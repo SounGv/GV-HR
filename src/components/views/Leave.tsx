@@ -72,7 +72,8 @@ export function Leave() {
   if (!l) return null;
 
   const typeName = l.type ? leaveTypeName[l.type] : "—";
-  const nextEnabled = !(l.step === 1 && !l.type);
+  const isOt = l.type === "ot";
+  const nextEnabled = !(l.step === 1 && !l.type) && !(l.step === 2 && isOt && !l.from);
   const nextBase: CSSProperties = {
     width: "100%",
     border: "none",
@@ -86,18 +87,19 @@ export function Leave() {
     cursor: nextEnabled ? "pointer" : "default",
   };
 
-  const isOt = l.type === "ot";
   const otHoursStr = computeOtHours(l.otStart, l.otEnd) + " ชม.";
 
   const reviewRows = [
     { label: "ประเภท", value: l.type ? leaveTypeName[l.type] : "—" },
-    isOt
-      ? { label: "ช่วงเวลา OT", value: `${l.otStart || "--:--"}–${l.otEnd || "--:--"} (${otHoursStr})` }
-      : {
-          label: "วันที่",
-          value: (l.from ? thDate(l.from) : "—") + (l.to && l.to !== l.from ? " – " + thDate(l.to) : ""),
-        },
-    ...(isOt ? [] : [{ label: "ระยะเวลา", value: l.half === "half" ? "ครึ่งวัน" : "เต็มวัน" }]),
+    {
+      label: "วันที่",
+      value: l.from
+        ? thDate(l.from) + (!isOt && l.to && l.to !== l.from ? " – " + thDate(l.to) : "")
+        : "—",
+    },
+    ...(isOt
+      ? [{ label: "ช่วงเวลา OT", value: `${l.otStart || "--:--"}–${l.otEnd || "--:--"} (${otHoursStr})` }]
+      : [{ label: "ระยะเวลา", value: l.half === "half" ? "ครึ่งวัน" : "เต็มวัน" }]),
     { label: "เหตุผล", value: l.reason || "—" },
     { label: "เอกสารแนบ", value: l.attachmentUrl ? `แนบแล้ว: ${l.attachmentName}` : "ไม่มี" },
   ];
@@ -171,6 +173,13 @@ export function Leave() {
         <div style={{ padding: "12px 16px" }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>ช่วงเวลาทำงานล่วงเวลา</div>
           <div style={{ background: "#fff", borderRadius: 18, padding: 16, boxShadow: cardShadow }}>
+            <label style={{ fontSize: 12, color: "#8a8d99", fontWeight: 600 }}>วันที่ทำ OT</label>
+            <input
+              type="date"
+              value={l.from}
+              onChange={(e) => updLeave("from", e.target.value)}
+              style={inputStyle}
+            />
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 12, color: "#8a8d99", fontWeight: 600 }}>เริ่ม OT</label>

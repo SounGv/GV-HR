@@ -20,6 +20,21 @@ function qrToken() {
   return "GVHR-" + randomBytes(6).toString("hex");
 }
 
+export async function runSeed(): Promise<string[]> {
+  const log: string[] = [];
+  const origLog = console.log;
+  console.log = (...args: unknown[]) => {
+    log.push(args.map(String).join(" "));
+    origLog(...args);
+  };
+  try {
+    await main();
+  } finally {
+    console.log = origLog;
+  }
+  return log;
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
@@ -372,9 +387,3 @@ async function main() {
   );
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
