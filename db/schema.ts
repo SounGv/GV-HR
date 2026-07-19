@@ -44,6 +44,16 @@ export const employees = pgTable("employees", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const workplaces = pgTable("workplaces", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  lat: doublePrecision("lat").notNull(),
+  lng: doublePrecision("lng").notNull(),
+  radiusMeters: integer("radius_meters").notNull(),
+  qrToken: varchar("qr_token", { length: 60 }).notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const attendanceRecords = pgTable("attendance_records", {
   id: serial("id").primaryKey(),
   employeeId: integer("employee_id")
@@ -56,6 +66,10 @@ export const attendanceRecords = pgTable("attendance_records", {
   clockInLng: doublePrecision("clock_in_lng"),
   clockOutLat: doublePrecision("clock_out_lat"),
   clockOutLng: doublePrecision("clock_out_lng"),
+  clockInWorkplaceId: integer("clock_in_workplace_id").references(() => workplaces.id),
+  clockOutWorkplaceId: integer("clock_out_workplace_id").references(() => workplaces.id),
+  clockInDistance: doublePrecision("clock_in_distance"),
+  clockOutDistance: doublePrecision("clock_out_distance"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -81,6 +95,9 @@ export const leaveRequests = pgTable("leave_requests", {
   dateFrom: date("date_from"),
   dateTo: date("date_to"),
   halfDay: boolean("half_day").notNull().default(false),
+  otStartTime: varchar("ot_start_time", { length: 5 }),
+  otEndTime: varchar("ot_end_time", { length: 5 }),
+  otHours: doublePrecision("ot_hours"),
   reason: text("reason"),
   attachmentUrl: text("attachment_url"),
   status: requestStatusEnum("status").notNull().default("Pending"),

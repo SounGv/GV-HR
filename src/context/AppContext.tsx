@@ -33,6 +33,7 @@ import type {
   RequestStatus,
   TabKey,
   ViewKey,
+  Workplace,
 } from "@/lib/types";
 import { apiFetch, getCurrentPosition } from "@/lib/apiClient";
 
@@ -65,6 +66,7 @@ interface AppState {
 
   attendanceToday: AttendanceRecordRow | null;
   attendanceHistory: AttendanceRecordRow[];
+  workplaces: Workplace[];
 
   leaveBalances: LeaveBalanceRow[];
   requests: LeaveRequestRow[];
@@ -114,6 +116,7 @@ const initialState: AppState = {
 
   attendanceToday: null,
   attendanceHistory: [],
+  workplaces: [],
 
   leaveBalances: [],
   requests: [],
@@ -158,6 +161,9 @@ interface AppContextValue {
   toggleClock: () => void;
   closeGps: () => void;
   confirmGps: () => void;
+  setWorkplace: (workplaceId: number) => void;
+  submitQrCode: (qrToken: string) => void;
+  retryGps: () => void;
 
   refreshRequests: (scope?: "mine" | "team" | "all") => void;
   openLeave: (leaveType?: LeaveTypeKey) => void;
@@ -280,6 +286,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     patch({ aiEmployees: data.employees });
   }, [patch]);
 
+  const refreshWorkplaces = useCallback(async () => {
+    const data = await apiFetch<{ workplaces: Workplace[] }>("/api/workplaces");
+    patch({ workplaces: data.workplaces });
+  }, [patch]);
+
   // bootstrap on mount
   useEffect(() => {
     (async () => {
@@ -294,6 +305,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           refreshNotifications(),
           refreshPayroll(),
           refreshPerformance(),
+          refreshWorkplaces(),
           me.role !== "employee" ? refreshAiEmployees() : Promise.resolve(),
         ]);
         refreshRequests(defaultScope);
@@ -338,29 +350,100 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const today = stateRef.current.attendanceToday;
     const mode: "in" | "out" | null = !today?.clockInAt ? "in" : !today?.clockOutAt ? "out" : null;
     if (!mode) return;
-    patch({ gps: { mode, phase: "locating" } });
-    getCurrentPosition()
-      .then((pos) => {
-        patch((s) =>
-          s.gps
-            ? { gps: { ...s.gps, phase: "ready", lat: pos.coords.latitude, lng: pos.coords.longitude } }
-            : {}
-        );
-      })
-      .catch((err: Error) => {
-        patch((s) => (s.gps ? { gps: { ...s.gps, phase: "error", error: err.message } } : {}));
-      });
-  }, [patch]);
+    const defaultWorkplace = stateRef.current.workplaces[0];
+    if (!defaultWorkplace) {
+      showToast("ไม่พบสถานที่ทำงานในระบบ กรุณาติดต่อ HR");
+      return;
+    }
+    patch({ gps: { mode, phase: "qr", workplaceId: defaultWorkplace.id, step: 0 } });
+  }, [patch, showToast]);
+
+  const setWorkplace = useCallback(
+    (workplaceId: number) => patch((s) => (s.gps ? { gps: { ...s.gps, workplaceId } } : {})),
+    [patch]
+  );
 
   const closeGps = useCallback(() => patch({ gps: null }), [patch]);
 
+  const retryGps = useCallback(() => {
+    patch((s) =>
+      s.gps ? { gps: { mode: s.gps.mode, phase: "qr", workplaceId: s.gps.workplaceId, step: 0 } } : {}
+    );
+  }, [patch]);
+
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const submitQrCode = useCallback(
+    (qrToken: string) => {
+      const gps = stateRef.current.gps;
+      if (!gps) return;
+      (async () => {
+        try {
+          patch((s) => (s.gps ? { gps: { ...s.gps, phase: "progress", step: 1, qrToken } } : {}));
+          const pos = await getCurrentPosition();
+          patch((s) =>
+            s.gps
+              ? {
+                  gps: {
+                    ...s.gps,
+                    step: 2,
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                  },
+                }
+              : {}
+          );
+          await delay(350);
+          patch((s) => (s.gps ? { gps: { ...s.gps, step: 3 } } : {}));
+          const verify = await apiFetch<{
+            ok: boolean;
+            error?: string;
+            distance?: number;
+            workplace?: { id: number; name: string; radiusMeters: number };
+          }>("/api/attendance/verify-location", {
+            method: "POST",
+            body: JSON.stringify({ workplaceId: gps.workplaceId, qrToken, lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          });
+          patch((s) =>
+            s.gps
+              ? {
+                  gps: {
+                    ...s.gps,
+                    phase: "result",
+                    step: 5,
+                    verified: verify.ok,
+                    distance: verify.distance,
+                    workplaceName: verify.workplace?.name,
+                    radiusMeters: verify.workplace?.radiusMeters,
+                    error: verify.error,
+                  },
+                }
+              : {}
+          );
+        } catch (err) {
+          patch((s) =>
+            s.gps
+              ? { gps: { ...s.gps, phase: "result", verified: false, error: err instanceof Error ? err.message : "เกิดข้อผิดพลาด" } }
+              : {}
+          );
+        }
+      })();
+    },
+    [patch]
+  );
+
   const confirmGps = useCallback(() => {
     const gps = stateRef.current.gps;
-    if (!gps || gps.phase !== "ready" || gps.lat === undefined || gps.lng === undefined) return;
+    if (!gps || gps.phase !== "result" || !gps.verified || gps.lat === undefined || gps.lng === undefined) return;
     const endpoint = gps.mode === "in" ? "/api/attendance/clock-in" : "/api/attendance/clock-out";
     apiFetch<{ record: AttendanceRecordRow }>(endpoint, {
       method: "POST",
-      body: JSON.stringify({ lat: gps.lat, lng: gps.lng }),
+      body: JSON.stringify({
+        lat: gps.lat,
+        lng: gps.lng,
+        workplaceId: gps.workplaceId,
+        qrToken: gps.qrToken,
+      }),
     })
       .then(() => {
         patch({ gps: null });
@@ -368,7 +451,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         refreshAttendance();
       })
       .catch((err: Error) => {
-        patch((s) => (s.gps ? { gps: { ...s.gps, phase: "error", error: err.message } } : {}));
+        patch((s) => (s.gps ? { gps: { ...s.gps, phase: "result", verified: false, error: err.message } } : {}));
       });
   }, [patch, showToast, refreshAttendance]);
 
@@ -383,6 +466,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           from: "",
           to: "",
           half: "full",
+          otStart: "18:00",
+          otEnd: "21:00",
           reason: "",
           attachmentUrl: null,
           attachmentName: null,
@@ -448,6 +533,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         dateFrom: l.from || null,
         dateTo: l.to || l.from || null,
         halfDay: l.half === "half",
+        otStartTime: l.type === "ot" ? l.otStart : null,
+        otEndTime: l.type === "ot" ? l.otEnd : null,
         reason: l.reason,
         attachmentUrl: l.attachmentUrl,
       }),
@@ -611,6 +698,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       toggleClock,
       closeGps,
       confirmGps,
+      setWorkplace,
+      submitQrCode,
+      retryGps,
       refreshRequests,
       openLeave,
       openCorrection,
@@ -648,6 +738,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       toggleClock,
       closeGps,
       confirmGps,
+      setWorkplace,
+      submitQrCode,
+      retryGps,
       refreshRequests,
       openLeave,
       openCorrection,

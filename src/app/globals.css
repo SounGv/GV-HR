@@ -115,3 +115,14 @@ a:hover {
     opacity: 0;
   }
 }
+@keyframes gvscan {
+  0% {
+    top: 22px;
+  }
+  50% {
+    top: 172px;
+  }
+  100% {
+    top: 22px;
+  }
+}

@@ -3,7 +3,7 @@ import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@db/index";
 import { leaveRequests, employees } from "@db/schema";
 import { requireSession, isSession } from "@/lib/api-helpers";
-import { thDate } from "@/lib/format";
+import { thDate, computeOtHours } from "@/lib/format";
 
 const leaveTypeName: Record<string, string> = {
   annual: "ลาพักร้อน",
@@ -46,6 +46,9 @@ export async function GET(req: Request) {
       dateFrom: leaveRequests.dateFrom,
       dateTo: leaveRequests.dateTo,
       halfDay: leaveRequests.halfDay,
+      otStartTime: leaveRequests.otStartTime,
+      otEndTime: leaveRequests.otEndTime,
+      otHours: leaveRequests.otHours,
       reason: leaveRequests.reason,
       attachmentUrl: leaveRequests.attachmentUrl,
       status: leaveRequests.status,
@@ -62,13 +65,19 @@ export async function GET(req: Request) {
   const result = rows.map((r) => {
     let dateLabel = r.dateFrom ? thDate(r.dateFrom) : "วันนี้";
     if (r.dateTo && r.dateTo !== r.dateFrom) dateLabel += "–" + thDate(r.dateTo);
+    const sub =
+      r.type === "ot"
+        ? `${r.otHours ?? 0} ชม. (${r.otStartTime || "--:--"}–${r.otEndTime || "--:--"})`
+        : r.halfDay
+          ? "ครึ่งวัน"
+          : "1 วัน";
     return {
       id: r.id,
       requestCode: r.requestCode,
       type: leaveTypeName[r.type] || r.type,
       key: r.type,
       dateLabel,
-      sub: r.halfDay ? "ครึ่งวัน" : "1 วัน",
+      sub,
       status: r.status,
       submitted: r.submittedAt,
       employeeId: r.employeeId,
@@ -95,6 +104,11 @@ export async function POST(req: Request) {
 
   const [emp] = await db.select().from(employees).where(eq(employees.id, session.employeeId)).limit(1);
 
+  const isOt = type === "ot";
+  const otStartTime = isOt ? body.otStartTime || null : null;
+  const otEndTime = isOt ? body.otEndTime || null : null;
+  const otHours = isOt && otStartTime && otEndTime ? computeOtHours(otStartTime, otEndTime) : null;
+
   const [req_] = await db
     .insert(leaveRequests)
     .values({
@@ -104,6 +118,9 @@ export async function POST(req: Request) {
       dateFrom: body.dateFrom || null,
       dateTo: body.dateTo || body.dateFrom || null,
       halfDay: !!body.halfDay,
+      otStartTime,
+      otEndTime,
+      otHours,
       reason: body.reason || "",
       attachmentUrl: body.attachmentUrl || null,
       approverId: emp?.managerId || null,

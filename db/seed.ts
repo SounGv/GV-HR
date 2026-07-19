@@ -10,12 +10,31 @@ import {
   performanceRecords,
   leaveRequests,
   attendanceRecords,
+  workplaces,
 } from "./schema";
+import { randomBytes } from "crypto";
 
 const DEMO_PASSWORD = "Passw0rd!";
 
+function qrToken() {
+  return "GVHR-" + randomBytes(6).toString("hex");
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+
+  console.log("Seeding workplaces...");
+  const seededWorkplaces = await db
+    .insert(workplaces)
+    .values([
+      { name: "สำนักงานใหญ่ Gadget Villa", lat: 13.7563, lng: 100.5018, radiusMeters: 100, qrToken: qrToken() },
+      { name: "คลังสินค้า Gadget Villa", lat: 13.7455, lng: 100.5372, radiusMeters: 150, qrToken: qrToken() },
+      { name: "สาขาย่อย", lat: 13.7307, lng: 100.5418, radiusMeters: 80, qrToken: qrToken() },
+    ])
+    .returning();
+  for (const w of seededWorkplaces) {
+    console.log(`  ${w.name}: qrToken=${w.qrToken}`);
+  }
 
   console.log("Seeding employees...");
   const [hr, manager, natthapong, sudarat, apiwat] = await db

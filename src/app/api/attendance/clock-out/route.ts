@@ -4,7 +4,7 @@ import { db } from "@db/index";
 import { attendanceRecords } from "@db/schema";
 import { requireSession, isSession } from "@/lib/api-helpers";
 import { todayISOBangkok } from "@/lib/date";
-import { isWithinOffice } from "@/lib/geo";
+import { verifyWorkplace } from "@/lib/workplace-verify";
 
 export async function POST(req: Request) {
   const session = await requireSession();
@@ -13,11 +13,21 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const lat = Number(body?.lat);
   const lng = Number(body?.lng);
+  const workplaceId = Number(body?.workplaceId);
+  const qrToken = typeof body?.qrToken === "string" ? body.qrToken : undefined;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return NextResponse.json({ error: "ไม่พบพิกัด GPS กรุณาอนุญาตการเข้าถึงตำแหน่ง" }, { status: 400 });
   }
-  if (!isWithinOffice(lat, lng)) {
-    return NextResponse.json({ error: "คุณอยู่นอกพื้นที่สำนักงาน ไม่สามารถลงเวลาได้" }, { status: 422 });
+  if (!Number.isFinite(workplaceId)) {
+    return NextResponse.json({ error: "กรุณาเลือกสถานที่ทำงาน" }, { status: 400 });
+  }
+
+  const verify = await verifyWorkplace({ workplaceId, qrToken, lat, lng });
+  if (!verify.ok) {
+    return NextResponse.json(
+      { error: verify.error, distance: verify.distance, workplace: verify.workplace },
+      { status: 422 }
+    );
   }
 
   const today = todayISOBangkok();
@@ -38,9 +48,15 @@ export async function POST(req: Request) {
 
   const [record] = await db
     .update(attendanceRecords)
-    .set({ clockOutAt: new Date(), clockOutLat: lat, clockOutLng: lng })
+    .set({
+      clockOutAt: new Date(),
+      clockOutLat: lat,
+      clockOutLng: lng,
+      clockOutWorkplaceId: workplaceId,
+      clockOutDistance: verify.distance,
+    })
     .where(eq(attendanceRecords.id, existing.id))
     .returning();
 
-  return NextResponse.json({ ok: true, record });
+  return NextResponse.json({ ok: true, record, workplace: verify.workplace, distance: verify.distance });
 }

@@ -6,7 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { backBtnStyle, cardShadow } from "@/lib/styles";
 import { leaveTypeDefs, leaveTypeName } from "@/lib/mock";
-import { thDate } from "@/lib/format";
+import { computeOtHours, thDate } from "@/lib/format";
 
 const chipSel: CSSProperties = {
   flex: 1,
@@ -86,13 +86,18 @@ export function Leave() {
     cursor: nextEnabled ? "pointer" : "default",
   };
 
+  const isOt = l.type === "ot";
+  const otHoursStr = computeOtHours(l.otStart, l.otEnd) + " ชม.";
+
   const reviewRows = [
     { label: "ประเภท", value: l.type ? leaveTypeName[l.type] : "—" },
-    {
-      label: "วันที่",
-      value: (l.from ? thDate(l.from) : "—") + (l.to && l.to !== l.from ? " – " + thDate(l.to) : ""),
-    },
-    { label: "ระยะเวลา", value: l.half === "half" ? "ครึ่งวัน" : "เต็มวัน" },
+    isOt
+      ? { label: "ช่วงเวลา OT", value: `${l.otStart || "--:--"}–${l.otEnd || "--:--"} (${otHoursStr})` }
+      : {
+          label: "วันที่",
+          value: (l.from ? thDate(l.from) : "—") + (l.to && l.to !== l.from ? " – " + thDate(l.to) : ""),
+        },
+    ...(isOt ? [] : [{ label: "ระยะเวลา", value: l.half === "half" ? "ครึ่งวัน" : "เต็มวัน" }]),
     { label: "เหตุผล", value: l.reason || "—" },
     { label: "เอกสารแนบ", value: l.attachmentUrl ? `แนบแล้ว: ${l.attachmentName}` : "ไม่มี" },
   ];
@@ -162,7 +167,49 @@ export function Leave() {
         </div>
       )}
 
-      {l.step === 2 && (
+      {l.step === 2 && isOt && (
+        <div style={{ padding: "12px 16px" }}>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>ช่วงเวลาทำงานล่วงเวลา</div>
+          <div style={{ background: "#fff", borderRadius: 18, padding: 16, boxShadow: cardShadow }}>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, color: "#8a8d99", fontWeight: 600 }}>เริ่ม OT</label>
+                <input
+                  type="time"
+                  value={l.otStart}
+                  onChange={(e) => updLeave("otStart", e.target.value)}
+                  style={{ ...inputStyle, marginBottom: 0 }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, color: "#8a8d99", fontWeight: 600 }}>สิ้นสุด OT</label>
+                <input
+                  type="time"
+                  value={l.otEnd}
+                  onChange={(e) => updLeave("otEnd", e.target.value)}
+                  style={{ ...inputStyle, marginBottom: 0 }}
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: 14,
+                padding: "12px 14px",
+                background: "#eef7cc",
+                borderRadius: 12,
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#5a7000" }}>รวมเวลา OT</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "#5a7000" }}>{otHoursStr}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {l.step === 2 && !isOt && (
         <div style={{ padding: "12px 16px" }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>เลือกวันที่</div>
           <div style={{ background: "#fff", borderRadius: 18, padding: 16, boxShadow: cardShadow }}>

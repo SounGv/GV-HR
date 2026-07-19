@@ -48,6 +48,15 @@ export function thDate(iso: string | null | undefined): string {
   return parseInt(p[2], 10) + " " + thMonths[parseInt(p[1], 10) - 1];
 }
 
+export function computeOtHours(start: string, end: string): number {
+  if (!start || !end) return 0;
+  const [a, b] = start.split(":").map(Number);
+  const [c, d] = end.split(":").map(Number);
+  let mins = c * 60 + d - (a * 60 + b);
+  if (mins < 0) mins += 1440;
+  return Math.round((mins / 60) * 10) / 10;
+}
+
 export function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.max(0, Math.floor(diffMs / 60000));

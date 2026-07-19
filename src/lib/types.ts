@@ -59,6 +59,9 @@ export interface LeaveRequestRow {
   employeeName: string;
   reason: string | null;
   attachmentUrl: string | null;
+  otStartTime?: string | null;
+  otEndTime?: string | null;
+  otHours?: number | null;
 }
 
 export interface LeaveBalanceRow {
@@ -75,6 +78,8 @@ export interface LeaveDraft {
   from: string;
   to: string;
   half: "full" | "half";
+  otStart: string;
+  otEnd: string;
   reason: string;
   attachmentUrl: string | null;
   attachmentName: string | null;
@@ -96,11 +101,27 @@ export interface HolidayForm {
   notify: boolean;
 }
 
+export interface Workplace {
+  id: number;
+  name: string;
+  radiusMeters: number;
+  qrToken?: string;
+}
+
+export type GpsPhase = "qr" | "progress" | "result" | "error";
+
 export interface GpsState {
   mode: "in" | "out";
-  phase: "locating" | "ready" | "error";
+  phase: GpsPhase;
+  workplaceId: number;
+  qrToken?: string;
+  step: number;
   lat?: number;
   lng?: number;
+  verified?: boolean;
+  distance?: number;
+  workplaceName?: string;
+  radiusMeters?: number;
   error?: string;
 }
 
