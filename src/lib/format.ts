@@ -48,6 +48,16 @@ export function thDate(iso: string | null | undefined): string {
   return parseInt(p[2], 10) + " " + thMonths[parseInt(p[1], 10) - 1];
 }
 
+export function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.max(0, Math.floor(diffMs / 60000));
+  if (mins < 60) return mins + " นาที";
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + " ชม.";
+  const days = Math.floor(hours / 24);
+  return days + " วัน";
+}
+
 export function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/);
   return ((parts[0] || " ")[0] + (parts[1] ? parts[1][0] : "")).toUpperCase();

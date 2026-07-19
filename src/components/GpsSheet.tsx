@@ -2,6 +2,7 @@
 
 import { useApp } from "@/context/AppContext";
 import { Icon } from "./Icon";
+import { haversineMeters, OFFICE_LOCATION, OFFICE_RADIUS_METERS } from "@/lib/geo";
 
 export function GpsSheet() {
   const { state, closeGps, confirmGps } = useApp();
@@ -10,8 +11,14 @@ export function GpsSheet() {
 
   const locating = gps.phase === "locating";
   const ready = gps.phase === "ready";
+  const hasError = gps.phase === "error";
   const title = gps.mode === "out" ? "ลงเวลาออกงาน" : "ลงเวลาเข้างาน";
   const confirmLabel = gps.mode === "out" ? "ยืนยันออกงาน" : "ยืนยันเข้างาน";
+  const distance =
+    ready && gps.lat !== undefined && gps.lng !== undefined
+      ? Math.round(haversineMeters({ lat: gps.lat, lng: gps.lng }, OFFICE_LOCATION))
+      : null;
+  const withinOffice = distance !== null && distance <= OFFICE_RADIUS_METERS;
 
   return (
     <>
@@ -172,25 +179,49 @@ export function GpsSheet() {
               gap: 11,
               margin: "16px 0",
               padding: "13px 15px",
-              background: "#e7f8f0",
+              background: withinOffice ? "#e7f8f0" : "#fdecec",
               borderRadius: 14,
               animation: "gvfade .25s ease",
             }}
           >
-            <Icon name="where_to_vote" size={22} fill style={{ color: "#0f9d6e" }} />
+            <Icon
+              name={withinOffice ? "where_to_vote" : "location_off"}
+              size={22}
+              fill
+              style={{ color: withinOffice ? "#0f9d6e" : "#d64545" }}
+            />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f9d6e" }}>
-                อยู่ในพื้นที่สำนักงาน
+              <div style={{ fontSize: 13, fontWeight: 700, color: withinOffice ? "#0f9d6e" : "#d64545" }}>
+                {withinOffice ? "อยู่ในพื้นที่สำนักงาน" : "อยู่นอกพื้นที่สำนักงาน"}
               </div>
-              <div style={{ fontSize: 11, color: "#5a9c85" }}>
-                ห่างจากจุดลงเวลา 12 ม. · ความแม่นยำ ±8 ม.
+              <div style={{ fontSize: 11, color: withinOffice ? "#5a9c85" : "#c47b7b" }}>
+                ห่างจากจุดลงเวลา {distance} ม. (รัศมีที่กำหนด {OFFICE_RADIUS_METERS} ม.)
               </div>
             </div>
           </div>
         )}
 
+        {hasError && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 11,
+              margin: "16px 0",
+              padding: "13px 15px",
+              background: "#fdecec",
+              borderRadius: 14,
+              animation: "gvfade .25s ease",
+            }}
+          >
+            <Icon name="error" size={22} style={{ color: "#d64545" }} />
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#d64545" }}>{gps.error}</div>
+          </div>
+        )}
+
         <button
           onClick={confirmGps}
+          disabled={!ready || !withinOffice}
           style={{
             width: "100%",
             border: "none",
@@ -200,8 +231,8 @@ export function GpsSheet() {
             fontSize: 15,
             fontWeight: 700,
             color: "#fff",
-            background: ready ? "#12b886" : "#c7c8d4",
-            cursor: ready ? "pointer" : "default",
+            background: ready && withinOffice ? "#12b886" : "#c7c8d4",
+            cursor: ready && withinOffice ? "pointer" : "default",
           }}
         >
           {confirmLabel}

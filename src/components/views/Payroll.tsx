@@ -3,11 +3,11 @@
 import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { cardShadowSm, darkShadow } from "@/lib/styles";
-import { payrollData } from "@/lib/derive";
+import { formatPayroll } from "@/lib/derive";
 
 export function Payroll() {
   const { state, togglePay, goSub } = useApp();
-  const p = payrollData(state.showPay);
+  const p = formatPayroll(state.payroll, state.showPay);
 
   return (
     <div style={{ animation: "gvpop .25s ease" }}>
@@ -27,7 +27,7 @@ export function Payroll() {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 12, opacity: 0.8 }}>รายได้สุทธิงวดล่าสุด · มิถุนายน 2568</div>
+          <div style={{ fontSize: 12, opacity: 0.8 }}>รายได้สุทธิงวดล่าสุด · {p.lastPeriodLabel}</div>
           <button
             onClick={togglePay}
             style={{
@@ -86,9 +86,9 @@ export function Payroll() {
 
       <div style={{ padding: "22px 16px 8px", fontSize: 14, fontWeight: 700 }}>ประวัติเงินเดือน</div>
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-        {p.payHistory.map((h) => (
+        {p.history.map((h) => (
           <div
-            key={h.period}
+            key={h.id}
             style={{
               display: "flex",
               alignItems: "center",
@@ -115,7 +115,7 @@ export function Payroll() {
                 <Icon name="calendar_month" size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{h.period}</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{h.periodLabel}</div>
                 <div style={{ fontSize: 11, color: "#8a8d99" }}>จ่ายแล้ว</div>
               </div>
             </div>

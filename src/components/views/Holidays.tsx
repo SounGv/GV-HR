@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { CSSProperties } from "react";
 import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
@@ -32,8 +33,13 @@ const chipHUn: CSSProperties = {
   border: "1.5px solid #e2e3ea",
 };
 
-function typeStyle(t: string): CSSProperties {
-  return t === "วันหยุดบริษัท"
+const typeLabel: Record<"company" | "national", string> = {
+  company: "วันหยุดบริษัท",
+  national: "นักขัตฤกษ์",
+};
+
+function typeStyle(t: "company" | "national"): CSSProperties {
+  return t === "company"
     ? { background: "#eef7cc", color: "#5a7000" }
     : { background: "#fdecec", color: "#d64545" };
 }
@@ -41,7 +47,6 @@ function typeStyle(t: string): CSSProperties {
 export function Holidays() {
   const {
     state,
-    toggleHolidayRemind,
     openHoliday,
     closeHoliday,
     updH,
@@ -49,6 +54,8 @@ export function Holidays() {
     delHoliday,
     toggleHNotify,
   } = useApp();
+  const [holidayRemind, setHolidayRemind] = useState(true);
+  const isHr = state.me?.role === "hr";
 
   const holidayList = state.holidays.map((h) => {
     const d = new Date(h.dateISO);
@@ -59,12 +66,12 @@ export function Holidays() {
       full: thDaysShort[d.getDay()] + " " + d.getDate() + " " + thMonths[d.getMonth()] + " " + (d.getFullYear() + 543),
     };
   });
-  const notifyOnCount = state.holidays.filter((h) => h.notify).length;
+  const notifyOnCount = state.holidays.filter((h) => h.notifyEnabled).length;
   const hf = state.hForm;
 
   return (
     <div style={{ animation: "gvslide .28s ease", paddingBottom: 24 }}>
-      <BackHeader title="วันหยุดบริษัท" subtitle="ปี 2569 · กำหนดโดย HR" />
+      <BackHeader title="วันหยุดบริษัท" subtitle="กำหนดโดย HR" />
 
       <div style={{ display: "flex", gap: 12, padding: "0 16px 12px" }}>
         <div style={{ flex: 1, background: "#17181c", borderRadius: 18, padding: 16, color: "#fff" }}>
@@ -99,7 +106,7 @@ export function Holidays() {
           <div style={{ fontSize: 11, color: "#8a8d99" }}>ส่งแจ้งเตือน 3 วันก่อนวันหยุด</div>
         </div>
         <button
-          onClick={toggleHolidayRemind}
+          onClick={() => setHolidayRemind((v) => !v)}
           style={{
             width: 46,
             height: 27,
@@ -109,7 +116,7 @@ export function Holidays() {
             position: "relative",
             flex: "none",
             transition: "background .2s",
-            background: state.holidayRemind ? "#c0e51f" : "#d7d9e2",
+            background: holidayRemind ? "#c0e51f" : "#d7d9e2",
           }}
         >
           <span
@@ -122,36 +129,38 @@ export function Holidays() {
               borderRadius: "50%",
               background: "#fff",
               transition: "transform .2s",
-              transform: `translateX(${state.holidayRemind ? 19 : 0}px)`,
+              transform: `translateX(${holidayRemind ? 19 : 0}px)`,
               boxShadow: "0 1px 3px rgba(0,0,0,.3)",
             }}
           />
         </button>
       </div>
 
-      <button
-        onClick={openHoliday}
-        style={{
-          margin: "0 16px 14px",
-          width: "calc(100% - 32px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          border: "none",
-          background: "#c0e51f",
-          color: "#17181c",
-          fontFamily: "inherit",
-          fontSize: 14,
-          fontWeight: 800,
-          padding: 14,
-          borderRadius: 16,
-          cursor: "pointer",
-        }}
-      >
-        <Icon name="add" size={20} />
-        เพิ่มวันหยุด
-      </button>
+      {isHr && (
+        <button
+          onClick={openHoliday}
+          style={{
+            margin: "0 16px 14px",
+            width: "calc(100% - 32px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            border: "none",
+            background: "#c0e51f",
+            color: "#17181c",
+            fontFamily: "inherit",
+            fontSize: 14,
+            fontWeight: 800,
+            padding: 14,
+            borderRadius: 16,
+            cursor: "pointer",
+          }}
+        >
+          <Icon name="add" size={20} />
+          เพิ่มวันหยุด
+        </button>
+      )}
 
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 10 }}>
         {holidayList.map((h) => (
@@ -188,50 +197,53 @@ export function Holidays() {
               <div style={{ fontSize: 14, fontWeight: 700 }}>{h.name}</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                 <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, ...typeStyle(h.type) }}>
-                  {h.type}
+                  {typeLabel[h.type]}
                 </span>
                 <span style={{ fontSize: 11, color: "#9aa0ab" }}>{h.full}</span>
               </div>
             </div>
             <button
-              onClick={() => toggleHNotify(h.id)}
+              onClick={() => isHr && toggleHNotify(h.id)}
+              disabled={!isHr}
               style={{
                 width: 36,
                 height: 36,
                 border: "none",
                 borderRadius: 11,
-                cursor: "pointer",
+                cursor: isHr ? "pointer" : "default",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: h.notify ? "#eef7cc" : "#f1f2f5",
-                color: h.notify ? "#5a7000" : "#a3a6b2",
+                background: h.notifyEnabled ? "#eef7cc" : "#f1f2f5",
+                color: h.notifyEnabled ? "#5a7000" : "#a3a6b2",
               }}
             >
-              <Icon name={h.notify ? "notifications_active" : "notifications_off"} size={20} />
+              <Icon name={h.notifyEnabled ? "notifications_active" : "notifications_off"} size={20} />
             </button>
-            <button
-              onClick={() => delHoliday(h.id)}
-              style={{
-                width: 36,
-                height: 36,
-                border: "none",
-                borderRadius: 11,
-                background: "#fff",
-                color: "#c9cbd6",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Icon name="delete" size={20} />
-            </button>
+            {isHr && (
+              <button
+                onClick={() => delHoliday(h.id)}
+                style={{
+                  width: 36,
+                  height: 36,
+                  border: "none",
+                  borderRadius: 11,
+                  background: "#fff",
+                  color: "#c9cbd6",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon name="delete" size={20} />
+              </button>
+            )}
           </div>
         ))}
       </div>
 
-      {state.holidaySheet && (
+      {isHr && state.holidaySheet && (
         <>
           <div
             onClick={closeHoliday}
@@ -270,10 +282,10 @@ export function Holidays() {
             />
             <label style={{ fontSize: 12, color: "#8a8d99", fontWeight: 600 }}>ประเภท</label>
             <div style={{ display: "flex", gap: 10, margin: "6px 0 14px" }}>
-              <button onClick={() => updH("type", "วันหยุดบริษัท")} style={hf.type === "วันหยุดบริษัท" ? chipHSel : chipHUn}>
+              <button onClick={() => updH("type", "company")} style={hf.type === "company" ? chipHSel : chipHUn}>
                 วันหยุดบริษัท
               </button>
-              <button onClick={() => updH("type", "นักขัตฤกษ์")} style={hf.type === "นักขัตฤกษ์" ? chipHSel : chipHUn}>
+              <button onClick={() => updH("type", "national")} style={hf.type === "national" ? chipHSel : chipHUn}>
                 นักขัตฤกษ์
               </button>
             </div>

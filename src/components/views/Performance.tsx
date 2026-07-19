@@ -1,17 +1,32 @@
 "use client";
 
+import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { BackHeader } from "@/components/BackHeader";
 import { cardShadow } from "@/lib/styles";
-import { compSeed, kpiSeed } from "@/lib/mock";
 
 export function Performance() {
-  const kpis = kpiSeed.map((k) => ({
+  const { state } = useApp();
+  const perf = state.performance;
+
+  if (!perf) {
+    return (
+      <div style={{ animation: "gvslide .28s ease", paddingBottom: 16 }}>
+        <BackHeader title="ผลการปฏิบัติงาน" />
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "#b6b9c2" }}>
+          <Icon name="trending_up" size={44} />
+          <div style={{ fontSize: 13, marginTop: 8 }}>ยังไม่มีรอบประเมินผลงาน</div>
+        </div>
+      </div>
+    );
+  }
+
+  const kpis = perf.kpis.map((k) => ({
     ...k,
     pct: ((k.score / 5) * 100).toFixed(0) + "%",
     color: k.score >= 4.2 ? "#0f9d6e" : k.score >= 3.5 ? "#f59e0b" : "#ef4444",
   }));
-  const comps = compSeed.map((c) => ({
+  const comps = perf.competencies.map((c) => ({
     ...c,
     curPct: (c.cur / 5) * 100 + "%",
     tgtPct: (c.tgt / 5) * 100 + "%",
@@ -19,7 +34,7 @@ export function Performance() {
 
   return (
     <div style={{ animation: "gvslide .28s ease", paddingBottom: 16 }}>
-      <BackHeader title="ผลการปฏิบัติงาน" subtitle="ครึ่งปีแรก 2568" />
+      <BackHeader title="ผลการปฏิบัติงาน" subtitle={perf.cycle} />
 
       <div
         style={{
@@ -47,13 +62,12 @@ export function Performance() {
             border: "3px solid rgba(255,255,255,.4)",
           }}
         >
-          <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1 }}>4.2</div>
+          <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1 }}>{perf.overallScore.toFixed(1)}</div>
           <div style={{ fontSize: 11, opacity: 0.8 }}>/ 5.0</div>
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, opacity: 0.85 }}>ระดับผลงานโดยรวม</div>
-          <div style={{ fontSize: 20, fontWeight: 800 }}>ดีเยี่ยม (Exceeds)</div>
-          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 4 }}>อยู่ใน 20% แรกของแผนก</div>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>{perf.band}</div>
         </div>
       </div>
 
@@ -110,20 +124,24 @@ export function Performance() {
         ))}
       </div>
 
-      <div style={{ margin: "20px 16px 0", background: "#fff8ec", border: "1px solid #ffe6bf", borderRadius: 18, padding: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "#b7791f", marginBottom: 6 }}>
-          <Icon name="flag" size={19} />
-          แผนพัฒนา (IDP)
+      {perf.idpTitle && (
+        <div style={{ margin: "20px 16px 0", background: "#fff8ec", border: "1px solid #ffe6bf", borderRadius: 18, padding: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "#b7791f", marginBottom: 6 }}>
+            <Icon name="flag" size={19} />
+            แผนพัฒนา (IDP)
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{perf.idpTitle}</div>
+          <div style={{ fontSize: 11, color: "#8a8d99", margin: "6px 0 8px" }}>
+            {perf.idpDescription} · เป้าหมาย {perf.idpTargetDate}
+          </div>
+          <div style={{ height: 7, background: "#f3e3c9", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${perf.idpProgressPercent || 0}%`, background: "#f59e0b", borderRadius: 99 }} />
+          </div>
+          <div style={{ textAlign: "right", fontSize: 11, color: "#b7791f", fontWeight: 700, marginTop: 4 }}>
+            ความคืบหน้า {perf.idpProgressPercent || 0}%
+          </div>
         </div>
-        <div style={{ fontSize: 13, fontWeight: 600 }}>พัฒนาทักษะการสื่อสาร</div>
-        <div style={{ fontSize: 11, color: "#8a8d99", margin: "6px 0 8px" }}>อบรม + โค้ชรายเดือน · เป้าหมาย ก.ย. 2568</div>
-        <div style={{ height: 7, background: "#f3e3c9", borderRadius: 99, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: "60%", background: "#f59e0b", borderRadius: 99 }} />
-        </div>
-        <div style={{ textAlign: "right", fontSize: 11, color: "#b7791f", fontWeight: 700, marginTop: 4 }}>
-          ความคืบหน้า 60%
-        </div>
-      </div>
+      )}
     </div>
   );
 }

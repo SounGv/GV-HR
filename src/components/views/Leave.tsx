@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { CSSProperties } from "react";
 import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
@@ -65,8 +66,9 @@ const attachOff: CSSProperties = {
 };
 
 export function Leave() {
-  const { state, leaveBack, leaveNext, updLeave } = useApp();
+  const { state, leaveBack, leaveNext, updLeave, uploadAttachment } = useApp();
   const l = state.leave;
+  const fileInputRef = useRef<HTMLInputElement>(null);
   if (!l) return null;
 
   const typeName = l.type ? leaveTypeName[l.type] : "—";
@@ -92,7 +94,7 @@ export function Leave() {
     },
     { label: "ระยะเวลา", value: l.half === "half" ? "ครึ่งวัน" : "เต็มวัน" },
     { label: "เหตุผล", value: l.reason || "—" },
-    { label: "เอกสารแนบ", value: l.attach ? "แนบแล้ว 1 ไฟล์" : "ไม่มี" },
+    { label: "เอกสารแนบ", value: l.attachmentUrl ? `แนบแล้ว: ${l.attachmentName}` : "ไม่มี" },
   ];
 
   return (
@@ -201,9 +203,22 @@ export function Leave() {
               placeholder="ระบุเหตุผลของคำขอ..."
               style={{ ...inputStyle, minHeight: 100, resize: "none" }}
             />
-            <button onClick={() => updLeave("attach", !l.attach)} style={l.attach ? attachOn : attachOff}>
-              <Icon name={l.attach ? "check_circle" : "attach_file"} size={20} />
-              {l.attach ? "แนบเอกสารแล้ว" : "แนบเอกสาร (ถ้ามี)"}
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadAttachment(file);
+              }}
+              style={{ display: "none" }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={l.uploading}
+              style={l.attachmentUrl ? attachOn : attachOff}
+            >
+              <Icon name={l.uploading ? "hourglass_top" : l.attachmentUrl ? "check_circle" : "attach_file"} size={20} />
+              {l.uploading ? "กำลังอัปโหลด..." : l.attachmentUrl ? `แนบแล้ว: ${l.attachmentName}` : "แนบเอกสาร (ถ้ามี)"}
             </button>
           </div>
         </div>

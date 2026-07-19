@@ -13,8 +13,15 @@ const chipDefs: { key: "all" | RequestStatus; label: string }[] = [
   { key: "Rejected", label: "ไม่อนุมัติ" },
 ];
 
+const scopeDefs: { key: "mine" | "team" | "all"; label: string }[] = [
+  { key: "mine", label: "ของฉัน" },
+  { key: "team", label: "ทีมงาน" },
+  { key: "all", label: "ทั้งหมด" },
+];
+
 export function Requests() {
-  const { state, setFilter, openLeave } = useApp();
+  const { state, setFilter, setReqScope, openLeave, decideLeave } = useApp();
+  const canApprove = state.me?.role === "manager" || state.me?.role === "hr";
 
   const reqs = state.requests.map((r) => {
     const m = statusMeta[r.status];
@@ -29,6 +36,35 @@ export function Requests() {
         <div style={{ fontSize: 22, fontWeight: 800 }}>ศูนย์คำขอ</div>
         <div style={{ fontSize: 12, color: "#8a8d99" }}>Request Center</div>
       </div>
+
+      {canApprove && (
+        <div style={{ margin: "0 16px 12px", background: "#eef0f4", borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
+          {scopeDefs.map((s) => {
+            const active = state.reqScope === s.key;
+            return (
+              <button
+                key={s.key}
+                onClick={() => setReqScope(s.key)}
+                style={{
+                  flex: 1,
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  padding: "9px 4px",
+                  borderRadius: 11,
+                  background: active ? "#fff" : "transparent",
+                  color: active ? "#191a2e" : "#8a8d99",
+                  boxShadow: active ? "0 2px 8px -3px rgba(0,0,0,.25)" : "none",
+                }}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, padding: "0 16px 14px", overflowX: "auto" }}>
         {chipDefs.map((c) => {
@@ -87,7 +123,8 @@ export function Requests() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{r.type}</div>
                 <div style={{ fontSize: 11, color: "#8a8d99" }}>
-                  {r.id} · {r.dateLabel}
+                  {r.requestCode} · {r.dateLabel}
+                  {state.reqScope !== "mine" && <> · {r.employeeName}</>}
                 </div>
               </div>
               <div
@@ -121,6 +158,44 @@ export function Requests() {
               <span>{r.sub}</span>
               <span>ส่งเมื่อ {r.submitted}</span>
             </div>
+            {canApprove && state.reqScope !== "mine" && r.status === "Pending" && (
+              <div style={{ display: "flex", gap: 8, marginTop: 11 }}>
+                <button
+                  onClick={() => decideLeave(r.id, "reject")}
+                  style={{
+                    flex: 1,
+                    border: "none",
+                    background: "#fdecec",
+                    color: "#d64545",
+                    fontFamily: "inherit",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: 10,
+                    borderRadius: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  ไม่อนุมัติ
+                </button>
+                <button
+                  onClick={() => decideLeave(r.id, "approve")}
+                  style={{
+                    flex: 1,
+                    border: "none",
+                    background: "#17181c",
+                    color: "#c0e51f",
+                    fontFamily: "inherit",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: 10,
+                    borderRadius: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  อนุมัติ
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {filtered.length === 0 && (

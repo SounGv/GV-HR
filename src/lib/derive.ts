@@ -1,5 +1,5 @@
-import { deductionsSeed, earningsSeed, payHistorySeed } from "./mock";
 import { fmtBaht } from "./format";
+import type { PayrollRow } from "./types";
 
 export function clockStatus(opts: {
   clockedIn: boolean;
@@ -91,32 +91,29 @@ export function clockStatus(opts: {
   };
 }
 
-export function payrollData(showPay: boolean) {
-  const earnings = earningsSeed.map((e) => ({ ...e, amtStr: fmtBaht(e.amt) }));
-  const deductions = deductionsSeed.map((d) => ({ ...d, amtStr: fmtBaht(d.amt) }));
-  const gross = earningsSeed.reduce((a, b) => a + b.amt, 0);
-  const ded = deductionsSeed.reduce((a, b) => a + b.amt, 0);
-  const net = gross - ded;
+export function formatPayroll(rows: PayrollRow[], showPay: boolean) {
   const mask = "฿ ••••••";
-  const earningsDisp = earnings.map((e) => ({ ...e, amtDisp: showPay ? e.amtStr : "฿ ••••" }));
-  const deductionsDisp = deductions.map((d) => ({
-    ...d,
-    amtDisp: showPay ? "-" + d.amtStr : "฿ ••••",
+  const latest = rows[0];
+  const earnings = (latest?.earnings || []).map((e) => ({
+    ...e,
+    amtDisp: showPay ? fmtBaht(e.amt) : "฿ ••••",
   }));
-  const payHistory = payHistorySeed.map((p) => ({
+  const deductions = (latest?.deductions || []).map((d) => ({
+    ...d,
+    amtDisp: showPay ? "-" + fmtBaht(d.amt) : "฿ ••••",
+  }));
+  const history = rows.map((p) => ({
     ...p,
-    netStr: fmtBaht(p.net),
     netDisp: showPay ? fmtBaht(p.net) : "฿ ••••",
   }));
+
   return {
-    earnings: earningsDisp,
-    deductions: deductionsDisp,
-    gross,
-    ded,
-    net,
-    payHistory,
-    payNetDisplay: showPay ? fmtBaht(net) : mask,
-    payGrossDisplay: showPay ? fmtBaht(gross) : "฿ ••••",
-    payDedDisplay: showPay ? "-" + fmtBaht(ded) : "฿ ••••",
+    earnings,
+    deductions,
+    history,
+    lastPeriodLabel: latest?.periodLabel || "-",
+    payNetDisplay: latest ? (showPay ? fmtBaht(latest.net) : mask) : mask,
+    payGrossDisplay: latest ? (showPay ? fmtBaht(latest.gross) : "฿ ••••") : "฿ ••••",
+    payDedDisplay: latest ? (showPay ? "-" + fmtBaht(latest.totalDeductions) : "฿ ••••") : "฿ ••••",
   };
 }

@@ -3,15 +3,64 @@
 import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { cardShadowSm } from "@/lib/styles";
-import { attHistory, attStats } from "@/lib/mock";
+import { hhmm, thDaysShort, thMonths } from "@/lib/format";
+import type { AttendanceRecordRow } from "@/lib/types";
+
+function isLate(iso: string) {
+  const d = new Date(iso);
+  return d.getHours() > 9 || (d.getHours() === 9 && d.getMinutes() > 0);
+}
+
+function rowInfo(r: AttendanceRecordRow) {
+  if (!r.clockInAt) return { status: "ขาดงาน", color: "#7b7d8c" };
+  if (!r.clockOutAt) return { status: "ลืมลงเวลาออก", color: "#ef4444" };
+  if (isLate(r.clockInAt)) return { status: "สายเข้างาน", color: "#f59e0b" };
+  const outH = new Date(r.clockOutAt).getHours() + new Date(r.clockOutAt).getMinutes() / 60;
+  if (outH > 18.25) return { status: "ปกติ +OT", color: "#0f9d6e" };
+  return { status: "ปกติ", color: "#0f9d6e" };
+}
 
 export function Attendance() {
-  const { openCorrection } = useApp();
+  const { state, openCorrection } = useApp();
+  const history = state.attendanceHistory;
+
+  const present = history.filter((r) => r.clockInAt).length;
+  const late = history.filter((r) => r.clockInAt && isLate(r.clockInAt)).length;
+  const absent = history.filter((r) => !r.clockInAt).length;
+  const otHours = history.reduce((sum, r) => {
+    if (!r.clockOutAt) return sum;
+    const d = new Date(r.clockOutAt);
+    const h = d.getHours() + d.getMinutes() / 60;
+    return sum + Math.max(0, h - 18);
+  }, 0);
+
+  const attStats = [
+    { label: "มาทำงาน", value: String(present), color: "#0f9d6e" },
+    { label: "สาย", value: String(late), color: "#f59e0b" },
+    { label: "ขาด", value: String(absent), color: "#ef4444" },
+    { label: "OT (ชม.)", value: otHours.toFixed(0), color: "#17181c" },
+  ];
+
+  const rows = history.map((r) => {
+    const d = new Date(r.workDate);
+    const info = rowInfo(r);
+    return {
+      id: r.id,
+      day: thDaysShort[d.getDay()],
+      dnum: d.getDate(),
+      date: `${d.getDate()} ${thMonths[d.getMonth()]} ${d.getFullYear() + 543}`,
+      in: hhmm(r.clockInAt ? new Date(r.clockInAt).getTime() : null),
+      out: hhmm(r.clockOutAt ? new Date(r.clockOutAt).getTime() : null),
+      status: info.status,
+      color: info.color,
+    };
+  });
+
   return (
     <div style={{ animation: "gvpop .25s ease" }}>
       <div style={{ padding: "20px 20px 16px" }}>
         <div style={{ fontSize: 22, fontWeight: 800 }}>ประวัติเวลาทำงาน</div>
-        <div style={{ fontSize: 12, color: "#8a8d99" }}>Attendance · กรกฎาคม 2568</div>
+        <div style={{ fontSize: 12, color: "#8a8d99" }}>Attendance · 30 วันล่าสุด</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, padding: "0 16px 8px" }}>
@@ -58,9 +107,9 @@ export function Attendance() {
       </div>
 
       <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-        {attHistory.map((a, i) => (
+        {rows.map((a) => (
           <div
-            key={i}
+            key={a.id}
             style={{
               display: "flex",
               alignItems: "center",
@@ -103,6 +152,12 @@ export function Attendance() {
             </div>
           </div>
         ))}
+        {rows.length === 0 && (
+          <div style={{ textAlign: "center", padding: "50px 20px", color: "#b6b9c2" }}>
+            <Icon name="event_busy" size={44} />
+            <div style={{ fontSize: 13, marginTop: 8 }}>ยังไม่มีประวัติการลงเวลา</div>
+          </div>
+        )}
       </div>
       <div style={{ height: 16 }} />
     </div>

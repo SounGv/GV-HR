@@ -4,12 +4,12 @@ import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { cardShadowSm, cardShadow } from "@/lib/styles";
 import { clockStatus } from "@/lib/derive";
-import { employeeName, leaveBalanceSeed, notificationSeed } from "@/lib/mock";
-import { hhmm, initialsOf, thDays, thMonthsLong } from "@/lib/format";
+import { hhmm, initialsOf, thDays, thMonthsLong, timeAgo } from "@/lib/format";
 
 export function Home() {
   const { state, goSub, go, toggleClock, openLeave } = useApp();
-  const initials = initialsOf(employeeName);
+  const me = state.me;
+  const initials = initialsOf(me?.name || "");
   const now = new Date(state.now);
   const hr = now.getHours();
   const greeting = hr < 12 ? "สวัสดีตอนเช้า" : hr < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
@@ -23,19 +23,24 @@ export function Home() {
     " " +
     (now.getFullYear() + 543);
 
+  const today = state.attendanceToday;
+  const clockInTs = today?.clockInAt ? new Date(today.clockInAt).getTime() : null;
+  const clockOutTs = today?.clockOutAt ? new Date(today.clockOutAt).getTime() : null;
   const cs = clockStatus({
-    clockedIn: state.clockedIn,
-    clockInTs: state.clockInTs,
-    clockOutTs: state.clockOutTs,
+    clockedIn: !!clockInTs && !clockOutTs,
+    clockInTs,
+    clockOutTs,
     now: state.now,
   });
 
-  const clockInDisplay = hhmm(state.clockInTs);
-  const clockOutDisplay = hhmm(state.clockOutTs);
+  const clockInDisplay = hhmm(clockInTs);
+  const clockOutDisplay = hhmm(clockOutTs);
 
-  const balances = leaveBalanceSeed.map((b) => ({ ...b, remain: b.total - b.used }));
-  const homeNotifs = notificationSeed.slice(0, 2);
-  const hasUnread = Object.keys(state.unreadIds).length > 0;
+  const balanceColors: Record<string, string> = { annual: "#17181c", sick: "#10b981", personal: "#f59e0b" };
+  const balances = state.leaveBalances.map((b) => ({ ...b, color: balanceColors[b.key] || "#17181c" }));
+  const homeNotifs = state.notifications.slice(0, 2);
+  const hasUnread = state.notifications.some((n) => !n.isRead);
+  const perf = state.performance;
 
   return (
     <div style={{ animation: "gvpop .25s ease" }}>
@@ -66,8 +71,8 @@ export function Home() {
             </div>
             <div>
               <div style={{ fontSize: 12, opacity: 0.75 }}>{greeting}</div>
-              <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.2 }}>{employeeName}</div>
-              <div style={{ fontSize: 11, opacity: 0.7 }}>เจ้าหน้าที่คลังสินค้า</div>
+              <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.2 }}>{me?.name}</div>
+              <div style={{ fontSize: 11, opacity: 0.7 }}>{me?.position}</div>
             </div>
           </div>
           <button
@@ -261,9 +266,10 @@ export function Home() {
           </div>
           <div style={{ fontSize: 11, color: "#7b7d8c", fontWeight: 600 }}>คะแนนผลงาน</div>
           <div style={{ fontSize: 19, fontWeight: 800 }}>
-            4.2 <span style={{ fontSize: 12, color: "#9aa0ab", fontWeight: 600 }}>/ 5.0</span>
+            {perf ? perf.overallScore.toFixed(1) : "—"}{" "}
+            <span style={{ fontSize: 12, color: "#9aa0ab", fontWeight: 600 }}>/ 5.0</span>
           </div>
-          <div style={{ fontSize: 11, color: "#9aa0ab" }}>ครึ่งปีแรก 2568</div>
+          <div style={{ fontSize: 11, color: "#9aa0ab" }}>{perf?.cycle || "ยังไม่มีรอบประเมิน"}</div>
         </div>
       </div>
 
@@ -349,7 +355,7 @@ export function Home() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>{n.title}</div>
-                <div style={{ fontSize: 11, color: "#8a8d99" }}>{n.time} ที่แล้ว</div>
+                <div style={{ fontSize: 11, color: "#8a8d99" }}>{timeAgo(n.createdAt)} ที่แล้ว</div>
               </div>
             </div>
           ))}

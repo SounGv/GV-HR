@@ -6,42 +6,84 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useReducer,
   useRef,
+  useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import type {
+  AiCompetency,
   AiEmployee,
+  AiKpi,
   AiMode,
   AiResult,
+  AttendanceRecordRow,
   GpsState,
   HolidayForm,
   HolidayItem,
+  LeaveBalanceRow,
   LeaveDraft,
-  LeaveRequest,
+  LeaveRequestRow,
   LeaveTypeKey,
+  Me,
+  NotificationRow,
+  PayrollRow,
+  PerformanceRow,
+  ReportData,
   ReportTab,
   RequestStatus,
   TabKey,
   ViewKey,
 } from "@/lib/types";
-import { initialHolidays, initialRequests, leaveTypeName } from "@/lib/mock";
-import { thDate } from "@/lib/format";
-import { mockGenCriteria, mockGenDraft } from "@/lib/aiMock";
+import { apiFetch, getCurrentPosition } from "@/lib/apiClient";
+
+interface AiCriteria {
+  summary: string;
+  competencies: AiCompetency[];
+  kpis: AiKpi[];
+}
+
+interface AiDraft {
+  overall: string;
+  strengths: string[];
+  improvements: string[];
+  development: string[];
+  summary: string;
+}
 
 interface AppState {
   view: ViewKey;
   tab: TabKey;
   parent: ViewKey;
-  clockedIn: boolean;
-  clockInTs: number | null;
-  clockOutTs: number | null;
+
+  me: Me | null;
+  bootLoading: boolean;
+  bootError: string | null;
+
   now: number;
-  reqFilter: "all" | RequestStatus;
   toast: string | null;
-  unreadIds: Record<string, boolean>;
-  showPay: boolean;
   gps: GpsState | null;
-  reportTab: ReportTab;
+
+  attendanceToday: AttendanceRecordRow | null;
+  attendanceHistory: AttendanceRecordRow[];
+
+  leaveBalances: LeaveBalanceRow[];
+  requests: LeaveRequestRow[];
+  reqFilter: "all" | RequestStatus;
+  reqScope: "mine" | "team" | "all";
+  requestsLoading: boolean;
+
+  holidays: HolidayItem[];
+  holidaySheet: boolean;
+  hForm: HolidayForm;
+
+  notifications: NotificationRow[];
+
+  payroll: PayrollRow[];
+  showPay: boolean;
+
+  performance: PerformanceRow | null;
+
+  aiEmployees: AiEmployee[];
   aiMode: AiMode;
   aiDept: string | null;
   aiRole: string;
@@ -49,30 +91,48 @@ interface AppState {
   aiLoading: boolean;
   aiResult: AiResult | null;
   aiError: string;
-  holidayRemind: boolean;
-  holidaySheet: boolean;
-  nextHId: number;
-  hForm: HolidayForm;
-  holidays: HolidayItem[];
+
+  reportTab: ReportTab;
+  reportData: ReportData | null;
+  reportLoading: boolean;
+
   leave: LeaveDraft | null;
-  nextId: number;
-  requests: LeaveRequest[];
 }
 
 const initialState: AppState = {
   view: "home",
   tab: "home",
   parent: "home",
-  clockedIn: false,
-  clockInTs: null,
-  clockOutTs: null,
+
+  me: null,
+  bootLoading: true,
+  bootError: null,
+
   now: Date.now(),
-  reqFilter: "all",
   toast: null,
-  unreadIds: { n1: true, n2: true },
-  showPay: false,
   gps: null,
-  reportTab: "attendance",
+
+  attendanceToday: null,
+  attendanceHistory: [],
+
+  leaveBalances: [],
+  requests: [],
+  reqFilter: "all",
+  reqScope: "mine",
+  requestsLoading: false,
+
+  holidays: [],
+  holidaySheet: false,
+  hForm: { name: "", date: "", type: "company", notify: true },
+
+  notifications: [],
+
+  payroll: [],
+  showPay: false,
+
+  performance: null,
+
+  aiEmployees: [],
   aiMode: "criteria",
   aiDept: null,
   aiRole: "",
@@ -80,211 +140,13 @@ const initialState: AppState = {
   aiLoading: false,
   aiResult: null,
   aiError: "",
-  holidayRemind: true,
-  holidaySheet: false,
-  nextHId: 8,
-  hForm: { name: "", date: "", type: "วันหยุดบริษัท", notify: true },
-  holidays: initialHolidays,
+
+  reportTab: "attendance",
+  reportData: null,
+  reportLoading: false,
+
   leave: null,
-  nextId: 2042,
-  requests: initialRequests,
 };
-
-type Action =
-  | { type: "GO"; view: ViewKey; tab?: TabKey }
-  | { type: "GO_SUB"; view: ViewKey }
-  | { type: "BACK" }
-  | { type: "TOAST_SHOW"; msg: string }
-  | { type: "TOAST_HIDE" }
-  | { type: "TICK"; now: number }
-  | { type: "CLOCK_START_GPS"; mode: "in" | "out" }
-  | { type: "GPS_SET_READY" }
-  | { type: "GPS_CLOSE" }
-  | { type: "GPS_CONFIRM" }
-  | { type: "LEAVE_OPEN"; leaveType?: LeaveTypeKey }
-  | { type: "LEAVE_UPDATE"; field: keyof LeaveDraft; value: string | boolean }
-  | { type: "LEAVE_BACK" }
-  | { type: "LEAVE_NEXT" }
-  | { type: "SET_FILTER"; filter: "all" | RequestStatus }
-  | { type: "MARK_READ" }
-  | { type: "AI_SET_MODE"; mode: AiMode }
-  | { type: "AI_SET_DEPT"; dept: string }
-  | { type: "AI_SET_ROLE"; role: string }
-  | { type: "AI_SET_EMP"; emp: AiEmployee }
-  | { type: "AI_LOADING_START" }
-  | { type: "AI_LOADING_DONE"; result: AiResult }
-  | { type: "AI_ERROR"; error: string }
-  | { type: "HOLIDAY_OPEN" }
-  | { type: "HOLIDAY_CLOSE" }
-  | { type: "HOLIDAY_FORM_UPDATE"; field: keyof HolidayForm; value: string | boolean }
-  | { type: "HOLIDAY_ADD" }
-  | { type: "HOLIDAY_DELETE"; id: number }
-  | { type: "HOLIDAY_TOGGLE_NOTIFY"; id: number }
-  | { type: "HOLIDAY_TOGGLE_REMIND" }
-  | { type: "PAY_TOGGLE" }
-  | { type: "REPORT_SET_TAB"; tab: ReportTab };
-
-function reducer(state: AppState, action: Action): AppState {
-  switch (action.type) {
-    case "GO":
-      return {
-        ...state,
-        view: action.view,
-        tab: action.tab || state.tab,
-        parent: action.tab ? action.view : state.parent,
-      };
-    case "GO_SUB":
-      return { ...state, view: action.view, parent: state.tab };
-    case "BACK":
-      return { ...state, view: state.parent };
-    case "TOAST_SHOW":
-      return { ...state, toast: action.msg };
-    case "TOAST_HIDE":
-      return { ...state, toast: null };
-    case "TICK":
-      return { ...state, now: action.now };
-    case "CLOCK_START_GPS":
-      return { ...state, gps: { mode: action.mode, phase: "locating" } };
-    case "GPS_SET_READY":
-      return state.gps ? { ...state, gps: { ...state.gps, phase: "ready" } } : state;
-    case "GPS_CLOSE":
-      return { ...state, gps: null };
-    case "GPS_CONFIRM": {
-      const g = state.gps;
-      if (!g || g.phase !== "ready") return state;
-      if (g.mode === "in") {
-        return { ...state, gps: null, clockedIn: true, clockInTs: Date.now() };
-      }
-      return { ...state, gps: null, clockedIn: false, clockOutTs: Date.now() };
-    }
-    case "LEAVE_OPEN":
-      return {
-        ...state,
-        view: "leave",
-        parent: state.tab,
-        leave: {
-          step: 1,
-          type: action.leaveType || null,
-          from: "",
-          to: "",
-          half: "full",
-          reason: "",
-          attach: false,
-        },
-      };
-    case "LEAVE_UPDATE":
-      return state.leave
-        ? { ...state, leave: { ...state.leave, [action.field]: action.value } as LeaveDraft }
-        : state;
-    case "LEAVE_BACK": {
-      const l = state.leave;
-      if (l && l.step > 1) {
-        return { ...state, leave: { ...l, step: (l.step - 1) as LeaveDraft["step"] } };
-      }
-      return { ...state, view: state.parent };
-    }
-    case "LEAVE_NEXT": {
-      const l = state.leave;
-      if (!l) return state;
-      if (l.step === 1 && !l.type) return state;
-      if (l.step < 4) {
-        return { ...state, leave: { ...l, step: (l.step + 1) as LeaveDraft["step"] } };
-      }
-      const type = l.type || "annual";
-      const typeName = leaveTypeName[type];
-      let range = l.from ? thDate(l.from) : "วันนี้";
-      if (l.to && l.to !== l.from) range += "–" + thDate(l.to);
-      const req: LeaveRequest = {
-        id: "REQ-" + state.nextId,
-        type: typeName,
-        key: type,
-        dateLabel: range,
-        sub: l.half === "half" ? "ครึ่งวัน" : "1 วัน",
-        status: "Pending",
-        submitted: "วันนี้",
-      };
-      return {
-        ...state,
-        requests: [req, ...state.requests],
-        nextId: state.nextId + 1,
-        leave: null,
-        view: "requests",
-        tab: "requests",
-        parent: "requests",
-        reqFilter: "all",
-        toast: "ส่งคำขอเรียบร้อยแล้ว",
-      };
-    }
-    case "SET_FILTER":
-      return { ...state, reqFilter: action.filter };
-    case "MARK_READ":
-      return { ...state, unreadIds: {} };
-    case "AI_SET_MODE":
-      return { ...state, aiMode: action.mode, aiResult: null, aiError: "" };
-    case "AI_SET_DEPT":
-      return { ...state, aiDept: action.dept };
-    case "AI_SET_ROLE":
-      return { ...state, aiRole: action.role };
-    case "AI_SET_EMP":
-      return { ...state, aiEmp: action.emp };
-    case "AI_LOADING_START":
-      return { ...state, aiLoading: true, aiError: "", aiResult: null };
-    case "AI_LOADING_DONE":
-      return { ...state, aiLoading: false, aiResult: action.result };
-    case "AI_ERROR":
-      return { ...state, aiLoading: false, aiError: action.error };
-    case "HOLIDAY_OPEN":
-      return {
-        ...state,
-        holidaySheet: true,
-        hForm: { name: "", date: "", type: "วันหยุดบริษัท", notify: true },
-      };
-    case "HOLIDAY_CLOSE":
-      return { ...state, holidaySheet: false };
-    case "HOLIDAY_FORM_UPDATE":
-      return { ...state, hForm: { ...state.hForm, [action.field]: action.value } as HolidayForm };
-    case "HOLIDAY_ADD": {
-      const h = state.hForm;
-      if (!h.name || !h.date) return state;
-      const item: HolidayItem = {
-        id: state.nextHId,
-        dateISO: h.date,
-        name: h.name,
-        type: h.type,
-        notify: h.notify,
-      };
-      const holidays = [...state.holidays, item].sort((a, b) => (a.dateISO < b.dateISO ? -1 : 1));
-      return {
-        ...state,
-        holidays,
-        nextHId: state.nextHId + 1,
-        holidaySheet: false,
-        toast: "เพิ่มวันหยุดเรียบร้อย",
-      };
-    }
-    case "HOLIDAY_DELETE":
-      return {
-        ...state,
-        holidays: state.holidays.filter((h) => h.id !== action.id),
-        toast: "ลบวันหยุดแล้ว",
-      };
-    case "HOLIDAY_TOGGLE_NOTIFY":
-      return {
-        ...state,
-        holidays: state.holidays.map((h) =>
-          h.id === action.id ? { ...h, notify: !h.notify } : h
-        ),
-      };
-    case "HOLIDAY_TOGGLE_REMIND":
-      return { ...state, holidayRemind: !state.holidayRemind };
-    case "PAY_TOGGLE":
-      return { ...state, showPay: !state.showPay };
-    case "REPORT_SET_TAB":
-      return { ...state, reportTab: action.tab };
-    default:
-      return state;
-  }
-}
 
 interface AppContextValue {
   state: AppState;
@@ -292,31 +154,41 @@ interface AppContextValue {
   goSub: (view: ViewKey) => void;
   back: () => void;
   showToast: (msg: string) => void;
+
   toggleClock: () => void;
   closeGps: () => void;
   confirmGps: () => void;
+
+  refreshRequests: (scope?: "mine" | "team" | "all") => void;
   openLeave: (leaveType?: LeaveTypeKey) => void;
   openCorrection: () => void;
-  updLeave: (field: keyof LeaveDraft, value: string | boolean) => void;
+  updLeave: (field: keyof LeaveDraft, value: string | boolean | null) => void;
   leaveBack: () => void;
   leaveNext: () => void;
+  uploadAttachment: (file: File) => Promise<void>;
   setFilter: (filter: "all" | RequestStatus) => void;
+  setReqScope: (scope: "mine" | "team" | "all") => void;
+  decideLeave: (id: number, action: "approve" | "reject") => void;
+
   markRead: () => void;
+
   setAiMode: (mode: AiMode) => void;
   setAiDept: (dept: string) => void;
   setAiRole: (role: string) => void;
   setAiEmp: (emp: AiEmployee) => void;
   genCriteria: () => void;
   genDraft: () => void;
+
   openHoliday: () => void;
   closeHoliday: () => void;
   updH: (field: keyof HolidayForm, value: string | boolean) => void;
   addHoliday: () => void;
   delHoliday: (id: number) => void;
   toggleHNotify: (id: number) => void;
-  toggleHolidayRemind: () => void;
+
   togglePay: () => void;
   setReportTab: (tab: ReportTab) => void;
+
   doLogout: () => void;
   downloadSlip: () => void;
 }
@@ -324,92 +196,486 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const gpsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // clock tick
+  const router = useRouter();
+  const [state, setState] = useState<AppState>(initialState);
+  const stateRef = useRef(state);
   useEffect(() => {
-    const t = setInterval(() => dispatch({ type: "TICK", now: Date.now() }), 1000);
-    return () => clearInterval(t);
+    stateRef.current = state;
+  }, [state]);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const patch = useCallback((p: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => {
+    setState((s) => ({ ...s, ...(typeof p === "function" ? p(s) : p) }));
   }, []);
+
+  const showToast = useCallback(
+    (msg: string) => {
+      patch({ toast: msg });
+    },
+    [patch]
+  );
 
   // toast auto-hide
   useEffect(() => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     if (state.toast) {
-      toastTimer.current = setTimeout(() => dispatch({ type: "TOAST_HIDE" }), 2200);
+      toastTimer.current = setTimeout(() => patch({ toast: null }), 2200);
     }
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
-  }, [state.toast]);
+  }, [state.toast, patch]);
 
-  // gps locating -> ready
+  // live clock ticker
   useEffect(() => {
-    if (gpsTimer.current) clearTimeout(gpsTimer.current);
-    if (state.gps && state.gps.phase === "locating") {
-      gpsTimer.current = setTimeout(() => dispatch({ type: "GPS_SET_READY" }), 1500);
-    }
-    return () => {
-      if (gpsTimer.current) clearTimeout(gpsTimer.current);
-    };
-  }, [state.gps]);
+    const t = setInterval(() => patch({ now: Date.now() }), 1000);
+    return () => clearInterval(t);
+  }, [patch]);
 
-  const showToast = useCallback((msg: string) => dispatch({ type: "TOAST_SHOW", msg }), []);
+  const refreshAttendance = useCallback(async () => {
+    const data = await apiFetch<{ today: AttendanceRecordRow | null; history: AttendanceRecordRow[] }>(
+      "/api/attendance"
+    );
+    patch({ attendanceToday: data.today, attendanceHistory: data.history });
+  }, [patch]);
+
+  const refreshLeaveBalances = useCallback(async () => {
+    const data = await apiFetch<{ balances: LeaveBalanceRow[] }>("/api/leave/balances");
+    patch({ leaveBalances: data.balances });
+  }, [patch]);
+
+  const refreshRequests = useCallback(
+    (scope?: "mine" | "team" | "all") => {
+      const useScope = scope || stateRef.current.reqScope;
+      patch({ requestsLoading: true, reqScope: useScope });
+      apiFetch<{ requests: LeaveRequestRow[] }>(`/api/leave?scope=${useScope}`)
+        .then((data) => patch({ requests: data.requests, requestsLoading: false }))
+        .catch(() => patch({ requestsLoading: false }));
+    },
+    [patch]
+  );
+
+  const refreshHolidays = useCallback(async () => {
+    const data = await apiFetch<{ holidays: HolidayItem[] }>("/api/holidays");
+    patch({ holidays: data.holidays });
+  }, [patch]);
+
+  const refreshNotifications = useCallback(async () => {
+    const data = await apiFetch<{ notifications: NotificationRow[] }>("/api/notifications");
+    patch({ notifications: data.notifications });
+  }, [patch]);
+
+  const refreshPayroll = useCallback(async () => {
+    const data = await apiFetch<{ payroll: PayrollRow[] }>("/api/payroll");
+    patch({ payroll: data.payroll });
+  }, [patch]);
+
+  const refreshPerformance = useCallback(async () => {
+    const data = await apiFetch<{ performance: PerformanceRow | null }>("/api/performance");
+    patch({ performance: data.performance });
+  }, [patch]);
+
+  const refreshAiEmployees = useCallback(async () => {
+    const data = await apiFetch<{ employees: AiEmployee[] }>("/api/employees");
+    patch({ aiEmployees: data.employees });
+  }, [patch]);
+
+  // bootstrap on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await apiFetch<Me>("/api/auth/me");
+        patch({ me });
+        const defaultScope = me.role === "hr" ? "all" : me.role === "manager" ? "team" : "mine";
+        await Promise.all([
+          refreshAttendance(),
+          refreshLeaveBalances(),
+          refreshHolidays(),
+          refreshNotifications(),
+          refreshPayroll(),
+          refreshPerformance(),
+          me.role !== "employee" ? refreshAiEmployees() : Promise.resolve(),
+        ]);
+        refreshRequests(defaultScope);
+        patch({ bootLoading: false });
+      } catch {
+        router.replace("/login");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const go = useCallback(
+    (view: ViewKey, tab?: TabKey) => {
+      patch((s) => ({
+        view,
+        tab: tab || s.tab,
+        parent: tab ? view : s.parent,
+      }));
+      if (view === "requests") refreshRequests();
+    },
+    [patch, refreshRequests]
+  );
+
+  const goSub = useCallback(
+    (view: ViewKey) => {
+      patch((s) => ({ view, parent: s.tab }));
+      if (view === "reports") {
+        patch({ reportLoading: true });
+        apiFetch<ReportData>(`/api/reports?tab=${stateRef.current.reportTab}`)
+          .then((data) => patch({ reportData: data, reportLoading: false }))
+          .catch(() => patch({ reportLoading: false }));
+      }
+    },
+    [patch]
+  );
+
+  const back = useCallback(() => {
+    patch((s) => ({ view: s.parent }));
+  }, [patch]);
+
+  const toggleClock = useCallback(() => {
+    const today = stateRef.current.attendanceToday;
+    const mode: "in" | "out" | null = !today?.clockInAt ? "in" : !today?.clockOutAt ? "out" : null;
+    if (!mode) return;
+    patch({ gps: { mode, phase: "locating" } });
+    getCurrentPosition()
+      .then((pos) => {
+        patch((s) =>
+          s.gps
+            ? { gps: { ...s.gps, phase: "ready", lat: pos.coords.latitude, lng: pos.coords.longitude } }
+            : {}
+        );
+      })
+      .catch((err: Error) => {
+        patch((s) => (s.gps ? { gps: { ...s.gps, phase: "error", error: err.message } } : {}));
+      });
+  }, [patch]);
+
+  const closeGps = useCallback(() => patch({ gps: null }), [patch]);
+
+  const confirmGps = useCallback(() => {
+    const gps = stateRef.current.gps;
+    if (!gps || gps.phase !== "ready" || gps.lat === undefined || gps.lng === undefined) return;
+    const endpoint = gps.mode === "in" ? "/api/attendance/clock-in" : "/api/attendance/clock-out";
+    apiFetch<{ record: AttendanceRecordRow }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ lat: gps.lat, lng: gps.lng }),
+    })
+      .then(() => {
+        patch({ gps: null });
+        showToast(gps.mode === "in" ? "ลงเวลาเข้างานเรียบร้อย" : "ลงเวลาออกงานเรียบร้อย");
+        refreshAttendance();
+      })
+      .catch((err: Error) => {
+        patch((s) => (s.gps ? { gps: { ...s.gps, phase: "error", error: err.message } } : {}));
+      });
+  }, [patch, showToast, refreshAttendance]);
+
+  const openLeave = useCallback(
+    (leaveType?: LeaveTypeKey) => {
+      patch((s) => ({
+        view: "leave",
+        parent: s.tab,
+        leave: {
+          step: 1,
+          type: leaveType || null,
+          from: "",
+          to: "",
+          half: "full",
+          reason: "",
+          attachmentUrl: null,
+          attachmentName: null,
+          uploading: false,
+        },
+      }));
+    },
+    [patch]
+  );
+
+  const openCorrection = useCallback(() => openLeave("correction"), [openLeave]);
+
+  const updLeave = useCallback(
+    (field: keyof LeaveDraft, value: string | boolean | null) => {
+      patch((s) => (s.leave ? { leave: { ...s.leave, [field]: value } as LeaveDraft } : {}));
+    },
+    [patch]
+  );
+
+  const leaveBack = useCallback(() => {
+    patch((s) => {
+      if (s.leave && s.leave.step > 1) {
+        return { leave: { ...s.leave, step: (s.leave.step - 1) as LeaveDraft["step"] } };
+      }
+      return { view: s.parent };
+    });
+  }, [patch]);
+
+  const uploadAttachment = useCallback(
+    async (file: File) => {
+      patch((s) => (s.leave ? { leave: { ...s.leave, uploading: true } } : {}));
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch("/api/uploads", { method: "POST", body: form });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "อัปโหลดไฟล์ไม่สำเร็จ");
+        patch((s) =>
+          s.leave
+            ? { leave: { ...s.leave, attachmentUrl: data.url, attachmentName: data.fileName, uploading: false } }
+            : {}
+        );
+      } catch (err) {
+        patch((s) => (s.leave ? { leave: { ...s.leave, uploading: false } } : {}));
+        showToast(err instanceof Error ? err.message : "อัปโหลดไฟล์ไม่สำเร็จ");
+      }
+    },
+    [patch, showToast]
+  );
+
+  const leaveNext = useCallback(() => {
+    const l = stateRef.current.leave;
+    if (!l) return;
+    if (l.step === 1 && !l.type) return;
+    if (l.step < 4) {
+      patch({ leave: { ...l, step: (l.step + 1) as LeaveDraft["step"] } });
+      return;
+    }
+    apiFetch("/api/leave", {
+      method: "POST",
+      body: JSON.stringify({
+        type: l.type,
+        dateFrom: l.from || null,
+        dateTo: l.to || l.from || null,
+        halfDay: l.half === "half",
+        reason: l.reason,
+        attachmentUrl: l.attachmentUrl,
+      }),
+    })
+      .then(() => {
+        patch({ leave: null, view: "requests", tab: "requests", parent: "requests", reqFilter: "all" });
+        showToast("ส่งคำขอเรียบร้อยแล้ว");
+        refreshRequests("mine");
+        refreshLeaveBalances();
+      })
+      .catch((err: Error) => showToast(err.message));
+  }, [patch, showToast, refreshRequests, refreshLeaveBalances]);
+
+  const setFilter = useCallback((filter: "all" | RequestStatus) => patch({ reqFilter: filter }), [patch]);
+  const setReqScope = useCallback((scope: "mine" | "team" | "all") => refreshRequests(scope), [refreshRequests]);
+
+  const decideLeave = useCallback(
+    (id: number, action: "approve" | "reject") => {
+      apiFetch(`/api/leave/${id}/decide`, { method: "POST", body: JSON.stringify({ action }) })
+        .then(() => {
+          showToast(action === "approve" ? "อนุมัติคำขอแล้ว" : "ไม่อนุมัติคำขอแล้ว");
+          refreshRequests();
+        })
+        .catch((err: Error) => showToast(err.message));
+    },
+    [showToast, refreshRequests]
+  );
+
+  const markRead = useCallback(() => {
+    apiFetch("/api/notifications/mark-read", { method: "POST" }).then(() => refreshNotifications());
+  }, [refreshNotifications]);
+
+  const setAiMode = useCallback(
+    (mode: AiMode) => patch({ aiMode: mode, aiResult: null, aiError: "" }),
+    [patch]
+  );
+  const setAiDept = useCallback((dept: string) => patch({ aiDept: dept }), [patch]);
+  const setAiRole = useCallback((role: string) => patch({ aiRole: role }), [patch]);
+  const setAiEmp = useCallback((emp: AiEmployee) => patch({ aiEmp: emp }), [patch]);
+
+  const genCriteria = useCallback(() => {
+    const s = stateRef.current;
+    if (!s.aiDept) return;
+    patch({ aiLoading: true, aiError: "", aiResult: null });
+    apiFetch<{ criteria: AiCriteria }>("/api/ai/criteria", {
+      method: "POST",
+      body: JSON.stringify({ department: s.aiDept, role: s.aiRole }),
+    })
+      .then((data) =>
+        patch({
+          aiLoading: false,
+          aiResult: {
+            type: "criteria",
+            summary: data.criteria.summary,
+            competencies: data.criteria.competencies,
+            kpis: data.criteria.kpis,
+          },
+        })
+      )
+      .catch((err: Error) => patch({ aiLoading: false, aiError: err.message }));
+  }, [patch]);
+
+  const genDraft = useCallback(() => {
+    const s = stateRef.current;
+    if (!s.aiEmp) return;
+    patch({ aiLoading: true, aiError: "", aiResult: null });
+    apiFetch<{ draft: AiDraft }>("/api/ai/draft", {
+      method: "POST",
+      body: JSON.stringify({ employeeId: s.aiEmp.id, scores: s.aiEmp.scores }),
+    })
+      .then((data) =>
+        patch({
+          aiLoading: false,
+          aiResult: {
+            type: "draft",
+            overall: data.draft.overall,
+            strengths: data.draft.strengths,
+            improvements: data.draft.improvements,
+            development: data.draft.development,
+            summary: data.draft.summary,
+          },
+        })
+      )
+      .catch((err: Error) => patch({ aiLoading: false, aiError: err.message }));
+  }, [patch]);
+
+  const openHoliday = useCallback(
+    () => patch({ holidaySheet: true, hForm: { name: "", date: "", type: "company", notify: true } }),
+    [patch]
+  );
+  const closeHoliday = useCallback(() => patch({ holidaySheet: false }), [patch]);
+  const updH = useCallback(
+    (field: keyof HolidayForm, value: string | boolean) =>
+      patch((s) => ({ hForm: { ...s.hForm, [field]: value } as HolidayForm })),
+    [patch]
+  );
+  const addHoliday = useCallback(() => {
+    const hf = stateRef.current.hForm;
+    if (!hf.name || !hf.date) return;
+    apiFetch("/api/holidays", {
+      method: "POST",
+      body: JSON.stringify({ name: hf.name, dateISO: hf.date, type: hf.type, notifyEnabled: hf.notify }),
+    })
+      .then(() => {
+        patch({ holidaySheet: false });
+        showToast("เพิ่มวันหยุดเรียบร้อย");
+        refreshHolidays();
+      })
+      .catch((err: Error) => showToast(err.message));
+  }, [patch, showToast, refreshHolidays]);
+  const delHoliday = useCallback(
+    (id: number) => {
+      apiFetch(`/api/holidays/${id}`, { method: "DELETE" })
+        .then(() => {
+          showToast("ลบวันหยุดแล้ว");
+          refreshHolidays();
+        })
+        .catch((err: Error) => showToast(err.message));
+    },
+    [showToast, refreshHolidays]
+  );
+  const toggleHNotify = useCallback(
+    (id: number) => {
+      const h = stateRef.current.holidays.find((x) => x.id === id);
+      if (!h) return;
+      apiFetch(`/api/holidays/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ notifyEnabled: !h.notifyEnabled }),
+      }).then(() => refreshHolidays());
+    },
+    [refreshHolidays]
+  );
+
+  const togglePay = useCallback(() => patch((s) => ({ showPay: !s.showPay })), [patch]);
+
+  const setReportTab = useCallback(
+    (tab: ReportTab) => {
+      patch({ reportTab: tab, reportLoading: true });
+      apiFetch<ReportData>(`/api/reports?tab=${tab}`)
+        .then((data) => patch({ reportData: data, reportLoading: false }))
+        .catch(() => patch({ reportLoading: false }));
+    },
+    [patch]
+  );
+
+  const doLogout = useCallback(() => {
+    apiFetch("/api/auth/logout", { method: "POST" }).finally(() => {
+      router.replace("/login");
+    });
+  }, [router]);
+
+  const downloadSlip = useCallback(() => showToast("กำลังดาวน์โหลดสลิป PDF"), [showToast]);
 
   const value = useMemo<AppContextValue>(
     () => ({
       state,
-      go: (view, tab) => dispatch({ type: "GO", view, tab }),
-      goSub: (view) => dispatch({ type: "GO_SUB", view }),
-      back: () => dispatch({ type: "BACK" }),
+      go,
+      goSub,
+      back,
       showToast,
-      toggleClock: () => {
-        const mode = !state.clockInTs ? "in" : state.clockedIn ? "out" : null;
-        if (!mode) return;
-        dispatch({ type: "CLOCK_START_GPS", mode });
-      },
-      closeGps: () => dispatch({ type: "GPS_CLOSE" }),
-      confirmGps: () => dispatch({ type: "GPS_CONFIRM" }),
-      openLeave: (leaveType) => dispatch({ type: "LEAVE_OPEN", leaveType }),
-      openCorrection: () => dispatch({ type: "LEAVE_OPEN", leaveType: "correction" }),
-      updLeave: (field, val) => dispatch({ type: "LEAVE_UPDATE", field, value: val }),
-      leaveBack: () => dispatch({ type: "LEAVE_BACK" }),
-      leaveNext: () => dispatch({ type: "LEAVE_NEXT" }),
-      setFilter: (filter) => dispatch({ type: "SET_FILTER", filter }),
-      markRead: () => dispatch({ type: "MARK_READ" }),
-      setAiMode: (mode) => dispatch({ type: "AI_SET_MODE", mode }),
-      setAiDept: (dept) => dispatch({ type: "AI_SET_DEPT", dept }),
-      setAiRole: (role) => dispatch({ type: "AI_SET_ROLE", role }),
-      setAiEmp: (emp) => dispatch({ type: "AI_SET_EMP", emp }),
-      genCriteria: () => {
-        if (!state.aiDept) return;
-        dispatch({ type: "AI_LOADING_START" });
-        mockGenCriteria(state.aiDept, state.aiRole)
-          .then((result) => dispatch({ type: "AI_LOADING_DONE", result }))
-          .catch(() => dispatch({ type: "AI_ERROR", error: "ไม่สามารถสร้างเกณฑ์ได้ กรุณาลองใหม่อีกครั้ง" }));
-      },
-      genDraft: () => {
-        if (!state.aiEmp) return;
-        dispatch({ type: "AI_LOADING_START" });
-        mockGenDraft(state.aiEmp)
-          .then((result) => dispatch({ type: "AI_LOADING_DONE", result }))
-          .catch(() => dispatch({ type: "AI_ERROR", error: "ไม่สามารถร่างความเห็นได้ กรุณาลองใหม่อีกครั้ง" }));
-      },
-      openHoliday: () => dispatch({ type: "HOLIDAY_OPEN" }),
-      closeHoliday: () => dispatch({ type: "HOLIDAY_CLOSE" }),
-      updH: (field, val) => dispatch({ type: "HOLIDAY_FORM_UPDATE", field, value: val }),
-      addHoliday: () => dispatch({ type: "HOLIDAY_ADD" }),
-      delHoliday: (id) => dispatch({ type: "HOLIDAY_DELETE", id }),
-      toggleHNotify: (id) => dispatch({ type: "HOLIDAY_TOGGLE_NOTIFY", id }),
-      toggleHolidayRemind: () => dispatch({ type: "HOLIDAY_TOGGLE_REMIND" }),
-      togglePay: () => dispatch({ type: "PAY_TOGGLE" }),
-      setReportTab: (tab) => dispatch({ type: "REPORT_SET_TAB", tab }),
-      doLogout: () => showToast("ออกจากระบบ (สาธิต)"),
-      downloadSlip: () => showToast("กำลังดาวน์โหลดสลิป PDF"),
+      toggleClock,
+      closeGps,
+      confirmGps,
+      refreshRequests,
+      openLeave,
+      openCorrection,
+      updLeave,
+      leaveBack,
+      leaveNext,
+      uploadAttachment,
+      setFilter,
+      setReqScope,
+      decideLeave,
+      markRead,
+      setAiMode,
+      setAiDept,
+      setAiRole,
+      setAiEmp,
+      genCriteria,
+      genDraft,
+      openHoliday,
+      closeHoliday,
+      updH,
+      addHoliday,
+      delHoliday,
+      toggleHNotify,
+      togglePay,
+      setReportTab,
+      doLogout,
+      downloadSlip,
     }),
-    [state, showToast]
+    [
+      state,
+      go,
+      goSub,
+      back,
+      showToast,
+      toggleClock,
+      closeGps,
+      confirmGps,
+      refreshRequests,
+      openLeave,
+      openCorrection,
+      updLeave,
+      leaveBack,
+      leaveNext,
+      uploadAttachment,
+      setFilter,
+      setReqScope,
+      decideLeave,
+      markRead,
+      setAiMode,
+      setAiDept,
+      setAiRole,
+      setAiEmp,
+      genCriteria,
+      genDraft,
+      openHoliday,
+      closeHoliday,
+      updH,
+      addHoliday,
+      delHoliday,
+      toggleHNotify,
+      togglePay,
+      setReportTab,
+      doLogout,
+      downloadSlip,
+    ]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -420,5 +686,3 @@ export function useApp() {
   if (!ctx) throw new Error("useApp must be used within AppProvider");
   return ctx;
 }
-
-export type { AiEmployee, LeaveTypeKey, ReportTab, RequestStatus, TabKey, ViewKey };

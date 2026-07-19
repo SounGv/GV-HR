@@ -3,13 +3,13 @@
 import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { backBtnStyle, cardShadowSm } from "@/lib/styles";
-import { notificationSeed } from "@/lib/mock";
+import { timeAgo } from "@/lib/format";
 
 export function Notifications() {
   const { state, back, markRead } = useApp();
-  const notifs = notificationSeed.map((n) => ({
+  const notifs = state.notifications.map((n) => ({
     ...n,
-    cardBg: state.unreadIds[n.id] ? "#fbfcff" : "#fff",
+    cardBg: n.isRead ? "#fff" : "#fbfcff",
   }));
 
   return (
@@ -59,12 +59,18 @@ export function Notifications() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{n.title}</span>
-                <span style={{ fontSize: 10, color: "#b6b9c2", whiteSpace: "nowrap" }}>{n.time}</span>
+                <span style={{ fontSize: 10, color: "#b6b9c2", whiteSpace: "nowrap" }}>{timeAgo(n.createdAt)}</span>
               </div>
               <div style={{ fontSize: 12, color: "#7b7d8c", marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>
             </div>
           </div>
         ))}
+        {notifs.length === 0 && (
+          <div style={{ textAlign: "center", padding: "50px 20px", color: "#b6b9c2" }}>
+            <Icon name="notifications_off" size={44} />
+            <div style={{ fontSize: 13, marginTop: 8 }}>ไม่มีการแจ้งเตือน</div>
+          </div>
+        )}
       </div>
     </div>
   );

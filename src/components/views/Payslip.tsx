@@ -4,18 +4,18 @@ import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { BackHeader } from "@/components/BackHeader";
 import { backBtnStyle, cardShadow } from "@/lib/styles";
-import { payrollData } from "@/lib/derive";
-import { employeeName } from "@/lib/mock";
+import { formatPayroll } from "@/lib/derive";
 
 export function Payslip() {
   const { state, togglePay, downloadSlip } = useApp();
-  const p = payrollData(state.showPay);
+  const p = formatPayroll(state.payroll, state.showPay);
+  const me = state.me;
 
   return (
     <div style={{ animation: "gvslide .28s ease", paddingBottom: 16 }}>
       <BackHeader
         title="สลิปเงินเดือน"
-        subtitle="มิถุนายน 2568"
+        subtitle={p.lastPeriodLabel}
         right={
           <button onClick={togglePay} style={{ ...backBtnStyle, color: "#17181c" }}>
             <Icon name={state.showPay ? "visibility_off" : "visibility"} size={22} />
@@ -35,7 +35,9 @@ export function Payslip() {
         >
           <div>
             <div style={{ fontSize: 14, fontWeight: 800 }}>Gadget Villa Co., Ltd.</div>
-            <div style={{ fontSize: 11, color: "#8a8d99" }}>{employeeName} · EMP-1042</div>
+            <div style={{ fontSize: 11, color: "#8a8d99" }}>
+              {me?.name} · {me?.employeeCode}
+            </div>
           </div>
           <div
             style={{

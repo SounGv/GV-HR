@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { backBtnStyle, cardShadowSm } from "@/lib/styles";
-import { aiDeptDefs, aiEmpDefs } from "@/lib/mock";
+import { aiDeptDefs } from "@/lib/mock";
 import { initialsOf } from "@/lib/format";
 
 const segStyle = (active: boolean): CSSProperties => ({
@@ -133,11 +133,11 @@ export function AiEval() {
         <div style={{ padding: "0 16px" }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>เลือกพนักงานที่จะเขียนความเห็น</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-            {aiEmpDefs.map((e) => {
-              const sel = state.aiEmp?.name === e.name;
+            {state.aiEmployees.map((e) => {
+              const sel = state.aiEmp?.id === e.id;
               return (
                 <div
-                  key={e.name}
+                  key={e.id}
                   onClick={() => setAiEmp(e)}
                   style={{
                     display: "flex",
@@ -171,7 +171,7 @@ export function AiEval() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700 }}>{e.name}</div>
                     <div style={{ fontSize: 11, color: "#8a8d99" }}>
-                      {e.dept} · {e.scores}
+                      {e.department} · {e.scores}
                     </div>
                   </div>
                 </div>

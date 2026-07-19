@@ -4,7 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { BackHeader } from "@/components/BackHeader";
 import { cardShadow } from "@/lib/styles";
-import { reportMeta, reportSets } from "@/lib/mock";
+import { reportMeta } from "@/lib/mock";
 import type { ReportTab } from "@/lib/types";
 
 const segDefs: { key: ReportTab; label: string }[] = [
@@ -17,8 +17,29 @@ export function Reports() {
   const { state, setReportTab, showToast } = useApp();
   const rt = state.reportTab;
   const rm = reportMeta[rt];
-  const set = reportSets[rt];
-  const rows = set.rows.map((r) => ({ ...r, pct: r.p + "%", barColor: rm.c, barBg: rm.bg }));
+  const set = state.reportData;
+  const rows = (set?.rows || []).map((r) => ({ ...r, pct: r.p + "%", barColor: rm.c, barBg: rm.bg }));
+
+  if (state.reportLoading || !set) {
+    return (
+      <div style={{ animation: "gvslide .28s ease", paddingBottom: 20 }}>
+        <BackHeader title="รายงาน" subtitle="สำหรับ HR · บัญชี · ผู้บริหาร" />
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "#b6b9c2" }}>
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              margin: "0 auto",
+              border: "3px solid #eef0f4",
+              borderTopColor: "#191a2e",
+              borderRadius: "50%",
+              animation: "gvspin .8s linear infinite",
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ animation: "gvslide .28s ease", paddingBottom: 20 }}>

@@ -3,13 +3,15 @@
 import { useApp } from "@/context/AppContext";
 import { Icon } from "@/components/Icon";
 import { cardShadow } from "@/lib/styles";
-import { employeeDept, employeeName, moreMenuDefs } from "@/lib/mock";
+import { moreMenuDefs } from "@/lib/mock";
 import { initialsOf } from "@/lib/format";
 import type { ViewKey } from "@/lib/types";
 
 export function More() {
-  const { goSub, openLeave, showToast, doLogout } = useApp();
-  const initials = initialsOf(employeeName);
+  const { state, goSub, openLeave, showToast, doLogout } = useApp();
+  const me = state.me;
+  const initials = initialsOf(me?.name || "");
+  const visibleMenu = moreMenuDefs.filter((m) => !me || (m.roles as readonly string[]).includes(me.role));
 
   const handleClick = (key: string) => {
     switch (key) {
@@ -68,14 +70,16 @@ export function More() {
           {initials}
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{employeeName}</div>
-          <div style={{ fontSize: 12, color: "#8a8d99" }}>EMP-1042 · {employeeDept}</div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{me?.name}</div>
+          <div style={{ fontSize: 12, color: "#8a8d99" }}>
+            {me?.employeeCode} · {me?.department}
+          </div>
         </div>
         <Icon name="chevron_right" size={22} style={{ color: "#c9cbd6" }} />
       </div>
 
       <div style={{ margin: "0 16px", background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: cardShadow }}>
-        {moreMenuDefs.map((m) => (
+        {visibleMenu.map((m) => (
           <div
             key={m.key}
             onClick={() => handleClick(m.key)}

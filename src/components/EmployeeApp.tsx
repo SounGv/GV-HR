@@ -26,6 +26,35 @@ export function EmployeeApp() {
   const chromeFg = state.view === "home" ? "#fff" : "#191a2e";
   const nowClock = hhmm(state.now);
 
+  if (state.bootLoading) {
+    return (
+      <PhoneFrame chromeBg="#17181c" chromeFg="#fff" nowClock={nowClock}>
+        <div
+          style={{
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              border: "3px solid #eef0f4",
+              borderTopColor: "#17181c",
+              borderRadius: "50%",
+              animation: "gvspin .8s linear infinite",
+            }}
+          />
+          <div style={{ fontSize: 13, color: "#8a8d99", fontWeight: 600 }}>กำลังโหลด...</div>
+        </div>
+      </PhoneFrame>
+    );
+  }
+
   return (
     <PhoneFrame
       chromeBg={chromeBg}
