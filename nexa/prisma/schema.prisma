@@ -63,6 +63,13 @@ enum HolidayType {
   NATIONAL
 }
 
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  ON_LEAVE
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -88,6 +95,7 @@ model Company {
   roles       Role[]
   auditLogs   AuditLog[]
   holidays    Holiday[]
+  attendance  AttendanceRecord[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -354,6 +362,8 @@ model Employee {
   manager   Employee?  @relation("EmployeeReports", fields: [managerId], references: [id], onDelete: SetNull)
   reports   Employee[] @relation("EmployeeReports")
 
+  attendance AttendanceRecord[]
+
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
   status            EmployeeStatus @default(ACTIVE)
@@ -407,4 +417,43 @@ model Holiday {
   @@unique([companyId, date, name])
   @@index([companyId, date])
   @@map("holidays")
+}
+
+// ─────────────────────────── HR: Attendance ───────────────────────────
+
+model AttendanceRecord {
+  id         String  @id @default(uuid())
+  companyId  String
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  workDate DateTime @db.Date
+
+  clockInAt  DateTime?
+  clockOutAt DateTime?
+
+  clockInLat  Float?
+  clockInLng  Float?
+  clockOutLat Float?
+  clockOutLng Float?
+
+  // Distance (metres) from the matched branch geofence at clock-in/out.
+  clockInDistance  Float?
+  clockOutDistance Float?
+  // Branch the geofence matched against (no FK to keep back-relations lean).
+  clockInBranchId  String?
+
+  status AttendanceStatus @default(PRESENT)
+  note   String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([employeeId, workDate])
+  @@index([companyId, workDate])
+  @@map("attendance_records")
 }

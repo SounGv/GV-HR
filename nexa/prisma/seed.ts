@@ -213,6 +213,51 @@ async function main() {
   }
   console.log(`  ✓ ${HOLIDAYS.length} holidays (${year})`);
 
+  // 9) Attendance sample for the HR user (last ~12 weekdays). Bangkok = UTC+7,
+  //    so 08:55 local = 01:55 UTC, 09:15 local = 02:15 UTC, 18:05 local = 11:05 UTC.
+  const hrEmp = await prisma.employee.findUnique({
+    where: { companyId_employeeCode: { companyId: COMPANY_ID, employeeCode: "EMP0002" } },
+    select: { id: true },
+  });
+  if (hrEmp) {
+    const base = new Date();
+    let made = 0;
+    for (let i = 1; i <= 20 && made < 12; i++) {
+      const d = new Date(base);
+      d.setUTCDate(d.getUTCDate() - i);
+      const dow = d.getUTCDay();
+      if (dow === 0 || dow === 6) continue; // skip weekends
+      const y = d.getUTCFullYear();
+      const mo = d.getUTCMonth();
+      const day = d.getUTCDate();
+      const late = made % 5 === 4;
+      const workDate = new Date(Date.UTC(y, mo, day));
+      const clockInAt = new Date(Date.UTC(y, mo, day, late ? 2 : 1, late ? 15 : 55));
+      const clockOutAt = new Date(Date.UTC(y, mo, day, 11, 5));
+      await prisma.attendanceRecord.upsert({
+        where: { employeeId_workDate: { employeeId: hrEmp.id, workDate } },
+        update: {},
+        create: {
+          companyId: COMPANY_ID,
+          employeeId: hrEmp.id,
+          workDate,
+          clockInAt,
+          clockOutAt,
+          clockInLat: 13.7563,
+          clockInLng: 100.5018,
+          clockInDistance: 22,
+          clockOutLat: 13.7563,
+          clockOutLng: 100.5018,
+          clockOutDistance: 25,
+          clockInBranchId: HQ_ID,
+          status: late ? "LATE" : "PRESENT",
+        },
+      });
+      made++;
+    }
+    console.log(`  ✓ ${made} attendance records (EMP0002)`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }
