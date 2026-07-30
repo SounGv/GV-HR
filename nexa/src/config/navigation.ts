@@ -1,0 +1,95 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  Clock,
+  CalendarDays,
+  CalendarCheck,
+  Users,
+  UserPlus,
+  Boxes,
+  Target,
+  ClipboardCheck,
+  Sparkles,
+  GraduationCap,
+  Wallet,
+  BarChart3,
+  FileSpreadsheet,
+  Megaphone,
+  Bot,
+  Settings,
+} from "lucide-react";
+
+export interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  /** Permission key required to see this item (RBAC). */
+  permission: string;
+  /** false → module not built yet; links to the coming-soon placeholder. */
+  ready?: boolean;
+}
+
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "ภาพรวม",
+    items: [
+      { label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
+    ],
+  },
+  {
+    label: "การทำงาน",
+    items: [
+      { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read" },
+      { label: "การลาและ OT", href: "/leave", icon: CalendarDays, permission: "leave:read" },
+      { label: "วันหยุด", href: "/holidays", icon: CalendarCheck, permission: "holiday:read", ready: true },
+    ],
+  },
+  {
+    label: "ข้อมูลพนักงาน",
+    items: [
+      { label: "พนักงานและองค์กร", href: "/employees", icon: Users, permission: "employee:read", ready: true },
+      { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read" },
+      { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read" },
+    ],
+  },
+  {
+    label: "ประเมินและพัฒนา",
+    items: [
+      { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read" },
+      { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
+      { label: "แบบประเมิน (AI)", href: "/ai-evaluation", icon: Sparkles, permission: "ai:read" },
+      { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read" },
+    ],
+  },
+  {
+    label: "เงินเดือน",
+    items: [
+      { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+    ],
+  },
+  {
+    label: "ข้อมูลและรายงาน",
+    items: [
+      { label: "รายงานและวิเคราะห์", href: "/reports", icon: BarChart3, permission: "report:read" },
+      { label: "Report Center", href: "/report-center", icon: FileSpreadsheet, permission: "report:read" },
+    ],
+  },
+  {
+    label: "สื่อสารองค์กร",
+    items: [
+      { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read" },
+    ],
+  },
+  {
+    label: "ระบบและตั้งค่า",
+    items: [
+      { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read" },
+      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read" },
+    ],
+  },
+];

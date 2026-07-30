@@ -1,0 +1,410 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// NEXA HR & Payroll Platform — Prisma schema
+//
+// Conventions (apply to every business model):
+//   • UUID primary keys            → id String @id @default(uuid())
+//   • Audit columns                → createdAt / updatedAt / createdById / updatedById
+//   • Soft delete                  → deletedAt DateTime?  (null = active)
+//   • Multi-tenancy                → companyId on every tenant-scoped table
+//
+// createdById / updatedById are stored as plain UUID strings (no enforced FK) to
+// avoid dozens of noisy back-relations on User. The authoritative, immutable
+// change history lives in AuditLog, which DOES have a real FK to the actor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  PROBATION
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+  RESIGNED
+}
+
+enum HolidayType {
+  COMPANY
+  NATIONAL
+}
+
+// ─────────────────────── Tenancy / Org ───────────────────────
+
+model Company {
+  id       String  @id @default(uuid())
+  name     String
+  legalName String?
+  taxId    String?
+  logoUrl  String?
+  timezone String  @default("Asia/Bangkok")
+  currency String  @default("THB")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  branches    Branch[]
+  departments Department[]
+  positions   Position[]
+  employees   Employee[]
+  users       User[]
+  roles       Role[]
+  auditLogs   AuditLog[]
+  holidays    Holiday[]
+
+  @@index([deletedAt])
+  @@map("companies")
+}
+
+model Branch {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name    String
+  code    String
+  address String?
+  phone   String?
+
+  // Geofence for attendance clock-in/out
+  lat          Float?
+  lng          Float?
+  radiusMeters Int?   @default(150)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  departments Department[]
+  employees   Employee[]
+
+  @@unique([companyId, code])
+  @@index([companyId, deletedAt])
+  @@map("branches")
+}
+
+model Department {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  name String
+  code String
+
+  // Self-referential hierarchy (parent department)
+  parentId String?
+  parent   Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Department[] @relation("DepartmentHierarchy")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  positions Position[]
+  employees Employee[]
+
+  @@unique([companyId, code])
+  @@index([companyId, deletedAt])
+  @@map("departments")
+}
+
+model Position {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  title String
+  code  String
+  level Int    @default(1) // job level / band
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  employees Employee[]
+
+  @@unique([companyId, code])
+  @@index([companyId, deletedAt])
+  @@map("positions")
+}
+
+// ──────────────────────── Auth / RBAC ────────────────────────
+
+model User {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  email        String
+  passwordHash String
+  status       UserStatus @default(ACTIVE)
+
+  // 2FA (ready-to-enable)
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+
+  // OAuth account linking (ready-to-enable)
+  googleId    String?
+  microsoftId String?
+
+  lastLoginAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  roles         UserRole[]
+  refreshTokens RefreshToken[]
+  employee      Employee?
+  auditLogs     AuditLog[]
+
+  @@unique([companyId, email])
+  @@index([companyId, deletedAt])
+  @@map("users")
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  // Null companyId = global/system role available to all tenants.
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  isSystem    Boolean @default(false) // system roles cannot be deleted
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@unique([companyId, name])
+  @@map("roles")
+}
+
+model Permission {
+  id     String @id @default(uuid())
+  // Stable key used in code, e.g. "employee:create", "payroll:read"
+  key    String @unique
+  module String // grouping for the permission matrix UI, e.g. "employee"
+  action String // e.g. "create" | "read" | "update" | "delete" | "approve"
+  label  String
+
+  roles RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RefreshToken {
+  id        String @id @default(uuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Store only a hash of the refresh token; supports rotation + revocation.
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdIp String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  actorUserId String?
+  actor       User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  action   String // e.g. "employee.create"
+  entity   String // e.g. "Employee"
+  entityId String?
+  before   Json?
+  after    Json?
+  ip       String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────── HR: Employee ───────────────────────────
+
+model Employee {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Optional link to a login account (some employees may have no system access).
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  employeeCode String
+
+  // Identity
+  firstName   String
+  lastName    String
+  firstNameEn String?
+  lastNameEn  String?
+  nickname    String?
+  email       String?
+  phone       String?
+  avatarUrl   String?
+
+  gender        Gender?
+  dateOfBirth   DateTime?
+  nationalId    String? // handle as sensitive / encrypt at rest downstream
+  maritalStatus MaritalStatus?
+
+  // Org placement
+  branchId     String?
+  branch       Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  positionId   String?
+  position     Position?   @relation(fields: [positionId], references: [id], onDelete: SetNull)
+
+  // Reporting line (self relation)
+  managerId String?
+  manager   Employee?  @relation("EmployeeReports", fields: [managerId], references: [id], onDelete: SetNull)
+  reports   Employee[] @relation("EmployeeReports")
+
+  // Employment
+  employmentType    EmploymentType @default(FULL_TIME)
+  status            EmployeeStatus @default(ACTIVE)
+  hireDate          DateTime?
+  probationEndDate  DateTime?
+  terminationDate   DateTime?
+
+  // Payroll basics (detailed payroll lives in its own module later)
+  baseSalary    Decimal? @db.Decimal(12, 2)
+  bankName      String?
+  bankAccountNo String?
+
+  // Address
+  addressLine String?
+  district    String?
+  province    String?
+  postalCode  String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([companyId, employeeCode])
+  @@index([companyId, deletedAt])
+  @@index([companyId, departmentId])
+  @@index([companyId, status])
+  @@index([managerId])
+  @@map("employees")
+}
+
+// ─────────────────────────── HR: Holiday calendar ───────────────────────────
+
+model Holiday {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  date          DateTime    @db.Date
+  name          String
+  type          HolidayType @default(COMPANY)
+  notifyEnabled Boolean     @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([companyId, date, name])
+  @@index([companyId, date])
+  @@map("holidays")
+}
