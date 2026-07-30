@@ -89,7 +89,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ระบบและตั้งค่า",
     items: [
       { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read" },
-      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read" },
+      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read", ready: true },
     ],
   },
 ];
