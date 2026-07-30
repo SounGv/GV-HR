@@ -258,6 +258,34 @@ async function main() {
     console.log(`  ✓ ${made} attendance records (EMP0002)`);
   }
 
+  // 10) Leave balances (current year) for all employees
+  const allEmps = await prisma.employee.findMany({
+    where: { companyId: COMPANY_ID },
+    select: { id: true },
+  });
+  const quotas = [
+    { type: "ANNUAL" as const, total: 10 },
+    { type: "SICK" as const, total: 30 },
+    { type: "PERSONAL" as const, total: 3 },
+  ];
+  for (const emp of allEmps) {
+    for (const q of quotas) {
+      await prisma.leaveBalance.upsert({
+        where: { employeeId_year_type: { employeeId: emp.id, year, type: q.type } },
+        update: {},
+        create: {
+          companyId: COMPANY_ID,
+          employeeId: emp.id,
+          year,
+          type: q.type,
+          totalDays: q.total,
+          usedDays: 0,
+        },
+      });
+    }
+  }
+  console.log(`  ✓ leave balances for ${allEmps.length} employees`);
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }

@@ -45,7 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "การทำงาน",
     items: [
       { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read", ready: true },
-      { label: "การลาและ OT", href: "/leave", icon: CalendarDays, permission: "leave:read" },
+      { label: "การลาและ OT", href: "/leave", icon: CalendarDays, permission: "leave:read", ready: true },
       { label: "วันหยุด", href: "/holidays", icon: CalendarCheck, permission: "holiday:read", ready: true },
     ],
   },

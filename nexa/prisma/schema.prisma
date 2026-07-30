@@ -70,6 +70,21 @@ enum AttendanceStatus {
   ON_LEAVE
 }
 
+enum LeaveType {
+  ANNUAL
+  SICK
+  PERSONAL
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -94,8 +109,10 @@ model Company {
   users       User[]
   roles       Role[]
   auditLogs   AuditLog[]
-  holidays    Holiday[]
-  attendance  AttendanceRecord[]
+  holidays      Holiday[]
+  attendance    AttendanceRecord[]
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -362,7 +379,9 @@ model Employee {
   manager   Employee?  @relation("EmployeeReports", fields: [managerId], references: [id], onDelete: SetNull)
   reports   Employee[] @relation("EmployeeReports")
 
-  attendance AttendanceRecord[]
+  attendance    AttendanceRecord[]
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -456,4 +475,59 @@ model AttendanceRecord {
   @@unique([employeeId, workDate])
   @@index([companyId, workDate])
   @@map("attendance_records")
+}
+
+// ─────────────────────────── HR: Leave ───────────────────────────
+
+model LeaveRequest {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  type      LeaveType
+  startDate DateTime  @db.Date
+  endDate   DateTime  @db.Date
+  halfDay   Boolean   @default(false)
+  days      Float
+  reason    String?
+
+  status LeaveStatus @default(PENDING)
+
+  // Decider (approver) — stored as ids without FK to keep back-relations lean.
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([employeeId, status])
+  @@map("leave_requests")
+}
+
+model LeaveBalance {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  year      Int
+  type      LeaveType
+  totalDays Float     @default(0)
+  usedDays  Float     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([employeeId, year, type])
+  @@index([companyId, year])
+  @@map("leave_balances")
 }
