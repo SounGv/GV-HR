@@ -61,7 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ประเมินและพัฒนา",
     items: [
       { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read" },
-      { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
+      { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true },
       { label: "แบบประเมิน (AI)", href: "/ai-evaluation", icon: Sparkles, permission: "ai:read" },
       { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read" },
     ],

@@ -90,6 +90,11 @@ enum PayrollStatus {
   PAID
 }
 
+enum ReviewStatus {
+  DRAFT
+  FINALIZED
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -117,8 +122,9 @@ model Company {
   holidays      Holiday[]
   attendance    AttendanceRecord[]
   leaveRequests  LeaveRequest[]
-  leaveBalances  LeaveBalance[]
-  payrollRecords PayrollRecord[]
+  leaveBalances      LeaveBalance[]
+  payrollRecords     PayrollRecord[]
+  performanceReviews PerformanceReview[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -385,10 +391,11 @@ model Employee {
   manager   Employee?  @relation("EmployeeReports", fields: [managerId], references: [id], onDelete: SetNull)
   reports   Employee[] @relation("EmployeeReports")
 
-  attendance     AttendanceRecord[]
-  leaveRequests  LeaveRequest[]
-  leaveBalances  LeaveBalance[]
-  payrollRecords PayrollRecord[]
+  attendance         AttendanceRecord[]
+  leaveRequests      LeaveRequest[]
+  leaveBalances      LeaveBalance[]
+  payrollRecords     PayrollRecord[]
+  performanceReviews PerformanceReview[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -571,4 +578,37 @@ model PayrollRecord {
   @@unique([employeeId, period])
   @@index([companyId, period])
   @@map("payroll_records")
+}
+
+// ─────────────────────────── HR: Performance ───────────────────────────
+
+model PerformanceReview {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  reviewerEmployeeId String?
+  reviewerUserId     String?
+
+  cycle        String // e.g. "H1/2569"
+  overallScore Float  // 1..5
+  band         String
+  competencies Json // [{ name, score }]
+  strengths    String?
+  improvements String?
+  summary      String?
+
+  status ReviewStatus @default(FINALIZED)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([employeeId, cycle])
+  @@index([companyId, cycle])
+  @@map("performance_reviews")
 }

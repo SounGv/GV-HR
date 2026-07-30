@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PERMISSIONS, ROLE_PRESETS, expandPermissions } from "../src/config/permissions";
 import { computePayroll, periodLabel } from "../src/features/payroll/calc";
+import { computeOverall, scoreBand } from "../src/features/performance/calc";
 
 const prisma = new PrismaClient();
 
@@ -317,6 +318,50 @@ async function main() {
     });
   }
   console.log(`  ✓ payroll for ${salaried.length} employees (${payPeriod})`);
+
+  // 12) Sample performance review (EMP0004 reviewed by manager EMP0003)
+  const staff = await prisma.employee.findUnique({
+    where: { companyId_employeeCode: { companyId: COMPANY_ID, employeeCode: "EMP0004" } },
+    select: { id: true },
+  });
+  const mgr = await prisma.employee.findUnique({
+    where: { companyId_employeeCode: { companyId: COMPANY_ID, employeeCode: "EMP0003" } },
+    select: { id: true, userId: true },
+  });
+  if (staff && mgr) {
+    // Wire the reporting line so team-scoped features work in the demo.
+    await prisma.employee.update({ where: { id: staff.id }, data: { managerId: mgr.id } });
+
+    const nowR = new Date();
+    const cycle = `H${nowR.getMonth() < 6 ? 1 : 2}/${nowR.getFullYear() + 543}`;
+    const comps = [
+      { name: "การทำงานเป็นทีม", score: 4 },
+      { name: "ความรับผิดชอบ", score: 4.5 },
+      { name: "การสื่อสาร", score: 3.5 },
+      { name: "คุณภาพงาน", score: 4 },
+      { name: "ความคิดริเริ่ม", score: 3.5 },
+    ];
+    const overall = computeOverall(comps);
+    await prisma.performanceReview.upsert({
+      where: { employeeId_cycle: { employeeId: staff.id, cycle } },
+      update: {},
+      create: {
+        companyId: COMPANY_ID,
+        employeeId: staff.id,
+        reviewerEmployeeId: mgr.id,
+        reviewerUserId: mgr.userId,
+        cycle,
+        overallScore: overall,
+        band: scoreBand(overall),
+        competencies: comps as unknown as Prisma.InputJsonValue,
+        strengths: "ทำงานร่วมกับทีมได้ดี มีความรับผิดชอบสูง",
+        improvements: "ควรพัฒนาทักษะการนำเสนอและการสื่อสารข้ามทีม",
+        summary: "ผลงานโดยรวมอยู่ในระดับดี",
+        status: "FINALIZED",
+      },
+    });
+    console.log(`  ✓ sample performance review (${cycle})`);
+  }
 
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
