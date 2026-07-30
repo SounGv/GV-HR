@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PERMISSIONS, ROLE_PRESETS, expandPermissions } from "../src/config/permissions";
+import { computePayroll, periodLabel } from "../src/features/payroll/calc";
 
 const prisma = new PrismaClient();
 
@@ -285,6 +286,37 @@ async function main() {
     }
   }
   console.log(`  ✓ leave balances for ${allEmps.length} employees`);
+
+  // 11) Payroll for last month (marked PAID) so employees have a payslip
+  const nowP = new Date();
+  const lm = new Date(Date.UTC(nowP.getUTCFullYear(), nowP.getUTCMonth() - 1, 1));
+  const payPeriod = `${lm.getUTCFullYear()}-${String(lm.getUTCMonth() + 1).padStart(2, "0")}`;
+  const payLabel = periodLabel(payPeriod);
+  const salaried = await prisma.employee.findMany({
+    where: { companyId: COMPANY_ID, status: "ACTIVE", baseSalary: { not: null } },
+    select: { id: true, baseSalary: true },
+  });
+  for (const emp of salaried) {
+    const comp = computePayroll(Number(emp.baseSalary));
+    await prisma.payrollRecord.upsert({
+      where: { employeeId_period: { employeeId: emp.id, period: payPeriod } },
+      update: {},
+      create: {
+        companyId: COMPANY_ID,
+        employeeId: emp.id,
+        period: payPeriod,
+        periodLabel: payLabel,
+        earnings: comp.earnings as unknown as Prisma.InputJsonValue,
+        deductions: comp.deductions as unknown as Prisma.InputJsonValue,
+        gross: comp.gross,
+        totalDeductions: comp.totalDeductions,
+        net: comp.net,
+        status: "PAID",
+        paidAt: new Date(),
+      },
+    });
+  }
+  console.log(`  ✓ payroll for ${salaried.length} employees (${payPeriod})`);
 
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));

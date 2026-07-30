@@ -85,6 +85,11 @@ enum LeaveStatus {
   CANCELLED
 }
 
+enum PayrollStatus {
+  DRAFT
+  PAID
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -111,8 +116,9 @@ model Company {
   auditLogs   AuditLog[]
   holidays      Holiday[]
   attendance    AttendanceRecord[]
-  leaveRequests LeaveRequest[]
-  leaveBalances LeaveBalance[]
+  leaveRequests  LeaveRequest[]
+  leaveBalances  LeaveBalance[]
+  payrollRecords PayrollRecord[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -379,9 +385,10 @@ model Employee {
   manager   Employee?  @relation("EmployeeReports", fields: [managerId], references: [id], onDelete: SetNull)
   reports   Employee[] @relation("EmployeeReports")
 
-  attendance    AttendanceRecord[]
-  leaveRequests LeaveRequest[]
-  leaveBalances LeaveBalance[]
+  attendance     AttendanceRecord[]
+  leaveRequests  LeaveRequest[]
+  leaveBalances  LeaveBalance[]
+  payrollRecords PayrollRecord[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -530,4 +537,38 @@ model LeaveBalance {
   @@unique([employeeId, year, type])
   @@index([companyId, year])
   @@map("leave_balances")
+}
+
+// ─────────────────────────── HR: Payroll ───────────────────────────
+
+model PayrollRecord {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  period      String // "YYYY-MM"
+  periodLabel String
+
+  // Line items: [{ label, amount }]
+  earnings   Json
+  deductions Json
+
+  gross           Int
+  totalDeductions Int
+  net             Int
+
+  status PayrollStatus @default(DRAFT)
+  paidAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([employeeId, period])
+  @@index([companyId, period])
+  @@map("payroll_records")
 }

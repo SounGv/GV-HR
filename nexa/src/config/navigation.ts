@@ -69,7 +69,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "เงินเดือน",
     items: [
-      { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+      { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet, permission: "payroll:read", ready: true },
     ],
   },
   {
