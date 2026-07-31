@@ -145,6 +145,14 @@ enum EnrollmentStatus {
   CANCELLED
 }
 
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -184,6 +192,7 @@ model Company {
   goals              Goal[]
   trainingCourses    TrainingCourse[]
   trainingEnrollments TrainingEnrollment[]
+  expenses           ExpenseClaim[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -460,6 +469,7 @@ model Employee {
   notifications      Notification[]
   goals              Goal[]
   enrollments        TrainingEnrollment[]
+  expenses           ExpenseClaim[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -932,4 +942,38 @@ model TrainingEnrollment {
   @@unique([courseId, employeeId])
   @@index([employeeId, status])
   @@map("training_enrollments")
+}
+
+// ─────────────────────────── Finance: Expense claim ───────────────────────────
+
+model ExpenseClaim {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  title       String
+  category    String        @default("other") // travel | food | supplies | accommodation | other
+  amount      Decimal       @db.Decimal(12, 2)
+  expenseDate DateTime
+  description String?
+  receiptUrl  String?
+  status      ExpenseStatus @default(PENDING)
+
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+  paidAt             DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([employeeId, status])
+  @@map("expense_claims")
 }

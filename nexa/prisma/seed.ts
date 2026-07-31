@@ -601,6 +601,36 @@ async function main() {
     console.log(`  ✓ ${created.length} training courses`);
   }
 
+  // 19) Sample expense claims
+  const expenseCount = await prisma.expenseClaim.count({ where: { companyId: COMPANY_ID } });
+  if (expenseCount === 0 && allEmps.length > 0) {
+    const samples = [
+      { title: "ค่าแท็กซี่ไปพบลูกค้า", category: "travel", amount: 350, status: "PENDING" as const },
+      { title: "ค่าอาหารประชุมทีม", category: "food", amount: 1200, status: "APPROVED" as const },
+      { title: "ค่าอุปกรณ์สำนักงาน", category: "supplies", amount: 780, status: "PAID" as const },
+    ];
+    let made = 0;
+    for (let i = 0; i < samples.length; i++) {
+      const emp = allEmps[i % allEmps.length];
+      const s = samples[i];
+      await prisma.expenseClaim.create({
+        data: {
+          companyId: COMPANY_ID,
+          employeeId: emp.id,
+          title: s.title,
+          category: s.category,
+          amount: s.amount,
+          expenseDate: new Date(),
+          status: s.status,
+          decidedAt: s.status === "PENDING" ? null : new Date(),
+          paidAt: s.status === "PAID" ? new Date() : null,
+        },
+      });
+      made++;
+    }
+    console.log(`  ✓ ${made} expense claims`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }

@@ -13,6 +13,7 @@ import {
   Sparkles,
   GraduationCap,
   Wallet,
+  ReceiptText,
   BarChart3,
   Megaphone,
   Bot,
@@ -71,6 +72,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "เงินเดือน",
     items: [
       { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet, permission: "payroll:read", ready: true },
+      { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
     ],
   },
   {
