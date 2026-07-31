@@ -121,6 +121,19 @@ enum CandidateStage {
   REJECTED
 }
 
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  AT_RISK
+  COMPLETED
+  CANCELLED
+}
+
+enum GoalType {
+  KPI
+  OKR
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -157,6 +170,7 @@ model Company {
   jobPostings        JobPosting[]
   candidates         Candidate[]
   notifications      Notification[]
+  goals              Goal[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -431,6 +445,7 @@ model Employee {
   overtimeRequests   OvertimeRequest[]
   assignedAssets     Asset[]
   notifications      Notification[]
+  goals              Goal[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -816,4 +831,38 @@ model Notification {
 
   @@index([employeeId, read])
   @@map("notifications")
+}
+
+// ─────────────────────────── Performance: KPI / Goal ───────────────────────────
+
+model Goal {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  ownerEmployeeId String? // who assigned/created the goal (manager)
+  ownerUserId     String?
+
+  title       String
+  description String?
+  type        GoalType   @default(KPI)
+  cycle       String // e.g. "H1/2569"
+  unit        String     @default("%") // %, ชิ้น, บาท, คน, ...
+  targetValue Float
+  currentValue Float     @default(0)
+  weight      Int        @default(1) // relative importance 1..5
+  status      GoalStatus @default(NOT_STARTED)
+  dueDate     DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, cycle])
+  @@index([employeeId, status])
+  @@map("goals")
 }

@@ -531,6 +531,41 @@ async function main() {
     console.log(`  ✓ ${notifs.length} notifications`);
   }
 
+  // 17) Sample KPI / goals
+  const goalCount = await prisma.goal.count({ where: { companyId: COMPANY_ID } });
+  if (goalCount === 0 && allEmps.length > 0) {
+    const cycle = `H1/${new Date().getFullYear() + 543}`;
+    const sample = [
+      { title: "ปิดการขายตามเป้าไตรมาส", type: "KPI" as const, unit: "ดีล", target: 20, current: 12, weight: 5 },
+      { title: "คะแนนความพึงพอใจลูกค้า", type: "KPI" as const, unit: "%", target: 90, current: 88, weight: 4 },
+      { title: "อบรมหลักสูตรพัฒนาทักษะ", type: "OKR" as const, unit: "หลักสูตร", target: 3, current: 1, weight: 2 },
+    ];
+    let made = 0;
+    for (let i = 0; i < sample.length; i++) {
+      const emp = allEmps[i % allEmps.length];
+      const s = sample[i];
+      const status =
+        s.current >= s.target ? "COMPLETED" : s.current > 0 ? "IN_PROGRESS" : "NOT_STARTED";
+      await prisma.goal.create({
+        data: {
+          companyId: COMPANY_ID,
+          employeeId: emp.id,
+          ownerEmployeeId: mgr?.id ?? null,
+          title: s.title,
+          type: s.type,
+          cycle,
+          unit: s.unit,
+          targetValue: s.target,
+          currentValue: s.current,
+          weight: s.weight,
+          status,
+        },
+      });
+      made++;
+    }
+    console.log(`  ✓ ${made} goals`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }
