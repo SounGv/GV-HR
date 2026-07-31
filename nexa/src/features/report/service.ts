@@ -209,37 +209,140 @@ export async function getReport(
     };
   }
 
-  // payroll
-  const period = periodInput || currentMonth();
-  const prs = await prisma.payrollRecord.findMany({
-    where: { companyId, deletedAt: null, period },
+  if (type === "payroll") {
+    const period = periodInput || currentMonth();
+    const prs = await prisma.payrollRecord.findMany({
+      where: { companyId, deletedAt: null, period },
+      select: {
+        gross: true,
+        totalDeductions: true,
+        net: true,
+        status: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      },
+      orderBy: { employee: { employeeCode: "asc" } },
+    });
+    return {
+      title,
+      period,
+      columns: [
+        { key: "code", label: "รหัส" },
+        { key: "name", label: "ชื่อ-สกุล" },
+        { key: "gross", label: "รายได้รวม", numeric: true },
+        { key: "deductions", label: "รายการหัก", numeric: true },
+        { key: "net", label: "สุทธิ", numeric: true },
+        { key: "status", label: "สถานะ" },
+      ],
+      rows: prs.map((p) => ({
+        code: p.employee.employeeCode,
+        name: `${p.employee.firstName} ${p.employee.lastName}`,
+        gross: p.gross,
+        deductions: p.totalDeductions,
+        net: p.net,
+        status: p.status === "PAID" ? "จ่ายแล้ว" : "ฉบับร่าง",
+      })),
+    };
+  }
+
+  if (type === "expense") {
+    const period = periodInput || currentMonth();
+    const { from, to } = monthRange(period);
+    const claims = await prisma.expenseClaim.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: { in: ["APPROVED", "PAID"] },
+        expenseDate: { gte: from, lt: to },
+      },
+      select: {
+        amount: true,
+        status: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      },
+    });
+    const map = new Map<string, { name: string; count: number; approved: number; paid: number }>();
+    for (const c of claims) {
+      const code = c.employee.employeeCode;
+      const row = map.get(code) ?? {
+        name: `${c.employee.firstName} ${c.employee.lastName}`,
+        count: 0,
+        approved: 0,
+        paid: 0,
+      };
+      const amt = Number(c.amount);
+      row.count += 1;
+      row.approved += amt;
+      if (c.status === "PAID") row.paid += amt;
+      map.set(code, row);
+    }
+    return {
+      title,
+      period,
+      columns: [
+        { key: "code", label: "รหัส" },
+        { key: "name", label: "ชื่อ-สกุล" },
+        { key: "count", label: "จำนวนรายการ", numeric: true },
+        { key: "approved", label: "อนุมัติรวม (บาท)", numeric: true },
+        { key: "paid", label: "จ่ายแล้ว (บาท)", numeric: true },
+      ],
+      rows: [...map.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([code, v]) => ({
+          code,
+          name: v.name,
+          count: v.count,
+          approved: Math.round(v.approved * 100) / 100,
+          paid: Math.round(v.paid * 100) / 100,
+        })),
+    };
+  }
+
+  // training
+  const enrollments = await prisma.trainingEnrollment.findMany({
+    where: { companyId, status: { not: "CANCELLED" } },
     select: {
-      gross: true,
-      totalDeductions: true,
-      net: true,
       status: true,
       employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      course: { select: { hours: true } },
     },
-    orderBy: { employee: { employeeCode: "asc" } },
   });
+  const tmap = new Map<
+    string,
+    { name: string; enrolled: number; completed: number; hours: number }
+  >();
+  for (const e of enrollments) {
+    const code = e.employee.employeeCode;
+    const row = tmap.get(code) ?? {
+      name: `${e.employee.firstName} ${e.employee.lastName}`,
+      enrolled: 0,
+      completed: 0,
+      hours: 0,
+    };
+    row.enrolled += 1;
+    if (e.status === "COMPLETED") {
+      row.completed += 1;
+      row.hours += e.course.hours;
+    }
+    tmap.set(code, row);
+  }
   return {
     title,
-    period,
+    period: null,
     columns: [
       { key: "code", label: "รหัส" },
       { key: "name", label: "ชื่อ-สกุล" },
-      { key: "gross", label: "รายได้รวม", numeric: true },
-      { key: "deductions", label: "รายการหัก", numeric: true },
-      { key: "net", label: "สุทธิ", numeric: true },
-      { key: "status", label: "สถานะ" },
+      { key: "enrolled", label: "ลงทะเบียน", numeric: true },
+      { key: "completed", label: "เรียนจบ", numeric: true },
+      { key: "hours", label: "ชั่วโมงสะสม", numeric: true },
     ],
-    rows: prs.map((p) => ({
-      code: p.employee.employeeCode,
-      name: `${p.employee.firstName} ${p.employee.lastName}`,
-      gross: p.gross,
-      deductions: p.totalDeductions,
-      net: p.net,
-      status: p.status === "PAID" ? "จ่ายแล้ว" : "ฉบับร่าง",
-    })),
+    rows: [...tmap.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([code, v]) => ({
+        code,
+        name: v.name,
+        enrolled: v.enrolled,
+        completed: v.completed,
+        hours: Math.round(v.hours * 10) / 10,
+      })),
   };
 }

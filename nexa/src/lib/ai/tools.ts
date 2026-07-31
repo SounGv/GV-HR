@@ -26,7 +26,7 @@ export const NEXA_TOOLS: Anthropic.Tool[] = [
   {
     name: "get_hr_report",
     description:
-      "Get a structured HR report as rows. type=employees (roster), attendance (monthly present/late/hours per employee), leave (yearly used days by type), overtime (monthly OT hours + pay), payroll (per-period gross/deductions/net). Use this to summarize absences, leave, OT, or payroll. period is YYYY-MM for monthly reports, YYYY for leave; omit for current.",
+      "Get a structured HR report as rows. type=employees (roster), attendance (monthly present/late/hours per employee), leave (yearly used days by type), overtime (monthly OT hours + pay), payroll (per-period gross/deductions/net), expense (monthly approved/paid reimbursements per employee), training (per-employee enrolled/completed courses + hours). Use this to summarize absences, leave, OT, payroll, expenses, or training. period is YYYY-MM for monthly reports, YYYY for leave; omit for training/current.",
     input_schema: {
       type: "object",
       properties: {

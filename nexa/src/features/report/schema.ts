@@ -1,6 +1,14 @@
 import { z } from "zod";
 
-export const REPORT_TYPES = ["employees", "attendance", "leave", "overtime", "payroll"] as const;
+export const REPORT_TYPES = [
+  "employees",
+  "attendance",
+  "leave",
+  "overtime",
+  "payroll",
+  "expense",
+  "training",
+] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
 
 export const REPORT_LABELS: Record<ReportType, string> = {
@@ -9,6 +17,8 @@ export const REPORT_LABELS: Record<ReportType, string> = {
   leave: "สรุปการลา (รายปี)",
   overtime: "สรุป OT (รายเดือน)",
   payroll: "สรุปเงินเดือน (รายงวด)",
+  expense: "สรุปเบิกจ่าย (รายเดือน)",
+  training: "สรุปการอบรม",
 };
 
 /** Which reports take a month (YYYY-MM), a year (YYYY), or no period. */
@@ -18,6 +28,8 @@ export const REPORT_PERIOD_KIND: Record<ReportType, "month" | "year" | "none"> =
   leave: "year",
   overtime: "month",
   payroll: "month",
+  expense: "month",
+  training: "none",
 };
 
 export const reportQuerySchema = z.object({
