@@ -82,7 +82,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "สื่อสารองค์กร",
     items: [
-      { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read" },
+      { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read", ready: true },
     ],
   },
   {

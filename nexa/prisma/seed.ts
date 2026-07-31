@@ -363,6 +363,43 @@ async function main() {
     console.log(`  ✓ sample performance review (${cycle})`);
   }
 
+  // 13) Announcements (only on a fresh company to avoid duplicates)
+  const annCount = await prisma.announcement.count({ where: { companyId: COMPANY_ID } });
+  if (annCount === 0) {
+    const anns = [
+      {
+        title: "ยินดีต้อนรับสู่ NEXA People Platform",
+        body: "ระบบบริหารงานบุคคลและเงินเดือนใหม่พร้อมใช้งานแล้ว พนักงานสามารถเช็คอินด้วย GPS ยื่นลา ดูสลิปเงินเดือน และผลประเมินได้ในที่เดียว",
+        pinned: true,
+      },
+      {
+        title: "แจ้งวันหยุดสงกรานต์",
+        body: "บริษัทหยุดทำการวันที่ 13–15 เมษายน เนื่องในเทศกาลสงกรานต์ ขอให้ทุกท่านเดินทางปลอดภัย",
+        pinned: false,
+      },
+      {
+        title: "นโยบายการทำงานแบบ Hybrid",
+        body: "ตั้งแต่เดือนนี้เป็นต้นไป พนักงานสามารถทำงานจากที่บ้านได้ 2 วันต่อสัปดาห์ โดยแจ้งหัวหน้างานล่วงหน้า",
+        pinned: false,
+      },
+    ];
+    for (const a of anns) {
+      await prisma.announcement.create({
+        data: {
+          companyId: COMPANY_ID,
+          authorEmployeeId: hrEmp?.id ?? null,
+          authorName: "สุนทร ใจดี",
+          title: a.title,
+          body: a.body,
+          pinned: a.pinned,
+          status: "PUBLISHED",
+          publishedAt: new Date(),
+        },
+      });
+    }
+    console.log(`  ✓ ${anns.length} announcements`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }

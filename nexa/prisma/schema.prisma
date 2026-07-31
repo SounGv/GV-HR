@@ -95,6 +95,11 @@ enum ReviewStatus {
   FINALIZED
 }
 
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -125,6 +130,7 @@ model Company {
   leaveBalances      LeaveBalance[]
   payrollRecords     PayrollRecord[]
   performanceReviews PerformanceReview[]
+  announcements      Announcement[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -611,4 +617,32 @@ model PerformanceReview {
   @@unique([employeeId, cycle])
   @@index([companyId, cycle])
   @@map("performance_reviews")
+}
+
+// ─────────────────────────── Comms: Announcement ───────────────────────────
+
+model Announcement {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  authorEmployeeId String?
+  authorUserId     String?
+  authorName       String?
+
+  title  String
+  body   String
+  pinned Boolean            @default(false)
+  status AnnouncementStatus @default(PUBLISHED)
+
+  publishedAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status, pinned])
+  @@map("announcements")
 }
