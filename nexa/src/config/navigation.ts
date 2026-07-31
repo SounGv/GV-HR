@@ -8,6 +8,7 @@ import {
   CalendarRange,
   CalendarClock,
   Users,
+  Network,
   UserPlus,
   Boxes,
   Target,
@@ -60,6 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ข้อมูลพนักงาน",
     items: [
       { label: "พนักงานและองค์กร", href: "/employees", icon: Users, permission: "employee:read", ready: true },
+      { label: "โครงสร้างองค์กร", href: "/organization", icon: Network, permission: "employee:read", ready: true },
       { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
       { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read", ready: true },
     ],

@@ -10,13 +10,36 @@ const prisma = new PrismaClient();
 const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 const HQ_ID = "00000000-0000-0000-0000-0000000000b1";
 
-const DEPARTMENTS = [
-  { code: "WH", name: "คลังสินค้า" },
-  { code: "SALES", name: "ฝ่ายขาย" },
-  { code: "MKT", name: "การตลาด" },
-  { code: "FIN", name: "บัญชีและการเงิน" },
-  { code: "IT", name: "IT & Support" },
-  { code: "HR", name: "ทรัพยากรบุคคล" },
+// Full org structure. `parent` links a sub-department to its parent (parents listed first).
+const DEPARTMENTS: { code: string; name: string; parent?: string }[] = [
+  // 1) บัญชีและการเงิน
+  { code: "ACC-FIN", name: "ฝ่ายบัญชีและการเงิน" },
+  { code: "ACC", name: "แผนกบัญชี", parent: "ACC-FIN" },
+  { code: "FIN", name: "แผนกการเงิน", parent: "ACC-FIN" },
+  { code: "SUP", name: "ฝ่ายซัพพอร์ตเชลล์", parent: "ACC-FIN" },
+  // 2) การขายและการตลาด
+  { code: "SALE-MKT", name: "ฝ่ายการขายและการตลาด" },
+  { code: "SALE-OFF", name: "การขายออฟไลน์", parent: "SALE-MKT" },
+  { code: "SALE-ON", name: "การขายออนไลน์", parent: "SALE-MKT" },
+  { code: "MKT-ON", name: "การตลาดออนไลน์", parent: "SALE-MKT" },
+  { code: "MKT-OFF", name: "การตลาดออฟไลน์", parent: "SALE-MKT" },
+  // 3) ทรัพยากรบุคคล
+  { code: "HR", name: "ฝ่ายทรัพยากรบุคคล" },
+  // 4) จัดซื้อต่างประเทศ
+  { code: "PUR-INT", name: "ฝ่ายจัดซื้อต่างประเทศ" },
+  // 5) Logistics & Warehouse
+  { code: "LOG", name: "ฝ่าย Logistics & Warehouse" },
+  { code: "LOG-IN", name: "ฝ่ายรับเข้าสินค้า", parent: "LOG" },
+  { code: "WH", name: "ฝ่ายคลังสินค้า", parent: "LOG" },
+  { code: "LOG-OUT", name: "ฝ่ายขนส่ง", parent: "LOG" },
+  // 6) เซอร์วิส & เคลม
+  { code: "SVC-CLM", name: "ฝ่ายเซอร์วิส & เคลม" },
+  { code: "SVC", name: "ฝ่ายเซอร์วิส", parent: "SVC-CLM" },
+  { code: "CLM", name: "ฝ่ายเคลมสินค้า", parent: "SVC-CLM" },
+  // 7) แม่บ้าน
+  { code: "HOUSE", name: "แม่บ้าน" },
+  // 8) IT
+  { code: "IT", name: "ฝ่าย IT" },
 ];
 
 async function main() {
@@ -92,22 +115,25 @@ async function main() {
   // 5) Departments
   const deptByCode = new Map<string, string>();
   for (const d of DEPARTMENTS) {
+    const parentId = d.parent ? deptByCode.get(d.parent) : null;
     const dept = await prisma.department.upsert({
       where: { companyId_code: { companyId: COMPANY_ID, code: d.code } },
-      update: { name: d.name },
-      create: { companyId: COMPANY_ID, code: d.code, name: d.name, branchId: HQ_ID },
+      update: { name: d.name, parentId: parentId ?? null },
+      create: { companyId: COMPANY_ID, code: d.code, name: d.name, branchId: HQ_ID, parentId: parentId ?? null },
     });
     deptByCode.set(d.code, dept.id);
   }
   console.log(`  ✓ ${DEPARTMENTS.length} departments`);
 
   // 6) Positions
+  // Levels: 3 = CEO/ผู้บริหาร, 2 = ผู้จัดการ, 1 = ปฏิบัติการ
   const positions = [
-    { code: "HR-MGR", title: "ผู้จัดการฝ่ายบุคคล", level: 5, dept: "HR" },
-    { code: "SALE-MGR", title: "ผู้จัดการฝ่ายขาย", level: 5, dept: "SALES" },
-    { code: "SALE-STAFF", title: "พนักงานขาย", level: 2, dept: "SALES" },
-    { code: "WH-STAFF", title: "พนักงานคลังสินค้า", level: 2, dept: "WH" },
-    { code: "FIN-STAFF", title: "เจ้าหน้าที่การเงิน", level: 3, dept: "FIN" },
+    { code: "CEO", title: "ประธานเจ้าหน้าที่บริหาร (CEO)", level: 3, dept: "HR" },
+    { code: "HR-MGR", title: "ผู้จัดการฝ่ายบุคคล", level: 2, dept: "HR" },
+    { code: "SALE-MGR", title: "ผู้จัดการฝ่ายขาย", level: 2, dept: "SALE-OFF" },
+    { code: "SALE-STAFF", title: "พนักงานขาย", level: 1, dept: "SALE-OFF" },
+    { code: "WH-STAFF", title: "พนักงานคลังสินค้า", level: 1, dept: "WH" },
+    { code: "FIN-STAFF", title: "เจ้าหน้าที่การเงิน", level: 1, dept: "FIN" },
   ];
   const posByCode = new Map<string, string>();
   for (const p of positions) {
@@ -138,8 +164,8 @@ async function main() {
   }> = [
     { code: "EMP0001", email: "admin@nexa.co.th", firstName: "แอดมิน", lastName: "ระบบ", nickname: "Admin", role: "Super Admin", dept: "IT", pos: "HR-MGR" },
     { code: "EMP0002", email: "hr@nexa.co.th", firstName: "สุนทร", lastName: "ใจดี", nickname: "สุนทร", role: "HR Manager", dept: "HR", pos: "HR-MGR" },
-    { code: "EMP0003", email: "manager@nexa.co.th", firstName: "วราภรณ์", lastName: "คำสิงห์", nickname: "แนน", role: "Manager", dept: "SALES", pos: "SALE-MGR" },
-    { code: "EMP0004", email: "employee@nexa.co.th", firstName: "ธนพล", lastName: "ศรีสุข", nickname: "พล", role: "Employee", dept: "SALES", pos: "SALE-STAFF" },
+    { code: "EMP0003", email: "manager@nexa.co.th", firstName: "วราภรณ์", lastName: "คำสิงห์", nickname: "แนน", role: "Manager", dept: "SALE-OFF", pos: "SALE-MGR" },
+    { code: "EMP0004", email: "employee@nexa.co.th", firstName: "ธนพล", lastName: "ศรีสุข", nickname: "พล", role: "Employee", dept: "SALE-OFF", pos: "SALE-STAFF" },
     { code: "EMP0005", email: "finance@nexa.co.th", firstName: "ณัฐชูณิ", lastName: "ใจดี", nickname: "หนิง", role: "Finance", dept: "FIN", pos: "FIN-STAFF" },
   ];
 
@@ -467,7 +493,7 @@ async function main() {
       data: {
         companyId: COMPANY_ID,
         title: "พนักงานขาย (Sales Executive)",
-        departmentId: deptByCode.get("SALES"),
+        departmentId: deptByCode.get("SALE-OFF"),
         employmentType: "FULL_TIME",
         openings: 2,
         location: "สำนักงานใหญ่ กรุงเทพ",
