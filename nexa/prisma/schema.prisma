@@ -131,6 +131,7 @@ model Company {
   payrollRecords     PayrollRecord[]
   performanceReviews PerformanceReview[]
   announcements      Announcement[]
+  overtimeRequests   OvertimeRequest[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -402,6 +403,7 @@ model Employee {
   leaveBalances      LeaveBalance[]
   payrollRecords     PayrollRecord[]
   performanceReviews PerformanceReview[]
+  overtimeRequests   OvertimeRequest[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -645,4 +647,39 @@ model Announcement {
 
   @@index([companyId, status, pinned])
   @@map("announcements")
+}
+
+// ─────────────────────────── HR: Overtime ───────────────────────────
+
+model OvertimeRequest {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  date            DateTime @db.Date
+  startTime       String // "HH:mm"
+  endTime         String
+  hours           Float
+  multiplier      Float    @default(1.5)
+  estimatedAmount Int      @default(0)
+  reason          String?
+
+  status LeaveStatus @default(PENDING)
+
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([employeeId, status])
+  @@map("overtime_requests")
 }

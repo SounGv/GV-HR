@@ -400,6 +400,31 @@ async function main() {
     console.log(`  ✓ ${anns.length} announcements`);
   }
 
+  // 14) Sample OT request (staff EMP0004, PENDING — for the approvals demo)
+  if (staff) {
+    const otCount = await prisma.overtimeRequest.count({ where: { companyId: COMPANY_ID } });
+    if (otCount === 0) {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() - 1);
+      const otDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      await prisma.overtimeRequest.create({
+        data: {
+          companyId: COMPANY_ID,
+          employeeId: staff.id,
+          date: otDate,
+          startTime: "18:00",
+          endTime: "20:30",
+          hours: 2.5,
+          multiplier: 1.5,
+          estimatedAmount: Math.round((35000 / 30 / 8) * 1.5 * 2.5),
+          reason: "ปิดยอดขายสิ้นเดือน",
+          status: "PENDING",
+        },
+      });
+      console.log("  ✓ sample OT request");
+    }
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }

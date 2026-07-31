@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Clock,
+  Timer,
   CalendarDays,
   CalendarCheck,
   Users,
@@ -45,7 +46,8 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "การทำงาน",
     items: [
       { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read", ready: true },
-      { label: "การลาและ OT", href: "/leave", icon: CalendarDays, permission: "leave:read", ready: true },
+      { label: "การลา", href: "/leave", icon: CalendarDays, permission: "leave:read", ready: true },
+      { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read", ready: true },
       { label: "วันหยุด", href: "/holidays", icon: CalendarCheck, permission: "holiday:read", ready: true },
     ],
   },
