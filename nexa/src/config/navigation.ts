@@ -2,9 +2,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Clock,
+  Timer,
   CalendarDays,
   CalendarCheck,
+  CalendarRange,
+  CalendarClock,
   Users,
+  Network,
   UserPlus,
   Boxes,
   Target,
@@ -12,9 +16,10 @@ import {
   Sparkles,
   GraduationCap,
   Wallet,
+  ReceiptText,
   BarChart3,
-  FileSpreadsheet,
   Megaphone,
+  GitBranch,
   Bot,
   Settings,
 } from "lucide-react";
@@ -39,13 +44,16 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ภาพรวม",
     items: [
       { label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
+      { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarRange, permission: "calendar:read", ready: true },
     ],
   },
   {
     label: "การทำงาน",
     items: [
-      { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read" },
-      { label: "การลาและ OT", href: "/leave", icon: CalendarDays, permission: "leave:read" },
+      { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read", ready: true },
+      { label: "การลา", href: "/leave", icon: CalendarDays, permission: "leave:read", ready: true },
+      { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read", ready: true },
+      { label: "กะการทำงาน", href: "/shifts", icon: CalendarClock, permission: "shift:read", ready: true },
       { label: "วันหยุด", href: "/holidays", icon: CalendarCheck, permission: "holiday:read", ready: true },
     ],
   },
@@ -53,43 +61,45 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ข้อมูลพนักงาน",
     items: [
       { label: "พนักงานและองค์กร", href: "/employees", icon: Users, permission: "employee:read", ready: true },
-      { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read" },
-      { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read" },
+      { label: "โครงสร้างองค์กร", href: "/organization", icon: Network, permission: "employee:read", ready: true },
+      { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
+      { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read", ready: true },
     ],
   },
   {
     label: "ประเมินและพัฒนา",
     items: [
-      { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read" },
-      { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
-      { label: "แบบประเมิน (AI)", href: "/ai-evaluation", icon: Sparkles, permission: "ai:read" },
-      { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read" },
+      { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read", ready: true },
+      { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true },
+      { label: "แบบประเมิน (AI)", href: "/ai-evaluation", icon: Sparkles, permission: "ai:read", ready: true },
+      { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read", ready: true },
     ],
   },
   {
     label: "เงินเดือน",
     items: [
-      { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+      { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet, permission: "payroll:read", ready: true },
+      { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
     ],
   },
   {
     label: "ข้อมูลและรายงาน",
     items: [
-      { label: "รายงานและวิเคราะห์", href: "/reports", icon: BarChart3, permission: "report:read" },
-      { label: "Report Center", href: "/report-center", icon: FileSpreadsheet, permission: "report:read" },
+      { label: "รายงานและวิเคราะห์", href: "/reports", icon: BarChart3, permission: "report:read", ready: true },
     ],
   },
   {
     label: "สื่อสารองค์กร",
     items: [
-      { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read" },
+      { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read", ready: true },
     ],
   },
   {
     label: "ระบบและตั้งค่า",
     items: [
-      { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read" },
-      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read" },
+      { label: "เวิร์กโฟลว์อนุมัติ", href: "/workflows", icon: GitBranch, permission: "workflow:read", ready: true },
+      { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
+      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read", ready: true },
     ],
   },
 ];

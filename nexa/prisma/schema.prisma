@@ -17,8 +17,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Runtime (pooled) connection — e.g. Supabase Transaction Pooler (port 6543).
+  url       = env("DATABASE_URL")
+  // Direct connection (port 5432) used by `prisma migrate` / `db push`.
+  // For a plain single-server Postgres, set DIRECT_URL to the same value as DATABASE_URL.
+  directUrl = env("DIRECT_URL")
 }
 
 // ─────────────────────────── Enums ───────────────────────────
@@ -63,6 +67,96 @@ enum HolidayType {
   NATIONAL
 }
 
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  ON_LEAVE
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  PERSONAL
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PayrollStatus {
+  DRAFT
+  PAID
+}
+
+enum ReviewStatus {
+  DRAFT
+  FINALIZED
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum AssetStatus {
+  AVAILABLE
+  ASSIGNED
+  REPAIR
+  RETIRED
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
+}
+
+enum CandidateStage {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  AT_RISK
+  COMPLETED
+  CANCELLED
+}
+
+enum GoalType {
+  KPI
+  OKR
+}
+
+enum TrainingStatus {
+  OPEN
+  CLOSED
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  COMPLETED
+  CANCELLED
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -87,7 +181,27 @@ model Company {
   users       User[]
   roles       Role[]
   auditLogs   AuditLog[]
-  holidays    Holiday[]
+  holidays      Holiday[]
+  attendance    AttendanceRecord[]
+  leaveRequests  LeaveRequest[]
+  leaveBalances      LeaveBalance[]
+  payrollRecords     PayrollRecord[]
+  performanceReviews PerformanceReview[]
+  announcements      Announcement[]
+  overtimeRequests   OvertimeRequest[]
+  assets             Asset[]
+  jobPostings        JobPosting[]
+  candidates         Candidate[]
+  notifications      Notification[]
+  goals              Goal[]
+  trainingCourses    TrainingCourse[]
+  trainingEnrollments TrainingEnrollment[]
+  expenses           ExpenseClaim[]
+  calendarEvents     CalendarEvent[]
+  shiftTemplates     ShiftTemplate[]
+  shiftAssignments   ShiftAssignment[]
+  approvalWorkflows  ApprovalWorkflow[]
+  approvalRequests   ApprovalRequest[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -354,6 +468,19 @@ model Employee {
   manager   Employee?  @relation("EmployeeReports", fields: [managerId], references: [id], onDelete: SetNull)
   reports   Employee[] @relation("EmployeeReports")
 
+  attendance         AttendanceRecord[]
+  leaveRequests      LeaveRequest[]
+  leaveBalances      LeaveBalance[]
+  payrollRecords     PayrollRecord[]
+  performanceReviews PerformanceReview[]
+  overtimeRequests   OvertimeRequest[]
+  assignedAssets     Asset[]
+  notifications      Notification[]
+  goals              Goal[]
+  enrollments        TrainingEnrollment[]
+  expenses           ExpenseClaim[]
+  shiftAssignments   ShiftAssignment[]
+
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
   status            EmployeeStatus @default(ACTIVE)
@@ -407,4 +534,579 @@ model Holiday {
   @@unique([companyId, date, name])
   @@index([companyId, date])
   @@map("holidays")
+}
+
+// ─────────────────────────── HR: Attendance ───────────────────────────
+
+model AttendanceRecord {
+  id         String  @id @default(uuid())
+  companyId  String
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  workDate DateTime @db.Date
+
+  clockInAt  DateTime?
+  clockOutAt DateTime?
+
+  clockInLat  Float?
+  clockInLng  Float?
+  clockOutLat Float?
+  clockOutLng Float?
+
+  // Distance (metres) from the matched branch geofence at clock-in/out.
+  clockInDistance  Float?
+  clockOutDistance Float?
+  // Branch the geofence matched against (no FK to keep back-relations lean).
+  clockInBranchId  String?
+
+  status AttendanceStatus @default(PRESENT)
+  note   String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([employeeId, workDate])
+  @@index([companyId, workDate])
+  @@map("attendance_records")
+}
+
+// ─────────────────────────── HR: Leave ───────────────────────────
+
+model LeaveRequest {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  type      LeaveType
+  startDate DateTime  @db.Date
+  endDate   DateTime  @db.Date
+  halfDay   Boolean   @default(false)
+  days      Float
+  reason    String?
+
+  status LeaveStatus @default(PENDING)
+
+  // Decider (approver) — stored as ids without FK to keep back-relations lean.
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([employeeId, status])
+  @@map("leave_requests")
+}
+
+model LeaveBalance {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  year      Int
+  type      LeaveType
+  totalDays Float     @default(0)
+  usedDays  Float     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([employeeId, year, type])
+  @@index([companyId, year])
+  @@map("leave_balances")
+}
+
+// ─────────────────────────── HR: Payroll ───────────────────────────
+
+model PayrollRecord {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  period      String // "YYYY-MM"
+  periodLabel String
+
+  // Line items: [{ label, amount }]
+  earnings   Json
+  deductions Json
+
+  gross           Int
+  totalDeductions Int
+  net             Int
+
+  status PayrollStatus @default(DRAFT)
+  paidAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([employeeId, period])
+  @@index([companyId, period])
+  @@map("payroll_records")
+}
+
+// ─────────────────────────── HR: Performance ───────────────────────────
+
+model PerformanceReview {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  reviewerEmployeeId String?
+  reviewerUserId     String?
+
+  cycle        String // e.g. "H1/2569"
+  overallScore Float  // 1..5
+  band         String
+  competencies Json // [{ name, score }]
+  strengths    String?
+  improvements String?
+  summary      String?
+
+  status ReviewStatus @default(FINALIZED)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([employeeId, cycle])
+  @@index([companyId, cycle])
+  @@map("performance_reviews")
+}
+
+// ─────────────────────────── Comms: Announcement ───────────────────────────
+
+model Announcement {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  authorEmployeeId String?
+  authorUserId     String?
+  authorName       String?
+
+  title  String
+  body   String
+  pinned Boolean            @default(false)
+  status AnnouncementStatus @default(PUBLISHED)
+
+  publishedAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status, pinned])
+  @@map("announcements")
+}
+
+// ─────────────────────────── HR: Overtime ───────────────────────────
+
+model OvertimeRequest {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  date            DateTime @db.Date
+  startTime       String // "HH:mm"
+  endTime         String
+  hours           Float
+  multiplier      Float    @default(1.5)
+  estimatedAmount Int      @default(0)
+  reason          String?
+
+  status LeaveStatus @default(PENDING)
+
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([employeeId, status])
+  @@map("overtime_requests")
+}
+
+// ─────────────────────────── HR: Assets ───────────────────────────
+
+model Asset {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  assetCode    String
+  name         String
+  category     String
+  serialNumber String?
+
+  status AssetStatus @default(AVAILABLE)
+
+  assignedToEmployeeId String?
+  assignedTo           Employee? @relation(fields: [assignedToEmployeeId], references: [id], onDelete: SetNull)
+  assignedAt           DateTime?
+
+  purchaseDate  DateTime? @db.Date
+  purchasePrice Int?
+  note          String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([companyId, assetCode])
+  @@index([companyId, status])
+  @@map("assets")
+}
+
+// ─────────────────────────── HR: Recruitment ───────────────────────────
+
+model JobPosting {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title          String
+  departmentId   String?
+  description    String?
+  location       String?
+  employmentType EmploymentType @default(FULL_TIME)
+  openings       Int            @default(1)
+  status         JobStatus      @default(OPEN)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  candidates Candidate[]
+
+  @@index([companyId, status])
+  @@map("job_postings")
+}
+
+model Candidate {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  jobPostingId String
+  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+
+  name      String
+  email     String?
+  phone     String?
+  resumeUrl String?
+  note      String?
+  stage     CandidateStage @default(APPLIED)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, stage])
+  @@index([jobPostingId])
+  @@map("candidates")
+}
+
+// ─────────────────────────── Comms: Notification ───────────────────────────
+
+model Notification {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  title    String
+  body     String
+  category String  @default("system") // system | ai | leave | payroll | ...
+  read     Boolean @default(false)
+
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([employeeId, read])
+  @@map("notifications")
+}
+
+// ─────────────────────────── Performance: KPI / Goal ───────────────────────────
+
+model Goal {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  ownerEmployeeId String? // who assigned/created the goal (manager)
+  ownerUserId     String?
+
+  title       String
+  description String?
+  type        GoalType   @default(KPI)
+  cycle       String // e.g. "H1/2569"
+  unit        String     @default("%") // %, ชิ้น, บาท, คน, ...
+  targetValue Float
+  currentValue Float     @default(0)
+  weight      Int        @default(1) // relative importance 1..5
+  status      GoalStatus @default(NOT_STARTED)
+  dueDate     DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, cycle])
+  @@index([employeeId, status])
+  @@map("goals")
+}
+
+// ─────────────────────────── Development: Training ───────────────────────────
+
+model TrainingCourse {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title         String
+  description   String?
+  category      String  @default("ทั่วไป")
+  provider      String?
+  hours         Float   @default(0)
+  location      String?
+  scheduledDate DateTime?
+  capacity      Int?
+  status        TrainingStatus @default(OPEN)
+
+  enrollments TrainingEnrollment[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@map("training_courses")
+}
+
+model TrainingEnrollment {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  courseId String
+  course   TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  status      EnrollmentStatus @default(ENROLLED)
+  score       Float?
+  completedAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+
+  @@unique([courseId, employeeId])
+  @@index([employeeId, status])
+  @@map("training_enrollments")
+}
+
+// ─────────────────────────── Finance: Expense claim ───────────────────────────
+
+model ExpenseClaim {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  title       String
+  category    String        @default("other") // travel | food | supplies | accommodation | other
+  amount      Decimal       @db.Decimal(12, 2)
+  expenseDate DateTime
+  description String?
+  receiptUrl  String?
+  status      ExpenseStatus @default(PENDING)
+
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+  paidAt             DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([employeeId, status])
+  @@map("expense_claims")
+}
+
+// ─────────────────────────── Org: Calendar event ───────────────────────────
+
+model CalendarEvent {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  type        String    @default("event") // event | meeting | deadline
+  startDate   DateTime  @db.Date
+  endDate     DateTime? @db.Date
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, startDate])
+  @@map("calendar_events")
+}
+
+// ─────────────────────────── Work: Shift scheduling ───────────────────────────
+
+model ShiftTemplate {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name         String
+  startTime    String // "HH:mm"
+  endTime      String // "HH:mm"
+  color        String @default("#2563EB")
+  breakMinutes Int    @default(0)
+
+  assignments ShiftAssignment[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@map("shift_templates")
+}
+
+model ShiftAssignment {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  templateId String
+  template   ShiftTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+  note String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  updatedById String?
+
+  @@unique([employeeId, date])
+  @@index([companyId, date])
+  @@map("shift_assignments")
+}
+
+// ─────────────────────────── Process: Approval workflow ───────────────────────────
+
+model ApprovalWorkflow {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  steps       Json // [{ order: number, name: string, approverRole: string }]
+  active      Boolean @default(true)
+
+  requests ApprovalRequest[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, active])
+  @@map("approval_workflows")
+}
+
+model ApprovalRequest {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  workflowId   String
+  workflow     ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowName String // snapshot
+
+  requesterEmployeeId String
+  requesterName       String
+
+  title  String
+  detail String?
+  amount Decimal? @db.Decimal(12, 2)
+
+  steps       Json // [{ order, name, approverRole, status, decidedByName?, decidedAt?, note? }]
+  currentStep Int    @default(0)
+  status      String @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+
+  @@index([companyId, status])
+  @@map("approval_requests")
 }

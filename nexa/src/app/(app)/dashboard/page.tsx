@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Users, UserCheck, CalendarOff, UserPlus, ArrowRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getDashboardSummary } from "@/features/dashboard/service";
+import { getDashboardSummary, getActionCenter } from "@/features/dashboard/service";
+import { ActionCenter } from "@/features/dashboard/action-center";
 import { StatCard } from "@/components/shared/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,10 @@ export const metadata: Metadata = { title: "แดชบอร์ด" };
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  const summary = await getDashboardSummary(user!.companyId);
+  const [summary, actions] = await Promise.all([
+    getDashboardSummary(user!.companyId),
+    getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles),
+  ]);
 
   const name = user?.employee
     ? fullName(user.employee.firstName, user.employee.lastName)
@@ -48,20 +52,23 @@ export default async function DashboardPage() {
             <Button
               size="sm"
               className="bg-white/10 text-white hover:bg-white/20"
-              render={<Link href="/coming-soon?title=เช็คอิน" />}
+              render={<Link href="/attendance" />}
             >
               เช็คอิน
             </Button>
             <Button
               size="sm"
               className="bg-white/10 text-white hover:bg-white/20"
-              render={<Link href="/coming-soon?title=ขอลา" />}
+              render={<Link href="/leave" />}
             >
               ขอลา
             </Button>
           </div>
         </div>
       </section>
+
+      {/* Action center — role-aware pending items */}
+      <ActionCenter data={actions} />
 
       {/* KPI cards */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
