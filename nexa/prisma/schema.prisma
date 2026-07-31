@@ -193,6 +193,7 @@ model Company {
   trainingCourses    TrainingCourse[]
   trainingEnrollments TrainingEnrollment[]
   expenses           ExpenseClaim[]
+  calendarEvents     CalendarEvent[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -976,4 +977,27 @@ model ExpenseClaim {
   @@index([companyId, status])
   @@index([employeeId, status])
   @@map("expense_claims")
+}
+
+// ─────────────────────────── Org: Calendar event ───────────────────────────
+
+model CalendarEvent {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  type        String    @default("event") // event | meeting | deadline
+  startDate   DateTime  @db.Date
+  endDate     DateTime? @db.Date
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, startDate])
+  @@map("calendar_events")
 }

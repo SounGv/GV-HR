@@ -5,6 +5,7 @@ import {
   Timer,
   CalendarDays,
   CalendarCheck,
+  CalendarRange,
   Users,
   UserPlus,
   Boxes,
@@ -40,6 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ภาพรวม",
     items: [
       { label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
+      { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarRange, permission: "calendar:read", ready: true },
     ],
   },
   {

@@ -1,0 +1,216 @@
+import { prisma } from "@/lib/prisma";
+import { writeAudit } from "@/lib/audit";
+import { NotFound } from "@/lib/api/errors";
+import { fullName } from "@/lib/format";
+import type { AccessClaims } from "@/lib/auth/jwt";
+import type { CalendarItem, CalendarMonth } from "./types";
+import type { EventCreateInput, EventUpdateInput } from "./schema";
+
+type Meta = { ip?: string; userAgent?: string };
+
+const DAY_MS = 86_400_000;
+
+function iso(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function currentMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export async function getMonth(
+  companyId: string,
+  month: string | undefined,
+): Promise<CalendarMonth> {
+  const m = month ?? currentMonth();
+  const [y, mo] = m.split("-").map(Number);
+  const start = new Date(Date.UTC(y, mo - 1, 1));
+  const end = new Date(Date.UTC(y, mo, 1)); // exclusive
+  const lastDay = new Date(end.getTime() - DAY_MS);
+
+  const items: CalendarItem[] = [];
+
+  const pushRange = (
+    idBase: string,
+    title: string,
+    source: CalendarItem["source"],
+    type: string,
+    from: Date,
+    to: Date,
+    eventId?: string,
+  ) => {
+    let cur = new Date(Math.max(from.getTime(), start.getTime()));
+    const stop = new Date(Math.min(to.getTime(), lastDay.getTime()));
+    while (cur.getTime() <= stop.getTime()) {
+      const day = iso(cur);
+      items.push({ id: `${idBase}-${day}`, title, date: day, source, type, eventId });
+      cur = new Date(cur.getTime() + DAY_MS);
+    }
+  };
+
+  const [holidays, leaves, courses, events] = await Promise.all([
+    prisma.holiday.findMany({
+      where: { companyId, deletedAt: null, date: { gte: start, lt: end } },
+      select: { id: true, name: true, date: true, type: true },
+    }),
+    prisma.leaveRequest.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: "APPROVED",
+        startDate: { lt: end },
+        endDate: { gte: start },
+      },
+      select: {
+        id: true,
+        type: true,
+        startDate: true,
+        endDate: true,
+        employee: { select: { firstName: true, lastName: true } },
+      },
+    }),
+    prisma.trainingCourse.findMany({
+      where: { companyId, deletedAt: null, scheduledDate: { gte: start, lt: end } },
+      select: { id: true, title: true, scheduledDate: true },
+    }),
+    prisma.calendarEvent.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        startDate: { lt: end },
+        OR: [{ endDate: null, startDate: { gte: start } }, { endDate: { gte: start } }],
+      },
+      select: { id: true, title: true, type: true, startDate: true, endDate: true },
+    }),
+  ]);
+
+  for (const h of holidays) {
+    items.push({
+      id: `h-${h.id}`,
+      title: h.name,
+      date: iso(h.date),
+      source: "holiday",
+      type: h.type,
+    });
+  }
+  for (const l of leaves) {
+    pushRange(
+      `l-${l.id}`,
+      `ลา — ${fullName(l.employee.firstName, l.employee.lastName)}`,
+      "leave",
+      l.type,
+      l.startDate,
+      l.endDate,
+    );
+  }
+  for (const c of courses) {
+    if (!c.scheduledDate) continue;
+    items.push({
+      id: `t-${c.id}`,
+      title: `อบรม: ${c.title}`,
+      date: iso(c.scheduledDate),
+      source: "training",
+      type: "training",
+    });
+  }
+  for (const e of events) {
+    pushRange(`e-${e.id}`, e.title, "event", e.type, e.startDate, e.endDate ?? e.startDate, e.id);
+  }
+
+  items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return { month: m, items };
+}
+
+export async function createEvent(
+  companyId: string,
+  session: AccessClaims,
+  input: EventCreateInput,
+  meta?: Meta,
+) {
+  const record = await prisma.calendarEvent.create({
+    data: {
+      companyId,
+      title: input.title,
+      description: input.description,
+      type: input.type,
+      startDate: input.startDate,
+      endDate: input.endDate ?? null,
+      createdById: session.sub,
+      updatedById: session.sub,
+    },
+    select: { id: true },
+  });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "calendar.create",
+    entity: "CalendarEvent",
+    entityId: record.id,
+    after: { title: input.title },
+    ...meta,
+  });
+  return record;
+}
+
+export async function updateEvent(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  input: EventUpdateInput,
+  meta?: Meta,
+) {
+  const ev = await prisma.calendarEvent.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!ev) throw NotFound("ไม่พบกิจกรรม");
+
+  const record = await prisma.calendarEvent.update({
+    where: { id: ev.id },
+    data: {
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.type !== undefined ? { type: input.type } : {}),
+      ...(input.startDate !== undefined ? { startDate: input.startDate } : {}),
+      ...(input.endDate !== undefined ? { endDate: input.endDate ?? null } : {}),
+      updatedById: session.sub,
+    },
+    select: { id: true },
+  });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "calendar.update",
+    entity: "CalendarEvent",
+    entityId: ev.id,
+    ...meta,
+  });
+  return record;
+}
+
+export async function deleteEvent(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
+  const ev = await prisma.calendarEvent.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!ev) throw NotFound("ไม่พบกิจกรรม");
+  await prisma.calendarEvent.update({
+    where: { id: ev.id },
+    data: { deletedAt: new Date(), updatedById: session.sub },
+  });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "calendar.delete",
+    entity: "CalendarEvent",
+    entityId: ev.id,
+    ...meta,
+  });
+  return { ok: true as const };
+}

@@ -631,6 +631,24 @@ async function main() {
     console.log(`  ✓ ${made} expense claims`);
   }
 
+  // 20) Sample calendar events (this month)
+  const eventCount = await prisma.calendarEvent.count({ where: { companyId: COMPANY_ID } });
+  if (eventCount === 0) {
+    const now = new Date();
+    const at = (day: number) => new Date(Date.UTC(now.getFullYear(), now.getMonth(), day));
+    const events = [
+      { title: "ประชุมประจำเดือน", type: "meeting", start: at(5) },
+      { title: "ส่งรายงานผลประกอบการ", type: "deadline", start: at(15) },
+      { title: "กิจกรรมสังสรรค์พนักงาน", type: "event", start: at(25) },
+    ];
+    for (const e of events) {
+      await prisma.calendarEvent.create({
+        data: { companyId: COMPANY_ID, title: e.title, type: e.type, startDate: e.start },
+      });
+    }
+    console.log(`  ✓ ${events.length} calendar events`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }
