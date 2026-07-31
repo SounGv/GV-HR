@@ -683,6 +683,50 @@ async function main() {
     console.log(`  ✓ ${tplData.length} shift templates`);
   }
 
+  // 22) Sample approval workflow + one pending request
+  const wfCount = await prisma.approvalWorkflow.count({ where: { companyId: COMPANY_ID } });
+  if (wfCount === 0) {
+    const wf = await prisma.approvalWorkflow.create({
+      data: {
+        companyId: COMPANY_ID,
+        name: "อนุมัติจัดซื้อ",
+        description: "คำขอจัดซื้อที่ต้องผ่านหัวหน้าและฝ่ายการเงิน",
+        active: true,
+        steps: [
+          { order: 0, name: "หัวหน้าอนุมัติ", approverRole: "Manager" },
+          { order: 1, name: "การเงินอนุมัติ", approverRole: "Finance" },
+        ],
+      },
+      select: { id: true },
+    });
+    const requester = await prisma.employee.findFirst({
+      where: { companyId: COMPANY_ID, deletedAt: null },
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: { employeeCode: "asc" },
+    });
+    if (requester) {
+      await prisma.approvalRequest.create({
+        data: {
+          companyId: COMPANY_ID,
+          workflowId: wf.id,
+          workflowName: "อนุมัติจัดซื้อ",
+          requesterEmployeeId: requester.id,
+          requesterName: `${requester.firstName} ${requester.lastName}`,
+          title: "ขอจัดซื้อจอมอนิเตอร์ 2 เครื่อง",
+          detail: "สำหรับทีมออกแบบ",
+          amount: 15000,
+          currentStep: 0,
+          status: "PENDING",
+          steps: [
+            { order: 0, name: "หัวหน้าอนุมัติ", approverRole: "Manager", status: "PENDING" },
+            { order: 1, name: "การเงินอนุมัติ", approverRole: "Finance", status: "PENDING" },
+          ],
+        },
+      });
+    }
+    console.log("  ✓ 1 approval workflow + 1 request");
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }

@@ -18,6 +18,7 @@ import {
   ReceiptText,
   BarChart3,
   Megaphone,
+  GitBranch,
   Bot,
   Settings,
 } from "lucide-react";
@@ -94,6 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ระบบและตั้งค่า",
     items: [
+      { label: "เวิร์กโฟลว์อนุมัติ", href: "/workflows", icon: GitBranch, permission: "workflow:read", ready: true },
       { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
       { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read", ready: true },
     ],
