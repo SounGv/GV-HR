@@ -77,7 +77,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ข้อมูลและรายงาน",
     items: [
-      { label: "รายงานและวิเคราะห์", href: "/reports", icon: BarChart3, permission: "report:read" },
+      { label: "รายงานและวิเคราะห์", href: "/reports", icon: BarChart3, permission: "report:read", ready: true },
       { label: "Report Center", href: "/report-center", icon: FileSpreadsheet, permission: "report:read" },
     ],
   },
