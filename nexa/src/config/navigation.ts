@@ -64,7 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read" },
       { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true },
-      { label: "แบบประเมิน (AI)", href: "/ai-evaluation", icon: Sparkles, permission: "ai:read" },
+      { label: "แบบประเมิน (AI)", href: "/ai-evaluation", icon: Sparkles, permission: "ai:read", ready: true },
       { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read" },
     ],
   },
@@ -90,7 +90,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ระบบและตั้งค่า",
     items: [
-      { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read" },
+      { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
       { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read", ready: true },
     ],
   },

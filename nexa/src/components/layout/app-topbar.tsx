@@ -1,12 +1,12 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
+import { NotificationBell } from "./notification-bell";
 
 export function AppTopbar() {
   return (
@@ -23,10 +23,7 @@ export function AppTopbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="relative" aria-label="การแจ้งเตือน">
-          <Bell className="size-4" />
-          <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive ring-2 ring-background" />
-        </Button>
+        <NotificationBell />
         <ThemeToggle />
         <Separator orientation="vertical" className="mx-1 h-5" />
         <UserMenu />

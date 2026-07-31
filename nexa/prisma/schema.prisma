@@ -156,6 +156,7 @@ model Company {
   assets             Asset[]
   jobPostings        JobPosting[]
   candidates         Candidate[]
+  notifications      Notification[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -429,6 +430,7 @@ model Employee {
   performanceReviews PerformanceReview[]
   overtimeRequests   OvertimeRequest[]
   assignedAssets     Asset[]
+  notifications      Notification[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -793,4 +795,25 @@ model Candidate {
   @@index([companyId, stage])
   @@index([jobPostingId])
   @@map("candidates")
+}
+
+// ─────────────────────────── Comms: Notification ───────────────────────────
+
+model Notification {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  title    String
+  body     String
+  category String  @default("system") // system | ai | leave | payroll | ...
+  read     Boolean @default(false)
+
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([employeeId, read])
+  @@map("notifications")
 }

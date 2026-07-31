@@ -500,6 +500,37 @@ async function main() {
     console.log(`  ✓ 1 job posting + ${cands.length} candidates`);
   }
 
+  // 16) Sample in-app notifications for the HR user (so the bell has content)
+  const notifCount = await prisma.notification.count({ where: { companyId: COMPANY_ID } });
+  if (notifCount === 0 && hrEmp) {
+    const notifs = [
+      {
+        title: "คำขอลาใหม่รออนุมัติ",
+        body: "มีคำขอลา 2 รายการรอการพิจารณาจากคุณ",
+        category: "leave",
+        read: false,
+      },
+      {
+        title: "สลิปเงินเดือนพร้อมแล้ว",
+        body: `สลิปเงินเดือนงวด ${payPeriod} ได้ออกให้พนักงานเรียบร้อยแล้ว`,
+        category: "payroll",
+        read: false,
+      },
+      {
+        title: "ยินดีต้อนรับสู่ NEXA",
+        body: "ระบบ HR & Payroll พร้อมใช้งาน ลองถาม NEXA AI เพื่อช่วยสรุปข้อมูลได้เลย",
+        category: "system",
+        read: true,
+      },
+    ];
+    for (const n of notifs) {
+      await prisma.notification.create({
+        data: { companyId: COMPANY_ID, employeeId: hrEmp.id, ...n },
+      });
+    }
+    console.log(`  ✓ ${notifs.length} notifications`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }
