@@ -100,6 +100,13 @@ enum AnnouncementStatus {
   PUBLISHED
 }
 
+enum AssetStatus {
+  AVAILABLE
+  ASSIGNED
+  REPAIR
+  RETIRED
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -132,6 +139,7 @@ model Company {
   performanceReviews PerformanceReview[]
   announcements      Announcement[]
   overtimeRequests   OvertimeRequest[]
+  assets             Asset[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -404,6 +412,7 @@ model Employee {
   payrollRecords     PayrollRecord[]
   performanceReviews PerformanceReview[]
   overtimeRequests   OvertimeRequest[]
+  assignedAssets     Asset[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -682,4 +691,37 @@ model OvertimeRequest {
   @@index([companyId, status])
   @@index([employeeId, status])
   @@map("overtime_requests")
+}
+
+// ─────────────────────────── HR: Assets ───────────────────────────
+
+model Asset {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  assetCode    String
+  name         String
+  category     String
+  serialNumber String?
+
+  status AssetStatus @default(AVAILABLE)
+
+  assignedToEmployeeId String?
+  assignedTo           Employee? @relation(fields: [assignedToEmployeeId], references: [id], onDelete: SetNull)
+  assignedAt           DateTime?
+
+  purchaseDate  DateTime? @db.Date
+  purchasePrice Int?
+  note          String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@unique([companyId, assetCode])
+  @@index([companyId, status])
+  @@map("assets")
 }

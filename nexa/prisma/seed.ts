@@ -425,6 +425,41 @@ async function main() {
     }
   }
 
+  // 15) Assets
+  const assetCount = await prisma.asset.count({ where: { companyId: COMPANY_ID } });
+  if (assetCount === 0) {
+    const assets: {
+      code: string;
+      name: string;
+      category: string;
+      serial: string | null;
+      price: number;
+      status: "AVAILABLE" | "ASSIGNED" | "REPAIR" | "RETIRED";
+      assignTo?: string;
+    }[] = [
+      { code: "IT-0001", name: "MacBook Pro 14”", category: "โน้ตบุ๊ก", serial: "C02XL0011", price: 65000, status: "ASSIGNED", assignTo: staff?.id },
+      { code: "IT-0002", name: "Dell Latitude 5440", category: "โน้ตบุ๊ก", serial: "DL5440-002", price: 32000, status: "AVAILABLE" },
+      { code: "PH-0001", name: "iPhone 15", category: "โทรศัพท์", serial: "IP15-001", price: 29000, status: "AVAILABLE" },
+      { code: "FN-0001", name: "เก้าอี้สำนักงาน Ergonomic", category: "เฟอร์นิเจอร์", serial: null, price: 4500, status: "REPAIR" },
+    ];
+    for (const a of assets) {
+      await prisma.asset.create({
+        data: {
+          companyId: COMPANY_ID,
+          assetCode: a.code,
+          name: a.name,
+          category: a.category,
+          serialNumber: a.serial,
+          purchasePrice: a.price,
+          status: a.status,
+          assignedToEmployeeId: a.assignTo ?? null,
+          assignedAt: a.assignTo ? new Date() : null,
+        },
+      });
+    }
+    console.log(`  ✓ ${assets.length} assets`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }
