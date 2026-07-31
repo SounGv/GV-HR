@@ -649,6 +649,40 @@ async function main() {
     console.log(`  ✓ ${events.length} calendar events`);
   }
 
+  // 21) Sample shift templates + a few assignments (this week)
+  const shiftTplCount = await prisma.shiftTemplate.count({ where: { companyId: COMPANY_ID } });
+  if (shiftTplCount === 0) {
+    const tplData = [
+      { name: "กะเช้า", startTime: "08:00", endTime: "17:00", color: "#2563EB", breakMinutes: 60 },
+      { name: "กะบ่าย", startTime: "14:00", endTime: "22:00", color: "#F59E0B", breakMinutes: 45 },
+      { name: "กะดึก", startTime: "22:00", endTime: "06:00", color: "#7C3AED", breakMinutes: 45 },
+    ];
+    const tplIds: string[] = [];
+    for (const t of tplData) {
+      const tpl = await prisma.shiftTemplate.create({
+        data: { companyId: COMPANY_ID, ...t },
+        select: { id: true },
+      });
+      tplIds.push(tpl.id);
+    }
+    // Assign morning shift to first 3 employees for today
+    if (tplIds[0] && allEmps.length > 0) {
+      const now = new Date();
+      const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      for (let i = 0; i < Math.min(3, allEmps.length); i++) {
+        await prisma.shiftAssignment.create({
+          data: {
+            companyId: COMPANY_ID,
+            employeeId: allEmps[i].id,
+            templateId: tplIds[i % tplIds.length],
+            date: today,
+          },
+        });
+      }
+    }
+    console.log(`  ✓ ${tplData.length} shift templates`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }

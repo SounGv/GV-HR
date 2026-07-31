@@ -123,6 +123,7 @@ export const ROLE_PRESETS: RolePreset[] = [
       "performance:update",
       "kpi:read",
       "okr:read",
+      "shift:read",
       "calendar:read",
       "report:read",
       "announcement:read",

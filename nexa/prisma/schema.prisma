@@ -194,6 +194,8 @@ model Company {
   trainingEnrollments TrainingEnrollment[]
   expenses           ExpenseClaim[]
   calendarEvents     CalendarEvent[]
+  shiftTemplates     ShiftTemplate[]
+  shiftAssignments   ShiftAssignment[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -471,6 +473,7 @@ model Employee {
   goals              Goal[]
   enrollments        TrainingEnrollment[]
   expenses           ExpenseClaim[]
+  shiftAssignments   ShiftAssignment[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -1000,4 +1003,51 @@ model CalendarEvent {
 
   @@index([companyId, startDate])
   @@map("calendar_events")
+}
+
+// ─────────────────────────── Work: Shift scheduling ───────────────────────────
+
+model ShiftTemplate {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name         String
+  startTime    String // "HH:mm"
+  endTime      String // "HH:mm"
+  color        String @default("#2563EB")
+  breakMinutes Int    @default(0)
+
+  assignments ShiftAssignment[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@map("shift_templates")
+}
+
+model ShiftAssignment {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  templateId String
+  template   ShiftTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+  note String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  updatedById String?
+
+  @@unique([employeeId, date])
+  @@index([companyId, date])
+  @@map("shift_assignments")
 }
