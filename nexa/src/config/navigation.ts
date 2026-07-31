@@ -55,7 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ข้อมูลพนักงาน",
     items: [
       { label: "พนักงานและองค์กร", href: "/employees", icon: Users, permission: "employee:read", ready: true },
-      { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read" },
+      { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
       { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read", ready: true },
     ],
   },

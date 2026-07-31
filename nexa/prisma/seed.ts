@@ -460,6 +460,46 @@ async function main() {
     console.log(`  ✓ ${assets.length} assets`);
   }
 
+  // 16) Recruitment sample (one open job + a small candidate pipeline)
+  const jobCount = await prisma.jobPosting.count({ where: { companyId: COMPANY_ID } });
+  if (jobCount === 0) {
+    const job = await prisma.jobPosting.create({
+      data: {
+        companyId: COMPANY_ID,
+        title: "พนักงานขาย (Sales Executive)",
+        departmentId: deptByCode.get("SALES"),
+        employmentType: "FULL_TIME",
+        openings: 2,
+        location: "สำนักงานใหญ่ กรุงเทพ",
+        status: "OPEN",
+        description: "รับผิดชอบงานขายและดูแลความสัมพันธ์กับลูกค้า",
+      },
+    });
+    const cands: {
+      name: string;
+      email: string;
+      phone: string;
+      stage: "APPLIED" | "SCREENING" | "INTERVIEW" | "OFFER" | "HIRED" | "REJECTED";
+    }[] = [
+      { name: "กิตติ ศรีทอง", email: "kitti@example.com", phone: "0810000001", stage: "INTERVIEW" },
+      { name: "มานี รักงาน", email: "manee@example.com", phone: "0810000002", stage: "SCREENING" },
+      { name: "ปิติ ใจกล้า", email: "piti@example.com", phone: "0810000003", stage: "APPLIED" },
+    ];
+    for (const c of cands) {
+      await prisma.candidate.create({
+        data: {
+          companyId: COMPANY_ID,
+          jobPostingId: job.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          stage: c.stage,
+        },
+      });
+    }
+    console.log(`  ✓ 1 job posting + ${cands.length} candidates`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }

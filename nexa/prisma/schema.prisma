@@ -107,6 +107,20 @@ enum AssetStatus {
   RETIRED
 }
 
+enum JobStatus {
+  OPEN
+  CLOSED
+}
+
+enum CandidateStage {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
 // ─────────────────────── Tenancy / Org ───────────────────────
 
 model Company {
@@ -140,6 +154,8 @@ model Company {
   announcements      Announcement[]
   overtimeRequests   OvertimeRequest[]
   assets             Asset[]
+  jobPostings        JobPosting[]
+  candidates         Candidate[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -724,4 +740,57 @@ model Asset {
   @@unique([companyId, assetCode])
   @@index([companyId, status])
   @@map("assets")
+}
+
+// ─────────────────────────── HR: Recruitment ───────────────────────────
+
+model JobPosting {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title          String
+  departmentId   String?
+  description    String?
+  location       String?
+  employmentType EmploymentType @default(FULL_TIME)
+  openings       Int            @default(1)
+  status         JobStatus      @default(OPEN)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  candidates Candidate[]
+
+  @@index([companyId, status])
+  @@map("job_postings")
+}
+
+model Candidate {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  jobPostingId String
+  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+
+  name      String
+  email     String?
+  phone     String?
+  resumeUrl String?
+  note      String?
+  stage     CandidateStage @default(APPLIED)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, stage])
+  @@index([jobPostingId])
+  @@map("candidates")
 }
