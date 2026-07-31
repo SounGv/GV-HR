@@ -566,6 +566,41 @@ async function main() {
     console.log(`  ✓ ${made} goals`);
   }
 
+  // 18) Sample training courses + a couple of enrollments
+  const courseCount = await prisma.trainingCourse.count({ where: { companyId: COMPANY_ID } });
+  if (courseCount === 0) {
+    const courseData = [
+      { title: "การสื่อสารอย่างมีประสิทธิภาพในองค์กร", category: "Soft Skills", hours: 6, provider: "ฝ่ายบุคคล", capacity: 30 },
+      { title: "ความปลอดภัยของข้อมูลและ PDPA", category: "Compliance", hours: 3, provider: "ที่ปรึกษาภายนอก", capacity: 50 },
+      { title: "พื้นฐานการเป็นหัวหน้างาน", category: "Leadership", hours: 12, provider: "สถาบันพัฒนาผู้นำ", capacity: 20 },
+    ];
+    const created: string[] = [];
+    for (const c of courseData) {
+      const course = await prisma.trainingCourse.create({
+        data: {
+          companyId: COMPANY_ID,
+          title: c.title,
+          category: c.category,
+          hours: c.hours,
+          provider: c.provider,
+          capacity: c.capacity,
+          status: "OPEN",
+        },
+        select: { id: true },
+      });
+      created.push(course.id);
+    }
+    // Enroll the first two employees in the first course
+    if (created[0] && allEmps.length > 0) {
+      for (const emp of allEmps.slice(0, 2)) {
+        await prisma.trainingEnrollment.create({
+          data: { companyId: COMPANY_ID, courseId: created[0], employeeId: emp.id, status: "ENROLLED" },
+        });
+      }
+    }
+    console.log(`  ✓ ${created.length} training courses`);
+  }
+
   console.log("✅ Seed complete. Login with any of:");
   people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
 }

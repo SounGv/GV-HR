@@ -14,7 +14,6 @@ import {
   GraduationCap,
   Wallet,
   BarChart3,
-  FileSpreadsheet,
   Megaphone,
   Bot,
   Settings,
@@ -65,7 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read", ready: true },
       { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true },
       { label: "แบบประเมิน (AI)", href: "/ai-evaluation", icon: Sparkles, permission: "ai:read", ready: true },
-      { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read" },
+      { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read", ready: true },
     ],
   },
   {
@@ -78,7 +77,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ข้อมูลและรายงาน",
     items: [
       { label: "รายงานและวิเคราะห์", href: "/reports", icon: BarChart3, permission: "report:read", ready: true },
-      { label: "Report Center", href: "/report-center", icon: FileSpreadsheet, permission: "report:read" },
     ],
   },
   {
