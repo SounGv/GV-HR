@@ -9,16 +9,19 @@ export default function RegisterPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Brand panel */}
-      <div className="relative hidden flex-col justify-between bg-sidebar p-10 text-white lg:flex">
-        <Link href="/login" className="flex items-center gap-3">
-          <img src="/nexa-logo.svg" alt="NEXA" className="size-12 rounded-2xl" />
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-white lg:flex">
+        <div className="pointer-events-none absolute -top-32 -left-24 size-96 rounded-full bg-primary/25 blur-[110px]" />
+        <div className="pointer-events-none absolute -right-24 bottom-0 size-96 rounded-full bg-blue-500/15 blur-[120px]" />
+
+        <Link href="/login" className="relative flex items-center gap-3">
+          <img src="/nexa-logo.svg" alt="NEXA" className="size-12 rounded-2xl shadow-lg shadow-black/30" />
           <div className="leading-tight">
             <div className="font-semibold tracking-wide">NEXA</div>
-            <div className="text-[11px] tracking-[0.18em] text-slate-400">PEOPLE PLATFORM</div>
+            <div className="text-[11px] tracking-[0.18em] text-slate-400">HR AI PLATFORM</div>
           </div>
         </Link>
 
-        <div className="space-y-6">
+        <div className="relative space-y-6">
           <h1 className="text-3xl font-semibold leading-tight">
             เริ่มต้นใช้งานฟรี
             <br />
