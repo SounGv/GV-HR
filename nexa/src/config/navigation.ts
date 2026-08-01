@@ -13,7 +13,6 @@ import {
   Boxes,
   Target,
   ClipboardCheck,
-  Sparkles,
   GraduationCap,
   Wallet,
   ReceiptText,
@@ -61,7 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ข้อมูลพนักงาน",
     items: [
-      { label: "พนักงานและองค์กร", href: "/employees", icon: Users, permission: "employee:read", ready: true },
+      { label: "พนักงาน", href: "/employees", icon: Users, permission: "employee:read", ready: true },
       { label: "โครงสร้างองค์กร", href: "/organization", icon: Network, permission: "employee:read", ready: true },
       { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
       { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read", ready: true },
@@ -72,7 +71,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read", ready: true },
       { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true },
-      { label: "แบบประเมิน (AI)", href: "/ai-evaluation", icon: Sparkles, permission: "ai:read", ready: true },
       { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read", ready: true },
     ],
   },
