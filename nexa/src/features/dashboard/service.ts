@@ -101,6 +101,11 @@ export interface DashboardSummary {
   active: number;
   onLeave: number;
   newThisMonth: number;
+  presentToday: number;
+  lateToday: number;
+  onLeaveToday: number;
+  otHoursToday: number;
+  attendanceRate: number; // % of active present today
   byDepartment: { name: string; count: number }[];
   byStatus: { status: string; count: number }[];
   byEmploymentType: { type: string; count: number }[];
@@ -114,12 +119,42 @@ export async function getDashboardSummary(companyId: string): Promise<DashboardS
 
   const activeFilter = { companyId, deletedAt: null };
 
-  const [headcount, active, onLeave, newThisMonth, byDeptRaw, byStatusRaw, byTypeRaw, depts] =
-    await Promise.all([
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const todayEnd = new Date(todayStart.getTime() + 86_400_000);
+
+  const [
+    headcount,
+    active,
+    onLeave,
+    newThisMonth,
+    presentToday,
+    lateToday,
+    onLeaveTodayRows,
+    otTodayAgg,
+    byDeptRaw,
+    byStatusRaw,
+    byTypeRaw,
+    depts,
+  ] = await Promise.all([
       prisma.employee.count({ where: activeFilter }),
       prisma.employee.count({ where: { ...activeFilter, status: "ACTIVE" } }),
       prisma.employee.count({ where: { ...activeFilter, status: "ON_LEAVE" } }),
       prisma.employee.count({ where: { ...activeFilter, hireDate: { gte: startOfMonth } } }),
+      prisma.attendanceRecord.count({
+        where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, clockInAt: { not: null } },
+      }),
+      prisma.attendanceRecord.count({
+        where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, status: "LATE" },
+      }),
+      prisma.leaveRequest.findMany({
+        where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: todayEnd }, endDate: { gte: todayStart } },
+        select: { employeeId: true },
+      }),
+      prisma.overtimeRequest.aggregate({
+        _sum: { hours: true },
+        where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: todayStart, lt: todayEnd } },
+      }),
       prisma.employee.groupBy({
         by: ["departmentId"],
         where: activeFilter,
@@ -142,12 +177,20 @@ export async function getDashboardSummary(companyId: string): Promise<DashboardS
     ]);
 
   const deptName = new Map(depts.map((d) => [d.id, d.name]));
+  const onLeaveToday = new Set(onLeaveTodayRows.map((r) => r.employeeId)).size;
+  const otHoursToday = Math.round((otTodayAgg._sum.hours ?? 0) * 10) / 10;
+  const attendanceRate = active > 0 ? Math.round((presentToday / active) * 1000) / 10 : 0;
 
   return {
     headcount,
     active,
     onLeave,
     newThisMonth,
+    presentToday,
+    lateToday,
+    onLeaveToday,
+    otHoursToday,
+    attendanceRate,
     byDepartment: byDeptRaw
       .map((r) => ({
         name: r.departmentId ? (deptName.get(r.departmentId) ?? "ไม่ระบุ") : "ไม่ระบุ",
