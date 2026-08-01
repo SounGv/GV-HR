@@ -31,19 +31,22 @@ import {
 } from "@/components/ui/table";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
+import { useOrgOptions } from "@/features/employee/hooks";
 import { sendChat } from "@/features/ai/api";
 import { cn } from "@/lib/utils";
 import { toCsv, downloadCsv } from "@/lib/csv";
-import { REPORT_LABELS, REPORT_PERIOD_KIND, REPORT_TYPES, type ReportType } from "./schema";
+import { REPORT_LABELS, REPORT_TYPES, type ReportType } from "./schema";
 import { useReport } from "./hooks";
 import type { ReportResult } from "./types";
 
-function defaultPeriod(type: ReportType): string {
+const ALL_DEPT = "ALL";
+function firstOfMonth(): string {
   const d = new Date();
-  const kind = REPORT_PERIOD_KIND[type];
-  if (kind === "month") return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  if (kind === "year") return String(d.getFullYear());
-  return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+function todayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function fmtNum(v: string | number) {
@@ -78,24 +81,28 @@ export function ReportView() {
   const canAi = can("ai:read");
 
   const [type, setType] = useState<ReportType>("employees");
-  const [period, setPeriod] = useState<string>(defaultPeriod("employees"));
+  const [from, setFrom] = useState<string>(firstOfMonth());
+  const [to, setTo] = useState<string>(todayStr());
+  const [departmentId, setDepartmentId] = useState<string>(ALL_DEPT);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState("");
 
-  const kind = REPORT_PERIOD_KIND[type];
-  const { data, isLoading, isError, refetch } = useReport(type, period || undefined);
-  const result = data?.data;
+  const { data: orgData } = useOrgOptions();
+  const departments = orgData?.data.departments ?? [];
 
-  function changeType(next: ReportType) {
-    setType(next);
-    setPeriod(defaultPeriod(next));
-  }
+  const { data, isLoading, isError, refetch } = useReport({
+    type,
+    from,
+    to,
+    departmentId: departmentId === ALL_DEPT ? undefined : departmentId,
+  });
+  const result = data?.data;
 
   function exportCsv() {
     if (!result) return;
     const csv = toCsv(result.columns, result.rows);
-    const name = `${type}${result.period ? `-${result.period}` : ""}`;
+    const name = `${type}-${from}_${to}`;
     downloadCsv(name, csv);
     toast.success("ดาวน์โหลด CSV แล้ว");
   }
@@ -121,9 +128,9 @@ export function ReportView() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-wrap items-end gap-2">
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">ประเภทรายงาน</label>
-            <Select value={type} onValueChange={(v) => changeType(v as ReportType)}>
-              <SelectTrigger className="w-[220px]">
+            <label className="text-xs text-muted-foreground">หัวข้อรายงาน</label>
+            <Select value={type} onValueChange={(v) => setType(v as ReportType)}>
+              <SelectTrigger className="w-[200px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -136,25 +143,30 @@ export function ReportView() {
             </Select>
           </div>
 
-          {kind === "month" && (
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">งวด (เดือน)</label>
-              <Input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} className="w-[170px]" />
-            </div>
-          )}
-          {kind === "year" && (
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">ปี</label>
-              <Input
-                type="number"
-                min={2000}
-                max={2100}
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                className="w-[120px]"
-              />
-            </div>
-          )}
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">ตั้งแต่วันที่</label>
+            <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="w-[160px]" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">ถึงวันที่</label>
+            <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="w-[160px]" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">แผนก</label>
+            <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL_DEPT)}>
+              <SelectTrigger className="w-[170px]">
+                <SelectValue placeholder="ทุกแผนก" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_DEPT}>ทุกแผนก</SelectItem>
+                {departments.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

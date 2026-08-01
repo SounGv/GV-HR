@@ -1,13 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchReport } from "./api";
-import type { ReportType } from "./schema";
+import { fetchReport, type ReportParams } from "./api";
 
-export function useReport(type: ReportType, period?: string) {
+export function useReport(params: ReportParams) {
   return useQuery({
-    queryKey: ["reports", type, period],
-    queryFn: () => fetchReport(type, period),
+    queryKey: ["reports", params],
+    queryFn: () => fetchReport(params),
     placeholderData: (prev) => prev,
   });
 }
