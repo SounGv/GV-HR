@@ -47,25 +47,36 @@ async function loadEmployeeWithBranch(companyId: string, employeeId: string) {
   return employee;
 }
 
-/** Enforce the branch geofence (skipped when the branch has no coordinates set). */
+/**
+ * Enforce the branch geofence.
+ *  - No geofence configured on the branch → location isn't needed, skip.
+ *  - Geofence configured but no GPS point supplied → ask the user to enable GPS.
+ *  - Geofence configured + point → must be within the radius.
+ */
 function enforceGeofence(
   branch: { name: string; lat: number | null; lng: number | null; radiusMeters: number | null } | null,
   point: ClockInput,
 ) {
-  if (!branch || branch.lat == null || branch.lng == null || branch.radiusMeters == null) {
-    return { distance: null as number | null, branchId: null as string | null };
+  const hasGeofence =
+    !!branch && branch.lat != null && branch.lng != null && branch.radiusMeters != null;
+  if (!hasGeofence) {
+    return { distance: null as number | null };
   }
-  const { distance, withinRadius } = checkGeofence(point, {
-    lat: branch.lat,
-    lng: branch.lng,
-    radiusMeters: branch.radiusMeters,
-  });
-  if (!withinRadius) {
-    throw Forbidden(
-      `อยู่นอกพื้นที่ทำงาน (${branch.name}) — ห่าง ${Math.round(distance)} เมตร`,
+  if (point.lat == null || point.lng == null) {
+    throw BadRequest(
+      `กรุณาอนุญาตการเข้าถึงตำแหน่ง (GPS) เพื่อลงเวลาในพื้นที่สาขา ${branch!.name}`,
     );
   }
-  return { distance, branchId: null as string | null };
+  const { distance, withinRadius } = checkGeofence(
+    { lat: point.lat, lng: point.lng },
+    { lat: branch!.lat!, lng: branch!.lng!, radiusMeters: branch!.radiusMeters! },
+  );
+  if (!withinRadius) {
+    throw Forbidden(
+      `อยู่นอกพื้นที่ทำงาน (${branch!.name}) — ห่าง ${Math.round(distance)} เมตร`,
+    );
+  }
+  return { distance };
 }
 
 export async function getToday(companyId: string, session: AccessClaims) {
@@ -106,8 +117,8 @@ export async function clockIn(
       employeeId,
       workDate,
       clockInAt: now,
-      clockInLat: input.lat,
-      clockInLng: input.lng,
+      clockInLat: input.lat ?? null,
+      clockInLng: input.lng ?? null,
       clockInDistance: distance,
       clockInBranchId: employee.branch?.id ?? null,
       status,
@@ -116,8 +127,8 @@ export async function clockIn(
     },
     update: {
       clockInAt: now,
-      clockInLat: input.lat,
-      clockInLng: input.lng,
+      clockInLat: input.lat ?? null,
+      clockInLng: input.lng ?? null,
       clockInDistance: distance,
       clockInBranchId: employee.branch?.id ?? null,
       status,
@@ -151,15 +162,20 @@ export async function clockOut(
   // Distance is recorded for clock-out but not enforced (don't trap people in).
   let distance: number | null = null;
   if (
+    input.lat != null &&
+    input.lng != null &&
     employee.branch?.lat != null &&
     employee.branch.lng != null &&
     employee.branch.radiusMeters != null
   ) {
-    distance = checkGeofence(input, {
-      lat: employee.branch.lat,
-      lng: employee.branch.lng,
-      radiusMeters: employee.branch.radiusMeters,
-    }).distance;
+    distance = checkGeofence(
+      { lat: input.lat, lng: input.lng },
+      {
+        lat: employee.branch.lat,
+        lng: employee.branch.lng,
+        radiusMeters: employee.branch.radiusMeters,
+      },
+    ).distance;
   }
 
   const { dateUTC } = bangkokParts();
