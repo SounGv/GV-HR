@@ -21,7 +21,6 @@ const PUBLIC_API = new Set([
   "/api/auth/register",
   "/api/auth/refresh",
   "/api/auth/logout",
-  "/api/health", // TEMP diagnostic
 ]);
 
 const PUBLIC_PAGES = new Set(["/login", "/register"]);
