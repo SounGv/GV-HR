@@ -147,6 +147,34 @@ export async function getPayslip(companyId: string, session: AccessClaims, id: s
   return record;
 }
 
+/**
+ * Public payslip verification (no auth). Returns only non-sensitive fields to
+ * confirm authenticity — never salary amounts. `id` is an unguessable UUID.
+ */
+export async function verifyPayslip(id: string) {
+  const rec = await prisma.payrollRecord.findFirst({
+    where: { id, deletedAt: null },
+    select: {
+      periodLabel: true,
+      status: true,
+      paidAt: true,
+      createdAt: true,
+      company: { select: { name: true, legalName: true } },
+      employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+    },
+  });
+  if (!rec) return null;
+  return {
+    valid: true,
+    company: rec.company.legalName ?? rec.company.name,
+    employeeCode: rec.employee.employeeCode,
+    name: `${rec.employee.firstName} ${rec.employee.lastName}`.trim(),
+    period: rec.periodLabel,
+    status: rec.status,
+    issuedAt: (rec.paidAt ?? rec.createdAt).toISOString(),
+  };
+}
+
 export async function markPaid(
   companyId: string,
   session: AccessClaims,
