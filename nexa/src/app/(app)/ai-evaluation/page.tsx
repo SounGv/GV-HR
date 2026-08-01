@@ -1,20 +1,9 @@
-import type { Metadata } from "next";
-import { requirePagePermission } from "@/lib/auth/page-guard";
-import { PageHeader } from "@/components/shared/page-header";
-import { AiEvaluationView } from "@/features/ai/ai-evaluation-view";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "แบบประเมิน (AI)" };
-
-export default async function AiEvaluationPage() {
-  await requirePagePermission("ai:read");
-
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="แบบประเมิน (AI)"
-        description="ให้ AI ออกแบบเกณฑ์การประเมินที่ตรงกับฝ่ายและสายงานของพนักงานแต่ละคน"
-      />
-      <AiEvaluationView />
-    </div>
-  );
+/**
+ * The AI evaluation designer now lives as a tab inside ประเมินผลงาน
+ * (/performance). This route is kept only to redirect old links.
+ */
+export default function AiEvaluationPage() {
+  redirect("/performance");
 }
