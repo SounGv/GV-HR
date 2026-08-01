@@ -166,9 +166,27 @@ model Company {
   name     String
   legalName String?
   taxId    String?
-  logoUrl  String?
+  logoUrl  String? // light logo (data URL or external URL)
+  logoDarkUrl String?
+  faviconUrl  String?
+  signatureUrl String? // authorized digital signature
+  stampUrl     String? // company stamp
+  brandColor   String? // hex, e.g. #2563EB
   timezone String  @default("Asia/Bangkok")
   currency String  @default("THB")
+  language String  @default("th")
+
+  // Contact / address
+  phone       String?
+  email       String?
+  website     String?
+  googleMapsUrl String?
+  addressLine String?
+  subDistrict String?
+  district    String?
+  province    String?
+  postalCode  String?
+  country     String? @default("ไทย")
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
