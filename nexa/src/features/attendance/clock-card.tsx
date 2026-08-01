@@ -74,30 +74,38 @@ export function ClockCard() {
           </div>
         </div>
 
-        <div className="flex flex-col items-stretch gap-3 sm:flex-row lg:flex-col xl:flex-row">
+        <div className="flex flex-col items-stretch gap-3">
           {isLoading ? (
-            <Skeleton className="h-11 w-40 bg-white/10" />
+            <Skeleton className="h-11 w-full bg-white/10" />
           ) : hasOut ? (
             <div className="flex items-center gap-2 rounded-lg bg-success/15 px-4 py-3 text-success">
               <CheckCircle2 className="size-5" /> ลงเวลาครบแล้ววันนี้
             </div>
-          ) : hasIn ? (
-            <Button
-              size="lg"
-              className="bg-white text-slate-900 hover:bg-slate-100"
-              onClick={() => setDialogKind("out")}
-            >
-              <LogOut className="size-4" /> เช็คเอาท์
-            </Button>
           ) : (
-            <Button
-              size="lg"
-              className="gap-2 bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90"
-              onClick={() => setDialogKind("in")}
-            >
-              <LogIn className="size-4" /> เช็คอิน
-              <QrCode className="size-4 opacity-80" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="lg"
+                className="flex-1 gap-2 bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 disabled:opacity-40"
+                disabled={hasIn}
+                onClick={() => setDialogKind("in")}
+              >
+                <LogIn className="size-4" /> เช็คอิน
+                <QrCode className="size-4 opacity-80" />
+              </Button>
+              <Button
+                size="lg"
+                className="flex-1 bg-white text-slate-900 hover:bg-slate-100 disabled:opacity-40"
+                disabled={!hasIn}
+                onClick={() => setDialogKind("out")}
+              >
+                <LogOut className="size-4" /> เช็คเอาท์
+              </Button>
+            </div>
+          )}
+          {!isLoading && !hasOut && (
+            <p className="text-center text-xs text-slate-400">
+              {hasIn ? "เช็คอินแล้ว — เลือกเช็คเอาท์เมื่อเลิกงาน" : "เลือกเช็คอินเมื่อเริ่มงาน"}
+            </p>
           )}
         </div>
       </div>
