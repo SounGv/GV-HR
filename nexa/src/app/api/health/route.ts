@@ -5,12 +5,7 @@ export const runtime = "nodejs";
 // TEMPORARY diagnostic — remove after fixing Vercel DB connectivity.
 function mask(url: string | undefined) {
   if (!url) return "(missing)";
-  try {
-    // hide the password but reveal structure
-    return url.replace(/:\/\/([^:]+):[^@]+@/, "://$1:***@");
-  } catch {
-    return "(unparseable)";
-  }
+  return url.replace(/:\/\/([^:]+):[^@]+@/, "://$1:***@");
 }
 
 export async function GET() {
@@ -19,6 +14,7 @@ export async function GET() {
     DIRECT_URL: mask(process.env.DIRECT_URL),
     node: process.version,
   };
+  const t = Date.now();
   try {
     const r = await prisma.$queryRaw`SELECT 1 as ok`;
     out.query = "OK";
@@ -27,5 +23,6 @@ export async function GET() {
     out.query = "FAILED";
     out.error = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
   }
+  out.ms = Date.now() - t;
   return Response.json(out);
 }
