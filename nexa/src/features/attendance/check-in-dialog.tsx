@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, RefreshCw, MapPin, Loader2, LogIn, LogOut, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Camera, RefreshCw, MapPin, Loader2, LogIn, LogOut, CheckCircle2, AlertTriangle, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,18 +39,15 @@ export function CheckInDialog({
   const [camReady, setCamReady] = useState(false);
   const [camError, setCamError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [facing, setFacing] = useState<"user" | "environment">("user");
 
-  // Acquire GPS + camera whenever the dialog opens; release on close.
+  // GPS: acquire on open, reset photo.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-
     setCoords(null);
     setGpsState("loading");
     setPhoto(null);
-    setCamReady(false);
-    setCamError(false);
-
     getCurrentPosition()
       .then((pos) => {
         if (cancelled) return;
@@ -62,11 +59,21 @@ export function CheckInDialog({
         setGpsState("error");
         setGpsMsg(e instanceof Error ? e.message : "ระบุตำแหน่งไม่สำเร็จ");
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
+  // Camera: (re)acquire on open or when the user flips front/back.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setCamReady(false);
+    setCamError(false);
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
+          video: { facingMode: facing },
           audio: false,
         });
         if (cancelled) {
@@ -83,13 +90,12 @@ export function CheckInDialog({
         if (!cancelled) setCamError(true);
       }
     })();
-
     return () => {
       cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
-  }, [open]);
+  }, [open, facing]);
 
   function capture() {
     const video = videoRef.current;
@@ -163,15 +169,26 @@ export function CheckInDialog({
             )}
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-2">
             {photo ? (
               <Button type="button" variant="outline" size="sm" onClick={() => setPhoto(null)}>
                 <RefreshCw className="size-4" /> ถ่ายใหม่
               </Button>
             ) : (
-              <Button type="button" size="sm" onClick={capture} disabled={!camReady}>
-                <Camera className="size-4" /> ถ่ายรูป
-              </Button>
+              <>
+                <Button type="button" size="sm" onClick={capture} disabled={!camReady}>
+                  <Camera className="size-4" /> ถ่ายรูป
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
+                  disabled={!camReady}
+                >
+                  <SwitchCamera className="size-4" /> สลับกล้อง
+                </Button>
+              </>
             )}
           </div>
 
