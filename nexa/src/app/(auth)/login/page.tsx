@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { ShieldCheck, Clock, BarChart3 } from "lucide-react";
 import { LoginForm } from "@/features/auth/login-form";
@@ -11,9 +12,7 @@ export default function LoginPage() {
       {/* Brand panel */}
       <div className="relative hidden flex-col justify-between bg-sidebar p-10 text-white lg:flex">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-500 text-lg font-bold">
-            N
-          </div>
+          <img src="/nexa-logo.svg" alt="NEXA" className="size-12 rounded-2xl" />
           <div className="leading-tight">
             <div className="font-semibold tracking-wide">NEXA</div>
             <div className="text-[11px] tracking-[0.18em] text-slate-400">PEOPLE PLATFORM</div>
@@ -57,6 +56,13 @@ export default function LoginPage() {
           <Suspense fallback={<div className="h-64" />}>
             <LoginForm />
           </Suspense>
+
+          <p className="text-center text-sm text-muted-foreground">
+            ยังไม่มีองค์กร?{" "}
+            <Link href="/register" className="font-medium text-primary hover:underline">
+              สมัครใช้งาน (สร้างองค์กรใหม่)
+            </Link>
+          </p>
 
           <div className="rounded-lg border border-dashed border-border bg-muted/40 p-3 text-xs text-muted-foreground">
             <p className="font-medium text-foreground">บัญชีทดลอง</p>
