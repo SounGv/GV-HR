@@ -23,7 +23,7 @@ const PUBLIC_API = new Set([
   "/api/auth/logout",
 ]);
 
-const PUBLIC_PAGES = new Set(["/login", "/register"]);
+const PUBLIC_PAGES = new Set(["/login", "/register", "/offline"]);
 
 function isPublicApi(pathname: string) {
   return PUBLIC_API.has(pathname);
@@ -70,6 +70,6 @@ export const config = {
   // Run on everything except Next internals, static files, and the auth API
   // (which must stay reachable to log in / refresh).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 };

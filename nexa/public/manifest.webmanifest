@@ -1,0 +1,48 @@
+{
+  "name": "NEXA People Platform",
+  "short_name": "NEXA",
+  "description": "ระบบบริหารงานบุคคลและเงินเดือนสำหรับองค์กร — HR & Payroll",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A1226",
+  "theme_color": "#0A1226",
+  "lang": "th",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/nexa-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "เช็คอินเข้างาน",
+      "short_name": "เช็คอิน",
+      "url": "/attendance",
+      "description": "ลงเวลาเข้า-ออกงานอย่างรวดเร็ว"
+    },
+    {
+      "name": "ขอลา",
+      "short_name": "ขอลา",
+      "url": "/leave",
+      "description": "ยื่นคำขอลา"
+    },
+    {
+      "name": "NEXA AI",
+      "short_name": "AI",
+      "url": "/ai",
+      "description": "ถามผู้ช่วยอัจฉริยะ"
+    }
+  ]
+}
