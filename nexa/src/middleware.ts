@@ -38,6 +38,11 @@ export async function middleware(req: NextRequest) {
   if (pathname === "/login" && claims) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
+  // The login page itself is public — let it through, otherwise unauthenticated
+  // visits redirect to /login → /login → … (infinite loop).
+  if (pathname === "/login") {
+    return NextResponse.next();
+  }
 
   if (isApi) {
     if (isPublicApi(pathname)) return NextResponse.next();
