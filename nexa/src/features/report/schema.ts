@@ -35,8 +35,14 @@ export const REPORT_PERIOD_KIND: Record<ReportType, "month" | "year" | "none"> =
   training: "none",
 };
 
+const dateStr = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "รูปแบบวันที่ต้องเป็น YYYY-MM-DD");
+
 export const reportQuerySchema = z.object({
   type: z.enum(REPORT_TYPES).default("employees"),
-  period: z.string().max(7).optional(),
+  from: dateStr.optional(),
+  to: dateStr.optional(),
+  departmentId: z.string().uuid().optional(),
 });
 export type ReportQuery = z.infer<typeof reportQuerySchema>;

@@ -153,11 +153,23 @@ export async function executeTool(
 
       case "get_hr_report": {
         if (!can(session.perms, "report:read")) return deny("report:read");
-        const report = await getReport(
-          companyId,
-          input.type as (typeof REPORT_TYPES)[number],
-          typeof input.period === "string" ? input.period : undefined,
-        );
+        // Convert the tool's period (YYYY-MM or YYYY) into a from/to date range.
+        const period = typeof input.period === "string" ? input.period : undefined;
+        let from: string | undefined;
+        let to: string | undefined;
+        if (period && /^\d{4}-\d{2}$/.test(period)) {
+          const [y, m] = period.split("-").map(Number);
+          from = `${period}-01`;
+          to = `${period}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
+        } else if (period && /^\d{4}$/.test(period)) {
+          from = `${period}-01-01`;
+          to = `${period}-12-31`;
+        }
+        const report = await getReport(companyId, {
+          type: input.type as (typeof REPORT_TYPES)[number],
+          from,
+          to,
+        });
         return JSON.stringify({
           title: report.title,
           period: report.period,

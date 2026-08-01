@@ -2,8 +2,17 @@ import { api, type Envelope } from "@/lib/api/client";
 import type { ReportType } from "./schema";
 import type { ReportResult } from "./types";
 
-export function fetchReport(type: ReportType, period?: string) {
-  const params = new URLSearchParams({ type });
-  if (period) params.set("period", period);
+export interface ReportParams {
+  type: ReportType;
+  from?: string;
+  to?: string;
+  departmentId?: string;
+}
+
+export function fetchReport(q: ReportParams) {
+  const params = new URLSearchParams({ type: q.type });
+  if (q.from) params.set("from", q.from);
+  if (q.to) params.set("to", q.to);
+  if (q.departmentId) params.set("departmentId", q.departmentId);
   return api.get<Envelope<ReportResult>>(`/api/reports?${params.toString()}`);
 }

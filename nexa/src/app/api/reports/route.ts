@@ -9,10 +9,10 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   try {
     const session = await requirePermission("report:read");
-    const { type, period } = reportQuerySchema.parse(
+    const query = reportQuerySchema.parse(
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );
-    const result = await getReport(session.companyId, type, period);
+    const result = await getReport(session.companyId, query);
     return ok(result);
   } catch (err) {
     return handleApiError(err);
