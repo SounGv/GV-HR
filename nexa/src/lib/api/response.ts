@@ -71,11 +71,7 @@ export function handleApiError(err: unknown): NextResponse {
 
   // Unknown / unexpected — log server-side, return opaque 500.
   console.error("[api] unhandled error:", err);
-  // TEMP DEBUG: surface the real error to diagnose the Vercel-only 500. Revert after.
-  const debugDetail =
-    err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-  return NextResponse.json(
-    errorBody("INTERNAL", "เกิดข้อผิดพลาดภายในระบบ", { debug: debugDetail }),
-    { status: 500 },
-  );
+  return NextResponse.json(errorBody("INTERNAL", "เกิดข้อผิดพลาดภายในระบบ"), {
+    status: 500,
+  });
 }

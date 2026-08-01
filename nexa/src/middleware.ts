@@ -18,10 +18,12 @@ import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
 
 const PUBLIC_API = new Set([
   "/api/auth/login",
+  "/api/auth/register",
   "/api/auth/refresh",
   "/api/auth/logout",
-  "/api/health", // TEMP diagnostic — remove after fixing DB connectivity
 ]);
+
+const PUBLIC_PAGES = new Set(["/login", "/register"]);
 
 function isPublicApi(pathname: string) {
   return PUBLIC_API.has(pathname);
@@ -35,13 +37,13 @@ export async function middleware(req: NextRequest) {
   const claims = accessToken ? await verifyAccessToken(accessToken) : null;
   const isApi = pathname.startsWith("/api");
 
-  // Already authenticated users shouldn't see the login page.
-  if (pathname === "/login" && claims) {
+  // Already authenticated users shouldn't see the login/register pages.
+  if (PUBLIC_PAGES.has(pathname) && claims) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
-  // The login page itself is public — let it through, otherwise unauthenticated
+  // Login/register are public — let them through, otherwise unauthenticated
   // visits redirect to /login → /login → … (infinite loop).
-  if (pathname === "/login") {
+  if (PUBLIC_PAGES.has(pathname)) {
     return NextResponse.next();
   }
 
