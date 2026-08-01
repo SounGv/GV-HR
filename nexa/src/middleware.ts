@@ -21,6 +21,7 @@ const PUBLIC_API = new Set([
   "/api/auth/register",
   "/api/auth/refresh",
   "/api/auth/logout",
+  "/api/ai/status",
 ]);
 
 const PUBLIC_PAGES = new Set(["/login", "/register", "/offline"]);
