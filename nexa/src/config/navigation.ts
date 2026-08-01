@@ -22,6 +22,7 @@ import {
   Bot,
   Settings,
   Plug,
+  Building2,
 } from "lucide-react";
 
 export interface NavItem {
@@ -98,6 +99,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "เวิร์กโฟลว์อนุมัติ", href: "/workflows", icon: GitBranch, permission: "workflow:read", ready: true },
       { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
+      { label: "ข้อมูลบริษัท", href: "/company", icon: Building2, permission: "admin:read", ready: true },
       { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read", ready: true },
       { label: "การเชื่อมต่อระบบ", href: "/integrations", icon: Plug, permission: "admin:read", ready: true },
     ],
