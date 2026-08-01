@@ -324,7 +324,7 @@ async function main() {
     select: { id: true, baseSalary: true },
   });
   for (const emp of salaried) {
-    const comp = computePayroll(Number(emp.baseSalary));
+    const comp = computePayroll({ baseSalary: Number(emp.baseSalary) });
     await prisma.payrollRecord.upsert({
       where: { employeeId_period: { employeeId: emp.id, period: payPeriod } },
       update: {},
