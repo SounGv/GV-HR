@@ -197,6 +197,7 @@ model Company {
   branches    Branch[]
   departments Department[]
   positions   Position[]
+  costCenters CostCenter[]
   employees   Employee[]
   users       User[]
   roles       Role[]
@@ -284,6 +285,28 @@ model Department {
   @@unique([companyId, code])
   @@index([companyId, deletedAt])
   @@map("departments")
+}
+
+model CostCenter {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  code        String
+  name        String
+  description String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  employees Employee[]
+
+  @@unique([companyId, code])
+  @@index([companyId, deletedAt])
+  @@map("cost_centers")
 }
 
 model Position {
@@ -482,6 +505,8 @@ model Employee {
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   positionId   String?
   position     Position?   @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  costCenterId String?
+  costCenter   CostCenter? @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
 
   // Reporting line (self relation)
   managerId String?
