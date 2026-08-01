@@ -24,6 +24,7 @@ import {
   Plug,
   Building2,
   MapPinned,
+  Upload,
 } from "lucide-react";
 
 export interface NavItem {
@@ -64,6 +65,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ข้อมูลพนักงาน",
     items: [
       { label: "พนักงาน", href: "/employees", icon: Users, permission: "employee:read", ready: true },
+      { label: "นำเข้าพนักงาน", href: "/employees/import", icon: Upload, permission: "employee:create", ready: true },
       { label: "โครงสร้างองค์กร", href: "/organization", icon: Network, permission: "employee:read", ready: true },
       { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
       { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read", ready: true },
