@@ -20,7 +20,7 @@ const PUBLIC_API = new Set([
   "/api/auth/login",
   "/api/auth/refresh",
   "/api/auth/logout",
-  "/api/_debug", // TEMP diagnostic — remove after fixing DB connectivity
+  "/api/health", // TEMP diagnostic — remove after fixing DB connectivity
 ]);
 
 function isPublicApi(pathname: string) {
