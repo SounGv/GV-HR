@@ -52,10 +52,25 @@ export async function generatePayroll(
     select: { id: true, baseSalary: true },
   });
   const label = periodLabel(period);
+
+  // Auto-include approved overtime for the period into each payslip.
+  const [y, m] = period.split("-").map(Number);
+  const from = new Date(Date.UTC(y, m - 1, 1));
+  const to = new Date(Date.UTC(y, m, 1));
+  const otAgg = await prisma.overtimeRequest.groupBy({
+    by: ["employeeId"],
+    where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: from, lt: to } },
+    _sum: { estimatedAmount: true },
+  });
+  const otMap = new Map(otAgg.map((o) => [o.employeeId, o._sum.estimatedAmount ?? 0]));
+
   let count = 0;
 
   for (const emp of employees) {
-    const comp = computePayroll(Number(emp.baseSalary));
+    const comp = computePayroll({
+      baseSalary: Number(emp.baseSalary),
+      overtime: otMap.get(emp.id) ?? 0,
+    });
     await prisma.payrollRecord.upsert({
       where: { employeeId_period: { employeeId: emp.id, period } },
       update: {

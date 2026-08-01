@@ -11,22 +11,85 @@ export interface PayrollComputation {
   net: number;
 }
 
+export interface PayrollInput {
+  baseSalary: number;
+  allowances?: number; // fixed monthly allowances (position, cost of living…)
+  overtime?: number; // approved OT amount for the period
+  bonus?: number;
+  otherEarnings?: number;
+  providentFundRate?: number; // employee PF contribution, % of base salary
+  loan?: number; // monthly loan repayment
+  advance?: number; // salary advance recovery
+}
+
+/** Thailand personal income tax brackets (annual net taxable income). */
+const TAX_BRACKETS: { upTo: number; rate: number }[] = [
+  { upTo: 150_000, rate: 0 },
+  { upTo: 300_000, rate: 0.05 },
+  { upTo: 500_000, rate: 0.1 },
+  { upTo: 750_000, rate: 0.15 },
+  { upTo: 1_000_000, rate: 0.2 },
+  { upTo: 2_000_000, rate: 0.25 },
+  { upTo: 5_000_000, rate: 0.3 },
+  { upTo: Infinity, rate: 0.35 },
+];
+
+/** Progressive annual income tax on net taxable income. */
+export function annualIncomeTax(annualTaxable: number): number {
+  let tax = 0;
+  let lower = 0;
+  for (const b of TAX_BRACKETS) {
+    if (annualTaxable <= lower) break;
+    tax += (Math.min(annualTaxable, b.upTo) - lower) * b.rate;
+    lower = b.upTo;
+  }
+  return Math.max(0, tax);
+}
+
 /**
- * Compute a monthly payslip from base salary.
- *
- * Social Security (Thailand): 5% of the assessable wage, which is floored at
- * 1,650 and capped at 15,000 THB — i.e. a monthly SS deduction between 83 and
- * 750 THB. Withholding tax is intentionally left at 0 here; a configurable tax
- * table can be layered on without changing callers.
+ * Compute a monthly payslip (Thailand).
+ *  - Social Security: 5% of wage, floored at 1,650 / capped at 15,000 → 83–750 THB.
+ *  - Provident fund: employee % of base salary (optional).
+ *  - Withholding tax: monthly estimate = annualIncomeTax(annualized income −
+ *    50% expense (cap 100k) − 60k personal allowance − SS (cap 9k) − PF) / 12.
  */
-export function computePayroll(baseSalary: number): PayrollComputation {
-  const salary = Math.round(baseSalary);
+export function computePayroll(input: PayrollInput): PayrollComputation {
+  const salary = Math.round(input.baseSalary);
+  const allowances = Math.round(input.allowances ?? 0);
+  const overtime = Math.round(input.overtime ?? 0);
+  const bonus = Math.round(input.bonus ?? 0);
+  const other = Math.round(input.otherEarnings ?? 0);
+  const pfRate = Math.max(0, input.providentFundRate ?? 0);
+  const loan = Math.round(input.loan ?? 0);
+  const advance = Math.round(input.advance ?? 0);
+
   const earnings: LineItem[] = [{ label: "เงินเดือน", amount: salary }];
+  if (allowances) earnings.push({ label: "ค่าตำแหน่ง/เบี้ยเลี้ยง", amount: allowances });
+  if (overtime) earnings.push({ label: "ค่าล่วงเวลา (OT)", amount: overtime });
+  if (bonus) earnings.push({ label: "โบนัส", amount: bonus });
+  if (other) earnings.push({ label: "รายได้อื่นๆ", amount: other });
   const gross = earnings.reduce((s, e) => s + e.amount, 0);
 
   const ssBase = Math.min(Math.max(salary, 1650), 15000);
   const socialSecurity = Math.min(Math.round(ssBase * 0.05), 750);
+  const providentFund = Math.round(salary * (pfRate / 100));
+
+  const annualIncome = gross * 12;
+  const expenseDeduction = Math.min(annualIncome * 0.5, 100_000);
+  const personalAllowance = 60_000;
+  const ssAnnual = Math.min(socialSecurity * 12, 9_000);
+  const pfAnnual = providentFund * 12;
+  const annualTaxable = Math.max(
+    0,
+    annualIncome - expenseDeduction - personalAllowance - ssAnnual - pfAnnual,
+  );
+  const tax = Math.round(annualIncomeTax(annualTaxable) / 12);
+
   const deductions: LineItem[] = [{ label: "ประกันสังคม", amount: socialSecurity }];
+  if (tax) deductions.push({ label: "ภาษีหัก ณ ที่จ่าย", amount: tax });
+  if (providentFund) deductions.push({ label: "กองทุนสำรองเลี้ยงชีพ", amount: providentFund });
+  if (loan) deductions.push({ label: "หักชำระเงินกู้", amount: loan });
+  if (advance) deductions.push({ label: "หักเบิกล่วงหน้า", amount: advance });
   const totalDeductions = deductions.reduce((s, d) => s + d.amount, 0);
 
   return { earnings, deductions, gross, totalDeductions, net: gross - totalDeductions };
