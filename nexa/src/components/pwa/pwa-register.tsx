@@ -2,32 +2,31 @@
 
 import { useEffect } from "react";
 
-/** Registers the service worker once, after the page is interactive. */
+/**
+ * Service-worker CLEANUP (not registration).
+ *
+ * The earlier PWA service worker cached Next.js chunks and, after redeploys,
+ * served stale assets that crashed the app. We no longer register a SW; instead,
+ * every load actively unregisters any existing SW and clears its caches, so
+ * affected devices recover. (The kill-switch /sw.js handles devices whose page
+ * JS never runs.) Reintroduce a correct SW later if offline support is needed.
+ */
 export function PwaRegister() {
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!("serviceWorker" in navigator)) return;
-    if (process.env.NODE_ENV !== "production") return;
 
-    // When a new SW activates and claims this page, reload once so we run
-    // against fresh assets (self-heals installs stuck on stale v1 caches).
-    let reloaded = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloaded) return;
-      reloaded = true;
-      window.location.reload();
-    });
-
-    const register = () => {
-      // updateViaCache: "none" → the browser always revalidates sw.js itself,
-      // so a fixed SW is picked up promptly instead of from HTTP cache.
-      navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(() => {
-        /* registration failures are non-fatal — the app still works online */
-      });
-    };
-
-    if (document.readyState === "complete") register();
-    else window.addEventListener("load", register, { once: true });
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => regs.forEach((r) => r.unregister()))
+        .catch(() => {});
+    }
+    if (typeof caches !== "undefined") {
+      caches
+        .keys()
+        .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+        .catch(() => {});
+    }
   }, []);
 
   return null;

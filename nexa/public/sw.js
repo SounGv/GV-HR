@@ -1,39 +1,34 @@
-/* NEXA PWA service worker — v2 (safe).
+/* NEXA service worker — SELF-DESTRUCT / kill switch.
  *
- * Lesson from v1: caching Next.js JS chunks / HTML made the SW serve stale
- * assets after a redeploy, which mismatched the fresh HTML and threw a
- * client-side ChunkLoadError. This version NEVER caches or serves app code:
- *  - It only precaches the /offline fallback page.
- *  - It intercepts *navigations only*, network-first, falling back to /offline
- *    when the network is unreachable. Everything else (JS, CSS, API, images)
- *    goes straight to the network untouched — so no stale-asset crashes.
- *  - On activate it deletes every older cache (incl. the bad v1 caches), so
- *    existing installs self-heal on their next visit.
+ * A previous SW cached Next.js chunks and, after redeploys, served stale assets
+ * that crashed the app ("client-side exception"). This SW exists only to undo
+ * that: on activation it deletes every cache, unregisters itself, and reloads
+ * any controlled tab so it runs against the network with a clean slate.
+ *
+ * This runs at the service-worker layer, independent of the page's JS, so it
+ * heals devices even when the stale bundle would otherwise crash before any app
+ * code executes. After it unregisters, no service worker controls the site.
  */
-const CACHE = "nexa-v2";
-const OFFLINE_URL = "/offline";
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((c) => c.addAll([OFFLINE_URL, "/nexa-logo.svg"]))
-      .then(() => self.skipWaiting()),
-  );
-});
+self.addEventListener("install", () => self.skipWaiting());
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
+    (async () => {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      } catch {
+        /* ignore */
+      }
+      await self.registration.unregister();
+      const clients = await self.clients.matchAll({ type: "window" });
+      for (const client of clients) {
+        // Reload each open tab now that caches are gone and the SW is detaching.
+        client.navigate(client.url);
+      }
+    })(),
   );
 });
 
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  // Only handle top-level page navigations; never touch JS/CSS/API/images.
-  if (request.method !== "GET" || request.mode !== "navigate") return;
-  event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
-});
+// While this SW is briefly active, never serve anything from cache.
+self.addEventListener("fetch", () => {});
