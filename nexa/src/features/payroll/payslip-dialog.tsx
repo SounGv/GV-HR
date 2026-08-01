@@ -68,8 +68,8 @@ export function PayslipDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="size-4" /> พิมพ์
+          <Button variant="outline" onClick={() => window.open(`/payslip/${record.id}`, "_blank")}>
+            <Printer className="size-4" /> พิมพ์ / PDF
           </Button>
           <Button onClick={() => onOpenChange(false)}>ปิด</Button>
         </DialogFooter>

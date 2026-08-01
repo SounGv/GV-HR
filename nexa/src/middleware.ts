@@ -37,6 +37,11 @@ export async function middleware(req: NextRequest) {
   const claims = accessToken ? await verifyAccessToken(accessToken) : null;
   const isApi = pathname.startsWith("/api");
 
+  // Public payslip verification pages (QR target) — no auth required.
+  if (pathname.startsWith("/verify/")) {
+    return NextResponse.next();
+  }
+
   // Already authenticated users shouldn't see the login/register pages.
   if (PUBLIC_PAGES.has(pathname) && claims) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
