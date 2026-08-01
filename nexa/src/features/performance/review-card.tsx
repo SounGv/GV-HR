@@ -61,14 +61,11 @@ export function ReviewCard({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", tone)}>
-            {review.band}
-          </span>
-          <div className="text-right">
-            <div className="text-lg font-semibold tabular-nums">
+          <div className={cn("flex flex-col items-center rounded-2xl px-3.5 py-1.5", tone)}>
+            <span className="text-2xl font-semibold leading-none tabular-nums">
               {review.overallScore.toFixed(1)}
-            </div>
-            <div className="text-[10px] text-muted-foreground">/ 5.0</div>
+            </span>
+            <span className="text-[10px] font-medium opacity-80">{review.band} · /5.0</span>
           </div>
           {onEdit && (
             <Button variant="ghost" size="icon-sm" aria-label="แก้ไข" onClick={() => onEdit(review)}>
@@ -85,7 +82,10 @@ export function ReviewCard({
               <span className="w-28 shrink-0 text-sm text-muted-foreground">{c.name}</span>
               <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-primary"
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    c.score >= 4 ? "bg-success" : c.score >= 3 ? "bg-primary" : "bg-warning",
+                  )}
                   style={{ width: `${(c.score / 5) * 100}%` }}
                 />
               </div>
