@@ -24,4 +24,6 @@ export interface ClockPayload {
   lat?: number;
   lng?: number;
   accuracy?: number;
+  photo?: string;
+  device?: string;
 }

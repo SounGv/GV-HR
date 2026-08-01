@@ -6,6 +6,9 @@ export const clockSchema = z.object({
   lat: z.number().finite().nullish(),
   lng: z.number().finite().nullish(),
   accuracy: z.number().finite().nullish(),
+  // Selfie proof (data URL, ~<=3MB) + device UA string — both optional.
+  photo: z.string().max(3_000_000).nullish(),
+  device: z.string().max(400).nullish(),
 });
 export type ClockInput = z.infer<typeof clockSchema>;
 
