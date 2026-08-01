@@ -68,8 +68,38 @@ function MyPayslips() {
     return <EmptyState icon={Wallet} title="ยังไม่มีสลิปเงินเดือน" description="สลิปจะปรากฏเมื่อฝ่ายบุคคลออกรอบเงินเดือน" />;
   }
 
+  const latest = records[0];
+
   return (
     <>
+      {latest && (
+        <Card className="relative mb-4 overflow-hidden border-0 bg-sidebar p-6 text-white">
+          <div className="pointer-events-none absolute -top-20 -right-12 size-72 rounded-full bg-primary/25 blur-[90px]" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex size-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+                <CircleDollarSign className="size-6 text-primary" />
+              </span>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                  รายได้สุทธิล่าสุด · {latest.periodLabel}
+                </p>
+                <p className="mt-0.5 text-4xl font-semibold tracking-tight tabular-nums">
+                  {formatCurrency(latest.net)}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="shrink-0 bg-white/10 text-white hover:bg-white/20"
+              onClick={() => setSelected(latest)}
+            >
+              <Eye className="size-4" /> ดูสลิป
+            </Button>
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {records.map((r) => (
           <Card
