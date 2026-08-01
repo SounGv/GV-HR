@@ -343,8 +343,10 @@ function toGeminiSchema(s: any): any {
   if (s.type) out.type = s.type as SchemaType; // JSON-schema type strings match SchemaType values
   if (s.description) out.description = s.description;
   if (Array.isArray(s.enum)) {
+    // enum on a STRING type; do NOT send `format` — Gemini rejects it on
+    // function-declaration parameters.
+    out.type = SchemaType.STRING;
     out.enum = s.enum;
-    out.format = "enum";
   }
   if (s.type === "object") {
     const props = (s.properties ?? {}) as Record<string, unknown>;

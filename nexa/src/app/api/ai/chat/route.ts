@@ -64,47 +64,54 @@ export async function POST(request: NextRequest) {
     const system = buildSystemPrompt(company?.name ?? "-", session.email, today);
     const meta = getRequestMeta(request);
 
-    const genAI = getGemini();
-    const model = genAI.getGenerativeModel({
-      model: AI_MODEL,
-      systemInstruction: system,
-      tools: [{ functionDeclarations: toGeminiTools() }],
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.4 },
-    });
-
-    // All but the last message become chat history; the last is the new turn.
-    const history = input.slice(0, -1).map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
-    const chat = model.startChat({ history });
-
     const steps: Step[] = [];
-    let result = await chat.sendMessage(input[input.length - 1].content);
-
-    for (let i = 0; i < MAX_STEPS; i++) {
-      const calls = result.response.functionCalls();
-      if (!calls || calls.length === 0) break;
-      const parts = [];
-      for (const call of calls) {
-        steps.push({ tool: call.name, detail: describeTool(call.name, call.args) });
-        const out = await executeTool(session, call.name, call.args as Record<string, unknown>, meta);
-        parts.push({ functionResponse: { name: call.name, response: { result: out } } });
-      }
-      result = await chat.sendMessage(parts);
-    }
-
-    let reply = "";
     try {
-      reply = result.response.text().trim();
-    } catch {
-      reply = "";
-    }
-    if (!reply) {
-      reply = "ขออภัย ยังไม่สามารถประมวลผลคำขอได้ กรุณาปรับคำถามแล้วลองใหม่อีกครั้ง";
-    }
+      const genAI = getGemini();
+      const model = genAI.getGenerativeModel({
+        model: AI_MODEL,
+        systemInstruction: system,
+        tools: [{ functionDeclarations: toGeminiTools() }],
+        generationConfig: { maxOutputTokens: 2048, temperature: 0.4 },
+      });
 
-    return ok({ reply, steps, configured: true });
+      // All but the last message become chat history; the last is the new turn.
+      const history = input.slice(0, -1).map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+      const chat = model.startChat({ history });
+
+      let result = await chat.sendMessage(input[input.length - 1].content);
+
+      for (let i = 0; i < MAX_STEPS; i++) {
+        const calls = result.response.functionCalls();
+        if (!calls || calls.length === 0) break;
+        const parts = [];
+        for (const call of calls) {
+          steps.push({ tool: call.name, detail: describeTool(call.name, call.args) });
+          const out = await executeTool(session, call.name, call.args as Record<string, unknown>, meta);
+          parts.push({ functionResponse: { name: call.name, response: { result: out } } });
+        }
+        result = await chat.sendMessage(parts);
+      }
+
+      let reply = "";
+      try {
+        reply = result.response.text().trim();
+      } catch {
+        reply = "";
+      }
+      if (!reply) reply = "ขออภัย ยังไม่สามารถประมวลผลคำขอได้ กรุณาปรับคำถามแล้วลองใหม่อีกครั้ง";
+      return ok({ reply, steps, configured: true });
+    } catch (aiErr) {
+      // Surface the real Gemini error to the chat so it can be diagnosed.
+      const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+      return ok({
+        reply: `⚠️ เกิดข้อผิดพลาดจาก AI (Gemini):\n${msg.slice(0, 600)}`,
+        steps,
+        configured: true,
+      });
+    }
   } catch (error) {
     return handleApiError(error);
   }
