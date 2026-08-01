@@ -48,13 +48,13 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarRange, permission: "calendar:read", ready: true },
+      { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
     ],
   },
   {
-    label: "การทำงาน",
+    label: "เวลาทำงาน",
     items: [
       { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read", ready: true },
-      { label: "ตั้งค่าพื้นที่เช็คอิน", href: "/attendance/settings", icon: MapPinned, permission: "attendance:update", ready: true },
       { label: "การลา", href: "/leave", icon: CalendarDays, permission: "leave:read", ready: true },
       { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read", ready: true },
       { label: "กะการทำงาน", href: "/shifts", icon: CalendarClock, permission: "shift:read", ready: true },
@@ -62,13 +62,10 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "ข้อมูลพนักงาน",
+    label: "พนักงาน",
     items: [
       { label: "พนักงาน", href: "/employees", icon: Users, permission: "employee:read", ready: true },
       { label: "นำเข้าพนักงาน", href: "/employees/import", icon: Upload, permission: "employee:create", ready: true },
-      { label: "โครงสร้างองค์กร", href: "/organization", icon: Network, permission: "employee:read", ready: true },
-      { label: "สาขา", href: "/branches", icon: Building2, permission: "admin:read", ready: true },
-      { label: "ศูนย์ต้นทุน", href: "/cost-centers", icon: Wallet, permission: "admin:read", ready: true },
       { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
       { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read", ready: true },
     ],
@@ -89,25 +86,28 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "ข้อมูลและรายงาน",
+    label: "รายงานและสื่อสาร",
     items: [
       { label: "รายงานและวิเคราะห์", href: "/reports", icon: BarChart3, permission: "report:read", ready: true },
-    ],
-  },
-  {
-    label: "สื่อสารองค์กร",
-    items: [
       { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read", ready: true },
     ],
   },
   {
-    label: "ระบบและตั้งค่า",
+    label: "องค์กร",
     items: [
-      { label: "เวิร์กโฟลว์อนุมัติ", href: "/workflows", icon: GitBranch, permission: "workflow:read", ready: true },
-      { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
       { label: "ข้อมูลบริษัท", href: "/company", icon: Building2, permission: "admin:read", ready: true },
-      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read", ready: true },
+      { label: "โครงสร้างองค์กร", href: "/organization", icon: Network, permission: "employee:read", ready: true },
+      { label: "สาขา", href: "/branches", icon: Building2, permission: "admin:read", ready: true },
+      { label: "ศูนย์ต้นทุน", href: "/cost-centers", icon: Wallet, permission: "admin:read", ready: true },
+    ],
+  },
+  {
+    label: "ตั้งค่าระบบ",
+    items: [
+      { label: "ตั้งค่าพื้นที่เช็คอิน", href: "/attendance/settings", icon: MapPinned, permission: "attendance:update", ready: true },
+      { label: "เวิร์กโฟลว์อนุมัติ", href: "/workflows", icon: GitBranch, permission: "workflow:read", ready: true },
       { label: "การเชื่อมต่อระบบ", href: "/integrations", icon: Plug, permission: "admin:read", ready: true },
+      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read", ready: true },
     ],
   },
 ];
