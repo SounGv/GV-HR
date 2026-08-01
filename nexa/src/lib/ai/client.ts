@@ -1,16 +1,14 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-/** NEXA AI runs on Claude via the Anthropic SDK, grounded in real HR data through tool use. */
+/** NEXA AI runs on Google Gemini (free tier), grounded in real HR data via function calling. */
 
 export function isAiConfigured(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY;
+  return !!process.env.GEMINI_API_KEY;
 }
 
-/** The SDK resolves ANTHROPIC_API_KEY from the environment. */
-export function getAnthropic(): Anthropic {
-  return new Anthropic();
+export function getGemini(): GoogleGenerativeAI {
+  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 }
 
-// Default to the most capable model; override with ANTHROPIC_MODEL (e.g. claude-sonnet-5
-// or claude-haiku-4-5) to trade capability for cost.
-export const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5";
+// Free-tier friendly default; override with GEMINI_MODEL (e.g. gemini-2.5-flash).
+export const AI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";

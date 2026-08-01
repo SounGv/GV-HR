@@ -1,10 +1,10 @@
 import type { NextRequest } from "next/server";
-import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { NotFound } from "@/lib/api/errors";
-import { getAnthropic, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
+import { getGemini, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
+import { jsonSchemaToGemini } from "@/lib/ai/tools";
 import { prisma } from "@/lib/prisma";
 import { fullName } from "@/lib/format";
 
@@ -103,21 +103,18 @@ export async function POST(request: NextRequest) {
       instruction ? `คำสั่งเพิ่มเติมจาก HR: ${instruction}` : "ไม่มีคำสั่งเพิ่มเติม ให้ออกแบบตามมาตรฐานของตำแหน่งนี้",
     ].join("\n");
 
-    const client = getAnthropic();
-    const response = await client.messages.create({
+    const genAI = getGemini();
+    const model = genAI.getGenerativeModel({
       model: AI_MODEL,
-      max_tokens: 3000,
-      system,
-      messages: [{ role: "user", content: userPrompt }],
-      output_config: {
-        format: { type: "json_schema", name: "evaluation_draft", schema: OUTPUT_SCHEMA },
+      systemInstruction: system,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: jsonSchemaToGemini(OUTPUT_SCHEMA as unknown as Record<string, unknown>),
+        maxOutputTokens: 2048,
       },
-    } as Anthropic.MessageCreateParamsNonStreaming);
-
-    const text = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    });
+    const response = await model.generateContent(userPrompt);
+    const text = response.response.text();
 
     let draft: EvaluationDraft | null = null;
     try {
