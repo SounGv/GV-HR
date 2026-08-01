@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { Users, UserCheck, CalendarOff, UserPlus, ArrowRight } from "lucide-react";
+import {
+  Users,
+  UserCheck,
+  Clock,
+  CalendarOff,
+  Timer,
+  Sparkles,
+  ArrowRight,
+  ArrowUpRight,
+  type LucideIcon,
+} from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDashboardSummary, getActionCenter } from "@/features/dashboard/service";
 import { ActionCenter } from "@/features/dashboard/action-center";
-import { StatCard } from "@/components/shared/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,70 +23,144 @@ import {
   HeadcountBar,
 } from "@/features/dashboard/dashboard-charts";
 import { fullName } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "แดชบอร์ด" };
 
+const TONES = {
+  primary: "bg-primary/10 text-primary",
+  success: "bg-success/10 text-success",
+  warning: "bg-warning/10 text-warning",
+  danger: "bg-destructive/10 text-destructive",
+  info: "bg-info/10 text-info",
+} as const;
+
+function Kpi({
+  label,
+  value,
+  unit,
+  icon: Icon,
+  tone,
+  sub,
+}: {
+  label: string;
+  value: string | number;
+  unit?: string;
+  icon: LucideIcon;
+  tone: keyof typeof TONES;
+  sub?: ReactNode;
+}) {
+  return (
+    <Card className="gap-0 p-5 transition hover:shadow-md">
+      <div className="flex items-start justify-between">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className={cn("flex size-9 items-center justify-center rounded-xl", TONES[tone])}>
+          <Icon className="size-4.5" />
+        </span>
+      </div>
+      <div className="mt-3 flex items-baseline gap-1.5">
+        <span className="text-3xl font-semibold tracking-tight tabular-nums">{value}</span>
+        {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+      </div>
+      {sub && <div className="mt-1.5 text-xs text-muted-foreground">{sub}</div>}
+    </Card>
+  );
+}
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "สวัสดีตอนเช้า";
+  if (h < 17) return "สวัสดีตอนบ่าย";
+  return "สวัสดีตอนเย็น";
+}
+
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  const [summary, actions] = await Promise.all([
+  const [s, actions] = await Promise.all([
     getDashboardSummary(user!.companyId),
     getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles),
   ]);
 
-  const name = user?.employee
-    ? fullName(user.employee.firstName, user.employee.lastName)
-    : user?.email;
-  const today = new Intl.DateTimeFormat("th-TH", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date());
+  const name = user?.employee ? fullName(user.employee.firstName, user.employee.lastName) : user?.email;
 
   return (
     <div className="space-y-6">
-      {/* Welcome hero */}
-      <section className="overflow-hidden rounded-2xl bg-sidebar p-6 text-white sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm text-slate-400">{today}</p>
-            <h1 className="text-2xl font-semibold">สวัสดี {name}</h1>
-            <p className="text-sm text-slate-300">
-              ยินดีต้อนรับสู่ NEXA People Platform · {user?.company?.name}
-            </p>
+      {/* Greeting */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {greeting()}, {name} 👋
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          ยินดีต้อนรับเข้าสู่ NEXA HR AI Platform · {user?.company?.name}
+        </p>
+      </div>
+
+      {/* AI Daily Briefing */}
+      <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
+        <div className="pointer-events-none absolute -top-20 -right-10 size-72 rounded-full bg-primary/25 blur-[90px]" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
+              <Sparkles className="size-5 text-primary" />
+            </span>
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                AI Daily Briefing
+              </p>
+              <p className="text-sm leading-relaxed text-slate-100">
+                วันนี้พนักงานเข้างาน <b className="text-white">{s.presentToday}</b> คน
+                ({s.attendanceRate}%) · มาสาย <b className="text-white">{s.lateToday}</b> คน ·
+                ลา <b className="text-white">{s.onLeaveToday}</b> คน ·
+                OT <b className="text-white">{s.otHoursToday}</b> ชม.
+                {s.lateToday > 0
+                  ? " แนะนำให้ตรวจสอบพนักงานที่มาสายและติดตามเป็นรายบุคคล"
+                  : " อัตราการเข้างานอยู่ในเกณฑ์ดี 👍"}
+              </p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" render={<Link href="/employees" />}>
-              <Users className="size-4" /> พนักงาน
-            </Button>
-            <Button
-              size="sm"
-              className="bg-white/10 text-white hover:bg-white/20"
-              render={<Link href="/attendance" />}
-            >
-              เช็คอิน
-            </Button>
-            <Button
-              size="sm"
-              className="bg-white/10 text-white hover:bg-white/20"
-              render={<Link href="/leave" />}
-            >
-              ขอลา
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            className="shrink-0 bg-white/10 text-white hover:bg-white/20"
+            render={<Link href="/ai" />}
+          >
+            <Sparkles className="size-4" /> ถาม NEXA AI
+          </Button>
         </div>
+      </Card>
+
+      {/* KPI cards (today) */}
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <Kpi
+          label="พนักงานทั้งหมด"
+          value={s.headcount}
+          unit="คน"
+          icon={Users}
+          tone="primary"
+          sub={
+            s.newThisMonth > 0 ? (
+              <span className="inline-flex items-center gap-0.5 text-success">
+                <ArrowUpRight className="size-3" /> +{s.newThisMonth} เดือนนี้
+              </span>
+            ) : (
+              "องค์กร"
+            )
+          }
+        />
+        <Kpi
+          label="เข้างานวันนี้"
+          value={s.presentToday}
+          unit="คน"
+          icon={UserCheck}
+          tone="success"
+          sub={`${s.attendanceRate}% ของพนักงาน`}
+        />
+        <Kpi label="มาสายวันนี้" value={s.lateToday} unit="คน" icon={Clock} tone="warning" sub="ต้องติดตาม" />
+        <Kpi label="ลาวันนี้" value={s.onLeaveToday} unit="คน" icon={CalendarOff} tone="danger" sub="อนุมัติแล้ว" />
+        <Kpi label="OT วันนี้" value={s.otHoursToday} unit="ชม." icon={Timer} tone="info" sub="รวมทั้งองค์กร" />
       </section>
 
-      {/* Action center — role-aware pending items */}
+      {/* Action center */}
       <ActionCenter data={actions} />
-
-      {/* KPI cards */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="พนักงานทั้งหมด" value={summary.headcount} unit="คน" icon={Users} tone="primary" />
-        <StatCard label="ปฏิบัติงาน" value={summary.active} unit="คน" icon={UserCheck} tone="success" />
-        <StatCard label="ลางาน" value={summary.onLeave} unit="คน" icon={CalendarOff} tone="warning" />
-        <StatCard label="เข้าใหม่เดือนนี้" value={summary.newThisMonth} unit="คน" icon={UserPlus} tone="info" />
-      </section>
 
       {/* Charts */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -85,8 +169,8 @@ export default async function DashboardPage() {
             <CardTitle>สัดส่วนพนักงานตามแผนก</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <DepartmentDonut data={summary.byDepartment} />
-            <DonutLegend data={summary.byDepartment} />
+            <DepartmentDonut data={s.byDepartment} />
+            <DonutLegend data={s.byDepartment} />
           </CardContent>
         </Card>
 
@@ -98,7 +182,7 @@ export default async function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <HeadcountBar data={summary.byDepartment} />
+            <HeadcountBar data={s.byDepartment} />
           </CardContent>
         </Card>
       </section>
