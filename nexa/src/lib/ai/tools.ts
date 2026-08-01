@@ -8,7 +8,10 @@ import { REPORT_TYPES } from "@/features/report/schema";
 import { listEmployees } from "@/features/employee/service";
 import { createAnnouncement } from "@/features/announcement/service";
 import { createNotification } from "@/features/notification/service";
+import { computePayroll } from "@/features/payroll/calc";
 import { fullName } from "@/lib/format";
+
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -85,6 +88,23 @@ export const NEXA_TOOLS: Anthropic.Tool[] = [
       type: "object",
       properties: { title: { type: "string" }, body: { type: "string" } },
       required: ["title", "body"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "calculate_payroll",
+    description:
+      "Calculate a Thai monthly payslip using the real payroll engine: Social Security (5%, capped 750), progressive withholding income tax, and provident fund. Provide either `employee` (name/code) to use their base salary, or `baseSalary` directly. Optional: allowances, overtime, bonus, providentFundRate (%). ALWAYS use this for any salary/tax/social-security/take-home-pay computation — never calculate it yourself.",
+    input_schema: {
+      type: "object",
+      properties: {
+        employee: { type: "string", description: "employee name or code (optional if baseSalary given)" },
+        baseSalary: { type: "number" },
+        allowances: { type: "number" },
+        overtime: { type: "number" },
+        bonus: { type: "number" },
+        providentFundRate: { type: "number", description: "employee provident fund %, e.g. 3" },
+      },
       additionalProperties: false,
     },
   },
@@ -247,6 +267,40 @@ export async function executeTool(
           meta,
         );
         return `เผยแพร่ประกาศเรียบร้อย (id: ${rec.id})`;
+      }
+
+      case "calculate_payroll": {
+        if (!can(session.perms, "payroll:read")) return deny("payroll:read");
+        let base = num(input.baseSalary);
+        let who: string | null = null;
+        if (input.employee) {
+          const q = String(input.employee);
+          const emp = await prisma.employee.findFirst({
+            where: {
+              companyId,
+              deletedAt: null,
+              OR: [
+                { employeeCode: { equals: q, mode: "insensitive" } },
+                { firstName: { contains: q, mode: "insensitive" } },
+                { lastName: { contains: q, mode: "insensitive" } },
+              ],
+            },
+            select: { firstName: true, lastName: true, baseSalary: true },
+          });
+          if (!emp) return "ไม่พบพนักงานที่ตรงกับคำค้น";
+          if (emp.baseSalary == null) return "พนักงานคนนี้ยังไม่ได้กำหนดเงินเดือนฐานในระบบ";
+          base = Number(emp.baseSalary);
+          who = fullName(emp.firstName, emp.lastName);
+        }
+        if (base == null) return "กรุณาระบุพนักงาน (employee) หรือเงินเดือนฐาน (baseSalary)";
+        const comp = computePayroll({
+          baseSalary: base,
+          allowances: num(input.allowances),
+          overtime: num(input.overtime),
+          bonus: num(input.bonus),
+          providentFundRate: num(input.providentFundRate),
+        });
+        return JSON.stringify({ employee: who, currency: "THB", ...comp });
       }
 
       default:

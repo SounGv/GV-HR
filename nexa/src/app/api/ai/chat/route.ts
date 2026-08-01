@@ -166,6 +166,8 @@ function describeTool(name: string, input: unknown): string {
       return `ส่งแจ้งเตือนถึง: ${String(i.target ?? "")}`;
     case "create_announcement":
       return `สร้างประกาศ: ${String(i.title ?? "")}`;
+    case "calculate_payroll":
+      return `คำนวณเงินเดือน${i.employee ? `: ${String(i.employee)}` : ""}`;
     default:
       return name;
   }
