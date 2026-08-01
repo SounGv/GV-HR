@@ -587,8 +587,16 @@ model AttendanceRecord {
   // Distance (metres) from the matched branch geofence at clock-in/out.
   clockInDistance  Float?
   clockOutDistance Float?
+  clockInAccuracy  Float?
+  clockOutAccuracy Float?
   // Branch the geofence matched against (no FK to keep back-relations lean).
   clockInBranchId  String?
+
+  // Selfie proof + device metadata (data URLs / UA string)
+  clockInPhotoUrl  String?
+  clockOutPhotoUrl String?
+  clockInDevice    String?
+  clockOutDevice   String?
 
   status AttendanceStatus @default(PRESENT)
   note   String?

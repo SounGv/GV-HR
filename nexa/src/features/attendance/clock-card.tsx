@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, LogIn, LogOut, MapPin, CheckCircle2, QrCode } from "lucide-react";
-import { toast } from "sonner";
+import { LogIn, LogOut, MapPin, CheckCircle2, QrCode } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiError } from "@/lib/api/client";
-import { getCurrentPosition } from "@/lib/geolocation";
-import { useToday, useClockIn, useClockOut } from "./hooks";
+import { useToday } from "./hooks";
 import { AttendanceStatusBadge } from "./status-badge";
+import { CheckInDialog } from "./check-in-dialog";
 
 function fmtTime(iso: string | null | undefined) {
   if (!iso) return "--:--";
@@ -22,9 +20,7 @@ function fmtTime(iso: string | null | undefined) {
 
 export function ClockCard() {
   const { data, isLoading } = useToday();
-  const clockInMut = useClockIn();
-  const clockOutMut = useClockOut();
-  const [busy, setBusy] = useState<"in" | "out" | null>(null);
+  const [dialogKind, setDialogKind] = useState<"in" | "out" | null>(null);
 
   // Live Bangkok clock
   const [now, setNow] = useState<Date | null>(null);
@@ -37,39 +33,6 @@ export function ClockCard() {
   const record = data?.data ?? null;
   const hasIn = !!record?.clockInAt;
   const hasOut = !!record?.clockOutAt;
-
-  async function handleClock(kind: "in" | "out") {
-    setBusy(kind);
-    try {
-      // Location is best-effort: try to read GPS, but don't block check-in if the
-      // user denies/has no GPS. The server enforces it only when the branch has a
-      // geofence — and returns a clear message asking to enable GPS in that case.
-      let payload: { lat?: number; lng?: number; accuracy?: number } = {};
-      try {
-        const pos = await getCurrentPosition();
-        payload = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-        };
-      } catch {
-        /* no location — server decides whether it's required */
-      }
-
-      if (kind === "in") {
-        await clockInMut.mutateAsync(payload);
-        toast.success("เช็คอินสำเร็จ");
-      } else {
-        await clockOutMut.mutateAsync(payload);
-        toast.success("เช็คเอาท์สำเร็จ");
-      }
-    } catch (err) {
-      const message = err instanceof ApiError || err instanceof Error ? err.message : "ลงเวลาไม่สำเร็จ";
-      toast.error(message);
-    } finally {
-      setBusy(null);
-    }
-  }
 
   const todayLabel = now
     ? new Intl.DateTimeFormat("th-TH", {
@@ -122,29 +85,17 @@ export function ClockCard() {
             <Button
               size="lg"
               className="bg-white text-slate-900 hover:bg-slate-100"
-              disabled={busy !== null}
-              onClick={() => handleClock("out")}
+              onClick={() => setDialogKind("out")}
             >
-              {busy === "out" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <LogOut className="size-4" />
-              )}
-              เช็คเอาท์
+              <LogOut className="size-4" /> เช็คเอาท์
             </Button>
           ) : (
             <Button
               size="lg"
               className="gap-2 bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90"
-              disabled={busy !== null}
-              onClick={() => handleClock("in")}
+              onClick={() => setDialogKind("in")}
             >
-              {busy === "in" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <LogIn className="size-4" />
-              )}
-              เช็คอิน
+              <LogIn className="size-4" /> เช็คอิน
               <QrCode className="size-4 opacity-80" />
             </Button>
           )}
@@ -166,6 +117,12 @@ export function ClockCard() {
           </p>
         </div>
       </div>
+
+      <CheckInDialog
+        open={dialogKind !== null}
+        kind={dialogKind ?? "in"}
+        onOpenChange={(v) => !v && setDialogKind(null)}
+      />
     </section>
   );
 }
