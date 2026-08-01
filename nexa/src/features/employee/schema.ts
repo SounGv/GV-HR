@@ -81,3 +81,10 @@ export const EMPLOYEE_SORTABLE = [
   "createdAt",
   "status",
 ] as const;
+
+/** HR creates a login account for an employee. */
+export const employeeAccountSchema = z.object({
+  email: z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง").max(200),
+  password: z.string().min(8, "รหัสผ่านอย่างน้อย 8 ตัวอักษร").max(100),
+});
+export type EmployeeAccountInput = z.infer<typeof employeeAccountSchema>;

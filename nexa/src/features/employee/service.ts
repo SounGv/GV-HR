@@ -30,6 +30,7 @@ const listSelect = {
 
 const detailSelect = {
   ...listSelect,
+  userId: true,
   firstNameEn: true,
   lastNameEn: true,
   gender: true,
