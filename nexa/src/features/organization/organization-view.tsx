@@ -14,6 +14,7 @@ import { ApiError } from "@/lib/api/client";
 
 import { DepartmentDialog } from "./department-dialog";
 import { PositionDialog } from "./position-dialog";
+import { OrgChart } from "./org-chart";
 import { JOB_LEVELS } from "./schema";
 import {
   useDepartments,
@@ -40,7 +41,7 @@ function levelLabel(level: number): string {
 }
 
 export function OrganizationView() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const canCreate = can("employee:create");
   const canUpdate = can("employee:update");
   const canDelete = can("employee:delete");
@@ -149,7 +150,18 @@ export function OrganizationView() {
       <TabsList>
         <TabsTrigger value="departments">ฝ่าย / แผนก</TabsTrigger>
         <TabsTrigger value="positions">ตำแหน่ง / ระดับ</TabsTrigger>
+        <TabsTrigger value="chart">ผังองค์กร</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="chart">
+        {deptQuery.isLoading ? (
+          <TableLoadingState rows={4} />
+        ) : deptQuery.isError ? (
+          <ErrorState onRetry={() => deptQuery.refetch()} />
+        ) : (
+          <OrgChart tree={tree} companyName={user.company?.name} />
+        )}
+      </TabsContent>
 
       {/* Departments */}
       <TabsContent value="departments" className="space-y-3">
