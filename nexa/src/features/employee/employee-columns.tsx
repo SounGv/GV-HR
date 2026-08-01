@@ -56,13 +56,27 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
       id: "department",
       header: "แผนก",
       enableSorting: false,
-      cell: ({ row }) => row.original.department?.name ?? "-",
+      cell: ({ row }) => {
+        const v = row.original.department?.name ?? "-";
+        return (
+          <div className="max-w-[180px] truncate text-sm" title={v}>
+            {v}
+          </div>
+        );
+      },
     },
     {
       id: "position",
       header: "ตำแหน่ง",
       enableSorting: false,
-      cell: ({ row }) => row.original.position?.title ?? "-",
+      cell: ({ row }) => {
+        const v = row.original.position?.title ?? "-";
+        return (
+          <div className="max-w-[180px] truncate text-sm" title={v}>
+            {v}
+          </div>
+        );
+      },
     },
     {
       id: "employmentType",

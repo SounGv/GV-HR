@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmployeeStatusBadge } from "@/features/employee/status-badge";
 import { EditEmployeeButton } from "@/features/employee/edit-employee-button";
+import { EmployeeAccountButton } from "@/features/employee/employee-account-button";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
 import { fullName, getInitials, formatDate, formatCurrency } from "@/lib/format";
 
@@ -40,7 +41,16 @@ export default async function EmployeeDetailPage({
         <Button variant="ghost" size="sm" render={<Link href="/employees" />}>
           <ArrowLeft className="size-4" /> กลับ
         </Button>
-        {canEdit && <EditEmployeeButton employee={serializeEmployeeDetail(employee)} />}
+        {canEdit && (
+          <div className="flex items-center gap-2">
+            <EmployeeAccountButton
+              employeeId={employee.id}
+              hasAccount={!!employee.userId}
+              defaultEmail={employee.email}
+            />
+            <EditEmployeeButton employee={serializeEmployeeDetail(employee)} />
+          </div>
+        )}
       </div>
 
       {/* Profile header */}
