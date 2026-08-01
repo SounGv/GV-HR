@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 export const clockSchema = z.object({
-  lat: z.number().finite(),
-  lng: z.number().finite(),
-  accuracy: z.number().finite().optional(),
+  // Location is best-effort: the client sends it when GPS is granted. The server
+  // only *requires* it when the employee's branch has a geofence configured.
+  lat: z.number().finite().nullish(),
+  lng: z.number().finite().nullish(),
+  accuracy: z.number().finite().nullish(),
 });
 export type ClockInput = z.infer<typeof clockSchema>;
 

@@ -41,12 +41,21 @@ export function ClockCard() {
   async function handleClock(kind: "in" | "out") {
     setBusy(kind);
     try {
-      const pos = await getCurrentPosition();
-      const payload = {
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-      };
+      // Location is best-effort: try to read GPS, but don't block check-in if the
+      // user denies/has no GPS. The server enforces it only when the branch has a
+      // geofence — and returns a clear message asking to enable GPS in that case.
+      let payload: { lat?: number; lng?: number; accuracy?: number } = {};
+      try {
+        const pos = await getCurrentPosition();
+        payload = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        };
+      } catch {
+        /* no location — server decides whether it's required */
+      }
+
       if (kind === "in") {
         await clockInMut.mutateAsync(payload);
         toast.success("เช็คอินสำเร็จ");

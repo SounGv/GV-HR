@@ -7,6 +7,7 @@ export const REPORT_TYPES = [
   "overtime",
   "payroll",
   "expense",
+  "performance",
   "training",
 ] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
@@ -18,6 +19,7 @@ export const REPORT_LABELS: Record<ReportType, string> = {
   overtime: "สรุป OT (รายเดือน)",
   payroll: "สรุปเงินเดือน (รายงวด)",
   expense: "สรุปเบิกจ่าย (รายเดือน)",
+  performance: "สรุปผลประเมิน",
   training: "สรุปการอบรม",
 };
 
@@ -29,6 +31,7 @@ export const REPORT_PERIOD_KIND: Record<ReportType, "month" | "year" | "none"> =
   overtime: "month",
   payroll: "month",
   expense: "month",
+  performance: "none",
   training: "none",
 };
 

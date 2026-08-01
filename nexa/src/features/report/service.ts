@@ -297,6 +297,52 @@ export async function getReport(
     };
   }
 
+  if (type === "performance") {
+    // Latest review per employee (most recent cycle).
+    const reviews = await prisma.performanceReview.findMany({
+      where: { companyId, deletedAt: null },
+      select: {
+        cycle: true,
+        overallScore: true,
+        band: true,
+        createdAt: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    const map = new Map<string, { name: string; cycle: string; score: number; band: string }>();
+    for (const r of reviews) {
+      const code = r.employee.employeeCode;
+      if (map.has(code)) continue; // first seen = latest (desc order)
+      map.set(code, {
+        name: `${r.employee.firstName} ${r.employee.lastName}`,
+        cycle: r.cycle,
+        score: Math.round(r.overallScore * 10) / 10,
+        band: r.band,
+      });
+    }
+    return {
+      title,
+      period: null,
+      columns: [
+        { key: "code", label: "รหัส" },
+        { key: "name", label: "ชื่อ-สกุล" },
+        { key: "cycle", label: "รอบล่าสุด" },
+        { key: "score", label: "คะแนนรวม", numeric: true },
+        { key: "band", label: "ระดับ" },
+      ],
+      rows: [...map.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([code, v]) => ({
+          code,
+          name: v.name,
+          cycle: v.cycle,
+          score: v.score,
+          band: v.band,
+        })),
+    };
+  }
+
   // training
   const enrollments = await prisma.trainingEnrollment.findMany({
     where: { companyId, status: { not: "CANCELLED" } },

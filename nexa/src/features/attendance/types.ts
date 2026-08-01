@@ -21,7 +21,7 @@ export interface AttendanceRecord {
 export type AttendanceScope = "me" | "team" | "all";
 
 export interface ClockPayload {
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
   accuracy?: number;
 }
