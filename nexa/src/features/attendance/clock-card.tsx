@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, LogIn, LogOut, MapPin, CheckCircle2 } from "lucide-react";
+import { Loader2, LogIn, LogOut, MapPin, CheckCircle2, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -81,18 +81,24 @@ export function ClockCard() {
     : "--:--:--";
 
   return (
-    <section className="overflow-hidden rounded-2xl bg-sidebar p-6 text-white sm:p-8">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-2">
+    <section className="relative overflow-hidden rounded-3xl bg-sidebar p-6 text-white sm:p-8">
+      <div className="pointer-events-none absolute -top-24 -right-16 size-80 rounded-full bg-primary/25 blur-[100px]" />
+      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-2.5">
           <p className="text-sm text-slate-400">{todayLabel}</p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-mono text-4xl font-semibold tracking-tight tabular-nums">
+          <div className="flex items-baseline gap-3">
+            <span className="font-mono text-5xl font-semibold tracking-tight tabular-nums">
               {clockLabel}
             </span>
             {record && <AttendanceStatusBadge status={record.status} />}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <MapPin className="size-3.5" /> ต้องอยู่ในพื้นที่สาขาเพื่อลงเวลา
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-2.5 py-1 text-xs font-medium text-success">
+              <span className="size-1.5 rounded-full bg-success" /> ระบบ GPS + Geofence พร้อม
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+              <MapPin className="size-3.5" /> ลงเวลาได้เมื่ออยู่ในพื้นที่สาขา
+            </span>
           </div>
         </div>
 
@@ -120,7 +126,7 @@ export function ClockCard() {
           ) : (
             <Button
               size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="gap-2 bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90"
               disabled={busy !== null}
               onClick={() => handleClock("in")}
             >
@@ -130,13 +136,14 @@ export function ClockCard() {
                 <LogIn className="size-4" />
               )}
               เช็คอิน
+              <QrCode className="size-4 opacity-80" />
             </Button>
           )}
         </div>
       </div>
 
       {/* In / out summary */}
-      <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-5">
+      <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-5">
         <div>
           <p className="text-xs text-slate-400">เวลาเข้า</p>
           <p className="mt-0.5 font-mono text-lg font-medium tabular-nums">

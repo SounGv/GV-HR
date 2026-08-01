@@ -12,8 +12,8 @@ export default async function AttendancePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="เวลาเข้า-ออกงาน"
-        description="เช็คอิน/เช็คเอาท์ด้วย GPS และดูประวัติการลงเวลาของคุณ"
+        title="Smart Attendance"
+        description="เช็คอิน/เช็คเอาท์อัจฉริยะด้วย GPS + Geofence และดูประวัติการลงเวลาของคุณ"
       />
       <ClockCard />
       <div className="space-y-3">
