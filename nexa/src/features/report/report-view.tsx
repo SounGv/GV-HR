@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -24,10 +31,12 @@ import {
 } from "@/components/ui/table";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
+import { sendChat } from "@/features/ai/api";
 import { cn } from "@/lib/utils";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import { REPORT_LABELS, REPORT_PERIOD_KIND, REPORT_TYPES, type ReportType } from "./schema";
 import { useReport } from "./hooks";
+import type { ReportResult } from "./types";
 
 function defaultPeriod(type: ReportType): string {
   const d = new Date();
@@ -41,12 +50,38 @@ function fmtNum(v: string | number) {
   return typeof v === "number" ? v.toLocaleString("th-TH") : v;
 }
 
+/** Render the report as a compact text table the AI can reason over. */
+function reportToPrompt(label: string, result: ReportResult): string {
+  const MAX_ROWS = 60;
+  const header = result.columns.map((c) => c.label).join(" | ");
+  const body = result.rows
+    .slice(0, MAX_ROWS)
+    .map((row) => result.columns.map((c) => String(row[c.key] ?? "")).join(" | "))
+    .join("\n");
+  const omitted =
+    result.rows.length > MAX_ROWS ? `\n(แสดง ${MAX_ROWS} จาก ${result.rows.length} แถว)` : "";
+  return [
+    `นี่คือรายงาน "${label}"${result.period ? ` งวด ${result.period}` : ""} จากระบบ NEXA`,
+    "",
+    header,
+    body,
+    omitted,
+    "",
+    "ช่วยสรุปเชิงผู้บริหาร (3-5 bullet): แนวโน้ม จุดที่ควรสนใจ ค่าผิดปกติ และข้อเสนอแนะเชิงปฏิบัติ",
+    "ตอบเป็นภาษาไทยกระชับ อ้างอิงตัวเลขจากตารางนี้เท่านั้น ไม่ต้องเรียกเครื่องมือใด",
+  ].join("\n");
+}
+
 export function ReportView() {
   const { can } = useAuth();
   const canExport = can("report:export");
+  const canAi = can("ai:read");
 
   const [type, setType] = useState<ReportType>("employees");
   const [period, setPeriod] = useState<string>(defaultPeriod("employees"));
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiText, setAiText] = useState("");
 
   const kind = REPORT_PERIOD_KIND[type];
   const { data, isLoading, isError, refetch } = useReport(type, period || undefined);
@@ -63,6 +98,22 @@ export function ReportView() {
     const name = `${type}${result.period ? `-${result.period}` : ""}`;
     downloadCsv(name, csv);
     toast.success("ดาวน์โหลด CSV แล้ว");
+  }
+
+  async function summarizeWithAi() {
+    if (!result) return;
+    setAiOpen(true);
+    setAiLoading(true);
+    setAiText("");
+    try {
+      const prompt = reportToPrompt(REPORT_LABELS[type], result);
+      const res = await sendChat([{ role: "user", content: prompt }]);
+      setAiText(res.data.reply);
+    } catch {
+      setAiText("ขออภัย ไม่สามารถวิเคราะห์รายงานได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   return (
@@ -106,11 +157,28 @@ export function ReportView() {
           )}
         </div>
 
-        {canExport && (
-          <Button variant="outline" onClick={exportCsv} disabled={!result || result.rows.length === 0}>
-            <Download className="size-4" /> ส่งออก CSV
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canAi && (
+            <Button
+              variant="outline"
+              onClick={summarizeWithAi}
+              disabled={!result || result.rows.length === 0 || aiLoading}
+              className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+            >
+              {aiLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
+              AI สรุปรายงาน
+            </Button>
+          )}
+          {canExport && (
+            <Button variant="outline" onClick={exportCsv} disabled={!result || result.rows.length === 0}>
+              <Download className="size-4" /> ส่งออก CSV
+            </Button>
+          )}
+        </div>
       </div>
 
       {isError ? (
@@ -149,6 +217,32 @@ export function ReportView() {
       {result && result.rows.length > 0 && (
         <p className="text-sm text-muted-foreground">รวม {result.rows.length} รายการ</p>
       )}
+
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
+                <Sparkles className="size-4 text-primary" />
+              </span>
+              AI สรุปรายงาน · {REPORT_LABELS[type]}
+            </DialogTitle>
+            <DialogDescription>
+              วิเคราะห์โดย NEXA AI จากข้อมูลรายงานปัจจุบัน
+            </DialogDescription>
+          </DialogHeader>
+          {aiLoading ? (
+            <div className="flex items-center gap-3 py-8 text-sm text-muted-foreground">
+              <Loader2 className="size-5 animate-spin text-primary" />
+              กำลังวิเคราะห์รายงาน...
+            </div>
+          ) : (
+            <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+              {aiText}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
