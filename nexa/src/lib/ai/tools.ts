@@ -1,4 +1,4 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import { SchemaType, type FunctionDeclaration } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -15,11 +15,22 @@ const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : u
 
 type Meta = { ip?: string; userAgent?: string };
 
+export interface NexaTool {
+  name: string;
+  description: string;
+  input_schema: {
+    type: "object";
+    properties: Record<string, unknown>;
+    required?: string[];
+    additionalProperties?: boolean;
+  };
+}
+
 /**
- * Tool definitions exposed to Claude. These make NEXA AI *grounded*: it fetches
- * real, company-scoped, permission-checked HR data instead of hallucinating.
+ * Tool definitions exposed to the model. These make NEXA AI *grounded*: it
+ * fetches real, company-scoped, permission-checked HR data instead of guessing.
  */
-export const NEXA_TOOLS: Anthropic.Tool[] = [
+export const NEXA_TOOLS: NexaTool[] = [
   {
     name: "get_headcount",
     description:
@@ -321,4 +332,44 @@ export async function executeTool(
   } catch (err) {
     return `เกิดข้อผิดพลาดในการเรียกข้อมูล: ${err instanceof Error ? err.message : "unknown"}`;
   }
+}
+
+/* ── Convert our JSON-schema tool defs into Gemini function declarations ── */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function toGeminiSchema(s: any): any {
+  if (!s || typeof s !== "object") return undefined;
+  const out: any = {};
+  if (s.type) out.type = s.type as SchemaType; // JSON-schema type strings match SchemaType values
+  if (s.description) out.description = s.description;
+  if (Array.isArray(s.enum)) {
+    out.enum = s.enum;
+    out.format = "enum";
+  }
+  if (s.type === "object") {
+    const props = (s.properties ?? {}) as Record<string, unknown>;
+    out.properties = {};
+    for (const [k, v] of Object.entries(props)) out.properties[k] = toGeminiSchema(v);
+    if (Array.isArray(s.required)) out.required = s.required;
+  }
+  if (s.type === "array" && s.items) out.items = toGeminiSchema(s.items);
+  return out;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
+/** JSON schema → Gemini responseSchema (for structured JSON output). */
+export function jsonSchemaToGemini(schema: Record<string, unknown>) {
+  return toGeminiSchema(schema);
+}
+
+/** All NEXA tools as Gemini function declarations. */
+export function toGeminiTools(): FunctionDeclaration[] {
+  return NEXA_TOOLS.map((t) => {
+    const hasProps = Object.keys(t.input_schema.properties ?? {}).length > 0;
+    return {
+      name: t.name,
+      description: t.description,
+      ...(hasProps ? { parameters: toGeminiSchema(t.input_schema) } : {}),
+    } as FunctionDeclaration;
+  });
 }

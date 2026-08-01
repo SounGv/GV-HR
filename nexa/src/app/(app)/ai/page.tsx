@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Database, Globe, Bell, Sparkles } from "lucide-react";
+import { Database, Calculator, Bell, Sparkles } from "lucide-react";
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { Card } from "@/components/ui/card";
 import { AiChatView } from "@/features/ai/ai-chat-view";
@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "NEXA AI" };
 
 const CAPABILITIES = [
   { icon: Database, label: "ดึงข้อมูลจริงจากระบบ" },
-  { icon: Globe, label: "ค้นเว็บแบบเรียลไทม์" },
+  { icon: Calculator, label: "คำนวณเงินเดือน/ภาษี" },
   { icon: Bell, label: "ส่งแจ้งเตือน & ประกาศ" },
   { icon: Sparkles, label: "ออกแบบเกณฑ์ประเมิน" },
 ];
