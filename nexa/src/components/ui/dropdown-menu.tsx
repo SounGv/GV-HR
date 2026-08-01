@@ -57,11 +57,15 @@ function DropdownMenuLabel({
   className,
   inset,
   ...props
-}: MenuPrimitive.GroupLabel.Props & {
+}: React.ComponentProps<"div"> & {
   inset?: boolean
 }) {
+  // Plain <div>, NOT Base UI's Menu.GroupLabel: GroupLabel requires a
+  // surrounding <Menu.Group> (DropdownMenuGroup) and throws "MenuGroupContext is
+  // missing" (Base UI error #31) when used as a standalone header, which is the
+  // common shadcn usage. A div carries the same styling without that constraint.
   return (
-    <MenuPrimitive.GroupLabel
+    <div
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn(
