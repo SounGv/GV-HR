@@ -1,13 +1,23 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
 import { announcementUpdateSchema } from "@/features/announcement/schema";
-import { deleteAnnouncement, updateAnnouncement } from "@/features/announcement/service";
+import { getAnnouncement, deleteAnnouncement, updateAnnouncement } from "@/features/announcement/service";
 import { ok, handleApiError } from "@/lib/api/response";
 import { getRequestMeta } from "@/lib/api/request";
 
 export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+export async function GET(_req: NextRequest, { params }: Ctx) {
+  try {
+    const session = await requirePermission("announcement:read");
+    const { id } = await params;
+    return ok(await getAnnouncement(session.companyId, id));
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   try {

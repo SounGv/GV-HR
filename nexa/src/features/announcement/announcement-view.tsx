@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Pin, Pencil, Trash2, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,7 +14,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/client";
 
-import { AnnouncementDialog } from "./announcement-dialog";
 import { useAnnouncements, useDeleteAnnouncement } from "./hooks";
 import type { Announcement } from "./types";
 
@@ -78,15 +78,8 @@ function Feed() {
 function Manage() {
   const { data, isLoading, isError, refetch } = useAnnouncements("manage");
   const deleteMut = useDeleteAnnouncement();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Announcement | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Announcement | null>(null);
   const items = data?.data ?? [];
-
-  function openCreate() {
-    setEditing(null);
-    setDialogOpen(true);
-  }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
@@ -103,7 +96,7 @@ function Manage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประกาศทั้งหมด</h2>
-        <Button onClick={openCreate}>
+        <Button render={<Link href="/announcements/new" />}>
           <Plus className="size-4" /> สร้างประกาศ
         </Button>
       </div>
@@ -140,10 +133,7 @@ function Manage() {
                   variant="ghost"
                   size="icon-sm"
                   aria-label="แก้ไข"
-                  onClick={() => {
-                    setEditing(a);
-                    setDialogOpen(true);
-                  }}
+                  render={<Link href={`/announcements/${a.id}/edit`} />}
                 >
                   <Pencil className="size-4" />
                 </Button>
@@ -160,13 +150,6 @@ function Manage() {
           ))}
         </div>
       )}
-
-      <AnnouncementDialog
-        key={editing?.id ?? "new"}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        announcement={editing}
-      />
 
       <ConfirmDialog
         open={!!deleteTarget}
