@@ -2,11 +2,21 @@ import { type NextRequest } from "next/server";
 import { requireSession, requirePermission } from "@/lib/auth/guard";
 import { can } from "@/lib/auth/rbac";
 import { goalUpdateSchema, goalProgressSchema } from "@/features/kpi/schema";
-import { updateGoal, updateGoalProgress, deleteGoal } from "@/features/kpi/service";
+import { getGoal, updateGoal, updateGoalProgress, deleteGoal } from "@/features/kpi/service";
 import { ok, handleApiError } from "@/lib/api/response";
 import { getRequestMeta } from "@/lib/api/request";
 
 export const runtime = "nodejs";
+
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await requirePermission("kpi:read");
+    const { id } = await params;
+    return ok(await getGoal(session.companyId, id));
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
