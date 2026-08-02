@@ -122,6 +122,15 @@ export async function getMonth(
   return { month: m, items };
 }
 
+export async function getEvent(companyId: string, id: string) {
+  const event = await prisma.calendarEvent.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, title: true, description: true, type: true, startDate: true, endDate: true },
+  });
+  if (!event) throw NotFound("ไม่พบกิจกรรม");
+  return event;
+}
+
 export async function createEvent(
   companyId: string,
   session: AccessClaims,
