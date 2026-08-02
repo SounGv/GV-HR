@@ -52,6 +52,15 @@ export async function listAnnouncements(
   });
 }
 
+export async function getAnnouncement(companyId: string, id: string) {
+  const announcement = await prisma.announcement.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select,
+  });
+  if (!announcement) throw NotFound("ไม่พบประกาศ");
+  return announcement;
+}
+
 export async function createAnnouncement(
   companyId: string,
   session: AccessClaims,
