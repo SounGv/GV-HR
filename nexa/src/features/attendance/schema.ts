@@ -9,6 +9,9 @@ export const clockSchema = z.object({
   // Selfie proof (data URL, ~<=3MB) + device UA string — both optional.
   photo: z.string().max(3_000_000).nullish(),
   device: z.string().max(400).nullish(),
+  // When the employee is outside the branch geofence, they may still clock in by
+  // explaining why (working off-site). Required only in that case (enforced server-side).
+  offsiteReason: z.string().trim().max(500).nullish(),
 });
 export type ClockInput = z.infer<typeof clockSchema>;
 

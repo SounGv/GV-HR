@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
+import { AppError, BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import { checkGeofence } from "@/lib/geo";
 import { bangkokParts, lateOrPresent } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -53,14 +53,20 @@ async function loadEmployeeWithBranch(companyId: string, employeeId: string) {
  *  - Geofence configured but no GPS point supplied → ask the user to enable GPS.
  *  - Geofence configured + point → must be within the radius.
  */
+/**
+ * Enforce the branch geofence. Returns the measured distance and whether the
+ * point is outside the radius. Being outside is NOT a hard error here — the
+ * caller decides (allow with an off-site reason, otherwise reject). Missing GPS
+ * on a geofenced branch is still a hard error.
+ */
 function enforceGeofence(
   branch: { name: string; lat: number | null; lng: number | null; radiusMeters: number | null } | null,
   point: ClockInput,
-) {
+): { distance: number | null; outside: boolean; branchName: string | null } {
   const hasGeofence =
     !!branch && branch.lat != null && branch.lng != null && branch.radiusMeters != null;
   if (!hasGeofence) {
-    return { distance: null as number | null };
+    return { distance: null, outside: false, branchName: branch?.name ?? null };
   }
   if (point.lat == null || point.lng == null) {
     throw BadRequest(
@@ -71,12 +77,29 @@ function enforceGeofence(
     { lat: point.lat, lng: point.lng },
     { lat: branch!.lat!, lng: branch!.lng!, radiusMeters: branch!.radiusMeters! },
   );
-  if (!withinRadius) {
-    throw Forbidden(
-      `อยู่นอกพื้นที่ทำงาน (${branch!.name}) — ห่าง ${Math.round(distance)} เมตร`,
+  return { distance, outside: !withinRadius, branchName: branch!.name };
+}
+
+/**
+ * When outside the geofence: require an off-site reason. Without one, reject with
+ * `details.offsite` so the client can prompt for it. With one, return the note to
+ * store on the record.
+ */
+function resolveOffsite(
+  geo: { distance: number | null; outside: boolean; branchName: string | null },
+  reason: string | null | undefined,
+): string | null {
+  if (!geo.outside) return null;
+  const trimmed = reason?.trim();
+  if (!trimmed) {
+    throw new AppError(
+      "FORBIDDEN",
+      403,
+      `อยู่นอกพื้นที่ทำงาน (${geo.branchName}) — ห่าง ${Math.round(geo.distance ?? 0)} เมตร กรุณาระบุเหตุผลการทำงานนอกสถานที่`,
+      { offsite: true, distance: Math.round(geo.distance ?? 0), branchName: geo.branchName },
     );
   }
-  return { distance };
+  return `ทำงานนอกสถานที่ (ห่าง ${Math.round(geo.distance ?? 0)} ม.): ${trimmed}`;
 }
 
 export async function getToday(companyId: string, session: AccessClaims) {
@@ -96,7 +119,9 @@ export async function clockIn(
 ) {
   const employeeId = requireEmployeeId(session);
   const employee = await loadEmployeeWithBranch(companyId, employeeId);
-  const { distance } = enforceGeofence(employee.branch, input);
+  const geo = enforceGeofence(employee.branch, input);
+  const offsiteNote = resolveOffsite(geo, input.offsiteReason);
+  const distance = geo.distance;
 
   const bp = bangkokParts();
   const now = new Date();
@@ -124,6 +149,7 @@ export async function clockIn(
       clockInPhotoUrl: input.photo ?? null,
       clockInDevice: input.device ?? null,
       clockInBranchId: employee.branch?.id ?? null,
+      note: offsiteNote,
       status,
       createdById: session.sub,
       updatedById: session.sub,
@@ -137,6 +163,7 @@ export async function clockIn(
       clockInPhotoUrl: input.photo ?? null,
       clockInDevice: input.device ?? null,
       clockInBranchId: employee.branch?.id ?? null,
+      ...(offsiteNote ? { note: offsiteNote } : {}),
       status,
       updatedById: session.sub,
     },

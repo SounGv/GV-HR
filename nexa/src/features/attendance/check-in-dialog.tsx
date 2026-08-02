@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { getCurrentPosition } from "@/lib/geolocation";
 import { ApiError } from "@/lib/api/client";
 import { useClockIn, useClockOut } from "./hooks";
@@ -40,6 +41,10 @@ export function CheckInDialog({
   const [camError, setCamError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
+  // Off-site: revealed after the server rejects an out-of-geofence check-in. The
+  // employee explains why (e.g. field work) and re-submits.
+  const [offsite, setOffsite] = useState<{ distance: number; branchName: string | null } | null>(null);
+  const [offsiteReason, setOffsiteReason] = useState("");
 
   // GPS: acquire on open, reset photo.
   useEffect(() => {
@@ -48,6 +53,8 @@ export function CheckInDialog({
     setCoords(null);
     setGpsState("loading");
     setPhoto(null);
+    setOffsite(null);
+    setOffsiteReason("");
     getCurrentPosition()
       .then((pos) => {
         if (cancelled) return;
@@ -114,6 +121,11 @@ export function CheckInDialog({
   }
 
   async function submit() {
+    // If we're in the off-site flow, a reason is required before re-submitting.
+    if (offsite && !offsiteReason.trim()) {
+      toast.error("กรุณาระบุเหตุผลการทำงานนอกสถานที่");
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
@@ -122,6 +134,7 @@ export function CheckInDialog({
         accuracy: coords?.accuracy,
         photo: photo ?? undefined,
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
+        offsiteReason: offsiteReason.trim() || undefined,
       };
       if (kind === "in") await clockIn.mutateAsync(payload);
       else await clockOut.mutateAsync(payload);
@@ -129,7 +142,14 @@ export function CheckInDialog({
       onOpenChange(false);
       onDone?.();
     } catch (err) {
-      toast.error(err instanceof ApiError || err instanceof Error ? err.message : "ลงเวลาไม่สำเร็จ");
+      // Outside the geofence → reveal the off-site reason field instead of failing.
+      const details = err instanceof ApiError ? (err.details as { offsite?: boolean; distance?: number; branchName?: string | null } | undefined) : undefined;
+      if (details?.offsite) {
+        setOffsite({ distance: details.distance ?? 0, branchName: details.branchName ?? null });
+        toast.warning("อยู่นอกพื้นที่ทำงาน — กรุณาระบุเหตุผลเพื่อลงเวลานอกสถานที่");
+      } else {
+        toast.error(err instanceof ApiError || err instanceof Error ? err.message : "ลงเวลาไม่สำเร็จ");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -215,9 +235,31 @@ export function CheckInDialog({
             )}
           </div>
 
+          {/* Off-site: shown after the server flags an out-of-geofence check-in */}
+          {offsite && (
+            <div className="space-y-2 rounded-xl border border-warning/40 bg-warning/10 p-3">
+              <div className="flex items-start gap-2 text-sm text-warning">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  อยู่นอกพื้นที่ทำงาน{offsite.branchName ? ` (${offsite.branchName})` : ""} — ห่าง{" "}
+                  {offsite.distance.toLocaleString()} เมตร ระบุเหตุผลการทำงานนอกสถานที่เพื่อลงเวลา
+                </span>
+              </div>
+              <Textarea
+                rows={2}
+                autoFocus
+                value={offsiteReason}
+                onChange={(e) => setOffsiteReason(e.target.value)}
+                placeholder="เช่น ออกพบลูกค้า / ส่งของนอกสถานที่ / ทำงานไซต์งาน"
+              />
+            </div>
+          )}
+
           <Button type="button" className="w-full" onClick={submit} disabled={submitting || gpsState === "loading"}>
             {submitting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-            ยืนยัน{kind === "in" ? "เช็คอิน" : "เช็คเอาท์"}
+            {offsite
+              ? `ยืนยันลงเวลานอกสถานที่`
+              : `ยืนยัน${kind === "in" ? "เช็คอิน" : "เช็คเอาท์"}`}
           </Button>
           {!photo && !camError && (
             <p className="text-center text-xs text-muted-foreground">แนะนำให้ถ่ายรูปก่อนยืนยัน</p>

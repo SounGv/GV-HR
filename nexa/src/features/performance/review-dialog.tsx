@@ -133,7 +133,14 @@ export function ReviewDialog({
                     <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="เลือกพนักงาน" />
+                          <SelectValue placeholder="เลือกพนักงาน">
+                            {(value) => {
+                              const m = (orgData?.data.managers ?? []).find((x) => x.id === value);
+                              return m
+                                ? `${m.firstName} ${m.lastName} (${m.employeeCode})`
+                                : "เลือกพนักงาน";
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
