@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -98,56 +99,75 @@ export function EmployeeForm({
 
   return (
     <Form {...form}>
-      <form id={formId} onSubmit={form.handleSubmit(submit)} className="space-y-8">
-        <Section title="ข้อมูลส่วนตัว">
-          <TextField form={form} name="employeeCode" label="รหัสพนักงาน *" />
-          <TextField form={form} name="nickname" label="ชื่อเล่น" />
-          <TextField form={form} name="firstName" label="ชื่อ *" />
-          <TextField form={form} name="lastName" label="นามสกุล *" />
-          <TextField form={form} name="firstNameEn" label="ชื่อ (EN)" />
-          <TextField form={form} name="lastNameEn" label="นามสกุล (EN)" />
-          <SelectField form={form} name="gender" label="เพศ" placeholder="เลือกเพศ"
-            options={GENDERS.map((g) => ({ value: g, label: GENDER_LABEL[g] }))} clearable />
-          <SelectField form={form} name="maritalStatus" label="สถานภาพ" placeholder="เลือกสถานภาพ"
-            options={MARITAL.map((m) => ({ value: m, label: MARITAL_LABEL[m] }))} clearable />
-          <DateField form={form} name="dateOfBirth" label="วันเกิด" />
-          <TextField form={form} name="nationalId" label="เลขบัตรประชาชน" />
-          <TextField form={form} name="email" label="อีเมล" type="email" />
-          <TextField form={form} name="phone" label="เบอร์โทร" />
-        </Section>
+      <form id={formId} onSubmit={form.handleSubmit(submit)}>
+        <Tabs defaultValue="personal" className="gap-6">
+          <div className="overflow-x-auto">
+            <TabsList variant="line" className="h-auto flex-nowrap">
+              <TabsTrigger value="personal">ข้อมูลส่วนตัว</TabsTrigger>
+              <TabsTrigger value="employment">การจ้างงาน</TabsTrigger>
+              <TabsTrigger value="payroll">เงินเดือน &amp; บัญชี</TabsTrigger>
+              <TabsTrigger value="address">ที่อยู่</TabsTrigger>
+            </TabsList>
+          </div>
 
-        <Section title="การจ้างงาน">
-          <SelectField form={form} name="branchId" label="สาขา" placeholder="เลือกสาขา" clearable
-            options={(orgOptions?.branches ?? []).map((b) => ({ value: b.id, label: b.name }))} />
-          <SelectField form={form} name="departmentId" label="แผนก" placeholder="เลือกแผนก" clearable
-            options={(orgOptions?.departments ?? []).map((d) => ({ value: d.id, label: d.name }))} />
-          <SelectField form={form} name="positionId" label="ตำแหน่ง" placeholder="เลือกตำแหน่ง" clearable
-            options={(orgOptions?.positions ?? []).map((p) => ({ value: p.id, label: p.title }))} />
-          <SelectField form={form} name="managerId" label="หัวหน้างาน" placeholder="เลือกหัวหน้างาน" clearable
-            options={(orgOptions?.managers ?? []).map((m) => ({
-              value: m.id,
-              label: `${m.firstName} ${m.lastName} (${m.employeeCode})`,
-            }))} />
-          <SelectField form={form} name="employmentType" label="ประเภทการจ้าง"
-            options={EMPLOYMENT_TYPES.map((t) => ({ value: t, label: EMPLOYMENT_LABEL[t] }))} />
-          <SelectField form={form} name="status" label="สถานะ"
-            options={EMPLOYEE_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
-          <DateField form={form} name="hireDate" label="วันเริ่มงาน" />
-          <DateField form={form} name="probationEndDate" label="สิ้นสุดทดลองงาน" />
-        </Section>
+          <TabsContent value="personal" keepMounted>
+            <FieldGrid>
+              <TextField form={form} name="employeeCode" label="รหัสพนักงาน *" />
+              <TextField form={form} name="nickname" label="ชื่อเล่น" />
+              <TextField form={form} name="firstName" label="ชื่อ *" />
+              <TextField form={form} name="lastName" label="นามสกุล *" />
+              <TextField form={form} name="firstNameEn" label="ชื่อ (EN)" />
+              <TextField form={form} name="lastNameEn" label="นามสกุล (EN)" />
+              <SelectField form={form} name="gender" label="เพศ" placeholder="เลือกเพศ"
+                options={GENDERS.map((g) => ({ value: g, label: GENDER_LABEL[g] }))} clearable />
+              <SelectField form={form} name="maritalStatus" label="สถานภาพ" placeholder="เลือกสถานภาพ"
+                options={MARITAL.map((m) => ({ value: m, label: MARITAL_LABEL[m] }))} clearable />
+              <DateField form={form} name="dateOfBirth" label="วันเกิด" />
+              <TextField form={form} name="nationalId" label="เลขบัตรประชาชน" />
+              <TextField form={form} name="email" label="อีเมล" type="email" />
+              <TextField form={form} name="phone" label="เบอร์โทร" />
+            </FieldGrid>
+          </TabsContent>
 
-        <Section title="เงินเดือนและบัญชีธนาคาร">
-          <TextField form={form} name="baseSalary" label="เงินเดือนพื้นฐาน (บาท)" type="number" />
-          <TextField form={form} name="bankName" label="ธนาคาร" />
-          <TextField form={form} name="bankAccountNo" label="เลขที่บัญชี" />
-        </Section>
+          <TabsContent value="employment" keepMounted>
+            <FieldGrid>
+              <SelectField form={form} name="branchId" label="สาขา" placeholder="เลือกสาขา" clearable
+                options={(orgOptions?.branches ?? []).map((b) => ({ value: b.id, label: b.name }))} />
+              <SelectField form={form} name="departmentId" label="แผนก" placeholder="เลือกแผนก" clearable
+                options={(orgOptions?.departments ?? []).map((d) => ({ value: d.id, label: d.name }))} />
+              <SelectField form={form} name="positionId" label="ตำแหน่ง" placeholder="เลือกตำแหน่ง" clearable
+                options={(orgOptions?.positions ?? []).map((p) => ({ value: p.id, label: p.title }))} />
+              <SelectField form={form} name="managerId" label="หัวหน้างาน" placeholder="เลือกหัวหน้างาน" clearable
+                options={(orgOptions?.managers ?? []).map((m) => ({
+                  value: m.id,
+                  label: `${m.firstName} ${m.lastName} (${m.employeeCode})`,
+                }))} />
+              <SelectField form={form} name="employmentType" label="ประเภทการจ้าง"
+                options={EMPLOYMENT_TYPES.map((t) => ({ value: t, label: EMPLOYMENT_LABEL[t] }))} />
+              <SelectField form={form} name="status" label="สถานะ"
+                options={EMPLOYEE_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
+              <DateField form={form} name="hireDate" label="วันเริ่มงาน" />
+              <DateField form={form} name="probationEndDate" label="สิ้นสุดทดลองงาน" />
+            </FieldGrid>
+          </TabsContent>
 
-        <Section title="ที่อยู่">
-          <TextField form={form} name="addressLine" label="ที่อยู่" className="sm:col-span-2" />
-          <TextField form={form} name="district" label="อำเภอ/เขต" />
-          <TextField form={form} name="province" label="จังหวัด" />
-          <TextField form={form} name="postalCode" label="รหัสไปรษณีย์" />
-        </Section>
+          <TabsContent value="payroll" keepMounted>
+            <FieldGrid>
+              <TextField form={form} name="baseSalary" label="เงินเดือนพื้นฐาน (บาท)" type="number" />
+              <TextField form={form} name="bankName" label="ธนาคาร" />
+              <TextField form={form} name="bankAccountNo" label="เลขที่บัญชี" />
+            </FieldGrid>
+          </TabsContent>
+
+          <TabsContent value="address" keepMounted>
+            <FieldGrid>
+              <TextField form={form} name="addressLine" label="ที่อยู่" className="sm:col-span-2" />
+              <TextField form={form} name="district" label="อำเภอ/เขต" />
+              <TextField form={form} name="province" label="จังหวัด" />
+              <TextField form={form} name="postalCode" label="รหัสไปรษณีย์" />
+            </FieldGrid>
+          </TabsContent>
+        </Tabs>
       </form>
     </Form>
   );
@@ -155,13 +175,8 @@ export function EmployeeForm({
 
 /* ── Layout + field helpers ─────────────────────────────────── */
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>
-    </div>
-  );
+function FieldGrid({ children }: { children: React.ReactNode }) {
+  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

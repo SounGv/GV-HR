@@ -1,25 +1,15 @@
-import { cn } from "@/lib/utils";
+import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import type { EmployeeStatus } from "./types";
 import { STATUS_LABEL } from "./labels";
 
-const STATUS_STYLE: Record<EmployeeStatus, string> = {
-  ACTIVE: "bg-success/10 text-success",
-  ON_LEAVE: "bg-warning/10 text-warning",
-  SUSPENDED: "bg-muted text-muted-foreground",
-  TERMINATED: "bg-destructive/10 text-destructive",
-  RESIGNED: "bg-muted text-muted-foreground",
+const STATUS_TONE: Record<EmployeeStatus, StatusTone> = {
+  ACTIVE: "success",
+  ON_LEAVE: "warning",
+  SUSPENDED: "neutral",
+  TERMINATED: "danger",
+  RESIGNED: "neutral",
 };
 
 export function EmployeeStatusBadge({ status }: { status: EmployeeStatus }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-        STATUS_STYLE[status],
-      )}
-    >
-      <span className="size-1.5 rounded-full bg-current" />
-      {STATUS_LABEL[status]}
-    </span>
-  );
+  return <StatusChip tone={STATUS_TONE[status]} label={STATUS_LABEL[status]} />;
 }

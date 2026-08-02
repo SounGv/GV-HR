@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, Pencil } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
 import { getEmployee } from "@/features/employee/service";
-import { serializeEmployeeDetail } from "@/features/employee/serialize";
 import { AppError } from "@/lib/api/errors";
+import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmployeeStatusBadge } from "@/features/employee/status-badge";
-import { EditEmployeeButton } from "@/features/employee/edit-employee-button";
 import { EmployeeAccountButton } from "@/features/employee/employee-account-button";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
 import { fullName, getInitials, formatDate, formatCurrency } from "@/lib/format";
@@ -37,21 +36,27 @@ export default async function EmployeeDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" render={<Link href="/employees" />}>
-          <ArrowLeft className="size-4" /> กลับ
-        </Button>
-        {canEdit && (
-          <div className="flex items-center gap-2">
-            <EmployeeAccountButton
-              employeeId={employee.id}
-              hasAccount={!!employee.userId}
-              defaultEmail={employee.email}
-            />
-            <EditEmployeeButton employee={serializeEmployeeDetail(employee)} />
-          </div>
-        )}
-      </div>
+      <PageHeaderBar
+        breadcrumbs={[{ label: "พนักงาน", href: "/employees" }, { label: name }]}
+        backHref="/employees"
+        title={name}
+        description={`${employee.employeeCode}${employee.position?.title ? ` · ${employee.position.title}` : ""}`}
+        status={<EmployeeStatusBadge status={employee.status} />}
+        actions={
+          canEdit ? (
+            <>
+              <EmployeeAccountButton
+                employeeId={employee.id}
+                hasAccount={!!employee.userId}
+                defaultEmail={employee.email}
+              />
+              <Button variant="outline" size="sm" render={<Link href={`/employees/${employee.id}/edit`} />}>
+                <Pencil className="size-4" /> แก้ไข
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
 
       {/* Profile header */}
       <Card>

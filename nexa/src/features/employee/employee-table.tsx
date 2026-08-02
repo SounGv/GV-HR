@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SortingState } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -20,8 +21,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 
 import { getEmployeeColumns } from "./employee-columns";
-import { EmployeeFormSheet } from "./employee-form-sheet";
-import { useEmployees, useEmployee, useOrgOptions, useDeleteEmployee } from "./hooks";
+import { useEmployees, useOrgOptions, useDeleteEmployee } from "./hooks";
 import { EMPLOYEE_STATUSES } from "./schema";
 import { STATUS_LABEL } from "./labels";
 import type { EmployeeListItem, EmployeeStatus } from "./types";
@@ -70,13 +70,6 @@ export function EmployeeTable() {
   const { data: orgData } = useOrgOptions();
   const deleteMutation = useDeleteEmployee();
 
-  // Create / edit sheet
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const editQuery = useEmployee(editId ?? undefined);
-  const sheetOpen = createOpen || (!!editId && !!editQuery.data);
-  const sheetEmployee = editId ? (editQuery.data?.data ?? null) : null;
-
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(null);
 
@@ -84,10 +77,7 @@ export function EmployeeTable() {
     () =>
       getEmployeeColumns({
         onView: (row) => router.push(`/employees/${row.id}`),
-        onEdit: (row) => {
-          setCreateOpen(false);
-          setEditId(row.id);
-        },
+        onEdit: (row) => router.push(`/employees/${row.id}/edit`),
         onDelete: (row) => setDeleteTarget(row),
         canEdit,
         canDelete,
@@ -149,7 +139,7 @@ export function EmployeeTable() {
       </Select>
 
       {canCreate && (
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button render={<Link href="/employees/new" />}>
           <Plus className="size-4" /> เพิ่มพนักงาน
         </Button>
       )}
@@ -187,17 +177,6 @@ export function EmployeeTable() {
           กำลังอัปเดต…
         </div>
       )}
-
-      <EmployeeFormSheet
-        open={sheetOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateOpen(false);
-            setEditId(null);
-          }
-        }}
-        employee={sheetEmployee}
-      />
 
       <ConfirmDialog
         open={!!deleteTarget}
