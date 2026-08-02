@@ -10,7 +10,28 @@ export function getGemini(): GoogleGenerativeAI {
   return new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 }
 
-// gemini-1.5-flash has the most reliable free-tier quota across accounts/regions.
-// Override with GEMINI_MODEL (e.g. gemini-2.0-flash / gemini-2.5-flash) if your
-// key has quota for a newer model.
-export const AI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+/**
+ * Which Gemini model each key can use (and with free quota) varies a lot. Try a
+ * list of candidates and use the first that works — skipping ones that 404
+ * (not available for this key) or 429 (no free-tier quota). Override with
+ * GEMINI_MODEL to pin a single model.
+ */
+export function getModelCandidates(): string[] {
+  const override = process.env.GEMINI_MODEL?.trim();
+  if (override) return [override];
+  return [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-flash-latest",
+  ];
+}
+
+/** True when the error means "try the next model" (unavailable / no quota). */
+export function isModelFallbackError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /\b404\b|not found|not supported|\b429\b|quota|exceeded/i.test(msg);
+}
+
+export const AI_MODEL = getModelCandidates()[0];

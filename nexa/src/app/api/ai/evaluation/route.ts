@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { NotFound } from "@/lib/api/errors";
-import { getGemini, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
+import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError } from "@/lib/ai/client";
 import { jsonSchemaToGemini } from "@/lib/ai/tools";
 import { prisma } from "@/lib/prisma";
 import { fullName } from "@/lib/format";
@@ -104,17 +104,29 @@ export async function POST(request: NextRequest) {
     ].join("\n");
 
     const genAI = getGemini();
-    const model = genAI.getGenerativeModel({
-      model: AI_MODEL,
-      systemInstruction: system,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: jsonSchemaToGemini(OUTPUT_SCHEMA as unknown as Record<string, unknown>),
-        maxOutputTokens: 2048,
-      },
-    });
-    const response = await model.generateContent(userPrompt);
-    const text = response.response.text();
+    let text = "";
+    let lastErr: unknown = null;
+    for (const modelName of getModelCandidates()) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: system,
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: jsonSchemaToGemini(OUTPUT_SCHEMA as unknown as Record<string, unknown>),
+            maxOutputTokens: 2048,
+          },
+        });
+        const response = await model.generateContent(userPrompt);
+        text = response.response.text();
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (isModelFallbackError(err)) continue;
+        throw err;
+      }
+    }
+    if (!text && lastErr) throw lastErr;
 
     let draft: EvaluationDraft | null = null;
     try {
