@@ -1,28 +1,24 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
-import { Plus, Pencil, Trash2, Wallet, Users, Loader2 } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+import { Plus, Pencil, Trash2, Wallet, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
-import { costCenterCreateSchema, type CostCenterRow } from "./schema";
-import { useCostCenters, useCreateCostCenter, useUpdateCostCenter, useDeleteCostCenter } from "./hooks";
+import { type CostCenterRow } from "./schema";
+import { useCostCenters, useDeleteCostCenter } from "./hooks";
 
 export function CostCenterView() {
   const { can } = useAuth();
   const canManage = can("admin:update");
   const { data, isLoading, isError, refetch } = useCostCenters();
 
-  const [editing, setEditing] = useState<CostCenterRow | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CostCenterRow | null>(null);
   const deleteMut = useDeleteCostCenter();
 
@@ -44,7 +40,7 @@ export function CostCenterView() {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ศูนย์ต้นทุนทั้งหมด</h2>
         {canManage && (
-          <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
+          <Button render={<Link href="/cost-centers/new" />}>
             <Plus className="size-4" /> เพิ่มศูนย์ต้นทุน
           </Button>
         )}
@@ -76,7 +72,7 @@ export function CostCenterView() {
               </div>
               {canManage && (
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button variant="ghost" size="icon-sm" aria-label="แก้ไข" onClick={() => { setEditing(c); setDialogOpen(true); }}>
+                  <Button variant="ghost" size="icon-sm" aria-label="แก้ไข" render={<Link href={`/cost-centers/${c.id}/edit`} />}>
                     <Pencil className="size-4" />
                   </Button>
                   <Button variant="ghost" size="icon-sm" aria-label="ลบ" className="text-destructive" onClick={() => setDeleteTarget(c)}>
@@ -89,8 +85,6 @@ export function CostCenterView() {
         </div>
       )}
 
-      <CostCenterDialog key={editing?.id ?? "new"} open={dialogOpen} onOpenChange={setDialogOpen} item={editing} />
-
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
@@ -102,86 +96,6 @@ export function CostCenterView() {
         loading={deleteMut.isPending}
         onConfirm={confirmDelete}
       />
-    </div>
-  );
-}
-
-function CostCenterDialog({
-  open,
-  onOpenChange,
-  item,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  item: CostCenterRow | null;
-}) {
-  const createMut = useCreateCostCenter();
-  const updateMut = useUpdateCostCenter();
-  const [form, setForm] = useState({
-    code: item?.code ?? "",
-    name: item?.name ?? "",
-    description: item?.description ?? "",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const pending = createMut.isPending || updateMut.isPending;
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setErrors({});
-    const parsed = costCenterCreateSchema.safeParse(form);
-    if (!parsed.success) {
-      const fe: Record<string, string> = {};
-      for (const i of parsed.error.issues) if (!fe[String(i.path[0])]) fe[String(i.path[0])] = i.message;
-      setErrors(fe);
-      return;
-    }
-    try {
-      if (item) await updateMut.mutateAsync({ id: item.id, input: parsed.data });
-      else await createMut.mutateAsync(parsed.data);
-      toast.success(item ? "บันทึกแล้ว" : "เพิ่มศูนย์ต้นทุนแล้ว");
-      onOpenChange(false);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ");
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{item ? "แก้ไขศูนย์ต้นทุน" : "เพิ่มศูนย์ต้นทุน"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-3">
-          <Field label="รหัส" required error={errors.code}>
-            <Input value={form.code} onChange={(e) => set("code", e.target.value)} />
-          </Field>
-          <Field label="ชื่อศูนย์ต้นทุน" required error={errors.name}>
-            <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
-          </Field>
-          <Field label="คำอธิบาย" error={errors.description}>
-            <Textarea rows={2} value={form.description} onChange={(e) => set("description", e.target.value)} />
-          </Field>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>ยกเลิก</Button>
-            <Button type="submit" disabled={pending}>
-              {pending && <Loader2 className="size-4 animate-spin" />} บันทึก
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
-        {label} {required && <span className="text-destructive">*</span>}
-      </label>
-      {children}
-      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
