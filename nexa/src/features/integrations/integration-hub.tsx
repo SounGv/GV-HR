@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import Link from "next/link";
 import {
   Cloud,
   Building2,
@@ -11,18 +12,10 @@ import {
   Webhook,
   Share2,
   Plug,
-  CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   INTEGRATIONS,
@@ -51,8 +44,6 @@ const STATUS_META = {
 const CATEGORY_ORDER: IntegrationCategory[] = ["erp", "productivity", "messaging", "storage", "api"];
 
 export function IntegrationHub() {
-  const [detail, setDetail] = useState<IntegrationDescriptor | null>(null);
-
   const grouped = useMemo(() => {
     const map = new Map<IntegrationCategory, IntegrationDescriptor[]>();
     for (const i of INTEGRATIONS) {
@@ -113,15 +104,20 @@ export function IntegrationHub() {
                       </span>
                     ))}
                   </div>
-                  <Button
-                    variant={i.status === "available" ? "default" : "outline"}
-                    size="sm"
-                    className="mt-1 w-full"
-                    disabled={i.status === "coming_soon"}
-                    onClick={() => setDetail(i)}
-                  >
-                    {i.status === "connected" ? "จัดการ" : i.status === "available" ? "เชื่อมต่อ" : "เร็วๆ นี้"}
-                  </Button>
+                  {i.status === "coming_soon" ? (
+                    <Button variant="outline" size="sm" className="mt-1 w-full" disabled>
+                      เร็วๆ นี้
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={i.status === "available" ? "default" : "outline"}
+                      size="sm"
+                      className="mt-1 w-full"
+                      render={<Link href={`/integrations/${i.id}`} />}
+                    >
+                      {i.status === "connected" ? "จัดการ" : "เชื่อมต่อ"}
+                    </Button>
+                  )}
                 </Card>
               );
             })}
@@ -129,36 +125,6 @@ export function IntegrationHub() {
         </section>
       ))}
 
-      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>เชื่อมต่อ {detail?.name}</DialogTitle>
-            <DialogDescription>{detail?.description}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm font-medium">ข้อมูลที่ต้องใช้เชื่อมต่อ</p>
-            {detail?.configFields.length ? (
-              <ul className="space-y-1.5">
-                {detail.configFields.map((f) => (
-                  <li key={f.key} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
-                    <span>{f.label}</span>
-                    <span className="text-xs text-muted-foreground">{f.secret ? "🔒 secret" : "ค่า"}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">ไม่ต้องตั้งค่าเพิ่มเติม</p>
-            )}
-            <div className="flex items-start gap-2 rounded-lg bg-info/10 p-3 text-xs text-info">
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
-              <span>
-                Adapter พร้อมใช้งานผ่าน Interface มาตรฐาน — ตั้งค่า credential
-                โดยผู้ดูแลระบบเพื่อเปิดการเชื่อมต่อจริง (ปลอดภัย ไม่กระทบ Business Logic)
-              </span>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
