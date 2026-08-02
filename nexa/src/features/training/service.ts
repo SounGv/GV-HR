@@ -61,6 +61,26 @@ export async function listCourses(companyId: string, session: AccessClaims) {
   });
 }
 
+export async function getCourse(companyId: string, id: string) {
+  const c = await prisma.trainingCourse.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      category: true,
+      provider: true,
+      hours: true,
+      location: true,
+      scheduledDate: true,
+      capacity: true,
+      status: true,
+    },
+  });
+  if (!c) throw NotFound("ไม่พบหลักสูตร");
+  return c;
+}
+
 export async function listMyEnrollments(companyId: string, session: AccessClaims) {
   const employeeId = requireEmployeeId(session);
   return prisma.trainingEnrollment.findMany({
