@@ -24,6 +24,15 @@ export async function listHolidays(companyId: string, year?: number) {
   });
 }
 
+export async function getHoliday(companyId: string, id: string) {
+  const holiday = await prisma.holiday.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select,
+  });
+  if (!holiday) throw NotFound("ไม่พบวันหยุด");
+  return holiday;
+}
+
 export async function createHoliday(
   companyId: string,
   input: HolidayCreateInput,

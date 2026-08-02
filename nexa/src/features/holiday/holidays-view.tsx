@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Plus, Pencil, Trash2, Bell, BellOff, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,7 +20,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/client";
 
-import { HolidayFormDialog } from "./holiday-form-dialog";
 import { useHolidays, useDeleteHoliday } from "./hooks";
 import type { Holiday } from "./types";
 
@@ -41,8 +41,6 @@ export function HolidaysView() {
   const { data, isLoading, isError, refetch } = useHolidays(year);
   const deleteMutation = useDeleteHoliday();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Holiday | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Holiday | null>(null);
 
   const grouped = useMemo(() => {
@@ -56,15 +54,6 @@ export function HolidaysView() {
     }
     return [...map.entries()].sort((a, b) => a[0] - b[0]);
   }, [data]);
-
-  function openCreate() {
-    setEditing(null);
-    setDialogOpen(true);
-  }
-  function openEdit(h: Holiday) {
-    setEditing(h);
-    setDialogOpen(true);
-  }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
@@ -94,7 +83,7 @@ export function HolidaysView() {
         </Select>
 
         {canManage && (
-          <Button onClick={openCreate}>
+          <Button render={<Link href="/holidays/new" />}>
             <Plus className="size-4" /> เพิ่มวันหยุด
           </Button>
         )}
@@ -162,7 +151,7 @@ export function HolidaysView() {
                               variant="ghost"
                               size="icon-sm"
                               aria-label="แก้ไข"
-                              onClick={() => openEdit(h)}
+                              render={<Link href={`/holidays/${h.id}/edit`} />}
                             >
                               <Pencil className="size-4" />
                             </Button>
@@ -187,13 +176,6 @@ export function HolidaysView() {
           ))}
         </div>
       )}
-
-      <HolidayFormDialog
-        key={editing?.id ?? "new"}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        holiday={editing}
-      />
 
       <ConfirmDialog
         open={!!deleteTarget}
