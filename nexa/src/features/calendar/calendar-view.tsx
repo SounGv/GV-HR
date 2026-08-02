@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 
-import { EventDialog } from "./event-dialog";
 import { useMonth, useDeleteEvent } from "./hooks";
 import type { CalendarItem, CalendarSource } from "./types";
 
@@ -61,9 +61,6 @@ export function CalendarView() {
 
   const [month, setMonth] = useState(currentMonth());
   const [selected, setSelected] = useState<string | null>(todayIso());
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<CalendarItem | null>(null);
-  const [defaultDate, setDefaultDate] = useState<string | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<CalendarItem | null>(null);
 
   const { data, isLoading, isError, refetch } = useMonth(month);
@@ -97,11 +94,7 @@ export function CalendarView() {
   const today = todayIso();
   const selectedItems = selected ? bucket.get(selected) ?? [] : [];
 
-  function openCreate(date?: string) {
-    setEditing(null);
-    setDefaultDate(date);
-    setDialogOpen(true);
-  }
+  const newEventHref = selected ? `/calendar/events/new?date=${selected}` : "/calendar/events/new";
 
   async function confirmDelete() {
     if (!deleteTarget?.eventId) return;
@@ -139,7 +132,7 @@ export function CalendarView() {
             ))}
           </div>
           {canManage && (
-            <Button size="sm" onClick={() => openCreate(selected ?? undefined)}>
+            <Button size="sm" render={<Link href={newEventHref} />}>
               <Plus className="size-4" /> เพิ่มกิจกรรม
             </Button>
           )}
@@ -224,10 +217,7 @@ export function CalendarView() {
                           variant="ghost"
                           size="icon"
                           className="size-7"
-                          onClick={() => {
-                            setEditing(it);
-                            setDialogOpen(true);
-                          }}
+                          render={<Link href={`/calendar/events/${it.eventId}/edit`} />}
                           aria-label="แก้ไข"
                         >
                           <Pencil className="size-3.5" />
@@ -247,7 +237,7 @@ export function CalendarView() {
                 ))
               )}
               {canManage && selected && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => openCreate(selected)}>
+                <Button variant="outline" size="sm" className="w-full" render={<Link href={newEventHref} />}>
                   <Plus className="size-4" /> เพิ่มในวันนี้
                 </Button>
               )}
@@ -256,12 +246,6 @@ export function CalendarView() {
         </div>
       )}
 
-      <EventDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        event={editing ? { id: editing.eventId!, title: editing.title, type: editing.type, date: editing.date } : null}
-        defaultDate={defaultDate}
-      />
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
