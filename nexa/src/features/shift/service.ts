@@ -29,6 +29,15 @@ export async function listTemplates(companyId: string) {
   });
 }
 
+export async function getTemplate(companyId: string, id: string) {
+  const tpl = await prisma.shiftTemplate.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: templateSelect,
+  });
+  if (!tpl) throw NotFound("ไม่พบกะการทำงาน");
+  return tpl;
+}
+
 export async function createTemplate(
   companyId: string,
   session: AccessClaims,
