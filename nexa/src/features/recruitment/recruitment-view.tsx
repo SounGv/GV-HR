@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Pencil, Trash2, Briefcase, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,8 +22,6 @@ import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/client";
 import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
 
-import { JobDialog } from "./job-dialog";
-import { CandidateDialog } from "./candidate-dialog";
 import { CANDIDATE_STAGE_LABEL, CandidateStageBadge, JOB_STATUS_LABEL } from "./labels";
 import { CANDIDATE_STAGES } from "./schema";
 import {
@@ -59,8 +58,6 @@ export function RecruitmentView() {
 function Jobs({ canManage }: { canManage: boolean }) {
   const { data, isLoading, isError, refetch } = useJobs();
   const deleteMut = useDeleteJob();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Job | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
   const jobs = data?.data ?? [];
 
@@ -79,12 +76,7 @@ function Jobs({ canManage }: { canManage: boolean }) {
     <div className="space-y-4">
       {canManage && (
         <div className="flex justify-end">
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
+          <Button render={<Link href="/recruitment/jobs/new" />}>
             <Plus className="size-4" /> ประกาศตำแหน่ง
           </Button>
         </div>
@@ -128,10 +120,7 @@ function Jobs({ canManage }: { canManage: boolean }) {
                       variant="ghost"
                       size="icon-sm"
                       aria-label="แก้ไข"
-                      onClick={() => {
-                        setEditing(j);
-                        setDialogOpen(true);
-                      }}
+                      render={<Link href={`/recruitment/jobs/${j.id}/edit`} />}
                     >
                       <Pencil className="size-4" />
                     </Button>
@@ -146,7 +135,6 @@ function Jobs({ canManage }: { canManage: boolean }) {
         </div>
       )}
 
-      <JobDialog key={editing?.id ?? "new"} open={dialogOpen} onOpenChange={setDialogOpen} job={editing} />
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
@@ -171,9 +159,10 @@ function Candidates({ canManage }: { canManage: boolean }) {
   );
   const updateMut = useUpdateCandidate();
   const deleteMut = useDeleteCandidate();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
   const candidates = data?.data ?? [];
+  const addCandidateHref =
+    jobFilter === ALL ? "/recruitment/candidates/new" : `/recruitment/candidates/new?job=${jobFilter}`;
 
   async function moveStage(id: string, stage: CandidateStage) {
     try {
@@ -227,7 +216,7 @@ function Candidates({ canManage }: { canManage: boolean }) {
           </Select>
         </div>
         {canManage && (
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button render={<Link href={addCandidateHref} />}>
             <Plus className="size-4" /> เพิ่มผู้สมัคร
           </Button>
         )}
@@ -278,11 +267,6 @@ function Candidates({ canManage }: { canManage: boolean }) {
         </div>
       )}
 
-      <CandidateDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        defaultJobId={jobFilter === ALL ? undefined : jobFilter}
-      />
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}

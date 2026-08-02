@@ -69,6 +69,24 @@ export async function listJobs(companyId: string, status?: JobStatus) {
   }));
 }
 
+export async function getJob(companyId: string, id: string) {
+  const job = await prisma.jobPosting.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      departmentId: true,
+      description: true,
+      location: true,
+      employmentType: true,
+      openings: true,
+      status: true,
+    },
+  });
+  if (!job) throw NotFound("ไม่พบตำแหน่งงาน");
+  return job;
+}
+
 export async function createJob(
   companyId: string,
   session: AccessClaims,
