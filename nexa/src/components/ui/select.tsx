@@ -6,7 +6,46 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+/**
+ * Walk the JSX children to collect every <SelectItem>'s value + label so we can
+ * feed Base UI's `items` prop. Without it, <Select.Value> shows the raw value
+ * (e.g. a UUID) whenever a value is set before its popup has ever been opened —
+ * which is the case for every edit form. Callers can still pass `items`
+ * explicitly to override. Falls back to `undefined` (old behavior) if nothing
+ * is found, so this never regresses.
+ */
+function deriveItems(
+  children: React.ReactNode,
+): ReadonlyArray<{ value: unknown; label: React.ReactNode }> | undefined {
+  const out: { value: unknown; label: React.ReactNode }[] = []
+  const walk = (nodes: React.ReactNode) => {
+    React.Children.forEach(nodes, (child) => {
+      if (!React.isValidElement(child)) return
+      const props = child.props as { value?: unknown; children?: React.ReactNode }
+      if (child.type === SelectItem && props.value !== undefined) {
+        out.push({ value: props.value, label: props.children })
+      } else if (props.children) {
+        walk(props.children)
+      }
+    })
+  }
+  walk(children)
+  return out.length ? out : undefined
+}
+
+function Select<Value = string, Multiple extends boolean | undefined = false>({
+  children,
+  items,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  const resolvedItems = (items ??
+    deriveItems(children)) as SelectPrimitive.Root.Props<Value, Multiple>["items"]
+  return (
+    <SelectPrimitive.Root items={resolvedItems} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (

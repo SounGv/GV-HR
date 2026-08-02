@@ -245,7 +245,14 @@ function SelectField({
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
-          <Select value={field.value || ""} onValueChange={field.onChange}>
+          <Select
+            value={field.value || ""}
+            onValueChange={field.onChange}
+            items={[
+              ...(clearable ? [{ value: NONE, label: "— ไม่ระบุ —" }] : []),
+              ...options,
+            ]}
+          >
             <FormControl>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={placeholder ?? "เลือก"} />
