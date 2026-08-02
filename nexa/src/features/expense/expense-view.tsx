@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Check, X, Receipt, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,7 +15,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { fullName, getInitials, formatCurrency, formatDate } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
-import { ExpenseDialog } from "./expense-dialog";
 import { ExpenseStatusBadge, EXPENSE_CATEGORY_LABEL } from "./labels";
 import {
   useExpenses,
@@ -61,7 +61,6 @@ export function ExpenseView() {
 function MyClaims() {
   const { data, isLoading, isError, refetch } = useExpenses("me");
   const cancelMut = useCancelExpense();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<ExpenseClaim | null>(null);
   const claims = data?.data ?? [];
 
@@ -80,7 +79,7 @@ function MyClaims() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติการเบิกจ่าย</h2>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button render={<Link href="/expenses/new" />}>
           <Plus className="size-4" /> ขอเบิกจ่าย
         </Button>
       </div>
@@ -117,7 +116,6 @@ function MyClaims() {
         </div>
       )}
 
-      <ExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       <ConfirmDialog
         open={!!cancelTarget}
         onOpenChange={(o) => !o && setCancelTarget(null)}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Check, X, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,7 +16,6 @@ import { fullName, getInitials } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 import { BalanceCards } from "./balance-cards";
-import { LeaveRequestDialog } from "./leave-request-dialog";
 import { useLeave, useCancelLeave, useDecideLeave } from "./hooks";
 import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "./labels";
 import type { LeaveRequest } from "./types";
@@ -57,7 +57,6 @@ export function LeaveView() {
 function MyRequests() {
   const { data, isLoading, isError, refetch } = useLeave("me");
   const cancelMut = useCancelLeave();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<LeaveRequest | null>(null);
   const requests = data?.data ?? [];
 
@@ -78,7 +77,7 @@ function MyRequests() {
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติการลา</h2>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button render={<Link href="/leave/new" />}>
           <Plus className="size-4" /> ขอลา
         </Button>
       </div>
@@ -117,7 +116,6 @@ function MyRequests() {
         </div>
       )}
 
-      <LeaveRequestDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       <ConfirmDialog
         open={!!cancelTarget}
         onOpenChange={(o) => !o && setCancelTarget(null)}
