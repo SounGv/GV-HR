@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, GraduationCap, Pencil, Trash2, Clock, MapPin, Users, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,7 +14,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { formatDate } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
-import { CourseDialog } from "./course-dialog";
 import { EnrollmentStatusBadge } from "./labels";
 import {
   useCourses,
@@ -39,14 +39,7 @@ export function TrainingView() {
   const cancelMut = useCancelEnrollment();
   const deleteMut = useDeleteCourse();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<TrainingCourse | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TrainingCourse | null>(null);
-
-  function openCreate() {
-    setEditing(null);
-    setDialogOpen(true);
-  }
 
   async function enroll(id: string) {
     try {
@@ -86,7 +79,7 @@ export function TrainingView() {
             <TabsTrigger value="mine">การอบรมของฉัน</TabsTrigger>
           </TabsList>
           {canCreate && (
-            <Button onClick={openCreate}>
+            <Button render={<Link href="/training/new" />}>
               <Plus className="size-4" />
               สร้างหลักสูตร
             </Button>
@@ -174,10 +167,7 @@ export function TrainingView() {
                           variant="ghost"
                           size="icon"
                           className="size-8"
-                          onClick={() => {
-                            setEditing(c);
-                            setDialogOpen(true);
-                          }}
+                          render={<Link href={`/training/${c.id}/edit`} />}
                           aria-label="แก้ไข"
                         >
                           <Pencil className="size-3.5" />
@@ -246,7 +236,6 @@ export function TrainingView() {
         </TabsContent>
       </Tabs>
 
-      <CourseDialog open={dialogOpen} onOpenChange={setDialogOpen} course={editing} />
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
