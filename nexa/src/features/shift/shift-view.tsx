@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,7 +14,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { cn } from "@/lib/utils";
 
-import { TemplateDialog } from "./template-dialog";
 import {
   useTemplates,
   useAssignments,
@@ -63,8 +63,6 @@ export function ShiftView() {
   const deleteAsgMut = useDeleteAssignment();
   const deleteTplMut = useDeleteTemplate();
 
-  const [tplDialogOpen, setTplDialogOpen] = useState(false);
-  const [editingTpl, setEditingTpl] = useState<ShiftTemplate | null>(null);
   const [delTpl, setDelTpl] = useState<ShiftTemplate | null>(null);
 
   const asgMap = useMemo(() => {
@@ -121,16 +119,13 @@ export function ShiftView() {
               {t.startTime}–{t.endTime}
             </span>
             {canEditTpl && (
-              <button
+              <Link
+                href={`/shifts/templates/${t.id}/edit`}
                 className="ml-0.5 text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  setEditingTpl(t);
-                  setTplDialogOpen(true);
-                }}
                 aria-label="แก้ไขกะ"
               >
                 <Pencil className="size-3" />
-              </button>
+              </Link>
             )}
             {canDelTpl && (
               <button
@@ -144,15 +139,7 @@ export function ShiftView() {
           </span>
         ))}
         {canEditTpl && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto h-7"
-            onClick={() => {
-              setEditingTpl(null);
-              setTplDialogOpen(true);
-            }}
-          >
+          <Button variant="outline" size="sm" className="ml-auto h-7" render={<Link href="/shifts/templates/new" />}>
             <Plus className="size-3.5" /> สร้างกะ
           </Button>
         )}
@@ -281,7 +268,6 @@ export function ShiftView() {
         </Card>
       )}
 
-      <TemplateDialog open={tplDialogOpen} onOpenChange={setTplDialogOpen} template={editingTpl} />
       <ConfirmDialog
         open={!!delTpl}
         onOpenChange={(o) => !o && setDelTpl(null)}

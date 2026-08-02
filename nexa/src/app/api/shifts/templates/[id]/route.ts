@@ -1,11 +1,21 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
 import { templateUpdateSchema } from "@/features/shift/schema";
-import { updateTemplate, deleteTemplate } from "@/features/shift/service";
+import { getTemplate, updateTemplate, deleteTemplate } from "@/features/shift/service";
 import { ok, handleApiError } from "@/lib/api/response";
 import { getRequestMeta } from "@/lib/api/request";
 
 export const runtime = "nodejs";
+
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await requirePermission("shift:read");
+    const { id } = await params;
+    return ok(await getTemplate(session.companyId, id));
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
