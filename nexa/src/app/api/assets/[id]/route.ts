@@ -1,13 +1,23 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
 import { assetUpdateSchema } from "@/features/asset/schema";
-import { deleteAsset, updateAsset } from "@/features/asset/service";
+import { getAsset, deleteAsset, updateAsset } from "@/features/asset/service";
 import { ok, handleApiError } from "@/lib/api/response";
 import { getRequestMeta } from "@/lib/api/request";
 
 export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+export async function GET(_req: NextRequest, { params }: Ctx) {
+  try {
+    const session = await requirePermission("asset:read");
+    const { id } = await params;
+    return ok(await getAsset(session.companyId, id));
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   try {
