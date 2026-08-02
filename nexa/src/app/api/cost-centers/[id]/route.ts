@@ -3,9 +3,19 @@ import { requirePermission } from "@/lib/auth/guard";
 import { getRequestMeta } from "@/lib/api/request";
 import { ok, handleApiError } from "@/lib/api/response";
 import { costCenterUpdateSchema } from "@/features/cost-center/schema";
-import { updateCostCenter, deleteCostCenter } from "@/features/cost-center/service";
+import { getCostCenter, updateCostCenter, deleteCostCenter } from "@/features/cost-center/service";
 
 export const runtime = "nodejs";
+
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await requirePermission("admin:read");
+    const { id } = await params;
+    return ok(await getCostCenter(session.companyId, id));
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

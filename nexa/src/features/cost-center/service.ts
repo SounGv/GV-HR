@@ -27,6 +27,15 @@ export async function listCostCenters(companyId: string): Promise<CostCenterRow[
   }));
 }
 
+export async function getCostCenter(companyId: string, id: string) {
+  const cc = await prisma.costCenter.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, code: true, name: true, description: true },
+  });
+  if (!cc) throw NotFound("ไม่พบศูนย์ต้นทุน");
+  return cc;
+}
+
 async function assertCodeFree(companyId: string, code: string, exceptId?: string) {
   const existing = await prisma.costCenter.findFirst({
     where: { companyId, code, deletedAt: null, ...(exceptId ? { id: { not: exceptId } } : {}) },
