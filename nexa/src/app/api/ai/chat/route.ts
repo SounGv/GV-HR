@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
 import { getRequestMeta } from "@/lib/api/request";
 import { ok, handleApiError } from "@/lib/api/response";
-import { getGemini, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
+import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError } from "@/lib/ai/client";
 import { executeTool, toGeminiTools } from "@/lib/ai/tools";
 import { prisma } from "@/lib/prisma";
 
@@ -64,54 +64,62 @@ export async function POST(request: NextRequest) {
     const system = buildSystemPrompt(company?.name ?? "-", session.email, today);
     const meta = getRequestMeta(request);
 
-    const steps: Step[] = [];
-    try {
-      const genAI = getGemini();
-      const model = genAI.getGenerativeModel({
-        model: AI_MODEL,
-        systemInstruction: system,
-        tools: [{ functionDeclarations: toGeminiTools() }],
-        generationConfig: { maxOutputTokens: 2048, temperature: 0.4 },
-      });
+    const genAI = getGemini();
+    // All but the last message become chat history; the last is the new turn.
+    const history = input.slice(0, -1).map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+    const lastMessage = input[input.length - 1].content;
 
-      // All but the last message become chat history; the last is the new turn.
-      const history = input.slice(0, -1).map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      }));
-      const chat = model.startChat({ history });
-
-      let result = await chat.sendMessage(input[input.length - 1].content);
-
-      for (let i = 0; i < MAX_STEPS; i++) {
-        const calls = result.response.functionCalls();
-        if (!calls || calls.length === 0) break;
-        const parts = [];
-        for (const call of calls) {
-          steps.push({ tool: call.name, detail: describeTool(call.name, call.args) });
-          const out = await executeTool(session, call.name, call.args as Record<string, unknown>, meta);
-          parts.push({ functionResponse: { name: call.name, response: { result: out } } });
-        }
-        result = await chat.sendMessage(parts);
-      }
-
-      let reply = "";
+    let lastErr: unknown = null;
+    for (const modelName of getModelCandidates()) {
+      const steps: Step[] = [];
       try {
-        reply = result.response.text().trim();
-      } catch {
-        reply = "";
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: system,
+          tools: [{ functionDeclarations: toGeminiTools() }],
+          generationConfig: { maxOutputTokens: 2048, temperature: 0.4 },
+        });
+        const chat = model.startChat({ history });
+        let result = await chat.sendMessage(lastMessage);
+
+        for (let i = 0; i < MAX_STEPS; i++) {
+          const calls = result.response.functionCalls();
+          if (!calls || calls.length === 0) break;
+          const parts = [];
+          for (const call of calls) {
+            steps.push({ tool: call.name, detail: describeTool(call.name, call.args) });
+            const out = await executeTool(session, call.name, call.args as Record<string, unknown>, meta);
+            parts.push({ functionResponse: { name: call.name, response: { result: out } } });
+          }
+          result = await chat.sendMessage(parts);
+        }
+
+        let reply = "";
+        try {
+          reply = result.response.text().trim();
+        } catch {
+          reply = "";
+        }
+        if (!reply) reply = "ขออภัย ยังไม่สามารถประมวลผลคำขอได้ กรุณาปรับคำถามแล้วลองใหม่อีกครั้ง";
+        return ok({ reply, steps, configured: true });
+      } catch (aiErr) {
+        lastErr = aiErr;
+        // Model unavailable / no quota for this key → try the next candidate.
+        if (isModelFallbackError(aiErr)) continue;
+        const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+        return ok({ reply: `⚠️ เกิดข้อผิดพลาดจาก AI (Gemini):\n${msg.slice(0, 600)}`, steps, configured: true });
       }
-      if (!reply) reply = "ขออภัย ยังไม่สามารถประมวลผลคำขอได้ กรุณาปรับคำถามแล้วลองใหม่อีกครั้ง";
-      return ok({ reply, steps, configured: true });
-    } catch (aiErr) {
-      // Surface the real Gemini error to the chat so it can be diagnosed.
-      const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
-      return ok({
-        reply: `⚠️ เกิดข้อผิดพลาดจาก AI (Gemini):\n${msg.slice(0, 600)}`,
-        steps,
-        configured: true,
-      });
     }
+
+    const lastMsg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+    return ok({
+      reply: `⚠️ ไม่พบโมเดล Gemini ที่คีย์นี้ใช้ได้ (ลองหลายรุ่นแล้ว)\n${lastMsg.slice(0, 500)}`,
+      steps: [],
+      configured: true,
+    });
   } catch (error) {
     return handleApiError(error);
   }
