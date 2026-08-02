@@ -1,0 +1,59 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Spinner } from "./spinner";
+import { cn } from "@/lib/utils";
+
+export type FormFooterAction = {
+  label: string;
+  /** Fired on click, before the form submits — use it to record the save intent. */
+  onClick?: () => void;
+  primary?: boolean;
+};
+
+/**
+ * Sticky form footer for full-page create/edit screens. The save buttons submit
+ * the form via `form={formId}`; each records its intent through `onClick` so the
+ * page can branch (return to list / stay / create another) after a successful save.
+ */
+export function FormFooter({
+  formId,
+  pending = false,
+  onCancel,
+  cancelLabel = "ยกเลิก",
+  actions,
+  className,
+}: {
+  formId: string;
+  pending?: boolean;
+  onCancel: () => void;
+  cancelLabel?: string;
+  actions: FormFooterAction[];
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border/70 bg-background/85 px-4 py-3 backdrop-blur-xl md:-mx-6 md:px-6",
+        className,
+      )}
+    >
+      <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
+        {cancelLabel}
+      </Button>
+      {actions.map((a) => (
+        <Button
+          key={a.label}
+          type="submit"
+          form={formId}
+          variant={a.primary ? "default" : "outline"}
+          onClick={a.onClick}
+          disabled={pending}
+        >
+          {a.primary && pending && <Spinner />}
+          {a.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
