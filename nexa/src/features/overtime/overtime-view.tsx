@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Check, X, Timer } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,7 +16,6 @@ import { fullName, getInitials, formatCurrency, formatDate } from "@/lib/format"
 import { ApiError } from "@/lib/api/client";
 import { LeaveStatusBadge } from "@/features/leave/labels";
 
-import { OvertimeDialog } from "./overtime-dialog";
 import { useOvertime, useCancelOvertime, useDecideOvertime } from "./hooks";
 import type { OvertimeRequest } from "./types";
 
@@ -50,7 +50,6 @@ export function OvertimeView() {
 function MyRequests() {
   const { data, isLoading, isError, refetch } = useOvertime("me");
   const cancelMut = useCancelOvertime();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<OvertimeRequest | null>(null);
   const requests = data?.data ?? [];
 
@@ -69,7 +68,7 @@ function MyRequests() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติคำขอ OT</h2>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button render={<Link href="/overtime/new" />}>
           <Plus className="size-4" /> ขอ OT
         </Button>
       </div>
@@ -101,7 +100,6 @@ function MyRequests() {
         </div>
       )}
 
-      <OvertimeDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       <ConfirmDialog
         open={!!cancelTarget}
         onOpenChange={(o) => !o && setCancelTarget(null)}

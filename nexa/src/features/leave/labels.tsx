@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import type { LeaveStatus, LeaveType } from "./types";
 
 export const LEAVE_TYPE_LABEL: Record<LeaveType, string> = {
@@ -16,23 +16,13 @@ export const LEAVE_STATUS_LABEL: Record<LeaveStatus, string> = {
   CANCELLED: "ยกเลิก",
 };
 
-const STATUS_STYLE: Record<LeaveStatus, string> = {
-  PENDING: "bg-warning/10 text-warning",
-  APPROVED: "bg-success/10 text-success",
-  REJECTED: "bg-destructive/10 text-destructive",
-  CANCELLED: "bg-muted text-muted-foreground",
+const STATUS_TONE: Record<LeaveStatus, StatusTone> = {
+  PENDING: "warning",
+  APPROVED: "success",
+  REJECTED: "danger",
+  CANCELLED: "neutral",
 };
 
 export function LeaveStatusBadge({ status }: { status: LeaveStatus }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-        STATUS_STYLE[status],
-      )}
-    >
-      <span className="size-1.5 rounded-full bg-current" />
-      {LEAVE_STATUS_LABEL[status]}
-    </span>
-  );
+  return <StatusChip tone={STATUS_TONE[status]} label={LEAVE_STATUS_LABEL[status]} />;
 }
