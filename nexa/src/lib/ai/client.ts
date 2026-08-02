@@ -31,7 +31,8 @@ export function getModelCandidates(): string[] {
 /** True when the error means "try the next model" (unavailable / no quota). */
 export function isModelFallbackError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
-  return /\b404\b|not found|not supported|\b429\b|quota|exceeded/i.test(msg);
+  // Only fall through when the MODEL is unavailable (404) or out of quota (429).
+  return /\b404\b|is not found|\b429\b|quota|exceeded|RESOURCE_EXHAUSTED/i.test(msg);
 }
 
 export const AI_MODEL = getModelCandidates()[0];

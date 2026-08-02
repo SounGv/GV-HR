@@ -82,27 +82,36 @@ export async function POST(request: NextRequest) {
           tools: [{ functionDeclarations: toGeminiTools() }],
           generationConfig: { maxOutputTokens: 2048, temperature: 0.4 },
         });
-        const chat = model.startChat({ history });
-        let result = await chat.sendMessage(lastMessage);
+        // Manage the contents array ourselves so function results are sent with
+        // role "user" (newer Gemini models reject role "function").
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const contents: any[] = [...history, { role: "user", parts: [{ text: lastMessage }] }];
 
+        let reply = "";
         for (let i = 0; i < MAX_STEPS; i++) {
+          const result = await model.generateContent({ contents });
           const calls = result.response.functionCalls();
-          if (!calls || calls.length === 0) break;
-          const parts = [];
+          if (!calls || calls.length === 0) {
+            try {
+              reply = result.response.text().trim();
+            } catch {
+              reply = "";
+            }
+            break;
+          }
+          // Record the model's function-call turn, then answer it with a user turn.
+          const modelParts = result.response.candidates?.[0]?.content?.parts ?? [];
+          contents.push({ role: "model", parts: modelParts });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const respParts: any[] = [];
           for (const call of calls) {
             steps.push({ tool: call.name, detail: describeTool(call.name, call.args) });
             const out = await executeTool(session, call.name, call.args as Record<string, unknown>, meta);
-            parts.push({ functionResponse: { name: call.name, response: { result: out } } });
+            respParts.push({ functionResponse: { name: call.name, response: { result: out } } });
           }
-          result = await chat.sendMessage(parts);
+          contents.push({ role: "user", parts: respParts });
         }
 
-        let reply = "";
-        try {
-          reply = result.response.text().trim();
-        } catch {
-          reply = "";
-        }
         if (!reply) reply = "ขออภัย ยังไม่สามารถประมวลผลคำขอได้ กรุณาปรับคำถามแล้วลองใหม่อีกครั้ง";
         return ok({ reply, steps, configured: true });
       } catch (aiErr) {
