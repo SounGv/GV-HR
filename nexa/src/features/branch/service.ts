@@ -33,6 +33,15 @@ export async function listBranches(companyId: string): Promise<BranchRow[]> {
   }));
 }
 
+export async function getBranch(companyId: string, id: string) {
+  const branch = await prisma.branch.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, name: true, code: true, address: true, phone: true },
+  });
+  if (!branch) throw NotFound("ไม่พบสาขา");
+  return branch;
+}
+
 async function assertCodeFree(companyId: string, code: string, exceptId?: string) {
   const existing = await prisma.branch.findFirst({
     where: { companyId, code, deletedAt: null, ...(exceptId ? { id: { not: exceptId } } : {}) },
