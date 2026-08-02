@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Target, Pencil, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,7 +15,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { fullName, getInitials, formatDate } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
-import { GoalDialog } from "./goal-dialog";
 import { ProgressDialog } from "./progress-dialog";
 import { GoalStatusBadge, GOAL_TYPE_LABEL } from "./labels";
 import { useGoals, useDeleteGoal } from "./hooks";
@@ -37,19 +37,8 @@ export function KpiView() {
   const goals = data?.data ?? [];
 
   const deleteMut = useDeleteGoal();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Goal | null>(null);
   const [progressGoal, setProgressGoal] = useState<Goal | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Goal | null>(null);
-
-  function openCreate() {
-    setEditing(null);
-    setDialogOpen(true);
-  }
-  function openEdit(g: Goal) {
-    setEditing(g);
-    setDialogOpen(true);
-  }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
@@ -73,7 +62,7 @@ export function KpiView() {
           </TabsList>
         </Tabs>
         {canCreate && (
-          <Button onClick={openCreate}>
+          <Button render={<Link href="/kpi/new" />}>
             <Plus className="size-4" />
             สร้างเป้าหมาย
           </Button>
@@ -95,7 +84,7 @@ export function KpiView() {
               }
               action={
                 canCreate ? (
-                  <Button onClick={openCreate} size="sm">
+                  <Button render={<Link href="/kpi/new" />} size="sm">
                     <Plus className="size-4" />
                     สร้างเป้าหมาย
                   </Button>
@@ -184,7 +173,7 @@ export function KpiView() {
                             variant="ghost"
                             size="icon"
                             className="size-7"
-                            onClick={() => openEdit(g)}
+                            render={<Link href={`/kpi/${g.id}/edit`} />}
                             aria-label="แก้ไข"
                           >
                             <Pencil className="size-3.5" />
@@ -211,7 +200,6 @@ export function KpiView() {
         </TabsContent>
       </Tabs>
 
-      <GoalDialog open={dialogOpen} onOpenChange={setDialogOpen} goal={editing} />
       <ProgressDialog
         open={!!progressGoal}
         onOpenChange={(o) => !o && setProgressGoal(null)}

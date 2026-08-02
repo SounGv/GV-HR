@@ -42,6 +42,15 @@ function deriveStatus(
   return explicit ?? "NOT_STARTED";
 }
 
+export async function getGoal(companyId: string, id: string) {
+  const goal = await prisma.goal.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: goalSelect,
+  });
+  if (!goal) throw NotFound("ไม่พบเป้าหมาย");
+  return goal;
+}
+
 export async function createGoal(
   companyId: string,
   session: AccessClaims,
