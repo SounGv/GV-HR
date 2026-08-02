@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Plus, Pencil, Trash2, Building2, Briefcase, CornerDownRight, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,8 +13,6 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 
-import { DepartmentDialog } from "./department-dialog";
-import { PositionDialog } from "./position-dialog";
 import { OrgChart } from "./org-chart";
 import { JOB_LEVELS } from "./schema";
 import {
@@ -55,12 +54,7 @@ export function OrganizationView() {
   const deleteDeptMut = useDeleteDepartment();
   const deletePosMut = useDeletePosition();
 
-  const [deptDialog, setDeptDialog] = useState(false);
-  const [editDept, setEditDept] = useState<DepartmentRow | null>(null);
   const [delDept, setDelDept] = useState<DepartmentRow | null>(null);
-
-  const [posDialog, setPosDialog] = useState(false);
-  const [editPos, setEditPos] = useState<PositionRow | null>(null);
   const [delPos, setDelPos] = useState<PositionRow | null>(null);
 
   async function confirmDelDept() {
@@ -115,10 +109,7 @@ export function OrganizationView() {
                   variant="ghost"
                   size="icon"
                   className="size-7"
-                  onClick={() => {
-                    setEditDept(node);
-                    setDeptDialog(true);
-                  }}
+                  render={<Link href={`/organization/departments/${node.id}/edit`} />}
                   aria-label="แก้ไข"
                 >
                   <Pencil className="size-3.5" />
@@ -168,12 +159,7 @@ export function OrganizationView() {
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">โครงสร้างฝ่าย/แผนก</h2>
           {canCreate && (
-            <Button
-              onClick={() => {
-                setEditDept(null);
-                setDeptDialog(true);
-              }}
-            >
+            <Button render={<Link href="/organization/departments/new" />}>
               <Plus className="size-4" /> เพิ่มฝ่าย
             </Button>
           )}
@@ -198,12 +184,7 @@ export function OrganizationView() {
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">ตำแหน่งและระดับ</h2>
           {canCreate && (
-            <Button
-              onClick={() => {
-                setEditPos(null);
-                setPosDialog(true);
-              }}
-            >
+            <Button render={<Link href="/organization/positions/new" />}>
               <Plus className="size-4" /> เพิ่มตำแหน่ง
             </Button>
           )}
@@ -238,10 +219,7 @@ export function OrganizationView() {
                         variant="ghost"
                         size="icon"
                         className="size-7"
-                        onClick={() => {
-                          setEditPos(p);
-                          setPosDialog(true);
-                        }}
+                        render={<Link href={`/organization/positions/${p.id}/edit`} />}
                         aria-label="แก้ไข"
                       >
                         <Pencil className="size-3.5" />
@@ -266,18 +244,6 @@ export function OrganizationView() {
         )}
       </TabsContent>
 
-      <DepartmentDialog
-        open={deptDialog}
-        onOpenChange={setDeptDialog}
-        department={editDept}
-        departments={departments}
-      />
-      <PositionDialog
-        open={posDialog}
-        onOpenChange={setPosDialog}
-        position={editPos}
-        departments={departments}
-      />
       <ConfirmDialog
         open={!!delDept}
         onOpenChange={(o) => !o && setDelDept(null)}

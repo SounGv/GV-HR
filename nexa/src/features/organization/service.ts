@@ -57,6 +57,15 @@ async function assertNoCycle(companyId: string, id: string, parentId: string) {
   }
 }
 
+export async function getDepartment(companyId: string, id: string) {
+  const d = await prisma.department.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, name: true, code: true, parentId: true },
+  });
+  if (!d) throw NotFound("ไม่พบฝ่าย/แผนก");
+  return d;
+}
+
 export async function createDepartment(
   companyId: string,
   session: AccessClaims,
@@ -198,6 +207,15 @@ async function assertPositionCodeFree(companyId: string, code: string, exceptId?
     select: { id: true },
   });
   if (existing) throw Conflict(`มีรหัสตำแหน่ง “${code}” อยู่แล้ว`);
+}
+
+export async function getPosition(companyId: string, id: string) {
+  const p = await prisma.position.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, title: true, code: true, level: true, departmentId: true },
+  });
+  if (!p) throw NotFound("ไม่พบตำแหน่ง");
+  return p;
 }
 
 export async function createPosition(
