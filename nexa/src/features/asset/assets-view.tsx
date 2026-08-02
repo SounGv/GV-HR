@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Plus, Search, Pencil, Trash2, UserPlus, Undo2, Boxes } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,7 +29,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { fullName, formatCurrency } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
-import { AssetFormDialog } from "./asset-form-dialog";
 import { AssetAssignDialog } from "./asset-assign-dialog";
 import { AssetStatusBadge, ASSET_STATUS_LABEL } from "./labels";
 import { useAssets, useAssignAsset, useDeleteAsset } from "./hooks";
@@ -59,8 +59,6 @@ export function AssetsView() {
   const deleteMut = useDeleteAsset();
   const assets = data?.data ?? [];
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Asset | null>(null);
   const [assignTarget, setAssignTarget] = useState<Asset | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
 
@@ -112,12 +110,7 @@ export function AssetsView() {
           </Select>
         </div>
         {canManage && (
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
+          <Button render={<Link href="/assets/new" />}>
             <Plus className="size-4" /> เพิ่มทรัพย์สิน
           </Button>
         )}
@@ -183,10 +176,7 @@ export function AssetsView() {
                           variant="ghost"
                           size="icon-sm"
                           aria-label="แก้ไข"
-                          onClick={() => {
-                            setEditing(a);
-                            setDialogOpen(true);
-                          }}
+                          render={<Link href={`/assets/${a.id}/edit`} />}
                         >
                           <Pencil className="size-4" />
                         </Button>
@@ -210,12 +200,6 @@ export function AssetsView() {
         </Card>
       )}
 
-      <AssetFormDialog
-        key={editing?.id ?? "new"}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        asset={editing}
-      />
       <AssetAssignDialog asset={assignTarget} onClose={() => setAssignTarget(null)} />
       <ConfirmDialog
         open={!!deleteTarget}

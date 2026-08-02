@@ -53,6 +53,15 @@ export async function listAssets(companyId: string, query: AssetListQuery) {
   });
 }
 
+export async function getAsset(companyId: string, id: string) {
+  const asset = await prisma.asset.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select,
+  });
+  if (!asset) throw NotFound("ไม่พบทรัพย์สิน");
+  return asset;
+}
+
 export async function createAsset(
   companyId: string,
   session: AccessClaims,
