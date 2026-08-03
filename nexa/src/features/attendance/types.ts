@@ -1,4 +1,6 @@
 export type AttendanceStatus = "PRESENT" | "LATE" | "ABSENT" | "ON_LEAVE";
+export type AttendanceWorkMode = "ONSITE" | "WFH";
+export type AttendanceMood = "TERRIBLE" | "BAD" | "OK" | "GOOD" | "EXCELLENT";
 
 export interface AttendanceRecord {
   id: string;
@@ -7,6 +9,8 @@ export interface AttendanceRecord {
   clockOutAt: string | null;
   clockInDistance: number | null;
   clockOutDistance: number | null;
+  workMode: AttendanceWorkMode;
+  moodOut: AttendanceMood | null;
   status: AttendanceStatus;
   note: string | null;
   employee?: {
@@ -26,4 +30,7 @@ export interface ClockPayload {
   accuracy?: number;
   photo?: string;
   device?: string;
+  offsiteReason?: string;
+  workMode?: AttendanceWorkMode;
+  mood?: AttendanceMood;
 }

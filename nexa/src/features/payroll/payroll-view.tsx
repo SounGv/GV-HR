@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Wallet, Play, Loader2, Eye, CircleDollarSign } from "lucide-react";
+import Link from "next/link";
+import { Wallet, Play, Loader2, Eye, CircleDollarSign, RefreshCcw, Briefcase, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -102,18 +103,16 @@ function MyPayslips() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {records.map((r) => (
-          <Card
-            key={r.id}
-            className="cursor-pointer gap-2 p-4 transition-colors hover:border-primary/40"
-            onClick={() => setSelected(r)}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-foreground">{r.periodLabel}</span>
-              <PayrollStatusBadge status={r.status} />
-            </div>
-            <div className="text-2xl font-semibold text-primary">{formatCurrency(r.net)}</div>
-            <p className="text-xs text-muted-foreground">แตะเพื่อดูรายละเอียดสลิป</p>
-          </Card>
+          <Link key={r.id} href={`/payroll/${r.id}`}>
+            <Card className="cursor-pointer gap-2 p-4 transition-colors hover:border-primary/40">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-foreground">{r.periodLabel}</span>
+                <PayrollStatusBadge status={r.status} />
+              </div>
+              <div className="text-2xl font-semibold text-primary">{formatCurrency(r.net)}</div>
+              <p className="text-xs text-muted-foreground">แตะเพื่อดูรายละเอียดสลิป</p>
+            </Card>
+          </Link>
         ))}
       </div>
       <PayslipDialog record={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
@@ -128,6 +127,16 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
   const payMut = usePayPayroll();
   const [selected, setSelected] = useState<PayrollRecord | null>(null);
   const records = data?.data ?? [];
+  const summary = records.reduce(
+    (acc, r) => {
+      acc.totalGross += Number(r.gross ?? 0);
+      acc.totalNet += Number(r.net ?? 0);
+      acc.paid += r.status === "PAID" ? 1 : 0;
+      acc.draft += r.status === "DRAFT" ? 1 : 0;
+      return acc;
+    },
+    { totalGross: 0, totalNet: 0, paid: 0, draft: 0 },
+  );
 
   async function generate() {
     try {
@@ -149,20 +158,39 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">งวดเงินเดือน</label>
-          <Input
-            type="month"
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="w-[180px]"
-          />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">งวดเงินเดือน</label>
+            <Input
+              type="month"
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="w-[180px]"
+            />
+          </div>
+          <Button onClick={generate} disabled={generateMut.isPending}>
+            {generateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+            ออก/อัปเดตรอบเงินเดือน
+          </Button>
+          <Button variant="outline" onClick={() => refetch()}>
+            <RefreshCcw className="size-4" /> รีเฟรช
+          </Button>
         </div>
-        <Button onClick={generate} disabled={generateMut.isPending}>
-          {generateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-          ออก/อัปเดตรอบเงินเดือน
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
+            <div className="text-xs text-muted-foreground">รายการ</div>
+            <div className="text-lg font-semibold">{records.length}</div>
+          </Card>
+          <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
+            <div className="text-xs text-muted-foreground">จ่ายแล้ว</div>
+            <div className="text-lg font-semibold text-success">{summary.paid}</div>
+          </Card>
+          <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
+            <div className="text-xs text-muted-foreground">รอดำเนินการ</div>
+            <div className="text-lg font-semibold text-warning">{summary.draft}</div>
+          </Card>
+        </div>
       </div>
 
       {isError ? (
@@ -176,7 +204,16 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
           description="กดออกรอบเงินเดือนเพื่อสร้างสลิปจากฐานเงินเดือนพนักงาน"
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <Briefcase className="size-4" /> สรุปรอบ {period}: เงินรวม {formatCurrency(summary.totalGross)} · สุทธิ {formatCurrency(summary.totalNet)}
+            </span>
+            <span className="flex items-center gap-2">
+              <CheckCircle2 className="size-4" /> พร้อมประมวลผลและจ่ายเงินได้ทันที
+            </span>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -192,10 +229,12 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
               {records.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>
-                    <div className="font-medium">
-                      {r.employee ? fullName(r.employee.firstName, r.employee.lastName) : "-"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{r.employee?.employeeCode}</div>
+                    <Link href={`/payroll/${r.id}`} className="block">
+                      <div className="font-medium">
+                        {r.employee ? fullName(r.employee.firstName, r.employee.lastName) : "-"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{r.employee?.employeeCode}</div>
+                    </Link>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{formatCurrency(r.gross)}</TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">
@@ -228,6 +267,7 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
               ))}
             </TableBody>
           </Table>
+          </div>
         </div>
       )}
 

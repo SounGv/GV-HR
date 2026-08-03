@@ -59,17 +59,19 @@ function Feed() {
   return (
     <div className="space-y-3">
       {items.map((a) => (
-        <Card key={a.id} className={cn("gap-2 p-5", a.pinned && "border-primary/40 bg-primary/[0.03]")}>
-          <div className="flex items-center gap-2">
-            {a.pinned && <Pin className="size-4 text-primary" />}
-            <h3 className="font-semibold text-foreground">{a.title}</h3>
-          </div>
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{a.body}</p>
-          <p className="text-xs text-muted-foreground">
-            {a.authorName ? `โดย ${a.authorName} · ` : ""}
-            {fmtDate(a.publishedAt ?? a.createdAt)}
-          </p>
-        </Card>
+        <Link key={a.id} href={`/announcements/${a.id}`}>
+          <Card className={cn("gap-2 p-5", a.pinned && "border-primary/40 bg-primary/[0.03]")}>
+            <div className="flex items-center gap-2">
+              {a.pinned && <Pin className="size-4 text-primary" />}
+              <h3 className="font-semibold text-foreground">{a.title}</h3>
+            </div>
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{a.body}</p>
+            <p className="text-xs text-muted-foreground">
+              {a.authorName ? `โดย ${a.authorName} · ` : ""}
+              {fmtDate(a.publishedAt ?? a.createdAt)}
+            </p>
+          </Card>
+        </Link>
       ))}
     </div>
   );
@@ -111,23 +113,25 @@ function Manage() {
         <div className="space-y-2">
           {items.map((a) => (
             <Card key={a.id} className="flex-row items-center justify-between gap-3 p-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  {a.pinned && <Pin className="size-3.5 text-primary" />}
-                  <span className="truncate font-medium text-foreground">{a.title}</span>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-medium",
-                      a.status === "PUBLISHED"
-                        ? "bg-success/10 text-success"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {a.status === "PUBLISHED" ? "เผยแพร่" : "ฉบับร่าง"}
-                  </span>
+              <Link href={`/announcements/${a.id}`} className="min-w-0 flex-1">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    {a.pinned && <Pin className="size-3.5 text-primary" />}
+                    <span className="truncate font-medium text-foreground">{a.title}</span>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-xs font-medium",
+                        a.status === "PUBLISHED"
+                          ? "bg-success/10 text-success"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {a.status === "PUBLISHED" ? "เผยแพร่" : "ฉบับร่าง"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{a.body}</p>
                 </div>
-                <p className="mt-0.5 truncate text-sm text-muted-foreground">{a.body}</p>
-              </div>
+              </Link>
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"

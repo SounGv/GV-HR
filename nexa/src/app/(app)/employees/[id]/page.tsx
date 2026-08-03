@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmployeeStatusBadge } from "@/features/employee/status-badge";
 import { EmployeeAccountButton } from "@/features/employee/employee-account-button";
+import { RecognitionGiveButton } from "@/features/recognition/recognition-give-button";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
 import { fullName, getInitials, formatDate, formatCurrency } from "@/lib/format";
 
@@ -32,6 +33,10 @@ export default async function EmployeeDetailPage({
   });
 
   const canEdit = can(session.perms, "employee:update");
+  const isHrLevelRecognition = session.perms.includes("*") || session.perms.includes("recognition:*");
+  const canGiveRecognition =
+    can(session.perms, "recognition:create") &&
+    (isHrLevelRecognition || employee.manager?.id === session.employeeId);
   const name = fullName(employee.firstName, employee.lastName);
 
   return (
@@ -43,16 +48,23 @@ export default async function EmployeeDetailPage({
         description={`${employee.employeeCode}${employee.position?.title ? ` · ${employee.position.title}` : ""}`}
         status={<EmployeeStatusBadge status={employee.status} />}
         actions={
-          canEdit ? (
+          canEdit || canGiveRecognition ? (
             <>
-              <EmployeeAccountButton
-                employeeId={employee.id}
-                hasAccount={!!employee.userId}
-                defaultEmail={employee.email}
-              />
-              <Button variant="outline" size="sm" render={<Link href={`/employees/${employee.id}/edit`} />}>
-                <Pencil className="size-4" /> แก้ไข
-              </Button>
+              {canGiveRecognition && (
+                <RecognitionGiveButton employeeId={employee.id} employeeName={name} />
+              )}
+              {canEdit && (
+                <>
+                  <EmployeeAccountButton
+                    employeeId={employee.id}
+                    hasAccount={!!employee.userId}
+                    defaultEmail={employee.email}
+                  />
+                  <Button variant="outline" size="sm" render={<Link href={`/employees/${employee.id}/edit`} />}>
+                    <Pencil className="size-4" /> แก้ไข
+                  </Button>
+                </>
+              )}
             </>
           ) : undefined
         }

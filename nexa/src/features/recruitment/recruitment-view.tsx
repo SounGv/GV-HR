@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Briefcase, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Briefcase, Users, RefreshCcw, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,6 +60,8 @@ function Jobs({ canManage }: { canManage: boolean }) {
   const deleteMut = useDeleteJob();
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
   const jobs = data?.data ?? [];
+  const openJobs = jobs.filter((j) => j.status === "OPEN").length;
+  const totalCandidates = jobs.reduce((sum, j) => sum + j.candidateCount, 0);
 
   async function confirmDelete() {
     if (!deleteTarget) return;
@@ -74,13 +76,28 @@ function Jobs({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="space-y-4">
-      {canManage && (
-        <div className="flex justify-end">
-          <Button render={<Link href="/recruitment/jobs/new" />}>
-            <Plus className="size-4" /> ประกาศตำแหน่ง
-          </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
+            <div className="text-xs text-muted-foreground">ตำแหน่งเปิด</div>
+            <div className="text-lg font-semibold">{openJobs}</div>
+          </Card>
+          <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
+            <div className="text-xs text-muted-foreground">ผู้สมัครรวม</div>
+            <div className="text-lg font-semibold">{totalCandidates}</div>
+          </Card>
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => refetch()}>
+            <RefreshCcw className="size-4" /> รีเฟรช
+          </Button>
+          {canManage && (
+            <Button render={<Link href="/recruitment/jobs/new" />}>
+              <Plus className="size-4" /> ประกาศตำแหน่ง
+            </Button>
+          )}
+        </div>
+      </div>
 
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
@@ -92,44 +109,46 @@ function Jobs({ canManage }: { canManage: boolean }) {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {jobs.map((j) => (
             <Card key={j.id} className="gap-2 p-5">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="font-semibold text-foreground">{j.title}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {[j.departmentName, EMPLOYMENT_LABEL[j.employmentType as keyof typeof EMPLOYMENT_LABEL], j.location]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                    j.status === "OPEN" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {JOB_STATUS_LABEL[j.status]}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  รับ {j.openings} อัตรา · ผู้สมัคร {j.candidateCount} คน
-                </span>
-                {canManage && (
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="แก้ไข"
-                      render={<Link href={`/recruitment/jobs/${j.id}/edit`} />}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon-sm" aria-label="ลบ" onClick={() => setDeleteTarget(j)}>
-                      <Trash2 className="size-4 text-destructive" />
-                    </Button>
+              <Link href={`/recruitment/jobs/${j.id}`} className="block">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-semibold text-foreground">{j.title}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {[j.departmentName, EMPLOYMENT_LABEL[j.employmentType as keyof typeof EMPLOYMENT_LABEL], j.location]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
                   </div>
-                )}
-              </div>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
+                      j.status === "OPEN" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {JOB_STATUS_LABEL[j.status]}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    รับ {j.openings} อัตรา · ผู้สมัคร {j.candidateCount} คน
+                  </span>
+                </div>
+              </Link>
+              {canManage && (
+                <div className="mt-2 flex justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="แก้ไข"
+                    render={<Link href={`/recruitment/jobs/${j.id}/edit`} />}
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" aria-label="ลบ" onClick={() => setDeleteTarget(j)}>
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              )}
             </Card>
           ))}
         </div>
@@ -160,18 +179,18 @@ function Candidates({ canManage }: { canManage: boolean }) {
   const updateMut = useUpdateCandidate();
   const deleteMut = useDeleteCandidate();
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
+  const [stageTarget, setStageTarget] = useState<Candidate | null>(null);
+  const [pendingStage, setPendingStage] = useState<CandidateStage | null>(null);
   const candidates = data?.data ?? [];
+  const stageStats = candidates.reduce(
+    (acc, c) => {
+      acc[c.stage] = (acc[c.stage] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
   const addCandidateHref =
     jobFilter === ALL ? "/recruitment/candidates/new" : `/recruitment/candidates/new?job=${jobFilter}`;
-
-  async function moveStage(id: string, stage: CandidateStage) {
-    try {
-      await updateMut.mutateAsync({ id, input: { stage } });
-      toast.success("อัปเดตสถานะแล้ว");
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "อัปเดตไม่สำเร็จ");
-    }
-  }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
@@ -184,10 +203,22 @@ function Candidates({ canManage }: { canManage: boolean }) {
     }
   }
 
+  async function confirmStageChange() {
+    if (!stageTarget || !pendingStage) return;
+    try {
+      await updateMut.mutateAsync({ id: stageTarget.id, input: { stage: pendingStage } });
+      toast.success(`เลื่อนสถานะเป็น ${CANDIDATE_STAGE_LABEL[pendingStage]} แล้ว`);
+      setStageTarget(null);
+      setPendingStage(null);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "อัปเดตไม่สำเร็จ");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Select value={jobFilter} onValueChange={(v) => setJobFilter(v ?? ALL)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="ทุกตำแหน่ง" />
@@ -215,11 +246,31 @@ function Candidates({ canManage }: { canManage: boolean }) {
             </SelectContent>
           </Select>
         </div>
-        {canManage && (
-          <Button render={<Link href={addCandidateHref} />}>
-            <Plus className="size-4" /> เพิ่มผู้สมัคร
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => refetch()}>
+            <RefreshCcw className="size-4" /> รีเฟรช
           </Button>
-        )}
+          {canManage && (
+            <Button render={<Link href={addCandidateHref} />}>
+              <Plus className="size-4" /> เพิ่มผู้สมัคร
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
+          <div className="text-xs text-muted-foreground">ผู้สมัครทั้งหมด</div>
+          <div className="text-lg font-semibold">{candidates.length}</div>
+        </Card>
+        <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
+          <div className="text-xs text-muted-foreground">รอสัมภาษณ์</div>
+          <div className="text-lg font-semibold">{stageStats.INTERVIEW ?? 0}</div>
+        </Card>
+        <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
+          <div className="text-xs text-muted-foreground">ผ่านแล้ว</div>
+          <div className="text-lg font-semibold text-success">{stageStats.OFFER ?? 0}</div>
+        </Card>
       </div>
 
       {isError ? (
@@ -232,31 +283,39 @@ function Candidates({ canManage }: { canManage: boolean }) {
         <div className="space-y-2">
           {candidates.map((c) => (
             <Card key={c.id} className="flex-row items-center justify-between gap-3 p-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{c.name}</span>
-                  <CandidateStageBadge stage={c.stage} />
+              <Link href={`/recruitment/candidates/${c.id}`} className="min-w-0 flex-1">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">{c.name}</span>
+                    <CandidateStageBadge stage={c.stage} />
+                  </div>
+                  <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                    {c.jobPosting.title}
+                    {c.email ? ` · ${c.email}` : ""}
+                    {c.phone ? ` · ${c.phone}` : ""}
+                  </p>
                 </div>
-                <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                  {c.jobPosting.title}
-                  {c.email ? ` · ${c.email}` : ""}
-                  {c.phone ? ` · ${c.phone}` : ""}
-                </p>
-              </div>
+              </Link>
               {canManage && (
                 <div className="flex items-center gap-2">
-                  <Select value={c.stage} onValueChange={(v) => v && moveStage(c.id, v as CandidateStage)}>
-                    <SelectTrigger className="w-[130px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CANDIDATE_STAGES.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {CANDIDATE_STAGE_LABEL[s]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setStageTarget(c);
+                      setPendingStage(c.stage);
+                    }}
+                  >
+                    <ArrowRightLeft className="size-4" /> เลื่อนสถานะ
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="แก้ไข"
+                    render={<Link href={`/recruitment/candidates/${c.id}/edit`} />}
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
                   <Button variant="ghost" size="icon-sm" aria-label="ลบ" onClick={() => setDeleteTarget(c)}>
                     <Trash2 className="size-4 text-destructive" />
                   </Button>
@@ -276,6 +335,21 @@ function Candidates({ canManage }: { canManage: boolean }) {
         confirmLabel="ลบ"
         loading={deleteMut.isPending}
         onConfirm={confirmDelete}
+      />
+
+      <ConfirmDialog
+        open={!!stageTarget}
+        onOpenChange={(o) => {
+          if (!o) {
+            setStageTarget(null);
+            setPendingStage(null);
+          }
+        }}
+        title="เลื่อนสถานะผู้สมัคร"
+        description={stageTarget ? `ย้าย "${stageTarget.name}" เป็น ${pendingStage ? CANDIDATE_STAGE_LABEL[pendingStage] : "สถานะใหม่"} หรือไม่?` : undefined}
+        confirmLabel="ยืนยัน"
+        loading={updateMut.isPending}
+        onConfirm={confirmStageChange}
       />
     </div>
   );

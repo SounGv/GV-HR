@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { Plus, ClipboardCheck, Sparkles } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,9 +10,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { AiEvaluationView } from "@/features/ai/ai-evaluation-view";
 
 import { ReviewCard } from "./review-card";
-import { ReviewDialog } from "./review-dialog";
 import { useReviews } from "./hooks";
-import type { PerformanceReview } from "./types";
 
 export function PerformanceView() {
   const { can } = useAuth();
@@ -70,24 +68,13 @@ function MyReviews() {
 
 function TeamReviews() {
   const { data, isLoading, isError, refetch } = useReviews("team");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<PerformanceReview | null>(null);
   const reviews = data?.data ?? [];
-
-  function openCreate() {
-    setEditing(null);
-    setDialogOpen(true);
-  }
-  function openEdit(r: PerformanceReview) {
-    setEditing(r);
-    setDialogOpen(true);
-  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ผลประเมินของทีม</h2>
-        <Button onClick={openCreate}>
+        <Button render={<Link href="/performance/new" />}>
           <Plus className="size-4" /> สร้างการประเมิน
         </Button>
       </div>
@@ -101,17 +88,10 @@ function TeamReviews() {
       ) : (
         <div className="space-y-3">
           {reviews.map((r) => (
-            <ReviewCard key={r.id} review={r} showEmployee onEdit={openEdit} />
+            <ReviewCard key={r.id} review={r} showEmployee canEdit />
           ))}
         </div>
       )}
-
-      <ReviewDialog
-        key={editing?.id ?? "new"}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        review={editing}
-      />
     </div>
   );
 }

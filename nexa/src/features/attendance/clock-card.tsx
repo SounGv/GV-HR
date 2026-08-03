@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogIn, LogOut, MapPin, CheckCircle2, QrCode } from "lucide-react";
+import { LogIn, LogOut, MapPin, CheckCircle2, QrCode, RotateCcw, Home } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +19,7 @@ function fmtTime(iso: string | null | undefined) {
 }
 
 export function ClockCard() {
-  const { data, isLoading } = useToday();
+  const { data, isLoading, refetch } = useToday();
   const [dialogKind, setDialogKind] = useState<"in" | "out" | null>(null);
 
   // Live Bangkok clock
@@ -63,6 +63,11 @@ export function ClockCard() {
               {clockLabel}
             </span>
             {record && <AttendanceStatusBadge status={record.status} />}
+            {record?.workMode === "WFH" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
+                <Home className="size-3" /> WFH
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-2.5 py-1 text-xs font-medium text-success">
@@ -72,6 +77,12 @@ export function ClockCard() {
               <MapPin className="size-3.5" /> ลงเวลาได้เมื่ออยู่ในพื้นที่สาขา
             </span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="border-white/20 bg-white/10 text-white hover:bg-white/20" onClick={() => refetch()}>
+            <RotateCcw className="size-4" /> รีเฟรช
+          </Button>
         </div>
 
         <div className="flex flex-col items-stretch gap-3">
@@ -130,6 +141,7 @@ export function ClockCard() {
         open={dialogKind !== null}
         kind={dialogKind ?? "in"}
         onOpenChange={(v) => !v && setDialogKind(null)}
+        onDone={() => refetch()}
       />
     </section>
   );

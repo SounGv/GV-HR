@@ -98,23 +98,24 @@ export function KpiView() {
                 const isOwner = g.employee.id === myEmployeeId;
                 return (
                   <Card key={g.id} className="gap-0 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                            {GOAL_TYPE_LABEL[g.type]}
-                          </span>
-                          <span className="text-xs text-muted-foreground">{g.cycle}</span>
+                    <Link href={`/kpi/${g.id}`} className="block">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                              {GOAL_TYPE_LABEL[g.type]}
+                            </span>
+                            <span className="text-xs text-muted-foreground">{g.cycle}</span>
+                          </div>
+                          <p className="font-medium leading-snug">{g.title}</p>
+                          {g.description && (
+                            <p className="line-clamp-2 text-sm text-muted-foreground">
+                              {g.description}
+                            </p>
+                          )}
                         </div>
-                        <p className="font-medium leading-snug">{g.title}</p>
-                        {g.description && (
-                          <p className="line-clamp-2 text-sm text-muted-foreground">
-                            {g.description}
-                          </p>
-                        )}
+                        <GoalStatusBadge status={g.status} />
                       </div>
-                      <GoalStatusBadge status={g.status} />
-                    </div>
 
                     {scope !== "me" && (
                       <div className="mt-2 flex items-center gap-2">
@@ -130,26 +131,27 @@ export function KpiView() {
                       </div>
                     )}
 
-                    <div className="mt-3 space-y-1.5">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          {g.currentValue} / {g.targetValue} {g.unit}
-                        </span>
-                        <span className="font-semibold">{pct}%</span>
+                      <div className="mt-3 space-y-1.5">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {g.currentValue} / {g.targetValue} {g.unit}
+                          </span>
+                          <span className="font-semibold">{pct}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              g.status === "AT_RISK"
+                                ? "bg-warning"
+                                : g.status === "COMPLETED"
+                                  ? "bg-success"
+                                  : "bg-primary"
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            g.status === "AT_RISK"
-                              ? "bg-warning"
-                              : g.status === "COMPLETED"
-                                ? "bg-success"
-                                : "bg-primary"
-                          }`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
+                    </Link>
 
                     <div className="mt-3 flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">

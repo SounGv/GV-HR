@@ -83,13 +83,15 @@ function MyRequests() {
         <div className="space-y-2">
           {requests.map((r) => (
             <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">ล่วงเวลา</span>
-                  <LeaveStatusBadge status={r.status} />
+              <Link href={`/overtime/${r.id}`} className="min-w-0 flex-1">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">ล่วงเวลา</span>
+                    <LeaveStatusBadge status={r.status} />
+                  </div>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
                 </div>
-                <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
-              </div>
+              </Link>
               {(r.status === "PENDING" || r.status === "APPROVED") && (
                 <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setCancelTarget(r)}>
                   ยกเลิก
@@ -139,7 +141,7 @@ function Approvals() {
     <div className="space-y-2">
       {requests.map((r) => (
         <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
-          <div className="flex min-w-0 items-center gap-3">
+          <Link href={`/overtime/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
             <Avatar className="size-9">
               {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
               <AvatarFallback className="bg-primary/10 text-xs text-primary">
@@ -155,7 +157,7 @@ function Approvals() {
                 {r.reason ? ` · ${r.reason}` : ""}
               </p>
             </div>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
               <X className="size-4" /> ปฏิเสธ

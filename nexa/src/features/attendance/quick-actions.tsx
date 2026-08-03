@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Timer, CalendarDays, ReceiptText, type LucideIcon } from "lucide-react";
+import { Timer, CalendarDays, ReceiptText, Wallet, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 
 interface Action {
@@ -15,6 +15,7 @@ const ACTIONS: Action[] = [
   { label: "ขอ OT", href: "/overtime", icon: Timer, permission: "overtime:read" },
   { label: "ขอลา", href: "/leave", icon: CalendarDays, permission: "leave:read" },
   { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read" },
+  { label: "เงินเดือน", href: "/payroll", icon: Wallet, permission: "payroll:read" },
 ];
 
 /** Contextual shortcuts under the clock card — makes OT/leave reachable in one tap. */

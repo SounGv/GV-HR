@@ -163,6 +163,24 @@ export async function deleteJob(
 
 // ─────────────────────────── Candidates ───────────────────────────
 
+export async function getCandidate(companyId: string, id: string) {
+  const candidate = await prisma.candidate.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      note: true,
+      stage: true,
+      createdAt: true,
+      jobPosting: { select: { id: true, title: true } },
+    },
+  });
+  if (!candidate) throw NotFound("ไม่พบผู้สมัคร");
+  return candidate;
+}
+
 export async function listCandidates(
   companyId: string,
   filter: { jobPostingId?: string; stage?: CandidateStage },

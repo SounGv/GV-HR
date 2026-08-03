@@ -114,36 +114,38 @@ export function HolidaysView() {
                   }).format(d);
                   return (
                     <div key={h.id} className="flex items-center gap-4 px-4 py-3">
-                      <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <span className="text-base font-semibold leading-none">{day}</span>
-                        <span className="text-[10px]">{weekday}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium text-foreground">{h.name}</div>
-                        <div className="mt-0.5 flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "rounded-full px-2 py-0.5 text-xs font-medium",
-                              h.type === "NATIONAL"
-                                ? "bg-info/10 text-info"
-                                : "bg-warning/10 text-warning",
-                            )}
-                          >
-                            {h.type === "NATIONAL" ? "วันหยุดราชการ" : "วันหยุดบริษัท"}
-                          </span>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            {h.notifyEnabled ? (
-                              <>
-                                <Bell className="size-3" /> แจ้งเตือน
-                              </>
-                            ) : (
-                              <>
-                                <BellOff className="size-3" /> ปิดแจ้งเตือน
-                              </>
-                            )}
-                          </span>
+                      <Link href={`/holidays/${h.id}`} className="flex min-w-0 flex-1 items-center gap-4">
+                        <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <span className="text-base font-semibold leading-none">{day}</span>
+                          <span className="text-[10px]">{weekday}</span>
                         </div>
-                      </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium text-foreground">{h.name}</div>
+                          <div className="mt-0.5 flex items-center gap-2">
+                            <span
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-xs font-medium",
+                                h.type === "NATIONAL"
+                                  ? "bg-info/10 text-info"
+                                  : "bg-warning/10 text-warning",
+                              )}
+                            >
+                              {h.type === "NATIONAL" ? "วันหยุดราชการ" : "วันหยุดบริษัท"}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              {h.notifyEnabled ? (
+                                <>
+                                  <Bell className="size-3" /> แจ้งเตือน
+                                </>
+                              ) : (
+                                <>
+                                  <BellOff className="size-3" /> ปิดแจ้งเตือน
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
                       {(canEdit || canDelete) && (
                         <div className="flex items-center gap-1">
                           {canEdit && (
