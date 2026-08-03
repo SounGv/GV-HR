@@ -3,6 +3,7 @@ import { Unauthorized } from "@/lib/api/errors";
 import { verifyPassword } from "./password";
 import { signAccessToken, type AccessClaims } from "./jwt";
 import { issueRefreshToken, rotateRefreshToken, revokeRefreshToken } from "./token-store";
+import type { GoogleProfile } from "./google-oauth";
 
 // Constant dummy hash so a missing user still costs one bcrypt compare,
 // equalizing response time and preventing user enumeration by timing.
@@ -63,6 +64,46 @@ export async function login(
   if (!user || !ok) {
     throw Unauthorized("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
   }
+  if (user.status === "DISABLED") {
+    throw Unauthorized("บัญชีนี้ถูกระงับการใช้งาน");
+  }
+
+  await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+
+  const claims = buildClaims(user);
+  const accessToken = await signAccessToken(claims);
+  const refresh = await issueRefreshToken(user.id, meta);
+  return { claims, accessToken, refreshToken: refresh.token };
+}
+
+/**
+ * Google sign-in: matches an existing account by `googleId`, or by a
+ * verified email (linking the Google identity on first use). Never creates a
+ * brand-new account/organization — that still goes through /register.
+ */
+export async function loginWithGoogle(profile: GoogleProfile, meta?: AuthMeta): Promise<AuthResult> {
+  if (!profile.email_verified) {
+    throw Unauthorized("อีเมล Google ยังไม่ได้ยืนยัน");
+  }
+  const email = profile.email.toLowerCase().trim();
+
+  let user = await prisma.user.findFirst({
+    where: { googleId: profile.sub, deletedAt: null },
+    include: userWithRolesInclude,
+  });
+
+  if (!user) {
+    const existing = await prisma.user.findFirst({
+      where: { email, deletedAt: null },
+      include: userWithRolesInclude,
+    });
+    if (!existing) {
+      throw Unauthorized("ไม่พบบัญชีนี้ในระบบ กรุณาสมัครใช้งานก่อน");
+    }
+    await prisma.user.update({ where: { id: existing.id }, data: { googleId: profile.sub } });
+    user = existing;
+  }
+
   if (user.status === "DISABLED") {
     throw Unauthorized("บัญชีนี้ถูกระงับการใช้งาน");
   }

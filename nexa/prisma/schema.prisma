@@ -382,10 +382,11 @@ model User {
   updatedById String?
   deletedAt   DateTime?
 
-  roles         UserRole[]
-  refreshTokens RefreshToken[]
-  employee      Employee?
-  auditLogs     AuditLog[]
+  roles               UserRole[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  employee            Employee?
+  auditLogs           AuditLog[]
 
   @@unique([companyId, email])
   @@index([companyId, deletedAt])
@@ -466,6 +467,24 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Store only a hash of the reset token; single-use, short-lived.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdIp String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model AuditLog {

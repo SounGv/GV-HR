@@ -21,10 +21,14 @@ const PUBLIC_API = new Set([
   "/api/auth/register",
   "/api/auth/refresh",
   "/api/auth/logout",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/google",
+  "/api/auth/google/callback",
   "/api/ai/status",
 ]);
 
-const PUBLIC_PAGES = new Set(["/login", "/register", "/offline"]);
+const PUBLIC_PAGES = new Set(["/login", "/register", "/offline", "/forgot-password", "/reset-password"]);
 
 function isPublicApi(pathname: string) {
   return PUBLIC_API.has(pathname);

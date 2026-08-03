@@ -16,3 +16,14 @@ export const registerSchema = z.object({
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง"),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(1, "ลิงก์ไม่ถูกต้อง"),
+  password: z.string().min(8, "รหัสผ่านอย่างน้อย 8 ตัวอักษร").max(72),
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
