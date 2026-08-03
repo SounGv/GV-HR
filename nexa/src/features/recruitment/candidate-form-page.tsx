@@ -29,7 +29,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { CANDIDATE_STAGES } from "./schema";
 import { CANDIDATE_STAGE_LABEL } from "./labels";
-import { useCreateCandidate, useJobs } from "./hooks";
+import { useCreateCandidate, useUpdateCandidate, useJobs } from "./hooks";
 
 const FORM_ID = "cand-form";
 const LIST = "/recruitment";
@@ -44,33 +44,58 @@ const formSchema = z.object({
 });
 type FormSchema = z.infer<typeof formSchema>;
 
-export function CandidateFormPage({ defaultJobId }: { defaultJobId?: string }) {
+export type CandidateInit = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  note: string | null;
+  stage: FormSchema["stage"];
+  jobPosting: { id: string; title: string };
+};
+
+export function CandidateFormPage({
+  defaultJobId,
+  candidate,
+}: {
+  defaultJobId?: string;
+  candidate?: CandidateInit;
+}) {
   const router = useRouter();
+  const isEdit = !!candidate;
   const { data: jobsData } = useJobs();
   const createMut = useCreateCandidate();
+  const updateMut = useUpdateCandidate();
+  const pending = createMut.isPending || updateMut.isPending;
   const againRef = useRef(false);
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      jobPostingId: defaultJobId ?? "",
-      name: "",
-      email: "",
-      phone: "",
-      stage: "APPLIED",
-      note: "",
+      jobPostingId: candidate?.jobPosting.id ?? defaultJobId ?? "",
+      name: candidate?.name ?? "",
+      email: candidate?.email ?? "",
+      phone: candidate?.phone ?? "",
+      stage: candidate?.stage ?? "APPLIED",
+      note: candidate?.note ?? "",
     },
   });
 
   async function onSubmit(values: FormSchema) {
     try {
-      await createMut.mutateAsync(values);
-      toast.success("เพิ่มผู้สมัครเรียบร้อย");
-      if (againRef.current) {
-        form.reset({ ...form.getValues(), name: "", email: "", phone: "", note: "", stage: "APPLIED" });
-        if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
+      if (isEdit && candidate) {
+        await updateMut.mutateAsync({ id: candidate.id, input: values });
+        toast.success("บันทึกเรียบร้อย");
         router.push(LIST);
+      } else {
+        await createMut.mutateAsync(values);
+        toast.success("เพิ่มผู้สมัครเรียบร้อย");
+        if (againRef.current) {
+          form.reset({ ...form.getValues(), name: "", email: "", phone: "", note: "", stage: "APPLIED" });
+          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          router.push(LIST);
+        }
       }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ");
@@ -78,18 +103,18 @@ export function CandidateFormPage({ defaultJobId }: { defaultJobId?: string }) {
   }
 
   const actions: FormFooterAction[] = [
-    { label: "บันทึกและเพิ่มใหม่", onClick: () => (againRef.current = true) },
-    { label: "เพิ่มผู้สมัคร", onClick: () => (againRef.current = false), primary: true },
+    ...(isEdit ? [] : [{ label: "บันทึกและเพิ่มใหม่", onClick: () => (againRef.current = true) }]),
+    { label: isEdit ? "บันทึก" : "เพิ่มผู้สมัคร", onClick: () => (againRef.current = false), primary: true },
   ];
 
   return (
     <FormPageShell
-      breadcrumbs={[{ label: "สรรหาพนักงาน", href: LIST }, { label: "เพิ่มผู้สมัคร" }]}
+      breadcrumbs={[{ label: "สรรหาพนักงาน", href: LIST }, { label: isEdit ? "แก้ไขผู้สมัคร" : "เพิ่มผู้สมัคร" }]}
       backHref={LIST}
-      title="เพิ่มผู้สมัคร"
+      title={isEdit ? "แก้ไขผู้สมัคร" : "เพิ่มผู้สมัคร"}
       description="บันทึกผู้สมัครเข้าสู่ขั้นตอนการคัดเลือก"
       formId={FORM_ID}
-      pending={createMut.isPending}
+      pending={pending}
       onCancel={() => router.push(LIST)}
       actions={actions}
     >

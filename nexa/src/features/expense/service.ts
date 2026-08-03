@@ -122,6 +122,21 @@ export async function listExpenses(
   return rows.map(serialize);
 }
 
+export async function getExpense(companyId: string, session: AccessClaims, id: string) {
+  const record = await prisma.expenseClaim.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { ...claimSelect, employee: { select: { ...claimSelect.employee.select, managerId: true } } },
+  });
+  if (!record) throw NotFound("ไม่พบรายการเบิกจ่าย");
+
+  const own = record.employee.id === session.employeeId;
+  const managesRequester = record.employee.managerId === session.employeeId;
+  if (!own && !managesRequester && !isFinanceLevel(session)) {
+    throw Forbidden("ไม่มีสิทธิ์ดูรายการเบิกจ่ายนี้");
+  }
+  return serialize(record);
+}
+
 export async function decideExpense(
   companyId: string,
   session: AccessClaims,

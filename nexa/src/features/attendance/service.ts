@@ -14,6 +14,8 @@ const recordSelect = {
   clockOutAt: true,
   clockInDistance: true,
   clockOutDistance: true,
+  workMode: true,
+  moodOut: true,
   status: true,
   note: true,
 } satisfies Prisma.AttendanceRecordSelect;
@@ -119,8 +121,14 @@ export async function clockIn(
 ) {
   const employeeId = requireEmployeeId(session);
   const employee = await loadEmployeeWithBranch(companyId, employeeId);
-  const geo = enforceGeofence(employee.branch, input);
-  const offsiteNote = resolveOffsite(geo, input.offsiteReason);
+  const isWfh = input.workMode === "WFH";
+
+  // WFH is a declared exception: the employee isn't expected to be inside the
+  // branch geofence, so skip the distance check and off-site reason entirely.
+  const geo = isWfh
+    ? { distance: null, outside: false, branchName: employee.branch?.name ?? null }
+    : enforceGeofence(employee.branch, input);
+  const offsiteNote = isWfh ? null : resolveOffsite(geo, input.offsiteReason);
   const distance = geo.distance;
 
   const bp = bangkokParts();
@@ -149,6 +157,7 @@ export async function clockIn(
       clockInPhotoUrl: input.photo ?? null,
       clockInDevice: input.device ?? null,
       clockInBranchId: employee.branch?.id ?? null,
+      workMode: input.workMode ?? "ONSITE",
       note: offsiteNote,
       status,
       createdById: session.sub,
@@ -163,6 +172,7 @@ export async function clockIn(
       clockInPhotoUrl: input.photo ?? null,
       clockInDevice: input.device ?? null,
       clockInBranchId: employee.branch?.id ?? null,
+      workMode: input.workMode ?? "ONSITE",
       ...(offsiteNote ? { note: offsiteNote } : {}),
       status,
       updatedById: session.sub,
@@ -192,9 +202,19 @@ export async function clockOut(
   const employeeId = requireEmployeeId(session);
   const employee = await loadEmployeeWithBranch(companyId, employeeId);
 
-  // Distance is recorded for clock-out but not enforced (don't trap people in).
+  const { dateUTC } = bangkokParts();
+  const existing = await prisma.attendanceRecord.findUnique({
+    where: { employeeId_workDate: { employeeId, workDate: dateUTC } },
+    select: { id: true, clockInAt: true, clockOutAt: true, workMode: true },
+  });
+  if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
+  if (existing.clockOutAt) throw Conflict("คุณได้เช็คเอาท์แล้ววันนี้");
+
+  // Distance is recorded for clock-out but not enforced (don't trap people in);
+  // skip it entirely for a day declared as WFH at clock-in.
   let distance: number | null = null;
   if (
+    existing.workMode !== "WFH" &&
     input.lat != null &&
     input.lng != null &&
     employee.branch?.lat != null &&
@@ -211,14 +231,6 @@ export async function clockOut(
     ).distance;
   }
 
-  const { dateUTC } = bangkokParts();
-  const existing = await prisma.attendanceRecord.findUnique({
-    where: { employeeId_workDate: { employeeId, workDate: dateUTC } },
-    select: { id: true, clockInAt: true, clockOutAt: true },
-  });
-  if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
-  if (existing.clockOutAt) throw Conflict("คุณได้เช็คเอาท์แล้ววันนี้");
-
   const record = await prisma.attendanceRecord.update({
     where: { id: existing.id },
     data: {
@@ -229,6 +241,7 @@ export async function clockOut(
       clockOutAccuracy: input.accuracy ?? null,
       clockOutPhotoUrl: input.photo ?? null,
       clockOutDevice: input.device ?? null,
+      moodOut: input.mood ?? undefined,
       updatedById: session.sub,
     },
     select: recordSelect,

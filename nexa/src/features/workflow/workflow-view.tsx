@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Check, X, GitBranch, Pencil, Trash2, Send, Inbox } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,8 +15,6 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/client";
 
-import { WorkflowDialog } from "./workflow-dialog";
-import { RequestDialog } from "./request-dialog";
 import { RequestStatusBadge, STEP_DOT } from "./labels";
 import {
   useRequests,
@@ -116,7 +115,6 @@ export function WorkflowView() {
 function MyRequests() {
   const { data, isLoading, isError, refetch } = useRequests("me");
   const cancelMut = useCancelRequest();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const requests = data?.data ?? [];
 
   async function cancel(id: string) {
@@ -132,7 +130,7 @@ function MyRequests() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">คำขอของฉัน</h2>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button render={<Link href="/workflows/requests/new" />}>
           <Send className="size-4" /> ส่งคำขอ
         </Button>
       </div>
@@ -145,21 +143,21 @@ function MyRequests() {
       ) : (
         <div className="space-y-3">
           {requests.map((r) => (
-            <RequestCard
-              key={r.id}
-              req={r}
-              actions={
-                r.status === "PENDING" ? (
-                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => cancel(r.id)}>
-                    ยกเลิกคำขอ
-                  </Button>
-                ) : undefined
-              }
-            />
+            <Link key={r.id} href={`/workflows/requests/${r.id}`}>
+              <RequestCard
+                req={r}
+                actions={
+                  r.status === "PENDING" ? (
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => cancel(r.id)}>
+                      ยกเลิกคำขอ
+                    </Button>
+                  ) : undefined
+                }
+              />
+            </Link>
           ))}
         </div>
       )}
-      <RequestDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );
 }
@@ -187,21 +185,22 @@ function InboxRequests() {
   return (
     <div className="space-y-3">
       {requests.map((r) => (
-        <RequestCard
-          key={r.id}
-          req={r}
-          showRequester
-          actions={
-            <>
-              <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
-                <X className="size-4" /> ปฏิเสธ
-              </Button>
-              <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
-                <Check className="size-4" /> อนุมัติ
-              </Button>
-            </>
-          }
-        />
+        <Link key={r.id} href={`/workflows/requests/${r.id}`}>
+          <RequestCard
+            req={r}
+            showRequester
+            actions={
+              <>
+                <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
+                  <X className="size-4" /> ปฏิเสธ
+                </Button>
+                <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
+                  <Check className="size-4" /> อนุมัติ
+                </Button>
+              </>
+            }
+          />
+        </Link>
       ))}
     </div>
   );
@@ -212,8 +211,6 @@ function Templates() {
   const deleteMut = useDeleteWorkflow();
   const workflows = data?.data ?? [];
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<ApprovalWorkflow | null>(null);
   const [delTarget, setDelTarget] = useState<ApprovalWorkflow | null>(null);
 
   async function confirmDelete() {
@@ -231,12 +228,7 @@ function Templates() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">เวิร์กโฟลว์อนุมัติ</h2>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
+        <Button render={<Link href="/workflows/new" />}>
           <Plus className="size-4" /> สร้างเวิร์กโฟลว์
         </Button>
       </div>
@@ -270,10 +262,7 @@ function Templates() {
                     variant="ghost"
                     size="icon"
                     className="size-7"
-                    onClick={() => {
-                      setEditing(w);
-                      setDialogOpen(true);
-                    }}
+                    render={<Link href={`/workflows/${w.id}/edit`} />}
                     aria-label="แก้ไข"
                   >
                     <Pencil className="size-3.5" />
@@ -302,7 +291,6 @@ function Templates() {
         </div>
       )}
 
-      <WorkflowDialog open={dialogOpen} onOpenChange={setDialogOpen} workflow={editing} />
       <ConfirmDialog
         open={!!delTarget}
         onOpenChange={(o) => !o && setDelTarget(null)}

@@ -54,6 +54,14 @@ export async function listWorkflows(companyId: string, activeOnly = false): Prom
   }));
 }
 
+export async function getWorkflow(companyId: string, id: string): Promise<ApprovalWorkflow> {
+  const w = await prisma.approvalWorkflow.findFirst({
+    where: { id, companyId, deletedAt: null },
+  });
+  if (!w) throw NotFound("ไม่พบเวิร์กโฟลว์");
+  return { id: w.id, name: w.name, description: w.description, steps: asStepDefs(w.steps), active: w.active };
+}
+
 export async function createWorkflow(
   companyId: string,
   session: AccessClaims,

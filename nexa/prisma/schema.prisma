@@ -76,6 +76,26 @@ enum AttendanceStatus {
   ON_LEAVE
 }
 
+enum AttendanceWorkMode {
+  ONSITE
+  WFH
+}
+
+enum AttendanceMood {
+  TERRIBLE
+  BAD
+  OK
+  GOOD
+  EXCELLENT
+}
+
+enum RecognitionType {
+  STAR
+  AWARD
+  HEART
+  POINT
+}
+
 enum LeaveType {
   ANNUAL
   SICK
@@ -222,6 +242,7 @@ model Company {
   shiftTemplates     ShiftTemplate[]
   shiftAssignments   ShiftAssignment[]
   approvalWorkflows  ApprovalWorkflow[]
+  recognitions       Recognition[]
   approvalRequests   ApprovalRequest[]
 
   @@index([deletedAt])
@@ -525,6 +546,7 @@ model Employee {
   enrollments        TrainingEnrollment[]
   expenses           ExpenseClaim[]
   shiftAssignments   ShiftAssignment[]
+  recognitions       Recognition[]
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
@@ -623,6 +645,11 @@ model AttendanceRecord {
   clockInDevice    String?
   clockOutDevice   String?
 
+  // Employee-declared mode at clock-in (WFH skips the geofence requirement).
+  workMode AttendanceWorkMode @default(ONSITE)
+  // Self-reported wellbeing check at clock-out.
+  moodOut  AttendanceMood?
+
   status AttendanceStatus @default(PRESENT)
   note   String?
 
@@ -635,6 +662,31 @@ model AttendanceRecord {
   @@unique([employeeId, workDate])
   @@index([companyId, workDate])
   @@map("attendance_records")
+}
+
+// ─────────────────────────── HR: Recognition ───────────────────────────
+
+model Recognition {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  givenByUserId     String
+  givenByEmployeeId String?
+
+  type    RecognitionType
+  points  Int             @default(0)
+  message String?
+
+  createdAt   DateTime  @default(now())
+  createdById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, employeeId])
+  @@index([companyId, type])
+  @@map("recognitions")
 }
 
 // ─────────────────────────── HR: Leave ───────────────────────────

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ClockCard } from "@/features/attendance/clock-card";
 import { AttendanceQuickActions } from "@/features/attendance/quick-actions";
 import { AttendanceHistory } from "@/features/attendance/attendance-history";
+import { RecognitionTiles } from "@/features/recognition/recognition-tiles";
 
 export const metadata: Metadata = { title: "เวลาเข้า-ออกงาน" };
 
@@ -17,6 +18,7 @@ export default async function AttendancePage() {
         description="เช็คอิน/เช็คเอาท์อัจฉริยะด้วย GPS + Geofence และดูประวัติการลงเวลาของคุณ"
       />
       <ClockCard />
+      <RecognitionTiles />
       <AttendanceQuickActions />
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-foreground">ประวัติการลงเวลา (30 วันล่าสุด)</h2>

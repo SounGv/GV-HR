@@ -104,10 +104,11 @@ export function TrainingView() {
                 const full = c.capacity != null && c.enrolledCount >= c.capacity;
                 return (
                   <Card key={c.id} className="gap-0 p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                        {c.category}
-                      </span>
+                    <Link href={`/training/${c.id}`} className="block">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                          {c.category}
+                        </span>
                       <span
                         className={`text-[11px] font-medium ${
                           c.status === "OPEN" ? "text-success" : "text-muted-foreground"
@@ -116,36 +117,37 @@ export function TrainingView() {
                         {c.status === "OPEN" ? "เปิดรับสมัคร" : "ปิดรับสมัคร"}
                       </span>
                     </div>
-                    <p className="mt-2 font-medium leading-snug">{c.title}</p>
-                    {c.description && (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                        {c.description}
-                      </p>
-                    )}
-                    <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="size-3.5" />
-                        {c.hours} ชม.
-                        {c.provider ? ` · ${c.provider}` : ""}
-                      </div>
-                      {c.scheduledDate && (
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="size-3.5" />
-                          {formatDate(c.scheduledDate)}
-                        </div>
+                      <p className="mt-2 font-medium leading-snug">{c.title}</p>
+                      {c.description && (
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                          {c.description}
+                        </p>
                       )}
-                      {c.location && (
+                      <div className="mt-3 space-y-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1.5">
-                          <MapPin className="size-3.5" />
-                          {c.location}
+                          <Clock className="size-3.5" />
+                          {c.hours} ชม.
+                          {c.provider ? ` · ${c.provider}` : ""}
                         </div>
-                      )}
-                      <div className="flex items-center gap-1.5">
-                        <Users className="size-3.5" />
-                        {c.enrolledCount}
-                        {c.capacity != null ? ` / ${c.capacity}` : ""} คน
+                        {c.scheduledDate && (
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="size-3.5" />
+                            {formatDate(c.scheduledDate)}
+                          </div>
+                        )}
+                        {c.location && (
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="size-3.5" />
+                            {c.location}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <Users className="size-3.5" />
+                          {c.enrolledCount}
+                          {c.capacity != null ? ` / ${c.capacity}` : ""} คน
+                        </div>
                       </div>
-                    </div>
+                    </Link>
 
                     <div className="mt-3 flex items-center gap-1">
                       {active ? (
@@ -207,14 +209,16 @@ export function TrainingView() {
             <div className="space-y-2">
               {enrollments.map((e) => (
                 <Card key={e.id} className="flex-row items-center justify-between gap-3 p-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">{e.course.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {e.course.category} · {e.course.hours} ชม.
-                      {e.course.scheduledDate ? ` · ${formatDate(e.course.scheduledDate)}` : ""}
-                      {e.status === "COMPLETED" && e.score != null ? ` · คะแนน ${e.score}` : ""}
-                    </p>
-                  </div>
+                  <Link href={`/training/${e.course.id}`} className="min-w-0 flex-1">
+                    <div className="min-w-0">
+                      <p className="font-medium">{e.course.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {e.course.category} · {e.course.hours} ชม.
+                        {e.course.scheduledDate ? ` · ${formatDate(e.course.scheduledDate)}` : ""}
+                        {e.status === "COMPLETED" && e.score != null ? ` · คะแนน ${e.score}` : ""}
+                      </p>
+                    </div>
+                  </Link>
                   <div className="flex items-center gap-2">
                     <EnrollmentStatusBadge status={e.status} />
                     {e.status === "ENROLLED" && (

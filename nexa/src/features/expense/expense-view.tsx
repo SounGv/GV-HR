@@ -94,13 +94,15 @@ function MyClaims() {
         <div className="space-y-2">
           {claims.map((r) => (
             <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-medium text-foreground">{r.title}</span>
-                  <ExpenseStatusBadge status={r.status} />
+              <Link href={`/expenses/${r.id}`} className="min-w-0 flex-1">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium text-foreground">{r.title}</span>
+                    <ExpenseStatusBadge status={r.status} />
+                  </div>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
                 </div>
-                <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
-              </div>
+              </Link>
               {r.status === "PENDING" && (
                 <Button
                   variant="ghost"
@@ -161,7 +163,7 @@ function Approvals() {
     <div className="space-y-2">
       {claims.map((r) => (
         <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
-          <div className="flex min-w-0 items-center gap-3">
+          <Link href={`/expenses/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
             <Avatar className="size-9">
               {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
               <AvatarFallback className="bg-primary/10 text-xs text-primary">
@@ -177,7 +179,7 @@ function Approvals() {
                 {r.description ? ` · ${r.description}` : ""}
               </p>
             </div>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
               <X className="size-4" /> ปฏิเสธ
@@ -222,7 +224,7 @@ function ToPay() {
     <div className="space-y-2">
       {claims.map((r) => (
         <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
-          <div className="flex min-w-0 items-center gap-3">
+          <Link href={`/expenses/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
             <Avatar className="size-9">
               {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
               <AvatarFallback className="bg-primary/10 text-xs text-primary">
@@ -235,7 +237,7 @@ function ToPay() {
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
             </div>
-          </div>
+          </Link>
           <Button size="sm" disabled={payMut.isPending} onClick={() => pay(r.id)}>
             <Wallet className="size-4" /> จ่ายแล้ว
           </Button>

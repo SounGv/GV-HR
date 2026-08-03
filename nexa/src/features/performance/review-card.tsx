@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,18 +20,18 @@ const TONE_CLASS: Record<string, string> = {
 export function ReviewCard({
   review,
   showEmployee,
-  onEdit,
+  canEdit,
 }: {
   review: PerformanceReview;
   showEmployee?: boolean;
-  onEdit?: (review: PerformanceReview) => void;
+  canEdit?: boolean;
 }) {
   const tone = TONE_CLASS[bandTone(review.band)];
 
   return (
     <Card className="gap-4 p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <Link href={`/performance/${review.id}`} className="flex items-center gap-3">
           {showEmployee ? (
             <>
               <Avatar className="size-10">
@@ -58,7 +59,7 @@ export function ReviewCard({
               </p>
             </div>
           )}
-        </div>
+        </Link>
 
         <div className="flex items-center gap-2">
           <div className={cn("flex flex-col items-center rounded-2xl px-3.5 py-1.5", tone)}>
@@ -67,8 +68,13 @@ export function ReviewCard({
             </span>
             <span className="text-[10px] font-medium opacity-80">{review.band} · /5.0</span>
           </div>
-          {onEdit && (
-            <Button variant="ghost" size="icon-sm" aria-label="แก้ไข" onClick={() => onEdit(review)}>
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="แก้ไข"
+              render={<Link href={`/performance/${review.id}/edit`} />}
+            >
               <Pencil className="size-4" />
             </Button>
           )}

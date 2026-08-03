@@ -107,6 +107,21 @@ export async function listLeave(
   });
 }
 
+export async function getLeave(companyId: string, session: AccessClaims, id: string) {
+  const record = await prisma.leaveRequest.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { ...requestSelect, employee: { select: { ...requestSelect.employee.select, managerId: true } } },
+  });
+  if (!record) throw NotFound("ไม่พบคำขอลา");
+
+  const own = record.employee.id === session.employeeId;
+  const managesRequester = record.employee.managerId === session.employeeId;
+  if (!own && !managesRequester && !isHrLevel(session)) {
+    throw Forbidden("ไม่มีสิทธิ์ดูคำขอลานี้");
+  }
+  return record;
+}
+
 export async function decideLeave(
   companyId: string,
   session: AccessClaims,

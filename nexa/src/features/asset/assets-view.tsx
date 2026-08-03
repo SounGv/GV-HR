@@ -140,11 +140,13 @@ export function AssetsView() {
                 <TableRow key={a.id}>
                   <TableCell className="font-mono text-xs">{a.assetCode}</TableCell>
                   <TableCell>
-                    <div className="font-medium">{a.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {a.category}
-                      {a.serialNumber ? ` · ${a.serialNumber}` : ""}
-                    </div>
+                    <Link href={`/assets/${a.id}`} className="block">
+                      <div className="font-medium">{a.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {a.category}
+                        {a.serialNumber ? ` · ${a.serialNumber}` : ""}
+                      </div>
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <AssetStatusBadge status={a.status} />

@@ -1,21 +1,31 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, RefreshCw, MapPin, Loader2, LogIn, LogOut, CheckCircle2, AlertTriangle, SwitchCamera } from "lucide-react";
+import { Camera, RefreshCw, MapPin, Loader2, LogIn, LogOut, CheckCircle2, AlertTriangle, SwitchCamera, Home, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { getCurrentPosition } from "@/lib/geolocation";
 import { ApiError } from "@/lib/api/client";
 import { useClockIn, useClockOut } from "./hooks";
+import type { AttendanceMood, AttendanceWorkMode } from "./types";
 
 interface Coords {
   lat: number;
   lng: number;
   accuracy?: number;
 }
+
+const MOOD_OPTIONS: { value: AttendanceMood; emoji: string; label: string }[] = [
+  { value: "TERRIBLE", emoji: "😣", label: "Terrible" },
+  { value: "BAD", emoji: "🙁", label: "Bad" },
+  { value: "OK", emoji: "🙂", label: "OK" },
+  { value: "GOOD", emoji: "😊", label: "Good" },
+  { value: "EXCELLENT", emoji: "😄", label: "Excellent" },
+];
 
 export function CheckInDialog({
   open,
@@ -45,6 +55,8 @@ export function CheckInDialog({
   // employee explains why (e.g. field work) and re-submits.
   const [offsite, setOffsite] = useState<{ distance: number; branchName: string | null } | null>(null);
   const [offsiteReason, setOffsiteReason] = useState("");
+  const [workMode, setWorkMode] = useState<AttendanceWorkMode>("ONSITE");
+  const [mood, setMood] = useState<AttendanceMood | null>(null);
 
   // GPS: acquire on open, reset photo.
   useEffect(() => {
@@ -55,6 +67,8 @@ export function CheckInDialog({
     setPhoto(null);
     setOffsite(null);
     setOffsiteReason("");
+    setWorkMode("ONSITE");
+    setMood(null);
     getCurrentPosition()
       .then((pos) => {
         if (cancelled) return;
@@ -135,6 +149,8 @@ export function CheckInDialog({
         photo: photo ?? undefined,
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
         offsiteReason: offsiteReason.trim() || undefined,
+        ...(kind === "in" ? { workMode } : {}),
+        ...(kind === "out" && mood ? { mood } : {}),
       };
       if (kind === "in") await clockIn.mutateAsync(payload);
       else await clockOut.mutateAsync(payload);
@@ -168,6 +184,36 @@ export function CheckInDialog({
         </DialogHeader>
 
         <div className="space-y-3">
+          {/* Work mode: WFH skips the branch geofence requirement */}
+          {kind === "in" && (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setWorkMode("ONSITE")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-xl border p-2.5 text-sm font-medium transition",
+                  workMode === "ONSITE"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted/50",
+                )}
+              >
+                <Building2 className="size-4" /> GPS (เข้าสำนักงาน)
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkMode("WFH")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-xl border p-2.5 text-sm font-medium transition",
+                  workMode === "WFH"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted/50",
+                )}
+              >
+                <Home className="size-4" /> WFH
+              </button>
+            </div>
+          )}
+
           {/* Camera / photo */}
           <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900">
             {photo ? (
@@ -224,6 +270,9 @@ export function CheckInDialog({
               )}
               {gpsState === "error" && <span className="text-warning">{gpsMsg}</span>}
             </div>
+            {kind === "in" && workMode === "WFH" && (
+              <p className="mt-1 text-xs text-muted-foreground">โหมด WFH — ไม่ต้องอยู่ในพื้นที่สาขา</p>
+            )}
             {gpsState === "ok" && coords && (
               <iframe
                 title="ตำแหน่งของฉัน"
@@ -234,6 +283,29 @@ export function CheckInDialog({
               />
             )}
           </div>
+
+          {/* Wellbeing check-in at clock-out */}
+          {kind === "out" && (
+            <div className="rounded-xl border border-border p-3">
+              <p className="mb-2 text-center text-sm font-medium text-foreground">วันนี้เป็นอย่างไรบ้าง?</p>
+              <div className="flex items-center justify-between">
+                {MOOD_OPTIONS.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setMood(m.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition",
+                      mood === m.value ? "bg-primary/10 ring-1 ring-primary" : "hover:bg-muted/50",
+                    )}
+                  >
+                    <span className="text-2xl">{m.emoji}</span>
+                    <span className="text-[10px] text-muted-foreground">{m.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Off-site: shown after the server flags an out-of-geofence check-in */}
           {offsite && (

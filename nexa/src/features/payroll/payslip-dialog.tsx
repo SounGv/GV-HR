@@ -1,6 +1,6 @@
 "use client";
 
-import { Printer } from "lucide-react";
+import { Printer, BadgeCheck, CalendarDays, ReceiptText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,14 +35,30 @@ export function PayslipDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 p-3">
             <div>
               {name && <p className="font-medium text-foreground">{name}</p>}
               {record.employee && (
                 <p className="text-xs text-muted-foreground">{record.employee.employeeCode}</p>
               )}
             </div>
-            <PayrollStatusBadge status={record.status} />
+            <div className="text-right">
+              <PayrollStatusBadge status={record.status} />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {record.paidAt ? `จ่ายเมื่อ ${new Date(record.paidAt).toLocaleDateString("th-TH")}` : "ยังไม่จ่าย"}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-border p-3 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <CalendarDays className="size-4" />
+              <span>รอบ {record.periodLabel}</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ReceiptText className="size-4" />
+              <span>อ้างอิง {record.id.slice(0, 8)}</span>
+            </div>
           </div>
 
           <Section title="รายได้">
@@ -59,8 +75,13 @@ export function PayslipDialog({
             <Row label="รวมรายการหัก" value={-record.totalDeductions} strong />
           </Section>
 
-          <div className="flex items-center justify-between rounded-lg bg-primary/10 px-4 py-3">
-            <span className="font-medium text-foreground">เงินเดือนสุทธิ</span>
+          <div className="flex items-start justify-between rounded-lg bg-primary/10 px-4 py-3">
+            <div>
+              <div className="flex items-center gap-2 font-medium text-foreground">
+                <BadgeCheck className="size-4 text-primary" /> เงินเดือนสุทธิ
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">ยอดที่โอน/จ่ายจริงในรอบนี้</p>
+            </div>
             <span className="text-lg font-semibold text-primary">
               {formatCurrency(record.net)}
             </span>
