@@ -10,10 +10,14 @@ import {
   Sparkles,
   ArrowRight,
   ArrowUpRight,
+  LogIn,
+  CalendarDays,
+  Wallet,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getDashboardSummary, getActionCenter } from "@/features/dashboard/service";
+import { getDashboardSummary, getActionCenter, getMySnapshot } from "@/features/dashboard/service";
 import { ActionCenter } from "@/features/dashboard/action-center";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +26,7 @@ import {
   DonutLegend,
   HeadcountBar,
 } from "@/features/dashboard/dashboard-charts";
-import { fullName } from "@/lib/format";
+import { fullName, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "แดชบอร์ด" };
@@ -67,6 +71,37 @@ function Kpi({
   );
 }
 
+function MyTile({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  tone,
+  href,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: LucideIcon;
+  tone: keyof typeof TONES;
+  href: string;
+}) {
+  return (
+    <Link href={href}>
+      <Card className="gap-0 p-4 transition hover:border-primary/40 hover:shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TONES[tone])}>
+            <Icon className="size-4" />
+          </span>
+          <span className="truncate text-xs text-muted-foreground">{label}</span>
+        </div>
+        <div className="mt-2 truncate text-lg font-semibold tracking-tight">{value}</div>
+        {sub && <div className="mt-0.5 truncate text-xs text-muted-foreground">{sub}</div>}
+      </Card>
+    </Link>
+  );
+}
+
 function greeting(): string {
   const h = new Date().getHours();
   if (h < 12) return "สวัสดีตอนเช้า";
@@ -76,12 +111,15 @@ function greeting(): string {
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  const [s, actions] = await Promise.all([
+  const [s, actions, mine] = await Promise.all([
     getDashboardSummary(user!.companyId),
     getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles),
+    user!.employee ? getMySnapshot(user!.companyId, user!.employee.id) : Promise.resolve(null),
   ]);
 
   const name = user?.employee ? fullName(user.employee.firstName, user.employee.lastName) : user?.email;
+  const fmtClock = (iso: string | null) =>
+    iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
 
   return (
     <div className="space-y-6">
@@ -94,6 +132,43 @@ export default async function DashboardPage() {
           ยินดีต้อนรับเข้าสู่ NEXA HR AI Platform · {user?.company?.name}
         </p>
       </div>
+
+      {/* My today — personal snapshot, not company aggregates */}
+      {mine && (
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <MyTile
+            icon={LogIn}
+            tone="success"
+            label="เวลาเข้างานวันนี้"
+            value={fmtClock(mine.clockInAt) ?? "ยังไม่เช็คอิน"}
+            sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
+            href="/attendance"
+          />
+          <MyTile
+            icon={CalendarDays}
+            tone="info"
+            label="วันลาคงเหลือ"
+            value={`${mine.leaveDaysRemaining} วัน`}
+            href="/leave"
+          />
+          <MyTile
+            icon={Wallet}
+            tone="warning"
+            label="เงินเดือนล่าสุด"
+            value={mine.latestPayslip ? formatCurrency(mine.latestPayslip.net) : "-"}
+            sub={mine.latestPayslip?.periodLabel}
+            href="/payroll"
+          />
+          <MyTile
+            icon={Star}
+            tone="primary"
+            label="คะแนนให้กำลังใจ"
+            value={`${mine.recognition.star + mine.recognition.award + mine.recognition.heart}`}
+            sub={`+${mine.recognition.point} คะแนน`}
+            href="/attendance"
+          />
+        </section>
+      )}
 
       {/* AI Daily Briefing */}
       <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
