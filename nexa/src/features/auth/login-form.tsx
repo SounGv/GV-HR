@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import { loginSchema, type LoginInput } from "./schema";
@@ -55,12 +55,16 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>อีเมล</FormLabel>
               <FormControl>
-                <Input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@company.co.th"
-                  {...field}
-                />
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@company.co.th"
+                    className="h-10 pl-9"
+                    {...field}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -73,18 +77,27 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>รหัสผ่าน</FormLabel>
               <FormControl>
-                <Input
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  {...field}
-                />
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    className="h-10 pl-9"
+                    {...field}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full bg-gradient-to-r from-primary to-violet-500 text-primary-foreground hover:opacity-90"
+          disabled={submitting}
+        >
           {submitting && <Loader2 className="size-4 animate-spin" />}
           เข้าสู่ระบบ
         </Button>
