@@ -96,6 +96,66 @@ export async function getActionCenter(
   };
 }
 
+export interface MySnapshot {
+  clockInAt: string | null;
+  clockOutAt: string | null;
+  leaveDaysRemaining: number;
+  latestPayslip: { periodLabel: string; net: number } | null;
+  recognition: { star: number; award: number; heart: number; point: number };
+}
+
+/**
+ * Personal "for me" snapshot shown on the dashboard — today's clock status,
+ * remaining leave balance, latest payslip, and recognition tally. Company-wide
+ * KPIs above are abstract to an individual contributor; this is the part of
+ * the dashboard that's actually about them.
+ */
+export async function getMySnapshot(companyId: string, employeeId: string): Promise<MySnapshot> {
+  const year = new Date().getFullYear();
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+
+  const [today, balances, latestPayslip, recognitionRows] = await Promise.all([
+    prisma.attendanceRecord.findFirst({
+      where: { companyId, employeeId, workDate: todayStart, deletedAt: null },
+      select: { clockInAt: true, clockOutAt: true },
+    }),
+    prisma.leaveBalance.findMany({
+      where: { companyId, employeeId, year },
+      select: { totalDays: true, usedDays: true },
+    }),
+    prisma.payrollRecord.findFirst({
+      where: { companyId, employeeId },
+      orderBy: { period: "desc" },
+      select: { periodLabel: true, net: true },
+    }),
+    prisma.recognition.groupBy({
+      by: ["type"],
+      where: { companyId, employeeId, deletedAt: null },
+      _count: { _all: true },
+      _sum: { points: true },
+    }),
+  ]);
+
+  const leaveDaysRemaining = balances.reduce((sum, b) => sum + (b.totalDays - b.usedDays), 0);
+
+  const recognition = { star: 0, award: 0, heart: 0, point: 0 };
+  for (const row of recognitionRows) {
+    if (row.type === "STAR") recognition.star = row._count._all;
+    else if (row.type === "AWARD") recognition.award = row._count._all;
+    else if (row.type === "HEART") recognition.heart = row._count._all;
+    else if (row.type === "POINT") recognition.point = row._sum.points ?? 0;
+  }
+
+  return {
+    clockInAt: today?.clockInAt?.toISOString() ?? null,
+    clockOutAt: today?.clockOutAt?.toISOString() ?? null,
+    leaveDaysRemaining,
+    latestPayslip: latestPayslip ? { periodLabel: latestPayslip.periodLabel, net: Number(latestPayslip.net) } : null,
+    recognition,
+  };
+}
+
 export interface DashboardSummary {
   headcount: number;
   active: number;
