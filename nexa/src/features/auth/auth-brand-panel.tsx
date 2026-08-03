@@ -1,0 +1,49 @@
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
+
+export function AuthBrandPanel({
+  eyebrow,
+  headline,
+  subtitle,
+  children,
+  footer,
+}: {
+  eyebrow: string;
+  headline: React.ReactNode;
+  subtitle: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
+  return (
+    <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-white lg:flex">
+      {/* ambient glow */}
+      <div className="pointer-events-none absolute -top-32 -left-24 size-96 rounded-full bg-primary/25 blur-[110px]" />
+      <div className="pointer-events-none absolute -right-24 bottom-0 size-96 rounded-full bg-blue-500/15 blur-[120px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,theme(colors.white/8%)_1px,transparent_0)] bg-[size:28px_28px] opacity-40" />
+
+      <Link href="/login" className="relative flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/nexa-logo.svg" alt="NEXA" className="size-12 rounded-2xl shadow-lg shadow-black/30" />
+        <div className="leading-tight">
+          <div className="font-semibold tracking-wide">NEXA</div>
+          <div className="text-[11px] tracking-[0.18em] text-slate-400">AI WORKFORCE PLATFORM</div>
+        </div>
+      </Link>
+
+      <div className="relative space-y-6">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 backdrop-blur">
+          <Sparkles className="size-3.5 text-primary" /> {eyebrow}
+        </span>
+        <h1 className="text-3xl font-semibold leading-[1.2] tracking-tight lg:text-4xl">{headline}</h1>
+        <p className="max-w-md text-sm text-slate-400">{subtitle}</p>
+
+        {children}
+      </div>
+
+      <div className="relative flex items-center justify-between text-xs text-slate-500">
+        <span>© {new Date().getFullYear()} NEXA AI Workforce Platform</span>
+        {footer}
+      </div>
+    </div>
+  );
+}
