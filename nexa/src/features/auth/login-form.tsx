@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,7 +21,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export function LoginForm() {
+const OAUTH_ERROR_MESSAGE: Record<string, string> = {
+  google_disabled: "ยังไม่ได้เปิดใช้งานเข้าสู่ระบบด้วย Google",
+  google_invalid_state: "เซสชันเข้าสู่ระบบไม่ถูกต้อง กรุณาลองใหม่",
+  google_failed: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่",
+};
+
+export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
@@ -29,6 +36,14 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error && OAUTH_ERROR_MESSAGE[error]) {
+      toast.error(OAUTH_ERROR_MESSAGE[error]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function onSubmit(values: LoginInput) {
     setSubmitting(true);
@@ -75,7 +90,12 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>รหัสผ่าน</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>รหัสผ่าน</FormLabel>
+                <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                  ลืมรหัสผ่าน?
+                </Link>
+              </div>
               <FormControl>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -101,7 +121,31 @@ export function LoginForm() {
           {submitting && <Loader2 className="size-4 animate-spin" />}
           เข้าสู่ระบบ
         </Button>
+
+        {googleEnabled && (
+          <>
+            <div className="relative flex items-center py-1">
+              <div className="flex-1 border-t border-border" />
+              <span className="px-3 text-xs text-muted-foreground">หรือ</span>
+              <div className="flex-1 border-t border-border" />
+            </div>
+            <Button type="button" variant="outline" size="lg" className="w-full" render={<a href="/api/auth/google" />}>
+              <GoogleIcon className="size-4" /> เข้าสู่ระบบด้วย Google
+            </Button>
+          </>
+        )}
       </form>
     </Form>
+  );
+}
+
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.89c2.28-2.1 3.56-5.19 3.56-8.82Z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.89-3c-1.08.73-2.46 1.15-4.06 1.15-3.12 0-5.77-2.11-6.72-4.94H1.25v3.1A12 12 0 0 0 12 24Z" />
+      <path fill="#FBBC05" d="M5.28 14.3A7.2 7.2 0 0 1 4.9 12c0-.8.14-1.57.38-2.3v-3.1H1.25A12 12 0 0 0 0 12c0 1.94.46 3.77 1.25 5.4l4.03-3.1Z" />
+      <path fill="#EA4335" d="M12 4.75c1.76 0 3.35.6 4.6 1.8l3.45-3.45C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.25 6.6l4.03 3.1C6.23 6.86 8.88 4.75 12 4.75Z" />
+    </svg>
   );
 }

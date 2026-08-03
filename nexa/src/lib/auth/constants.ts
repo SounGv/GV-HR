@@ -2,3 +2,4 @@
  *  pulling in `next/headers` (which only works in the Node request scope). */
 export const ACCESS_COOKIE = "nexa_at";
 export const REFRESH_COOKIE = "nexa_rt";
+export const OAUTH_STATE_COOKIE = "nexa_oauth_state";

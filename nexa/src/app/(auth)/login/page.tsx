@@ -15,6 +15,7 @@ import {
 import { AuthBrandPanel } from "@/features/auth/auth-brand-panel";
 import { LoginForm } from "@/features/auth/login-form";
 import { MODULES } from "@/config/permissions";
+import { isGoogleOAuthEnabled } from "@/lib/auth/google-oauth";
 
 export const metadata: Metadata = { title: "เข้าสู่ระบบ" };
 
@@ -85,7 +86,7 @@ export default function LoginPage() {
           </div>
 
           <Suspense fallback={<div className="h-64" />}>
-            <LoginForm />
+            <LoginForm googleEnabled={isGoogleOAuthEnabled()} />
           </Suspense>
 
           <p className="text-center text-sm text-muted-foreground">
