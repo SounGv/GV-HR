@@ -162,6 +162,29 @@ export async function listUsers(companyId: string) {
   }));
 }
 
+export async function getUser(companyId: string, id: string) {
+  const user = await prisma.user.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: {
+      id: true,
+      email: true,
+      status: true,
+      roles: { select: { role: { select: { id: true, name: true } } } },
+      employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+    },
+  });
+  if (!user) throw NotFound("ไม่พบผู้ใช้");
+
+  return {
+    id: user.id,
+    email: user.email,
+    status: user.status,
+    employee: user.employee,
+    roleIds: user.roles.map((r) => r.role.id),
+    roleNames: user.roles.map((r) => r.role.name),
+  };
+}
+
 export async function setUserRoles(
   companyId: string,
   session: AccessClaims,
