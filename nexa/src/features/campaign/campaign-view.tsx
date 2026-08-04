@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Sparkles, Target, BookOpen } from "lucide-react";
+import { Plus, Sparkles, Target, BookOpen, CalendarClock } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,11 @@ export function CampaignView() {
           {canManage && (
             <Button variant="outline" size="sm" render={<Link href="/performance/competencies" />}>
               <BookOpen className="size-4" /> คลังสมรรถนะ
+            </Button>
+          )}
+          {canManage && (
+            <Button variant="outline" size="sm" render={<Link href="/performance/campaigns/schedules" />}>
+              <CalendarClock className="size-4" /> รอบอัตโนมัติ
             </Button>
           )}
           {canManage && (

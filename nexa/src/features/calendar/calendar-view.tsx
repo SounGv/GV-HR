@@ -27,18 +27,21 @@ const SOURCE_STYLE: Record<CalendarSource, string> = {
   leave: "bg-warning/15 text-warning",
   training: "bg-primary/15 text-primary",
   event: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  evaluation: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
 };
 const SOURCE_DOT: Record<CalendarSource, string> = {
   holiday: "bg-destructive",
   leave: "bg-warning",
   training: "bg-primary",
   event: "bg-emerald-500",
+  evaluation: "bg-violet-500",
 };
 const SOURCE_LABEL: Record<CalendarSource, string> = {
   holiday: "วันหยุด",
   leave: "การลา",
   training: "อบรม",
   event: "กิจกรรม",
+  evaluation: "ประเมินผล",
 };
 
 function todayIso(): string {
@@ -207,7 +210,16 @@ export function CalendarView() {
                     <div className="flex min-w-0 items-start gap-2">
                       <span className={cn("mt-1 size-2 shrink-0 rounded-full", SOURCE_DOT[it.source])} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium leading-snug">{it.title}</p>
+                        {it.href ? (
+                          <Link
+                            href={it.href}
+                            className="text-sm font-medium leading-snug text-primary hover:underline"
+                          >
+                            {it.title}
+                          </Link>
+                        ) : (
+                          <p className="text-sm font-medium leading-snug">{it.title}</p>
+                        )}
                         <p className="text-xs text-muted-foreground">{SOURCE_LABEL[it.source]}</p>
                       </div>
                     </div>

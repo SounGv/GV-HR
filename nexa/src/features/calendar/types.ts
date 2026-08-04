@@ -1,4 +1,4 @@
-export type CalendarSource = "holiday" | "leave" | "training" | "event";
+export type CalendarSource = "holiday" | "leave" | "training" | "event" | "evaluation";
 export type EventType = "event" | "meeting" | "deadline";
 
 export interface CalendarItem {
@@ -8,6 +8,7 @@ export interface CalendarItem {
   source: CalendarSource;
   type: string;
   eventId?: string; // present for editable company events
+  href?: string; // present for view-only linked items (e.g. evaluation campaigns)
 }
 
 export interface CalendarMonth {
