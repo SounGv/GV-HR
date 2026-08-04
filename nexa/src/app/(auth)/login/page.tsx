@@ -79,7 +79,7 @@ export default function LoginPage() {
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2 text-center lg:text-left">
-            <h2 className="text-2xl font-semibold tracking-tight">ยินดีต้อนรับกลับ 👋</h2>
+            <h2 className="font-heading text-2xl font-bold">ยินดีต้อนรับกลับ 👋</h2>
             <p className="text-sm text-muted-foreground">
               เข้าสู่ระบบเพื่อเริ่มต้นใช้งาน NEXA
             </p>

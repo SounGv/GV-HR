@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2 text-center lg:text-left">
-            <h2 className="text-2xl font-semibold tracking-tight">ลืมรหัสผ่าน</h2>
+            <h2 className="font-heading text-2xl font-bold">ลืมรหัสผ่าน</h2>
             <p className="text-sm text-muted-foreground">กรอกอีเมลเพื่อรับลิงก์ตั้งรหัสผ่านใหม่</p>
           </div>
           <ForgotPasswordForm />
