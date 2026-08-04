@@ -14,6 +14,8 @@ const recordSelect = {
   clockOutAt: true,
   clockInDistance: true,
   clockOutDistance: true,
+  clockInViaQr: true,
+  clockOutViaQr: true,
   workMode: true,
   moodOut: true,
   status: true,
@@ -123,12 +125,23 @@ export async function clockIn(
   const employee = await loadEmployeeWithBranch(companyId, employeeId);
   const isWfh = input.workMode === "WFH";
 
+  // Scanning the branch's own QR code is treated the same as being inside the
+  // geofence — it's a physical-presence proof, so GPS distance isn't required.
+  let qrVerified = false;
+  if (input.qrBranchId) {
+    if (input.qrBranchId !== employee.branch?.id) {
+      throw BadRequest("QR นี้ไม่ใช่ของสาขาที่คุณสังกัด");
+    }
+    qrVerified = true;
+  }
+
   // WFH is a declared exception: the employee isn't expected to be inside the
   // branch geofence, so skip the distance check and off-site reason entirely.
-  const geo = isWfh
-    ? { distance: null, outside: false, branchName: employee.branch?.name ?? null }
-    : enforceGeofence(employee.branch, input);
-  const offsiteNote = isWfh ? null : resolveOffsite(geo, input.offsiteReason);
+  const geo =
+    isWfh || qrVerified
+      ? { distance: null, outside: false, branchName: employee.branch?.name ?? null }
+      : enforceGeofence(employee.branch, input);
+  const offsiteNote = isWfh || qrVerified ? null : resolveOffsite(geo, input.offsiteReason);
   const distance = geo.distance;
 
   const bp = bangkokParts();
@@ -157,6 +170,7 @@ export async function clockIn(
       clockInPhotoUrl: input.photo ?? null,
       clockInDevice: input.device ?? null,
       clockInBranchId: employee.branch?.id ?? null,
+      clockInViaQr: qrVerified,
       workMode: input.workMode ?? "ONSITE",
       note: offsiteNote,
       status,
@@ -172,6 +186,7 @@ export async function clockIn(
       clockInPhotoUrl: input.photo ?? null,
       clockInDevice: input.device ?? null,
       clockInBranchId: employee.branch?.id ?? null,
+      clockInViaQr: qrVerified,
       workMode: input.workMode ?? "ONSITE",
       ...(offsiteNote ? { note: offsiteNote } : {}),
       status,
@@ -210,11 +225,21 @@ export async function clockOut(
   if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
   if (existing.clockOutAt) throw Conflict("คุณได้เช็คเอาท์แล้ววันนี้");
 
+  let qrVerified = false;
+  if (input.qrBranchId) {
+    if (input.qrBranchId !== employee.branch?.id) {
+      throw BadRequest("QR นี้ไม่ใช่ของสาขาที่คุณสังกัด");
+    }
+    qrVerified = true;
+  }
+
   // Distance is recorded for clock-out but not enforced (don't trap people in);
-  // skip it entirely for a day declared as WFH at clock-in.
+  // skip it entirely for a day declared as WFH at clock-in, or when the branch
+  // QR was scanned (physical presence already proven).
   let distance: number | null = null;
   if (
     existing.workMode !== "WFH" &&
+    !qrVerified &&
     input.lat != null &&
     input.lng != null &&
     employee.branch?.lat != null &&
@@ -241,6 +266,7 @@ export async function clockOut(
       clockOutAccuracy: input.accuracy ?? null,
       clockOutPhotoUrl: input.photo ?? null,
       clockOutDevice: input.device ?? null,
+      clockOutViaQr: qrVerified,
       moodOut: input.mood ?? undefined,
       updatedById: session.sub,
     },

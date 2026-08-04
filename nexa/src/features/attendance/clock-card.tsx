@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import jsQR from "jsqr";
 import {
   LogIn,
   LogOut,
@@ -12,6 +13,7 @@ import {
   Camera,
   X,
   AlertTriangle,
+  QrCode,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -68,10 +70,17 @@ export function ClockCard() {
     mood?: AttendanceMood;
   } | null>(null);
   const [offsiteReason, setOffsiteReason] = useState("");
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrReady, setQrReady] = useState(false);
+  const [qrError, setQrError] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lastCoordsRef = useRef<Coords | null>(null);
+  const qrVideoRef = useRef<HTMLVideoElement>(null);
+  const qrStreamRef = useRef<MediaStream | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const qrIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Live Bangkok clock
   const [now, setNow] = useState<Date | null>(null);
@@ -128,6 +137,95 @@ export function ClockCard() {
   const record = data?.data ?? null;
   const hasIn = !!record?.clockInAt;
   const hasOut = !!record?.clockOutAt;
+
+  async function submitClockInViaQr(branchId: string) {
+    setChecking(true);
+    try {
+      await clockIn.mutateAsync({
+        qrBranchId: branchId,
+        workMode: "ONSITE",
+        device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
+      });
+      toast.success("เช็คอินด้วย QR สำเร็จ");
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError || err instanceof Error ? err.message : "เช็คอินไม่สำเร็จ");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function submitClockOutViaQr(branchId: string) {
+    setChecking(true);
+    try {
+      await clockOut.mutateAsync({
+        qrBranchId: branchId,
+        device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
+      });
+      toast.success("เช็คเอาท์ด้วย QR สำเร็จ");
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError || err instanceof Error ? err.message : "เช็คเอาท์ไม่สำเร็จ");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  // QR scanner: opens the back camera and decodes frames on an interval until
+  // a "NEXA-CHECKIN:<branchId>" payload is found, then auto-submits.
+  useEffect(() => {
+    if (!qrOpen) return;
+    let cancelled = false;
+    setQrReady(false);
+    setQrError(false);
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        qrStreamRef.current = stream;
+        if (qrVideoRef.current) {
+          qrVideoRef.current.srcObject = stream;
+          await qrVideoRef.current.play().catch(() => {});
+        }
+        setQrReady(true);
+        qrIntervalRef.current = setInterval(() => {
+          const video = qrVideoRef.current;
+          if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+          if (!qrCanvasRef.current) qrCanvasRef.current = document.createElement("canvas");
+          const canvas = qrCanvasRef.current;
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          const prefix = "NEXA-CHECKIN:";
+          if (code?.data?.startsWith(prefix)) {
+            const branchId = code.data.slice(prefix.length).trim();
+            setQrOpen(false);
+            if (hasIn) submitClockOutViaQr(branchId);
+            else submitClockInViaQr(branchId);
+          }
+        }, 400);
+      } catch {
+        if (!cancelled) setQrError(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (qrIntervalRef.current) clearInterval(qrIntervalRef.current);
+      qrStreamRef.current?.getTracks().forEach((t) => t.stop());
+      qrStreamRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrOpen]);
 
   async function resolveCoords(): Promise<Coords | null> {
     try {
@@ -342,9 +440,19 @@ export function ClockCard() {
         )}
 
         {!isLoading && !hasOut && !moodOpen && (
-          <p className="mt-2 text-center text-xs text-slate-400">
-            {hasIn ? "แตะเพื่อเช็คเอาท์เมื่อเลิกงาน" : "แตะเพื่อเช็คอินเข้างานทันที"}
-          </p>
+          <>
+            <p className="mt-2 text-center text-xs text-slate-400">
+              {hasIn ? "แตะเพื่อเช็คเอาท์เมื่อเลิกงาน" : "แตะเพื่อเช็คอินเข้างานทันที"}
+            </p>
+            <button
+              type="button"
+              disabled={checking}
+              onClick={() => setQrOpen(true)}
+              className="mx-auto mt-2 flex items-center gap-1.5 text-xs text-slate-300 underline-offset-2 hover:text-white hover:underline disabled:opacity-40"
+            >
+              <QrCode className="size-3.5" /> หรือสแกน QR ที่สาขา
+            </button>
+          </>
         )}
       </div>
 
@@ -391,6 +499,37 @@ export function ClockCard() {
           <Button type="button" className="w-full" onClick={capture} disabled={!camReady}>
             <Camera className="size-4" /> ถ่ายรูป
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR check-in/out — scans the branch's posted QR code instead of GPS */}
+      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>สแกน QR เพื่อ{hasIn ? "เช็คเอาท์" : "เช็คอิน"}</DialogTitle>
+            <DialogDescription>เล็งกล้องไปที่ QR ของสาขาที่ติดไว้หน้างาน</DialogDescription>
+          </DialogHeader>
+          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900">
+            <video ref={qrVideoRef} playsInline muted className="size-full object-cover" />
+            {!qrReady && !qrError && (
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-300">
+                <Loader2 className="mr-2 size-4 animate-spin" /> กำลังเปิดกล้อง…
+              </div>
+            )}
+            {qrError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 text-center text-xs text-slate-300">
+                <AlertTriangle className="size-5 text-warning" /> เปิดกล้องไม่ได้ — กรุณาอนุญาตการเข้าถึงกล้อง
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setQrOpen(false)}
+              className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/50 text-white"
+              aria-label="ปิด"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
 

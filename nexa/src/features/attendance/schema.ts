@@ -17,6 +17,11 @@ export const clockSchema = z.object({
   offsiteReason: z.string().trim().max(500).nullish(),
   // Declared at clock-in: WFH skips the geofence requirement entirely.
   workMode: z.enum(ATTENDANCE_WORK_MODES).nullish(),
+  // Set when the employee scanned their branch's QR code instead of relying on
+  // GPS — must match the employee's assigned branch (verified server-side via
+  // plain string equality, so this intentionally isn't a strict `.uuid()` check —
+  // some seeded/legacy branch ids in this system aren't RFC4122-compliant).
+  qrBranchId: z.string().trim().min(1).max(100).nullish(),
   // Self-reported wellbeing check, submitted at clock-out only.
   mood: z.enum(ATTENDANCE_MOODS).nullish(),
 });

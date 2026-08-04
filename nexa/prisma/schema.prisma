@@ -686,6 +686,11 @@ model AttendanceRecord {
   clockInDevice    String?
   clockOutDevice   String?
 
+  // Set when the branch geofence was verified by scanning the branch's QR
+  // code instead of (or in addition to) GPS — see the attendance service.
+  clockInViaQr  Boolean @default(false)
+  clockOutViaQr Boolean @default(false)
+
   // Employee-declared mode at clock-in (WFH skips the geofence requirement).
   workMode AttendanceWorkMode @default(ONSITE)
   // Self-reported wellbeing check at clock-out.

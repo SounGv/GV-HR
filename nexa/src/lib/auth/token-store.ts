@@ -95,3 +95,37 @@ export async function revokeAllForUser(userId: string): Promise<void> {
     data: { revokedAt: new Date() },
   });
 }
+
+export interface SessionRow {
+  id: string;
+  createdIp: string | null;
+  userAgent: string | null;
+  createdAt: Date;
+  isCurrent: boolean;
+}
+
+/** Active (non-revoked, non-expired) sessions for a user, most recent first. */
+export async function listSessions(userId: string, currentJti: string | null): Promise<SessionRow[]> {
+  const rows = await prisma.refreshToken.findMany({
+    where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, createdIp: true, userAgent: true, createdAt: true },
+  });
+  return rows.map((r) => ({ ...r, isCurrent: r.id === currentJti }));
+}
+
+/** Revoke one session by id — scoped to `userId` so a user can only ever revoke their own row. */
+export async function revokeSessionById(userId: string, id: string): Promise<void> {
+  await prisma.refreshToken.updateMany({
+    where: { id, userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
+/** "Sign out of all other devices" — revokes every session except the caller's current one. */
+export async function revokeAllExcept(userId: string, exceptId: string): Promise<void> {
+  await prisma.refreshToken.updateMany({
+    where: { userId, revokedAt: null, id: { not: exceptId } },
+    data: { revokedAt: new Date() },
+  });
+}
