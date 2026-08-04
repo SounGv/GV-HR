@@ -9,6 +9,8 @@ export interface AttendanceRecord {
   clockOutAt: string | null;
   clockInDistance: number | null;
   clockOutDistance: number | null;
+  clockInViaQr: boolean;
+  clockOutViaQr: boolean;
   workMode: AttendanceWorkMode;
   moodOut: AttendanceMood | null;
   status: AttendanceStatus;
@@ -33,4 +35,5 @@ export interface ClockPayload {
   offsiteReason?: string;
   workMode?: AttendanceWorkMode;
   mood?: AttendanceMood;
+  qrBranchId?: string;
 }

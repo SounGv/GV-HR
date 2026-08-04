@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Building, MapPin, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Building, MapPin, Users, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -74,16 +74,21 @@ export function BranchView() {
                   </div>
                 </div>
               </div>
-              {canManage && (
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button variant="ghost" size="icon-sm" aria-label="แก้ไข" render={<Link href={`/branches/${b.id}/edit`} />}>
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label="ลบ" className="text-destructive" onClick={() => setDeleteTarget(b)}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              )}
+              <div className="flex shrink-0 items-center gap-1">
+                <Button variant="ghost" size="icon-sm" aria-label="ดู QR เช็คอิน" render={<Link href={`/branches/${b.id}/qr`} />}>
+                  <QrCode className="size-4" />
+                </Button>
+                {canManage && (
+                  <>
+                    <Button variant="ghost" size="icon-sm" aria-label="แก้ไข" render={<Link href={`/branches/${b.id}/edit`} />}>
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" aria-label="ลบ" className="text-destructive" onClick={() => setDeleteTarget(b)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </Card>
           ))}
         </div>
