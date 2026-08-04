@@ -18,8 +18,16 @@ const select = {
   },
 } as const;
 
+/**
+ * Wildcard grants like "recognition:*" are expanded into concrete permission
+ * keys at seed time (see `expandPermissions`), so `session.perms` never
+ * literally contains "recognition:*". The recognition module itself has no
+ * HR-exclusive action (Manager and HR both get read+create), so fall back to
+ * `employee:update` — the same concrete HR-level signal used in
+ * `features/employee/service.ts`.
+ */
 function isHrLevel(session: AccessClaims): boolean {
-  return session.perms.includes("*") || session.perms.includes("recognition:*");
+  return session.perms.includes("*") || session.perms.includes("employee:update");
 }
 
 export async function createRecognition(

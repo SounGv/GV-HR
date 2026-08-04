@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, ClipboardCheck, Sparkles } from "lucide-react";
+import { Plus, ClipboardCheck, Sparkles, Target } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
 import { AiEvaluationView } from "@/features/ai/ai-evaluation-view";
+import { CampaignView } from "@/features/campaign/campaign-view";
 
 import { ReviewCard } from "./review-card";
 import { useReviews } from "./hooks";
@@ -16,12 +17,18 @@ export function PerformanceView() {
   const { can } = useAuth();
   const canReview = can("performance:create");
   const canAi = can("ai:read");
+  const canCampaign = can("campaign:read");
 
   return (
     <Tabs defaultValue="me" className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">ผลประเมินของฉัน</TabsTrigger>
         {canReview && <TabsTrigger value="team">ประเมินทีม</TabsTrigger>}
+        {canCampaign && (
+          <TabsTrigger value="campaigns">
+            <Target className="size-3.5" /> แคมเปญ
+          </TabsTrigger>
+        )}
         {canAi && (
           <TabsTrigger value="ai">
             <Sparkles className="size-3.5" /> แบบประเมิน AI
@@ -36,6 +43,12 @@ export function PerformanceView() {
       {canReview && (
         <TabsContent value="team">
           <TeamReviews />
+        </TabsContent>
+      )}
+
+      {canCampaign && (
+        <TabsContent value="campaigns">
+          <CampaignView />
         </TabsContent>
       )}
 
