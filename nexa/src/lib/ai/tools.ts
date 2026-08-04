@@ -191,12 +191,11 @@ export async function executeTool(
 
       case "search_employees": {
         if (!can(session.perms, "employee:read")) return deny("employee:read");
-        const { items } = await listEmployees(companyId, {
-          page: 1,
-          pageSize: 20,
-          sortDir: "asc",
-          search: String(input.query ?? ""),
-        });
+        const { items } = await listEmployees(
+          companyId,
+          { page: 1, pageSize: 20, sortDir: "asc", search: String(input.query ?? "") },
+          session,
+        );
         return JSON.stringify(
           items.map((e) => ({
             code: e.employeeCode,

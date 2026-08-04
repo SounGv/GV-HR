@@ -16,7 +16,7 @@ export default async function EditEmployeePage({
   const session = await requirePagePermission("employee:update");
   const { id } = await params;
 
-  const employee = await getEmployee(session.companyId, id).catch((e) => {
+  const employee = await getEmployee(session.companyId, id, session).catch((e) => {
     if (e instanceof AppError && e.status === 404) notFound();
     throw e;
   });

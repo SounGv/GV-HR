@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const query = employeeListQuerySchema.parse(
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );
-    const { items, total } = await listEmployees(session.companyId, query);
+    const { items, total } = await listEmployees(session.companyId, query, session);
     return okPaginated(items, buildPageMeta(query, total));
   } catch (err) {
     return handleApiError(err);
