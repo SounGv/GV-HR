@@ -19,3 +19,11 @@ export function clockIn(payload: ClockPayload) {
 export function clockOut(payload: ClockPayload) {
   return api.post<Envelope<AttendanceRecord>>("/api/attendance/clock-out", payload);
 }
+
+export function startBreak() {
+  return api.post<Envelope<AttendanceRecord>>("/api/attendance/break/start");
+}
+
+export function endBreak() {
+  return api.post<Envelope<AttendanceRecord>>("/api/attendance/break/end");
+}

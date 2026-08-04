@@ -30,3 +30,27 @@ export const rangeQuerySchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "วันที่ไม่ถูกต้อง"),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "วันที่ไม่ถูกต้อง"),
 });
+
+export const swapRequestCreateSchema = z.object({
+  assignmentId: z.string().uuid(),
+  targetEmployeeId: z.string().uuid(),
+  reason: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.string().trim().max(300).optional(),
+  ),
+});
+export type SwapRequestCreateInput = z.infer<typeof swapRequestCreateSchema>;
+
+export const swapRequestListQuerySchema = z.object({
+  scope: z.enum(["mine", "inbox"]).default("mine"),
+});
+export type SwapRequestListQuery = z.infer<typeof swapRequestListQuerySchema>;
+
+export const swapRequestDecideSchema = z.object({
+  action: z.enum(["approve", "reject"]),
+  note: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.string().trim().max(300).optional(),
+  ),
+});
+export type SwapRequestDecideInput = z.infer<typeof swapRequestDecideSchema>;

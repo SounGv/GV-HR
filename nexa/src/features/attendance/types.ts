@@ -11,6 +11,8 @@ export interface AttendanceRecord {
   clockOutDistance: number | null;
   clockInViaQr: boolean;
   clockOutViaQr: boolean;
+  breakStartAt: string | null;
+  breakEndAt: string | null;
   workMode: AttendanceWorkMode;
   moodOut: AttendanceMood | null;
   status: AttendanceStatus;

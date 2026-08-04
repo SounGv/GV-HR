@@ -2,26 +2,37 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X, Repeat, Check, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ErrorState, TableLoadingState } from "@/components/shared/states";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
+import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ApiError } from "@/lib/api/client";
 
 import {
   useTemplates,
   useAssignments,
+  useMyAssignments,
   useUpsertAssignment,
   useDeleteAssignment,
   useDeleteTemplate,
+  useCreateSwapRequest,
+  useSwapRequests,
+  useDecideSwapRequest,
+  useCancelSwapRequest,
 } from "./hooks";
-import type { ShiftTemplate, ShiftAssignment } from "./types";
+import type { ShiftTemplate, ShiftAssignment, SwapRequest } from "./types";
 
 const WEEKDAYS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
@@ -41,6 +52,292 @@ function shiftWeek(weekStart: string, deltaDays: number) {
 }
 
 export function ShiftView() {
+  const { can } = useAuth();
+  const canAssign = can("shift:create");
+
+  return (
+    <Tabs defaultValue="mine" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="mine">ตารางของฉัน</TabsTrigger>
+        <TabsTrigger value="swap">คำขอสลับเวร</TabsTrigger>
+        {canAssign && <TabsTrigger value="roster">จัดตาราง</TabsTrigger>}
+      </TabsList>
+      <TabsContent value="mine">
+        <MyScheduleView />
+      </TabsContent>
+      <TabsContent value="swap">
+        <SwapRequestsView />
+      </TabsContent>
+      {canAssign && (
+        <TabsContent value="roster">
+          <RosterGrid />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+}
+
+function MyScheduleView() {
+  const today = toIsoLocal(new Date());
+  const to = shiftWeek(today, 6);
+  const { data, isLoading, isError, refetch } = useMyAssignments(today, to);
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => shiftWeek(today, i)), [today]);
+
+  const byDate = useMemo(() => {
+    const map = new Map<string, ShiftAssignment>();
+    for (const a of data?.data ?? []) map.set(a.date, a);
+    return map;
+  }, [data]);
+
+  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (isLoading) return <TableLoadingState rows={4} />;
+
+  return (
+    <div className="space-y-2">
+      {days.map((d) => {
+        const cell = byDate.get(d);
+        const tpl = cell?.template;
+        const isToday = d === today;
+        return (
+          <Card
+            key={d}
+            className={cn(
+              "flex flex-row items-center justify-between gap-3 p-3",
+              isToday && "border-primary/40 bg-primary/5",
+            )}
+          >
+            <p className="text-sm font-medium text-foreground">
+              {WEEKDAYS[new Date(`${d}T00:00:00Z`).getUTCDay()]} {d.slice(8)} {thaiMonth(d)}
+              {isToday && <span className="ml-1.5 text-xs text-primary">(วันนี้)</span>}
+            </p>
+            <div className="flex items-center gap-2">
+              {tpl ? (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white"
+                  style={{ backgroundColor: tpl.color }}
+                >
+                  {tpl.name} · {tpl.startTime}-{tpl.endTime}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">ไม่มีเวร</span>
+              )}
+              {cell && <RequestSwapButton assignment={cell} />}
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function RequestSwapButton({ assignment }: { assignment: ShiftAssignment }) {
+  const { user } = useAuth();
+  const myEmployeeId = user.employee?.id ?? null;
+  const { data: orgData } = useOrgOptions();
+  const coworkers = (orgData?.data.managers ?? []).filter((e) => e.id !== myEmployeeId);
+
+  const [open, setOpen] = useState(false);
+  const [targetId, setTargetId] = useState("");
+  const [reason, setReason] = useState("");
+  const createMut = useCreateSwapRequest();
+
+  async function submit() {
+    if (!targetId) {
+      toast.error("กรุณาเลือกเพื่อนร่วมงาน");
+      return;
+    }
+    try {
+      await createMut.mutateAsync({
+        assignmentId: assignment.id,
+        targetEmployeeId: targetId,
+        reason: reason.trim() || undefined,
+      });
+      toast.success("ส่งคำขอสลับเวรแล้ว");
+      setOpen(false);
+      setTargetId("");
+      setReason("");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ส่งคำขอไม่สำเร็จ");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button variant="ghost" size="icon-sm" aria-label="ขอสลับเวร" onClick={() => setOpen(true)}>
+        <Repeat className="size-3.5" />
+      </Button>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>ขอสลับเวร</DialogTitle>
+          <DialogDescription>
+            {formatDate(assignment.date)} · {assignment.template.name} ({assignment.template.startTime}-
+            {assignment.template.endTime})
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Select value={targetId} onValueChange={(v) => setTargetId(v ?? "")}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="เลือกเพื่อนร่วมงานที่จะให้ทำแทน" />
+            </SelectTrigger>
+            <SelectContent>
+              {coworkers.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName} ({c.employeeCode})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Textarea
+            rows={2}
+            placeholder="เหตุผล (ไม่บังคับ)"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+          <Button className="w-full" onClick={submit} disabled={createMut.isPending}>
+            ส่งคำขอ
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const SWAP_STATUS_LABEL: Record<SwapRequest["status"], string> = {
+  PENDING: "รออนุมัติ",
+  APPROVED: "อนุมัติแล้ว",
+  REJECTED: "ปฏิเสธแล้ว",
+  CANCELLED: "ยกเลิกแล้ว",
+};
+const SWAP_STATUS_TONE: Record<SwapRequest["status"], string> = {
+  PENDING: "bg-muted text-muted-foreground",
+  APPROVED: "bg-success/10 text-success",
+  REJECTED: "bg-destructive/10 text-destructive",
+  CANCELLED: "bg-muted text-muted-foreground",
+};
+
+function SwapRequestRow({
+  req,
+  children,
+}: {
+  req: SwapRequest;
+  children?: React.ReactNode;
+}) {
+  return (
+    <Card className="flex flex-row flex-wrap items-center justify-between gap-3 p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">
+          {req.requesterEmployee.firstName} {req.requesterEmployee.lastName} → {req.targetEmployee.firstName}{" "}
+          {req.targetEmployee.lastName}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {formatDate(req.assignment.date)} · {req.assignment.template.name}
+          {req.reason && <> · {req.reason}</>}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", SWAP_STATUS_TONE[req.status])}>
+          {SWAP_STATUS_LABEL[req.status]}
+        </span>
+        {children}
+      </div>
+    </Card>
+  );
+}
+
+function SwapRequestsView() {
+  const mineQuery = useSwapRequests("mine");
+  const inboxQuery = useSwapRequests("inbox");
+  const cancelMut = useCancelSwapRequest();
+  const decideMut = useDecideSwapRequest();
+
+  async function cancel(id: string) {
+    try {
+      await cancelMut.mutateAsync(id);
+      toast.success("ยกเลิกคำขอแล้ว");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ยกเลิกไม่สำเร็จ");
+    }
+  }
+
+  async function decide(id: string, action: "approve" | "reject") {
+    try {
+      await decideMut.mutateAsync({ id, action });
+      toast.success(action === "approve" ? "อนุมัติแล้ว" : "ปฏิเสธแล้ว");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
+    }
+  }
+
+  const mine = mineQuery.data?.data ?? [];
+  const inbox = inboxQuery.data?.data ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-foreground">คำขอของฉัน</h3>
+        {mineQuery.isError ? (
+          <ErrorState onRetry={() => mineQuery.refetch()} />
+        ) : mineQuery.isLoading ? (
+          <TableLoadingState rows={2} />
+        ) : mine.length === 0 ? (
+          <EmptyState icon={Repeat} title="ยังไม่มีคำขอสลับเวร" />
+        ) : (
+          mine.map((req) => (
+            <SwapRequestRow key={req.id} req={req}>
+              {req.status === "PENDING" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive"
+                  disabled={cancelMut.isPending}
+                  onClick={() => cancel(req.id)}
+                >
+                  ยกเลิก
+                </Button>
+              )}
+            </SwapRequestRow>
+          ))
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-foreground">รออนุมัติ</h3>
+        {inboxQuery.isError ? (
+          <ErrorState onRetry={() => inboxQuery.refetch()} />
+        ) : inboxQuery.isLoading ? (
+          <TableLoadingState rows={2} />
+        ) : inbox.length === 0 ? (
+          <EmptyState icon={Repeat} title="ไม่มีคำขอรออนุมัติ" />
+        ) : (
+          inbox.map((req) => (
+            <SwapRequestRow key={req.id} req={req}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="อนุมัติ"
+                disabled={decideMut.isPending}
+                onClick={() => decide(req.id, "approve")}
+              >
+                <Check className="size-4 text-success" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="ปฏิเสธ"
+                disabled={decideMut.isPending}
+                onClick={() => decide(req.id, "reject")}
+              >
+                <Ban className="size-4 text-destructive" />
+              </Button>
+            </SwapRequestRow>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RosterGrid() {
   const { can } = useAuth();
   const canAssign = can("shift:create");
   const canEditTpl = can("shift:update");
