@@ -9,6 +9,7 @@ import type {
   CampaignCreateInput,
   CampaignListQuery,
   CampaignUpdateInput,
+  InviteRaterInput,
   SubmitResponseInput,
 } from "./schema";
 import type { RaterType } from "./types";
@@ -304,7 +305,9 @@ export async function seedParticipants(
 
     if (raterTypes.includes("SELF")) {
       await prisma.evaluationResponse.upsert({
-        where: { participantId_raterType: { participantId: participant.id, raterType: "SELF" } },
+        where: {
+          participantId_raterType_raterEmployeeId: { participantId: participant.id, raterType: "SELF", raterEmployeeId: emp.id },
+        },
         update: {},
         create: { participantId: participant.id, raterType: "SELF", raterEmployeeId: emp.id, scores: [] },
       });
@@ -312,7 +315,13 @@ export async function seedParticipants(
 
     if (raterTypes.includes("MANAGER") && emp.managerId) {
       await prisma.evaluationResponse.upsert({
-        where: { participantId_raterType: { participantId: participant.id, raterType: "MANAGER" } },
+        where: {
+          participantId_raterType_raterEmployeeId: {
+            participantId: participant.id,
+            raterType: "MANAGER",
+            raterEmployeeId: emp.managerId,
+          },
+        },
         update: {},
         create: { participantId: participant.id, raterType: "MANAGER", raterEmployeeId: emp.managerId, scores: [] },
       });
@@ -365,6 +374,7 @@ export async function getParticipant(companyId: string, participantId: string, s
       },
       responses: {
         select: {
+          id: true,
           raterType: true,
           raterEmployeeId: true,
           status: true,
@@ -450,9 +460,12 @@ async function computeAndStoreScore(participantId: string) {
 }
 
 /**
- * The rater type is derived from the caller's identity relative to the
- * participant — never trusted from the client — so an employee can't claim
- * to be submitting "as manager" (or vice versa).
+ * Which response row belongs to the caller is derived from
+ * `raterEmployeeId` — never trusted from the client. SELF/MANAGER rows are
+ * stamped with the employee's/manager's id at seed time; PEER/UPWARD rows
+ * are stamped with the specific invited rater's id at invite time
+ * (see `invitePeerRater`) — so this single lookup works for all 4 rater
+ * types without needing to re-derive the relationship here.
  */
 export async function submitMyResponse(
   companyId: string,
@@ -463,24 +476,15 @@ export async function submitMyResponse(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true, employeeId: true, employee: { select: { managerId: true } } },
+    select: { id: true },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
 
-  let raterType: RaterType;
-  if (session.employeeId === participant.employeeId) {
-    raterType = "SELF";
-  } else if (session.employeeId === participant.employee.managerId || isHrLevel(session)) {
-    raterType = "MANAGER";
-  } else {
-    throw Forbidden("ไม่มีสิทธิ์ทำแบบประเมินนี้");
-  }
-
-  const response = await prisma.evaluationResponse.findUnique({
-    where: { participantId_raterType: { participantId, raterType } },
-    select: { id: true },
+  const response = await prisma.evaluationResponse.findFirst({
+    where: { participantId, raterEmployeeId: session.employeeId ?? "" },
+    select: { id: true, raterType: true },
   });
-  if (!response) throw NotFound("ไม่พบแบบประเมินของผู้ประเมินนี้");
+  if (!response) throw Forbidden("ไม่มีสิทธิ์ทำแบบประเมินนี้");
 
   await prisma.evaluationResponse.update({
     where: { id: response.id },
@@ -505,11 +509,109 @@ export async function submitMyResponse(
     action: "campaign.submit_response",
     entity: "EvaluationParticipant",
     entityId: participantId,
-    after: { raterType },
+    after: { raterType: response.raterType },
     ...meta,
   });
 
-  return { ok: true as const, raterType };
+  return { ok: true as const, raterType: response.raterType };
+}
+
+/**
+ * HR or the participant's own manager may invite a specific coworker as a
+ * PEER rater, or one of the participant's direct reports as an UPWARD
+ * rater — true 360 feedback is opt-in per participant, unlike SELF/MANAGER
+ * which auto-seed for every campaign that collects them.
+ */
+export async function invitePeerRater(
+  companyId: string,
+  session: AccessClaims,
+  participantId: string,
+  input: InviteRaterInput,
+  meta?: Meta,
+) {
+  const participant = await prisma.evaluationParticipant.findFirst({
+    where: { id: participantId, campaign: { companyId, deletedAt: null } },
+    select: { id: true, employeeId: true, employee: { select: { managerId: true } } },
+  });
+  if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
+
+  const managesTarget = participant.employee.managerId === session.employeeId;
+  if (!isHrLevel(session) && !managesTarget) {
+    throw Forbidden("เชิญผู้ประเมินได้เฉพาะทีมที่คุณดูแล");
+  }
+
+  const rater = await prisma.employee.findFirst({
+    where: { id: input.raterEmployeeId, companyId, deletedAt: null },
+    select: { id: true, managerId: true },
+  });
+  if (!rater) throw NotFound("ไม่พบพนักงานที่เลือก");
+  if (input.raterEmployeeId === participant.employeeId) {
+    throw BadRequest("ไม่สามารถเชิญตนเองเป็นผู้ประเมินเพิ่มเติมได้");
+  }
+  if (input.raterType === "UPWARD" && rater.managerId !== participant.employeeId) {
+    throw BadRequest("ผู้ประเมินแบบ Upward ต้องเป็นผู้ใต้บังคับบัญชาของผู้ถูกประเมินเท่านั้น");
+  }
+
+  const response = await prisma.evaluationResponse.create({
+    data: {
+      participantId,
+      raterType: input.raterType,
+      raterEmployeeId: input.raterEmployeeId,
+      scores: [],
+    },
+    select: { id: true },
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.invite_rater",
+    entity: "EvaluationParticipant",
+    entityId: participantId,
+    after: { raterType: input.raterType, raterEmployeeId: input.raterEmployeeId },
+    ...meta,
+  });
+
+  return { id: response.id };
+}
+
+export async function removeRater(companyId: string, session: AccessClaims, responseId: string, meta?: Meta) {
+  const response = await prisma.evaluationResponse.findFirst({
+    where: { id: responseId, participant: { campaign: { companyId, deletedAt: null } } },
+    select: {
+      id: true,
+      status: true,
+      raterType: true,
+      participantId: true,
+      participant: { select: { employeeId: true, employee: { select: { managerId: true } } } },
+    },
+  });
+  if (!response) throw NotFound("ไม่พบผู้ประเมิน");
+  if (response.raterType !== "PEER" && response.raterType !== "UPWARD") {
+    throw BadRequest("ยกเลิกได้เฉพาะผู้ประเมินแบบ Peer/Upward");
+  }
+  if (response.status !== "PENDING") {
+    throw BadRequest("ผู้ประเมินคนนี้ส่งแบบประเมินไปแล้ว");
+  }
+
+  const managesTarget = response.participant.employee.managerId === session.employeeId;
+  if (!isHrLevel(session) && !managesTarget) {
+    throw Forbidden("ยกเลิกได้เฉพาะทีมที่คุณดูแล");
+  }
+
+  await prisma.evaluationResponse.delete({ where: { id: response.id } });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.remove_rater",
+    entity: "EvaluationParticipant",
+    entityId: response.participantId,
+    before: { raterType: response.raterType },
+    ...meta,
+  });
+
+  return { ok: true as const };
 }
 
 export async function finalizeParticipant(

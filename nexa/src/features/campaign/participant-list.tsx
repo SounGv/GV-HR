@@ -60,6 +60,8 @@ export function ParticipantList({
         const selfDone = p.responses.some((r) => r.raterType === "SELF" && r.status === "SUBMITTED");
         const managerResponse = p.responses.find((r) => r.raterType === "MANAGER");
         const managerStatus = managerResponse?.status === "SUBMITTED" ? "SUBMITTED" : "PENDING";
+        const peerResponses = p.responses.filter((r) => r.raterType === "PEER");
+        const upwardResponses = p.responses.filter((r) => r.raterType === "UPWARD");
 
         return (
           <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -70,6 +72,16 @@ export function ParticipantList({
                   <RaterStatus label="ตนเอง" status={selfDone ? "SUBMITTED" : "PENDING"} />
                 )}
                 {raterTypes.includes("MANAGER") && <RaterStatus label="หัวหน้างาน" status={managerStatus} />}
+                {peerResponses.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    เพื่อนร่วมงาน {peerResponses.filter((r) => r.status === "SUBMITTED").length}/{peerResponses.length}
+                  </span>
+                )}
+                {upwardResponses.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    ผู้ใต้บังคับบัญชา {upwardResponses.filter((r) => r.status === "SUBMITTED").length}/{upwardResponses.length}
+                  </span>
+                )}
               </div>
             </Link>
             <div className="flex shrink-0 items-center gap-3">
