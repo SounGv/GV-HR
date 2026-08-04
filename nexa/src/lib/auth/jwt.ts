@@ -78,3 +78,29 @@ export async function verifyRefreshToken(token: string): Promise<RefreshClaims |
     return null;
   }
 }
+
+const MFA_TTL_SECONDS = 300; // 5 min — just long enough to read a code off an authenticator app
+
+/**
+ * Short-lived token proving "password already verified, awaiting 2FA code."
+ * Signed with the access secret but carries a distinct `purpose` claim so it
+ * can never be mistaken for (or reused as) a real access token.
+ */
+export async function signMfaToken(userId: string): Promise<string> {
+  return new SignJWT({ purpose: "mfa" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setSubject(userId)
+    .setExpirationTime(`${MFA_TTL_SECONDS}s`)
+    .sign(accessSecret());
+}
+
+export async function verifyMfaToken(token: string): Promise<{ sub: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, accessSecret());
+    if (payload.purpose !== "mfa" || typeof payload.sub !== "string") return null;
+    return { sub: payload.sub };
+  } catch {
+    return null;
+  }
+}

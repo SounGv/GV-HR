@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { loginSchema, type LoginInput } from "./schema";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, type Envelope } from "@/lib/api/client";
 import {
   Form,
   FormControl,
@@ -31,6 +31,8 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
   const router = useRouter();
   const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -45,19 +47,84 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function goToRedirect() {
+    const redirect = searchParams.get("redirect") || "/dashboard";
+    router.replace(redirect);
+    router.refresh();
+  }
+
   async function onSubmit(values: LoginInput) {
     setSubmitting(true);
     try {
-      await api.post("/api/auth/login", values);
-      const redirect = searchParams.get("redirect") || "/dashboard";
-      router.replace(redirect);
-      router.refresh();
+      const res = await api.post<Envelope<{ mfaRequired?: boolean; mfaToken?: string }>>(
+        "/api/auth/login",
+        values,
+      );
+      if (res.data.mfaRequired && res.data.mfaToken) {
+        setMfaToken(res.data.mfaToken);
+        setSubmitting(false);
+        return;
+      }
+      goToRedirect();
     } catch (err) {
       const message =
         err instanceof ApiError ? err.message : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่";
       toast.error(message);
       setSubmitting(false);
     }
+  }
+
+  async function onSubmitMfa() {
+    if (!mfaToken) return;
+    setSubmitting(true);
+    try {
+      await api.post("/api/auth/mfa/verify", { mfaToken, code: mfaCode });
+      goToRedirect();
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่";
+      toast.error(message);
+      setSubmitting(false);
+    }
+  }
+
+  if (mfaToken) {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmitMfa();
+        }}
+        className="space-y-4"
+      >
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <ShieldCheck className="size-4 text-primary" /> ยืนยันตัวตนสองขั้นตอน
+        </div>
+        <p className="text-xs text-muted-foreground">
+          กรอกรหัส 6 หลักจากแอปยืนยันตัวตน หรือรหัสสำรองของคุณ
+        </p>
+        <Input
+          autoFocus
+          inputMode="numeric"
+          placeholder="123456"
+          value={mfaCode}
+          onChange={(e) => setMfaCode(e.target.value)}
+          className="h-10 text-center text-lg tracking-widest"
+        />
+        <Button type="submit" size="lg" className="w-full" disabled={submitting || !mfaCode}>
+          {submitting && <Loader2 className="size-4 animate-spin" />} ยืนยัน
+        </Button>
+        <button
+          type="button"
+          onClick={() => {
+            setMfaToken(null);
+            setMfaCode("");
+          }}
+          className="w-full text-center text-xs text-muted-foreground hover:underline"
+        >
+          กลับไปเข้าสู่ระบบใหม่
+        </button>
+      </form>
+    );
   }
 
   return (

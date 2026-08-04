@@ -25,6 +25,9 @@ const PUBLIC_API = new Set([
   "/api/auth/reset-password",
   "/api/auth/google",
   "/api/auth/google/callback",
+  // 2FA verify runs after password check but before a session exists — the
+  // caller proves intent with the short-lived mfaToken instead of a cookie.
+  "/api/auth/mfa/verify",
   "/api/ai/status",
   // Cron-triggered routes have no session cookie (Vercel Cron calls them
   // directly) — they authenticate themselves via a CRON_SECRET bearer token

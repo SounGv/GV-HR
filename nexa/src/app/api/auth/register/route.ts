@@ -16,8 +16,13 @@ export async function POST(req: NextRequest) {
 
     await registerCompany(input);
 
-    // Auto-login the new owner so they land straight in the dashboard.
-    const { claims, accessToken, refreshToken } = await login(input.email, input.password, meta);
+    // Auto-login the new owner so they land straight in the dashboard. A
+    // brand-new account can't have 2FA enabled yet, so this never gates.
+    const result = await login(input.email, input.password, meta);
+    if (result.mfaRequired) {
+      throw new Error("unexpected mfaRequired on a freshly created account");
+    }
+    const { claims, accessToken, refreshToken } = result;
 
     const res = created({
       user: {
