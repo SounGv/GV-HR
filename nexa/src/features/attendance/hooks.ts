@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { clockIn, clockOut, fetchAttendance, fetchToday } from "./api";
+import { clockIn, clockOut, endBreak, fetchAttendance, fetchToday, startBreak } from "./api";
 import type { AttendanceScope, ClockPayload } from "./types";
 
 export const attendanceKeys = {
@@ -34,6 +34,22 @@ export function useClockOut() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: ClockPayload) => clockOut(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: attendanceKeys.all }),
+  });
+}
+
+export function useStartBreak() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => startBreak(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: attendanceKeys.all }),
+  });
+}
+
+export function useEndBreak() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => endBreak(),
     onSuccess: () => qc.invalidateQueries({ queryKey: attendanceKeys.all }),
   });
 }

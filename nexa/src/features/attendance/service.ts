@@ -16,6 +16,8 @@ const recordSelect = {
   clockOutDistance: true,
   clockInViaQr: true,
   clockOutViaQr: true,
+  breakStartAt: true,
+  breakEndAt: true,
   workMode: true,
   moodOut: true,
   status: true,
@@ -277,6 +279,65 @@ export async function clockOut(
     companyId,
     actorUserId: session.sub,
     action: "attendance.clock_out",
+    entity: "AttendanceRecord",
+    entityId: record.id,
+    ...meta,
+  });
+
+  return record;
+}
+
+/** One break window per day — a second start before ending the first is rejected. */
+export async function startBreak(companyId: string, session: AccessClaims, meta?: Meta) {
+  const employeeId = requireEmployeeId(session);
+  const { dateUTC } = bangkokParts();
+  const existing = await prisma.attendanceRecord.findUnique({
+    where: { employeeId_workDate: { employeeId, workDate: dateUTC } },
+    select: { id: true, clockInAt: true, clockOutAt: true, breakStartAt: true, breakEndAt: true },
+  });
+  if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
+  if (existing.clockOutAt) throw BadRequest("เช็คเอาท์แล้ว ไม่สามารถเริ่มพักได้");
+  if (existing.breakStartAt && !existing.breakEndAt) throw Conflict("กำลังพักอยู่แล้ว");
+
+  const record = await prisma.attendanceRecord.update({
+    where: { id: existing.id },
+    data: { breakStartAt: new Date(), breakEndAt: null, updatedById: session.sub },
+    select: recordSelect,
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "attendance.break_start",
+    entity: "AttendanceRecord",
+    entityId: record.id,
+    ...meta,
+  });
+
+  return record;
+}
+
+export async function endBreak(companyId: string, session: AccessClaims, meta?: Meta) {
+  const employeeId = requireEmployeeId(session);
+  const { dateUTC } = bangkokParts();
+  const existing = await prisma.attendanceRecord.findUnique({
+    where: { employeeId_workDate: { employeeId, workDate: dateUTC } },
+    select: { id: true, breakStartAt: true, breakEndAt: true },
+  });
+  if (!existing?.breakStartAt || existing.breakEndAt) {
+    throw BadRequest("ยังไม่ได้เริ่มพัก");
+  }
+
+  const record = await prisma.attendanceRecord.update({
+    where: { id: existing.id },
+    data: { breakEndAt: new Date(), updatedById: session.sub },
+    select: recordSelect,
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "attendance.break_end",
     entity: "AttendanceRecord",
     entityId: record.id,
     ...meta,

@@ -1,16 +1,23 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, NotFound } from "@/lib/api/errors";
+import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ShiftAssignment } from "./types";
 import type {
   TemplateCreateInput,
   TemplateUpdateInput,
   AssignmentUpsertInput,
+  SwapRequestCreateInput,
+  SwapRequestDecideInput,
 } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
+
+/** HR-level approvers (wildcard shift permission) may act on any swap request. */
+function isHrLevel(session: AccessClaims): boolean {
+  return session.perms.includes("*") || session.perms.includes("shift:approve");
+}
 
 const templateSelect = {
   id: true,
@@ -160,6 +167,40 @@ export async function listAssignments(
   }));
 }
 
+/** Self-scoped schedule — a dedicated function so the existing company-wide
+ * `listAssignments` (used by the roster grid) is untouched. */
+export async function listMyAssignments(
+  companyId: string,
+  employeeId: string,
+  from: string,
+  to: string,
+): Promise<ShiftAssignment[]> {
+  const rows = await prisma.shiftAssignment.findMany({
+    where: {
+      companyId,
+      employeeId,
+      date: { gte: new Date(from), lte: new Date(to) },
+    },
+    select: {
+      id: true,
+      date: true,
+      employeeId: true,
+      note: true,
+      template: {
+        select: { id: true, name: true, startTime: true, endTime: true, color: true },
+      },
+    },
+    orderBy: { date: "asc" },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    date: r.date.toISOString().slice(0, 10),
+    employeeId: r.employeeId,
+    note: r.note,
+    template: r.template,
+  }));
+}
+
 export async function upsertAssignment(
   companyId: string,
   session: AccessClaims,
@@ -229,4 +270,210 @@ export async function deleteAssignment(
     ...meta,
   });
   return { ok: true as const };
+}
+
+const swapRequestSelect = {
+  id: true,
+  status: true,
+  reason: true,
+  decidedAt: true,
+  decisionNote: true,
+  createdAt: true,
+  assignment: {
+    select: {
+      id: true,
+      date: true,
+      template: { select: { id: true, name: true, startTime: true, endTime: true, color: true } },
+    },
+  },
+  requesterEmployee: {
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+  },
+  targetEmployee: {
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+  },
+} satisfies Prisma.ShiftSwapRequestSelect;
+
+/**
+ * One-directional coverage request: give my assigned shift to a coworker.
+ * Not a bilateral swap — the target doesn't have to give anything back.
+ */
+export async function createSwapRequest(
+  companyId: string,
+  session: AccessClaims,
+  input: SwapRequestCreateInput,
+  meta?: Meta,
+) {
+  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
+  if (input.targetEmployeeId === session.employeeId) {
+    throw BadRequest("กรุณาเลือกเพื่อนร่วมงานคนอื่น");
+  }
+
+  const assignment = await prisma.shiftAssignment.findFirst({
+    where: { id: input.assignmentId, companyId },
+    select: { id: true, employeeId: true },
+  });
+  if (!assignment) throw NotFound("ไม่พบเวรที่มอบหมาย");
+  if (assignment.employeeId !== session.employeeId) {
+    throw Forbidden("ขอสลับได้เฉพาะเวรของตนเอง");
+  }
+
+  const target = await prisma.employee.findFirst({
+    where: { id: input.targetEmployeeId, companyId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!target) throw BadRequest("ไม่พบพนักงานที่เลือก");
+
+  const record = await prisma.shiftSwapRequest.create({
+    data: {
+      companyId,
+      assignmentId: assignment.id,
+      requesterEmployeeId: session.employeeId,
+      targetEmployeeId: input.targetEmployeeId,
+      reason: input.reason,
+      status: "PENDING",
+    },
+    select: swapRequestSelect,
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "shift.swap.create",
+    entity: "ShiftSwapRequest",
+    entityId: record.id,
+    ...meta,
+  });
+
+  return record;
+}
+
+export async function listSwapRequests(
+  companyId: string,
+  session: AccessClaims,
+  scope: "mine" | "inbox",
+) {
+  if (scope === "mine") {
+    if (!session.employeeId) return [];
+    return prisma.shiftSwapRequest.findMany({
+      where: { companyId, requesterEmployeeId: session.employeeId },
+      select: swapRequestSelect,
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  // inbox: requests awaiting a decision from me — either I manage the
+  // requester, or I hold company-wide shift:approve.
+  const rows = await prisma.shiftSwapRequest.findMany({
+    where: { companyId, status: "PENDING" },
+    select: { ...swapRequestSelect, requesterEmployee: { select: { ...swapRequestSelect.requesterEmployee.select, managerId: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  if (isHrLevel(session)) return rows;
+  return rows.filter((r) => r.requesterEmployee.managerId === session.employeeId);
+}
+
+export async function decideSwapRequest(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  input: SwapRequestDecideInput,
+  meta?: Meta,
+) {
+  const req = await prisma.shiftSwapRequest.findFirst({
+    where: { id, companyId },
+    select: {
+      id: true,
+      status: true,
+      assignmentId: true,
+      targetEmployeeId: true,
+      requesterEmployeeId: true,
+      assignment: { select: { date: true } },
+      requesterEmployee: { select: { managerId: true } },
+    },
+  });
+  if (!req) throw NotFound("ไม่พบคำขอสลับเวร");
+  if (req.status !== "PENDING") throw BadRequest("คำขอนี้ถูกดำเนินการไปแล้ว");
+  if (req.requesterEmployeeId === session.employeeId) {
+    throw Forbidden("ไม่สามารถอนุมัติคำขอของตนเองได้");
+  }
+  const isManager = req.requesterEmployee.managerId === session.employeeId;
+  if (!isManager && !isHrLevel(session)) {
+    throw Forbidden("อนุมัติได้เฉพาะคำขอของทีมที่คุณดูแล");
+  }
+
+  const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
+
+  const updated = await prisma.$transaction(async (tx) => {
+    if (input.action === "approve") {
+      // The target may already have their own assignment that day — the
+      // unique (employeeId, date) constraint would reject the reassignment.
+      const clash = await tx.shiftAssignment.findUnique({
+        where: { employeeId_date: { employeeId: req.targetEmployeeId, date: req.assignment.date } },
+        select: { id: true },
+      });
+      if (clash) throw BadRequest("พนักงานที่เลือกมีเวรอยู่แล้วในวันนั้น");
+
+      await tx.shiftAssignment.update({
+        where: { id: req.assignmentId },
+        data: { employeeId: req.targetEmployeeId, updatedById: session.sub },
+      });
+    }
+
+    return tx.shiftSwapRequest.update({
+      where: { id: req.id },
+      data: {
+        status: nextStatus,
+        approverEmployeeId: session.employeeId ?? null,
+        approverUserId: session.sub,
+        decidedAt: new Date(),
+        decisionNote: input.note,
+      },
+      select: swapRequestSelect,
+    });
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: `shift.swap.${input.action}`,
+    entity: "ShiftSwapRequest",
+    entityId: req.id,
+    after: { status: nextStatus },
+    ...meta,
+  });
+
+  return updated;
+}
+
+export async function cancelSwapRequest(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
+  const req = await prisma.shiftSwapRequest.findFirst({
+    where: { id, companyId },
+    select: { id: true, requesterEmployeeId: true, status: true },
+  });
+  if (!req) throw NotFound("ไม่พบคำขอสลับเวร");
+  if (req.requesterEmployeeId !== session.employeeId) throw Forbidden("ยกเลิกได้เฉพาะคำขอของตนเอง");
+  if (req.status !== "PENDING") throw BadRequest("คำขอนี้ยกเลิกไม่ได้");
+
+  const updated = await prisma.shiftSwapRequest.update({
+    where: { id: req.id },
+    data: { status: "CANCELLED" },
+    select: swapRequestSelect,
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "shift.swap.cancel",
+    entity: "ShiftSwapRequest",
+    entityId: req.id,
+    ...meta,
+  });
+
+  return updated;
 }

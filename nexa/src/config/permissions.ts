@@ -28,7 +28,7 @@ export const MODULES = [
   { key: "kpi", label: "KPI", actions: ["read", "create", "update", "delete"] },
   { key: "okr", label: "OKR", actions: ["read", "create", "update", "delete"] },
   { key: "asset", label: "ทรัพย์สิน", actions: ["read", "create", "update", "delete"] },
-  { key: "shift", label: "กะการทำงาน", actions: ["read", "create", "update", "delete"] },
+  { key: "shift", label: "กะการทำงาน", actions: ["read", "create", "update", "delete", "approve"] },
   { key: "calendar", label: "ปฏิทิน", actions: ["read", "create", "update", "delete"] },
   { key: "holiday", label: "วันหยุด", actions: ["read", "create", "update", "delete"] },
   { key: "expense", label: "ค่าใช้จ่าย", actions: ["read", "create", "update", "delete", "approve"] },

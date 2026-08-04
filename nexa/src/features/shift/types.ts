@@ -28,3 +28,29 @@ export interface TemplateFormValues {
   color: string;
   breakMinutes: string;
 }
+
+export type SwapRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+
+export interface SwapRequestPerson {
+  id: string;
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+}
+
+export interface SwapRequest {
+  id: string;
+  status: SwapRequestStatus;
+  reason: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+  assignment: {
+    id: string;
+    date: string;
+    template: { id: string; name: string; startTime: string; endTime: string; color: string };
+  };
+  requesterEmployee: SwapRequestPerson;
+  targetEmployee: SwapRequestPerson;
+}

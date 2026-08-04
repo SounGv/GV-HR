@@ -14,6 +14,7 @@ import {
   X,
   AlertTriangle,
   QrCode,
+  Coffee,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getCurrentPosition } from "@/lib/geolocation";
 import { ApiError } from "@/lib/api/client";
-import { useClockIn, useClockOut, useToday } from "./hooks";
+import { useClockIn, useClockOut, useEndBreak, useStartBreak, useToday } from "./hooks";
 import { AttendanceStatusBadge } from "./status-badge";
 import type { AttendanceMood, AttendanceWorkMode } from "./types";
 
@@ -55,6 +56,8 @@ export function ClockCard() {
   const { data, isLoading, refetch } = useToday();
   const clockIn = useClockIn();
   const clockOut = useClockOut();
+  const startBreakMut = useStartBreak();
+  const endBreakMut = useEndBreak();
 
   const [mode, setMode] = useState<AttendanceWorkMode>("ONSITE");
   const [checking, setChecking] = useState(false);
@@ -137,6 +140,22 @@ export function ClockCard() {
   const record = data?.data ?? null;
   const hasIn = !!record?.clockInAt;
   const hasOut = !!record?.clockOutAt;
+  const onBreak = !!record?.breakStartAt && !record?.breakEndAt;
+
+  async function toggleBreak() {
+    try {
+      if (onBreak) {
+        await endBreakMut.mutateAsync();
+        toast.success("เลิกพักแล้ว");
+      } else {
+        await startBreakMut.mutateAsync();
+        toast.success("เริ่มพักแล้ว");
+      }
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
+    }
+  }
 
   async function submitClockInViaQr(branchId: string) {
     setChecking(true);
@@ -456,8 +475,31 @@ export function ClockCard() {
         )}
       </div>
 
+      {/* Break toggle — only while clocked in, not yet clocked out */}
+      {hasIn && !hasOut && (
+        <div className="relative mt-3">
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "h-10 w-full gap-2 rounded-xl border-white/15 bg-white/5 text-sm font-medium text-white hover:bg-white/10",
+              onBreak && "border-warning/40 bg-warning/15 text-warning hover:bg-warning/20",
+            )}
+            disabled={startBreakMut.isPending || endBreakMut.isPending}
+            onClick={toggleBreak}
+          >
+            {startBreakMut.isPending || endBreakMut.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Coffee className="size-4" />
+            )}
+            {onBreak ? "เลิกพัก" : "เริ่มพัก"}
+          </Button>
+        </div>
+      )}
+
       {/* In / out summary */}
-      <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-5">
+      <div className="relative mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
         <div>
           <p className="text-xs text-slate-400">เวลาเข้า</p>
           <p className="mt-0.5 font-mono text-lg font-medium tabular-nums">{fmtTime(record?.clockInAt)}</p>
@@ -465,6 +507,18 @@ export function ClockCard() {
         <div>
           <p className="text-xs text-slate-400">เวลาออก</p>
           <p className="mt-0.5 font-mono text-lg font-medium tabular-nums">{fmtTime(record?.clockOutAt)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-400">เวลาพัก</p>
+          <p className="mt-0.5 font-mono text-lg font-medium tabular-nums">
+            {onBreak
+              ? "กำลังพัก"
+              : record?.breakStartAt && record?.breakEndAt
+                ? `${Math.round(
+                    (new Date(record.breakEndAt).getTime() - new Date(record.breakStartAt).getTime()) / 60000,
+                  )} นาที`
+                : "--:--"}
+          </p>
         </div>
       </div>
 

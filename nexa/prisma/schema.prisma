@@ -261,6 +261,7 @@ model Company {
   calendarEvents     CalendarEvent[]
   shiftTemplates     ShiftTemplate[]
   shiftAssignments   ShiftAssignment[]
+  shiftSwapRequests  ShiftSwapRequest[]
   approvalWorkflows  ApprovalWorkflow[]
   recognitions       Recognition[]
   approvalRequests   ApprovalRequest[]
@@ -604,6 +605,8 @@ model Employee {
   enrollments        TrainingEnrollment[]
   expenses           ExpenseClaim[]
   shiftAssignments   ShiftAssignment[]
+  shiftSwapRequestsMade     ShiftSwapRequest[] @relation("ShiftSwapRequester")
+  shiftSwapRequestsReceived ShiftSwapRequest[] @relation("ShiftSwapTarget")
   recognitions       Recognition[]
 
   // Employment
@@ -707,6 +710,10 @@ model AttendanceRecord {
   // code instead of (or in addition to) GPS — see the attendance service.
   clockInViaQr  Boolean @default(false)
   clockOutViaQr Boolean @default(false)
+
+  // Single break window per day (start/end pair) — not a multi-break log.
+  breakStartAt DateTime?
+  breakEndAt   DateTime?
 
   // Employee-declared mode at clock-in (WFH skips the geofence requirement).
   workMode AttendanceWorkMode @default(ONSITE)
@@ -1409,9 +1416,42 @@ model ShiftAssignment {
   createdById String?
   updatedById String?
 
+  swapRequests ShiftSwapRequest[]
+
   @@unique([employeeId, date])
   @@index([companyId, date])
   @@map("shift_assignments")
+}
+
+// One-directional shift coverage request: "give my assigned shift to a
+// coworker" — not a bilateral give-and-take swap. Approved by the
+// requester's manager or anyone holding shift:approve, same model as
+// Leave/Overtime requests (reuses LeaveStatus for an identical shape).
+model ShiftSwapRequest {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  assignmentId String
+  assignment   ShiftAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  requesterEmployeeId String
+  requesterEmployee   Employee @relation("ShiftSwapRequester", fields: [requesterEmployeeId], references: [id], onDelete: Cascade)
+  targetEmployeeId    String
+  targetEmployee      Employee @relation("ShiftSwapTarget", fields: [targetEmployeeId], references: [id], onDelete: Cascade)
+
+  status             LeaveStatus @default(PENDING)
+  reason             String?
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@map("shift_swap_requests")
 }
 
 // ─────────────────────────── Process: Approval workflow ───────────────────────────
