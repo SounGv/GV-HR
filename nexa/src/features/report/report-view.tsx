@@ -240,7 +240,7 @@ export function ReportView() {
               AI สรุปรายงาน · {REPORT_LABELS[type]}
             </DialogTitle>
             <DialogDescription>
-              วิเคราะห์โดย NEXA AI จากข้อมูลรายงานปัจจุบัน
+              วิเคราะห์โดย AI Assistant จากข้อมูลรายงานปัจจุบัน
             </DialogDescription>
           </DialogHeader>
           {aiLoading ? (

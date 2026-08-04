@@ -65,7 +65,7 @@ export function AiChatView() {
               <Bot className="size-6 text-primary" />
             </div>
             <div>
-              <p className="font-semibold">สวัสดีครับ ผมคือ NEXA AI</p>
+              <p className="font-semibold">สวัสดีครับ ผมคือ AI Assistant</p>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
                 ผู้ช่วยงาน HR ที่ดึงข้อมูลจริงจากระบบมาตอบ ช่วยสรุปข้อมูล ค้นเว็บ
                 และส่งการแจ้งเตือนถึงพนักงานได้
@@ -158,7 +158,7 @@ export function AiChatView() {
                 submit(input);
               }
             }}
-            placeholder="ถาม NEXA AI… (Enter เพื่อส่ง, Shift+Enter ขึ้นบรรทัดใหม่)"
+            placeholder="ถาม AI Assistant… (Enter เพื่อส่ง, Shift+Enter ขึ้นบรรทัดใหม่)"
             rows={1}
             className="max-h-32 min-h-10 resize-none"
           />

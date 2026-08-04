@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-/** NEXA AI runs on Google Gemini (free tier), grounded in real HR data via function calling. */
+/** The AI Assistant runs on Google Gemini (free tier), grounded in real HR data via function calling. */
 
 export function isAiConfigured(): boolean {
   return !!process.env.GEMINI_API_KEY;

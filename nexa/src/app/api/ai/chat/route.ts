@@ -28,7 +28,7 @@ type Step = { tool: string; detail: string };
 
 function buildSystemPrompt(companyName: string, userName: string, today: string): string {
   return [
-    "คุณคือ NEXA AI ผู้ช่วยอัจฉริยะสำหรับงาน HR และ Payroll ภายในระบบ NEXA",
+    "คุณคือ AI Assistant ผู้ช่วยอัจฉริยะสำหรับงาน HR และ Payroll ภายในระบบ NEXA",
     `บริษัท: ${companyName} | ผู้ใช้ปัจจุบัน: ${userName} | วันที่วันนี้: ${today}`,
     "",
     "หลักการทำงาน:",
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     if (!isAiConfigured()) {
       return ok({
         reply:
-          "ขออภัย ระบบ NEXA AI ยังไม่ได้ตั้งค่า API key (GEMINI_API_KEY) จึงยังใช้งานไม่ได้ในขณะนี้ กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดใช้งาน",
+          "ขออภัย ระบบ AI Assistant ยังไม่ได้ตั้งค่า API key (GEMINI_API_KEY) จึงยังใช้งานไม่ได้ในขณะนี้ กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดใช้งาน",
         steps: [] as Step[],
         configured: false,
       });

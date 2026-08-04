@@ -197,7 +197,7 @@ export function AiDesignerDialog({
 
             {notConfigured && (
               <Card className="p-3 text-sm text-muted-foreground">
-                ระบบ NEXA AI ยังไม่ได้ตั้งค่า API key จึงยังสร้างแบบประเมินอัตโนมัติไม่ได้
+                ระบบ AI Assistant ยังไม่ได้ตั้งค่า API key จึงยังสร้างแบบประเมินอัตโนมัติไม่ได้
               </Card>
             )}
 

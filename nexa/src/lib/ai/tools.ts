@@ -27,7 +27,7 @@ export interface NexaTool {
 }
 
 /**
- * Tool definitions exposed to the model. These make NEXA AI *grounded*: it
+ * Tool definitions exposed to the model. These make the AI Assistant *grounded*: it
  * fetches real, company-scoped, permission-checked HR data instead of guessing.
  */
 export const NEXA_TOOLS: NexaTool[] = [
