@@ -21,7 +21,7 @@ interface Turn {
   steps?: ChatStep[];
 }
 
-export function AiChatView() {
+export function AiChatView({ className = "h-[calc(100vh-20rem)] min-h-[24rem]" }: { className?: string }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const chat = useChat();
@@ -57,7 +57,7 @@ export function AiChatView() {
   }
 
   return (
-    <Card className="flex h-[calc(100vh-20rem)] min-h-[24rem] flex-col overflow-hidden p-0">
+    <Card className={`flex flex-col overflow-hidden p-0 ${className}`}>
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
         {turns.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">

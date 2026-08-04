@@ -15,6 +15,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -107,6 +113,39 @@ export function ReportView() {
     toast.success("ดาวน์โหลด CSV แล้ว");
   }
 
+  async function exportExcel() {
+    if (!result) return;
+    const XLSX = await import("xlsx");
+    const header = result.columns.map((c) => c.label);
+    const body = result.rows.map((r) => result.columns.map((c) => r[c.key] ?? ""));
+    const sheet = XLSX.utils.aoa_to_sheet([header, ...body]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, REPORT_LABELS[type].slice(0, 31));
+    XLSX.writeFile(workbook, `${type}-${from}_${to}.xlsx`);
+    toast.success("ดาวน์โหลด Excel แล้ว");
+  }
+
+  async function exportPdf() {
+    if (!result) return;
+    const { jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+    const { registerThaiFont } = await import("@/lib/pdf-fonts");
+    const doc = new jsPDF({ orientation: result.columns.length > 6 ? "landscape" : "portrait" });
+    const fontName = await registerThaiFont(doc);
+    doc.setFont(fontName);
+    doc.setFontSize(12);
+    doc.text(`${REPORT_LABELS[type]} (${from} - ${to})`, 14, 14);
+    autoTable(doc, {
+      startY: 20,
+      head: [result.columns.map((c) => c.label)],
+      body: result.rows.map((r) => result.columns.map((c) => String(r[c.key] ?? ""))),
+      styles: { font: fontName, fontSize: 9 },
+      headStyles: { font: fontName, fontStyle: "bold", fillColor: [79, 70, 229] },
+    });
+    doc.save(`${type}-${from}_${to}.pdf`);
+    toast.success("ดาวน์โหลด PDF แล้ว");
+  }
+
   async function summarizeWithAi() {
     if (!result) return;
     setAiOpen(true);
@@ -186,9 +225,18 @@ export function ReportView() {
             </Button>
           )}
           {canExport && (
-            <Button variant="outline" onClick={exportCsv} disabled={!result || result.rows.length === 0}>
-              <Download className="size-4" /> ส่งออก CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<Button variant="outline" disabled={!result || result.rows.length === 0} />}
+              >
+                <Download className="size-4" /> ส่งออก
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={exportCsv}>CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={exportExcel}>Excel (.xlsx)</DropdownMenuItem>
+                <DropdownMenuItem onClick={exportPdf}>PDF</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>

@@ -22,7 +22,7 @@ export default function ResetPasswordPage() {
       >
         <ul className="space-y-3 text-sm text-slate-300">
           <li className="flex items-center gap-3">
-            <Lock className="size-5 text-primary" /> อย่างน้อย 8 ตัวอักษร
+            <Lock className="size-5 text-primary" /> อย่างน้อย 8 ตัวอักษร มีตัวพิมพ์เล็ก ใหญ่ และตัวเลข
           </li>
           <li className="flex items-center gap-3">
             <KeyRound className="size-5 text-primary" /> ลิงก์นี้ใช้ได้เพียงครั้งเดียว

@@ -166,6 +166,7 @@ export const ROLE_PRESETS: RolePreset[] = [
       "workflow:read",
       "notification:read",
       "announcement:read",
+      "ai:read",
     ],
   },
   {
@@ -179,6 +180,7 @@ export const ROLE_PRESETS: RolePreset[] = [
       "expense:*",
       "report:read",
       "report:export",
+      "ai:read",
     ],
   },
 ];
