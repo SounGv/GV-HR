@@ -23,6 +23,8 @@ export interface PayrollRecord {
     firstName: string;
     lastName: string;
     avatarUrl: string | null;
+    email: string | null;
+    departmentId: string | null;
   };
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchPayroll, generatePayroll, payPayroll } from "./api";
+import { fetchPayroll, generatePayroll, payPayroll, sendPayslipEmails } from "./api";
 import type { PayrollScope } from "./types";
 
 export const payrollKeys = {
@@ -30,5 +30,11 @@ export function usePayPayroll() {
   return useMutation({
     mutationFn: (id: string) => payPayroll(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: payrollKeys.all }),
+  });
+}
+
+export function useSendPayslipEmails() {
+  return useMutation({
+    mutationFn: (payrollRecordIds: string[]) => sendPayslipEmails(payrollRecordIds),
   });
 }

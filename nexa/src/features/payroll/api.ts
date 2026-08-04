@@ -18,3 +18,10 @@ export function generatePayroll(period: string) {
 export function payPayroll(id: string) {
   return api.post<Envelope<PayrollRecord>>(`/api/payroll/${id}/pay`);
 }
+
+export function sendPayslipEmails(payrollRecordIds: string[]) {
+  return api.post<Envelope<{ sent: string[]; skipped: { employeeId: string; name: string; reason: string }[] }>>(
+    "/api/payroll/send-email",
+    { payrollRecordIds },
+  );
+}

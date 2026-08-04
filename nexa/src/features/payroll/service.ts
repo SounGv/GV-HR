@@ -4,7 +4,10 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { sendEmail } from "@/lib/email";
+import { getCompanyProfile } from "@/features/company/service";
 import { computePayroll, periodLabel } from "./calc";
+import { renderPayslipEmailHtml } from "./payslip-email";
 import type { PayrollListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -27,7 +30,7 @@ const recordSelect = {
 const recordWithEmployeeSelect = {
   ...recordSelect,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, email: true, departmentId: true },
   },
 } satisfies Prisma.PayrollRecordSelect;
 
@@ -128,7 +131,29 @@ export async function listPayroll(
   }
   // Company-wide (caller must hold manage permission — enforced in the route).
   return prisma.payrollRecord.findMany({
-    where: { companyId, deletedAt: null, ...(query.period ? { period: query.period } : {}) },
+    where: {
+      companyId,
+      deletedAt: null,
+      ...(query.period ? { period: query.period } : {}),
+      ...(query.departmentId || query.search
+        ? {
+            employee: {
+              ...(query.departmentId ? { departmentId: query.departmentId } : {}),
+              ...(query.search
+                ? {
+                    OR: [
+                      { firstName: { contains: query.search, mode: "insensitive" } },
+                      { lastName: { contains: query.search, mode: "insensitive" } },
+                      { nickname: { contains: query.search, mode: "insensitive" } },
+                      { employeeCode: { contains: query.search, mode: "insensitive" } },
+                      { email: { contains: query.search, mode: "insensitive" } },
+                    ],
+                  }
+                : {}),
+            },
+          }
+        : {}),
+    },
     select: recordWithEmployeeSelect,
     orderBy: [{ period: "desc" }, { net: "desc" }],
     take: 500,
@@ -204,4 +229,67 @@ export async function markPaid(
   });
 
   return updated;
+}
+
+/**
+ * Emails each selected payslip as a full HTML statement (no PDF generation
+ * exists server-side today — see payslip-email.ts). Employees without an
+ * email on file are skipped, not failed, so one missing address doesn't
+ * block the rest of the batch.
+ */
+export async function sendPayslipEmails(
+  companyId: string,
+  session: AccessClaims,
+  payrollRecordIds: string[],
+  verifyBaseUrl: string,
+  meta?: Meta,
+) {
+  const records = await prisma.payrollRecord.findMany({
+    where: { id: { in: payrollRecordIds }, companyId, deletedAt: null },
+    select: recordWithEmployeeSelect,
+  });
+  if (records.length === 0) throw NotFound("ไม่พบสลิปเงินเดือนที่เลือก");
+
+  const company = await getCompanyProfile(companyId);
+
+  const sent: string[] = [];
+  const skipped: { employeeId: string; name: string; reason: string }[] = [];
+
+  for (const record of records) {
+    const name = `${record.employee.firstName} ${record.employee.lastName}`.trim();
+    if (!record.employee.email) {
+      skipped.push({ employeeId: record.employee.id, name, reason: "ไม่มีอีเมล" });
+      continue;
+    }
+
+    const html = renderPayslipEmailHtml({
+      record: {
+        id: record.id,
+        periodLabel: record.periodLabel,
+        earnings: record.earnings as unknown as { label: string; amount: number }[],
+        deductions: record.deductions as unknown as { label: string; amount: number }[],
+        gross: record.gross,
+        totalDeductions: record.totalDeductions,
+        net: record.net,
+        status: record.status,
+        employee: { employeeCode: record.employee.employeeCode, firstName: record.employee.firstName, lastName: record.employee.lastName },
+      },
+      company: { name: company.name, legalName: company.legalName, taxId: company.taxId, addressLine: company.addressLine, subDistrict: company.subDistrict, district: company.district, province: company.province, postalCode: company.postalCode, phone: company.phone },
+      verifyUrl: `${verifyBaseUrl}/verify/payslip/${record.id}`,
+    });
+
+    await sendEmail({ to: record.employee.email, subject: `สลิปเงินเดือน ${record.periodLabel}`, html });
+    sent.push(record.employee.id);
+  }
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "payroll.send_email",
+    entity: "PayrollRecord",
+    after: { sent: sent.length, skipped: skipped.length },
+    ...meta,
+  });
+
+  return { sent, skipped };
 }
