@@ -15,7 +15,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { fullName, getInitials, formatDate } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
-import { ProgressDialog } from "./progress-dialog";
 import { GoalStatusBadge, GOAL_TYPE_LABEL } from "./labels";
 import { useGoals, useDeleteGoal } from "./hooks";
 import type { Goal, GoalScope } from "./types";
@@ -37,7 +36,6 @@ export function KpiView() {
   const goals = data?.data ?? [];
 
   const deleteMut = useDeleteGoal();
-  const [progressGoal, setProgressGoal] = useState<Goal | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Goal | null>(null);
 
   async function confirmDelete() {
@@ -164,7 +162,7 @@ export function KpiView() {
                             variant="ghost"
                             size="sm"
                             className="h-7 gap-1 text-xs"
-                            onClick={() => setProgressGoal(g)}
+                            render={<Link href={`/kpi/${g.id}/progress`} />}
                           >
                             <TrendingUp className="size-3.5" />
                             อัปเดต
@@ -202,11 +200,6 @@ export function KpiView() {
         </TabsContent>
       </Tabs>
 
-      <ProgressDialog
-        open={!!progressGoal}
-        onOpenChange={(o) => !o && setProgressGoal(null)}
-        goal={progressGoal}
-      />
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
