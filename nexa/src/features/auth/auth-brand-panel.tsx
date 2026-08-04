@@ -34,7 +34,7 @@ export function AuthBrandPanel({
         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 backdrop-blur">
           <Sparkles className="size-3.5 text-primary" /> {eyebrow}
         </span>
-        <h1 className="text-3xl font-semibold leading-[1.2] tracking-tight lg:text-4xl">{headline}</h1>
+        <h1 className="font-heading text-3xl leading-[1.2] font-bold lg:text-4xl">{headline}</h1>
         <p className="max-w-md text-sm text-slate-400">{subtitle}</p>
 
         {children}

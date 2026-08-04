@@ -38,7 +38,7 @@ export default function RegisterPage() {
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2 text-center lg:text-left">
-            <h2 className="text-2xl font-semibold tracking-tight">สมัครใช้งาน</h2>
+            <h2 className="font-heading text-2xl font-bold">สมัครใช้งาน</h2>
             <p className="text-sm text-muted-foreground">สร้างองค์กรใหม่และเริ่มใช้ NEXA</p>
           </div>
 

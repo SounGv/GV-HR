@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-heading);
 
   /* Semantic status colors (NEXA) */
   --color-success: var(--success);
@@ -65,6 +65,11 @@
   --font-sans: var(--font-noto-thai), var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", sans-serif;
 
+  /* Headings use a distinct geometric face (Kanit) at heavier weights so
+     titles are unmistakable against body/tab text at a glance. */
+  --font-heading: var(--font-kanit), var(--font-noto-thai), var(--font-inter), ui-sans-serif,
+    system-ui, sans-serif;
+
   --background: #f8fafc; /* slate-50 */
   --foreground: #0f172a; /* slate-900 */
   --card: #ffffff;
@@ -72,29 +77,29 @@
   --popover: #ffffff;
   --popover-foreground: #0f172a;
 
-  --primary: #2563eb; /* blue-600 */
+  --primary: #4f46e5; /* indigo-600 */
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9; /* slate-100 */
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b; /* slate-500 */
-  --accent: #eff6ff; /* blue-50 */
-  --accent-foreground: #1d4ed8; /* blue-700 */
+  --accent: #eef2ff; /* indigo-50 */
+  --accent-foreground: #4338ca; /* indigo-700 */
   --destructive: #ef4444; /* red-500 */
 
   --success: #22c55e;
   --success-foreground: #ffffff;
   --warning: #f59e0b;
   --warning-foreground: #1f2937;
-  --info: #2563eb;
+  --info: #4f46e5;
   --info-foreground: #ffffff;
 
   --border: #e5e7eb; /* gray-200 */
   --input: #e5e7eb;
-  --ring: #2563eb;
+  --ring: #4f46e5;
 
-  /* Brand chart palette (blue, green, amber, violet, red) */
-  --chart-1: #2563eb;
+  /* Brand chart palette (indigo, green, amber, violet, red) */
+  --chart-1: #4f46e5;
   --chart-2: #22c55e;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
@@ -103,12 +108,12 @@
   /* Sidebar is dark navy in BOTH themes (per NEXA design) */
   --sidebar: #111827; /* gray-900 */
   --sidebar-foreground: #cbd5e1; /* slate-300 */
-  --sidebar-primary: #2563eb;
+  --sidebar-primary: #4f46e5;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1f2937; /* gray-800 (hover/active) */
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1f2937;
-  --sidebar-ring: #2563eb;
+  --sidebar-ring: #4f46e5;
 }
 
 /* ───────────────── NEXA — Dark theme ───────────────── */
@@ -120,7 +125,7 @@
   --popover: #131a2a;
   --popover-foreground: #e2e8f0;
 
-  --primary: #3b82f6; /* blue-500 (brighter on dark) */
+  --primary: #6366f1; /* indigo-500 (brighter on dark) */
   --primary-foreground: #ffffff;
   --secondary: #1e293b; /* slate-800 */
   --secondary-foreground: #e2e8f0;
@@ -134,14 +139,14 @@
   --success-foreground: #052e16;
   --warning: #f59e0b;
   --warning-foreground: #1f2937;
-  --info: #3b82f6;
+  --info: #6366f1;
   --info-foreground: #ffffff;
 
   --border: #1e293b;
   --input: #1e293b;
-  --ring: #3b82f6;
+  --ring: #6366f1;
 
-  --chart-1: #3b82f6;
+  --chart-1: #6366f1;
   --chart-2: #4ade80;
   --chart-3: #fbbf24;
   --chart-4: #a78bfa;
@@ -149,12 +154,12 @@
 
   --sidebar: #0b1120;
   --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #3b82f6;
+  --sidebar-primary: #6366f1;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1e293b;
-  --sidebar-ring: #3b82f6;
+  --sidebar-ring: #6366f1;
 }
 
 @layer base {
