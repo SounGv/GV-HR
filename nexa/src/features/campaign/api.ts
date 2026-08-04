@@ -53,6 +53,14 @@ export function finalizeParticipant(participantId: string) {
   return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/finalize`);
 }
 
+export function inviteRater(participantId: string, input: { raterType: "PEER" | "UPWARD"; raterEmployeeId: string }) {
+  return api.post<Envelope<{ id: string }>>(`/api/campaigns/participants/${participantId}/raters`, input);
+}
+
+export function removeRater(responseId: string) {
+  return api.del<Envelope<{ ok: true }>>(`/api/campaigns/responses/${responseId}`);
+}
+
 export function fetchEmployeeEvaluationHistory(employeeId: string) {
   return api.get<Envelope<EmployeeEvaluationHistoryItem[]>>(`/api/campaigns/employee-history/${employeeId}`);
 }

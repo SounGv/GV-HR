@@ -32,6 +32,8 @@ import type { CampaignDetail, RaterType } from "./types";
 const RATER_TYPE_OPTIONS: { value: RaterType; label: string }[] = [
   { value: "SELF", label: "ตนเองประเมิน" },
   { value: "MANAGER", label: "หัวหน้างานประเมิน" },
+  { value: "PEER", label: "เพื่อนร่วมงานประเมิน (Peer)" },
+  { value: "UPWARD", label: "ผู้ใต้บังคับบัญชาประเมิน (Upward)" },
 ];
 
 const FORM_ID = "campaign-form";
@@ -232,7 +234,7 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              เลือกได้ทั้งสองแบบ (ประเมินสองทาง) หรือแบบเดียว (รอบทางเดียว เช่น เฉพาะหัวหน้าประเมินลูกน้อง)
+              เลือกได้หลายแบบ — ตนเองและหัวหน้างานจะถูกเพิ่มอัตโนมัติเมื่อเพิ่มผู้เข้าร่วม ส่วน Peer/Upward ต้องเชิญเป็นรายบุคคลในหน้ารายละเอียดผู้เข้าร่วม
             </p>
           </Card>
 

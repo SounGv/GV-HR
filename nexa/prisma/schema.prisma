@@ -130,6 +130,8 @@ enum EvaluationCampaignStatus {
 enum EvaluationRaterType {
   SELF
   MANAGER
+  PEER
+  UPWARD
 }
 
 enum EvaluationResponseStatus {
@@ -1057,7 +1059,7 @@ model EvaluationResponse {
   submittedAt DateTime?
   createdAt   DateTime                 @default(now())
 
-  @@unique([participantId, raterType])
+  @@unique([participantId, raterType, raterEmployeeId])
   @@map("evaluation_responses")
 }
 

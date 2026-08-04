@@ -6,7 +6,7 @@ const competencyWeightSchema = z.object({
 });
 
 const raterTypesSchema = z
-  .array(z.enum(["SELF", "MANAGER"]))
+  .array(z.enum(["SELF", "MANAGER", "PEER", "UPWARD"]))
   .min(1, "ต้องเลือกทิศทางการประเมินอย่างน้อย 1 แบบ");
 
 export const campaignCreateSchema = z.object({
@@ -51,6 +51,12 @@ export const submitResponseSchema = z.object({
   summary: z.string().max(1000).optional(),
 });
 export type SubmitResponseInput = z.infer<typeof submitResponseSchema>;
+
+export const inviteRaterSchema = z.object({
+  raterType: z.enum(["PEER", "UPWARD"]),
+  raterEmployeeId: z.string().uuid(),
+});
+export type InviteRaterInput = z.infer<typeof inviteRaterSchema>;
 
 export const aiDesignerRequestSchema = z.object({
   scope: z.enum(["employee", "team", "department", "company"]),

@@ -95,5 +95,5 @@ export interface OrgOptions {
   departments: Ref[];
   positions: { id: string; title: string }[];
   branches: Ref[];
-  managers: { id: string; firstName: string; lastName: string; employeeCode: string }[];
+  managers: { id: string; firstName: string; lastName: string; employeeCode: string; managerId: string | null }[];
 }

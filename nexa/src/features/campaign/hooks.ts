@@ -12,6 +12,8 @@ import {
   fetchParticipant,
   finalizeParticipant,
   generateAiDesign,
+  inviteRater,
+  removeRater,
   submitMyResponse,
   updateCampaign,
 } from "./api";
@@ -102,6 +104,22 @@ export function useFinalizeParticipant() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (participantId: string) => finalizeParticipant(participantId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
+  });
+}
+
+export function useInviteRater(participantId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { raterType: "PEER" | "UPWARD"; raterEmployeeId: string }) => inviteRater(participantId, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
+  });
+}
+
+export function useRemoveRater() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (responseId: string) => removeRater(responseId),
     onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
   });
 }

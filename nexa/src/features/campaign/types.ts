@@ -1,5 +1,5 @@
 export type CampaignStatus = "DRAFT" | "ACTIVE" | "CLOSED";
-export type RaterType = "SELF" | "MANAGER";
+export type RaterType = "SELF" | "MANAGER" | "PEER" | "UPWARD";
 export type ResponseStatus = "PENDING" | "SUBMITTED";
 
 export interface CampaignCompetency {
@@ -49,6 +49,7 @@ export interface ParticipantSummary {
 export interface ParticipantDetail extends ParticipantSummary {
   campaign: { id: string; name: string; cycle: string; raterTypes: RaterType[]; competencies: CampaignCompetency[] };
   fullResponses: {
+    id: string;
     raterType: RaterType;
     raterEmployeeId: string;
     status: ResponseStatus;
