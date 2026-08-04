@@ -5,11 +5,16 @@ const competencyWeightSchema = z.object({
   weight: z.coerce.number().int().min(1, "1-5").max(5, "1-5"),
 });
 
+const raterTypesSchema = z
+  .array(z.enum(["SELF", "MANAGER"]))
+  .min(1, "ต้องเลือกทิศทางการประเมินอย่างน้อย 1 แบบ");
+
 export const campaignCreateSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อแคมเปญ").max(200),
   cycle: z.string().trim().min(1, "กรุณาระบุรอบการประเมิน").max(40),
   startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่ม"),
   endDate: z.string().min(1, "กรุณาเลือกวันที่สิ้นสุด"),
+  raterTypes: raterTypesSchema.default(["SELF", "MANAGER"]),
   competencies: z.array(competencyWeightSchema).min(1, "ต้องมีอย่างน้อย 1 สมรรถนะ"),
   aiGenerated: z.boolean().optional(),
   aiRationale: z.string().max(2000).optional(),
@@ -22,6 +27,7 @@ export const campaignUpdateSchema = z.object({
   startDate: z.string().min(1).optional(),
   endDate: z.string().min(1).optional(),
   status: z.enum(["DRAFT", "ACTIVE", "CLOSED"]).optional(),
+  raterTypes: raterTypesSchema.optional(),
   competencies: z.array(competencyWeightSchema).min(1).optional(),
 });
 export type CampaignUpdateInput = z.infer<typeof campaignUpdateSchema>;

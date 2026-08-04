@@ -8,6 +8,7 @@ import {
   deleteCampaign,
   fetchCampaign,
   fetchCampaigns,
+  fetchEmployeeEvaluationHistory,
   fetchParticipant,
   finalizeParticipant,
   generateAiDesign,
@@ -22,6 +23,7 @@ export const campaignKeys = {
   list: (status?: string) => ["campaigns", "list", status ?? "all"] as const,
   detail: (id: string) => ["campaigns", "detail", id] as const,
   participant: (id: string) => ["campaigns", "participant", id] as const,
+  employeeHistory: (employeeId: string) => ["campaigns", "employee-history", employeeId] as const,
 };
 
 export function useCampaigns(status?: string) {
@@ -45,6 +47,14 @@ export function useParticipant(participantId: string | undefined) {
     queryKey: campaignKeys.participant(participantId ?? ""),
     queryFn: () => fetchParticipant(participantId as string),
     enabled: !!participantId,
+  });
+}
+
+export function useEmployeeEvaluationHistory(employeeId: string | undefined) {
+  return useQuery({
+    queryKey: campaignKeys.employeeHistory(employeeId ?? ""),
+    queryFn: () => fetchEmployeeEvaluationHistory(employeeId as string),
+    enabled: !!employeeId,
   });
 }
 

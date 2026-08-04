@@ -6,6 +6,9 @@ export interface CampaignCompetency {
   competencyId: string;
   name: string;
   description: string | null;
+  exampleBehavior: string | null;
+  categoryId: string | null;
+  category: { id: string; name: string } | null;
   weight: number;
 }
 
@@ -16,6 +19,7 @@ export interface CampaignListItem {
   startDate: string;
   endDate: string;
   status: CampaignStatus;
+  raterTypes: RaterType[];
   aiGenerated: boolean;
   participantCount: number;
 }
@@ -43,7 +47,7 @@ export interface ParticipantSummary {
 }
 
 export interface ParticipantDetail extends ParticipantSummary {
-  campaign: { id: string; name: string; cycle: string; competencies: CampaignCompetency[] };
+  campaign: { id: string; name: string; cycle: string; raterTypes: RaterType[]; competencies: CampaignCompetency[] };
   fullResponses: {
     raterType: RaterType;
     raterEmployeeId: string;
@@ -61,6 +65,7 @@ export interface CampaignFormValues {
   cycle: string;
   startDate: string;
   endDate: string;
+  raterTypes: RaterType[];
   competencies: { competencyId: string; weight: number }[];
   aiGenerated?: boolean;
   aiRationale?: string;
@@ -91,6 +96,21 @@ export interface AiDesignerResponse {
   target: { scope: AiDesignerScope; label: string };
   draft: AiDesignerDraft | null;
   configured: boolean;
+}
+
+export interface EmployeeEvaluationHistoryItem {
+  participantId: string;
+  overallScore: number | null;
+  band: string | null;
+  finalizedAt: string | null;
+  campaign: {
+    id: string;
+    name: string;
+    cycle: string;
+    status: CampaignStatus;
+    startDate: string;
+    endDate: string;
+  };
 }
 
 export interface BulkUpsertCompetencyResult {

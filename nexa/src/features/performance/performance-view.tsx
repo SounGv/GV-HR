@@ -62,19 +62,32 @@ export function PerformanceView() {
 }
 
 function MyReviews() {
+  const { user, can } = useAuth();
   const { data, isLoading, isError, refetch } = useReviews("me");
   const reviews = data?.data ?? [];
+  const canViewHistory = can("campaign:read") && !!user.employee?.id;
 
-  if (isError) return <ErrorState onRetry={() => refetch()} />;
-  if (isLoading) return <TableLoadingState rows={3} />;
-  if (reviews.length === 0) {
-    return <EmptyState icon={ClipboardCheck} title="ยังไม่มีผลการประเมิน" description="ผลการประเมินจากหัวหน้างานจะแสดงที่นี่" />;
-  }
   return (
     <div className="space-y-3">
-      {reviews.map((r) => (
-        <ReviewCard key={r.id} review={r} />
-      ))}
+      {canViewHistory && (
+        <div className="flex justify-end">
+          <Link
+            href={`/employees/${user.employee!.id}/evaluation-history`}
+            className="text-sm text-primary hover:underline"
+          >
+            ดูประวัติทั้งหมด
+          </Link>
+        </div>
+      )}
+      {isError ? (
+        <ErrorState onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <TableLoadingState rows={3} />
+      ) : reviews.length === 0 ? (
+        <EmptyState icon={ClipboardCheck} title="ยังไม่มีผลการประเมิน" description="ผลการประเมินจากหัวหน้างานจะแสดงที่นี่" />
+      ) : (
+        reviews.map((r) => <ReviewCard key={r.id} review={r} />)
+      )}
     </div>
   );
 }

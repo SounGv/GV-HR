@@ -86,6 +86,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
         </div>
         <ParticipantList
           campaignId={campaign.id}
+          raterTypes={campaign.raterTypes}
           participants={campaign.participants.map((p) => ({
             id: p.id,
             overallScore: p.overallScore,

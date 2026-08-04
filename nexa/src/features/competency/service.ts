@@ -10,6 +10,10 @@ const select = {
   id: true,
   name: true,
   description: true,
+  exampleBehavior: true,
+  categoryId: true,
+  category: { select: { id: true, name: true } },
+  order: true,
   active: true,
   createdAt: true,
 } as const;
@@ -18,7 +22,7 @@ export async function listCompetencies(companyId: string, query: CompetencyListQ
   return prisma.competency.findMany({
     where: { companyId, deletedAt: null, ...(query.includeInactive ? {} : { active: true }) },
     select,
-    orderBy: { name: "asc" },
+    orderBy: [{ category: { order: "asc" } }, { order: "asc" }, { name: "asc" }],
   });
 }
 
@@ -48,6 +52,9 @@ export async function createCompetency(
       companyId,
       name: input.name,
       description: input.description,
+      exampleBehavior: input.exampleBehavior,
+      categoryId: input.categoryId ?? null,
+      order: input.order ?? 0,
       active: input.active ?? true,
       createdById: session.sub,
       updatedById: session.sub,

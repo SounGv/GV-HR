@@ -245,6 +245,7 @@ model Company {
   payrollRecords     PayrollRecord[]
   performanceReviews PerformanceReview[]
   competencies       Competency[]
+  competencyCategories CompetencyCategory[]
   evaluationCampaigns EvaluationCampaign[]
   announcements      Announcement[]
   overtimeRequests   OvertimeRequest[]
@@ -853,13 +854,38 @@ model PerformanceReview {
 // Additive alongside PerformanceReview (single-rater ad-hoc reviews keep working
 // unchanged) — Campaigns are a separate, more structured multi-rater workflow.
 
-model Competency {
+model CompetencyCategory {
   id          String    @id @default(uuid())
   companyId   String
   company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name        String
-  description String?
-  active      Boolean   @default(true)
+  order       Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  competencies Competency[]
+
+  @@unique([companyId, name])
+  @@map("competency_categories")
+}
+
+model Competency {
+  id              String              @id @default(uuid())
+  companyId       String
+  company         Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  // Short real-world example shown under the criterion in the rating form
+  // (Favpo-style "ตัวอย่างพฤติกรรม:" line), distinct from `description`.
+  exampleBehavior String?
+  categoryId      String?
+  category        CompetencyCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  order           Int                 @default(0)
+  active          Boolean             @default(true)
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -882,6 +908,9 @@ model EvaluationCampaign {
   startDate   DateTime
   endDate     DateTime
   status      EvaluationCampaignStatus @default(DRAFT)
+  // Which rater direction(s) this round collects — defaults to both so every
+  // campaign created before this field existed keeps behaving unchanged.
+  raterTypes  EvaluationRaterType[]    @default([SELF, MANAGER])
   // Whether the competency set was AI-drafted (AI Performance Designer), and why.
   aiGenerated Boolean                  @default(false)
   aiRationale String?

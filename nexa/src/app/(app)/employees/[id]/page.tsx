@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Mail, Phone, MapPin, Pencil, KeyRound, RotateCcw, Sparkle, CheckCircle2 } from "lucide-react";
+import { Mail, Phone, MapPin, Pencil, KeyRound, RotateCcw, Sparkle, CheckCircle2, History } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
@@ -35,6 +35,9 @@ export default async function EmployeeDetailPage({
   const canGiveRecognition =
     can(session.perms, "recognition:create") &&
     (isHrLevelRecognition || employee.manager?.id === session.employeeId);
+  const canViewEvaluationHistory =
+    can(session.perms, "campaign:read") &&
+    (isHrLevelRecognition || employee.manager?.id === session.employeeId || employee.id === session.employeeId);
   const name = fullName(employee.firstName, employee.lastName);
 
   return (
@@ -46,8 +49,17 @@ export default async function EmployeeDetailPage({
         description={`${employee.employeeCode}${employee.position?.title ? ` · ${employee.position.title}` : ""}`}
         status={<EmployeeStatusBadge status={employee.status} />}
         actions={
-          canEdit || canGiveRecognition ? (
+          canEdit || canGiveRecognition || canViewEvaluationHistory ? (
             <>
+              {canViewEvaluationHistory && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<Link href={`/employees/${employee.id}/evaluation-history`} />}
+                >
+                  <History className="size-4" /> ประวัติการประเมิน
+                </Button>
+              )}
               {canGiveRecognition && (
                 <Button variant="outline" size="sm" render={<Link href={`/employees/${employee.id}/recognize`} />}>
                   <Sparkle className="size-4" /> ให้กำลังใจ
