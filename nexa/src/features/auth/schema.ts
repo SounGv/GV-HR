@@ -28,3 +28,14 @@ export const resetPasswordSchema = z.object({
   password: passwordSchema,
 });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const mfaVerifySchema = z.object({
+  mfaToken: z.string().trim().min(1),
+  code: z.string().trim().min(1, "กรุณากรอกรหัสยืนยัน"),
+});
+export type MfaVerifyInput = z.infer<typeof mfaVerifySchema>;
+
+export const mfaCodeSchema = z.object({
+  code: z.string().trim().min(1, "กรุณากรอกรหัสยืนยัน"),
+});
+export type MfaCodeInput = z.infer<typeof mfaCodeSchema>;

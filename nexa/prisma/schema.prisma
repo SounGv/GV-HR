@@ -403,11 +403,12 @@ model User {
   updatedById String?
   deletedAt   DateTime?
 
-  roles               UserRole[]
-  refreshTokens       RefreshToken[]
-  passwordResetTokens PasswordResetToken[]
-  employee            Employee?
-  auditLogs           AuditLog[]
+  roles                  UserRole[]
+  refreshTokens          RefreshToken[]
+  passwordResetTokens    PasswordResetToken[]
+  twoFactorRecoveryCodes TwoFactorRecoveryCode[]
+  employee               Employee?
+  auditLogs              AuditLog[]
 
   @@unique([companyId, email])
   @@index([companyId, deletedAt])
@@ -506,6 +507,22 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+// Single-use recovery codes for 2FA — shown once at enrollment, used when the
+// authenticator device is unavailable (lost phone, etc.) instead of a TOTP code.
+model TwoFactorRecoveryCode {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  codeHash String    @unique
+  usedAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("two_factor_recovery_codes")
 }
 
 model AuditLog {
