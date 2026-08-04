@@ -251,6 +251,7 @@ model Company {
   evaluationCampaigns EvaluationCampaign[]
   evaluationScheduleTemplates EvaluationScheduleTemplate[]
   calibrationSessions CalibrationSession[]
+  successionPlans SuccessionPlan[]
   announcements      Announcement[]
   overtimeRequests   OvertimeRequest[]
   assets             Asset[]
@@ -374,10 +375,61 @@ model Position {
   deletedAt   DateTime?
 
   employees Employee[]
+  successionPlans SuccessionPlan[]
 
   @@unique([companyId, code])
   @@index([companyId, deletedAt])
   @@map("positions")
+}
+
+enum SuccessionReadiness {
+  READY_NOW
+  ONE_TO_TWO_YEARS
+  THREE_TO_FIVE_YEARS
+  NOT_READY
+}
+
+model SuccessionPlan {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  incumbentEmployeeId String?
+  incumbentEmployee   Employee? @relation("SuccessionPlanIncumbent", fields: [incumbentEmployeeId], references: [id], onDelete: SetNull)
+
+  notes String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+
+  candidates SuccessionCandidate[]
+
+  @@unique([companyId, positionId])
+  @@map("succession_plans")
+}
+
+model SuccessionCandidate {
+  id     String         @id @default(uuid())
+  planId String
+  plan   SuccessionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  employeeId String
+  employee   Employee @relation("SuccessionCandidacy", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  readiness SuccessionReadiness
+  note      String?
+  rank      Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planId, employeeId])
+  @@map("succession_candidates")
 }
 
 // ──────────────────────── Auth / RBAC ────────────────────────
@@ -611,6 +663,8 @@ model Employee {
   shiftSwapRequestsMade     ShiftSwapRequest[] @relation("ShiftSwapRequester")
   shiftSwapRequestsReceived ShiftSwapRequest[] @relation("ShiftSwapTarget")
   recognitions       Recognition[]
+  successionPlansAsIncumbent SuccessionPlan[] @relation("SuccessionPlanIncumbent")
+  successionCandidacies      SuccessionCandidate[] @relation("SuccessionCandidacy")
 
   // Employment
   employmentType    EmploymentType @default(FULL_TIME)
