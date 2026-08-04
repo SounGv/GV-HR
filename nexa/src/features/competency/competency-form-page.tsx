@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,16 +22,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ApiError } from "@/lib/api/client";
+import { useCompetencyCategories } from "@/features/competency-category/hooks";
 import { useCreateCompetency, useUpdateCompetency } from "./hooks";
 import type { Competency } from "./types";
 
 const FORM_ID = "competency-form";
 const LIST = "/performance/competencies";
+const NO_CATEGORY = "__none";
 
 const formSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อสมรรถนะ"),
   description: z.string().optional(),
+  exampleBehavior: z.string().optional(),
+  categoryId: z.string(),
   active: z.boolean(),
 });
 type FormSchema = z.infer<typeof formSchema>;
@@ -42,27 +54,35 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
   const updateMutation = useUpdateCompetency(competency?.id ?? "");
   const pending = createMutation.isPending || updateMutation.isPending;
   const againRef = useRef(false);
+  const { data: categoryData } = useCompetencyCategories();
+  const categories = categoryData?.data ?? [];
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: competency?.name ?? "",
       description: competency?.description ?? "",
+      exampleBehavior: competency?.exampleBehavior ?? "",
+      categoryId: competency?.categoryId ?? NO_CATEGORY,
       active: competency?.active ?? true,
     },
   });
 
   async function onSubmit(values: FormSchema) {
+    const payload = {
+      ...values,
+      categoryId: values.categoryId === NO_CATEGORY ? null : values.categoryId,
+    };
     try {
       if (isEdit) {
-        await updateMutation.mutateAsync(values);
+        await updateMutation.mutateAsync(payload);
         toast.success("บันทึกการแก้ไขเรียบร้อย");
         router.push(LIST);
       } else {
-        await createMutation.mutateAsync(values);
+        await createMutation.mutateAsync(payload);
         toast.success("เพิ่มสมรรถนะเรียบร้อย");
         if (againRef.current) {
-          form.reset({ name: "", description: "", active: true });
+          form.reset({ name: "", description: "", exampleBehavior: "", categoryId: NO_CATEGORY, active: true });
           if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
           router.push(LIST);
@@ -117,6 +137,49 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
                 <FormControl>
                   <Textarea rows={3} placeholder="อธิบายพฤติกรรมที่คาดหวังสำหรับสมรรถนะนี้" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="exampleBehavior"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>ตัวอย่างพฤติกรรม (ไม่บังคับ)</FormLabel>
+                <FormControl>
+                  <Textarea rows={2} placeholder="เช่น คิดหาทางแก้ปัญหาโดยไม่ต้องรอคำสั่ง" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="categoryId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>หมวดหมู่ (ไม่บังคับ)</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="ไม่มีหมวดหมู่" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={NO_CATEGORY}>ไม่มีหมวดหมู่</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  <Link href="/performance/competencies/categories/new" className="text-primary hover:underline">
+                    + จัดการหมวดหมู่
+                  </Link>
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

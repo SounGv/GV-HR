@@ -6,6 +6,7 @@ import type {
   CampaignDetail,
   CampaignFormValues,
   CampaignListItem,
+  EmployeeEvaluationHistoryItem,
   ParticipantDetail,
   SubmitResponseValues,
 } from "./types";
@@ -50,6 +51,10 @@ export function submitMyResponse(participantId: string, input: SubmitResponseVal
 
 export function finalizeParticipant(participantId: string) {
   return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/finalize`);
+}
+
+export function fetchEmployeeEvaluationHistory(employeeId: string) {
+  return api.get<Envelope<EmployeeEvaluationHistoryItem[]>>(`/api/campaigns/employee-history/${employeeId}`);
 }
 
 export function generateAiDesign(input: AiDesignerRequest) {

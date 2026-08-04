@@ -24,9 +24,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
 import { useCompetencies } from "@/features/competency/hooks";
+import { groupByCategory } from "@/lib/competency-grouping";
 import { AiDesignerPanel } from "./ai-designer-panel";
 import { useCreateCampaign, useUpdateCampaign } from "./hooks";
-import type { CampaignDetail } from "./types";
+import type { CampaignDetail, RaterType } from "./types";
+
+const RATER_TYPE_OPTIONS: { value: RaterType; label: string }[] = [
+  { value: "SELF", label: "ตนเองประเมิน" },
+  { value: "MANAGER", label: "หัวหน้างานประเมิน" },
+];
 
 const FORM_ID = "campaign-form";
 const LIST = "/performance";
@@ -61,6 +67,12 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
   const [aiGenerated, setAiGenerated] = useState(campaign?.aiGenerated ?? false);
   const [aiRationale, setAiRationale] = useState(campaign?.aiRationale ?? "");
   const [showAiDesigner, setShowAiDesigner] = useState(false);
+  const [raterTypes, setRaterTypes] = useState<RaterType[]>(campaign?.raterTypes ?? ["SELF", "MANAGER"]);
+  const groupedCompetencies = groupByCategory(competencies);
+
+  function toggleRaterType(type: RaterType) {
+    setRaterTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
+  }
 
   const createMutation = useCreateCampaign();
   const updateMutation = useUpdateCampaign(campaign?.id ?? "");
@@ -108,14 +120,19 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
       toast.error("กรุณาเลือกสมรรถนะอย่างน้อย 1 รายการ");
       return;
     }
+    if (raterTypes.length === 0) {
+      toast.error("กรุณาเลือกทิศทางการประเมินอย่างน้อย 1 แบบ");
+      return;
+    }
     try {
       if (isEdit) {
-        await updateMutation.mutateAsync({ ...values, competencies: competencyList });
+        await updateMutation.mutateAsync({ ...values, raterTypes, competencies: competencyList });
         toast.success("บันทึกการแก้ไขเรียบร้อย");
         router.push(`/performance/campaigns/${campaign.id}`);
       } else {
         const res = await createMutation.mutateAsync({
           ...values,
+          raterTypes,
           competencies: competencyList,
           aiGenerated,
           aiRationale: aiRationale || undefined,
@@ -199,6 +216,26 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
             />
           </div>
 
+          <Card className="gap-2 p-4">
+            <p className="text-sm font-medium text-foreground">ทิศทางการประเมิน</p>
+            <div className="flex flex-wrap gap-3">
+              {RATER_TYPE_OPTIONS.map((opt) => (
+                <label key={opt.value} className="flex items-center gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={raterTypes.includes(opt.value)}
+                    onChange={() => toggleRaterType(opt.value)}
+                    className="size-4 accent-primary"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              เลือกได้ทั้งสองแบบ (ประเมินสองทาง) หรือแบบเดียว (รอบทางเดียว เช่น เฉพาะหัวหน้าประเมินลูกน้อง)
+            </p>
+          </Card>
+
           {showAiDesigner && (
             <AiDesignerPanel onApply={handleAiApply} onClose={() => setShowAiDesigner(false)} />
           )}
@@ -226,34 +263,39 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
                 </Link>
               </p>
             ) : (
-              <div className="space-y-1.5">
-                {competencies.map((c) => {
-                  const checked = c.id in selected;
-                  return (
-                    <div
-                      key={c.id}
-                      className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggle(c.id)}
-                        className="size-4 shrink-0 accent-primary"
-                      />
-                      <span className="min-w-0 flex-1 truncate text-sm text-foreground">{c.name}</span>
-                      {checked && (
-                        <Input
-                          type="number"
-                          min={1}
-                          max={5}
-                          value={selected[c.id]}
-                          onChange={(e) => setWeight(c.id, Number(e.target.value) || 1)}
-                          className="w-16 shrink-0"
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="space-y-3">
+                {groupedCompetencies.map((group) => (
+                  <div key={group.categoryId} className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
+                    {group.items.map((c) => {
+                      const checked = c.id in selected;
+                      return (
+                        <div
+                          key={c.id}
+                          className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggle(c.id)}
+                            className="size-4 shrink-0 accent-primary"
+                          />
+                          <span className="min-w-0 flex-1 truncate text-sm text-foreground">{c.name}</span>
+                          {checked && (
+                            <Input
+                              type="number"
+                              min={1}
+                              max={5}
+                              value={selected[c.id]}
+                              onChange={(e) => setWeight(c.id, Number(e.target.value) || 1)}
+                              className="w-16 shrink-0"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             )}
           </Card>

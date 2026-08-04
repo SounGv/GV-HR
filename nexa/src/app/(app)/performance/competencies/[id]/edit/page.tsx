@@ -26,6 +26,10 @@ export default async function EditCompetencyPage({
         id: competency.id,
         name: competency.name,
         description: competency.description,
+        exampleBehavior: competency.exampleBehavior,
+        categoryId: competency.categoryId,
+        category: competency.category,
+        order: competency.order,
         active: competency.active,
         createdAt: competency.createdAt.toISOString(),
       }}

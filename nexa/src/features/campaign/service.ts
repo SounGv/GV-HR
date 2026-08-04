@@ -18,7 +18,15 @@ type Meta = { ip?: string; userAgent?: string };
 const competencySelect = {
   competencyId: true,
   weight: true,
-  competency: { select: { name: true, description: true } },
+  competency: {
+    select: {
+      name: true,
+      description: true,
+      exampleBehavior: true,
+      categoryId: true,
+      category: { select: { id: true, name: true } },
+    },
+  },
 } satisfies Prisma.EvaluationCampaignCompetencySelect;
 
 const participantSelect = {
@@ -42,11 +50,26 @@ function isHrLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("campaign:approve");
 }
 
-function mapCompetencies(rows: { competencyId: string; weight: number; competency: { name: string; description: string | null } }[]) {
+function mapCompetencies(
+  rows: {
+    competencyId: string;
+    weight: number;
+    competency: {
+      name: string;
+      description: string | null;
+      exampleBehavior: string | null;
+      categoryId: string | null;
+      category: { id: string; name: string } | null;
+    };
+  }[],
+) {
   return rows.map((r) => ({
     competencyId: r.competencyId,
     name: r.competency.name,
     description: r.competency.description,
+    exampleBehavior: r.competency.exampleBehavior,
+    categoryId: r.competency.categoryId,
+    category: r.competency.category,
     weight: r.weight,
   }));
 }
@@ -61,6 +84,7 @@ export async function listCampaigns(companyId: string, query: CampaignListQuery)
       startDate: true,
       endDate: true,
       status: true,
+      raterTypes: true,
       aiGenerated: true,
       _count: { select: { participants: true } },
     },
@@ -75,6 +99,7 @@ export async function listCampaigns(companyId: string, query: CampaignListQuery)
     startDate: c.startDate,
     endDate: c.endDate,
     status: c.status,
+    raterTypes: c.raterTypes,
     aiGenerated: c.aiGenerated,
     participantCount: c._count.participants,
   }));
@@ -90,6 +115,7 @@ export async function getCampaign(companyId: string, id: string, session: Access
       startDate: true,
       endDate: true,
       status: true,
+      raterTypes: true,
       aiGenerated: true,
       aiRationale: true,
       competencies: { select: competencySelect },
@@ -112,6 +138,7 @@ export async function getCampaign(companyId: string, id: string, session: Access
     startDate: campaign.startDate,
     endDate: campaign.endDate,
     status: campaign.status,
+    raterTypes: campaign.raterTypes,
     aiGenerated: campaign.aiGenerated,
     aiRationale: campaign.aiRationale,
     competencies: mapCompetencies(campaign.competencies),
@@ -139,6 +166,7 @@ export async function createCampaign(
       cycle: input.cycle,
       startDate: new Date(input.startDate),
       endDate: new Date(input.endDate),
+      raterTypes: input.raterTypes,
       aiGenerated: input.aiGenerated ?? false,
       aiRationale: input.aiRationale,
       createdById: session.sub,
@@ -198,6 +226,7 @@ export async function updateCampaign(
         ...(input.startDate !== undefined ? { startDate: new Date(input.startDate) } : {}),
         ...(input.endDate !== undefined ? { endDate: new Date(input.endDate) } : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.raterTypes !== undefined ? { raterTypes: input.raterTypes } : {}),
         updatedById: session.sub,
       },
     });
@@ -246,7 +275,12 @@ export async function deleteCampaign(companyId: string, session: AccessClaims, i
   });
 }
 
-/** Adds participants + seeds a SELF response for everyone and a MANAGER response for those who have a manager. */
+/**
+ * Adds participants and seeds one PENDING response per rater direction the
+ * campaign actually collects (`campaign.raterTypes` — SELF, MANAGER, or
+ * both). MANAGER is still skipped for anyone without a manager, same as
+ * before this was configurable.
+ */
 export async function addParticipants(
   companyId: string,
   session: AccessClaims,
@@ -256,7 +290,7 @@ export async function addParticipants(
 ) {
   const campaign = await prisma.evaluationCampaign.findFirst({
     where: { id: campaignId, companyId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, raterTypes: true },
   });
   if (!campaign) throw NotFound("ไม่พบแคมเปญ");
 
@@ -276,13 +310,15 @@ export async function addParticipants(
     });
     created.push(participant.id);
 
-    await prisma.evaluationResponse.upsert({
-      where: { participantId_raterType: { participantId: participant.id, raterType: "SELF" } },
-      update: {},
-      create: { participantId: participant.id, raterType: "SELF", raterEmployeeId: emp.id, scores: [] },
-    });
+    if (campaign.raterTypes.includes("SELF")) {
+      await prisma.evaluationResponse.upsert({
+        where: { participantId_raterType: { participantId: participant.id, raterType: "SELF" } },
+        update: {},
+        create: { participantId: participant.id, raterType: "SELF", raterEmployeeId: emp.id, scores: [] },
+      });
+    }
 
-    if (emp.managerId) {
+    if (campaign.raterTypes.includes("MANAGER") && emp.managerId) {
       await prisma.evaluationResponse.upsert({
         where: { participantId_raterType: { participantId: participant.id, raterType: "MANAGER" } },
         update: {},
@@ -310,7 +346,7 @@ export async function getParticipant(companyId: string, participantId: string, s
     select: {
       ...participantSelect,
       campaign: {
-        select: { id: true, name: true, cycle: true, competencies: { select: competencySelect } },
+        select: { id: true, name: true, cycle: true, raterTypes: true, competencies: { select: competencySelect } },
       },
       responses: {
         select: {
@@ -345,31 +381,47 @@ export async function getParticipant(companyId: string, participantId: string, s
       id: participant.campaign.id,
       name: participant.campaign.name,
       cycle: participant.campaign.cycle,
+      raterTypes: participant.campaign.raterTypes,
       competencies: mapCompetencies(participant.campaign.competencies),
     },
     fullResponses: participant.responses,
   };
 }
 
+/**
+ * The "official" score comes from the MANAGER response when the campaign
+ * collects one — that's unchanged. For a SELF-only round (no MANAGER in
+ * `raterTypes`), the self-assessment becomes the official score instead, so
+ * one-directional rounds still produce a score/band once their single rater
+ * submits.
+ */
 async function computeAndStoreScore(participantId: string) {
   const participant = await prisma.evaluationParticipant.findUnique({
     where: { id: participantId },
     select: {
-      campaign: { select: { competencies: { select: { competencyId: true, weight: true } } } },
-      responses: {
-        where: { raterType: "MANAGER", status: "SUBMITTED" },
-        select: { scores: true },
+      campaign: {
+        select: {
+          raterTypes: true,
+          competencies: { select: { competencyId: true, weight: true } },
+        },
       },
+      responses: { select: { raterType: true, status: true, scores: true } },
     },
   });
-  if (!participant || participant.responses.length === 0) return;
+  if (!participant) return;
 
-  const managerScores = participant.responses[0].scores as { competencyId: string; score: number }[];
+  const scoringRaterType = participant.campaign.raterTypes.includes("MANAGER") ? "MANAGER" : "SELF";
+  const response = participant.responses.find(
+    (r) => r.raterType === scoringRaterType && r.status === "SUBMITTED",
+  );
+  if (!response) return;
+
+  const raterScores = response.scores as { competencyId: string; score: number }[];
   const weightMap = new Map(participant.campaign.competencies.map((c) => [c.competencyId, c.weight]));
 
   let weightedSum = 0;
   let totalWeight = 0;
-  for (const s of managerScores) {
+  for (const s of raterScores) {
     const weight = weightMap.get(s.competencyId) ?? 1;
     weightedSum += s.score * weight;
     totalWeight += weight;
@@ -427,9 +479,10 @@ export async function submitMyResponse(
     },
   });
 
-  if (raterType === "MANAGER") {
-    await computeAndStoreScore(participantId);
-  }
+  // Idempotent w.r.t. which rater just submitted — it looks up the campaign's
+  // configured scoring rater type itself (MANAGER if the round collects it,
+  // else SELF) and only computes once that specific response exists.
+  await computeAndStoreScore(participantId);
 
   await writeAudit({
     companyId,
@@ -474,4 +527,45 @@ export async function finalizeParticipant(
   });
 
   return { ok: true as const };
+}
+
+export async function getEmployeeEvaluationHistory(
+  companyId: string,
+  employeeId: string,
+  session: AccessClaims,
+) {
+  const employee = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId },
+    select: { id: true, managerId: true },
+  });
+  if (!employee) throw NotFound("ไม่พบพนักงาน");
+
+  const hrLevel = isHrLevel(session);
+  const own = employee.id === session.employeeId;
+  const manages = employee.managerId === session.employeeId;
+  if (!hrLevel && !own && !manages) {
+    throw Forbidden("ไม่มีสิทธิ์ดูข้อมูลนี้");
+  }
+
+  const rows = await prisma.evaluationParticipant.findMany({
+    where: { employeeId, campaign: { companyId, deletedAt: null } },
+    select: {
+      id: true,
+      overallScore: true,
+      band: true,
+      finalizedAt: true,
+      campaign: {
+        select: { id: true, name: true, cycle: true, status: true, startDate: true, endDate: true },
+      },
+    },
+    orderBy: { campaign: { startDate: "desc" } },
+  });
+
+  return rows.map((r) => ({
+    participantId: r.id,
+    overallScore: r.overallScore,
+    band: r.band,
+    finalizedAt: r.finalizedAt,
+    campaign: r.campaign,
+  }));
 }

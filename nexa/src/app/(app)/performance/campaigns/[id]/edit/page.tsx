@@ -25,6 +25,7 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
         startDate: campaign.startDate.toISOString(),
         endDate: campaign.endDate.toISOString(),
         status: campaign.status,
+        raterTypes: campaign.raterTypes,
         aiGenerated: campaign.aiGenerated,
         aiRationale: campaign.aiRationale,
         competencies: campaign.competencies,

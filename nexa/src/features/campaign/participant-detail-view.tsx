@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { fullName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/features/auth/auth-context";
+import { groupByCategory } from "@/lib/competency-grouping";
 import { useParticipant, useSubmitMyResponse } from "./hooks";
+import type { CampaignCompetency } from "./types";
 
 export function ParticipantDetailView({ participantId }: { participantId: string }) {
   const { user } = useAuth();
@@ -106,24 +108,32 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              {participant.campaign.competencies.map((c) => (
-                <div key={c.competencyId} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{c.name}</p>
-                    {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
-                  </div>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={5}
-                    step={0.5}
-                    className="w-20 shrink-0"
-                    value={scores[c.competencyId] ?? 3}
-                    onChange={(e) =>
-                      setScores((prev) => ({ ...prev, [c.competencyId]: Number(e.target.value) || 1 }))
-                    }
-                  />
+            <div className="space-y-3">
+              {groupByCategory(participant.campaign.competencies).map((group) => (
+                <div key={group.categoryId} className="space-y-1.5">
+                  <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
+                  {group.items.map((c) => (
+                    <div key={c.competencyId} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">{c.name}</p>
+                        {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
+                        {c.exampleBehavior && (
+                          <p className="text-xs text-muted-foreground">ตัวอย่างพฤติกรรม: {c.exampleBehavior}</p>
+                        )}
+                      </div>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={5}
+                        step={0.5}
+                        className="w-20 shrink-0"
+                        value={scores[c.competencyId] ?? 3}
+                        onChange={(e) =>
+                          setScores((prev) => ({ ...prev, [c.competencyId]: Number(e.target.value) || 1 }))
+                        }
+                      />
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -147,8 +157,12 @@ export function ParticipantDetailView({ participantId }: { participantId: string
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ResponseCard title="ประเมินตนเอง" response={selfResponse} competencies={participant.campaign.competencies} />
-        <ResponseCard title="ประเมินโดยหัวหน้างาน" response={managerResponse} competencies={participant.campaign.competencies} />
+        {participant.campaign.raterTypes.includes("SELF") && (
+          <ResponseCard title="ประเมินตนเอง" response={selfResponse} competencies={participant.campaign.competencies} />
+        )}
+        {participant.campaign.raterTypes.includes("MANAGER") && (
+          <ResponseCard title="ประเมินโดยหัวหน้างาน" response={managerResponse} competencies={participant.campaign.competencies} />
+        )}
       </div>
     </div>
   );
@@ -168,7 +182,7 @@ function ResponseCard({
     summary: string | null;
     submittedAt: string | null;
   };
-  competencies: { competencyId: string; name: string }[];
+  competencies: CampaignCompetency[];
 }) {
   return (
     <Card>
@@ -178,20 +192,25 @@ function ResponseCard({
           {response?.status === "SUBMITTED" && <CheckCircle2 className="size-4 text-success" />}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 text-sm">
+      <CardContent className="space-y-3 text-sm">
         {!response || response.status !== "SUBMITTED" ? (
           <p className="text-muted-foreground">ยังไม่ได้ส่งแบบประเมิน</p>
         ) : (
           <>
-            {competencies.map((c) => {
-              const s = response.scores.find((x) => x.competencyId === c.competencyId);
-              return (
-                <div key={c.competencyId} className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{c.name}</span>
-                  <span className="font-medium text-foreground">{s?.score.toFixed(1) ?? "-"}</span>
-                </div>
-              );
-            })}
+            {groupByCategory(competencies).map((group) => (
+              <div key={group.categoryId} className="space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
+                {group.items.map((c) => {
+                  const s = response.scores.find((x) => x.competencyId === c.competencyId);
+                  return (
+                    <div key={c.competencyId} className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-muted-foreground">{c.name}</span>
+                      <span className="shrink-0 font-medium text-foreground">{s?.score.toFixed(1) ?? "-"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
             {response.summary && (
               <p className="mt-2 border-t border-border pt-2 text-muted-foreground">{response.summary}</p>
             )}
