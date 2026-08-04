@@ -20,10 +20,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { passwordSchema } from "@/lib/auth/password-policy";
 
 const formSchema = z
   .object({
-    password: z.string().min(8, "รหัสผ่านอย่างน้อย 8 ตัวอักษร").max(72),
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((v) => v.password === v.confirmPassword, {
@@ -95,7 +96,7 @@ export function ResetPasswordForm() {
               <FormControl>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input type="password" autoComplete="new-password" placeholder="อย่างน้อย 8 ตัวอักษร" className="h-10 pl-9" {...field} />
+                  <Input type="password" autoComplete="new-password" placeholder="8+ ตัวอักษร มีพิมพ์เล็ก ใหญ่ ตัวเลข" className="h-10 pl-9" {...field} />
                 </div>
               </FormControl>
               <FormMessage />

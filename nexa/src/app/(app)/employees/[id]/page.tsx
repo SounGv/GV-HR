@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Mail, Phone, MapPin, Pencil } from "lucide-react";
+import { Mail, Phone, MapPin, Pencil, KeyRound, RotateCcw, Sparkle, CheckCircle2 } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
@@ -12,8 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmployeeStatusBadge } from "@/features/employee/status-badge";
-import { EmployeeAccountButton } from "@/features/employee/employee-account-button";
-import { RecognitionGiveButton } from "@/features/recognition/recognition-give-button";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
 import { fullName, getInitials, formatDate, formatCurrency } from "@/lib/format";
 
@@ -33,7 +31,7 @@ export default async function EmployeeDetailPage({
   });
 
   const canEdit = can(session.perms, "employee:update");
-  const isHrLevelRecognition = session.perms.includes("*") || session.perms.includes("recognition:*");
+  const isHrLevelRecognition = session.perms.includes("*") || session.perms.includes("employee:update");
   const canGiveRecognition =
     can(session.perms, "recognition:create") &&
     (isHrLevelRecognition || employee.manager?.id === session.employeeId);
@@ -51,15 +49,28 @@ export default async function EmployeeDetailPage({
           canEdit || canGiveRecognition ? (
             <>
               {canGiveRecognition && (
-                <RecognitionGiveButton employeeId={employee.id} employeeName={name} />
+                <Button variant="outline" size="sm" render={<Link href={`/employees/${employee.id}/recognize`} />}>
+                  <Sparkle className="size-4" /> ให้กำลังใจ
+                </Button>
               )}
               {canEdit && (
                 <>
-                  <EmployeeAccountButton
-                    employeeId={employee.id}
-                    hasAccount={!!employee.userId}
-                    defaultEmail={employee.email}
-                  />
+                  {employee.userId && (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-success/10 px-3 py-1.5 text-xs font-medium text-success">
+                      <CheckCircle2 className="size-4" /> มีบัญชีเข้าใช้งานแล้ว
+                    </span>
+                  )}
+                  <Button variant="outline" size="sm" render={<Link href={`/employees/${employee.id}/account`} />}>
+                    {employee.userId ? (
+                      <>
+                        <RotateCcw className="size-4" /> รีเซ็ตรหัสผ่าน
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound className="size-4" /> สร้างบัญชีเข้าใช้งาน
+                      </>
+                    )}
+                  </Button>
                   <Button variant="outline" size="sm" render={<Link href={`/employees/${employee.id}/edit`} />}>
                     <Pencil className="size-4" /> แก้ไข
                   </Button>

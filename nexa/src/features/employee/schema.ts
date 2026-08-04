@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { listQuerySchema } from "@/lib/api/pagination";
+import { passwordSchema } from "@/lib/auth/password-policy";
 
 export const GENDERS = ["MALE", "FEMALE", "OTHER"] as const;
 export const MARITAL = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as const;
@@ -85,12 +86,12 @@ export const EMPLOYEE_SORTABLE = [
 /** HR creates a login account for an employee. */
 export const employeeAccountSchema = z.object({
   email: z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง").max(200),
-  password: z.string().min(8, "รหัสผ่านอย่างน้อย 8 ตัวอักษร").max(100),
+  password: passwordSchema,
 });
 export type EmployeeAccountInput = z.infer<typeof employeeAccountSchema>;
 
 /** HR resets the password of an employee who already has a login account. */
 export const employeePasswordResetSchema = z.object({
-  password: z.string().min(8, "รหัสผ่านอย่างน้อย 8 ตัวอักษร").max(100),
+  password: passwordSchema,
 });
 export type EmployeePasswordResetInput = z.infer<typeof employeePasswordResetSchema>;

@@ -108,7 +108,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>รหัสผ่าน</FormLabel>
               <FormControl>
-                <Input type="password" autoComplete="new-password" placeholder="อย่างน้อย 8 ตัวอักษร" {...field} />
+                <Input type="password" autoComplete="new-password" placeholder="8+ ตัวอักษร มีพิมพ์เล็ก ใหญ่ ตัวเลข" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

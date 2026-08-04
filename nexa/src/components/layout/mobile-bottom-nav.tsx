@@ -2,37 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Bot, Menu, Clock, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, LayoutGrid, Bot, UserRound, Clock } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 
-interface Item {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  permission: string;
-}
-
-const LEFT: Item[] = [
-  { label: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read" },
-  { label: "การลา", href: "/leave", icon: CalendarDays, permission: "leave:read" },
-];
-
-const RIGHT: Item[] = [
-  { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read" },
-];
-
-/** Bottom tab bar for phones — hidden on md+. Center raised button = quick check-in. */
+/**
+ * 5-slot bottom tab bar for phones — hidden on md+: Home · Services ·
+ * [Time, raised center FAB] · AI · Profile. "Services" opens the full
+ * sidebar drawer (every module); the center FAB is attendance check-in,
+ * kept raised since it's the single most-used action on this bar.
+ */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { can } = useAuth();
   const { setOpenMobile } = useSidebar();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
-  const left = LEFT.filter((i) => can(i.permission));
-  const right = RIGHT.filter((i) => can(i.permission));
   const canCheckIn = can("attendance:read");
+  const canAi = can("ai:read");
 
   return (
     <nav
@@ -40,11 +28,18 @@ export function MobileBottomNav() {
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg md:hidden"
     >
       <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-1">
-        {left.map((i) => (
-          <NavTab key={i.href} item={i} active={isActive(i.href)} />
-        ))}
+        <NavTab href="/dashboard" label="หน้าหลัก" icon={LayoutDashboard} active={isActive("/dashboard")} />
 
-        {/* Center raised check-in FAB */}
+        <button
+          type="button"
+          onClick={() => setOpenMobile(true)}
+          className="flex h-full flex-col items-center justify-center gap-0.5 text-muted-foreground transition active:scale-95"
+        >
+          <LayoutGrid className="size-5" />
+          <span className="text-[10px] font-medium">บริการ</span>
+        </button>
+
+        {/* Center raised check-in FAB — "Time" */}
         <div className="flex justify-center">
           {canCheckIn ? (
             <Link
@@ -62,35 +57,39 @@ export function MobileBottomNav() {
           )}
         </div>
 
-        {right.map((i) => (
-          <NavTab key={i.href} item={i} active={isActive(i.href)} />
-        ))}
+        {canAi ? (
+          <NavTab href="/ai" label="AI" icon={Bot} active={isActive("/ai")} />
+        ) : (
+          <span />
+        )}
 
-        <button
-          type="button"
-          onClick={() => setOpenMobile(true)}
-          className="flex h-full flex-col items-center justify-center gap-0.5 text-muted-foreground transition active:scale-95"
-        >
-          <Menu className="size-5" />
-          <span className="text-[10px] font-medium">เพิ่มเติม</span>
-        </button>
+        <NavTab href="/profile" label="โปรไฟล์" icon={UserRound} active={isActive("/profile")} />
       </div>
     </nav>
   );
 }
 
-function NavTab({ item, active }: { item: Item; active: boolean }) {
-  const Icon = item.icon;
+function NavTab({
+  href,
+  label,
+  icon: Icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  active: boolean;
+}) {
   return (
     <Link
-      href={item.href}
+      href={href}
       className={cn(
         "flex h-full flex-col items-center justify-center gap-0.5 transition active:scale-95",
         active ? "text-primary" : "text-muted-foreground",
       )}
     >
       <Icon className={cn("size-5", active && "fill-primary/10")} />
-      <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
+      <span className="text-[10px] font-medium whitespace-nowrap">{label}</span>
     </Link>
   );
 }

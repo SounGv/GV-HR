@@ -1,26 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus, Trash2, Save, Lock, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/client";
 import { MODULES } from "@/config/permissions";
-import { useRoles, useUpdateRole, useCreateRole, useDeleteRole } from "./hooks";
+import { useRoles, useUpdateRole, useDeleteRole } from "./hooks";
 import type { AdminRole } from "./types";
 
 const ACTION_LABEL: Record<string, string> = {
@@ -33,22 +27,25 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 export function RolesMatrix() {
+  const searchParams = useSearchParams();
   const { data, isLoading, isError, refetch } = useRoles();
   const roles = useMemo(() => data?.data ?? [], [data]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [perms, setPerms] = useState<Set<string>>(new Set());
-  const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminRole | null>(null);
 
   const selected = roles.find((r) => r.id === selectedId) ?? roles[0] ?? null;
   const updateMut = useUpdateRole(selected?.id ?? "");
   const deleteMut = useDeleteRole();
 
-  // Sync local permission set when the selected role changes.
+  // Select the role just created (via ?role=id from the create page), else the first one.
   useEffect(() => {
-    if (!selectedId && roles.length > 0) setSelectedId(roles[0].id);
-  }, [roles, selectedId]);
+    if (selectedId || roles.length === 0) return;
+    const fromQuery = searchParams.get("role");
+    if (fromQuery && roles.some((r) => r.id === fromQuery)) setSelectedId(fromQuery);
+    else setSelectedId(roles[0].id);
+  }, [roles, selectedId, searchParams]);
   // Re-sync the editable permission set only when the selected role or the
   // underlying data changes — never on every render (which would discard edits).
   useEffect(() => {
@@ -117,7 +114,7 @@ export function RolesMatrix() {
       <Card className="h-fit gap-1 p-2">
         <div className="flex items-center justify-between px-2 py-1.5">
           <span className="text-sm font-semibold">บทบาท</span>
-          <Button variant="ghost" size="icon-sm" aria-label="เพิ่มบทบาท" onClick={() => setCreateOpen(true)}>
+          <Button variant="ghost" size="icon-sm" aria-label="เพิ่มบทบาท" render={<Link href="/admin/roles/new" />}>
             <Plus className="size-4" />
           </Button>
         </div>
@@ -220,8 +217,6 @@ export function RolesMatrix() {
         )}
       </Card>
 
-      <CreateRoleDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={setSelectedId} />
-
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
@@ -233,57 +228,5 @@ export function RolesMatrix() {
         onConfirm={confirmDelete}
       />
     </div>
-  );
-}
-
-function CreateRoleDialog({
-  open,
-  onOpenChange,
-  onCreated,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCreated: (id: string) => void;
-}) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const createMut = useCreateRole();
-
-  async function submit() {
-    if (!name.trim()) return;
-    try {
-      const res = await createMut.mutateAsync({ name, description, permissions: [] });
-      toast.success("สร้างบทบาทเรียบร้อย");
-      onCreated(res.data.id);
-      setName("");
-      setDescription("");
-      onOpenChange(false);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "สร้างไม่สำเร็จ");
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>สร้างบทบาทใหม่</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Input placeholder="ชื่อบทบาท เช่น หัวหน้าคลังสินค้า" value={name} onChange={(e) => setName(e.target.value)} />
-          <Input placeholder="คำอธิบาย (ถ้ามี)" value={description} onChange={(e) => setDescription(e.target.value)} />
-          <p className="text-xs text-muted-foreground">สร้างแล้วเลือกสิทธิ์ในตารางด้านขวา</p>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={createMut.isPending}>
-            ยกเลิก
-          </Button>
-          <Button onClick={submit} disabled={createMut.isPending || !name.trim()}>
-            {createMut.isPending && <Loader2 className="size-4 animate-spin" />}
-            สร้าง
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

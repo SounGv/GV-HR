@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { FormPageShell } from "@/components/shared/form-page-shell";
@@ -19,10 +20,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
 import { useCompetencies } from "@/features/competency/hooks";
-import { AiDesignerDialog } from "./ai-designer-dialog";
+import { AiDesignerPanel } from "./ai-designer-panel";
 import { useCreateCampaign, useUpdateCampaign } from "./hooks";
 import type { CampaignDetail } from "./types";
 
@@ -58,6 +60,7 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
   });
   const [aiGenerated, setAiGenerated] = useState(campaign?.aiGenerated ?? false);
   const [aiRationale, setAiRationale] = useState(campaign?.aiRationale ?? "");
+  const [showAiDesigner, setShowAiDesigner] = useState(false);
 
   const createMutation = useCreateCampaign();
   const updateMutation = useUpdateCampaign(campaign?.id ?? "");
@@ -96,6 +99,7 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
     });
     setAiGenerated(true);
     setAiRationale(rationale);
+    setShowAiDesigner(false);
   }
 
   async function onSubmit(values: FormSchema) {
@@ -195,12 +199,20 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
             />
           </div>
 
+          {showAiDesigner && (
+            <AiDesignerPanel onApply={handleAiApply} onClose={() => setShowAiDesigner(false)} />
+          )}
+
           <Card className="gap-2 p-4">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-medium text-foreground">สมรรถนะที่ใช้ประเมิน</p>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">เลือกแล้ว {Object.keys(selected).length} รายการ</span>
-                <AiDesignerDialog onApply={handleAiApply} />
+                {!showAiDesigner && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowAiDesigner(true)}>
+                    <Sparkles className="size-4" /> ให้ AI ออกแบบให้
+                  </Button>
+                )}
               </div>
             </div>
             {aiGenerated && (
