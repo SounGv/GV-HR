@@ -248,6 +248,7 @@ model Company {
   competencyCategories CompetencyCategory[]
   evaluationCampaigns EvaluationCampaign[]
   evaluationScheduleTemplates EvaluationScheduleTemplate[]
+  calibrationSessions CalibrationSession[]
   announcements      Announcement[]
   overtimeRequests   OvertimeRequest[]
   assets             Asset[]
@@ -958,8 +959,9 @@ model EvaluationCampaign {
   updatedById String?
   deletedAt   DateTime?
 
-  competencies EvaluationCampaignCompetency[]
-  participants EvaluationParticipant[]
+  competencies        EvaluationCampaignCompetency[]
+  participants        EvaluationParticipant[]
+  calibrationSessions CalibrationSession[]
 
   @@index([companyId, status])
   @@map("evaluation_campaigns")
@@ -989,10 +991,54 @@ model EvaluationParticipant {
   band         String?
   finalizedAt  DateTime?
 
+  // Set during a calibration session — the human-reconciled score/band that
+  // supersedes overallScore/band for reporting once present, plus the
+  // 9-box grid's potential axis (there is no automatic way to derive
+  // "potential" from evaluation responses, so it's set manually here).
+  calibrationSessionId String?
+  calibrationSession   CalibrationSession? @relation(fields: [calibrationSessionId], references: [id], onDelete: SetNull)
+  calibratedScore      Float?
+  calibratedBand       String?
+  potential            PotentialLevel?
+  potentialNote        String?
+
   responses EvaluationResponse[]
 
   @@unique([campaignId, employeeId])
   @@map("evaluation_participants")
+}
+
+enum PotentialLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CalibrationStatus {
+  DRAFT
+  COMPLETED
+}
+
+model CalibrationSession {
+  id         String             @id @default(uuid())
+  companyId  String
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  campaignId String
+  campaign   EvaluationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name       String
+  status     CalibrationStatus  @default(DRAFT)
+
+  facilitatorEmployeeId String?
+  notes                 String?
+  completedAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants EvaluationParticipant[]
+
+  @@index([companyId, campaignId])
+  @@map("calibration_sessions")
 }
 
 model EvaluationResponse {
