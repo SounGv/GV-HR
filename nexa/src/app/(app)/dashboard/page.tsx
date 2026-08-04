@@ -198,7 +198,7 @@ export default async function DashboardPage() {
             className="shrink-0 bg-white/10 text-white hover:bg-white/20"
             render={<Link href="/ai" />}
           >
-            <Sparkles className="size-4" /> ถาม NEXA AI
+            <Sparkles className="size-4" /> ถาม AI Assistant
           </Button>
         </div>
       </Card>

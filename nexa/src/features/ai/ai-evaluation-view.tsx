@@ -108,7 +108,7 @@ export function AiEvaluationView() {
         {result && result.configured === false && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              ระบบ NEXA AI ยังไม่ได้ตั้งค่า API key จึงยังสร้างแบบประเมินอัตโนมัติไม่ได้
+              ระบบ AI Assistant ยังไม่ได้ตั้งค่า API key จึงยังสร้างแบบประเมินอัตโนมัติไม่ได้
             </CardContent>
           </Card>
         )}

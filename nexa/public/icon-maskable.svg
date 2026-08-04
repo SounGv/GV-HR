@@ -4,14 +4,13 @@
       <stop stop-color="#111C3B"/>
       <stop offset="1" stop-color="#0A1226"/>
     </linearGradient>
-    <linearGradient id="mx-n" x1="190" y1="180" x2="330" y2="332" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#22D3EE"/>
-      <stop offset="0.55" stop-color="#3B82F6"/>
-      <stop offset="1" stop-color="#7C3AED"/>
-    </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#mx-bg)"/>
-  <path
-    d="M195 330V190c0-3 4-4 6-2l114 119c2 2 6 1 6-2V182"
-    stroke="url(#mx-n)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <g transform="translate(136,136) scale(5)">
+    <line x1="12" y1="34" x2="24" y2="14" stroke="#2F7BFF" stroke-width="3.2" stroke-linecap="round"/>
+    <line x1="24" y1="14" x2="36" y2="34" stroke="#2F7BFF" stroke-width="3.2" stroke-linecap="round"/>
+    <circle cx="12" cy="34" r="5" fill="#1D56B8"/>
+    <circle cx="24" cy="14" r="5" fill="#2F7BFF"/>
+    <circle cx="36" cy="34" r="5" fill="#1D56B8"/>
+  </g>
 </svg>

@@ -20,7 +20,7 @@ const LEFT: Item[] = [
 ];
 
 const RIGHT: Item[] = [
-  { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read" },
+  { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read" },
 ];
 
 /** Bottom tab bar for phones — hidden on md+. Center raised button = quick check-in. */
@@ -90,7 +90,7 @@ function NavTab({ item, active }: { item: Item; active: boolean }) {
       )}
     >
       <Icon className={cn("size-5", active && "fill-primary/10")} />
-      <span className="text-[10px] font-medium">{item.label}</span>
+      <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
     </Link>
   );
 }

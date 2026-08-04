@@ -48,7 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarRange, permission: "calendar:read", ready: true },
-      { label: "NEXA AI", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
+      { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
     ],
   },
   {

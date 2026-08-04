@@ -4,7 +4,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { Card } from "@/components/ui/card";
 import { AiChatView } from "@/features/ai/ai-chat-view";
 
-export const metadata: Metadata = { title: "NEXA AI" };
+export const metadata: Metadata = { title: "AI Assistant" };
 
 const CAPABILITIES = [
   { icon: Database, label: "ดึงข้อมูลจริงจากระบบ" },
@@ -27,7 +27,7 @@ export default async function AiPage() {
             </span>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <p className="text-lg font-semibold">NEXA AI</p>
+                <p className="text-lg font-semibold">AI Assistant</p>
                 <span className="flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-medium text-success">
                   <span className="size-1.5 rounded-full bg-success" /> Online
                 </span>
