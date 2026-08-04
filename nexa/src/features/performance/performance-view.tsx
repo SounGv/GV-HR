@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, ClipboardCheck, Sparkles, Target, Scale, Grid3x3 } from "lucide-react";
+import { Plus, ClipboardCheck, Sparkles, Target, Scale, Grid3x3, Users } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { AiEvaluationView } from "@/features/ai/ai-evaluation-view";
 import { CampaignView } from "@/features/campaign/campaign-view";
 import { CalibrationView } from "@/features/calibration/calibration-view";
 import { NineBoxView } from "@/features/calibration/nine-box-view";
+import { SuccessionView } from "@/features/succession/succession-view";
 
 import { ReviewCard } from "./review-card";
 import { useReviews } from "./hooks";
@@ -21,6 +22,7 @@ export function PerformanceView() {
   const canAi = can("ai:read");
   const canCampaign = can("campaign:read");
   const canCalibration = can("calibration:read");
+  const canSuccession = can("succession:read");
 
   return (
     <Tabs defaultValue="me" className="space-y-4">
@@ -40,6 +42,11 @@ export function PerformanceView() {
         {canCalibration && (
           <TabsTrigger value="nine-box">
             <Grid3x3 className="size-3.5" /> 9-Box
+          </TabsTrigger>
+        )}
+        {canSuccession && (
+          <TabsTrigger value="succession">
+            <Users className="size-3.5" /> แผนสืบทอด
           </TabsTrigger>
         )}
         {canAi && (
@@ -74,6 +81,12 @@ export function PerformanceView() {
       {canCalibration && (
         <TabsContent value="nine-box">
           <NineBoxView />
+        </TabsContent>
+      )}
+
+      {canSuccession && (
+        <TabsContent value="succession">
+          <SuccessionView />
         </TabsContent>
       )}
 
