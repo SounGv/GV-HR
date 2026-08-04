@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Wallet, Play, Loader2, Eye, CircleDollarSign, RefreshCcw, Briefcase, CheckCircle2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Wallet, Play, Loader2, Eye, CircleDollarSign, RefreshCcw, Briefcase, CheckCircle2, Mail, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -19,13 +22,16 @@ import {
 } from "@/components/ui/table";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
+import { useOrgOptions, useUpdateEmployee } from "@/features/employee/hooks";
 import { fullName, formatCurrency } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
-import { usePayroll, useGeneratePayroll, usePayPayroll } from "./hooks";
+import { usePayroll, useGeneratePayroll, usePayPayroll, useSendPayslipEmails, payrollKeys } from "./hooks";
 import { PayslipDialog } from "./payslip-dialog";
 import { PayrollStatusBadge } from "./status-badge";
 import type { PayrollRecord } from "./types";
+
+const ALL_DEPARTMENTS = "ALL";
 
 function defaultPeriod() {
   const d = new Date();
@@ -121,12 +127,32 @@ function MyPayslips() {
 }
 
 function PayrollAdmin({ canPay }: { canPay: boolean }) {
+  const { can } = useAuth();
+  const canSendEmail = can("payroll:export");
   const [period, setPeriod] = useState(defaultPeriod());
+  const [search, setSearch] = useState("");
+  const [departmentId, setDepartmentId] = useState(ALL_DEPARTMENTS);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { data, isLoading, isError, refetch } = usePayroll("all", period);
+  const { data: orgData } = useOrgOptions();
+  const departments = orgData?.data.departments ?? [];
   const generateMut = useGeneratePayroll();
   const payMut = usePayPayroll();
+  const sendEmailMut = useSendPayslipEmails();
   const [selected, setSelected] = useState<PayrollRecord | null>(null);
   const records = data?.data ?? [];
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (data?.data ?? []).filter((r) => {
+      if (departmentId !== ALL_DEPARTMENTS && r.employee?.departmentId !== departmentId) return false;
+      if (!q) return true;
+      const name = r.employee ? fullName(r.employee.firstName, r.employee.lastName).toLowerCase() : "";
+      const code = r.employee?.employeeCode?.toLowerCase() ?? "";
+      return name.includes(q) || code.includes(q);
+    });
+  }, [data, search, departmentId]);
+
   const summary = records.reduce(
     (acc, r) => {
       acc.totalGross += Number(r.gross ?? 0);
@@ -137,6 +163,30 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
     },
     { totalGross: 0, totalNet: 0, paid: 0, draft: 0 },
   );
+
+  const allVisibleSelected = filtered.length > 0 && filtered.every((r) => selectedIds.has(r.id));
+  const someVisibleSelected = filtered.some((r) => selectedIds.has(r.id));
+
+  function toggleAll() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        filtered.forEach((r) => next.delete(r.id));
+      } else {
+        filtered.forEach((r) => next.add(r.id));
+      }
+      return next;
+    });
+  }
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   async function generate() {
     try {
@@ -153,6 +203,20 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
       toast.success("ทำเครื่องหมายจ่ายแล้ว");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
+    }
+  }
+
+  async function sendEmails() {
+    try {
+      const res = await sendEmailMut.mutateAsync([...selectedIds]);
+      const { sent, skipped } = res.data;
+      if (sent.length > 0) toast.success(`ส่งสลิปทางอีเมลแล้ว ${sent.length} คน`);
+      if (skipped.length > 0) {
+        toast.error(`ข้าม ${skipped.length} คน: ${skipped.map((s) => `${s.name} (${s.reason})`).join(", ")}`);
+      }
+      setSelectedIds(new Set());
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ส่งอีเมลไม่สำเร็จ");
     }
   }
 
@@ -176,6 +240,31 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCcw className="size-4" /> รีเฟรช
           </Button>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">ค้นหาชื่อ/รหัส</label>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหาพนักงาน"
+              className="w-[180px]"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">ฝ่าย</label>
+            <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL_DEPARTMENTS)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="ทุกฝ่าย" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_DEPARTMENTS}>ทุกฝ่าย</SelectItem>
+                {departments.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
@@ -213,11 +302,32 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
               <CheckCircle2 className="size-4" /> พร้อมประมวลผลและจ่ายเงินได้ทันที
             </span>
           </div>
+
+          {canSendEmail && selectedIds.size > 0 && (
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+              <span className="text-sm text-foreground">เลือกแล้ว {selectedIds.size} คน</span>
+              <Button size="sm" disabled={sendEmailMut.isPending} onClick={sendEmails}>
+                {sendEmailMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+                ส่งสลิปทางอีเมล ({selectedIds.size})
+              </Button>
+            </div>
+          )}
+
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                {canSendEmail && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allVisibleSelected}
+                      indeterminate={someVisibleSelected && !allVisibleSelected}
+                      onCheckedChange={toggleAll}
+                    />
+                  </TableHead>
+                )}
                 <TableHead>พนักงาน</TableHead>
+                {canSendEmail && <TableHead>อีเมล</TableHead>}
                 <TableHead className="text-right">รายได้รวม</TableHead>
                 <TableHead className="text-right">รายการหัก</TableHead>
                 <TableHead className="text-right">สุทธิ</TableHead>
@@ -226,8 +336,13 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {records.map((r) => (
+              {filtered.map((r) => (
                 <TableRow key={r.id}>
+                  {canSendEmail && (
+                    <TableCell>
+                      <Checkbox checked={selectedIds.has(r.id)} onCheckedChange={() => toggleOne(r.id)} />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Link href={`/payroll/${r.id}`} className="block">
                       <div className="font-medium">
@@ -236,6 +351,9 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
                       <div className="text-xs text-muted-foreground">{r.employee?.employeeCode}</div>
                     </Link>
                   </TableCell>
+                  {canSendEmail && (
+                    <TableCell>{r.employee && <EmployeeEmailCell employeeId={r.employee.id} email={r.employee.email} />}</TableCell>
+                  )}
                   <TableCell className="text-right tabular-nums">{formatCurrency(r.gross)}</TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">
                     {formatCurrency(r.totalDeductions)}
@@ -265,6 +383,13 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
                   </TableCell>
                 </TableRow>
               ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={canSendEmail ? 8 : 6} className="py-8 text-center text-sm text-muted-foreground">
+                    ไม่พบพนักงานตามตัวกรอง
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
           </div>
@@ -272,6 +397,54 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
       )}
 
       <PayslipDialog record={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
+    </div>
+  );
+}
+
+function EmployeeEmailCell({ employeeId, email }: { employeeId: string; email: string | null }) {
+  const [draft, setDraft] = useState("");
+  const [editing, setEditing] = useState(false);
+  const updateMut = useUpdateEmployee(employeeId);
+  const qc = useQueryClient();
+
+  async function save() {
+    if (!draft.trim()) {
+      toast.error("กรุณาระบุอีเมล");
+      return;
+    }
+    try {
+      await updateMut.mutateAsync({ email: draft.trim() });
+      await qc.invalidateQueries({ queryKey: payrollKeys.all });
+      toast.success("บันทึกอีเมลแล้ว");
+      setEditing(false);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ");
+    }
+  }
+
+  if (email && !editing) {
+    return <span className="text-sm text-muted-foreground">{email}</span>;
+  }
+
+  if (!editing) {
+    return (
+      <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+        <Mail className="size-3.5" /> เพิ่มอีเมล
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder="อีเมลพนักงาน"
+        className="h-8 w-44"
+      />
+      <Button variant="outline" size="icon-sm" aria-label="บันทึก" onClick={save} disabled={updateMut.isPending}>
+        <Save className="size-3.5" />
+      </Button>
     </div>
   );
 }

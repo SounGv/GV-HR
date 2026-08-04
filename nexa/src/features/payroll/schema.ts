@@ -10,5 +10,12 @@ export type GeneratePayrollInput = z.infer<typeof generatePayrollSchema>;
 export const payrollListQuerySchema = z.object({
   scope: z.enum(["me", "all"]).default("me"),
   period: z.string().regex(periodRe).optional(),
+  departmentId: z.string().uuid().optional(),
+  search: z.string().trim().max(100).optional(),
 });
 export type PayrollListQuery = z.infer<typeof payrollListQuerySchema>;
+
+export const sendPayslipEmailSchema = z.object({
+  payrollRecordIds: z.array(z.string().uuid()).min(1, "กรุณาเลือกอย่างน้อย 1 รายการ"),
+});
+export type SendPayslipEmailInput = z.infer<typeof sendPayslipEmailSchema>;
