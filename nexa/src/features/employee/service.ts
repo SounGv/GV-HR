@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { NotFound } from "@/lib/api/errors";
+import { Forbidden, NotFound } from "@/lib/api/errors";
 import { buildOrderBy, toSkipTake } from "@/lib/api/pagination";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import {
@@ -54,10 +54,35 @@ const detailSelect = {
 export type EmployeeListItem = Prisma.EmployeeGetPayload<{ select: typeof listSelect }>;
 export type EmployeeDetail = Prisma.EmployeeGetPayload<{ select: typeof detailSelect }>;
 
-export async function listEmployees(companyId: string, query: EmployeeListQuery) {
+/**
+ * HR-level roles (Super Admin, HR Manager — anyone actually granted
+ * `employee:update`) and Finance (needs company-wide visibility for
+ * payroll/expense processing) see the full directory. Note: wildcard grants
+ * like "employee:*" are expanded into concrete keys at seed time (see
+ * `expandPermissions`), so `session.perms` never literally contains
+ * "employee:*" — checking for the real `employee:update` permission is what
+ * actually distinguishes HR from a plain `employee:read`-only Manager.
+ */
+function isCompanyWideEmployeeViewer(session: AccessClaims): boolean {
+  return (
+    session.perms.includes("*") ||
+    session.perms.includes("employee:update") ||
+    session.roles.includes("Finance")
+  );
+}
+
+function teamScopeFilter(session: AccessClaims): Prisma.EmployeeWhereInput | null {
+  if (isCompanyWideEmployeeViewer(session)) return null;
+  const employeeId = session.employeeId ?? "__none__";
+  return { OR: [{ id: employeeId }, { managerId: employeeId }] };
+}
+
+export async function listEmployees(companyId: string, query: EmployeeListQuery, session?: AccessClaims) {
+  const scope = session ? teamScopeFilter(session) : null;
   const where: Prisma.EmployeeWhereInput = {
     companyId,
     deletedAt: null,
+    ...(scope ?? {}),
     ...(query.status ? { status: query.status } : {}),
     ...(query.departmentId ? { departmentId: query.departmentId } : {}),
     ...(query.search
@@ -86,12 +111,19 @@ export async function listEmployees(companyId: string, query: EmployeeListQuery)
   return { items, total };
 }
 
-export async function getEmployee(companyId: string, id: string): Promise<EmployeeDetail> {
+export async function getEmployee(companyId: string, id: string, session?: AccessClaims): Promise<EmployeeDetail> {
   const employee = await prisma.employee.findFirst({
     where: { id, companyId, deletedAt: null },
     select: detailSelect,
   });
   if (!employee) throw NotFound("ไม่พบพนักงาน");
+
+  if (session && !isCompanyWideEmployeeViewer(session)) {
+    const own = employee.id === session.employeeId;
+    const managesTarget = employee.manager?.id === session.employeeId;
+    if (!own && !managesTarget) throw Forbidden("ดูข้อมูลได้เฉพาะทีมของคุณ");
+  }
+
   return employee;
 }
 

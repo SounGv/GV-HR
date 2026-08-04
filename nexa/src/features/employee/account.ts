@@ -2,8 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
 import { BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import { writeAudit } from "@/lib/audit";
+import { revokeAllForUser } from "@/lib/auth/token-store";
 import type { SessionUser } from "@/lib/auth/session";
-import type { EmployeeAccountInput } from "./schema";
+import type { EmployeeAccountInput, EmployeePasswordResetInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -61,4 +62,37 @@ export async function createEmployeeAccount(
   });
 
   return { email };
+}
+
+/**
+ * HR resets the password of an employee who already has a login account.
+ * Revokes all of that user's existing refresh tokens so they're signed out
+ * everywhere and must log in again with the new password.
+ */
+export async function resetEmployeeAccountPassword(
+  companyId: string,
+  employeeId: string,
+  input: EmployeePasswordResetInput,
+  session: SessionUser,
+  meta?: Meta,
+) {
+  const emp = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId, deletedAt: null },
+    select: { id: true, userId: true },
+  });
+  if (!emp) throw NotFound("ไม่พบพนักงาน");
+  if (!emp.userId) throw BadRequest("พนักงานคนนี้ยังไม่มีบัญชีเข้าใช้งาน");
+
+  const passwordHash = await hashPassword(input.password);
+  await prisma.user.update({ where: { id: emp.userId }, data: { passwordHash, updatedById: session.sub } });
+  await revokeAllForUser(emp.userId);
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "employee.reset_account_password",
+    entity: "Employee",
+    entityId: employeeId,
+    ...meta,
+  });
 }

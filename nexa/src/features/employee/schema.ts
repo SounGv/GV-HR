@@ -88,3 +88,9 @@ export const employeeAccountSchema = z.object({
   password: z.string().min(8, "รหัสผ่านอย่างน้อย 8 ตัวอักษร").max(100),
 });
 export type EmployeeAccountInput = z.infer<typeof employeeAccountSchema>;
+
+/** HR resets the password of an employee who already has a login account. */
+export const employeePasswordResetSchema = z.object({
+  password: z.string().min(8, "รหัสผ่านอย่างน้อย 8 ตัวอักษร").max(100),
+});
+export type EmployeePasswordResetInput = z.infer<typeof employeePasswordResetSchema>;

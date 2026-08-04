@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   try {
     const session = await requirePermission("employee:read");
     const { id } = await params;
-    const employee = await getEmployee(session.companyId, id);
+    const employee = await getEmployee(session.companyId, id, session);
     return ok(employee);
   } catch (err) {
     return handleApiError(err);
