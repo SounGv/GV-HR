@@ -38,18 +38,18 @@ export async function getMonth(
     type: string,
     from: Date,
     to: Date,
-    eventId?: string,
+    opts?: { eventId?: string; href?: string },
   ) => {
     let cur = new Date(Math.max(from.getTime(), start.getTime()));
     const stop = new Date(Math.min(to.getTime(), lastDay.getTime()));
     while (cur.getTime() <= stop.getTime()) {
       const day = iso(cur);
-      items.push({ id: `${idBase}-${day}`, title, date: day, source, type, eventId });
+      items.push({ id: `${idBase}-${day}`, title, date: day, source, type, ...opts });
       cur = new Date(cur.getTime() + DAY_MS);
     }
   };
 
-  const [holidays, leaves, courses, events] = await Promise.all([
+  const [holidays, leaves, courses, events, evaluations] = await Promise.all([
     prisma.holiday.findMany({
       where: { companyId, deletedAt: null, date: { gte: start, lt: end } },
       select: { id: true, name: true, date: true, type: true },
@@ -83,6 +83,15 @@ export async function getMonth(
       },
       select: { id: true, title: true, type: true, startDate: true, endDate: true },
     }),
+    prisma.evaluationCampaign.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        startDate: { lt: end },
+        endDate: { gte: start },
+      },
+      select: { id: true, name: true, startDate: true, endDate: true },
+    }),
   ]);
 
   for (const h of holidays) {
@@ -104,6 +113,11 @@ export async function getMonth(
       l.endDate,
     );
   }
+  for (const c of evaluations) {
+    pushRange(`ev-${c.id}`, `ประเมินผล: ${c.name}`, "evaluation", "campaign", c.startDate, c.endDate, {
+      href: `/performance/campaigns/${c.id}`,
+    });
+  }
   for (const c of courses) {
     if (!c.scheduledDate) continue;
     items.push({
@@ -115,7 +129,7 @@ export async function getMonth(
     });
   }
   for (const e of events) {
-    pushRange(`e-${e.id}`, e.title, "event", e.type, e.startDate, e.endDate ?? e.startDate, e.id);
+    pushRange(`e-${e.id}`, e.title, "event", e.type, e.startDate, e.endDate ?? e.startDate, { eventId: e.id });
   }
 
   items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));

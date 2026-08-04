@@ -26,6 +26,10 @@ const PUBLIC_API = new Set([
   "/api/auth/google",
   "/api/auth/google/callback",
   "/api/ai/status",
+  // Cron-triggered routes have no session cookie (Vercel Cron calls them
+  // directly) — they authenticate themselves via a CRON_SECRET bearer token
+  // instead, checked inside the route handler.
+  "/api/cron/evaluation-schedules",
 ]);
 
 const PUBLIC_PAGES = new Set(["/login", "/register", "/offline", "/forgot-password", "/reset-password"]);

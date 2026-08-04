@@ -281,6 +281,46 @@ export async function deleteCampaign(companyId: string, session: AccessClaims, i
  * both). MANAGER is still skipped for anyone without a manager, same as
  * before this was configurable.
  */
+/**
+ * Upserts participants + their PENDING responses for the campaign's active
+ * rater types. Shared by the HR-facing `addParticipants` (below) and the
+ * cron-triggered schedule generator, which has no session/permission check
+ * to gate — it's server-only system logic.
+ */
+export async function seedParticipants(
+  campaignId: string,
+  raterTypes: RaterType[],
+  employees: { id: string; managerId: string | null }[],
+) {
+  const created: string[] = [];
+  for (const emp of employees) {
+    const participant = await prisma.evaluationParticipant.upsert({
+      where: { campaignId_employeeId: { campaignId, employeeId: emp.id } },
+      update: {},
+      create: { campaignId, employeeId: emp.id },
+      select: { id: true },
+    });
+    created.push(participant.id);
+
+    if (raterTypes.includes("SELF")) {
+      await prisma.evaluationResponse.upsert({
+        where: { participantId_raterType: { participantId: participant.id, raterType: "SELF" } },
+        update: {},
+        create: { participantId: participant.id, raterType: "SELF", raterEmployeeId: emp.id, scores: [] },
+      });
+    }
+
+    if (raterTypes.includes("MANAGER") && emp.managerId) {
+      await prisma.evaluationResponse.upsert({
+        where: { participantId_raterType: { participantId: participant.id, raterType: "MANAGER" } },
+        update: {},
+        create: { participantId: participant.id, raterType: "MANAGER", raterEmployeeId: emp.managerId, scores: [] },
+      });
+    }
+  }
+  return created;
+}
+
 export async function addParticipants(
   companyId: string,
   session: AccessClaims,
@@ -300,32 +340,7 @@ export async function addParticipants(
   });
   if (employees.length === 0) throw BadRequest("ไม่พบพนักงานที่เลือก");
 
-  const created: string[] = [];
-  for (const emp of employees) {
-    const participant = await prisma.evaluationParticipant.upsert({
-      where: { campaignId_employeeId: { campaignId, employeeId: emp.id } },
-      update: {},
-      create: { campaignId, employeeId: emp.id },
-      select: { id: true },
-    });
-    created.push(participant.id);
-
-    if (campaign.raterTypes.includes("SELF")) {
-      await prisma.evaluationResponse.upsert({
-        where: { participantId_raterType: { participantId: participant.id, raterType: "SELF" } },
-        update: {},
-        create: { participantId: participant.id, raterType: "SELF", raterEmployeeId: emp.id, scores: [] },
-      });
-    }
-
-    if (campaign.raterTypes.includes("MANAGER") && emp.managerId) {
-      await prisma.evaluationResponse.upsert({
-        where: { participantId_raterType: { participantId: participant.id, raterType: "MANAGER" } },
-        update: {},
-        create: { participantId: participant.id, raterType: "MANAGER", raterEmployeeId: emp.managerId, scores: [] },
-      });
-    }
-  }
+  const created = await seedParticipants(campaignId, campaign.raterTypes, employees);
 
   await writeAudit({
     companyId,
