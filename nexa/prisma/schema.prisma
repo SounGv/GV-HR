@@ -121,6 +121,22 @@ enum ReviewStatus {
   FINALIZED
 }
 
+enum EvaluationCampaignStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum EvaluationRaterType {
+  SELF
+  MANAGER
+}
+
+enum EvaluationResponseStatus {
+  PENDING
+  SUBMITTED
+}
+
 enum AnnouncementStatus {
   DRAFT
   PUBLISHED
@@ -228,6 +244,8 @@ model Company {
   leaveBalances      LeaveBalance[]
   payrollRecords     PayrollRecord[]
   performanceReviews PerformanceReview[]
+  competencies       Competency[]
+  evaluationCampaigns EvaluationCampaign[]
   announcements      Announcement[]
   overtimeRequests   OvertimeRequest[]
   assets             Asset[]
@@ -558,6 +576,7 @@ model Employee {
   leaveBalances      LeaveBalance[]
   payrollRecords     PayrollRecord[]
   performanceReviews PerformanceReview[]
+  evaluationParticipants EvaluationParticipant[]
   overtimeRequests   OvertimeRequest[]
   assignedAssets     Asset[]
   notifications      Notification[]
@@ -828,6 +847,106 @@ model PerformanceReview {
   @@unique([employeeId, cycle])
   @@index([companyId, cycle])
   @@map("performance_reviews")
+}
+
+// ─────────────── Performance & Talent: Competency / Evaluation Campaigns ───────────────
+// Additive alongside PerformanceReview (single-rater ad-hoc reviews keep working
+// unchanged) — Campaigns are a separate, more structured multi-rater workflow.
+
+model Competency {
+  id          String    @id @default(uuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  active      Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  campaignLinks EvaluationCampaignCompetency[]
+
+  @@unique([companyId, name])
+  @@map("competencies")
+}
+
+model EvaluationCampaign {
+  id          String                   @id @default(uuid())
+  companyId   String
+  company     Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  cycle       String // e.g. "H1/2569"
+  startDate   DateTime
+  endDate     DateTime
+  status      EvaluationCampaignStatus @default(DRAFT)
+  // Whether the competency set was AI-drafted (AI Performance Designer), and why.
+  aiGenerated Boolean                  @default(false)
+  aiRationale String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  competencies EvaluationCampaignCompetency[]
+  participants EvaluationParticipant[]
+
+  @@index([companyId, status])
+  @@map("evaluation_campaigns")
+}
+
+model EvaluationCampaignCompetency {
+  id           String             @id @default(uuid())
+  campaignId   String
+  campaign     EvaluationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  competencyId String
+  competency   Competency         @relation(fields: [competencyId], references: [id])
+  weight       Int                @default(1) // importance weight 1-5
+
+  @@unique([campaignId, competencyId])
+  @@map("evaluation_campaign_competencies")
+}
+
+model EvaluationParticipant {
+  id           String             @id @default(uuid())
+  campaignId   String
+  campaign     EvaluationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  employeeId   String
+  employee     Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // Computed once the manager response is submitted (see computeScore).
+  overallScore Float?
+  band         String?
+  finalizedAt  DateTime?
+
+  responses EvaluationResponse[]
+
+  @@unique([campaignId, employeeId])
+  @@map("evaluation_participants")
+}
+
+model EvaluationResponse {
+  id              String                   @id @default(uuid())
+  participantId   String
+  participant     EvaluationParticipant    @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  raterType       EvaluationRaterType
+  raterEmployeeId String
+
+  scores       Json // [{ competencyId, score }]
+  strengths    String?
+  improvements String?
+  summary      String?
+
+  status      EvaluationResponseStatus @default(PENDING)
+  submittedAt DateTime?
+  createdAt   DateTime                 @default(now())
+
+  @@unique([participantId, raterType])
+  @@map("evaluation_responses")
 }
 
 // ─────────────────────────── Comms: Announcement ───────────────────────────

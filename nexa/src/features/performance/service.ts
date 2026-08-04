@@ -38,8 +38,14 @@ function requireEmployeeId(session: AccessClaims): string {
   return session.employeeId;
 }
 
+/**
+ * Wildcard grants like "performance:*" are expanded into concrete permission
+ * keys at seed time (see `expandPermissions`), so `session.perms` never
+ * literally contains "performance:*" — checking the real, HR-exclusive
+ * `performance:approve` (Manager doesn't have it) is what actually works.
+ */
 function isHrLevel(session: AccessClaims): boolean {
-  return session.perms.includes("*") || session.perms.includes("performance:*");
+  return session.perms.includes("*") || session.perms.includes("performance:approve");
 }
 
 async function assertCanReview(companyId: string, session: AccessClaims, employeeId: string) {
