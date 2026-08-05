@@ -103,7 +103,9 @@ export function ClockCard() {
     return () => clearInterval(t);
   }, []);
 
-  // Camera: only requested once the employee opts in to attaching a photo.
+  // Camera: opened automatically when the photo step starts. Defaults to the
+  // rear camera (matches how this is used in practice — proof-of-location
+  // photos, not selfies).
   useEffect(() => {
     if (!photoOpen) return;
     let cancelled = false;
@@ -111,7 +113,7 @@ export function ClockCard() {
     setCamError(false);
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
