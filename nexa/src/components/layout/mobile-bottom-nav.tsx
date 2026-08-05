@@ -3,20 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, LayoutGrid, Bot, UserRound, Clock } from "lucide-react";
-import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 
 /**
  * 5-slot bottom tab bar for phones — hidden on md+: Home · Services ·
- * [Time, raised center FAB] · AI · Profile. "Services" opens the full
- * sidebar drawer (every module); the center FAB is attendance check-in,
- * kept raised since it's the single most-used action on this bar.
+ * [Time, raised center FAB] · AI · Profile. "Services" is a curated
+ * quick-access icon grid (full sidebar drawer is one tap further, via a
+ * link on that page); the center FAB is attendance check-in, kept raised
+ * since it's the single most-used action on this bar.
  */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { can } = useAuth();
-  const { setOpenMobile } = useSidebar();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const canCheckIn = can("attendance:read");
@@ -30,14 +29,7 @@ export function MobileBottomNav() {
       <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-1">
         <NavTab href="/dashboard" label="หน้าหลัก" icon={LayoutDashboard} active={isActive("/dashboard")} />
 
-        <button
-          type="button"
-          onClick={() => setOpenMobile(true)}
-          className="flex h-full flex-col items-center justify-center gap-0.5 text-muted-foreground transition active:scale-95"
-        >
-          <LayoutGrid className="size-5" />
-          <span className="text-[10px] font-medium">บริการ</span>
-        </button>
+        <NavTab href="/services" label="บริการ" icon={LayoutGrid} active={isActive("/services")} />
 
         {/* Center raised check-in FAB — "Time" */}
         <div className="flex justify-center">

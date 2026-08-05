@@ -28,6 +28,18 @@ export interface AttendanceRecord {
 
 export type AttendanceScope = "me" | "team" | "all";
 
+export interface BranchGeofence {
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  radiusMeters: number | null;
+}
+
+export interface TodayResponse {
+  record: AttendanceRecord | null;
+  branch: BranchGeofence | null;
+}
+
 export interface ClockPayload {
   lat?: number;
   lng?: number;

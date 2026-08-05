@@ -111,10 +111,14 @@ function resolveOffsite(
 export async function getToday(companyId: string, session: AccessClaims) {
   const employeeId = requireEmployeeId(session);
   const { dateUTC } = bangkokParts();
-  return prisma.attendanceRecord.findFirst({
-    where: { companyId, employeeId, workDate: dateUTC, deletedAt: null },
-    select: recordSelect,
-  });
+  const [record, employee] = await Promise.all([
+    prisma.attendanceRecord.findFirst({
+      where: { companyId, employeeId, workDate: dateUTC, deletedAt: null },
+      select: recordSelect,
+    }),
+    loadEmployeeWithBranch(companyId, employeeId),
+  ]);
+  return { record, branch: employee.branch };
 }
 
 export async function clockIn(
