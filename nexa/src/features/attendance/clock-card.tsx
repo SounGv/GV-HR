@@ -69,7 +69,7 @@ export function ClockCard() {
   const [checking, setChecking] = useState(false);
   const [moodOpen, setMoodOpen] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoIntent, setPhotoIntent] = useState<"in" | "out" | null>(null);
   const [camReady, setCamReady] = useState(false);
   const [camError, setCamError] = useState(false);
   const [offsite, setOffsite] = useState<{
@@ -89,6 +89,7 @@ export function ClockCard() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lastCoordsRef = useRef<Coords | null>(null);
+  const photoRef = useRef<string | null>(null);
   const qrVideoRef = useRef<HTMLVideoElement>(null);
   const qrStreamRef = useRef<MediaStream | null>(null);
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -104,7 +105,7 @@ export function ClockCard() {
 
   // Camera: only requested once the employee opts in to attaching a photo.
   useEffect(() => {
-    if (!photoOpen || photo) return;
+    if (!photoOpen) return;
     let cancelled = false;
     setCamReady(false);
     setCamError(false);
@@ -130,7 +131,27 @@ export function ClockCard() {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
-  }, [photoOpen, photo]);
+  }, [photoOpen]);
+
+  /** Opens the auto-photo step before clocking in/out; resets any stale photo first. */
+  function requestPhoto(intent: "in" | "out") {
+    photoRef.current = null;
+    setPhotoIntent(intent);
+    setPhotoOpen(true);
+  }
+
+  /** Runs after the photo step closes (captured or skipped) — continues the intent's flow. */
+  function proceedAfterPhoto() {
+    const intent = photoIntent;
+    setPhotoIntent(null);
+    if (intent === "in") startClockIn();
+    else if (intent === "out") setMoodOpen(true);
+  }
+
+  function skipPhoto() {
+    setPhotoOpen(false);
+    proceedAfterPhoto();
+  }
 
   function capture() {
     const video = videoRef.current;
@@ -142,8 +163,10 @@ export function ClockCard() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, (video.videoWidth - side) / 2, (video.videoHeight - side) / 2, side, side, 0, 0, 480, 480);
-    setPhoto(canvas.toDataURL("image/jpeg", 0.8));
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+    photoRef.current = dataUrl;
     setPhotoOpen(false);
+    proceedAfterPhoto();
   }
 
   const record = data?.data?.record ?? null;
@@ -278,12 +301,12 @@ export function ClockCard() {
         lng: coords?.lng,
         accuracy: coords?.accuracy,
         workMode: mode,
-        photo: photo ?? undefined,
+        photo: photoRef.current ?? undefined,
         offsiteReason: reason,
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
       });
       toast.success("เช็คอินสำเร็จ");
-      setPhoto(null);
+      photoRef.current = null;
       setOffsite(null);
       setOffsiteReason("");
       refetch();
@@ -308,12 +331,12 @@ export function ClockCard() {
         lng: coords?.lng,
         accuracy: coords?.accuracy,
         mood,
-        photo: photo ?? undefined,
+        photo: photoRef.current ?? undefined,
         offsiteReason: reason,
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
       });
       toast.success("เช็คเอาท์สำเร็จ");
-      setPhoto(null);
+      photoRef.current = null;
       setMoodOpen(false);
       setOffsite(null);
       setOffsiteReason("");
@@ -409,41 +432,28 @@ export function ClockCard() {
         </div>
       </div>
 
-      {/* Mode + optional photo — persistent, no dialog needed to reach them */}
+      {/* Mode toggle — persistent, no dialog needed to reach it */}
       {!isLoading && !hasIn && !hasOut && (
-        <div className="relative mt-5 flex items-center gap-2">
-          <div className="flex flex-1 rounded-xl bg-white/5 p-1">
-            <button
-              type="button"
-              onClick={() => setMode("ONSITE")}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition",
-                mode === "ONSITE" ? "bg-white text-slate-900" : "text-slate-300",
-              )}
-            >
-              <Building2 className="size-3.5" /> สำนักงาน
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("WFH")}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition",
-                mode === "WFH" ? "bg-white text-slate-900" : "text-slate-300",
-              )}
-            >
-              <Home className="size-3.5" /> WFH
-            </button>
-          </div>
+        <div className="relative mt-5 flex rounded-xl bg-white/5 p-1">
           <button
             type="button"
-            onClick={() => setPhotoOpen(true)}
-            aria-label="แนบรูปถ่าย"
+            onClick={() => setMode("ONSITE")}
             className={cn(
-              "flex size-9 shrink-0 items-center justify-center rounded-xl transition",
-              photo ? "bg-success/20 text-success" : "bg-white/5 text-slate-300 hover:bg-white/10",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition",
+              mode === "ONSITE" ? "bg-white text-slate-900" : "text-slate-300",
             )}
           >
-            {photo ? <CheckCircle2 className="size-4" /> : <Camera className="size-4" />}
+            <Building2 className="size-3.5" /> สำนักงาน
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("WFH")}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition",
+              mode === "WFH" ? "bg-white text-slate-900" : "text-slate-300",
+            )}
+          >
+            <Home className="size-3.5" /> WFH
           </button>
         </div>
       )}
@@ -461,7 +471,7 @@ export function ClockCard() {
             size="lg"
             className="h-14 w-full gap-2 rounded-2xl bg-white text-base font-semibold text-slate-900 hover:bg-slate-100"
             disabled={checking}
-            onClick={() => setMoodOpen((v) => !v)}
+            onClick={() => (moodOpen ? setMoodOpen(false) : requestPhoto("out"))}
           >
             {checking ? <Loader2 className="size-5 animate-spin" /> : <LogOut className="size-5" />} เช็คเอาท์
           </Button>
@@ -470,7 +480,7 @@ export function ClockCard() {
             size="lg"
             className="h-14 w-full gap-2 rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90"
             disabled={checking}
-            onClick={startClockIn}
+            onClick={() => requestPhoto("in")}
           >
             {checking ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} เช็คอิน
           </Button>
@@ -600,12 +610,12 @@ export function ClockCard() {
         </div>
       </div>
 
-      {/* Optional selfie capture — opt-in only, doesn't block the main flow */}
-      <Dialog open={photoOpen} onOpenChange={setPhotoOpen}>
+      {/* Auto-opened on every clock-in/out tap — photo is still optional (skippable) */}
+      <Dialog open={photoOpen} onOpenChange={(v) => (v ? setPhotoOpen(true) : skipPhoto())}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>แนบรูปถ่ายยืนยันตัวตน</DialogTitle>
-            <DialogDescription>ไม่บังคับ — ใช้สำหรับยืนยันตัวตนเพิ่มเติมเท่านั้น</DialogDescription>
+            <DialogTitle>ถ่ายรูปยืนยันตัวตน</DialogTitle>
+            <DialogDescription>ใช้สำหรับยืนยันตัวตนเพิ่มเติม — ข้ามได้หากไม่สะดวก</DialogDescription>
           </DialogHeader>
           <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900">
             <video ref={videoRef} playsInline muted className="size-full object-cover" />
@@ -621,7 +631,7 @@ export function ClockCard() {
             )}
             <button
               type="button"
-              onClick={() => setPhotoOpen(false)}
+              onClick={skipPhoto}
               className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/50 text-white"
               aria-label="ปิด"
             >
@@ -631,6 +641,13 @@ export function ClockCard() {
           <Button type="button" className="w-full" onClick={capture} disabled={!camReady}>
             <Camera className="size-4" /> ถ่ายรูป
           </Button>
+          <button
+            type="button"
+            onClick={skipPhoto}
+            className="text-center text-xs text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
+          >
+            ข้ามการถ่ายรูป
+          </button>
         </DialogContent>
       </Dialog>
 
