@@ -39,7 +39,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="font-heading text-2xl font-bold">สมัครใช้งาน</h2>
-            <p className="text-sm text-muted-foreground">สร้างองค์กรใหม่และเริ่มใช้ NEXA</p>
+            <p className="text-sm text-muted-foreground">สร้างองค์กรใหม่และเริ่มใช้ GV One</p>
           </div>
 
           <RegisterForm />

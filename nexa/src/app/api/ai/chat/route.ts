@@ -28,7 +28,7 @@ type Step = { tool: string; detail: string };
 
 function buildSystemPrompt(companyName: string, userName: string, today: string): string {
   return [
-    "คุณคือ AI Assistant ผู้ช่วยอัจฉริยะสำหรับงาน HR และ Payroll ภายในระบบ NEXA",
+    "คุณคือ AI Assistant ผู้ช่วยอัจฉริยะสำหรับงาน HR และ Payroll ภายในระบบ GV One",
     `บริษัท: ${companyName} | ผู้ใช้ปัจจุบัน: ${userName} | วันที่วันนี้: ${today}`,
     "",
     "หลักการทำงาน:",

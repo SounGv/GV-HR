@@ -34,7 +34,7 @@ export function RegisterForm() {
     setSubmitting(true);
     try {
       await api.post("/api/auth/register", values);
-      toast.success("สร้างองค์กรสำเร็จ ยินดีต้อนรับสู่ NEXA");
+      toast.success("สร้างองค์กรสำเร็จ ยินดีต้อนรับสู่ GV One");
       router.replace("/dashboard");
       router.refresh();
     } catch (err) {

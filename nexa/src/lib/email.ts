@@ -13,7 +13,7 @@ export async function sendEmail({
   html: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "NEXA <onboarding@resend.dev>";
+  const from = process.env.EMAIL_FROM || "GV One <onboarding@resend.dev>";
 
   if (!apiKey) {
     console.warn(`[email] RESEND_API_KEY not set — skipping send.\nTo: ${to}\nSubject: ${subject}\n${html}`);

@@ -70,7 +70,7 @@ function reportToPrompt(label: string, result: ReportResult): string {
   const omitted =
     result.rows.length > MAX_ROWS ? `\n(แสดง ${MAX_ROWS} จาก ${result.rows.length} แถว)` : "";
   return [
-    `นี่คือรายงาน "${label}"${result.period ? ` งวด ${result.period}` : ""} จากระบบ NEXA`,
+    `นี่คือรายงาน "${label}"${result.period ? ` งวด ${result.period}` : ""} จากระบบ GV One`,
     "",
     header,
     body,

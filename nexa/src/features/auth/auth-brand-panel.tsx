@@ -18,14 +18,14 @@ export function AuthBrandPanel({
     <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-white lg:flex">
       {/* ambient glow */}
       <div className="pointer-events-none absolute -top-32 -left-24 size-96 rounded-full bg-primary/25 blur-[110px]" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 size-96 rounded-full bg-blue-500/15 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-24 bottom-0 size-96 rounded-full bg-primary/10 blur-[120px]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,theme(colors.white/8%)_1px,transparent_0)] bg-[size:28px_28px] opacity-40" />
 
       <Link href="/login" className="relative flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/nexa-logo.svg" alt="NEXA" className="size-12 rounded-2xl shadow-lg shadow-black/30" />
+        <img src="/nexa-logo.svg" alt="GV One" className="size-12 rounded-2xl shadow-lg shadow-black/30" />
         <div className="leading-tight">
-          <div className="font-semibold tracking-wide">NEXA</div>
+          <div className="font-semibold tracking-wide">GV ONE</div>
           <div className="text-[11px] tracking-[0.18em] text-slate-400">AI WORKFORCE PLATFORM</div>
         </div>
       </Link>
@@ -41,7 +41,7 @@ export function AuthBrandPanel({
       </div>
 
       <div className="relative flex items-center justify-between text-xs text-slate-500">
-        <span>© {new Date().getFullYear()} NEXA AI Workforce Platform</span>
+        <span>© {new Date().getFullYear()} GV One AI Workforce Platform</span>
         {footer}
       </div>
     </div>

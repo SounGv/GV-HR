@@ -77,14 +77,14 @@
   --popover: #ffffff;
   --popover-foreground: #0f172a;
 
-  --primary: #4f46e5; /* indigo-600 */
-  --primary-foreground: #ffffff;
+  --primary: #a3e635; /* lime-400 — GV One brand color */
+  --primary-foreground: #0a0a0a; /* near-black text for contrast on lime */
   --secondary: #f1f5f9; /* slate-100 */
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b; /* slate-500 */
-  --accent: #eef2ff; /* indigo-50 */
-  --accent-foreground: #4338ca; /* indigo-700 */
+  --accent: #ecfccb; /* lime-100 */
+  --accent-foreground: #3f6212; /* lime-800 */
   --destructive: #ef4444; /* red-500 */
 
   --success: #22c55e;
@@ -96,43 +96,43 @@
 
   --border: #e5e7eb; /* gray-200 */
   --input: #e5e7eb;
-  --ring: #4f46e5;
+  --ring: #a3e635;
 
-  /* Brand chart palette (indigo, green, amber, violet, red) */
-  --chart-1: #4f46e5;
-  --chart-2: #22c55e;
+  /* Brand chart palette (lime, blue, amber, violet, red) */
+  --chart-1: #a3e635;
+  --chart-2: #3b82f6;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
   --chart-5: #ef4444;
 
-  /* Sidebar is dark navy in BOTH themes (per NEXA design) */
-  --sidebar: #111827; /* gray-900 */
+  /* Sidebar is solid black in BOTH themes (per GV One design) */
+  --sidebar: #0a0a0a;
   --sidebar-foreground: #cbd5e1; /* slate-300 */
-  --sidebar-primary: #4f46e5;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1f2937; /* gray-800 (hover/active) */
+  --sidebar-primary: #a3e635;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #1a1a1a; /* hover/active */
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1f2937;
-  --sidebar-ring: #4f46e5;
+  --sidebar-border: #1a1a1a;
+  --sidebar-ring: #a3e635;
 }
 
-/* ───────────────── NEXA — Dark theme ───────────────── */
+/* ───────────────── GV One — Dark theme ───────────────── */
 .dark {
-  --background: #0b1120; /* slate-950-ish */
-  --foreground: #e2e8f0; /* slate-200 */
-  --card: #131a2a;
-  --card-foreground: #e2e8f0;
-  --popover: #131a2a;
-  --popover-foreground: #e2e8f0;
+  --background: #0a0a0a;
+  --foreground: #e5e5e5;
+  --card: #141414;
+  --card-foreground: #e5e5e5;
+  --popover: #141414;
+  --popover-foreground: #e5e5e5;
 
-  --primary: #6366f1; /* indigo-500 (brighter on dark) */
-  --primary-foreground: #ffffff;
-  --secondary: #1e293b; /* slate-800 */
-  --secondary-foreground: #e2e8f0;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8; /* slate-400 */
-  --accent: #1e293b;
-  --accent-foreground: #e2e8f0;
+  --primary: #bef264; /* lime-300 (brighter on dark) */
+  --primary-foreground: #0a0a0a;
+  --secondary: #1f1f1f;
+  --secondary-foreground: #e5e5e5;
+  --muted: #1f1f1f;
+  --muted-foreground: #a3a3a3;
+  --accent: #1a2e05; /* dark olive tint */
+  --accent-foreground: #d9f99d; /* lime-200 */
   --destructive: #f87171; /* red-400 */
 
   --success: #22c55e;
@@ -142,24 +142,24 @@
   --info: #6366f1;
   --info-foreground: #ffffff;
 
-  --border: #1e293b;
-  --input: #1e293b;
-  --ring: #6366f1;
+  --border: #262626;
+  --input: #262626;
+  --ring: #bef264;
 
-  --chart-1: #6366f1;
-  --chart-2: #4ade80;
+  --chart-1: #bef264;
+  --chart-2: #60a5fa;
   --chart-3: #fbbf24;
   --chart-4: #a78bfa;
   --chart-5: #f87171;
 
-  --sidebar: #0b1120;
+  --sidebar: #0a0a0a;
   --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #6366f1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
+  --sidebar-primary: #bef264;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #6366f1;
+  --sidebar-border: #1a1a1a;
+  --sidebar-ring: #bef264;
 }
 
 @layer base {

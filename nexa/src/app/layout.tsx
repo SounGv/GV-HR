@@ -33,16 +33,16 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "NEXA People Platform",
-    template: "%s · NEXA",
+    default: "GV One People Platform",
+    template: "%s · GV One",
   },
-  description: "NEXA HR & Payroll Platform — ระบบบริหารงานบุคคลและเงินเดือนสำหรับองค์กร",
-  applicationName: "NEXA",
+  description: "GV One HR & Payroll Platform — ระบบบริหารงานบุคคลและเงินเดือนสำหรับองค์กร",
+  applicationName: "GV One",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "NEXA",
+    title: "GV One",
   },
   icons: {
     icon: "/nexa-logo.svg",
