@@ -77,14 +77,14 @@
   --popover: #ffffff;
   --popover-foreground: #0f172a;
 
-  --primary: #a3e635; /* lime-400 — GV One brand color */
-  --primary-foreground: #0a0a0a; /* near-black text for contrast on lime */
+  --primary: #2563eb; /* blue-600 — GV One brand color */
+  --primary-foreground: #ffffff;
   --secondary: #f1f5f9; /* slate-100 */
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b; /* slate-500 */
-  --accent: #ecfccb; /* lime-100 */
-  --accent-foreground: #3f6212; /* lime-800 */
+  --accent: #eff6ff; /* blue-50 */
+  --accent-foreground: #1e40af; /* blue-800 */
   --destructive: #ef4444; /* red-500 */
 
   --success: #22c55e;
@@ -96,11 +96,11 @@
 
   --border: #e5e7eb; /* gray-200 */
   --input: #e5e7eb;
-  --ring: #a3e635;
+  --ring: #2563eb;
 
-  /* Brand chart palette (lime, blue, amber, violet, red) */
-  --chart-1: #a3e635;
-  --chart-2: #3b82f6;
+  /* Brand chart palette (blue, green, amber, violet, red) */
+  --chart-1: #2563eb;
+  --chart-2: #22c55e;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
   --chart-5: #ef4444;
@@ -108,12 +108,12 @@
   /* Sidebar is solid black in BOTH themes (per GV One design) */
   --sidebar: #0a0a0a;
   --sidebar-foreground: #cbd5e1; /* slate-300 */
-  --sidebar-primary: #a3e635;
-  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1a1a1a; /* hover/active */
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1a1a1a;
-  --sidebar-ring: #a3e635;
+  --sidebar-ring: #3b82f6;
 }
 
 /* ───────────────── GV One — Dark theme ───────────────── */
@@ -125,14 +125,14 @@
   --popover: #141414;
   --popover-foreground: #e5e5e5;
 
-  --primary: #bef264; /* lime-300 (brighter on dark) */
-  --primary-foreground: #0a0a0a;
+  --primary: #3b82f6; /* blue-500 (brighter on dark) */
+  --primary-foreground: #ffffff;
   --secondary: #1f1f1f;
   --secondary-foreground: #e5e5e5;
   --muted: #1f1f1f;
   --muted-foreground: #a3a3a3;
-  --accent: #1a2e05; /* dark olive tint */
-  --accent-foreground: #d9f99d; /* lime-200 */
+  --accent: #172554; /* dark blue tint */
+  --accent-foreground: #bfdbfe; /* blue-200 */
   --destructive: #f87171; /* red-400 */
 
   --success: #22c55e;
@@ -144,22 +144,22 @@
 
   --border: #262626;
   --input: #262626;
-  --ring: #bef264;
+  --ring: #3b82f6;
 
-  --chart-1: #bef264;
-  --chart-2: #60a5fa;
+  --chart-1: #3b82f6;
+  --chart-2: #4ade80;
   --chart-3: #fbbf24;
   --chart-4: #a78bfa;
   --chart-5: #f87171;
 
   --sidebar: #0a0a0a;
   --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #bef264;
-  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1a1a1a;
-  --sidebar-ring: #bef264;
+  --sidebar-ring: #3b82f6;
 }
 
 @layer base {
