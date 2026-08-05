@@ -8,7 +8,7 @@ import { Secret, TOTP } from "otpauth";
  * needs no external service at all.
  */
 
-const ISSUER = "NEXA";
+const ISSUER = "GV One";
 
 export function generateSecret(): string {
   return new Secret({ size: 20 }).base32;

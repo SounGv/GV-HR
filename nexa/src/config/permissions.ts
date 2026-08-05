@@ -1,5 +1,5 @@
 /**
- * NEXA — Permission catalog & role presets.
+ * GV One — Permission catalog & role presets.
  *
  * A permission key is `${module}:${action}`. This single source of truth drives:
  *   • the DB seed (Permission + Role rows),

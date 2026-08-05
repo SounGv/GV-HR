@@ -44,7 +44,7 @@ export default function LoginPage() {
           <>
             อนาคตของการบริหารองค์กร
             <br />
-            เริ่มต้นที่ NEXA
+            เริ่มต้นที่ GV One
           </>
         }
         subtitle="รวมทุกการทำงานขององค์กรไว้ในแพลตฟอร์มเดียว ขับเคลื่อนด้วย AI เพื่อให้คุณทำงานง่ายขึ้น ลัดขั้นตอน และเร็วขึ้น"
@@ -81,7 +81,7 @@ export default function LoginPage() {
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="font-heading text-2xl font-bold">ยินดีต้อนรับกลับ 👋</h2>
             <p className="text-sm text-muted-foreground">
-              เข้าสู่ระบบเพื่อเริ่มต้นใช้งาน NEXA
+              เข้าสู่ระบบเพื่อเริ่มต้นใช้งาน GV One
             </p>
           </div>
 

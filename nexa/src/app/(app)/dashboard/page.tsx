@@ -129,7 +129,7 @@ export default async function DashboardPage() {
           {greeting()}, {name} 👋
         </h1>
         <p className="text-sm text-muted-foreground">
-          ยินดีต้อนรับเข้าสู่ NEXA HR AI Platform · {user?.company?.name}
+          ยินดีต้อนรับเข้าสู่ GV One HR AI Platform · {user?.company?.name}
         </p>
       </div>
 

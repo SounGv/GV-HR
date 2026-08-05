@@ -13,7 +13,7 @@ export default function OfflinePage() {
       <div className="space-y-1.5">
         <h1 className="text-xl font-semibold text-foreground">ออฟไลน์อยู่ในขณะนี้</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
-          ดูเหมือนอุปกรณ์ของคุณไม่ได้เชื่อมต่ออินเทอร์เน็ต NEXA
+          ดูเหมือนอุปกรณ์ของคุณไม่ได้เชื่อมต่ออินเทอร์เน็ต GV One
           ต้องการการเชื่อมต่อเพื่อดึงข้อมูลล่าสุด ลองใหม่อีกครั้งเมื่อออนไลน์
         </p>
       </div>

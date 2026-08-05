@@ -184,7 +184,7 @@ export function PayslipDocument({
         </footer>
 
         <p className="mt-4 text-center text-[10px] text-slate-400">
-          เอกสารนี้ออกโดยระบบ NEXA HR — {company.name}
+          เอกสารนี้ออกโดยระบบ GV One HR — {company.name}
         </p>
       </div>
     </div>

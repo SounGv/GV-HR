@@ -38,9 +38,9 @@ export async function requestPasswordReset(
   const url = `${process.env.APP_URL ?? "http://localhost:3000"}/reset-password?token=${token}`;
   await sendEmail({
     to: user.email,
-    subject: "รีเซ็ตรหัสผ่าน NEXA",
+    subject: "รีเซ็ตรหัสผ่าน GV One",
     html: `
-      <p>คุณได้ขอรีเซ็ตรหัสผ่านบัญชี NEXA ของคุณ</p>
+      <p>คุณได้ขอรีเซ็ตรหัสผ่านบัญชี GV One ของคุณ</p>
       <p><a href="${url}">คลิกที่นี่เพื่อตั้งรหัสผ่านใหม่</a></p>
       <p>ลิงก์นี้จะหมดอายุใน 1 ชั่วโมง หากคุณไม่ได้ขอรีเซ็ตรหัสผ่าน สามารถละเว้นอีเมลนี้ได้</p>
     `,

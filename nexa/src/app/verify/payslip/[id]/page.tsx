@@ -21,7 +21,7 @@ export default async function VerifyPayslipPage({
           </div>
           <div className="space-y-1">
             <h1 className="text-xl font-semibold text-foreground">สลิปเงินเดือนถูกต้อง</h1>
-            <p className="text-sm text-muted-foreground">ออกโดยระบบ NEXA HR — เอกสารนี้เป็นของจริง</p>
+            <p className="text-sm text-muted-foreground">ออกโดยระบบ GV One HR — เอกสารนี้เป็นของจริง</p>
           </div>
           <div className="w-full max-w-sm divide-y divide-border rounded-2xl border border-border text-left">
             <Row label="บริษัท" value={result.company} />

@@ -40,7 +40,7 @@ export default async function BranchQrPage({ params }: { params: Promise<{ id: s
             {branch.address && <p className="mt-1 text-sm text-muted-foreground">{branch.address}</p>}
           </div>
           <p className="text-xs text-muted-foreground">
-            สแกน QR นี้ในหน้าเช็คอิน/เช็คเอาท์ของแอป NEXA เพื่อยืนยันตำแหน่งโดยไม่ต้องใช้ GPS
+            สแกน QR นี้ในหน้าเช็คอิน/เช็คเอาท์ของแอป GV One เพื่อยืนยันตำแหน่งโดยไม่ต้องใช้ GPS
           </p>
         </CardContent>
       </Card>

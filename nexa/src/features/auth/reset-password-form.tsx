@@ -122,7 +122,7 @@ export function ResetPasswordForm() {
         <Button
           type="submit"
           size="lg"
-          className="w-full bg-gradient-to-r from-primary to-violet-500 text-primary-foreground hover:opacity-90"
+          className="w-full bg-primary text-primary-foreground hover:opacity-90"
           disabled={submitting}
         >
           {submitting && <Loader2 className="size-4 animate-spin" />}
