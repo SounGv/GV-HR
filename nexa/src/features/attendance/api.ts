@@ -1,8 +1,8 @@
 import { api, type Envelope } from "@/lib/api/client";
-import type { AttendanceRecord, AttendanceScope, ClockPayload } from "./types";
+import type { AttendanceRecord, AttendanceScope, ClockPayload, TodayResponse } from "./types";
 
 export function fetchToday() {
-  return api.get<Envelope<AttendanceRecord | null>>("/api/attendance/today");
+  return api.get<Envelope<TodayResponse>>("/api/attendance/today");
 }
 
 export function fetchAttendance(scope: AttendanceScope, from?: string, to?: string) {

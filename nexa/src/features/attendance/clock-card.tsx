@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import jsQR from "jsqr";
 import {
   LogIn,
@@ -52,6 +53,11 @@ interface Coords {
   accuracy?: number;
 }
 
+const GeofenceMap = dynamic(() => import("./geofence-map").then((m) => m.GeofenceMap), {
+  ssr: false,
+  loading: () => <div className="h-44 w-full animate-pulse rounded-2xl bg-white/5" />,
+});
+
 export function ClockCard() {
   const { data, isLoading, refetch } = useToday();
   const clockIn = useClockIn();
@@ -76,6 +82,9 @@ export function ClockCard() {
   const [qrOpen, setQrOpen] = useState(false);
   const [qrReady, setQrReady] = useState(false);
   const [qrError, setQrError] = useState(false);
+  const [mapPreview, setMapPreview] = useState<{ kind: "in" | "out"; coords: Coords; mood?: AttendanceMood } | null>(
+    null,
+  );
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -137,10 +146,12 @@ export function ClockCard() {
     setPhotoOpen(false);
   }
 
-  const record = data?.data ?? null;
+  const record = data?.data?.record ?? null;
+  const branch = data?.data?.branch ?? null;
   const hasIn = !!record?.clockInAt;
   const hasOut = !!record?.clockOutAt;
   const onBreak = !!record?.breakStartAt && !record?.breakEndAt;
+  const hasGeofence = branch?.lat != null && branch?.lng != null && branch?.radiusMeters != null;
 
   async function toggleBreak() {
     try {
@@ -258,10 +269,10 @@ export function ClockCard() {
     }
   }
 
-  async function submitClockIn(reason?: string) {
+  async function submitClockIn(reason?: string, cachedCoords?: Coords) {
     setChecking(true);
     try {
-      const coords = reason ? lastCoordsRef.current : await resolveCoords();
+      const coords = cachedCoords ?? (reason ? lastCoordsRef.current : await resolveCoords());
       await clockIn.mutateAsync({
         lat: coords?.lat,
         lng: coords?.lng,
@@ -288,10 +299,10 @@ export function ClockCard() {
     }
   }
 
-  async function submitClockOut(mood?: AttendanceMood, reason?: string) {
+  async function submitClockOut(mood?: AttendanceMood, reason?: string, cachedCoords?: Coords) {
     setChecking(true);
     try {
-      const coords = reason ? lastCoordsRef.current : await resolveCoords();
+      const coords = cachedCoords ?? (reason ? lastCoordsRef.current : await resolveCoords());
       await clockOut.mutateAsync({
         lat: coords?.lat,
         lng: coords?.lng,
@@ -318,6 +329,42 @@ export function ClockCard() {
     } finally {
       setChecking(false);
     }
+  }
+
+  /**
+   * ONSITE clock-in/out with a configured geofence gets a map confirmation
+   * step first; WFH and branches without a geofence submit immediately,
+   * matching the existing skip-geofence behavior.
+   */
+  async function startClockIn() {
+    if (mode === "WFH" || !hasGeofence) {
+      submitClockIn();
+      return;
+    }
+    setChecking(true);
+    const coords = await resolveCoords();
+    setChecking(false);
+    if (!coords) return;
+    setMapPreview({ kind: "in", coords });
+  }
+
+  async function startClockOut(mood?: AttendanceMood) {
+    if (record?.workMode === "WFH" || !hasGeofence) {
+      submitClockOut(mood);
+      return;
+    }
+    setChecking(true);
+    const coords = await resolveCoords();
+    setChecking(false);
+    if (!coords) return;
+    setMapPreview({ kind: "out", coords, mood });
+  }
+
+  function confirmMapPreview() {
+    if (!mapPreview) return;
+    if (mapPreview.kind === "in") submitClockIn(undefined, mapPreview.coords);
+    else submitClockOut(mapPreview.mood, undefined, mapPreview.coords);
+    setMapPreview(null);
   }
 
   function confirmOffsite() {
@@ -405,7 +452,7 @@ export function ClockCard() {
       <div className="relative mt-5">
         {isLoading ? (
           <Skeleton className="h-14 w-full bg-white/10" />
-        ) : hasOut ? (
+        ) : mapPreview ? null : hasOut ? (
           <div className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-success/15 text-success">
             <CheckCircle2 className="size-5" /> ลงเวลาครบแล้ววันนี้
           </div>
@@ -423,14 +470,45 @@ export function ClockCard() {
             size="lg"
             className="h-14 w-full gap-2 rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90"
             disabled={checking}
-            onClick={() => submitClockIn()}
+            onClick={startClockIn}
           >
             {checking ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} เช็คอิน
           </Button>
         )}
 
+        {/* Map confirmation — only for ONSITE with a configured geofence */}
+        {mapPreview && (
+          <div className="space-y-3 rounded-2xl bg-white/5 p-3">
+            <p className="text-center text-xs text-slate-300">ยืนยันตำแหน่งของคุณก่อน{mapPreview.kind === "in" ? "เช็คอิน" : "เช็คเอาท์"}</p>
+            {branch?.lat != null && branch?.lng != null && branch?.radiusMeters != null && (
+              <GeofenceMap
+                branchLat={branch.lat}
+                branchLng={branch.lng}
+                radiusMeters={branch.radiusMeters}
+                userLat={mapPreview.coords.lat}
+                userLng={mapPreview.coords.lng}
+              />
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 border-white/15 bg-transparent text-white hover:bg-white/10"
+                disabled={checking}
+                onClick={() => setMapPreview(null)}
+              >
+                ยกเลิก
+              </Button>
+              <Button type="button" className="flex-1" disabled={checking} onClick={confirmMapPreview}>
+                {checking ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+                ยืนยัน{mapPreview.kind === "in" ? "เช็คอิน" : "เช็คเอาท์"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Mood picker — appears in place, tap an emoji to check out immediately */}
-        {moodOpen && (
+        {moodOpen && !mapPreview && (
           <div className="mt-3 rounded-2xl bg-white/5 p-3">
             <p className="mb-2 text-center text-xs text-slate-300">วันนี้เป็นอย่างไรบ้าง? (แตะเพื่อเช็คเอาท์)</p>
             <div className="flex items-center justify-between">
@@ -439,7 +517,7 @@ export function ClockCard() {
                   key={m.value}
                   type="button"
                   disabled={checking}
-                  onClick={() => submitClockOut(m.value)}
+                  onClick={() => startClockOut(m.value)}
                   className="flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition hover:bg-white/10 active:scale-95 disabled:opacity-40"
                 >
                   <span className="text-2xl">{m.emoji}</span>
@@ -450,7 +528,7 @@ export function ClockCard() {
             <button
               type="button"
               disabled={checking}
-              onClick={() => submitClockOut()}
+              onClick={() => startClockOut()}
               className="mt-2 w-full text-center text-xs text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
             >
               ข้ามและเช็คเอาท์เลย
@@ -458,7 +536,7 @@ export function ClockCard() {
           </div>
         )}
 
-        {!isLoading && !hasOut && !moodOpen && (
+        {!isLoading && !hasOut && !moodOpen && !mapPreview && (
           <>
             <p className="mt-2 text-center text-xs text-slate-400">
               {hasIn ? "แตะเพื่อเช็คเอาท์เมื่อเลิกงาน" : "แตะเพื่อเช็คอินเข้างานทันที"}

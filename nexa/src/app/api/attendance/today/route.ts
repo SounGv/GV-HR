@@ -7,8 +7,8 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     const session = await requirePermission("attendance:read");
-    const record = await getToday(session.companyId, session);
-    return ok(record);
+    const result = await getToday(session.companyId, session);
+    return ok(result);
   } catch (err) {
     return handleApiError(err);
   }
