@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/client";
+import { MobileLeaveForm } from "@/components/mobile/mobile-leave-form";
+import { DesktopOnly } from "@/components/mobile/mobile-screen";
 import { LEAVE_TYPES } from "./schema";
 import { computeLeaveDays } from "./days";
 import { LEAVE_TYPE_LABEL } from "./labels";
@@ -91,6 +93,9 @@ export function LeaveFormPage() {
   ];
 
   return (
+    <>
+      <MobileLeaveForm />
+      <DesktopOnly>
     <FormPageShell
       breadcrumbs={[{ label: "การลา", href: LIST }, { label: "ขอลาใหม่" }]}
       backHref={LIST}
@@ -198,5 +203,7 @@ export function LeaveFormPage() {
         </form>
       </Form>
     </FormPageShell>
+      </DesktopOnly>
+    </>
   );
 }

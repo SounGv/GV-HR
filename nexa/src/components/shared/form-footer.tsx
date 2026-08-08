@@ -34,7 +34,7 @@ export function FormFooter({
   return (
     <div
       className={cn(
-        "sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border/70 bg-background/85 px-4 py-3 backdrop-blur-xl md:-mx-6 md:px-6",
+        "sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-card px-4 py-3 md:-mx-6 md:bg-background/85 md:px-6 md:backdrop-blur-xl",
         className,
       )}
     >

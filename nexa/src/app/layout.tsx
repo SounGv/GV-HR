@@ -1,27 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Sans_Thai, Kanit, JetBrains_Mono } from "next/font/google";
+import { Prompt, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const notoThai = Noto_Sans_Thai({
-  variable: "--font-noto-thai",
+/** Loopless Thai/Latin sans — matches GV One mobile reference (clean list + purple accent UI). */
+const prompt = Prompt({
+  variable: "--font-prompt",
   subsets: ["thai", "latin"],
-  display: "swap",
-});
-
-// Heading typeface — geometric Thai/Latin sans with real weight range, so
-// titles read as clearly distinct from Noto Sans Thai body copy.
-const kanit = Kanit({
-  variable: "--font-kanit",
-  subsets: ["thai", "latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -52,8 +39,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0A1226" },
+    { media: "(prefers-color-scheme: light)", color: "#7A35FF" },
+    { media: "(prefers-color-scheme: dark)", color: "#0A0A0A" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -65,7 +52,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th" suppressHydrationWarning>
-      <body className={`${inter.variable} ${notoThai.variable} ${kanit.variable} ${mono.variable} font-sans`}>
+      <body className={`${prompt.variable} ${mono.variable} font-sans`}>
         <AppProviders>{children}</AppProviders>
         <PwaRegister />
       </body>

@@ -18,7 +18,7 @@ export default async function AiPage() {
 
   return (
     <div className="space-y-5">
-      <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
+      <Card className="relative hidden overflow-hidden border-0 bg-sidebar p-6 text-white md:block">
         <div className="pointer-events-none absolute -top-16 -right-10 size-64 rounded-full bg-primary/25 blur-[90px]" />
         <div className="relative flex flex-col gap-4">
           <div className="flex items-start gap-3">

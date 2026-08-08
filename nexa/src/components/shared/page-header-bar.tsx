@@ -32,8 +32,8 @@ export function PageHeaderBar({
   return (
     <div
       className={cn(
-        "-mx-4 border-b border-border/70 bg-background/80 px-4 py-3 backdrop-blur-xl md:-mx-6 md:px-6",
-        sticky && "sticky top-16 z-20",
+        "-mx-4 hidden border-b border-border/70 bg-background/80 px-4 py-3 backdrop-blur-xl md:-mx-6 md:block md:px-6",
+        sticky && "md:sticky md:top-16 md:z-20",
         className,
       )}
     >
