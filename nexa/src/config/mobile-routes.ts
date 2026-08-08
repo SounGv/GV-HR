@@ -71,12 +71,18 @@ const VIEW_TITLES: Record<Exclude<MobileRouteKey, "home" | "leave" | "leave-new"
 
 const VALID_VIEWS = new Set<string>(Object.keys(VIEW_TITLES));
 
-export function isMobileCustomPath(pathname: string): boolean {
-  return MOBILE_CUSTOM_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+export function isMobileCustomPath(pathname: string, searchParams?: URLSearchParams | null): boolean {
+  if (pathname === "/services" || pathname.startsWith("/services/")) {
+    const view = searchParams?.get("view") ?? "";
+    return VALID_VIEWS.has(view);
+  }
+  return MOBILE_CUSTOM_PATHS.filter((p) => p !== "/services").some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
 }
 
 export function resolveMobileRoute(pathname: string, searchParams?: URLSearchParams | null): MobileRoute | null {
-  if (!isMobileCustomPath(pathname)) return null;
+  if (!isMobileCustomPath(pathname, searchParams)) return null;
 
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
     return { key: "home", title: "GV One", backHref: "/dashboard" };
@@ -100,9 +106,6 @@ export function resolveMobileRoute(pathname: string, searchParams?: URLSearchPar
 
   if (pathname === "/services" || pathname.startsWith("/services/")) {
     const view = searchParams?.get("view") ?? "";
-    if (!view || !VALID_VIEWS.has(view)) {
-      return { key: "home", title: "บริการ", backHref: "/dashboard" };
-    }
     return {
       key: view as MobileRouteKey,
       title: VIEW_TITLES[view as keyof typeof VIEW_TITLES],
