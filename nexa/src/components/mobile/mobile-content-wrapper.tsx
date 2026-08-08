@@ -1,35 +1,53 @@
 "use client";
 
+import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { resolveMobileRoute } from "@/config/mobile-routes";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { resolveMobileModule } from "@/config/mobile-module-registry";
-import { MobileOnly, DesktopOnly } from "./mobile-screen";
-
-export interface MobileContentWrapperProps {
-  children: React.ReactNode;
-}
+import { isMobileCustomPath, resolveMobileRoute, resolveMobilePageMeta } from "@/config/mobile-routes";
+import { MobileScreen } from "./mobile-screen";
 
 /**
- * On mobile custom paths, renders the registered module inside the mobile shell.
- * On desktop (or non-custom paths), passes through the default page children.
+ * Mobile routing priority:
+ * 1. Registered GV One module (custom paths + /services?view=)
+ * 2. Page-owned layout on MOBILE_CUSTOM_PATHS without a module
+ * 3. Auto shell with route title for all other pages
  */
-export function MobileContentWrapper({ children }: MobileContentWrapperProps) {
+export function MobileContentWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const route = resolveMobileRoute(pathname, searchParams);
+  const isMobile = useIsMobile();
 
-  if (!route) {
+  const route = useMemo(
+    () => resolveMobileRoute(pathname, searchParams),
+    [pathname, searchParams],
+  );
+
+  const pageMeta = useMemo(
+    () => resolveMobilePageMeta(pathname, searchParams),
+    [pathname, searchParams],
+  );
+
+  if (!isMobile) {
     return <>{children}</>;
   }
 
-  const Module = resolveMobileModule(route.key);
+  if (route) {
+    const Module = resolveMobileModule(route.key);
+    if (Module) return <Module />;
+  }
+
+  if (isMobileCustomPath(pathname, searchParams)) {
+    return <>{children}</>;
+  }
 
   return (
-    <>
-      <MobileOnly>{Module ? <Module /> : children}</MobileOnly>
-      <DesktopOnly>{children}</DesktopOnly>
-    </>
+    <MobileScreen
+      title={pageMeta.title}
+      backHref={pageMeta.backHref}
+      contentClassName="mobile-module-body space-y-4 p-4"
+    >
+      {children}
+    </MobileScreen>
   );
 }
-
-export { isMobileCustomPath } from "@/config/mobile-routes";

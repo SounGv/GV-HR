@@ -37,7 +37,7 @@ function MenuTile({ item }: { item: MobileMenuItem }) {
   );
 }
 
-export function MobileHomeView() {
+export function MobileHomeView({ title = "GV One" }: { title?: string }) {
   const { can, user } = useAuth();
   const [tab, setTab] = useState<"employee" | "hr">("employee");
 
@@ -48,7 +48,7 @@ export function MobileHomeView() {
   const groups = tab === "employee" ? employeeGroups : hrGroups;
 
   return (
-    <MobileScreen title="GV One" contentClassName="space-y-5 pb-6">
+    <MobileScreen title={title} contentClassName="space-y-5 pb-6">
       <div className="-mx-4 bg-primary px-4 pb-4 pt-1 text-primary-foreground">
         <p className="text-sm opacity-90">สวัสดี</p>
         <p className="text-lg font-semibold">

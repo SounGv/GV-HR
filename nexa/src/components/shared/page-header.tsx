@@ -14,8 +14,9 @@ export function PageHeader({
 }) {
   return (
     <div
+      data-slot="page-header"
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        "hidden flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:flex",
         className,
       )}
     >

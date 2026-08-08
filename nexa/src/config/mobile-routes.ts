@@ -1,6 +1,7 @@
 /** Mobile route keys resolved from pathname + ?view= search param. */
 export type MobileRouteKey =
   | "home"
+  | "services"
   | "attendance"
   | "leave"
   | "leave-new"
@@ -33,7 +34,7 @@ export interface MobileRoute {
   backHref: string;
 }
 
-/** Paths that render the mobile shell instead of the desktop page chrome. */
+/** Paths that may render page-owned mobile layouts when no registry module matches. */
 export const MOBILE_CUSTOM_PATHS = [
   "/dashboard",
   "/services",
@@ -43,45 +44,62 @@ export const MOBILE_CUSTOM_PATHS = [
   "/profile",
 ] as const;
 
-export type MobileCustomPath = (typeof MOBILE_CUSTOM_PATHS)[number];
-
-const VIEW_TITLES: Record<Exclude<MobileRouteKey, "home" | "leave" | "leave-new" | "profile" | "attendance">, string> = {
-  "time-edit": "แก้ไขเวลา",
-  shift: "กะการทำงาน",
-  kpi: "KPI & Level",
-  review: "ประเมินผลงาน",
+const VIEW_TITLES: Record<
+  Exclude<MobileRouteKey, "home" | "services" | "leave" | "leave-new" | "profile" | "attendance">,
+  string
+> = {
+  "time-edit": "แก้เวลาเข้า-ออกงาน",
+  shift: "ตารางกะ",
+  kpi: "KPI ส่วนตัว",
+  review: "ประเมินผล",
   payslip: "สลิปเงินเดือน",
-  expense: "เบิกจ่าย",
-  employees: "พนักงาน",
+  expense: "เบิกค่าใช้จ่าย",
+  employees: "รายชื่อพนักงาน",
   "add-employee": "เพิ่มพนักงาน",
-  "org-chart": "แผนผังองค์กร",
-  access: "ผู้ดูแลระบบ",
-  approvals: "คำขออนุมัติ",
-  onsite: "พื้นที่เช็คอิน",
-  "leave-all": "การลา",
-  "payroll-run": "จัดการเงินเดือน",
+  "org-chart": "โครงสร้างองค์กร",
+  access: "สิทธิ์การเข้าถึง",
+  approvals: "อนุมัติเอกสาร",
+  onsite: "สิทธิ์นอกสถานที่",
+  "leave-all": "วันลาพนักงาน",
+  "payroll-run": "ประมวลผลเงินเดือน",
   "kpi-org": "KPI องค์กร",
-  export: "รายงานและส่งออก",
-  "org-settings": "ข้อมูลบริษัท",
+  export: "ส่งออกรายงาน",
+  "org-settings": "ตั้งค่าองค์กร",
   goals: "เป้าหมาย",
-  feedback: "Feedback 360",
+  feedback: "ฟีดแบ็ก",
   benefits: "สวัสดิการ",
-  "menu-settings": "ตั้งค่าเมนู",
+  "menu-settings": "ตั้งค่าเมนูของฉัน",
 };
 
 const VALID_VIEWS = new Set<string>(Object.keys(VIEW_TITLES));
 
+const PAGE_TITLES: Record<string, string> = {
+  "/training": "อบรมและพัฒนา",
+  "/workflows": "เวิร์กโฟลว์อนุมัติ",
+  "/calendar": "ปฏิทินองค์กร",
+  "/announcements": "ประกาศและแจ้งเตือน",
+  "/overtime": "ล่วงเวลา (OT)",
+  "/holidays": "วันหยุด",
+  "/recruitment": "สรรหาพนักงาน",
+  "/integrations": "การเชื่อมต่อระบบ",
+  "/ai": "AI Assistant",
+  "/employees/import": "นำเข้าพนักงาน",
+};
+
 export function isMobileCustomPath(pathname: string, searchParams?: URLSearchParams | null): boolean {
   if (pathname === "/services" || pathname.startsWith("/services/")) {
     const view = searchParams?.get("view") ?? "";
-    return VALID_VIEWS.has(view);
+    return view === "" || VALID_VIEWS.has(view);
   }
   return MOBILE_CUSTOM_PATHS.filter((p) => p !== "/services").some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 }
 
-export function resolveMobileRoute(pathname: string, searchParams?: URLSearchParams | null): MobileRoute | null {
+export function resolveMobileRoute(
+  pathname: string,
+  searchParams?: URLSearchParams | null,
+): MobileRoute | null {
   if (!isMobileCustomPath(pathname, searchParams)) return null;
 
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
@@ -93,7 +111,7 @@ export function resolveMobileRoute(pathname: string, searchParams?: URLSearchPar
   }
 
   if (pathname === "/attendance" || pathname.startsWith("/attendance/")) {
-    return { key: "attendance", title: "เช็คอิน", backHref: "/dashboard" };
+    return { key: "attendance", title: "สแกนเข้า-ออกงาน", backHref: "/services" };
   }
 
   if (pathname === "/leave/new") {
@@ -101,17 +119,37 @@ export function resolveMobileRoute(pathname: string, searchParams?: URLSearchPar
   }
 
   if (pathname === "/leave" || pathname.startsWith("/leave/")) {
-    return { key: "leave", title: "การลา", backHref: "/dashboard" };
+    return { key: "leave", title: "การลา", backHref: "/services" };
   }
 
   if (pathname === "/services" || pathname.startsWith("/services/")) {
     const view = searchParams?.get("view") ?? "";
+    if (!view) {
+      return { key: "services", title: "บริการ", backHref: "/dashboard" };
+    }
     return {
       key: view as MobileRouteKey,
       title: VIEW_TITLES[view as keyof typeof VIEW_TITLES],
-      backHref: "/dashboard",
+      backHref: "/services",
     };
   }
 
   return null;
+}
+
+/** Fallback titles for pages rendered inside the auto mobile shell. */
+export function resolveMobilePageMeta(
+  pathname: string,
+  searchParams?: URLSearchParams | null,
+): { title: string; backHref: string } {
+  if (pathname === "/coming-soon") {
+    const title = searchParams?.get("title") ?? "เร็วๆ นี้";
+    return { title, backHref: "/services" };
+  }
+
+  const exact = PAGE_TITLES[pathname];
+  if (exact) return { title: exact, backHref: "/services" };
+
+  const segment = pathname.split("/").filter(Boolean).pop();
+  return { title: segment ? decodeURIComponent(segment) : "GV One", backHref: "/services" };
 }

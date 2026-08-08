@@ -17,7 +17,7 @@ export { MobileAlertBanner, MobileSuccessCard } from "./mobile-alert-banner";
 export type { MobileAlertBannerProps, MobileSuccessCardProps } from "./mobile-alert-banner";
 
 export { MobileHomeView } from "./mobile-home-view";
-export { MobileContentWrapper, isMobileCustomPath } from "./mobile-content-wrapper";
+export { MobileContentWrapper } from "./mobile-content-wrapper";
 export { MobileLeaveListView } from "./mobile-leave-list-view";
 export { MobileLeaveForm } from "./mobile-leave-form";
 export { MobileProfileView } from "./mobile-profile-view";
@@ -61,8 +61,8 @@ export {
 } from "@/config/mobile-menu";
 export type { MobileMenuItem, MobileMenuGroup } from "@/config/mobile-menu";
 
-export { MOBILE_CUSTOM_PATHS, resolveMobileRoute } from "@/config/mobile-routes";
-export type { MobileRouteKey, MobileRoute, MobileCustomPath } from "@/config/mobile-routes";
+export { MOBILE_CUSTOM_PATHS, isMobileCustomPath, resolveMobileRoute } from "@/config/mobile-routes";
+export type { MobileRouteKey, MobileRoute } from "@/config/mobile-routes";
 
 export { resolveMobileModule } from "@/config/mobile-module-registry";
 export type { MobileModuleComponent } from "@/config/mobile-module-registry";

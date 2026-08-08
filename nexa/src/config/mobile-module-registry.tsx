@@ -29,10 +29,15 @@ import { MobileLeaveForm } from "@/components/mobile/mobile-leave-form";
 import { MobileLeaveListView } from "@/components/mobile/mobile-leave-list-view";
 import { MobileProfilePage } from "@/components/mobile/mobile-profile-page";
 
+function MobileServicesHome() {
+  return <MobileHomeView title="บริการ" />;
+}
+
 export type MobileModuleComponent = ComponentType<Record<string, never>>;
 
 const REGISTRY: Partial<Record<MobileRouteKey, MobileModuleComponent>> = {
   home: MobileHomeView,
+  services: MobileServicesHome,
   attendance: MobileAttendanceModule,
   leave: MobileLeaveListView,
   "leave-new": MobileLeaveForm,
