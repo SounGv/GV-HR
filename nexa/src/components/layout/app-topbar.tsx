@@ -9,7 +9,7 @@ import { CommandPalette } from "./command-palette";
 
 export function AppTopbar() {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border/70 bg-background/70 px-3 backdrop-blur-xl sm:px-5">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card px-3 sm:h-16 sm:bg-background/70 sm:px-5 sm:backdrop-blur-xl">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mx-1 h-5" />
 

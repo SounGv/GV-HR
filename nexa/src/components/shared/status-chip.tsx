@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
 export type StatusTone = "success" | "warning" | "danger" | "info" | "primary" | "neutral";
 
 const TONE: Record<StatusTone, string> = {
-  success: "bg-success/10 text-success",
+  success: "bg-success-muted text-success",
   warning: "bg-warning/10 text-warning",
-  danger: "bg-destructive/10 text-destructive",
-  info: "bg-info/10 text-info",
-  primary: "bg-primary/10 text-primary",
-  neutral: "bg-muted text-muted-foreground",
+  danger: "bg-destructive-muted text-destructive",
+  info: "bg-accent text-accent-foreground",
+  primary: "bg-accent text-accent-foreground",
+  neutral: "bg-surface-muted text-muted-foreground",
 };
 
 export function StatusChip({

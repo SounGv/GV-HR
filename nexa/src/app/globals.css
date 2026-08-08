@@ -11,13 +11,19 @@
   --font-mono: var(--font-mono);
   --font-heading: var(--font-heading);
 
-  /* Semantic status colors (NEXA) */
+  /* Semantic status colors (GV One) */
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-muted: var(--success-muted);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-destructive-muted: var(--destructive-muted);
+  --color-surface-muted: var(--surface-muted);
+  --color-dev-note: var(--dev-note);
+  --color-dev-note-foreground: var(--dev-note-foreground);
+  --color-dev-note-border: var(--dev-note-border);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -57,63 +63,66 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ───────────────── NEXA — Light theme ───────────────── */
+/* ───────────────── GV One — Light theme (mobile reference palette) ───────────────── */
 :root {
   --radius: 0.75rem;
 
-  /* Thai-first font stack; next/font injects --font-noto-thai / --font-inter on <body>. */
-  --font-sans: var(--font-noto-thai), var(--font-inter), ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", sans-serif;
+  /* Prompt via next/font — single family for body + headings (loopless Thai sans). */
+  --font-sans: var(--font-prompt), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
 
-  /* Headings use a distinct geometric face (Kanit) at heavier weights so
-     titles are unmistakable against body/tab text at a glance. */
-  --font-heading: var(--font-kanit), var(--font-noto-thai), var(--font-inter), ui-sans-serif,
-    system-ui, sans-serif;
-
-  --background: #f8fafc; /* slate-50 */
-  --foreground: #0f172a; /* slate-900 */
+  /* Surfaces */
+  --background: #f0f2f5;
+  --foreground: #1a1b22;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #1a1b22;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #1a1b22;
 
-  --primary: #2563eb; /* blue-600 — GV One brand color */
+  /* Brand violet — Signal Violet from GV One mobile mockup */
+  --primary: #7a35ff;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9; /* slate-100 */
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b; /* slate-500 */
-  --accent: #eff6ff; /* blue-50 */
-  --accent-foreground: #1e40af; /* blue-800 */
-  --destructive: #ef4444; /* red-500 */
+  --secondary: #f0ebff;
+  --secondary-foreground: #7a35ff;
+  --muted: #f0f2f5;
+  --muted-foreground: #5b5f6b;
+  --accent: #f0ebff;
+  --accent-foreground: #7a35ff;
+  --destructive: #e4573d;
 
-  --success: #22c55e;
+  --success: #0e9f8e;
   --success-foreground: #ffffff;
+  --success-muted: #e6f7f4;
+  --destructive-muted: #fdece8;
+  --surface-muted: #f0f1f5;
+  --dev-note: #fff9e6;
+  --dev-note-foreground: #7a6417;
+  --dev-note-border: #f3e29b;
+
   --warning: #f59e0b;
-  --warning-foreground: #1f2937;
-  --info: #4f46e5;
+  --warning-foreground: #1a1b22;
+  --info: #7a35ff;
   --info-foreground: #ffffff;
 
-  --border: #e5e7eb; /* gray-200 */
-  --input: #e5e7eb;
-  --ring: #2563eb;
+  --border: #e2e4e9;
+  --input: #e2e4e9;
+  --ring: #7a35ff;
 
-  /* Brand chart palette (blue, green, amber, violet, red) */
-  --chart-1: #2563eb;
-  --chart-2: #22c55e;
+  --chart-1: #7a35ff;
+  --chart-2: #0e9f8e;
   --chart-3: #f59e0b;
-  --chart-4: #8b5cf6;
-  --chart-5: #ef4444;
+  --chart-4: #9b7bff;
+  --chart-5: #e4573d;
 
-  /* Sidebar is solid black in BOTH themes (per GV One design) */
+  /* Sidebar stays dark; accent aligns with brand violet */
   --sidebar: #0a0a0a;
-  --sidebar-foreground: #cbd5e1; /* slate-300 */
-  --sidebar-primary: #3b82f6;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-primary: #7a35ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a1a1a; /* hover/active */
+  --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1a1a1a;
-  --sidebar-ring: #3b82f6;
+  --sidebar-ring: #7a35ff;
 }
 
 /* ───────────────── GV One — Dark theme ───────────────── */
@@ -125,41 +134,48 @@
   --popover: #141414;
   --popover-foreground: #e5e5e5;
 
-  --primary: #3b82f6; /* blue-500 (brighter on dark) */
+  --primary: #7a35ff;
   --primary-foreground: #ffffff;
   --secondary: #1f1f1f;
   --secondary-foreground: #e5e5e5;
   --muted: #1f1f1f;
   --muted-foreground: #a3a3a3;
-  --accent: #172554; /* dark blue tint */
-  --accent-foreground: #bfdbfe; /* blue-200 */
-  --destructive: #f87171; /* red-400 */
+  --accent: #2a2650;
+  --accent-foreground: #c8c2ff;
+  --destructive: #e4573d;
 
-  --success: #22c55e;
-  --success-foreground: #052e16;
+  --success: #0e9f8e;
+  --success-foreground: #ffffff;
+  --success-muted: #0d3d38;
+  --destructive-muted: #3d1f18;
+  --surface-muted: #1a1a1a;
+  --dev-note: #3d3520;
+  --dev-note-foreground: #f3e29b;
+  --dev-note-border: #5c4f2a;
+
   --warning: #f59e0b;
   --warning-foreground: #1f2937;
-  --info: #6366f1;
+  --info: #7a35ff;
   --info-foreground: #ffffff;
 
   --border: #262626;
   --input: #262626;
-  --ring: #3b82f6;
+  --ring: #7a35ff;
 
-  --chart-1: #3b82f6;
-  --chart-2: #4ade80;
+  --chart-1: #7a35ff;
+  --chart-2: #0e9f8e;
   --chart-3: #fbbf24;
-  --chart-4: #a78bfa;
-  --chart-5: #f87171;
+  --chart-4: #9b7bff;
+  --chart-5: #e4573d;
 
   --sidebar: #0a0a0a;
   --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #3b82f6;
+  --sidebar-primary: #7a35ff;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1a1a1a;
-  --sidebar-ring: #3b82f6;
+  --sidebar-ring: #7a35ff;
 }
 
 @layer base {
@@ -173,5 +189,31 @@
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading text-foreground;
+  }
+}
+
+/* ── Mobile module body (auto shell pages) ── */
+@layer components {
+  @media (max-width: 767px) {
+    .mobile-module-body > .space-y-6 > :first-child[data-slot="page-header"] {
+      display: none;
+    }
+
+    .mobile-module-body [data-slot="data-table"],
+    .mobile-module-body .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .mobile-module-body table {
+      min-width: 560px;
+    }
   }
 }

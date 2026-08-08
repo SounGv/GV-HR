@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { MobileHomeView } from "@/components/mobile/mobile-home-view";
 import {
   Users,
   UserCheck,
@@ -32,11 +33,11 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "แดชบอร์ด" };
 
 const TONES = {
-  primary: "bg-primary/10 text-primary",
-  success: "bg-success/10 text-success",
+  primary: "bg-accent text-accent-foreground",
+  success: "bg-success-muted text-success",
   warning: "bg-warning/10 text-warning",
-  danger: "bg-destructive/10 text-destructive",
-  info: "bg-info/10 text-info",
+  danger: "bg-destructive-muted text-destructive",
+  info: "bg-accent text-accent-foreground",
 } as const;
 
 function Kpi({
@@ -122,7 +123,9 @@ export default async function DashboardPage() {
     iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
 
   return (
-    <div className="space-y-6">
+    <>
+      <MobileHomeView />
+      <div className="hidden space-y-6 md:block">
       {/* Greeting */}
       <div className="flex flex-col gap-1">
         <h1 className="font-heading text-2xl font-bold sm:text-3xl">
@@ -261,6 +264,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

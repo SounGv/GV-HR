@@ -33,7 +33,7 @@ export function FormPageShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <PageHeaderBar
         breadcrumbs={breadcrumbs}
         backHref={backHref}
@@ -41,8 +41,8 @@ export function FormPageShell({
         description={description}
         status={status}
       />
-      <Card>
-        <CardContent className="pt-6">{children}</CardContent>
+      <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
+        <CardContent className="px-0 pt-0 md:px-6 md:pt-6">{children}</CardContent>
       </Card>
       <FormFooter formId={formId} pending={pending} onCancel={onCancel} actions={actions} />
     </div>
