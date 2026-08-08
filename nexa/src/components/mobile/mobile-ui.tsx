@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, Check, MapPin, MapPinOff } from "lucide-react";
+import { AlertTriangle, MapPin, MapPinOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MobileAlertBanner } from "./mobile-alert-banner";
 import { MobileActionFooter, MobilePrimaryButton } from "./mobile-action-footer";

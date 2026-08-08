@@ -2,24 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, LayoutGrid, Bot, UserRound, Clock } from "lucide-react";
+import { LayoutDashboard, LayoutGrid, Bot, Bell, UserRound, Clock } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
+import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
 
 /**
  * 5-slot bottom tab bar for phones — hidden on md+: Home · Services ·
- * [Time, raised center FAB] · AI · Profile. "Services" is a curated
- * quick-access icon grid (full sidebar drawer is one tap further, via a
- * link on that page); the center FAB is attendance check-in, kept raised
- * since it's the single most-used action on this bar.
+ * [Time, raised center FAB] · AI (or Notifications, for accounts without AI
+ * access) · Profile. "Services" is a curated quick-access icon grid (full
+ * sidebar drawer is one tap further, via a link on that page); the center
+ * FAB is attendance check-in, kept raised since it's the single most-used
+ * action on this bar.
  */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { can } = useAuth();
+  const { data: notifData } = useNotifications();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const canCheckIn = can("attendance:read");
   const canAi = can("ai:read");
+  const unread = notifData?.data?.unread ?? 0;
 
   return (
     <nav
@@ -52,7 +56,13 @@ export function MobileBottomNav() {
         {canAi ? (
           <NavTab href="/ai" label="AI" icon={Bot} active={isActive("/ai")} />
         ) : (
-          <span />
+          <NavTab
+            href="/notifications"
+            label="แจ้งเตือน"
+            icon={Bell}
+            active={isActive("/notifications")}
+            badge={unread}
+          />
         )}
 
         <NavTab href="/profile" label="โปรไฟล์" icon={UserRound} active={isActive("/profile")} />
@@ -66,11 +76,13 @@ function NavTab({
   label,
   icon: Icon,
   active,
+  badge,
 }: {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
   active: boolean;
+  badge?: number;
 }) {
   return (
     <Link
@@ -80,7 +92,14 @@ function NavTab({
         active ? "text-primary" : "text-muted-foreground",
       )}
     >
-      <Icon className={cn("size-5", active && "stroke-[2.5px]")} />
+      <span className="relative">
+        <Icon className={cn("size-5", active && "stroke-[2.5px]")} />
+        {!!badge && (
+          <span className="absolute -top-1 -right-1.5 flex min-w-3.5 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-white ring-2 ring-card">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
+      </span>
       <span className="text-[11px] font-semibold whitespace-nowrap">{label}</span>
     </Link>
   );

@@ -44,6 +44,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/holidays/new": { title: "เพิ่มวันหยุด", backHref: "/holidays" },
   "/integrations": { title: "การเชื่อมต่อระบบ", backHref: "/services" },
   "/kpi": { title: "KPI ส่วนตัว", backHref: "/services" },
+  "/notifications": { title: "การแจ้งเตือน", backHref: "/dashboard" },
   "/kpi/new": { title: "สร้าง KPI", backHref: "/kpi" },
   "/organization": { title: "โครงสร้างองค์กร", backHref: "/services" },
   "/organization/departments/new": { title: "เพิ่มแผนก", backHref: "/organization" },

@@ -1,6 +1,5 @@
 export { MobileActionFooter, MobilePrimaryButton } from "./mobile-action-footer";
 export { MobileAlertBanner, MobileSuccessCard } from "./mobile-alert-banner";
-export { MobileAttendanceView } from "./mobile-attendance-view";
 export { MobileHeader } from "./mobile-header";
 export { MobileHomeView } from "./mobile-home-view";
 export { MobileLeaveForm } from "./mobile-leave-form";

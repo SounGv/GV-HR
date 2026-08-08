@@ -152,8 +152,6 @@ export const MOBILE_HR_GROUPS: MobileMenuGroup[] = [
 
     items: [
 
-      { id: "checkin-hr", label: "สแกนเข้า-ออกงาน", href: "/attendance", icon: ScanLine, permission: "attendance:read" },
-
       { id: "menusettings", label: "ตั้งค่าเมนูของฉัน", href: "/services?view=menu-settings", icon: SlidersHorizontal, permission: "dashboard:read" },
 
       { id: "emplist", label: "รายชื่อพนักงาน", href: "/employees", icon: Users, permission: "employee:read" },

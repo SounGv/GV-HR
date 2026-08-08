@@ -3,35 +3,19 @@
 import type { ComponentType } from "react";
 import {
   MobileBenefitModule,
-  MobileExpenseModule,
   MobileFeedbackModule,
   MobileGoalsModule,
-  MobileKpiModule,
-  MobilePayslipModule,
-  MobileReviewModule,
 } from "@/components/mobile/modules/employee-modules";
-import {
-  MobileAccessModule,
-  MobileAddEmpModule,
-  MobileApprovalsModule,
-  MobileAttendanceAllModule,
-  MobileEmpListModule,
-  MobileExportModule,
-  MobileKpiOrgModule,
-  MobileLeaveAllModule,
-  MobileMenuSettingsModule,
-  MobileOnsiteModule,
-  MobileOrgChartModule,
-  MobileOrgSettingsModule,
-  MobilePayrollRunModule,
-} from "@/components/mobile/modules/hr-modules";
-import {
-  MobileCheckinModule,
-  MobileShiftModule,
-  MobileTimeEditModule,
-} from "@/components/mobile/modules/worktime-modules";
+import { MobileMenuSettingsModule } from "@/components/mobile/modules/hr-modules";
 
-/** GV One mobile mockup modules — keyed by route (+ optional ?view=). */
+/**
+ * Route → dedicated mobile screen, for the handful of cases with no real
+ * backend feature to fall back to (honest "coming soon" placeholders) or a
+ * mobile-only concern (home menu customization). Every other route falls
+ * through to the real desktop page content via the auto-shell wrapper —
+ * see mobile-content-wrapper.tsx — rather than a bespoke mockup that was
+ * never wired to the actual API.
+ */
 export function resolveMobileModule(
   pathname: string,
   searchParams: URLSearchParams,
@@ -47,30 +31,5 @@ export function resolveMobileModule(
 
   if (pathname === "/services" && view === "menu-settings") return MobileMenuSettingsModule;
 
-  if (pathname === "/kpi") return view === "org" ? MobileKpiOrgModule : MobileKpiModule;
-  if (pathname === "/payroll") return view === "run" ? MobilePayrollRunModule : MobilePayslipModule;
-
-  if (pathname === "/reports") {
-    if (view === "attendance") return MobileAttendanceAllModule;
-    return MobileExportModule;
-  }
-
-  if (pathname === "/leave" && view === "overview") return MobileLeaveAllModule;
-
-  const exact: Record<string, ComponentType> = {
-    "/attendance": MobileCheckinModule,
-    "/workflows/requests/new": MobileTimeEditModule,
-    "/shifts": MobileShiftModule,
-    "/performance": MobileReviewModule,
-    "/expenses/new": MobileExpenseModule,
-    "/employees": MobileEmpListModule,
-    "/employees/new": MobileAddEmpModule,
-    "/organization": MobileOrgChartModule,
-    "/admin": MobileAccessModule,
-    "/workflows": MobileApprovalsModule,
-    "/attendance/settings": MobileOnsiteModule,
-    "/company": MobileOrgSettingsModule,
-  };
-
-  return exact[pathname] ?? null;
+  return null;
 }

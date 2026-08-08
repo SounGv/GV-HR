@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/features/auth/auth-context";
 import {
@@ -8,48 +8,43 @@ import {
   MOBILE_HR_GROUPS,
   type MobileMenuGroup,
 } from "@/config/mobile-menu";
-import { MobileSegmentedTabs } from "./mobile-segmented-tabs";
+import { useMenuVisibility } from "./use-menu-visibility";
 
-type HomeTab = "employee" | "hr";
-
-function filterGroups(groups: MobileMenuGroup[], can: (perm: string) => boolean) {
+function filterGroups(
+  groups: MobileMenuGroup[],
+  can: (perm: string) => boolean,
+  isVisible: (id: string) => boolean,
+) {
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => can(item.permission)),
+      items: group.items.filter((item) => can(item.permission) && isVisible(item.id)),
     }))
     .filter((group) => group.items.length > 0);
 }
 
+/**
+ * Which tiles show up here is decided entirely by the permissions HR has
+ * granted this account (via `can`) — there is no separate "employee view" /
+ * "HR view" mode to switch between; a manager simply sees more sections
+ * than an individual contributor because they hold more permissions.
+ */
 export function MobileHomeView({ title = "GV One" }: { title?: string }) {
   const { can } = useAuth();
-  const [tab, setTab] = useState<HomeTab>("employee");
+  const { isVisible } = useMenuVisibility();
 
-  const groups = useMemo(() => {
-    const source = tab === "employee" ? MOBILE_EMPLOYEE_GROUPS : MOBILE_HR_GROUPS;
-    return filterGroups(source, can);
-  }, [tab, can]);
-
-  const showHrTab = useMemo(
-    () => filterGroups(MOBILE_HR_GROUPS, can).some((g) => g.items.length > 0),
-    [can],
+  const groups = useMemo(
+    () => [
+      ...filterGroups(MOBILE_EMPLOYEE_GROUPS, can, isVisible),
+      ...filterGroups(MOBILE_HR_GROUPS, can, isVisible),
+    ],
+    [can, isVisible],
   );
 
   return (
     <div className="flex min-h-full flex-col bg-muted md:hidden">
-      <div className="sticky top-0 z-30 bg-primary px-4 pb-4 pt-3">
-        <h1 className="mb-3 text-lg font-bold text-primary-foreground">{title}</h1>
-        {showHrTab && (
-          <MobileSegmentedTabs<HomeTab>
-            variant="onPrimary"
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: "employee", label: "พนักงานทั่วไป" },
-              { value: "hr", label: "HR" },
-            ]}
-          />
-        )}
+      <div className="sticky top-0 z-30 bg-primary px-4 py-3">
+        <h1 className="text-lg font-bold text-primary-foreground">{title}</h1>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 pb-2">
