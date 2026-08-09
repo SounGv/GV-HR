@@ -103,6 +103,17 @@ export const NEXA_TOOLS: NexaTool[] = [
     },
   },
   {
+    name: "web_search",
+    description:
+      "Search the public internet. Use ONLY when the answer isn't available from the other tools (internal company data) — e.g. Thai labor law, government holiday announcements, market/industry benchmarks, or general HR knowledge not specific to this company. NEVER use this for questions about this company's own employees, attendance, leave, payroll, or announcements — those must come from the internal tools. When you use results from this tool, clearly tell the user the information is from the internet (not the company's internal system) and cite the source title/link.",
+    input_schema: {
+      type: "object",
+      properties: { query: { type: "string", description: "search query" } },
+      required: ["query"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "calculate_payroll",
     description:
       "Calculate a Thai monthly payslip using the real payroll engine: Social Security (5%, capped 750), progressive withholding income tax, and provident fund. Provide either `employee` (name/code) to use their base salary, or `baseSalary` directly. Optional: allowances, overtime, bonus, providentFundRate (%). ALWAYS use this for any salary/tax/social-security/take-home-pay computation — never calculate it yourself.",
@@ -141,6 +152,39 @@ async function resolveEmployees(companyId: string, target: string) {
     select: { id: true },
     take: 50,
   });
+}
+
+/**
+ * Google Programmable Search (Custom Search JSON API) — real external web
+ * search, distinct from every other tool here which reads this company's
+ * own database. Requires GOOGLE_SEARCH_API_KEY + GOOGLE_SEARCH_CX; without
+ * them this degrades gracefully (same pattern as GEMINI_API_KEY/RESEND_API_KEY
+ * elsewhere) so the assistant can tell the user it isn't configured instead
+ * of silently failing or making something up.
+ */
+async function searchWeb(query: string): Promise<string> {
+  const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+  const cx = process.env.GOOGLE_SEARCH_CX;
+  if (!apiKey || !cx) {
+    return "การค้นเว็บภายนอกยังไม่ได้ตั้งค่า (ต้องมี GOOGLE_SEARCH_API_KEY และ GOOGLE_SEARCH_CX) — แจ้งผู้ดูแลระบบเพื่อเปิดใช้งาน ตอนนี้ตอบได้เฉพาะจากข้อมูลภายในบริษัทเท่านั้น";
+  }
+  try {
+    const url = new URL("https://www.googleapis.com/customsearch/v1");
+    url.searchParams.set("key", apiKey);
+    url.searchParams.set("cx", cx);
+    url.searchParams.set("q", query);
+    url.searchParams.set("num", "5");
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      return `ค้นเว็บไม่สำเร็จ (HTTP ${res.status}) — ตอบจากข้อมูลภายในบริษัทเท่าที่มีแทน`;
+    }
+    const data = (await res.json()) as { items?: { title: string; link: string; snippet: string }[] };
+    const items = (data.items ?? []).map((i) => ({ source: "web", title: i.title, link: i.link, snippet: i.snippet }));
+    if (items.length === 0) return "ไม่พบผลการค้นหาบนอินเทอร์เน็ตสำหรับคำค้นนี้";
+    return JSON.stringify(items);
+  } catch {
+    return "ค้นเว็บไม่สำเร็จ (เชื่อมต่อไม่ได้หรือหมดเวลา) — ตอบจากข้อมูลภายในบริษัทเท่าที่มีแทน";
+  }
 }
 
 /** Execute one tool call. Returns a string (JSON or message) for the tool_result. */
@@ -289,6 +333,13 @@ export async function executeTool(
           meta,
         );
         return `เผยแพร่ประกาศเรียบร้อย (id: ${rec.id})`;
+      }
+
+      case "web_search": {
+        if (!can(session.perms, "ai:read")) return deny("ai:read");
+        const query = String(input.query ?? "").trim();
+        if (!query) return "กรุณาระบุคำค้นหา";
+        return searchWeb(query);
       }
 
       case "calculate_payroll": {

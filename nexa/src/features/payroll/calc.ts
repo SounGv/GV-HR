@@ -20,6 +20,11 @@ export interface PayrollInput {
   providentFundRate?: number; // employee PF contribution, % of base salary
   loan?: number; // monthly loan repayment
   advance?: number; // salary advance recovery
+  // HR-entered ad-hoc line items for this period (bonus/allowance/advance/other
+  // that don't come from an automatic source like approved OT) — added on top
+  // of the computed lines below, and included in gross/deduction/net totals.
+  extraEarnings?: LineItem[];
+  extraDeductions?: LineItem[];
 }
 
 /** Thailand personal income tax brackets (annual net taxable income). */
@@ -68,6 +73,9 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   if (overtime) earnings.push({ label: "ค่าล่วงเวลา (OT)", amount: overtime });
   if (bonus) earnings.push({ label: "โบนัส", amount: bonus });
   if (other) earnings.push({ label: "รายได้อื่นๆ", amount: other });
+  for (const e of input.extraEarnings ?? []) {
+    if (e.amount) earnings.push({ label: e.label, amount: Math.round(e.amount) });
+  }
   const gross = earnings.reduce((s, e) => s + e.amount, 0);
 
   const ssBase = Math.min(Math.max(salary, 1650), 15000);
@@ -90,6 +98,9 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   if (providentFund) deductions.push({ label: "กองทุนสำรองเลี้ยงชีพ", amount: providentFund });
   if (loan) deductions.push({ label: "หักชำระเงินกู้", amount: loan });
   if (advance) deductions.push({ label: "หักเบิกล่วงหน้า", amount: advance });
+  for (const d of input.extraDeductions ?? []) {
+    if (d.amount) deductions.push({ label: d.label, amount: Math.round(d.amount) });
+  }
   const totalDeductions = deductions.reduce((s, d) => s + d.amount, 0);
 
   return { earnings, deductions, gross, totalDeductions, net: gross - totalDeductions };

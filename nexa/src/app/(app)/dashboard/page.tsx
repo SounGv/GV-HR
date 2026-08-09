@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { MobileHomeView } from "@/components/mobile/mobile-home-view";
+import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
 import {
   Users,
   UserCheck,
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <MobileHomeView />
+      <MobileDashboardView name={name} companyName={user?.company?.name} mine={mine} />
       <div className="hidden space-y-6 md:block">
       {/* Greeting */}
       <div className="flex flex-col gap-1">

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DATA_URL_IMAGE_RE } from "@/lib/image-schema";
 
 export const ATTENDANCE_WORK_MODES = ["ONSITE", "WFH"] as const;
 export const ATTENDANCE_MOODS = ["TERRIBLE", "BAD", "OK", "GOOD", "EXCELLENT"] as const;
@@ -10,7 +11,7 @@ export const clockSchema = z.object({
   lng: z.number().finite().nullish(),
   accuracy: z.number().finite().nullish(),
   // Selfie proof (data URL, ~<=3MB) + device UA string — both optional.
-  photo: z.string().max(3_000_000).nullish(),
+  photo: z.string().max(3_000_000).regex(DATA_URL_IMAGE_RE, "ไฟล์ต้องเป็นรูปภาพ").nullish(),
   device: z.string().max(400).nullish(),
   // When the employee is outside the branch geofence, they may still clock in by
   // explaining why (working off-site). Required only in that case (enforced server-side).

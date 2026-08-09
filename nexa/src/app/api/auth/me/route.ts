@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { prisma } from "@/lib/prisma";
 import { Unauthorized } from "@/lib/api/errors";
@@ -8,8 +8,7 @@ export const runtime = "nodejs";
 /** Returns the current user + linked employee summary + company. */
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session) throw Unauthorized();
+    const session = await requireSession();
 
     const user = await prisma.user.findUnique({
       where: { id: session.sub },

@@ -2,11 +2,20 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { computeLeaveDays, deductsBalance, DEFAULT_QUOTA } from "./days";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
+
+const LEAVE_TYPE_LABEL: Record<string, string> = {
+  ANNUAL: "ลาพักร้อน",
+  SICK: "ลาป่วย",
+  PERSONAL: "ลากิจ",
+  UNPAID: "ลาไม่รับค่าจ้าง",
+  OTHER: "อื่น ๆ",
+};
 
 const requestSelect = {
   id: true,
@@ -33,7 +42,7 @@ function requireEmployeeId(session: AccessClaims): string {
 
 /** HR-level approvers (wildcard leave permission) may act on any request. */
 function isHrLevel(session: AccessClaims): boolean {
-  return session.perms.includes("*") || session.perms.includes("leave:*");
+  return session.perms.includes("*") || session.perms.includes("leave:approve");
 }
 
 export async function createLeave(
@@ -44,6 +53,11 @@ export async function createLeave(
 ) {
   const employeeId = requireEmployeeId(session);
   const days = computeLeaveDays(input.startDate, input.endDate, input.halfDay);
+
+  const requester = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId, deletedAt: null },
+    select: { firstName: true, lastName: true, managerId: true },
+  });
 
   const record = await prisma.leaveRequest.create({
     data: {
@@ -71,6 +85,19 @@ export async function createLeave(
     after: { type: input.type, days },
     ...meta,
   });
+
+  if (requester?.managerId) {
+    await createNotification(
+      companyId,
+      requester.managerId,
+      {
+        title: "มีคำขอลารออนุมัติ",
+        body: `${requester.firstName} ${requester.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${days} วัน`,
+        category: "leave",
+      },
+      session.sub,
+    );
+  }
 
   return record;
 }
@@ -198,6 +225,17 @@ export async function decideLeave(
     after: { status: nextStatus },
     ...meta,
   });
+
+  await createNotification(
+    companyId,
+    req.employeeId,
+    {
+      title: nextStatus === "APPROVED" ? "คำขอลาได้รับอนุมัติ" : "คำขอลาไม่ได้รับอนุมัติ",
+      body: `${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${req.days} วัน — ${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
+      category: "leave",
+    },
+    session.sub,
+  );
 
   return updated;
 }

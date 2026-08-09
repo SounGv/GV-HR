@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { computeHours, estimateAmount, DEFAULT_MULTIPLIER } from "./calc";
 import type { OtCreateInput, OtDecideInput, OtListQuery } from "./schema";
@@ -32,7 +33,7 @@ function requireEmployeeId(session: AccessClaims): string {
 }
 
 function isHrLevel(session: AccessClaims): boolean {
-  return session.perms.includes("*") || session.perms.includes("overtime:*");
+  return session.perms.includes("*") || session.perms.includes("overtime:approve");
 }
 
 export async function createOvertime(
@@ -47,7 +48,7 @@ export async function createOvertime(
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { baseSalary: true },
+    select: { firstName: true, lastName: true, baseSalary: true, managerId: true },
   });
   const estimated = estimateAmount(
     employee?.baseSalary ? Number(employee.baseSalary) : null,
@@ -82,6 +83,19 @@ export async function createOvertime(
     after: { hours, estimated },
     ...meta,
   });
+
+  if (employee?.managerId) {
+    await createNotification(
+      companyId,
+      employee.managerId,
+      {
+        title: "มีคำขอ OT รออนุมัติ",
+        body: `${employee.firstName} ${employee.lastName} ขอ OT ${hours} ชั่วโมง`,
+        category: "overtime",
+      },
+      session.sub,
+    );
+  }
 
   return record;
 }
@@ -141,7 +155,7 @@ export async function decideOvertime(
 ) {
   const req = await prisma.overtimeRequest.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeId: true, status: true, employee: { select: { managerId: true } } },
+    select: { id: true, employeeId: true, status: true, hours: true, employee: { select: { managerId: true } } },
   });
   if (!req) throw NotFound("ไม่พบคำขอ OT");
   if (req.status !== "PENDING") throw BadRequest("คำขอนี้ถูกดำเนินการไปแล้ว");
@@ -152,10 +166,12 @@ export async function decideOvertime(
     throw Forbidden("อนุมัติได้เฉพาะคำขอของทีมที่คุณดูแล");
   }
 
+  const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
+
   const record = await prisma.overtimeRequest.update({
     where: { id: req.id },
     data: {
-      status: input.action === "approve" ? "APPROVED" : "REJECTED",
+      status: nextStatus,
       approverEmployeeId: session.employeeId ?? null,
       approverUserId: session.sub,
       decidedAt: new Date(),
@@ -173,6 +189,17 @@ export async function decideOvertime(
     entityId: req.id,
     ...meta,
   });
+
+  await createNotification(
+    companyId,
+    req.employeeId,
+    {
+      title: nextStatus === "APPROVED" ? "คำขอ OT ได้รับอนุมัติ" : "คำขอ OT ไม่ได้รับอนุมัติ",
+      body: `OT ${req.hours} ชั่วโมง — ${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
+      category: "overtime",
+    },
+    session.sub,
+  );
 
   return record;
 }

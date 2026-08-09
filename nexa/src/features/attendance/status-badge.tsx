@@ -1,11 +1,17 @@
 import { cn } from "@/lib/utils";
-import type { AttendanceStatus } from "./types";
+import type { AttendanceStatus, AttendanceWorkMode } from "./types";
 
 export const ATTENDANCE_STATUS_LABEL: Record<AttendanceStatus, string> = {
   PRESENT: "มาทำงาน",
   LATE: "มาสาย",
   ABSENT: "ขาดงาน",
   ON_LEAVE: "ลางาน",
+};
+
+export const WORK_MODE_LABEL: Record<AttendanceWorkMode, string> = {
+  ONSITE: "สำนักงาน",
+  WFH: "WFH",
+  OUTSIDE: "นอกสถานที่",
 };
 
 const STYLE: Record<AttendanceStatus, string> = {

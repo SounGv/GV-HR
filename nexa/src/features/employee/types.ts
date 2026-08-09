@@ -57,6 +57,7 @@ export interface EmployeeFormValues {
   firstNameEn?: string;
   lastNameEn?: string;
   nickname?: string;
+  avatarUrl?: string;
   email?: string;
   phone?: string;
   gender?: string;
@@ -96,4 +97,5 @@ export interface OrgOptions {
   positions: { id: string; title: string }[];
   branches: Ref[];
   managers: { id: string; firstName: string; lastName: string; employeeCode: string; managerId: string | null }[];
+  nextEmployeeCode: string;
 }

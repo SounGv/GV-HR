@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataUrlOrHttpUrlSchema } from "@/lib/image-schema";
 
 /** Empty string → null so optional fields clear cleanly. */
 const emptyToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
@@ -13,7 +14,7 @@ const optUrl = z.preprocess(
   z.string().trim().url("ลิงก์ไม่ถูกต้อง (ต้องขึ้นต้นด้วย http)").max(500).nullable().optional(),
 );
 // Images are stored as data URLs or external URLs (cap ~3MB of base64).
-const optImage = z.preprocess(emptyToNull, z.string().max(3_000_000).nullable().optional());
+const optImage = z.preprocess(emptyToNull, dataUrlOrHttpUrlSchema());
 
 export const companyProfileSchema = z.object({
   name: z.string().trim().min(1, "กรุณากรอกชื่อบริษัท").max(200),

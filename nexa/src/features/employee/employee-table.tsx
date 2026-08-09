@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SortingState } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { Plus, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/shared/data-table";
@@ -19,12 +19,40 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
+import { toCsv, downloadCsv } from "@/lib/csv";
 
+import { fetchEmployees } from "./api";
 import { getEmployeeColumns } from "./employee-columns";
 import { useEmployees, useOrgOptions, useDeleteEmployee } from "./hooks";
 import { EMPLOYEE_STATUSES } from "./schema";
-import { STATUS_LABEL } from "./labels";
-import type { EmployeeListItem, EmployeeStatus } from "./types";
+import { STATUS_LABEL, EMPLOYMENT_LABEL } from "./labels";
+import type { EmployeeListItem, EmployeeQuery, EmployeeStatus } from "./types";
+
+const EXPORT_COLUMNS = [
+  { key: "employeeCode", label: "รหัสพนักงาน" },
+  { key: "name", label: "ชื่อ-นามสกุล" },
+  { key: "nickname", label: "ชื่อเล่น" },
+  { key: "department", label: "แผนก" },
+  { key: "position", label: "ตำแหน่ง" },
+  { key: "branch", label: "สาขา" },
+  { key: "employmentType", label: "ประเภทการจ้าง" },
+  { key: "status", label: "สถานะ" },
+  { key: "hireDate", label: "วันเริ่มงาน" },
+  { key: "email", label: "อีเมล" },
+  { key: "phone", label: "เบอร์โทร" },
+];
+
+/** Page through the full filtered result set (server caps pageSize at 100). */
+async function fetchAllEmployees(query: EmployeeQuery): Promise<EmployeeListItem[]> {
+  const first = await fetchEmployees({ ...query, page: 1, pageSize: 100 });
+  const all = [...first.data];
+  const totalPages = first.meta.totalPages;
+  for (let page = 2; page <= totalPages; page++) {
+    const next = await fetchEmployees({ ...query, page, pageSize: 100 });
+    all.push(...next.data);
+  }
+  return all;
+}
 
 const PAGE_SIZE = 20;
 const ALL = "ALL";
@@ -35,6 +63,7 @@ export function EmployeeTable() {
   const canCreate = can("employee:create");
   const canEdit = can("employee:update");
   const canDelete = can("employee:delete");
+  const canExport = can("employee:export");
 
   // Query state
   const [page, setPage] = useState(1);
@@ -43,6 +72,7 @@ export function EmployeeTable() {
   const [departmentId, setDepartmentId] = useState<string>(ALL);
   const [status, setStatus] = useState<string>(ALL);
   const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Debounce the search box.
   useEffect(() => {
@@ -96,6 +126,35 @@ export function EmployeeTable() {
     }
   }
 
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      const rows = await fetchAllEmployees(query);
+      const csv = toCsv(
+        EXPORT_COLUMNS,
+        rows.map((e) => ({
+          employeeCode: e.employeeCode,
+          name: `${e.firstName} ${e.lastName}`,
+          nickname: e.nickname ?? "",
+          department: e.department?.name ?? "",
+          position: e.position?.title ?? "",
+          branch: e.branch?.name ?? "",
+          employmentType: EMPLOYMENT_LABEL[e.employmentType],
+          status: STATUS_LABEL[e.status],
+          hireDate: e.hireDate ?? "",
+          email: e.email ?? "",
+          phone: e.phone ?? "",
+        })),
+      );
+      downloadCsv(`employees-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+      toast.success(`ส่งออกพนักงาน ${rows.length} คนเรียบร้อย`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ส่งออกไม่สำเร็จ");
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   const filters = (
     <>
       <Select
@@ -137,6 +196,13 @@ export function EmployeeTable() {
           ))}
         </SelectContent>
       </Select>
+
+      {canExport && (
+        <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+          {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+          ส่งออก
+        </Button>
+      )}
 
       {canCreate && (
         <Button render={<Link href="/employees/new" />}>

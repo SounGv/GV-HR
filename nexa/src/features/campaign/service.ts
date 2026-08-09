@@ -476,9 +476,12 @@ export async function submitMyResponse(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true },
+    select: { id: true, finalizedAt: true },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
+  if (participant.finalizedAt) {
+    throw Forbidden("การประเมินนี้สรุปผลแล้ว ไม่สามารถแก้ไขคำตอบได้อีก");
+  }
 
   const response = await prisma.evaluationResponse.findFirst({
     where: { participantId, raterEmployeeId: session.employeeId ?? "" },

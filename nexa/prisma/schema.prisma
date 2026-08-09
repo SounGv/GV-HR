@@ -79,6 +79,9 @@ enum AttendanceStatus {
 enum AttendanceWorkMode {
   ONSITE
   WFH
+  // Set by the server (not user-chosen) when a clock-in/out happens outside
+  // the branch geofence with a declared reason — see attendance/service.ts.
+  OUTSIDE
 }
 
 enum AttendanceMood {
@@ -453,6 +456,12 @@ model User {
 
   lastLoginAt DateTime?
 
+  // Brute-force protection for login + MFA verify (shared budget — either
+  // wrong password or wrong TOTP/recovery code counts against the same
+  // limit, since a valid password is a prerequisite to even reach MFA).
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   createdById String?
@@ -615,6 +624,12 @@ model Employee {
   userId String? @unique
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  // LINE account link (for push notifications) — the employee links it
+  // themselves via a short-lived code, confirmed through the LINE webhook.
+  lineUserId            String?   @unique
+  lineLinkCode          String?   @unique
+  lineLinkCodeExpiresAt DateTime?
+
   employeeCode String
 
   // Identity
@@ -776,6 +791,8 @@ model AttendanceRecord {
   workMode AttendanceWorkMode @default(ONSITE)
   // Self-reported wellbeing check at clock-out.
   moodOut  AttendanceMood?
+  // Clocked out before the shift end (see lib/datetime.ts SHIFT_END_MIN).
+  earlyLeaveOut Boolean @default(false)
 
   status AttendanceStatus @default(PRESENT)
   note   String?
@@ -886,6 +903,16 @@ model PayrollRecord {
   // Line items: [{ label, amount }]
   earnings   Json
   deductions Json
+
+  // HR-entered extra earnings/deductions for this period (allowance, bonus,
+  // advance recovery, other) — { earnings: LineItem[], deductions: LineItem[] }.
+  // Kept separate from the auto-computed base so re-running "generate" for
+  // the period (which recomputes salary/OT/tax/SSO) never wipes these out —
+  // see generatePayroll() in payroll/service.ts.
+  manualAdjustments Json?
+
+  // HR remark printed on the payslip (e.g. "รวมค่าคอมมิชชั่นไตรมาสนี้").
+  note String?
 
   gross           Int
   totalDeductions Int

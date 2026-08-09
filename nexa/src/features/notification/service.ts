@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isLineConfigured, pushLineMessage } from "@/lib/integrations/line";
 
 export async function listNotifications(companyId: string, employeeId: string) {
   return prisma.notification.findMany({
@@ -20,14 +21,20 @@ export async function markAllRead(companyId: string, employeeId: string) {
   });
 }
 
-/** Create an in-app notification for one employee (used by the AI send_notification tool). */
+/**
+ * Create an in-app notification for one employee (used by the AI
+ * send_notification tool, and every leave/OT decision). Also best-effort
+ * pushes the same message via LINE if the employee has linked their account —
+ * failures there never affect the in-app notification, which is always the
+ * source of truth.
+ */
 export async function createNotification(
   companyId: string,
   employeeId: string,
   input: { title: string; body: string; category?: string },
   createdById?: string | null,
 ) {
-  return prisma.notification.create({
+  const record = await prisma.notification.create({
     data: {
       companyId,
       employeeId,
@@ -38,4 +45,16 @@ export async function createNotification(
     },
     select: { id: true },
   });
+
+  if (isLineConfigured()) {
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { lineUserId: true },
+    });
+    if (employee?.lineUserId) {
+      await pushLineMessage(employee.lineUserId, `${input.title}\n${input.body}`);
+    }
+  }
+
+  return record;
 }

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAttendance } from "./hooks";
-import { AttendanceStatusBadge } from "./status-badge";
+import { AttendanceStatusBadge, WORK_MODE_LABEL } from "./status-badge";
 import type { AttendanceRecord } from "./types";
 
 function fmtDate(iso: string) {
@@ -54,6 +54,7 @@ export function AttendanceHistory() {
             <TableHead>เวลาเข้า</TableHead>
             <TableHead>เวลาออก</TableHead>
             <TableHead>ชั่วโมงทำงาน</TableHead>
+            <TableHead>ประเภท</TableHead>
             <TableHead>สถานะ</TableHead>
           </TableRow>
         </TableHeader>
@@ -64,8 +65,16 @@ export function AttendanceHistory() {
               <TableCell className="font-mono tabular-nums">{fmtTime(r.clockInAt)}</TableCell>
               <TableCell className="font-mono tabular-nums">{fmtTime(r.clockOutAt)}</TableCell>
               <TableCell className="text-muted-foreground">{workedHours(r)}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">{WORK_MODE_LABEL[r.workMode]}</TableCell>
               <TableCell>
-                <AttendanceStatusBadge status={r.status} />
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <AttendanceStatusBadge status={r.status} />
+                  {r.earlyLeaveOut && (
+                    <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                      ออกก่อนเวลา
+                    </span>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

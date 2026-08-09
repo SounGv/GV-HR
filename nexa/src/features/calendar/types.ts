@@ -11,9 +11,13 @@ export interface CalendarItem {
   href?: string; // present for view-only linked items (e.g. evaluation campaigns)
 }
 
+/** The viewer's own day status — only computed up to today (past days are known, future days are omitted). */
+export type MyDayStatus = "PRESENT" | "LATE" | "HOLIDAY" | "LEAVE" | "WEEKEND" | "ABSENT";
+
 export interface CalendarMonth {
   month: string; // YYYY-MM
   items: CalendarItem[];
+  myStatus?: Record<string, MyDayStatus>; // date (YYYY-MM-DD) -> status, viewer's own attendance
 }
 
 export interface EventFormValues {

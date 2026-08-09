@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Home,
   Building2,
+  MapPin,
   Loader2,
   Camera,
   X,
@@ -27,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { getCurrentPosition } from "@/lib/geolocation";
 import { ApiError } from "@/lib/api/client";
 import { useClockIn, useClockOut, useEndBreak, useStartBreak, useToday } from "./hooks";
-import { AttendanceStatusBadge } from "./status-badge";
+import { AttendanceStatusBadge, WORK_MODE_LABEL } from "./status-badge";
 import type { AttendanceMood, AttendanceWorkMode } from "./types";
 
 function fmtTime(iso: string | null | undefined) {
@@ -428,7 +429,17 @@ export function ClockCard() {
           {record && <AttendanceStatusBadge status={record.status} />}
           {record?.workMode === "WFH" && (
             <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
-              <Home className="size-3" /> WFH
+              <Home className="size-3" /> {WORK_MODE_LABEL.WFH}
+            </span>
+          )}
+          {record?.workMode === "OUTSIDE" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
+              <MapPin className="size-3" /> {WORK_MODE_LABEL.OUTSIDE}
+            </span>
+          )}
+          {record?.earlyLeaveOut && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
+              ออกก่อนเวลา
             </span>
           )}
         </div>

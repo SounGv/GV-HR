@@ -1,6 +1,7 @@
 import { requirePermission } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
 import { ok, handleApiError } from "@/lib/api/response";
+import { suggestNextEmployeeCode } from "@/features/employee/service";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ export async function GET() {
     const companyId = session.companyId;
     const where = { companyId, deletedAt: null };
 
-    const [departments, positions, branches, managers] = await Promise.all([
+    const [departments, positions, branches, managers, nextEmployeeCode] = await Promise.all([
       prisma.department.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.position.findMany({ where, select: { id: true, title: true }, orderBy: { title: "asc" } }),
       prisma.branch.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } }),
@@ -21,9 +22,10 @@ export async function GET() {
         orderBy: { firstName: "asc" },
         take: 500,
       }),
+      suggestNextEmployeeCode(companyId),
     ]);
 
-    return ok({ departments, positions, branches, managers });
+    return ok({ departments, positions, branches, managers, nextEmployeeCode });
   } catch (err) {
     return handleApiError(err);
   }

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { AppError, BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import { checkGeofence } from "@/lib/geo";
-import { bangkokParts, lateOrPresent } from "@/lib/datetime";
+import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { AttendanceListQuery, ClockInput } from "./schema";
 
@@ -20,6 +20,7 @@ const recordSelect = {
   breakEndAt: true,
   workMode: true,
   moodOut: true,
+  earlyLeaveOut: true,
   status: true,
   note: true,
 } satisfies Prisma.AttendanceRecordSelect;
@@ -149,6 +150,10 @@ export async function clockIn(
       : enforceGeofence(employee.branch, input);
   const offsiteNote = isWfh || qrVerified ? null : resolveOffsite(geo, input.offsiteReason);
   const distance = geo.distance;
+  // OUTSIDE is never chosen by the employee — it's derived from actually
+  // being outside the geofence with a declared reason, not the ONSITE/WFH
+  // toggle they picked before attempting to clock in.
+  const resolvedWorkMode = offsiteNote ? "OUTSIDE" : input.workMode ?? "ONSITE";
 
   const bp = bangkokParts();
   const now = new Date();
@@ -177,7 +182,7 @@ export async function clockIn(
       clockInDevice: input.device ?? null,
       clockInBranchId: employee.branch?.id ?? null,
       clockInViaQr: qrVerified,
-      workMode: input.workMode ?? "ONSITE",
+      workMode: resolvedWorkMode,
       note: offsiteNote,
       status,
       createdById: session.sub,
@@ -193,7 +198,7 @@ export async function clockIn(
       clockInDevice: input.device ?? null,
       clockInBranchId: employee.branch?.id ?? null,
       clockInViaQr: qrVerified,
-      workMode: input.workMode ?? "ONSITE",
+      workMode: resolvedWorkMode,
       ...(offsiteNote ? { note: offsiteNote } : {}),
       status,
       updatedById: session.sub,
@@ -223,7 +228,8 @@ export async function clockOut(
   const employeeId = requireEmployeeId(session);
   const employee = await loadEmployeeWithBranch(companyId, employeeId);
 
-  const { dateUTC } = bangkokParts();
+  const bp = bangkokParts();
+  const { dateUTC } = bp;
   const existing = await prisma.attendanceRecord.findUnique({
     where: { employeeId_workDate: { employeeId, workDate: dateUTC } },
     select: { id: true, clockInAt: true, clockOutAt: true, workMode: true },
@@ -274,6 +280,7 @@ export async function clockOut(
       clockOutDevice: input.device ?? null,
       clockOutViaQr: qrVerified,
       moodOut: input.mood ?? undefined,
+      earlyLeaveOut: isEarlyLeave(bp.minutesOfDay),
       updatedById: session.sub,
     },
     select: recordSelect,

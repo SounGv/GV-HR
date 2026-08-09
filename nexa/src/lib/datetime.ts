@@ -4,9 +4,12 @@
  * the server's own timezone.
  */
 
-// Default shift start (09:00). A dedicated Shift module can override this later.
+// Default shift hours (09:00–18:00, matching this company's shift template).
+// A dedicated Shift module can make this per-employee/per-branch later.
 export const SHIFT_START_MIN = 9 * 60;
+export const SHIFT_END_MIN = 18 * 60;
 export const LATE_GRACE_MIN = 0;
+export const EARLY_LEAVE_GRACE_MIN = 0;
 
 export interface BangkokParts {
   year: number;
@@ -54,4 +57,9 @@ export function bangkokParts(now: Date = new Date()): BangkokParts {
 /** PRESENT if clocked in by the shift start (+grace), otherwise LATE. */
 export function lateOrPresent(clockInMinutesOfDay: number): "PRESENT" | "LATE" {
   return clockInMinutesOfDay > SHIFT_START_MIN + LATE_GRACE_MIN ? "LATE" : "PRESENT";
+}
+
+/** True if clocked out before the shift end (-grace). */
+export function isEarlyLeave(clockOutMinutesOfDay: number): boolean {
+  return clockOutMinutesOfDay < SHIFT_END_MIN - EARLY_LEAVE_GRACE_MIN;
 }

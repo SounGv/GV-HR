@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { Forbidden, NotFound } from "@/lib/api/errors";
 import { buildOrderBy, toSkipTake } from "@/lib/api/pagination";
+import { revokeAllForUser } from "@/lib/auth/token-store";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import {
   EMPLOYEE_SORTABLE,
@@ -136,6 +137,26 @@ function toUpdateData(input: EmployeeUpdateInput) {
   };
 }
 
+/**
+ * Suggests the next sequential "EMP0001"-style code for the "add employee"
+ * form. Existing employees keep whatever code scheme the company already
+ * uses (e.g. legacy numeric codes from a prior system, or codes brought in
+ * via CSV import) — this only proposes a default for brand-new manual
+ * entries, continuing the EMP-prefixed sequence if one exists, starting at
+ * EMP0001 otherwise. The field stays editable, so HR can still override it.
+ */
+export async function suggestNextEmployeeCode(companyId: string): Promise<string> {
+  const codes = await prisma.employee.findMany({
+    where: { companyId, employeeCode: { startsWith: "EMP" } },
+    select: { employeeCode: true },
+  });
+  const maxN = codes.reduce((max, { employeeCode }) => {
+    const m = /^EMP(\d+)$/.exec(employeeCode);
+    return m ? Math.max(max, Number(m[1])) : max;
+  }, 0);
+  return `EMP${String(maxN + 1).padStart(4, "0")}`;
+}
+
 export async function createEmployee(
   companyId: string,
   input: EmployeeCreateInput,
@@ -176,7 +197,7 @@ export async function updateEmployee(
 ): Promise<EmployeeDetail> {
   const existing = await prisma.employee.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, status: true, userId: true },
   });
   if (!existing) throw NotFound("ไม่พบพนักงาน");
 
@@ -185,6 +206,19 @@ export async function updateEmployee(
     data: { ...toUpdateData(input), updatedById: actor.sub },
     select: detailSelect,
   });
+
+  // Employment status drives system access: leaving employment must revoke
+  // login immediately, and reinstating it must restore access — not leave
+  // the account silently disabled or, worse, silently still active.
+  const INACTIVE_STATUSES = new Set(["TERMINATED", "RESIGNED", "SUSPENDED"]);
+  if (existing.userId && input.status && input.status !== existing.status) {
+    if (INACTIVE_STATUSES.has(input.status)) {
+      await prisma.user.update({ where: { id: existing.userId }, data: { status: "DISABLED" } });
+      await revokeAllForUser(existing.userId);
+    } else if (INACTIVE_STATUSES.has(existing.status)) {
+      await prisma.user.update({ where: { id: existing.userId }, data: { status: "ACTIVE" } });
+    }
+  }
 
   await writeAudit({
     companyId,
@@ -207,7 +241,7 @@ export async function softDeleteEmployee(
 ): Promise<void> {
   const existing = await prisma.employee.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeCode: true },
+    select: { id: true, employeeCode: true, userId: true },
   });
   if (!existing) throw NotFound("ไม่พบพนักงาน");
 
@@ -215,6 +249,17 @@ export async function softDeleteEmployee(
     where: { id },
     data: { deletedAt: new Date(), updatedById: actor.sub },
   });
+
+  // A terminated/removed employee must lose system access immediately —
+  // disable the linked login account and kill any active sessions, don't
+  // just leave the Employee row soft-deleted while the User stays live.
+  if (existing.userId) {
+    await prisma.user.update({
+      where: { id: existing.userId },
+      data: { status: "DISABLED" },
+    });
+    await revokeAllForUser(existing.userId);
+  }
 
   await writeAudit({
     companyId,

@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Camera } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Form,
@@ -14,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -21,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getInitials } from "@/lib/format";
+import { fileToSquareDataUrl } from "@/lib/image";
 import {
   EMPLOYEE_STATUSES,
   EMPLOYMENT_TYPES,
@@ -39,6 +45,7 @@ const formSchema = z.object({
   firstNameEn: z.string().trim().optional(),
   lastNameEn: z.string().trim().optional(),
   nickname: z.string().trim().optional(),
+  avatarUrl: z.string().optional(),
   email: z.union([z.string().email("อีเมลไม่ถูกต้อง"), z.literal("")]).optional(),
   phone: z.string().trim().optional(),
   gender: z.string().optional(),
@@ -88,6 +95,30 @@ export function EmployeeForm({
     resolver: zodResolver(formSchema),
     defaultValues: { ...EMPTY, ...defaultValues },
   });
+  const avatarRef = useRef<HTMLInputElement>(null);
+  const avatarUrl = form.watch("avatarUrl");
+  const firstName = form.watch("firstName");
+  const lastName = form.watch("lastName");
+
+  // New employee: prefill the suggested next "EMP0001"-style code once it
+  // loads — editing an existing employee never overwrites their real code.
+  useEffect(() => {
+    if (!defaultValues?.employeeCode && orgOptions?.nextEmployeeCode && !form.getValues("employeeCode")) {
+      form.setValue("employeeCode", orgOptions.nextEmployeeCode);
+    }
+  }, [defaultValues?.employeeCode, orgOptions?.nextEmployeeCode, form]);
+
+  async function onPickAvatar(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return toast.error("กรุณาเลือกไฟล์รูปภาพ");
+    try {
+      const dataUrl = await fileToSquareDataUrl(file, 256);
+      if (dataUrl.length > 3_000_000) return toast.error("รูปใหญ่เกินไป");
+      form.setValue("avatarUrl", dataUrl, { shouldDirty: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "อัปโหลดไม่สำเร็จ");
+    }
+  }
 
   function submit(values: FormSchema) {
     // Strip the "none" sentinel back to undefined before sending.
@@ -111,6 +142,35 @@ export function EmployeeForm({
           </div>
 
           <TabsContent value="personal" keepMounted>
+            <div className="mb-4 flex items-center gap-4">
+              <div className="relative">
+                <Avatar className="size-16">
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
+                  <AvatarFallback className="bg-primary/10 text-base text-primary">
+                    {getInitials(firstName, lastName)}
+                  </AvatarFallback>
+                </Avatar>
+                <button
+                  type="button"
+                  onClick={() => avatarRef.current?.click()}
+                  className="absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow ring-2 ring-card transition hover:opacity-90"
+                  aria-label="เปลี่ยนรูปพนักงาน"
+                >
+                  <Camera className="size-3.5" />
+                </button>
+                <input
+                  ref={avatarRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    onPickAvatar(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">รูปพนักงาน — คลิกไอคอนกล้องเพื่อเปลี่ยน</p>
+            </div>
             <FieldGrid>
               <TextField form={form} name="employeeCode" label="รหัสพนักงาน *" />
               <TextField form={form} name="nickname" label="ชื่อเล่น" />

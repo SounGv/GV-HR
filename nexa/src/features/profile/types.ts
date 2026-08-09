@@ -29,5 +29,8 @@ export interface MyProfile {
   department: { name: string } | null;
   position: { title: string } | null;
   branch: { name: string } | null;
+  lineUserId: string | null;
+  lineLinkCode: string | null;
+  lineLinkCodeExpiresAt: string | null;
   updatedAt: string;
 }

@@ -12,6 +12,8 @@ export interface PayrollRecord {
   periodLabel: string;
   earnings: PayrollLineItem[];
   deductions: PayrollLineItem[];
+  manualAdjustments?: { earnings: PayrollLineItem[]; deductions: PayrollLineItem[] } | null;
+  note?: string | null;
   gross: number;
   totalDeductions: number;
   net: number;

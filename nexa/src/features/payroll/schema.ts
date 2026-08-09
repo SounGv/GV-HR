@@ -19,3 +19,18 @@ export const sendPayslipEmailSchema = z.object({
   payrollRecordIds: z.array(z.string().uuid()).min(1, "กรุณาเลือกอย่างน้อย 1 รายการ"),
 });
 export type SendPayslipEmailInput = z.infer<typeof sendPayslipEmailSchema>;
+
+const lineItemSchema = z.object({
+  label: z.string().trim().min(1, "กรุณาระบุรายการ").max(100),
+  amount: z.coerce.number().min(0, "ต้องไม่ติดลบ"),
+});
+
+export const payrollAdjustSchema = z.object({
+  extraEarnings: z.array(lineItemSchema).max(20).default([]),
+  extraDeductions: z.array(lineItemSchema).max(20).default([]),
+  note: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().trim().max(500).optional(),
+  ),
+});
+export type PayrollAdjustInput = z.infer<typeof payrollAdjustSchema>;

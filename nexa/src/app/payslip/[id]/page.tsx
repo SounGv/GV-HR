@@ -64,6 +64,7 @@ export default async function PayslipPrintPage({
         totalDeductions: record.totalDeductions,
         net: record.net,
         status: record.status,
+        note: record.note,
         employee: {
           employeeCode: record.employee.employeeCode,
           firstName: record.employee.firstName,

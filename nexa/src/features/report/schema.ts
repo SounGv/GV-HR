@@ -8,6 +8,7 @@ export const REPORT_TYPES = [
   "payroll",
   "expense",
   "performance",
+  "kpi",
   "training",
 ] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
@@ -20,6 +21,7 @@ export const REPORT_LABELS: Record<ReportType, string> = {
   payroll: "สรุปเงินเดือน (รายงวด)",
   expense: "สรุปเบิกจ่าย (รายเดือน)",
   performance: "สรุปผลประเมิน",
+  kpi: "สรุป KPI",
   training: "สรุปการอบรม",
 };
 
@@ -32,6 +34,7 @@ export const REPORT_PERIOD_KIND: Record<ReportType, "month" | "year" | "none"> =
   payroll: "month",
   expense: "month",
   performance: "none",
+  kpi: "none",
   training: "none",
 };
 

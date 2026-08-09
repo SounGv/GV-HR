@@ -16,6 +16,31 @@ import type { GoogleProfile } from "./google-oauth";
 // equalizing response time and preventing user enumeration by timing.
 const DUMMY_HASH = "$2a$12$C6UzMDM.H6dfI/f/IKcEeO3d0m0Q0k6Q0k6Q0k6Q0k6Q0k6Q0k6Qa";
 
+// Brute-force lockout: shared budget across password login AND MFA verify.
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
+
+function lockoutMessage(lockedUntil: Date): string {
+  const minutes = Math.max(1, Math.ceil((lockedUntil.getTime() - Date.now()) / 60_000));
+  return `บัญชีถูกล็อกชั่วคราวเนื่องจากเข้าสู่ระบบผิดหลายครั้ง กรุณาลองใหม่ในอีก ${minutes} นาที`;
+}
+
+/** Bumps the shared failed-attempt counter, locking the account once the threshold is hit. */
+async function registerFailedAttempt(userId: string, currentAttempts: number): Promise<void> {
+  const next = currentAttempts + 1;
+  await prisma.user.update({
+    where: { id: userId },
+    data:
+      next >= MAX_FAILED_ATTEMPTS
+        ? { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + LOCKOUT_MS) }
+        : { failedLoginAttempts: next },
+  });
+}
+
+async function clearFailedAttempts(userId: string): Promise<void> {
+  await prisma.user.update({ where: { id: userId }, data: { failedLoginAttempts: 0, lockedUntil: null } });
+}
+
 export interface AuthMeta {
   ip?: string;
   userAgent?: string;
@@ -79,12 +104,19 @@ export async function login(
 
   // Always run a compare (real or dummy) to keep timing constant.
   const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+
+  if (user?.lockedUntil && user.lockedUntil > new Date()) {
+    throw Unauthorized(lockoutMessage(user.lockedUntil));
+  }
+
   if (!user || !ok) {
+    if (user) await registerFailedAttempt(user.id, user.failedLoginAttempts);
     throw Unauthorized("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
   }
   if (user.status === "DISABLED") {
     throw Unauthorized("บัญชีนี้ถูกระงับการใช้งาน");
   }
+  if (user.failedLoginAttempts > 0 || user.lockedUntil) await clearFailedAttempts(user.id);
 
   if (user.twoFactorEnabled) {
     const mfaToken = await signMfaToken(user.id);
@@ -108,6 +140,9 @@ export async function verifyMfaAndLogin(
   if (!user || user.deletedAt || user.status === "DISABLED" || !user.twoFactorEnabled || !user.twoFactorSecret) {
     throw Unauthorized("ไม่สามารถยืนยันตัวตนได้");
   }
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    throw Unauthorized(lockoutMessage(user.lockedUntil));
+  }
 
   if (!verifyTotp(user.twoFactorSecret, user.email, code)) {
     const codeHash = hashRecoveryCode(code);
@@ -115,9 +150,13 @@ export async function verifyMfaAndLogin(
       where: { userId: user.id, codeHash, usedAt: null },
       select: { id: true },
     });
-    if (!recovery) throw Unauthorized("รหัสยืนยันไม่ถูกต้อง");
+    if (!recovery) {
+      await registerFailedAttempt(user.id, user.failedLoginAttempts);
+      throw Unauthorized("รหัสยืนยันไม่ถูกต้อง");
+    }
     await prisma.twoFactorRecoveryCode.update({ where: { id: recovery.id }, data: { usedAt: new Date() } });
   }
+  if (user.failedLoginAttempts > 0 || user.lockedUntil) await clearFailedAttempts(user.id);
 
   return completeLogin(user, meta);
 }

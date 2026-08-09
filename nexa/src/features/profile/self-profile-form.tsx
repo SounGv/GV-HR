@@ -12,6 +12,9 @@ import {
   Landmark,
   ShieldAlert,
   Lock,
+  MessageCircle,
+  RefreshCcw,
+  Unlink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,8 +26,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ApiError } from "@/lib/api/client";
 import { getInitials, fullName } from "@/lib/format";
+import { fileToSquareDataUrl } from "@/lib/image";
 import { selfProfileSchema, type SelfProfileInput } from "./schema";
-import { useMyProfile, useUpdateMyProfile } from "./hooks";
+import { useGenerateLineLinkCode, useMyProfile, useUnlinkLine, useUpdateMyProfile } from "./hooks";
 import type { MyProfile } from "./types";
 
 type FormState = Record<string, string>;
@@ -48,32 +52,6 @@ const STATUS_LABEL: Record<string, string> = {
   SUSPENDED: "พักงาน",
   TERMINATED: "พ้นสภาพ",
 };
-
-/** Crop an image to a centered square and downscale to a compact PNG data URL. */
-function fileToSquareDataUrl(file: File, size: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("อ่านไฟล์ไม่สำเร็จ"));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("ไฟล์รูปไม่ถูกต้อง"));
-      img.onload = () => {
-        const side = Math.min(img.width, img.height);
-        const sx = (img.width - side) / 2;
-        const sy = (img.height - side) / 2;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("ไม่รองรับการประมวลผลรูป"));
-        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
-        resolve(canvas.toDataURL("image/png"));
-      };
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 function toFormState(p: MyProfile): FormState {
   const s: FormState = {};
@@ -258,6 +236,11 @@ export function SelfProfileForm() {
         </div>
       </Section>
 
+      {/* Notification channels */}
+      <Section icon={MessageCircle} title="การแจ้งเตือนทาง LINE" desc="รับแจ้งเตือนจากระบบผ่าน LINE เพิ่มเติมจากในแอป">
+        <LineConnect profile={profile} onChange={() => refetch()} />
+      </Section>
+
       {/* Read-only HR-controlled */}
       <Section icon={Lock} title="ข้อมูลการจ้างงาน" desc="ดูแลโดยฝ่ายบุคคล — แก้ไขไม่ได้">
         <div className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
@@ -360,6 +343,74 @@ function ReadOnly({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg bg-muted/40 px-3 py-2">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-0.5 font-medium text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function LineConnect({ profile, onChange }: { profile: MyProfile; onChange: () => void }) {
+  const [code, setCode] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const generateMut = useGenerateLineLinkCode();
+  const unlinkMut = useUnlinkLine();
+
+  const linked = !!profile.lineUserId;
+
+  async function generate() {
+    try {
+      const res = await generateMut.mutateAsync();
+      setCode(res.data.code);
+      setExpiresAt(res.data.expiresAt);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "สร้างรหัสไม่สำเร็จ");
+    }
+  }
+
+  async function unlink() {
+    try {
+      await unlinkMut.mutateAsync();
+      setCode(null);
+      toast.success("ยกเลิกการเชื่อมต่อ LINE แล้ว");
+      onChange();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ยกเลิกไม่สำเร็จ");
+    }
+  }
+
+  if (linked) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg bg-success-muted px-3 py-2.5">
+        <p className="text-sm text-foreground">เชื่อมต่อ LINE แล้ว — คุณจะได้รับการแจ้งเตือนทาง LINE ด้วย</p>
+        <Button type="button" variant="outline" size="sm" onClick={unlink} disabled={unlinkMut.isPending}>
+          {unlinkMut.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Unlink className="size-3.5" />}
+          ยกเลิกการเชื่อมต่อ
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {code ? (
+        <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+          <p className="text-sm text-muted-foreground">
+            เพิ่มเพื่อน LINE OA ของบริษัท แล้วส่งรหัสนี้เป็นข้อความ:
+          </p>
+          <p className="text-center font-mono text-2xl font-bold tracking-widest text-primary">{code}</p>
+          <p className="text-center text-xs text-muted-foreground">
+            หมดอายุ {expiresAt ? new Date(expiresAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : ""} น.
+          </p>
+          <div className="flex justify-center gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={generate} disabled={generateMut.isPending}>
+              <RefreshCcw className="size-3.5" /> สร้างรหัสใหม่
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button type="button" variant="outline" size="sm" onClick={generate} disabled={generateMut.isPending}>
+          {generateMut.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <MessageCircle className="size-3.5" />}
+          เชื่อมต่อ LINE
+        </Button>
+      )}
     </div>
   );
 }
