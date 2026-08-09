@@ -8,7 +8,7 @@ import {
 
   Globe,
 
-  IdCard,
+  Pencil,
 
   LogOut,
 
@@ -62,11 +62,18 @@ export function MobileProfileView() {
 
       <MobileModuleCard className="text-center">
 
-        <div className="mx-auto mb-2.5 flex size-16 items-center justify-center rounded-full bg-accent">
-
-          <User className="size-7 text-primary" />
-
-        </div>
+        <Link
+          href="/profile#profile-form"
+          className="mx-auto mb-2.5 flex size-16 items-center justify-center overflow-hidden rounded-full bg-accent"
+          aria-label="แก้ไขรูปโปรไฟล์"
+        >
+          {user.employee?.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.employee.avatarUrl} alt={displayName} className="size-full object-cover" />
+          ) : (
+            <User className="size-7 text-primary" />
+          )}
+        </Link>
 
         <p className="text-[15px] font-bold text-foreground">{displayName}</p>
 
@@ -116,9 +123,9 @@ export function MobileProfileView() {
 
         >
 
-          <IdCard className="size-[18px] text-primary" />
+          <Pencil className="size-[18px] text-primary" />
 
-          เอกสารประจำตัว
+          แก้ไขโปรไฟล์ / รูปประจำตัว
 
         </Link>
 

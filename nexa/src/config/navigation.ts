@@ -25,6 +25,7 @@ import {
   Building2,
   MapPinned,
   Upload,
+  PencilLine,
 } from "lucide-react";
 
 export interface NavItem {
@@ -55,6 +56,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "เวลาทำงาน",
     items: [
       { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read", ready: true },
+      { label: "แก้ไขเวลาเข้า-ออกงาน", href: "/attendance/corrections", icon: PencilLine, permission: "attendance:read", ready: true },
       { label: "การลา", href: "/leave", icon: CalendarDays, permission: "leave:read", ready: true },
       { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read", ready: true },
       { label: "กะการทำงาน", href: "/shifts", icon: CalendarClock, permission: "shift:read", ready: true },

@@ -245,6 +245,7 @@ model Company {
   auditLogs   AuditLog[]
   holidays      Holiday[]
   attendance    AttendanceRecord[]
+  attendanceCorrections AttendanceCorrectionRequest[]
   leaveRequests  LeaveRequest[]
   leaveBalances      LeaveBalance[]
   payrollRecords     PayrollRecord[]
@@ -663,6 +664,7 @@ model Employee {
   reports   Employee[] @relation("EmployeeReports")
 
   attendance         AttendanceRecord[]
+  attendanceCorrections AttendanceCorrectionRequest[]
   leaveRequests      LeaveRequest[]
   leaveBalances      LeaveBalance[]
   payrollRecords     PayrollRecord[]
@@ -806,6 +808,45 @@ model AttendanceRecord {
   @@unique([employeeId, workDate])
   @@index([companyId, workDate])
   @@map("attendance_records")
+}
+
+enum AttendanceCorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/** Employee-submitted request to fix a wrong clock-in/out time — on approval,
+ *  the manager's decision is applied straight to the matching AttendanceRecord. */
+model AttendanceCorrectionRequest {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  workDate          DateTime  @db.Date
+  requestedClockIn  DateTime?
+  requestedClockOut DateTime?
+  reason            String
+
+  status AttendanceCorrectionStatus @default(PENDING)
+
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([employeeId, status])
+  @@map("attendance_correction_requests")
 }
 
 // ─────────────────────────── HR: Recognition ───────────────────────────
