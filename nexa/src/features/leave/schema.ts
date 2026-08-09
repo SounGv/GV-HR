@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataUrlFileOrHttpUrlSchema } from "@/lib/image-schema";
 
 export const LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL", "UNPAID", "OTHER"] as const;
 export const LEAVE_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
@@ -21,6 +22,7 @@ export const leaveCreateSchema = z
       (v) => (v === "" || v == null ? undefined : v),
       z.string().trim().max(500).optional(),
     ),
+    attachmentUrl: z.preprocess((v) => (v === "" || v == null ? undefined : v), dataUrlFileOrHttpUrlSchema()),
   })
   .refine((d) => d.endDate >= d.startDate, {
     message: "วันสิ้นสุดต้องไม่ก่อนวันเริ่ม",

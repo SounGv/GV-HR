@@ -848,6 +848,9 @@ model LeaveRequest {
   halfDay   Boolean   @default(false)
   days      Float
   reason    String?
+  // Supporting document (e.g. a medical certificate) — a client-uploaded
+  // data URL or an https link, same pattern as other attachment fields.
+  attachmentUrl String?
 
   status LeaveStatus @default(PENDING)
 

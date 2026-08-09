@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { FileAttachField } from "@/components/shared/file-attach-field";
 import {
   Select,
   SelectContent,
@@ -47,6 +48,7 @@ const formSchema = z
     endDate: z.string().min(1, "กรุณาเลือกวันสิ้นสุด"),
     halfDay: z.boolean(),
     reason: z.string().optional(),
+    attachmentUrl: z.string().optional(),
   })
   .refine((d) => d.endDate >= d.startDate, {
     message: "วันสิ้นสุดต้องไม่ก่อนวันเริ่ม",
@@ -65,7 +67,7 @@ export function LeaveFormPage() {
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: { type: "ANNUAL", startDate: "", endDate: "", halfDay: false, reason: "" },
+    defaultValues: { type: "ANNUAL", startDate: "", endDate: "", halfDay: false, reason: "", attachmentUrl: "" },
   });
 
   const [start, end, half] = form.watch(["startDate", "endDate", "halfDay"]);
@@ -189,6 +191,20 @@ export function LeaveFormPage() {
                 <FormLabel>เหตุผล</FormLabel>
                 <FormControl>
                   <Textarea rows={3} placeholder="ระบุเหตุผลการลา (ถ้ามี)" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="attachmentUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>แนบไฟล์ประกอบ (ถ้ามี)</FormLabel>
+                <FormControl>
+                  <FileAttachField value={field.value} onChange={field.onChange} label="แนบใบรับรองแพทย์" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

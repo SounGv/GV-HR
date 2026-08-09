@@ -10,6 +10,7 @@ export interface LeaveRequest {
   halfDay: boolean;
   days: number;
   reason: string | null;
+  attachmentUrl: string | null;
   status: LeaveStatus;
   approverEmployeeId: string | null;
   decidedAt: string | null;
@@ -38,4 +39,5 @@ export interface LeaveFormValues {
   endDate: string;
   halfDay: boolean;
   reason?: string;
+  attachmentUrl?: string;
 }

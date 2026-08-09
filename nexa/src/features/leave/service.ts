@@ -25,6 +25,7 @@ const requestSelect = {
   halfDay: true,
   days: true,
   reason: true,
+  attachmentUrl: true,
   status: true,
   approverEmployeeId: true,
   decidedAt: true,
@@ -45,6 +46,22 @@ function isHrLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("leave:approve");
 }
 
+/** Remaining days for a paid leave type this year — quota if no balance row exists yet. */
+async function getRemainingBalance(
+  companyId: string,
+  employeeId: string,
+  type: string,
+  year: number,
+): Promise<number> {
+  const balance = await prisma.leaveBalance.findUnique({
+    where: { employeeId_year_type: { employeeId, year, type: type as never } },
+    select: { totalDays: true, usedDays: true },
+  });
+  const total = balance?.totalDays ?? DEFAULT_QUOTA[type] ?? 0;
+  const used = balance?.usedDays ?? 0;
+  return Math.max(0, total - used);
+}
+
 export async function createLeave(
   companyId: string,
   session: AccessClaims,
@@ -53,6 +70,15 @@ export async function createLeave(
 ) {
   const employeeId = requireEmployeeId(session);
   const days = computeLeaveDays(input.startDate, input.endDate, input.halfDay);
+
+  if (deductsBalance(input.type)) {
+    const remaining = await getRemainingBalance(companyId, employeeId, input.type, input.startDate.getUTCFullYear());
+    if (days > remaining) {
+      throw BadRequest(
+        `วัน${LEAVE_TYPE_LABEL[input.type] ?? input.type}คงเหลือไม่พอ — คุณมีสิทธิ์คงเหลือ ${remaining} วัน แต่ขอลา ${days} วัน`,
+      );
+    }
+  }
 
   const requester = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
@@ -69,6 +95,7 @@ export async function createLeave(
       halfDay: input.halfDay,
       days,
       reason: input.reason,
+      attachmentUrl: input.attachmentUrl,
       status: "PENDING",
       createdById: session.sub,
       updatedById: session.sub,
@@ -182,6 +209,15 @@ export async function decideLeave(
   }
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
+
+  if (input.action === "approve" && deductsBalance(req.type)) {
+    const remaining = await getRemainingBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
+    if (req.days > remaining) {
+      throw BadRequest(
+        `ไม่สามารถอนุมัติได้ — วัน${LEAVE_TYPE_LABEL[req.type] ?? req.type}คงเหลือของพนักงานไม่พอ (คงเหลือ ${remaining} วัน แต่คำขอนี้ ${req.days} วัน)`,
+      );
+    }
+  }
 
   const updated = await prisma.$transaction(async (tx) => {
     const rec = await tx.leaveRequest.update({
