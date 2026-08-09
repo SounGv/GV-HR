@@ -2,6 +2,8 @@
 
 
 
+import Link from "next/link";
+
 import {
 
   Bell,
@@ -9,6 +11,8 @@ import {
   Globe,
 
   Pencil,
+
+  ShieldCheck,
 
   LogOut,
 
@@ -129,31 +133,39 @@ export function MobileProfileView() {
 
         <a
 
-          href="#profile-form"
+          href="#security"
 
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
 
         >
 
-          <Globe className="size-[18px] text-primary" />
+          <ShieldCheck className="size-[18px] text-primary" />
 
-          ภาษา — ไทย
+          ความปลอดภัย (รหัสผ่าน, 2FA)
 
         </a>
 
-        <a
+        <Link
 
-          href="#security"
+          href="/notifications"
 
-          className="flex items-center gap-2.5 px-3.5 py-3 text-[13px] active:bg-muted"
+          className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
 
         >
 
           <Bell className="size-[18px] text-primary" />
 
-          การแจ้งเตือน — เปิด
+          การแจ้งเตือน
 
-        </a>
+        </Link>
+
+        <div className="flex items-center gap-2.5 px-3.5 py-3 text-[13px] text-muted-foreground">
+
+          <Globe className="size-[18px]" />
+
+          ภาษา — ไทย
+
+        </div>
 
       </MobileModuleCard>
 
