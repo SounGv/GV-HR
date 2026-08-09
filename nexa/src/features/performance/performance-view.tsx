@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, ClipboardCheck, Sparkles, Target, Scale, Grid3x3, Users } from "lucide-react";
+import { Plus, ClipboardCheck, Sparkles, Target, Scale, Grid3x3, Users, Building2 } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,13 @@ import { NineBoxView } from "@/features/calibration/nine-box-view";
 import { SuccessionView } from "@/features/succession/succession-view";
 
 import { ReviewCard } from "./review-card";
+import { DepartmentSummaryView } from "./department-summary-view";
 import { useReviews } from "./hooks";
 
 export function PerformanceView() {
   const { can } = useAuth();
   const canReview = can("performance:create");
+  const canHrLevel = can("performance:approve");
   const canAi = can("ai:read");
   const canCampaign = can("campaign:read");
   const canCalibration = can("calibration:read");
@@ -29,6 +31,11 @@ export function PerformanceView() {
       <TabsList>
         <TabsTrigger value="me">ผลประเมินของฉัน</TabsTrigger>
         {canReview && <TabsTrigger value="team">ประเมินทีม</TabsTrigger>}
+        {canHrLevel && (
+          <TabsTrigger value="department-summary">
+            <Building2 className="size-3.5" /> สรุปแผนก
+          </TabsTrigger>
+        )}
         {canCampaign && (
           <TabsTrigger value="campaigns">
             <Target className="size-3.5" /> แคมเปญ
@@ -63,6 +70,12 @@ export function PerformanceView() {
       {canReview && (
         <TabsContent value="team">
           <TeamReviews />
+        </TabsContent>
+      )}
+
+      {canHrLevel && (
+        <TabsContent value="department-summary">
+          <DepartmentSummaryView />
         </TabsContent>
       )}
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 export const REPORT_TYPES = [
   "employees",
   "attendance",
+  "attendance_daily",
   "leave",
   "overtime",
   "payroll",
@@ -16,6 +17,7 @@ export type ReportType = (typeof REPORT_TYPES)[number];
 export const REPORT_LABELS: Record<ReportType, string> = {
   employees: "ทำเนียบพนักงาน",
   attendance: "สรุปการลงเวลา (รายเดือน)",
+  attendance_daily: "รายละเอียดการลงเวลา (รายวัน)",
   leave: "สรุปการลา (รายปี)",
   overtime: "สรุป OT (รายเดือน)",
   payroll: "สรุปเงินเดือน (รายงวด)",
@@ -29,6 +31,7 @@ export const REPORT_LABELS: Record<ReportType, string> = {
 export const REPORT_PERIOD_KIND: Record<ReportType, "month" | "year" | "none"> = {
   employees: "none",
   attendance: "month",
+  attendance_daily: "month",
   leave: "year",
   overtime: "month",
   payroll: "month",

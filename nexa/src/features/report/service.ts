@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { STATUS_LABEL } from "@/features/employee/labels";
+import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
 
 const GOAL_STATUS_LABEL: Record<string, string> = {
@@ -16,11 +17,30 @@ export interface ReportColumn {
   label: string;
   numeric?: boolean;
 }
+export interface ReportSummaryDatum {
+  label: string;
+  value: number;
+}
 export interface ReportResult {
   title: string;
   period: string | null;
   columns: ReportColumn[];
   rows: Record<string, string | number>[];
+  summary?: ReportSummaryDatum[];
+  summaryLabel?: string;
+  summaryUnit?: string;
+}
+
+/** Rolls a per-department accumulator map into the chart-ready summary array, sorted by value desc. */
+function toSummary(map: Map<string, number>): ReportSummaryDatum[] {
+  return [...map.entries()]
+    .map(([label, value]) => ({ label, value: Math.round(value * 10) / 10 }))
+    .sort((a, b) => b.value - a.value);
+}
+
+function bumpDept(map: Map<string, number>, deptName: string | undefined, amount: number) {
+  const key = deptName ?? "ไม่มีแผนก";
+  map.set(key, (map.get(key) ?? 0) + amount);
 }
 
 /** [start, end) date window. Defaults to the current calendar month. */
@@ -95,15 +115,21 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         status: true,
         clockInAt: true,
         clockOutAt: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        employee: {
+          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        },
       },
     });
     const map = new Map<string, { name: string; present: number; late: number; hours: number }>();
+    const deptLate = new Map<string, number>();
     for (const r of recs) {
       const code = r.employee.employeeCode;
       const row = map.get(code) ?? { name: `${r.employee.firstName} ${r.employee.lastName}`, present: 0, late: 0, hours: 0 };
       if (r.clockInAt) row.present += 1;
-      if (r.status === "LATE") row.late += 1;
+      if (r.status === "LATE") {
+        row.late += 1;
+        bumpDept(deptLate, r.employee.department?.name, 1);
+      }
       if (r.clockInAt && r.clockOutAt) row.hours += (r.clockOutAt.getTime() - r.clockInAt.getTime()) / 3_600_000;
       map.set(code, row);
     }
@@ -120,6 +146,61 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
         code, name: v.name, present: v.present, late: v.late, hours: Math.round(v.hours * 10) / 10,
       })),
+      summary: toSummary(deptLate),
+      summaryLabel: "จำนวนวันมาสายตามแผนก",
+      summaryUnit: "วัน",
+    };
+  }
+
+  if (query.type === "attendance_daily") {
+    const [recs, branches] = await Promise.all([
+      prisma.attendanceRecord.findMany({
+        where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
+        select: {
+          workDate: true,
+          clockInAt: true,
+          clockOutAt: true,
+          status: true,
+          workMode: true,
+          clockInBranchId: true,
+          clockInDistance: true,
+          employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        },
+        orderBy: [{ workDate: "desc" }, { employee: { employeeCode: "asc" } }],
+        take: 1000,
+      }),
+      prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } }),
+    ]);
+    const branchName = new Map(branches.map((b) => [b.id, b.name]));
+    const fmtTime = (d: Date | null) =>
+      d
+        ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(d)
+        : "-";
+    return {
+      title,
+      period: label,
+      columns: [
+        { key: "date", label: "วันที่" },
+        { key: "code", label: "รหัส" },
+        { key: "name", label: "ชื่อ-สกุล" },
+        { key: "clockIn", label: "เวลาเข้า" },
+        { key: "clockOut", label: "เวลาออก" },
+        { key: "status", label: "สถานะ" },
+        { key: "workMode", label: "รูปแบบงาน" },
+        { key: "location", label: "สถานที่" },
+        { key: "distance", label: "ระยะห่าง (ม.)", numeric: true },
+      ],
+      rows: recs.map((r) => ({
+        date: formatDate(r.workDate),
+        code: r.employee.employeeCode,
+        name: `${r.employee.firstName} ${r.employee.lastName}`,
+        clockIn: fmtTime(r.clockInAt),
+        clockOut: fmtTime(r.clockOutAt),
+        status: ATTENDANCE_STATUS_LABEL[r.status] ?? r.status,
+        workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
+        location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
+        distance: r.clockInDistance != null ? Math.round(r.clockInDistance) : "-",
+      })),
     };
   }
 
@@ -130,15 +211,19 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       select: {
         type: true,
         usedDays: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        employee: {
+          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        },
       },
     });
     const map = new Map<string, { name: string; ANNUAL: number; SICK: number; PERSONAL: number }>();
+    const deptDays = new Map<string, number>();
     for (const b of bals) {
       const code = b.employee.employeeCode;
       const row = map.get(code) ?? { name: `${b.employee.firstName} ${b.employee.lastName}`, ANNUAL: 0, SICK: 0, PERSONAL: 0 };
       if (b.type === "ANNUAL" || b.type === "SICK" || b.type === "PERSONAL") row[b.type] += b.usedDays;
       map.set(code, row);
+      bumpDept(deptDays, b.employee.department?.name, b.usedDays);
     }
     return {
       title,
@@ -153,6 +238,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
         code, name: v.name, annual: v.ANNUAL, sick: v.SICK, personal: v.PERSONAL,
       })),
+      summary: toSummary(deptDays),
+      summaryLabel: "วันลารวมตามแผนก",
+      summaryUnit: "วัน",
     };
   }
 
@@ -162,16 +250,20 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       select: {
         hours: true,
         estimatedAmount: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        employee: {
+          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        },
       },
     });
     const map = new Map<string, { name: string; hours: number; amount: number }>();
+    const deptHours = new Map<string, number>();
     for (const o of ots) {
       const code = o.employee.employeeCode;
       const row = map.get(code) ?? { name: `${o.employee.firstName} ${o.employee.lastName}`, hours: 0, amount: 0 };
       row.hours += o.hours;
       row.amount += o.estimatedAmount;
       map.set(code, row);
+      bumpDept(deptHours, o.employee.department?.name, o.hours);
     }
     return {
       title,
@@ -185,6 +277,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
         code, name: v.name, hours: Math.round(v.hours * 10) / 10, amount: v.amount,
       })),
+      summary: toSummary(deptHours),
+      summaryLabel: "ชั่วโมง OT รวมตามแผนก",
+      summaryUnit: "ชม.",
     };
   }
 
@@ -197,10 +292,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         totalDeductions: true,
         net: true,
         status: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        employee: {
+          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        },
       },
       orderBy: { employee: { employeeCode: "asc" } },
     });
+    const deptNet = new Map<string, number>();
+    for (const p of prs) bumpDept(deptNet, p.employee.department?.name, Number(p.net));
     return {
       title,
       period,
@@ -220,6 +319,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         net: p.net,
         status: p.status === "PAID" ? "จ่ายแล้ว" : "ฉบับร่าง",
       })),
+      summary: toSummary(deptNet),
+      summaryLabel: "เงินเดือนสุทธิรวมตามแผนก",
+      summaryUnit: "บาท",
     };
   }
 
@@ -229,10 +331,13 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       select: {
         amount: true,
         status: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        employee: {
+          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        },
       },
     });
     const map = new Map<string, { name: string; count: number; approved: number; paid: number }>();
+    const deptApproved = new Map<string, number>();
     for (const c of claims) {
       const code = c.employee.employeeCode;
       const row = map.get(code) ?? { name: `${c.employee.firstName} ${c.employee.lastName}`, count: 0, approved: 0, paid: 0 };
@@ -241,6 +346,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       row.approved += amt;
       if (c.status === "PAID") row.paid += amt;
       map.set(code, row);
+      bumpDept(deptApproved, c.employee.department?.name, amt);
     }
     return {
       title,
@@ -255,6 +361,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
         code, name: v.name, count: v.count, approved: Math.round(v.approved * 100) / 100, paid: Math.round(v.paid * 100) / 100,
       })),
+      summary: toSummary(deptApproved),
+      summaryLabel: "ค่าใช้จ่ายอนุมัติรวมตามแผนก",
+      summaryUnit: "บาท",
     };
   }
 
