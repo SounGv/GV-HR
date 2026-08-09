@@ -56,6 +56,19 @@ export default async function ExpenseDetailPage({ params }: { params: Promise<{ 
             </div>
             <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{claim.description || "—"}</p>
           </div>
+          {claim.receiptUrl && (
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
+              <p className="mb-2 text-sm font-medium text-foreground">รูปใบเสร็จ</p>
+              <a href={claim.receiptUrl} target="_blank" rel="noreferrer">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={claim.receiptUrl}
+                  alt="ใบเสร็จ"
+                  className="max-h-64 rounded-md border border-border object-contain"
+                />
+              </a>
+            </div>
+          )}
           {claim.decisionNote && (
             <div className="rounded-lg border border-border bg-muted/40 p-3">
               <p className="text-sm font-medium text-foreground">หมายเหตุการพิจารณา</p>

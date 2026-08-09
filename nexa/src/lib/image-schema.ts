@@ -40,3 +40,23 @@ export function dataUrlOrHttpUrlSchema(maxBytes = 3_000_000) {
     .nullable()
     .optional();
 }
+
+/** Any client-uploaded file, not just images (e.g. a PDF/doc résumé). */
+const DATA_URL_ANY_RE = /^data:[a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+;base64,/;
+
+/**
+ * Same idea as `dataUrlOrHttpUrlSchema`, but for attachments that aren't
+ * necessarily images (résumés, documents) — accepts any `data:...;base64,`
+ * payload or a pasted https URL.
+ */
+export function dataUrlFileOrHttpUrlSchema(maxBytes = 3_000_000) {
+  return z
+    .string()
+    .max(maxBytes, "ไฟล์มีขนาดใหญ่เกินไป")
+    .refine(
+      (v) => DATA_URL_ANY_RE.test(v) || HTTP_URL_RE.test(v),
+      "ต้องเป็นไฟล์ที่อัปโหลด หรือลิงก์ http(s) เท่านั้น",
+    )
+    .nullable()
+    .optional();
+}

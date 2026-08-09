@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataUrlOrHttpUrlSchema } from "@/lib/image-schema";
 
 export const EXPENSE_STATUSES = ["PENDING", "APPROVED", "REJECTED", "PAID", "CANCELLED"] as const;
 export const EXPENSE_CATEGORIES = [
@@ -20,10 +21,7 @@ export const expenseCreateSchema = z.object({
   amount: z.coerce.number().positive("จำนวนเงินต้องมากกว่า 0").max(10_000_000),
   expenseDate: z.coerce.date({ message: "กรุณาเลือกวันที่" }),
   description: optionalText,
-  receiptUrl: z.preprocess(
-    (v) => (v === "" || v == null ? undefined : v),
-    z.string().trim().url("ลิงก์ไม่ถูกต้อง").max(500).optional(),
-  ),
+  receiptUrl: z.preprocess((v) => (v === "" || v == null ? undefined : v), dataUrlOrHttpUrlSchema()),
 });
 export type ExpenseCreateInput = z.infer<typeof expenseCreateSchema>;
 

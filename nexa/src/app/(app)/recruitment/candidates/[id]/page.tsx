@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Mail, Pencil, Phone, StickyNote, UserRound } from "lucide-react";
+import { FileText, Mail, Pencil, Phone, StickyNote, UserRound } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
@@ -61,6 +61,16 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
               {candidate.note || "ไม่มีหมายเหตุ"}
             </p>
           </div>
+          {candidate.resumeUrl && (
+            <a
+              href={candidate.resumeUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            >
+              <FileText className="size-4" /> ดูเรซูเม่
+            </a>
+          )}
           <p className="text-xs text-muted-foreground">สมัครเมื่อ {formatDate(candidate.createdAt)}</p>
         </CardContent>
       </Card>

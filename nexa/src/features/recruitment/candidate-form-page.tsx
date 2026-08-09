@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FileAttachField } from "@/components/shared/file-attach-field";
 import {
   Select,
   SelectContent,
@@ -41,6 +42,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   stage: z.enum(CANDIDATE_STAGES),
   note: z.string().optional(),
+  resumeUrl: z.string().optional(),
 });
 type FormSchema = z.infer<typeof formSchema>;
 
@@ -50,6 +52,7 @@ export type CandidateInit = {
   email: string | null;
   phone: string | null;
   note: string | null;
+  resumeUrl: string | null;
   stage: FormSchema["stage"];
   jobPosting: { id: string; title: string };
 };
@@ -78,6 +81,7 @@ export function CandidateFormPage({
       phone: candidate?.phone ?? "",
       stage: candidate?.stage ?? "APPLIED",
       note: candidate?.note ?? "",
+      resumeUrl: candidate?.resumeUrl ?? "",
     },
   });
 
@@ -91,7 +95,7 @@ export function CandidateFormPage({
         await createMut.mutateAsync(values);
         toast.success("เพิ่มผู้สมัครเรียบร้อย");
         if (againRef.current) {
-          form.reset({ ...form.getValues(), name: "", email: "", phone: "", note: "", stage: "APPLIED" });
+          form.reset({ ...form.getValues(), name: "", email: "", phone: "", note: "", resumeUrl: "", stage: "APPLIED" });
           if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
           router.push(LIST);
@@ -204,6 +208,19 @@ export function CandidateFormPage({
                     ))}
                   </SelectContent>
                 </Select>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="resumeUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>เรซูเม่ (ไม่บังคับ)</FormLabel>
+                <FormControl>
+                  <FileAttachField value={field.value} onChange={field.onChange} label="แนบเรซูเม่" />
+                </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />

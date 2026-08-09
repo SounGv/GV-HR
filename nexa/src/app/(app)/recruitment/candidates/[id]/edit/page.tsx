@@ -28,6 +28,7 @@ export default async function EditCandidatePage({
         email: candidate.email,
         phone: candidate.phone,
         note: candidate.note,
+        resumeUrl: candidate.resumeUrl,
         stage: candidate.stage,
         jobPosting: candidate.jobPosting,
       }}
