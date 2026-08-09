@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SelfProfileForm } from "@/features/profile/self-profile-form";
 import { SessionListView } from "@/features/auth-sessions/session-list-view";
 import { TwoFactorSettings } from "@/features/auth-mfa/two-factor-settings";
+import { ChangePasswordForm } from "@/features/auth-password/change-password-form";
 
 export const metadata: Metadata = { title: "โปรไฟล์ของฉัน" };
 
@@ -19,7 +20,8 @@ export default async function ProfilePage() {
       <div id="profile-form" className="hidden space-y-6 p-4 md:block md:p-0">
         <PageHeader title="โปรไฟล์ของฉัน" description="จัดการข้อมูลส่วนตัว รูปโปรไฟล์ บัญชีธนาคาร และผู้ติดต่อฉุกเฉิน" />
         <SelfProfileForm />
-        <div id="security">
+        <div id="security" className="space-y-4">
+          <ChangePasswordForm />
           <TwoFactorSettings />
           <SessionListView />
         </div>

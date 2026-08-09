@@ -3,3 +3,10 @@
 export const ACCESS_COOKIE = "nexa_at";
 export const REFRESH_COOKIE = "nexa_rt";
 export const OAUTH_STATE_COOKIE = "nexa_oauth_state";
+// Double-submit CSRF token — deliberately NOT httpOnly so client JS can read
+// it and echo it back as a header; the header/cookie pair is unforgeable
+// cross-site because a foreign origin can neither read this cookie nor
+// override it (same-origin policy), while sameSite=lax alone doesn't cover
+// every mutating-request path (e.g. some cross-site fetches).
+export const CSRF_COOKIE = "nexa_csrf";
+export const CSRF_HEADER = "x-csrf-token";

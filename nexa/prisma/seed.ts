@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { PERMISSIONS, ROLE_PRESETS, expandPermissions } from "../src/config/permissions";
 import { computePayroll, periodLabel } from "../src/features/payroll/calc";
 import { computeOverall, scoreBand } from "../src/features/performance/calc";
+import { generateStrongPassword } from "../src/lib/auth/password-policy";
 
 const prisma = new PrismaClient();
 
@@ -45,7 +46,11 @@ const DEPARTMENTS: { code: string; name: string; parent?: string }[] = [
 async function main() {
   console.log("▶ Seeding NEXA…");
 
-  const passwordHash = await bcrypt.hash("Password123!", 12);
+  // Each seeded account gets its own random password (not a shared default) —
+  // only ever applied on first insert (`update: {}` below leaves an existing
+  // user's real password untouched on re-seed), and printed once so whoever
+  // ran the seed can capture it immediately.
+  const generatedPasswords = new Map<string, string>();
 
   // 1) Company
   await prisma.company.upsert({
@@ -170,6 +175,14 @@ async function main() {
   ];
 
   for (const person of people) {
+    const existed = await prisma.user.findUnique({
+      where: { companyId_email: { companyId: COMPANY_ID, email: person.email } },
+      select: { id: true },
+    });
+    const generatedPassword = generateStrongPassword();
+    if (!existed) generatedPasswords.set(person.email, generatedPassword);
+    const passwordHash = await bcrypt.hash(generatedPassword, 12);
+
     const user = await prisma.user.upsert({
       where: { companyId_email: { companyId: COMPANY_ID, email: person.email } },
       update: {},
@@ -753,8 +766,18 @@ async function main() {
     console.log("  ✓ 1 approval workflow + 1 request");
   }
 
-  console.log("✅ Seed complete. Login with any of:");
-  people.forEach((p) => console.log(`   ${p.email}  /  Password123!  (${p.role})`));
+  console.log("✅ Seed complete.");
+  if (generatedPasswords.size > 0) {
+    console.log("   Newly created accounts (save these now — shown only this once):");
+    people.forEach((p) => {
+      const pw = generatedPasswords.get(p.email);
+      if (pw) console.log(`   ${p.email}  /  ${pw}  (${p.role})`);
+    });
+  }
+  const existingCount = people.length - generatedPasswords.size;
+  if (existingCount > 0) {
+    console.log(`   ${existingCount} account(s) already existed — their passwords were left unchanged.`);
+  }
 }
 
 main()

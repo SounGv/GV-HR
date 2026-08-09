@@ -5,6 +5,7 @@ import { MobileScreen } from "./mobile-screen";
 import { SelfProfileForm } from "@/features/profile/self-profile-form";
 import { SessionListView } from "@/features/auth-sessions/session-list-view";
 import { TwoFactorSettings } from "@/features/auth-mfa/two-factor-settings";
+import { ChangePasswordForm } from "@/features/auth-password/change-password-form";
 
 function subscribeHash(onStoreChange: () => void) {
   window.addEventListener("hashchange", onStoreChange);
@@ -34,6 +35,7 @@ export function MobileProfileSubpages() {
   if (hash === "#security") {
     return (
       <MobileScreen title="ความปลอดภัย" backHref="/profile" contentClassName="space-y-4 p-4">
+        <ChangePasswordForm />
         <TwoFactorSettings />
         <SessionListView />
       </MobileScreen>

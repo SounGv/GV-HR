@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { Unauthorized, BadRequest } from "@/lib/api/errors";
-import { verifyPassword } from "./password";
+import { verifyPassword, hashPassword } from "./password";
 import { signAccessToken, signMfaToken, verifyMfaToken, type AccessClaims } from "./jwt";
-import { issueRefreshToken, rotateRefreshToken, revokeRefreshToken } from "./token-store";
+import { issueRefreshToken, rotateRefreshToken, revokeRefreshToken, revokeAllExcept, revokeAllForUser } from "./token-store";
 import {
   generateSecret,
   buildOtpAuthUrl,
@@ -212,6 +212,32 @@ export async function disableTwoFactor(userId: string, code: string): Promise<vo
     prisma.user.update({ where: { id: userId }, data: { twoFactorEnabled: false, twoFactorSecret: null } }),
     prisma.twoFactorRecoveryCode.deleteMany({ where: { userId } }),
   ]);
+}
+
+/**
+ * Self-service password change (requires the current password). Revokes
+ * every other refresh-token session so a stolen password can't be used to
+ * keep an already-open session alive elsewhere — the caller's own current
+ * session (identified by `currentJti`) is left intact so they aren't logged
+ * out by their own action.
+ */
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+  currentJti: string | null,
+): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+  if (!user) throw Unauthorized();
+
+  const ok = await verifyPassword(currentPassword, user.passwordHash);
+  if (!ok) throw BadRequest("รหัสผ่านปัจจุบันไม่ถูกต้อง");
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+  if (currentJti) await revokeAllExcept(userId, currentJti);
+  else await revokeAllForUser(userId);
 }
 
 /**
