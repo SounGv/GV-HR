@@ -26,6 +26,7 @@ export interface Candidate {
   email: string | null;
   phone: string | null;
   note: string | null;
+  resumeUrl: string | null;
   stage: CandidateStage;
   createdAt: string;
   jobPosting: { id: string; title: string };
@@ -47,5 +48,6 @@ export interface CandidateFormValues {
   email?: string;
   phone?: string;
   note?: string;
+  resumeUrl?: string;
   stage: CandidateStage;
 }

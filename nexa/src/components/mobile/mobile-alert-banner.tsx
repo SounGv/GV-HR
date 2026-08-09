@@ -1,7 +1,7 @@
 import { AlertTriangle, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type BannerTone = "success" | "danger" | "dev";
+type BannerTone = "success" | "danger";
 
 const TONE: Record<BannerTone, { wrap: string; icon: typeof Check }> = {
   success: {
@@ -10,10 +10,6 @@ const TONE: Record<BannerTone, { wrap: string; icon: typeof Check }> = {
   },
   danger: {
     wrap: "border-destructive/20 bg-destructive-muted text-destructive",
-    icon: AlertTriangle,
-  },
-  dev: {
-    wrap: "border-dev-note-border bg-dev-note text-dev-note-foreground",
     icon: AlertTriangle,
   },
 };

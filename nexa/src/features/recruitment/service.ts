@@ -33,6 +33,7 @@ const candidateSelect = {
   email: true,
   phone: true,
   note: true,
+  resumeUrl: true,
   stage: true,
   createdAt: true,
   jobPosting: { select: { id: true, title: true } },
@@ -166,16 +167,7 @@ export async function deleteJob(
 export async function getCandidate(companyId: string, id: string) {
   const candidate = await prisma.candidate.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      note: true,
-      stage: true,
-      createdAt: true,
-      jobPosting: { select: { id: true, title: true } },
-    },
+    select: candidateSelect,
   });
   if (!candidate) throw NotFound("ไม่พบผู้สมัคร");
   return candidate;

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EMPLOYMENT_TYPES } from "@/features/employee/schema";
+import { dataUrlFileOrHttpUrlSchema } from "@/lib/image-schema";
 
 export const JOB_STATUSES = ["OPEN", "CLOSED"] as const;
 export const CANDIDATE_STAGES = [
@@ -37,6 +38,7 @@ export const candidateCreateSchema = z.object({
   email: optional(z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง")),
   phone: optional(z.string().trim().max(30)),
   note: optional(z.string().trim().max(1000)),
+  resumeUrl: z.preprocess((v) => (v === "" || v == null ? undefined : v), dataUrlFileOrHttpUrlSchema()),
   stage: z.enum(CANDIDATE_STAGES).default("APPLIED"),
 });
 export type CandidateCreateInput = z.infer<typeof candidateCreateSchema>;

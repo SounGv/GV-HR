@@ -6,10 +6,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileUp } from "lucide-react";
 
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { FileAttachField } from "@/components/shared/file-attach-field";
 import { LEAVE_TYPES } from "@/features/leave/schema";
 import { computeLeaveDays } from "@/features/leave/days";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
@@ -29,6 +29,7 @@ const formSchema = z
     endDate: z.string().min(1, "กรุณาเลือกวันสิ้นสุด"),
     halfDay: z.boolean(),
     reason: z.string().optional(),
+    attachmentUrl: z.string().optional(),
   })
   .refine((d) => d.endDate >= d.startDate, {
     message: "วันสิ้นสุดต้องไม่ก่อนวันเริ่ม",
@@ -61,7 +62,7 @@ export function MobileLeaveForm() {
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: { type: "SICK", startDate: "", endDate: "", halfDay: false, reason: "" },
+    defaultValues: { type: "SICK", startDate: "", endDate: "", halfDay: false, reason: "", attachmentUrl: "" },
   });
 
   const [type, start, end, half] = form.watch(["type", "startDate", "endDate", "halfDay"]);
@@ -216,13 +217,11 @@ export function MobileLeaveForm() {
           </label>
 
           <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">แนบไฟล์ประกอบ (ถ้ามี)</p>
-          <div className="rounded-[10px] border border-dashed border-border px-3 py-4 text-center text-muted-foreground">
-            <FileUp className="mx-auto size-5" />
-            <p className="mt-1 text-xs">แตะเพื่อแนบใบรับรองแพทย์</p>
-          </div>
-          <MobileAlertBanner tone="dev" className="mt-2">
-            Dev note: ต้องเชื่อมอัปโหลดไฟล์จริงและ validate ฝั่ง server
-          </MobileAlertBanner>
+          <FileAttachField
+            value={form.watch("attachmentUrl")}
+            onChange={(v) => form.setValue("attachmentUrl", v, { shouldValidate: true })}
+            label="แนบใบรับรองแพทย์"
+          />
 
           <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">เหตุผล</p>
           <textarea
@@ -238,10 +237,6 @@ export function MobileLeaveForm() {
             </p>
           )}
         </div>
-
-        <MobileAlertBanner tone="dev">
-          Dev note: ต้องเชื่อมตาราง balance วันลาจริงจาก backend และ validate สิทธิ์คงเหลือฝั่ง server ก่อนอนุมัติ
-        </MobileAlertBanner>
       </form>
     </MobileScreen>
   );

@@ -56,6 +56,16 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
             </div>
             <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{request.reason || "—"}</p>
           </div>
+          {request.attachmentUrl && (
+            <a
+              href={request.attachmentUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            >
+              <FileText className="size-4" /> ดูไฟล์แนบ (ใบรับรองแพทย์)
+            </a>
+          )}
           {request.decisionNote && (
             <div className="rounded-lg border border-border bg-muted/40 p-3">
               <p className="text-sm font-medium text-foreground">คำสั่งการอนุมัติ</p>

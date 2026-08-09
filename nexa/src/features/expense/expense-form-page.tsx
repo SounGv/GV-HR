@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { PhotoAttachField } from "@/components/shared/photo-attach-field";
 import { ApiError } from "@/lib/api/client";
 import { useCreateExpense } from "./hooks";
 import { EXPENSE_CATEGORIES } from "./schema";
@@ -165,9 +166,9 @@ export function ExpenseFormPage() {
             name="receiptUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>ลิงก์ใบเสร็จ (ไม่บังคับ)</FormLabel>
+                <FormLabel>รูปใบเสร็จ (ไม่บังคับ)</FormLabel>
                 <FormControl>
-                  <Input type="url" placeholder="https://…" {...field} />
+                  <PhotoAttachField value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
