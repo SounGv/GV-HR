@@ -13,6 +13,7 @@ export function toFormValues(e: EmployeeDetail): Partial<EmployeeFormValues> {
     firstNameEn: e.firstNameEn ?? undefined,
     lastNameEn: e.lastNameEn ?? undefined,
     nickname: e.nickname ?? undefined,
+    avatarUrl: e.avatarUrl ?? undefined,
     email: e.email ?? undefined,
     phone: e.phone ?? undefined,
     gender: e.gender ?? undefined,

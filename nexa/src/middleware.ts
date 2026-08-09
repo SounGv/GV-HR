@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAccessToken } from "@/lib/auth/jwt";
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
+import { ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE, CSRF_HEADER } from "@/lib/auth/constants";
+
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
  * Edge auth guard.
@@ -33,6 +35,9 @@ const PUBLIC_API = new Set([
   // directly) — they authenticate themselves via a CRON_SECRET bearer token
   // instead, checked inside the route handler.
   "/api/cron/evaluation-schedules",
+  // LINE's servers call this directly (no session cookie) — authenticates
+  // itself via the x-line-signature HMAC header, checked inside the handler.
+  "/api/integrations/line/webhook",
 ]);
 
 const PUBLIC_PAGES = new Set(["/login", "/register", "/offline", "/forgot-password", "/reset-password"]);
@@ -71,6 +76,20 @@ export async function middleware(req: NextRequest) {
         { error: { code: "UNAUTHORIZED", message: "ไม่ได้เข้าสู่ระบบ" } },
         { status: 401 },
       );
+    }
+    // Double-submit CSRF check: a mutating request using the session cookie
+    // must echo the (non-httpOnly) CSRF cookie back as a header — a
+    // cross-site page can trigger the cookie-bearing request but can't read
+    // the cookie value to put in the header.
+    if (MUTATING_METHODS.has(req.method)) {
+      const csrfCookie = req.cookies.get(CSRF_COOKIE)?.value;
+      const csrfHeader = req.headers.get(CSRF_HEADER);
+      if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+        return NextResponse.json(
+          { error: { code: "CSRF_INVALID", message: "คำขอไม่ผ่านการตรวจสอบความปลอดภัย กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง" } },
+          { status: 403 },
+        );
+      }
     }
     return NextResponse.next();
   }

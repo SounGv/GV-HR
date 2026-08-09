@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const { month } = monthQuerySchema.parse(
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );
-    const data = await getMonth(session.companyId, month);
+    const data = await getMonth(session.companyId, month, session.employeeId);
     return ok(data);
   } catch (err) {
     return handleApiError(err);

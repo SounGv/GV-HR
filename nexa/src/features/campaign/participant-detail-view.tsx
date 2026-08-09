@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronLeft, Loader2, Plus, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Loader2, Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +15,46 @@ import { fullName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
+import { sendChat } from "@/features/ai/api";
 import { groupByCategory } from "@/lib/competency-grouping";
 import { useInviteRater, useParticipant, useRemoveRater, useSubmitMyResponse } from "./hooks";
-import type { CampaignCompetency } from "./types";
+import type { CampaignCompetency, ParticipantDetail } from "./types";
+
+const RATER_LABEL: Record<string, string> = {
+  SELF: "ประเมินตนเอง",
+  MANAGER: "หัวหน้างาน",
+  PEER: "เพื่อนร่วมงาน",
+  UPWARD: "ผู้ใต้บังคับบัญชา",
+};
+
+/** Compact text summary of every submitted response, for the AI to reason over. */
+function participantToPrompt(participant: ParticipantDetail): string {
+  const name = fullName(participant.employee.firstName, participant.employee.lastName);
+  const competencyName = (id: string) => participant.campaign.competencies.find((c) => c.competencyId === id)?.name ?? id;
+
+  const sections = participant.fullResponses
+    .filter((r) => r.status === "SUBMITTED")
+    .map((r) => {
+      const scoreLines = r.scores.map((s) => `- ${competencyName(s.competencyId)}: ${s.score.toFixed(1)}/5`).join("\n");
+      return [
+        `[${RATER_LABEL[r.raterType] ?? r.raterType}]`,
+        scoreLines,
+        r.strengths ? `จุดแข็ง: ${r.strengths}` : "",
+        r.improvements ? `สิ่งที่ควรพัฒนา: ${r.improvements}` : "",
+        r.summary ? `สรุป: ${r.summary}` : "",
+      ].filter(Boolean).join("\n");
+    });
+
+  return [
+    `นี่คือผลการประเมิน "${participant.campaign.name}" รอบ ${participant.campaign.cycle} ของพนักงาน ${name} จากระบบ GV One`,
+    participant.overallScore != null ? `คะแนนรวมทางการ (จากหัวหน้างาน): ${participant.overallScore.toFixed(1)}/5 (${participant.band})` : "ยังไม่มีคะแนนรวมทางการ",
+    "",
+    ...sections,
+    "",
+    "ช่วยวิเคราะห์เชิงผู้บริหาร (3-5 bullet): จุดแข็งเด่น, สิ่งที่ควรพัฒนา, ความเห็นไม่ตรงกันระหว่างผู้ประเมิน (ถ้ามี), และข้อเสนอแนะเชิงปฏิบัติสำหรับหัวหน้างาน",
+    "ตอบเป็นภาษาไทยกระชับ อ้างอิงข้อมูลจากที่ให้มาเท่านั้น ไม่ต้องเรียกเครื่องมือใด",
+  ].join("\n");
+}
 
 export function ParticipantDetailView({ participantId }: { participantId: string }) {
   const { user, can } = useAuth();
@@ -28,6 +65,9 @@ export function ParticipantDetailView({ participantId }: { participantId: string
   const [strengths, setStrengths] = useState("");
   const [improvements, setImprovements] = useState("");
   const [summary, setSummary] = useState("");
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiText, setAiText] = useState("");
 
   const participant = data?.data;
 
@@ -74,21 +114,51 @@ export function ParticipantDetailView({ participantId }: { participantId: string
     }
   }
 
+  const hasSubmittedResponses = participant.fullResponses.some((r) => r.status === "SUBMITTED");
+
+  async function analyzeWithAi() {
+    setAiOpen(true);
+    setAiLoading(true);
+    setAiText("");
+    try {
+      const prompt = participantToPrompt(participant!);
+      const res = await sendChat([{ role: "user", content: prompt }]);
+      setAiText(res.data.reply);
+    } catch {
+      setAiText("ขออภัย ไม่สามารถวิเคราะห์ผลประเมินได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Link
-          href={`/performance/campaigns/${participant.campaign.id}`}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" /> กลับไปแคมเปญ
-        </Link>
-        <h1 className="text-xl font-semibold text-foreground">
-          {fullName(participant.employee.firstName, participant.employee.lastName)}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {participant.campaign.name} · {participant.campaign.cycle}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="space-y-1">
+          <Link
+            href={`/performance/campaigns/${participant.campaign.id}`}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="size-4" /> กลับไปแคมเปญ
+          </Link>
+          <h1 className="text-xl font-semibold text-foreground">
+            {fullName(participant.employee.firstName, participant.employee.lastName)}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {participant.campaign.name} · {participant.campaign.cycle}
+          </p>
+        </div>
+        {canManageRaters && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={analyzeWithAi}
+            disabled={!hasSubmittedResponses}
+            className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+          >
+            <Sparkles className="size-4" /> AI วิเคราะห์ผลประเมิน
+          </Button>
+        )}
       </div>
 
       {participant.overallScore != null && (
@@ -188,6 +258,30 @@ export function ParticipantDetailView({ participantId }: { participantId: string
           raterTypes={participant.campaign.raterTypes}
         />
       )}
+
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
+                <Sparkles className="size-4 text-primary" />
+              </span>
+              AI วิเคราะห์ผลประเมิน · {fullName(participant.employee.firstName, participant.employee.lastName)}
+            </DialogTitle>
+            <DialogDescription>วิเคราะห์โดย AI Assistant จากคะแนน/ความเห็นที่ส่งเข้ามาแล้วเท่านั้น</DialogDescription>
+          </DialogHeader>
+          {aiLoading ? (
+            <div className="flex items-center gap-3 py-8 text-sm text-muted-foreground">
+              <Loader2 className="size-5 animate-spin text-primary" />
+              กำลังวิเคราะห์ผลประเมิน...
+            </div>
+          ) : (
+            <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+              {aiText}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

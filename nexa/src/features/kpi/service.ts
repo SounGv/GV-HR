@@ -31,7 +31,7 @@ const goalSelect = {
 } satisfies Prisma.GoalSelect;
 
 /** Auto-derive status from progress unless an explicit terminal status is set. */
-function deriveStatus(
+export function deriveStatus(
   current: number,
   target: number,
   explicit?: GoalCreateInput["status"],

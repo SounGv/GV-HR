@@ -3,7 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { NotFound } from "@/lib/api/errors";
 import { fullName } from "@/lib/format";
 import type { AccessClaims } from "@/lib/auth/jwt";
-import type { CalendarItem, CalendarMonth } from "./types";
+import type { CalendarItem, CalendarMonth, MyDayStatus } from "./types";
 import type { EventCreateInput, EventUpdateInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -22,6 +22,7 @@ function currentMonth(): string {
 export async function getMonth(
   companyId: string,
   month: string | undefined,
+  employeeId?: string | null,
 ): Promise<CalendarMonth> {
   const m = month ?? currentMonth();
   const [y, mo] = m.split("-").map(Number);
@@ -67,6 +68,7 @@ export async function getMonth(
         type: true,
         startDate: true,
         endDate: true,
+        employeeId: true,
         employee: { select: { firstName: true, lastName: true } },
       },
     }),
@@ -133,7 +135,56 @@ export async function getMonth(
   }
 
   items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-  return { month: m, items };
+
+  const myStatus = employeeId
+    ? await getMyDayStatus(companyId, employeeId, start, lastDay, holidays, leaves)
+    : undefined;
+
+  return { month: m, items, myStatus };
+}
+
+/** Viewer's own day-by-day attendance status, from today backwards — future days are left unset. */
+async function getMyDayStatus(
+  companyId: string,
+  employeeId: string,
+  start: Date,
+  lastDay: Date,
+  holidays: { date: Date }[],
+  leaves: { employeeId: string; startDate: Date; endDate: Date }[],
+): Promise<Record<string, MyDayStatus>> {
+  const todayIsoStr = iso(new Date());
+  const rangeEnd = new Date(Math.min(lastDay.getTime(), new Date(`${todayIsoStr}T00:00:00.000Z`).getTime()));
+  if (rangeEnd.getTime() < start.getTime()) return {};
+
+  const holidaySet = new Set(holidays.map((h) => iso(h.date)));
+  const myLeaves = leaves.filter((l) => l.employeeId === employeeId);
+  const records = await prisma.attendanceRecord.findMany({
+    where: { companyId, employeeId, workDate: { gte: start, lte: rangeEnd } },
+    select: { workDate: true, clockInAt: true, status: true },
+  });
+  const recordByDate = new Map(records.map((r) => [iso(r.workDate), r]));
+
+  const result: Record<string, MyDayStatus> = {};
+  for (let cur = new Date(start); cur.getTime() <= rangeEnd.getTime(); cur = new Date(cur.getTime() + DAY_MS)) {
+    const day = iso(cur);
+    if (holidaySet.has(day)) {
+      result[day] = "HOLIDAY";
+      continue;
+    }
+    const onLeave = myLeaves.some((l) => l.startDate.getTime() <= cur.getTime() && cur.getTime() <= l.endDate.getTime());
+    if (onLeave) {
+      result[day] = "LEAVE";
+      continue;
+    }
+    const rec = recordByDate.get(day);
+    if (rec?.clockInAt) {
+      result[day] = rec.status === "LATE" ? "LATE" : "PRESENT";
+      continue;
+    }
+    const weekday = cur.getUTCDay();
+    result[day] = weekday === 0 || weekday === 6 ? "WEEKEND" : "ABSENT";
+  }
+  return result;
 }
 
 export async function getEvent(companyId: string, id: string) {

@@ -10,6 +10,7 @@ export interface PayslipEmailRecord {
   totalDeductions: number;
   net: number;
   status: "DRAFT" | "PAID";
+  note?: string | null;
   employee: { employeeCode: string; firstName: string; lastName: string };
 }
 
@@ -23,6 +24,16 @@ export interface PayslipEmailCompany {
   province: string | null;
   postalCode: string | null;
   phone: string | null;
+}
+
+/** Escapes free-text HR input before interpolating into the email HTML. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function companyAddress(c: PayslipEmailCompany): string {
@@ -108,6 +119,8 @@ export function renderPayslipEmailHtml({
       <td style="padding:14px 16px;color:#ffffff;font-weight:700;font-size:18px;text-align:right;">${formatCurrency(record.net)}</td>
     </tr>
   </table>
+
+  ${record.note ? `<p style="margin:16px 0 0;font-size:12px;color:#64748b;"><strong>หมายเหตุจาก HR:</strong> ${escapeHtml(record.note)}</p>` : ""}
 
   <p style="margin:16px 0 0;font-size:12px;color:#64748b;">
     ตรวจสอบความถูกต้องของสลิปนี้ได้ที่ <a href="${verifyUrl}" style="color:#7a35ff;">${verifyUrl}</a><br/>

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, NotFound } from "@/lib/api/errors";
 import type { SessionUser } from "@/lib/auth/session";
+import { generateLinkCode, LINE_LINK_CODE_TTL_MS } from "@/lib/integrations/line";
 import type { SelfProfileInput } from "./schema";
 
 const profileSelect = {
@@ -35,6 +36,9 @@ const profileSelect = {
   department: { select: { name: true } },
   position: { select: { title: true } },
   branch: { select: { name: true } },
+  lineUserId: true,
+  lineLinkCode: true,
+  lineLinkCodeExpiresAt: true,
   updatedAt: true,
 } satisfies Prisma.EmployeeSelect;
 
@@ -86,4 +90,42 @@ export async function updateMyProfile(
   });
 
   return prisma.employee.findUniqueOrThrow({ where: { id: employeeId }, select: profileSelect });
+}
+
+/** Issues a short-lived code the employee sends to the company's LINE OA to link their account. */
+export async function generateMyLineLinkCode(session: SessionUser) {
+  const employeeId = requireEmployeeId(session);
+  const expiresAt = new Date(Date.now() + LINE_LINK_CODE_TTL_MS);
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateLinkCode();
+    try {
+      await prisma.employee.update({
+        where: { id: employeeId },
+        data: { lineLinkCode: code, lineLinkCodeExpiresAt: expiresAt },
+      });
+      return { code, expiresAt: expiresAt.toISOString() };
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") continue; // code collision, retry
+      throw err;
+    }
+  }
+  throw BadRequest("ไม่สามารถสร้างรหัสเชื่อมต่อได้ กรุณาลองใหม่อีกครั้ง");
+}
+
+export async function unlinkMyLine(session: SessionUser, meta?: Meta) {
+  const employeeId = requireEmployeeId(session);
+  await prisma.employee.update({
+    where: { id: employeeId },
+    data: { lineUserId: null, lineLinkCode: null, lineLinkCodeExpiresAt: null },
+  });
+  await writeAudit({
+    companyId: session.companyId,
+    actorUserId: session.sub,
+    action: "profile.unlink_line",
+    entity: "Employee",
+    entityId: employeeId,
+    ...meta,
+  });
+  return { ok: true as const };
 }

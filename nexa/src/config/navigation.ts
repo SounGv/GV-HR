@@ -65,7 +65,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "พนักงาน",
     items: [
       { label: "พนักงาน", href: "/employees", icon: Users, permission: "employee:read", ready: true },
-      { label: "นำเข้าพนักงาน", href: "/employees/import", icon: Upload, permission: "employee:create", ready: true },
       { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
       { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read", ready: true },
     ],
@@ -99,6 +98,12 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "โครงสร้างองค์กร", href: "/organization", icon: Network, permission: "employee:read", ready: true },
       { label: "สาขา", href: "/branches", icon: Building2, permission: "admin:read", ready: true },
       { label: "ศูนย์ต้นทุน", href: "/cost-centers", icon: Wallet, permission: "admin:read", ready: true },
+    ],
+  },
+  {
+    label: "นำเข้า/ส่งออก",
+    items: [
+      { label: "ศูนย์นำเข้าข้อมูล", href: "/import", icon: Upload, permission: "employee:create", ready: true },
     ],
   },
   {

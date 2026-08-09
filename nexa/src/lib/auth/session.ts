@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 import {
@@ -6,9 +7,9 @@ import {
   REFRESH_TTL_SECONDS,
   type AccessClaims,
 } from "./jwt";
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "./constants";
+import { ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE } from "./constants";
 
-export { ACCESS_COOKIE, REFRESH_COOKIE };
+export { ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE };
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -22,7 +23,7 @@ const baseCookie = {
 /** Session as seen by the app: the verified access-token claims. */
 export type SessionUser = AccessClaims;
 
-/** Write both auth cookies onto a NextResponse (used by login / refresh). */
+/** Write both auth cookies (+ a fresh CSRF token) onto a NextResponse (used by login / refresh). */
 export function setSessionCookies(res: NextResponse, accessToken: string, refreshToken: string) {
   res.cookies.set(ACCESS_COOKIE, accessToken, {
     ...baseCookie,
@@ -34,11 +35,17 @@ export function setSessionCookies(res: NextResponse, accessToken: string, refres
     // Refresh token is only ever sent to the refresh endpoint.
     path: "/api/auth",
   });
+  res.cookies.set(CSRF_COOKIE, randomBytes(24).toString("hex"), {
+    ...baseCookie,
+    httpOnly: false, // client JS must be able to read this one
+    maxAge: REFRESH_TTL_SECONDS,
+  });
 }
 
 export function clearSessionCookies(res: NextResponse) {
   res.cookies.set(ACCESS_COOKIE, "", { ...baseCookie, maxAge: 0 });
   res.cookies.set(REFRESH_COOKIE, "", { ...baseCookie, path: "/api/auth", maxAge: 0 });
+  res.cookies.set(CSRF_COOKIE, "", { ...baseCookie, httpOnly: false, maxAge: 0 });
 }
 
 /** Read + verify the current session from the request cookies (Server Components / route handlers). */

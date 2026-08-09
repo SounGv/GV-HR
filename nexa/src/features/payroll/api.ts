@@ -19,6 +19,17 @@ export function payPayroll(id: string) {
   return api.post<Envelope<PayrollRecord>>(`/api/payroll/${id}/pay`);
 }
 
+export function updatePayrollAdjustments(
+  id: string,
+  input: {
+    extraEarnings: { label: string; amount: number }[];
+    extraDeductions: { label: string; amount: number }[];
+    note?: string;
+  },
+) {
+  return api.patch<Envelope<PayrollRecord>>(`/api/payroll/${id}`, input);
+}
+
 export function sendPayslipEmails(payrollRecordIds: string[]) {
   return api.post<Envelope<{ sent: string[]; skipped: { employeeId: string; name: string; reason: string }[] }>>(
     "/api/payroll/send-email",

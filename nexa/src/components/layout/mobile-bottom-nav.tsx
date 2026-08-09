@@ -2,70 +2,44 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, LayoutGrid, Bot, Bell, UserRound, Clock } from "lucide-react";
+import { LayoutDashboard, Clock, ClipboardList, Receipt, UserRound } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
-import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
 
 /**
- * 5-slot bottom tab bar for phones — hidden on md+: Home · Services ·
- * [Time, raised center FAB] · AI (or Notifications, for accounts without AI
- * access) · Profile. "Services" is a curated quick-access icon grid (full
- * sidebar drawer is one tap further, via a link on that page); the center
- * FAB is attendance check-in, kept raised since it's the single most-used
- * action on this bar.
+ * 5-slot flat bottom tab bar for phones — hidden on md+: หน้าหลัก · เวลา ·
+ * คำขอ · สลิป · โปรไฟล์. Matches the Master Prompt's mobile nav spec exactly;
+ * AI and notifications are intentionally NOT tabs here (AI is excluded from
+ * the employee mobile experience, notifications live as a bell icon on the
+ * Home header instead). Tabs the account lacks permission for are hidden
+ * rather than shown disabled, so the grid always fits whatever remains.
  */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { can } = useAuth();
-  const { data: notifData } = useNotifications();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
-  const canCheckIn = can("attendance:read");
-  const canAi = can("ai:read");
-  const unread = notifData?.data?.unread ?? 0;
+
+  const tabs = [
+    { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard, show: true },
+    { href: "/attendance", label: "เวลา", icon: Clock, show: can("attendance:read") },
+    { href: "/requests", label: "คำขอ", icon: ClipboardList, show: can("leave:read") || can("overtime:read") },
+    { href: "/payroll", label: "สลิป", icon: Receipt, show: can("payroll:read") },
+    { href: "/profile", label: "โปรไฟล์", icon: UserRound, show: true },
+  ].filter((t) => t.show);
 
   return (
     <nav
       aria-label="เมนูลัด"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-1">
-        <NavTab href="/dashboard" label="หน้าหลัก" icon={LayoutDashboard} active={isActive("/dashboard")} />
-
-        <NavTab href="/services" label="บริการ" icon={LayoutGrid} active={isActive("/services")} />
-
-        {/* Center raised check-in FAB — "Time" */}
-        <div className="flex justify-center">
-          {canCheckIn ? (
-            <Link
-              href="/attendance"
-              aria-label="เช็คอินเข้างาน"
-              className={cn(
-                "-mt-7 flex size-14 flex-col items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/25 ring-4 ring-card transition active:scale-95",
-                isActive("/attendance") && "ring-primary/20",
-              )}
-            >
-              <Clock className="size-6" />
-            </Link>
-          ) : (
-            <span className="size-14" />
-          )}
-        </div>
-
-        {canAi ? (
-          <NavTab href="/ai" label="AI" icon={Bot} active={isActive("/ai")} />
-        ) : (
-          <NavTab
-            href="/notifications"
-            label="แจ้งเตือน"
-            icon={Bell}
-            active={isActive("/notifications")}
-            badge={unread}
-          />
-        )}
-
-        <NavTab href="/profile" label="โปรไฟล์" icon={UserRound} active={isActive("/profile")} />
+      <div
+        className="mx-auto grid h-16 max-w-md items-center px-1"
+        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+      >
+        {tabs.map((t) => (
+          <NavTab key={t.href} href={t.href} label={t.label} icon={t.icon} active={isActive(t.href)} />
+        ))}
       </div>
     </nav>
   );
@@ -76,13 +50,11 @@ function NavTab({
   label,
   icon: Icon,
   active,
-  badge,
 }: {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
   active: boolean;
-  badge?: number;
 }) {
   return (
     <Link
@@ -92,14 +64,7 @@ function NavTab({
         active ? "text-primary" : "text-muted-foreground",
       )}
     >
-      <span className="relative">
-        <Icon className={cn("size-5", active && "stroke-[2.5px]")} />
-        {!!badge && (
-          <span className="absolute -top-1 -right-1.5 flex min-w-3.5 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-white ring-2 ring-card">
-            {badge > 9 ? "9+" : badge}
-          </span>
-        )}
-      </span>
+      <Icon className={cn("size-5", active && "stroke-[2.5px]")} />
       <span className="text-[11px] font-semibold whitespace-nowrap">{label}</span>
     </Link>
   );

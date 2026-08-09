@@ -3,6 +3,14 @@ import { formatDate } from "@/lib/format";
 import { STATUS_LABEL } from "@/features/employee/labels";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
 
+const GOAL_STATUS_LABEL: Record<string, string> = {
+  NOT_STARTED: "ยังไม่เริ่ม",
+  IN_PROGRESS: "กำลังดำเนินการ",
+  AT_RISK: "เสี่ยงไม่สำเร็จ",
+  COMPLETED: "สำเร็จแล้ว",
+  CANCELLED: "ยกเลิก",
+};
+
 export interface ReportColumn {
   key: string;
   label: string;
@@ -280,6 +288,54 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       ],
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
         code, name: v.name, cycle: v.cycle, score: v.score, band: v.band,
+      })),
+    };
+  }
+
+  if (query.type === "kpi") {
+    const goals = await prisma.goal.findMany({
+      where: { companyId, deletedAt: null, type: "KPI", ...deptRel },
+      select: {
+        cycle: true,
+        targetValue: true,
+        currentValue: true,
+        status: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    const map = new Map<string, { name: string; cycle: string; target: number; actual: number; status: string }>();
+    for (const g of goals) {
+      const code = g.employee.employeeCode;
+      if (map.has(code)) continue; // most recent goal per employee only
+      map.set(code, {
+        name: `${g.employee.firstName} ${g.employee.lastName}`,
+        cycle: g.cycle,
+        target: g.targetValue,
+        actual: g.currentValue,
+        status: GOAL_STATUS_LABEL[g.status] ?? g.status,
+      });
+    }
+    return {
+      title,
+      period: null,
+      columns: [
+        { key: "code", label: "รหัส" },
+        { key: "name", label: "ชื่อ-สกุล" },
+        { key: "cycle", label: "รอบ" },
+        { key: "target", label: "เป้าหมาย", numeric: true },
+        { key: "actual", label: "ผลจริง", numeric: true },
+        { key: "achievement", label: "% สำเร็จ", numeric: true },
+        { key: "status", label: "สถานะ" },
+      ],
+      rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
+        code,
+        name: v.name,
+        cycle: v.cycle,
+        target: v.target,
+        actual: v.actual,
+        achievement: v.target > 0 ? Math.round((v.actual / v.target) * 1000) / 10 : 0,
+        status: v.status,
       })),
     };
   }

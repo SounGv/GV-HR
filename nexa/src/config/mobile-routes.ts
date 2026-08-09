@@ -15,6 +15,9 @@ export const MOBILE_CUSTOM_PATHS = new Set([
   "/profile",
   "/leave",
   "/leave/new",
+  "/attendance",
+  "/requests",
+  "/payroll",
 ]);
 
 const EXACT: Record<string, MobileRouteMeta> = {
@@ -49,9 +52,8 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/organization": { title: "โครงสร้างองค์กร", backHref: "/services" },
   "/organization/departments/new": { title: "เพิ่มแผนก", backHref: "/organization" },
   "/organization/positions/new": { title: "เพิ่มตำแหน่ง", backHref: "/organization" },
-  "/overtime": { title: "ล่วงเวลา (OT)", backHref: "/services" },
-  "/overtime/new": { title: "ขอ OT", backHref: "/overtime" },
-  "/payroll": { title: "สลิปเงินเดือน", backHref: "/services" },
+  "/overtime": { title: "ล่วงเวลา (OT)", backHref: "/requests" },
+  "/overtime/new": { title: "ขอ OT", backHref: "/requests" },
   "/performance": { title: "ประเมินผล", backHref: "/services" },
   "/performance/new": { title: "สร้างรอบประเมิน", backHref: "/performance" },
   "/performance/competencies": { title: "สมรรถนะ", backHref: "/performance" },
@@ -137,10 +139,6 @@ export function resolveMobileRoute(pathname: string, searchParams?: URLSearchPar
 
   if (pathname === "/leave" && searchParams?.get("view") === "overview") {
     return { title: "วันลาพนักงาน", backHref: "/services" };
-  }
-
-  if (pathname === "/payroll" && searchParams?.get("view") === "run") {
-    return { title: "ประมวลผลเงินเดือน", backHref: "/services" };
   }
 
   if (pathname === "/kpi" && searchParams?.get("view") === "org") {

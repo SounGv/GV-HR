@@ -14,7 +14,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 
 import { useMonth, useDeleteEvent } from "./hooks";
-import type { CalendarItem, CalendarSource } from "./types";
+import type { CalendarItem, CalendarSource, MyDayStatus } from "./types";
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -44,6 +44,23 @@ const SOURCE_LABEL: Record<CalendarSource, string> = {
   evaluation: "ประเมินผล",
 };
 
+/** Small corner badge on each day cell — the viewer's own attendance status. */
+const MY_STATUS_BADGE: Record<MyDayStatus, { label: string; className: string }> = {
+  PRESENT: { label: "✓", className: "bg-success text-white" },
+  LATE: { label: "!", className: "bg-warning text-white" },
+  LEAVE: { label: "ล", className: "bg-warning text-white" },
+  HOLIDAY: { label: "ป", className: "bg-destructive text-white" },
+  WEEKEND: { label: "หย", className: "bg-muted-foreground/60 text-white" },
+  ABSENT: { label: "✕", className: "bg-destructive text-white" },
+};
+const MY_STATUS_LEGEND: { status: MyDayStatus; label: string }[] = [
+  { status: "PRESENT", label: "มาทำงาน" },
+  { status: "LEAVE", label: "ลา" },
+  { status: "HOLIDAY", label: "วันหยุดประจำปี" },
+  { status: "WEEKEND", label: "วันหยุด" },
+  { status: "ABSENT", label: "ไม่ลงเวลา" },
+];
+
 function todayIso(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -69,6 +86,7 @@ export function CalendarView() {
   const { data, isLoading, isError, refetch } = useMonth(month);
   const deleteMut = useDeleteEvent();
   const items = useMemo(() => data?.data.items ?? [], [data]);
+  const myStatus = data?.data.myStatus ?? {};
 
   const bucket = useMemo(() => {
     const map = new Map<string, CalendarItem[]>();
@@ -147,6 +165,22 @@ export function CalendarView() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
           <Card className="p-2 sm:p-3">
+            <div className="mb-2 flex flex-wrap items-center gap-3 px-1">
+              <span className="text-xs font-medium text-muted-foreground">ของฉัน:</span>
+              {MY_STATUS_LEGEND.map(({ status, label }) => (
+                <span key={status} className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span
+                    className={cn(
+                      "flex size-4 items-center justify-center rounded-full text-[9px] font-bold",
+                      MY_STATUS_BADGE[status].className,
+                    )}
+                  >
+                    {MY_STATUS_BADGE[status].label}
+                  </span>
+                  {label}
+                </span>
+              ))}
+            </div>
             <div className="grid grid-cols-7 gap-1">
               {WEEKDAYS.map((w) => (
                 <div key={w} className="py-1 text-center text-xs font-medium text-muted-foreground">
@@ -157,16 +191,28 @@ export function CalendarView() {
                 ? Array.from({ length: 42 }, (_, i) => <Skeleton key={i} className="h-20 rounded-md" />)
                 : cells.map((c) => {
                     const dayItems = bucket.get(c.iso) ?? [];
+                    const status = myStatus[c.iso];
                     return (
                       <button
                         key={c.iso}
                         onClick={() => setSelected(c.iso)}
                         className={cn(
-                          "flex h-20 flex-col gap-0.5 rounded-md border p-1 text-left transition",
+                          "relative flex h-20 flex-col gap-0.5 rounded-md border p-1 text-left transition",
                           c.inMonth ? "bg-card" : "bg-muted/30 text-muted-foreground",
                           selected === c.iso ? "border-primary ring-1 ring-primary" : "border-border",
                         )}
                       >
+                        {status && (
+                          <span
+                            className={cn(
+                              "absolute top-1 right-1 flex size-4 items-center justify-center rounded-full text-[9px] font-bold",
+                              MY_STATUS_BADGE[status].className,
+                            )}
+                            title={MY_STATUS_LEGEND.find((l) => l.status === status)?.label}
+                          >
+                            {MY_STATUS_BADGE[status].label}
+                          </span>
+                        )}
                         <span
                           className={cn(
                             "text-xs font-medium",

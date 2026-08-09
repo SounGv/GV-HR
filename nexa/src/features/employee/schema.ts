@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { listQuerySchema } from "@/lib/api/pagination";
 import { passwordSchema } from "@/lib/auth/password-policy";
+import { DATA_URL_IMAGE_RE } from "@/lib/image-schema";
 
 export const GENDERS = ["MALE", "FEMALE", "OTHER"] as const;
 export const MARITAL = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as const;
@@ -25,6 +26,10 @@ const optional = <T extends z.ZodTypeAny>(inner: T) =>
 
 const optionalDate = optional(z.coerce.date());
 const optionalCuidLike = optional(z.string().uuid());
+// Branch ids aren't validated as strict RFC4122 UUIDs — some seeded/legacy
+// branch ids in this system use human-readable placeholders (e.g. the
+// default HQ branch), same reasoning as qrBranchId in attendance/schema.ts.
+const optionalBranchId = optional(z.string().trim().min(1).max(100));
 
 export const employeeCreateSchema = z.object({
   employeeCode: z.string().trim().min(1, "กรุณากรอกรหัสพนักงาน").max(20),
@@ -33,6 +38,7 @@ export const employeeCreateSchema = z.object({
   firstNameEn: optional(z.string().trim().max(120)),
   lastNameEn: optional(z.string().trim().max(120)),
   nickname: optional(z.string().trim().max(60)),
+  avatarUrl: optional(z.string().max(3_000_000).regex(DATA_URL_IMAGE_RE, "ไฟล์ต้องเป็นรูปภาพ")),
   email: optional(z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง")),
   phone: optional(z.string().trim().max(30)),
 
@@ -41,7 +47,7 @@ export const employeeCreateSchema = z.object({
   nationalId: optional(z.string().trim().max(20)),
   maritalStatus: optional(z.enum(MARITAL)),
 
-  branchId: optionalCuidLike,
+  branchId: optionalBranchId,
   departmentId: optionalCuidLike,
   positionId: optionalCuidLike,
   managerId: optionalCuidLike,

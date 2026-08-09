@@ -6,13 +6,23 @@ import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { sendEmail } from "@/lib/email";
 import { getCompanyProfile } from "@/features/company/service";
-import { computePayroll, periodLabel } from "./calc";
+import { computePayroll, periodLabel, type LineItem } from "./calc";
 import { renderPayslipEmailHtml } from "./payslip-email";
-import type { PayrollListQuery } from "./schema";
+import type { PayrollAdjustInput, PayrollListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
 
 const json = (v: unknown) => v as Prisma.InputJsonValue;
+
+interface ManualAdjustments {
+  earnings: LineItem[];
+  deductions: LineItem[];
+}
+
+function readAdjustments(raw: unknown): ManualAdjustments {
+  const v = raw as Partial<ManualAdjustments> | null | undefined;
+  return { earnings: v?.earnings ?? [], deductions: v?.deductions ?? [] };
+}
 
 const recordSelect = {
   id: true,
@@ -20,6 +30,8 @@ const recordSelect = {
   periodLabel: true,
   earnings: true,
   deductions: true,
+  manualAdjustments: true,
+  note: true,
   gross: true,
   totalDeductions: true,
   net: true,
@@ -67,12 +79,27 @@ export async function generatePayroll(
   });
   const otMap = new Map(otAgg.map((o) => [o.employeeId, o._sum.estimatedAmount ?? 0]));
 
+  // Existing records for this period — read so a re-generate (e.g. after new
+  // OT gets approved) never wipes HR's manual adjustments, and never touches
+  // a payslip that's already been marked PAID.
+  const existing = await prisma.payrollRecord.findMany({
+    where: { companyId, period, employeeId: { in: employees.map((e) => e.id) } },
+    select: { employeeId: true, status: true, manualAdjustments: true },
+  });
+  const existingMap = new Map(existing.map((r) => [r.employeeId, r]));
+
   let count = 0;
 
   for (const emp of employees) {
+    const prior = existingMap.get(emp.id);
+    if (prior?.status === "PAID") continue; // never recompute a finalized payslip
+
+    const adj = readAdjustments(prior?.manualAdjustments);
     const comp = computePayroll({
       baseSalary: Number(emp.baseSalary),
       overtime: otMap.get(emp.id) ?? 0,
+      extraEarnings: adj.earnings,
+      extraDeductions: adj.deductions,
     });
     await prisma.payrollRecord.upsert({
       where: { employeeId_period: { employeeId: emp.id, period } },
@@ -170,6 +197,79 @@ export async function getPayslip(companyId: string, session: AccessClaims, id: s
     throw Forbidden("ไม่มีสิทธิ์ดูสลิปนี้");
   }
   return record;
+}
+
+/**
+ * HR adds/edits ad-hoc earnings & deductions on a DRAFT payslip (allowance,
+ * bonus, salary advance recovery, other) — recomputes the full payslip
+ * (salary + approved OT for the period + these adjustments) so gross/net
+ * stay consistent. Only allowed before the payslip is marked PAID.
+ */
+export async function updatePayrollAdjustments(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  input: PayrollAdjustInput,
+  meta?: Meta,
+) {
+  const record = await prisma.payrollRecord.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, employeeId: true, period: true, periodLabel: true, status: true },
+  });
+  if (!record) throw NotFound("ไม่พบสลิปเงินเดือน");
+  if (record.status === "PAID") throw BadRequest("แก้ไขไม่ได้ — รายการนี้จ่ายแล้ว");
+
+  const employee = await prisma.employee.findFirst({
+    where: { id: record.employeeId, companyId, deletedAt: null },
+    select: { baseSalary: true },
+  });
+  if (!employee?.baseSalary) throw BadRequest("พนักงานยังไม่มีเงินเดือนพื้นฐาน");
+
+  const [y, m] = record.period.split("-").map(Number);
+  const from = new Date(Date.UTC(y, m - 1, 1));
+  const to = new Date(Date.UTC(y, m, 1));
+  const otAgg = await prisma.overtimeRequest.aggregate({
+    where: { companyId, employeeId: record.employeeId, deletedAt: null, status: "APPROVED", date: { gte: from, lt: to } },
+    _sum: { estimatedAmount: true },
+  });
+
+  const adjustments: ManualAdjustments = {
+    earnings: input.extraEarnings ?? [],
+    deductions: input.extraDeductions ?? [],
+  };
+  const comp = computePayroll({
+    baseSalary: Number(employee.baseSalary),
+    overtime: otAgg._sum.estimatedAmount ?? 0,
+    extraEarnings: adjustments.earnings,
+    extraDeductions: adjustments.deductions,
+  });
+
+  const updated = await prisma.payrollRecord.update({
+    where: { id: record.id },
+    data: {
+      earnings: json(comp.earnings),
+      deductions: json(comp.deductions),
+      manualAdjustments: json(adjustments),
+      note: input.note ?? null,
+      gross: comp.gross,
+      totalDeductions: comp.totalDeductions,
+      net: comp.net,
+      updatedById: session.sub,
+    },
+    select: recordWithEmployeeSelect,
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "payroll.adjust",
+    entity: "PayrollRecord",
+    entityId: record.id,
+    after: { extraEarnings: adjustments.earnings, extraDeductions: adjustments.deductions },
+    ...meta,
+  });
+
+  return updated;
 }
 
 /**
@@ -272,6 +372,7 @@ export async function sendPayslipEmails(
         totalDeductions: record.totalDeductions,
         net: record.net,
         status: record.status,
+        note: record.note,
         employee: { employeeCode: record.employee.employeeCode, firstName: record.employee.firstName, lastName: record.employee.lastName },
       },
       company: { name: company.name, legalName: company.legalName, taxId: company.taxId, addressLine: company.addressLine, subDistrict: company.subDistrict, district: company.district, province: company.province, postalCode: company.postalCode, phone: company.phone },

@@ -8,6 +8,8 @@
  *   UI can render friendly errors.
  */
 
+import { CSRF_COOKIE, CSRF_HEADER } from "@/lib/auth/constants";
+
 export interface ApiErrorShape {
   code: string;
   message: string;
@@ -25,6 +27,13 @@ export class ApiError extends Error {
     this.code = body.code;
     this.details = body.details;
   }
+}
+
+/** Reads the (non-httpOnly) CSRF cookie so it can be echoed back as a header. */
+function getCsrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${CSRF_COOKIE}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 let refreshPromise: Promise<boolean> | null = null;
@@ -63,11 +72,13 @@ async function request<T>(
   options: RequestInit = {},
   retry = true,
 ): Promise<T> {
+  const csrfToken = getCsrfToken();
   const res = await fetch(path, {
     ...options,
     credentials: "include",
     headers: {
       ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(csrfToken ? { [CSRF_HEADER]: csrfToken } : {}),
       ...options.headers,
     },
   });

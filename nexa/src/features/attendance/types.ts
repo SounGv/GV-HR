@@ -1,5 +1,5 @@
 export type AttendanceStatus = "PRESENT" | "LATE" | "ABSENT" | "ON_LEAVE";
-export type AttendanceWorkMode = "ONSITE" | "WFH";
+export type AttendanceWorkMode = "ONSITE" | "WFH" | "OUTSIDE";
 export type AttendanceMood = "TERRIBLE" | "BAD" | "OK" | "GOOD" | "EXCELLENT";
 
 export interface AttendanceRecord {
@@ -15,6 +15,7 @@ export interface AttendanceRecord {
   breakEndAt: string | null;
   workMode: AttendanceWorkMode;
   moodOut: AttendanceMood | null;
+  earlyLeaveOut: boolean;
   status: AttendanceStatus;
   note: string | null;
   employee?: {

@@ -10,6 +10,8 @@ import {
 
   CalendarClock,
 
+  Calendar,
+
   Target,
 
   Flag,
@@ -97,6 +99,8 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
       { id: "timeedit", label: "แก้เวลาเข้า-ออกงาน", href: "/workflows/requests/new", icon: Clock3, permission: "workflow:read" },
 
       { id: "shift", label: "ตารางกะ", href: "/shifts", icon: CalendarClock, permission: "shift:read" },
+
+      { id: "calendar", label: "ปฏิทินองค์กร", href: "/calendar", icon: Calendar, permission: "calendar:read" },
 
     ],
 
