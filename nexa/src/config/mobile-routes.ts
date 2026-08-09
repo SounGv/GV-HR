@@ -28,6 +28,8 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/assets": { title: "เอกสารและทรัพย์สิน", backHref: "/services" },
   "/assets/new": { title: "เพิ่มทรัพย์สิน", backHref: "/assets" },
   "/attendance/settings": { title: "สิทธิ์นอกสถานที่", backHref: "/services" },
+  "/attendance/corrections": { title: "แก้ไขเวลาเข้า-ออกงาน", backHref: "/attendance" },
+  "/attendance/corrections/new": { title: "ส่งคำขอแก้ไขเวลา", backHref: "/attendance/corrections" },
   "/admin": { title: "สิทธิ์การเข้าถึง", backHref: "/services" },
   "/admin/roles/new": { title: "สร้างบทบาท", backHref: "/admin" },
   "/branches": { title: "สาขา", backHref: "/company" },
@@ -73,7 +75,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/training/new": { title: "สร้างหลักสูตร", backHref: "/training" },
   "/workflows": { title: "อนุมัติเอกสาร", backHref: "/services" },
   "/workflows/new": { title: "สร้างเวิร์กโฟลว์", backHref: "/workflows" },
-  "/workflows/requests/new": { title: "แก้เวลาเข้า-ออกงาน", backHref: "/services" },
+  "/workflows/requests/new": { title: "ส่งคำขออนุมัติ", backHref: "/workflows" },
 };
 
 const PATTERNS: RoutePattern[] = [
@@ -86,6 +88,7 @@ const PATTERNS: RoutePattern[] = [
   { pattern: /^\/payroll\/[^/]+$/, meta: { title: "รายละเอียดสลิป", backHref: "/payroll" } },
   { pattern: /^\/leave\/[^/]+$/, meta: { title: "รายละเอียดการลา", backHref: "/leave" } },
   { pattern: /^\/overtime\/[^/]+$/, meta: { title: "รายละเอียด OT", backHref: "/overtime" } },
+  { pattern: /^\/attendance\/corrections\/[^/]+$/, meta: { title: "รายละเอียดคำขอแก้ไขเวลา", backHref: "/attendance/corrections" } },
   { pattern: /^\/expenses\/[^/]+$/, meta: { title: "รายละเอียดเบิกจ่าย", backHref: "/expenses" } },
   { pattern: /^\/kpi\/[^/]+\/progress$/, meta: { title: "บันทึกความคืบหน้า KPI", backHref: "/kpi" } },
   { pattern: /^\/kpi\/[^/]+\/edit$/, meta: { title: "แก้ไข KPI", backHref: "/kpi" } },

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus, Check, X, GitBranch, Pencil, Trash2, Send, Inbox } from "lucide-react";
 import { toast } from "sonner";
 
@@ -88,9 +89,11 @@ function RequestCard({
 export function WorkflowView() {
   const { can } = useAuth();
   const canManage = can("workflow:create");
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams.get("tab") === "inbox" ? "inbox" : "me";
 
   return (
-    <Tabs defaultValue="me" className="space-y-4">
+    <Tabs defaultValue={defaultTab} className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">คำขอของฉัน</TabsTrigger>
         <TabsTrigger value="inbox">รอฉันอนุมัติ</TabsTrigger>

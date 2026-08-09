@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Timer, CalendarDays, ReceiptText, Wallet, type LucideIcon } from "lucide-react";
+import { Timer, CalendarDays, ReceiptText, Wallet, PencilLine, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 
 interface Action {
@@ -12,6 +12,7 @@ interface Action {
 }
 
 const ACTIONS: Action[] = [
+  { label: "แก้ไขเวลา", href: "/attendance/corrections", icon: PencilLine, permission: "attendance:read" },
   { label: "ขอ OT", href: "/overtime", icon: Timer, permission: "overtime:read" },
   { label: "ขอลา", href: "/leave", icon: CalendarDays, permission: "leave:read" },
   { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read" },

@@ -96,7 +96,7 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
 
       { id: "leave", label: "ขอลา", href: "/leave/new", icon: CalendarMinus, permission: "leave:read" },
 
-      { id: "timeedit", label: "แก้เวลาเข้า-ออกงาน", href: "/workflows/requests/new", icon: Clock3, permission: "workflow:read" },
+      { id: "timeedit", label: "แก้เวลาเข้า-ออกงาน", href: "/attendance/corrections/new", icon: Clock3, permission: "attendance:create" },
 
       { id: "shift", label: "ตารางกะ", href: "/shifts", icon: CalendarClock, permission: "shift:read" },
 
@@ -176,7 +176,7 @@ export const MOBILE_HR_GROUPS: MobileMenuGroup[] = [
 
     items: [
 
-      { id: "approvals", label: "อนุมัติเอกสาร", href: "/workflows", icon: FileCheck, permission: "workflow:read" },
+      { id: "approvals", label: "อนุมัติเอกสาร", href: "/workflows?tab=inbox", icon: FileCheck, permission: "workflow:read" },
 
       { id: "attendanceall", label: "เข้างานทั้งบริษัท", href: "/reports?view=attendance", icon: Users, permission: "report:read" },
 
