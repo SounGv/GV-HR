@@ -147,6 +147,65 @@ export async function getReview(companyId: string, session: AccessClaims, id: st
   return record;
 }
 
+export interface DepartmentSummaryRow {
+  department: string;
+  employeeCount: number;
+  reviewedCount: number;
+  averageScore: number;
+  bandCounts: Record<string, number>;
+}
+
+/**
+ * Company-wide performance rollup by department — HR-level only. Uses each
+ * employee's most recent PerformanceReview (if any) so it reflects current
+ * standing rather than every historical review ever filed.
+ */
+export async function getDepartmentSummary(companyId: string, session: AccessClaims): Promise<DepartmentSummaryRow[]> {
+  if (!isHrLevel(session)) throw Forbidden("ดูสรุปผลระดับแผนกได้เฉพาะฝ่ายบุคคล");
+
+  const [employees, reviews] = await Promise.all([
+    prisma.employee.findMany({
+      where: { companyId, deletedAt: null },
+      select: { id: true, department: { select: { name: true } } },
+    }),
+    prisma.performanceReview.findMany({
+      where: { companyId, deletedAt: null },
+      select: { employeeId: true, overallScore: true, band: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  const latestByEmployee = new Map<string, { overallScore: number; band: string }>();
+  for (const r of reviews) {
+    if (!latestByEmployee.has(r.employeeId)) {
+      latestByEmployee.set(r.employeeId, { overallScore: r.overallScore, band: r.band });
+    }
+  }
+
+  const byDept = new Map<string, { employeeCount: number; scores: number[]; bandCounts: Record<string, number> }>();
+  for (const e of employees) {
+    const deptName = e.department?.name ?? "ไม่มีแผนก";
+    const row = byDept.get(deptName) ?? { employeeCount: 0, scores: [], bandCounts: {} };
+    row.employeeCount += 1;
+    const latest = latestByEmployee.get(e.id);
+    if (latest) {
+      row.scores.push(latest.overallScore);
+      row.bandCounts[latest.band] = (row.bandCounts[latest.band] ?? 0) + 1;
+    }
+    byDept.set(deptName, row);
+  }
+
+  return [...byDept.entries()]
+    .map(([department, v]) => ({
+      department,
+      employeeCount: v.employeeCount,
+      reviewedCount: v.scores.length,
+      averageScore: v.scores.length ? Math.round((v.scores.reduce((s, x) => s + x, 0) / v.scores.length) * 100) / 100 : 0,
+      bandCounts: v.bandCounts,
+    }))
+    .sort((a, b) => b.averageScore - a.averageScore);
+}
+
 export async function updateReview(
   companyId: string,
   session: AccessClaims,

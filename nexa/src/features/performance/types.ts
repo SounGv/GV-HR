@@ -27,6 +27,14 @@ export interface PerformanceReview {
   };
 }
 
+export interface DepartmentSummaryRow {
+  department: string;
+  employeeCount: number;
+  reviewedCount: number;
+  averageScore: number;
+  bandCounts: Record<string, number>;
+}
+
 export interface ReviewFormValues {
   employeeId: string;
   cycle: string;

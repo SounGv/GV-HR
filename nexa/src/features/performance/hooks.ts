@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createReview, fetchReviews, updateReview } from "./api";
+import { createReview, fetchDepartmentSummary, fetchReviews, updateReview } from "./api";
 import type { ReviewFormValues, ReviewScope } from "./types";
 
 export const performanceKeys = {
   all: ["performance"] as const,
   list: (scope: ReviewScope) => ["performance", "list", scope] as const,
+  departmentSummary: ["performance", "department-summary"] as const,
 };
 
 export function useReviews(scope: ReviewScope) {
@@ -14,6 +15,13 @@ export function useReviews(scope: ReviewScope) {
     queryKey: performanceKeys.list(scope),
     queryFn: () => fetchReviews(scope),
     placeholderData: (prev) => prev,
+  });
+}
+
+export function useDepartmentSummary() {
+  return useQuery({
+    queryKey: performanceKeys.departmentSummary,
+    queryFn: () => fetchDepartmentSummary(),
   });
 }
 

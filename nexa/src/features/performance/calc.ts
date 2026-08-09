@@ -1,6 +1,10 @@
 export { scoreBand, bandTone } from "@/lib/scoring";
 
-/** Standard competency set assessed in every review (each scored 1–5). */
+/**
+ * Fallback competency set — only used when the org hasn't configured any
+ * competencies yet (see the `Competency` model), and as the fixed column
+ * set for the bulk CSV import template.
+ */
 export const COMPETENCIES = [
   "การทำงานเป็นทีม",
   "ความรับผิดชอบ",
@@ -8,6 +12,19 @@ export const COMPETENCIES = [
   "คุณภาพงาน",
   "ความคิดริเริ่ม",
 ] as const;
+
+/**
+ * What each point on the shared 1–5 scale means — shown next to the score
+ * inputs so raters don't have to guess a standard. Anchored to the same
+ * thresholds as `scoreBand()`.
+ */
+export const SCORE_RUBRIC: { score: number; label: string; desc: string }[] = [
+  { score: 5, label: "ดีเยี่ยม", desc: "โดดเด่นกว่าที่คาดหวังมาก เป็นแบบอย่างให้ผู้อื่นได้" },
+  { score: 4, label: "ดี", desc: "ทำได้สูงกว่าที่คาดหวัง" },
+  { score: 3, label: "ปานกลาง", desc: "เป็นไปตามที่คาดหวัง" },
+  { score: 2, label: "ต้องพัฒนา", desc: "ต่ำกว่าที่คาดหวัง ต้องปรับปรุง" },
+  { score: 1, label: "ต้องปรับปรุงเร่งด่วน", desc: "ไม่เป็นไปตามที่คาดหวังอย่างมาก" },
+];
 
 export interface Competency {
   name: string;

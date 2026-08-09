@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Info } from "lucide-react";
 import { toast } from "sonner";
 
 import { FormPageShell } from "@/components/shared/form-page-shell";
@@ -27,7 +30,8 @@ import {
 } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/client";
 import { useOrgOptions } from "@/features/employee/hooks";
-import { COMPETENCIES, computeOverall, scoreBand } from "./calc";
+import { useCompetencies } from "@/features/competency/hooks";
+import { COMPETENCIES, SCORE_RUBRIC, computeOverall, scoreBand } from "./calc";
 import { useCreateReview, useUpdateReview } from "./hooks";
 
 const FORM_ID = "review-form";
@@ -63,9 +67,18 @@ export function ReviewFormPage({ review }: { review?: ReviewInit }) {
   const router = useRouter();
   const isEdit = !!review;
   const { data: orgData } = useOrgOptions();
+  const { data: compData, isLoading: compsLoading } = useCompetencies();
   const createMut = useCreateReview();
   const updateMut = useUpdateReview(review?.id ?? "");
   const pending = createMut.isPending || updateMut.isPending;
+
+  // Configured competencies (HR-managed) take priority; the fixed list is
+  // only a fallback for orgs that haven't set any up yet.
+  const configured = compData?.data ?? [];
+  const competencyDisplay =
+    configured.length > 0
+      ? configured.map((c) => ({ name: c.name, category: c.category?.name ?? null }))
+      : COMPETENCIES.map((name) => ({ name, category: null as string | null }));
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -91,8 +104,24 @@ export function ReviewFormPage({ review }: { review?: ReviewInit }) {
         },
   });
 
+  // Once the real (HR-configured) competency list loads, rebuild the
+  // competencies field to match it — carrying over any already-saved score
+  // by name. Only happens once so it never clobbers in-progress edits.
+  const rebuiltRef = useRef(false);
+  useEffect(() => {
+    if (rebuiltRef.current || compsLoading || configured.length === 0) return;
+    rebuiltRef.current = true;
+    const savedByName = new Map((review?.competencies ?? []).map((c) => [c.name, c.score]));
+    form.setValue(
+      "competencies",
+      configured.map((c) => ({ name: c.name, score: savedByName.get(c.name) ?? 3 })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compsLoading, configured]);
+
   const comps = form.watch("competencies");
   const overall = computeOverall(comps ?? []);
+  const [showRubric, setShowRubric] = useState(false);
 
   async function onSubmit(values: FormSchema) {
     try {
@@ -177,25 +206,66 @@ export function ReviewFormPage({ review }: { review?: ReviewInit }) {
 
           <div className="space-y-2 rounded-lg border border-border p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">สมรรถนะ (1–5)</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">สมรรถนะ (1–5)</span>
+                <button
+                  type="button"
+                  onClick={() => setShowRubric((v) => !v)}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <Info className="size-3.5" /> เกณฑ์ให้คะแนน
+                </button>
+              </div>
               <span className="text-sm text-muted-foreground">
                 รวม <span className="font-semibold text-foreground">{overall.toFixed(1)}</span> ·{" "}
                 {scoreBand(overall)}
               </span>
             </div>
-            {COMPETENCIES.map((name, i) => (
-              <div key={name} className="flex items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">{name}</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={5}
-                  step={0.5}
-                  className="w-20"
-                  {...form.register(`competencies.${i}.score`, { valueAsNumber: true })}
-                />
+
+            {showRubric && (
+              <div className="grid gap-1.5 rounded-md bg-muted/50 p-2.5 text-xs">
+                {SCORE_RUBRIC.map((r) => (
+                  <div key={r.score} className="flex gap-2">
+                    <span className="w-4 shrink-0 text-right font-semibold text-foreground">{r.score}</span>
+                    <span className="w-32 shrink-0 font-medium text-foreground">{r.label}</span>
+                    <span className="text-muted-foreground">{r.desc}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            {competencyDisplay.map((c, i) => {
+              const prevCategory = i > 0 ? competencyDisplay[i - 1].category : undefined;
+              return (
+                <div key={`${c.name}-${i}`}>
+                  {c.category && c.category !== prevCategory && (
+                    <p className="mb-1 mt-3 text-xs font-semibold text-muted-foreground first:mt-0">
+                      {c.category}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">{c.name}</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={5}
+                      step={0.5}
+                      className="w-20"
+                      {...form.register(`competencies.${i}.score`, { valueAsNumber: true })}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            {!compsLoading && configured.length === 0 && (
+              <p className="pt-1 text-xs text-muted-foreground">
+                ยังไม่มีหัวข้อสมรรถนะที่ตั้งค่าไว้ ใช้หัวข้อเริ่มต้นอยู่ —{" "}
+                <Link href="/performance/competencies/new" className="text-primary hover:underline">
+                  ตั้งค่าหัวข้อของบริษัทเอง
+                </Link>
+              </p>
+            )}
           </div>
 
           <FormField

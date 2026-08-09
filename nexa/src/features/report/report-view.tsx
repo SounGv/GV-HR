@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import { REPORT_LABELS, REPORT_TYPES, type ReportType } from "./schema";
 import { useReport } from "./hooks";
+import { ReportSummaryChart } from "./report-summary-chart";
 import type { ReportResult } from "./types";
 
 const ALL_DEPT = "ALL";
@@ -240,6 +241,10 @@ export function ReportView() {
           )}
         </div>
       </div>
+
+      {result && result.summary && result.summary.length > 0 && (
+        <ReportSummaryChart data={result.summary} label={result.summaryLabel} unit={result.summaryUnit} />
+      )}
 
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
