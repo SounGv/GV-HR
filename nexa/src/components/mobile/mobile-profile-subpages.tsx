@@ -24,9 +24,17 @@ function getServerHashSnapshot() {
 export function MobileProfileSubpages() {
   const hash = useSyncExternalStore(subscribeHash, getHashSnapshot, getServerHashSnapshot);
 
+  // Back needs to actually clear the hash — a Next.js <Link> (even to the
+  // same path minus the hash) navigates via history.pushState, which does
+  // NOT fire the native `hashchange` event this view depends on, so the
+  // subpage would stay stuck on screen. history.back() pops the entry the
+  // hash-set itself pushed, which does fire hashchange like normal browser
+  // back navigation.
+  const goBack = () => window.history.back();
+
   if (hash === "#profile-form") {
     return (
-      <MobileScreen title="ตั้งค่าโปรไฟล์" backHref="/profile" contentClassName="space-y-4 p-4">
+      <MobileScreen title="ตั้งค่าโปรไฟล์" onBack={goBack} contentClassName="space-y-4 p-4">
         <SelfProfileForm />
       </MobileScreen>
     );
@@ -34,7 +42,7 @@ export function MobileProfileSubpages() {
 
   if (hash === "#security") {
     return (
-      <MobileScreen title="ความปลอดภัย" backHref="/profile" contentClassName="space-y-4 p-4">
+      <MobileScreen title="ความปลอดภัย" onBack={goBack} contentClassName="space-y-4 p-4">
         <ChangePasswordForm />
         <TwoFactorSettings />
         <SessionListView />

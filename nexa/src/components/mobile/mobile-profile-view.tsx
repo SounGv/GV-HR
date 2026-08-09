@@ -16,8 +16,6 @@ import {
 
 } from "lucide-react";
 
-import Link from "next/link";
-
 import { useAuth } from "@/features/auth/auth-context";
 
 import { fullName } from "@/lib/format";
@@ -62,8 +60,8 @@ export function MobileProfileView() {
 
       <MobileModuleCard className="text-center">
 
-        <Link
-          href="/profile#profile-form"
+        <a
+          href="#profile-form"
           className="mx-auto mb-2.5 flex size-16 items-center justify-center overflow-hidden rounded-full bg-accent"
           aria-label="แก้ไขรูปโปรไฟล์"
         >
@@ -73,7 +71,7 @@ export function MobileProfileView() {
           ) : (
             <User className="size-7 text-primary" />
           )}
-        </Link>
+        </a>
 
         <p className="text-[15px] font-bold text-foreground">{displayName}</p>
 
@@ -115,9 +113,9 @@ export function MobileProfileView() {
 
       <MobileModuleCard className="overflow-hidden p-0">
 
-        <Link
+        <a
 
-          href="/profile#profile-form"
+          href="#profile-form"
 
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
 
@@ -127,11 +125,11 @@ export function MobileProfileView() {
 
           แก้ไขโปรไฟล์ / รูปประจำตัว
 
-        </Link>
+        </a>
 
-        <Link
+        <a
 
-          href="/profile#profile-form"
+          href="#profile-form"
 
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
 
@@ -141,11 +139,11 @@ export function MobileProfileView() {
 
           ภาษา — ไทย
 
-        </Link>
+        </a>
 
-        <Link
+        <a
 
-          href="/profile#security"
+          href="#security"
 
           className="flex items-center gap-2.5 px-3.5 py-3 text-[13px] active:bg-muted"
 
@@ -155,7 +153,7 @@ export function MobileProfileView() {
 
           การแจ้งเตือน — เปิด
 
-        </Link>
+        </a>
 
       </MobileModuleCard>
 
