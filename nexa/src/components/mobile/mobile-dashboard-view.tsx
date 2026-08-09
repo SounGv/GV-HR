@@ -5,6 +5,7 @@ import { Bell, CalendarDays, Wallet, Star } from "lucide-react";
 import { useNotifications } from "@/features/notification/hooks";
 import { ClockCard } from "@/features/attendance/clock-card";
 import { useMobileMenuGroups } from "./use-mobile-menu-groups";
+import { MobileMenuTileGrid } from "./mobile-menu-tile-grid";
 
 export interface MobileDashboardSnapshot {
   clockInAt: string | null;
@@ -68,7 +69,7 @@ export function MobileDashboardView({
         </Link>
       </div>
 
-      <div className="-mt-3 space-y-4 px-4 pb-4">
+      <div className="-mt-3 space-y-5 px-4 pb-4">
         <ClockCard />
 
         {mine && (
@@ -101,29 +102,7 @@ export function MobileDashboardView({
           </div>
         )}
 
-        {groups.map((group) => (
-          <section key={group.title}>
-            <h2 className="mb-2.5 px-1 text-xs font-semibold text-muted-foreground">{group.title}</h2>
-            <div className="rounded-xl border border-border bg-card px-1.5 py-4">
-              <div className="grid grid-cols-4 gap-x-1 gap-y-5">
-                {group.items.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className="flex flex-col items-center gap-2 px-1 text-center transition active:scale-95"
-                  >
-                    <span className="flex size-[42px] items-center justify-center rounded-full border-[1.5px] border-primary bg-card text-primary">
-                      <item.icon className="size-[19px]" strokeWidth={2} />
-                    </span>
-                    <span className="text-[11px] font-semibold leading-snug text-foreground">
-                      {item.label}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        ))}
+        <MobileMenuTileGrid groups={groups} />
       </div>
     </div>
   );
