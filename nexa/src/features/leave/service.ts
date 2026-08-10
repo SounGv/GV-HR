@@ -47,7 +47,7 @@ function isHrLevel(session: AccessClaims): boolean {
 }
 
 /** Remaining days for a paid leave type this year — quota if no balance row exists yet. */
-async function getRemainingBalance(
+export async function getRemainingBalance(
   companyId: string,
   employeeId: string,
   type: string,
