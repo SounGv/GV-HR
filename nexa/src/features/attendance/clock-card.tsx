@@ -473,7 +473,7 @@ export function ClockCard() {
         {isLoading ? (
           <Skeleton className="h-14 w-full bg-white/10" />
         ) : hasOut ? (
-          <div className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-success/15 text-success">
+          <div className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-success text-white">
             <CheckCircle2 className="size-5" /> ลงเวลาครบแล้ววันนี้
           </div>
         ) : (
@@ -579,7 +579,7 @@ export function ClockCard() {
             variant="outline"
             className={cn(
               "h-10 w-full gap-2 rounded-xl border-white/15 bg-white/5 text-sm font-medium text-white hover:bg-white/10",
-              onBreak && "border-warning/40 bg-warning/15 text-warning hover:bg-warning/20",
+              onBreak && "border-warning bg-warning text-warning-foreground hover:bg-warning/90",
             )}
             disabled={startBreakMut.isPending || endBreakMut.isPending}
             onClick={toggleBreak}

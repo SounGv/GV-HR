@@ -53,10 +53,10 @@ export function MobileDashboardView({
     <div className="min-h-full bg-muted md:hidden">
       <div className="flex items-start justify-between bg-sidebar px-4 pt-4 pb-6 text-white">
         <div>
-          <p className="text-sm opacity-80">
+          <p className="text-sm font-medium text-white">
             {greeting}, {name} 👋
           </p>
-          <p className="mt-0.5 text-xs opacity-70">{companyName}</p>
+          <p className="mt-0.5 text-xs text-slate-300">{companyName}</p>
         </div>
         <Link
           href="/notifications"
