@@ -257,6 +257,12 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
             {aiGenerated && (
               <p className="flex items-center gap-1 text-xs text-primary">ออกแบบด้วย AI — สามารถปรับน้ำหนักหรือเพิ่ม/ลดรายการได้ตามต้องการ</p>
             )}
+            {Object.keys(selected).length === 0 && (
+              <p className="rounded-lg bg-destructive-muted px-3 py-2 text-xs font-medium text-destructive">
+                ยังไม่ได้เลือกสมรรถนะ — ต้องเลือกอย่างน้อย 1 รายการก่อนจึงจะสร้างแคมเปญได้ (ถ้าใช้ AI ออกแบบให้ อย่าลืมกด
+                &ldquo;ใช้ผลลัพธ์นี้&rdquo; ก่อนกด &ldquo;สร้างแคมเปญ&rdquo;)
+              </p>
+            )}
             {competencies.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 ยังไม่มีสมรรถนะในคลัง —{" "}

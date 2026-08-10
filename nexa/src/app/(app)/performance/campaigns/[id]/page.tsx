@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Sparkles, Target } from "lucide-react";
+import { Pencil, Sparkles, Target, Info } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
@@ -58,6 +58,19 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
           ) : undefined
         }
       />
+
+      {canManage && campaign.status === "DRAFT" && (
+        <Card className="gap-2 border-warning/30 bg-warning/5 p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-warning">
+            <Info className="size-4" /> แคมเปญนี้ยังเป็นฉบับร่าง
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {campaign.participantCount === 0
+              ? "ยังไม่มีผู้เข้าร่วม — เลื่อนลงไปกด \"เพิ่มผู้เข้าร่วม\" เพื่อเลือกคนที่จะประเมิน"
+              : "ผู้ประเมินยังไม่เห็นงานหรือได้รับการแจ้งเตือนใดๆ จนกว่าจะกด \"เปิดใช้งานแคมเปญ\" ที่มุมขวาบน"}
+          </p>
+        </Card>
+      )}
 
       {campaign.aiGenerated && campaign.aiRationale && (
         <Card className="gap-2 border-primary/30 bg-primary/5 p-4">
