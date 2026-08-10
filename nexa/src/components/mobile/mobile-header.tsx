@@ -46,7 +46,7 @@ export function MobileHeader({
 
       className={cn(
 
-        "sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2.5 bg-primary px-3 md:hidden",
+        "sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2.5 bg-sidebar px-3 md:hidden",
 
         className,
 
@@ -64,7 +64,7 @@ export function MobileHeader({
 
             aria-label="ย้อนกลับ"
 
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-primary-foreground transition active:scale-95"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition active:scale-95"
 
           >
 
@@ -82,7 +82,7 @@ export function MobileHeader({
 
             onClick={onBack}
 
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-primary-foreground transition active:scale-95"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition active:scale-95"
 
           >
 
@@ -92,9 +92,9 @@ export function MobileHeader({
 
         ))}
 
-      <h1 className="min-w-0 flex-1 truncate text-base font-bold text-primary-foreground">{title}</h1>
+      <h1 className="min-w-0 flex-1 truncate text-base font-bold text-white">{title}</h1>
 
-      {trailing && <div className="shrink-0 text-primary-foreground">{trailing}</div>}
+      {trailing && <div className="shrink-0 text-white">{trailing}</div>}
 
     </header>
 

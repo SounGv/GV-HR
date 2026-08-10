@@ -51,7 +51,7 @@ export function MobileDashboardView({
 
   return (
     <div className="min-h-full bg-muted md:hidden">
-      <div className="flex items-start justify-between bg-primary px-4 pt-4 pb-6 text-primary-foreground">
+      <div className="flex items-start justify-between bg-sidebar px-4 pt-4 pb-6 text-white">
         <div>
           <p className="text-sm opacity-80">
             {greeting}, {name} 👋
@@ -65,7 +65,7 @@ export function MobileDashboardView({
         >
           <Bell className="size-4.5" />
           {unread > 0 && (
-            <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-white ring-2 ring-primary">
+            <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-white ring-2 ring-sidebar">
               {unread > 9 ? "9+" : unread}
             </span>
           )}
