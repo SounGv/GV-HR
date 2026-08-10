@@ -27,14 +27,14 @@ const SOURCE_STYLE: Record<CalendarSource, string> = {
   leave: "bg-warning/15 text-warning",
   training: "bg-primary/15 text-primary",
   event: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  evaluation: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+  evaluation: "bg-lime-600/15 text-lime-700 dark:text-lime-400",
 };
 const SOURCE_DOT: Record<CalendarSource, string> = {
   holiday: "bg-destructive",
   leave: "bg-warning",
   training: "bg-primary",
   event: "bg-emerald-500",
-  evaluation: "bg-violet-500",
+  evaluation: "bg-lime-600",
 };
 const SOURCE_LABEL: Record<CalendarSource, string> = {
   holiday: "วันหยุด",

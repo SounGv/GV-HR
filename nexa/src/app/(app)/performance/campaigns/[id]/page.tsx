@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Sparkles, Target } from "lucide-react";
+import { Pencil, Sparkles, Target, Info } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
@@ -13,6 +13,8 @@ import { formatDate } from "@/lib/format";
 import { getCampaign } from "@/features/campaign/service";
 import { ParticipantList } from "@/features/campaign/participant-list";
 import { AddParticipantsDialog } from "@/features/campaign/add-participants-dialog";
+import { CampaignStatusActions } from "@/features/campaign/campaign-status-actions";
+import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 
 export const metadata: Metadata = { title: "รายละเอียดแคมเปญ" };
 
@@ -41,13 +43,35 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
           </span>
         }
         actions={
-          canManage && campaign.status === "DRAFT" ? (
-            <Button variant="outline" size="sm" render={<Link href={`/performance/campaigns/${campaign.id}/edit`} />}>
-              <Pencil className="size-4" /> แก้ไข
-            </Button>
+          canManage ? (
+            <>
+              {campaign.status === "DRAFT" && (
+                <Button variant="outline" size="sm" render={<Link href={`/performance/campaigns/${campaign.id}/edit`} />}>
+                  <Pencil className="size-4" /> แก้ไข
+                </Button>
+              )}
+              <CampaignStatusActions
+                campaignId={campaign.id}
+                status={campaign.status}
+                participantCount={campaign.participantCount}
+              />
+            </>
           ) : undefined
         }
       />
+
+      {canManage && campaign.status === "DRAFT" && (
+        <Card className="gap-2 border-warning/30 bg-warning/5 p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-warning">
+            <Info className="size-4" /> แคมเปญนี้ยังเป็นฉบับร่าง
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {campaign.participantCount === 0
+              ? "ยังไม่มีผู้เข้าร่วม — เลื่อนลงไปกด \"เพิ่มผู้เข้าร่วม\" เพื่อเลือกคนที่จะประเมิน"
+              : "ผู้ประเมินยังไม่เห็นงานหรือได้รับการแจ้งเตือนใดๆ จนกว่าจะกด \"เปิดใช้งานแคมเปญ\" ที่มุมขวาบน"}
+          </p>
+        </Card>
+      )}
 
       {campaign.aiGenerated && campaign.aiRationale && (
         <Card className="gap-2 border-primary/30 bg-primary/5 p-4">
@@ -61,16 +85,20 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Target className="size-4" /> สมรรถนะที่ใช้ประเมิน
+            <Target className="size-4" /> {campaign.templateSnapshot ? `แบบประเมิน: ${campaign.templateSnapshot.name}` : "สมรรถนะที่ใช้ประเมิน"}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1.5">
-          {campaign.competencies.map((c) => (
-            <div key={c.competencyId} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
-              <span className="font-medium text-foreground">{c.name}</span>
-              <span className="text-muted-foreground">น้ำหนัก {c.weight}</span>
-            </div>
-          ))}
+        <CardContent className={campaign.templateSnapshot ? undefined : "space-y-1.5"}>
+          {campaign.templateSnapshot ? (
+            <TemplateFormRenderer sections={campaign.templateSnapshot.sections} mode="preview" />
+          ) : (
+            campaign.competencies.map((c) => (
+              <div key={c.competencyId} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
+                <span className="font-medium text-foreground">{c.name}</span>
+                <span className="text-muted-foreground">น้ำหนัก {c.weight}</span>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

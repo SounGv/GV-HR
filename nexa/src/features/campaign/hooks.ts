@@ -9,6 +9,7 @@ import {
   fetchCampaign,
   fetchCampaigns,
   fetchEmployeeEvaluationHistory,
+  fetchMyPendingResponses,
   fetchParticipant,
   finalizeParticipant,
   generateAiDesign,
@@ -26,7 +27,12 @@ export const campaignKeys = {
   detail: (id: string) => ["campaigns", "detail", id] as const,
   participant: (id: string) => ["campaigns", "participant", id] as const,
   employeeHistory: (employeeId: string) => ["campaigns", "employee-history", employeeId] as const,
+  myPending: ["campaigns", "my-pending"] as const,
 };
+
+export function useMyPendingResponses() {
+  return useQuery({ queryKey: campaignKeys.myPending, queryFn: fetchMyPendingResponses });
+}
 
 export function useCampaigns(status?: string) {
   return useQuery({

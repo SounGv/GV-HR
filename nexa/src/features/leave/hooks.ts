@@ -16,11 +16,12 @@ export const leaveKeys = {
   balances: ["leave", "balances"] as const,
 };
 
-export function useLeave(scope: LeaveScope, status?: LeaveStatus) {
+export function useLeave(scope: LeaveScope, status?: LeaveStatus, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: leaveKeys.list(scope, status),
     queryFn: () => fetchLeave(scope, status),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
   });
 }
 

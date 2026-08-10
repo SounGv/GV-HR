@@ -9,16 +9,24 @@ const raterTypesSchema = z
   .array(z.enum(["SELF", "MANAGER", "PEER", "UPWARD"]))
   .min(1, "ต้องเลือกทิศทางการประเมินอย่างน้อย 1 แบบ");
 
-export const campaignCreateSchema = z.object({
+const campaignCreateBaseSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อแคมเปญ").max(200),
   cycle: z.string().trim().min(1, "กรุณาระบุรอบการประเมิน").max(40),
   startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่ม"),
   endDate: z.string().min(1, "กรุณาเลือกวันที่สิ้นสุด"),
   raterTypes: raterTypesSchema.default(["SELF", "MANAGER"]),
-  competencies: z.array(competencyWeightSchema).min(1, "ต้องมีอย่างน้อย 1 สมรรถนะ"),
+  // Mutually exclusive — a campaign either scores against the new Evaluation
+  // Template (Section -> Question) or the legacy Competency list, never both.
+  templateId: z.string().uuid().optional(),
+  competencies: z.array(competencyWeightSchema).optional(),
   aiGenerated: z.boolean().optional(),
   aiRationale: z.string().max(2000).optional(),
 });
+
+export const campaignCreateSchema = campaignCreateBaseSchema.refine(
+  (v) => !!v.templateId || (v.competencies && v.competencies.length > 0),
+  { message: "ต้องเลือกแบบประเมิน (Template) หรือสมรรถนะอย่างน้อย 1 รายการ", path: ["competencies"] },
+);
 export type CampaignCreateInput = z.infer<typeof campaignCreateSchema>;
 
 export const campaignUpdateSchema = z.object({
@@ -42,14 +50,23 @@ export const addParticipantsSchema = z.object({
 });
 export type AddParticipantsInput = z.infer<typeof addParticipantsSchema>;
 
-export const submitResponseSchema = z.object({
-  scores: z
-    .array(z.object({ competencyId: z.string().uuid(), score: z.coerce.number().min(1, "1-5").max(5, "1-5") }))
-    .min(1),
-  strengths: z.string().max(1000).optional(),
-  improvements: z.string().max(1000).optional(),
-  summary: z.string().max(1000).optional(),
-});
+export const submitResponseSchema = z
+  .object({
+    // Legacy Competency-based path.
+    scores: z
+      .array(z.object({ competencyId: z.string().uuid(), score: z.coerce.number().min(1, "1-5").max(5, "1-5") }))
+      .optional(),
+    // New Template-based path — value is an option value (resolved to a
+    // score server-side) or free text for LONG_TEXT questions.
+    answers: z.array(z.object({ questionId: z.string(), value: z.string().max(2000) })).optional(),
+    strengths: z.string().max(1000).optional(),
+    improvements: z.string().max(1000).optional(),
+    summary: z.string().max(1000).optional(),
+  })
+  .refine((v) => (v.scores && v.scores.length > 0) || (v.answers && v.answers.length > 0), {
+    message: "กรุณาตอบคำถามอย่างน้อย 1 ข้อ",
+    path: ["answers"],
+  });
 export type SubmitResponseInput = z.infer<typeof submitResponseSchema>;
 
 export const inviteRaterSchema = z.object({

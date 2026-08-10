@@ -33,6 +33,7 @@ import { ApiError } from "@/lib/api/client";
 import { useDepartments } from "@/features/organization/hooks";
 import { useCompetencies } from "@/features/competency/hooks";
 import { groupByCategory } from "@/lib/competency-grouping";
+import { useEvaluationTemplates } from "@/features/evaluation-template/hooks";
 import { useCreateScheduleTemplate, useUpdateScheduleTemplate } from "./hooks";
 import type { RaterType, ScheduleTemplateDetail } from "./types";
 
@@ -69,6 +70,11 @@ export function ScheduleTemplateFormPage({ template }: { template?: ScheduleTemp
   const { data: competencyData } = useCompetencies();
   const competencies = competencyData?.data ?? [];
   const groupedCompetencies = groupByCategory(competencies);
+  const { data: templateData } = useEvaluationTemplates("ACTIVE");
+  const activeTemplates = templateData?.data ?? [];
+
+  const [useEvalTemplate, setUseEvalTemplate] = useState(!!template?.evaluationTemplate);
+  const [evaluationTemplateId, setEvaluationTemplateId] = useState(template?.evaluationTemplate?.id ?? "");
 
   const [selected, setSelected] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
@@ -113,8 +119,12 @@ export function ScheduleTemplateFormPage({ template }: { template?: ScheduleTemp
   });
 
   async function onSubmit(values: FormSchema) {
+    if (useEvalTemplate && !evaluationTemplateId) {
+      toast.error("กรุณาเลือกแบบประเมิน (Template)");
+      return;
+    }
     const competencyList = Object.entries(selected).map(([competencyId, weight]) => ({ competencyId, weight }));
-    if (competencyList.length === 0) {
+    if (!useEvalTemplate && competencyList.length === 0) {
       toast.error("กรุณาเลือกสมรรถนะอย่างน้อย 1 รายการ");
       return;
     }
@@ -130,7 +140,7 @@ export function ScheduleTemplateFormPage({ template }: { template?: ScheduleTemp
       nextRunAt: values.nextRunAt,
       active: values.active,
       raterTypes,
-      competencies: competencyList,
+      ...(useEvalTemplate ? { evaluationTemplateId } : { competencies: competencyList }),
     };
     try {
       if (isEdit) {
@@ -289,6 +299,40 @@ export function ScheduleTemplateFormPage({ template }: { template?: ScheduleTemp
             )}
           />
 
+          <Card className="flex-row items-center justify-between gap-2 p-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-foreground">ใช้แบบประเมิน (Template) แทนสมรรถนะ</p>
+              <p className="text-xs text-muted-foreground">เลือกแบบประเมินที่สร้างไว้ในหน้า “แบบประเมิน” แทนการเลือกสมรรถนะรายข้อ</p>
+            </div>
+            <Switch checked={useEvalTemplate} onCheckedChange={setUseEvalTemplate} />
+          </Card>
+
+          {useEvalTemplate ? (
+            <Card className="gap-2 p-4">
+              <p className="text-sm font-medium text-foreground">แบบประเมิน</p>
+              {activeTemplates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  ยังไม่มีแบบประเมินที่พร้อมใช้งาน —{" "}
+                  <Link href="/performance/templates/new" className="text-primary hover:underline">
+                    สร้างแบบประเมินก่อน
+                  </Link>
+                </p>
+              ) : (
+                <Select value={evaluationTemplateId} onValueChange={(v) => setEvaluationTemplateId(v ?? "")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="เลือกแบบประเมิน" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeTemplates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </Card>
+          ) : (
           <Card className="gap-2 p-4">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-medium text-foreground">สมรรถนะที่ใช้ประเมิน</p>
@@ -338,6 +382,7 @@ export function ScheduleTemplateFormPage({ template }: { template?: ScheduleTemp
               </div>
             )}
           </Card>
+          )}
         </form>
       </Form>
     </FormPageShell>

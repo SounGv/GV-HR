@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getDashboardSummary, getActionCenter, getMySnapshot } from "@/features/dashboard/service";
+import { getDashboardSummary, getActionCenter, getMySnapshot, type LeaveBalanceSummary } from "@/features/dashboard/service";
 import { ActionCenter } from "@/features/dashboard/action-center";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,32 @@ function Kpi({
       </div>
       {sub && <div className="mt-1.5 text-xs text-muted-foreground">{sub}</div>}
     </Card>
+  );
+}
+
+/** Remaining leave shown per type (พักร้อน/ป่วย/กิจ) — a single summed number across
+ * every leave type reads as far larger than what an employee actually has left to
+ * take, since sick/personal quotas get silently folded into it. */
+function LeaveBalanceTile({ balances, href }: { balances: LeaveBalanceSummary[]; href: string }) {
+  return (
+    <Link href={href}>
+      <Card className="gap-0 p-4 transition hover:border-primary/40 hover:shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TONES.info)}>
+            <CalendarDays className="size-4" />
+          </span>
+          <span className="truncate text-xs text-muted-foreground">วันลาคงเหลือ</span>
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-1 text-center">
+          {balances.map((b) => (
+            <div key={b.type}>
+              <p className="text-base font-semibold tabular-nums text-foreground">{b.remaining}</p>
+              <p className="truncate text-[10px] text-muted-foreground">{b.label}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </Link>
   );
 }
 
@@ -147,13 +173,7 @@ export default async function DashboardPage() {
             sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
             href="/attendance"
           />
-          <MyTile
-            icon={CalendarDays}
-            tone="info"
-            label="วันลาคงเหลือ"
-            value={`${mine.leaveDaysRemaining} วัน`}
-            href="/leave"
-          />
+          <LeaveBalanceTile balances={mine.leaveBalances} href="/leave" />
           <MyTile
             icon={Wallet}
             tone="warning"

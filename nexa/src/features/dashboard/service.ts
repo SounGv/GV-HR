@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import type { RequestStep } from "@/features/workflow/types";
+import { getRemainingBalance } from "@/features/leave/service";
+import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
+
+/** The three paid leave types that actually deduct an annual quota (see `deductsBalance`) — UNPAID/OTHER have no meaningful "remaining" to show. */
+const LEAVE_TYPES_FOR_SUMMARY = ["ANNUAL", "SICK", "PERSONAL"] as const;
 
 export interface DashboardActions {
   approvals: { leave: number; overtime: number; expense: number; workflow: number };
@@ -96,10 +101,16 @@ export async function getActionCenter(
   };
 }
 
+export interface LeaveBalanceSummary {
+  type: string;
+  label: string;
+  remaining: number;
+}
+
 export interface MySnapshot {
   clockInAt: string | null;
   clockOutAt: string | null;
-  leaveDaysRemaining: number;
+  leaveBalances: LeaveBalanceSummary[];
   latestPayslip: { periodLabel: string; net: number } | null;
   recognition: { star: number; award: number; heart: number; point: number };
 }
@@ -115,15 +126,18 @@ export async function getMySnapshot(companyId: string, employeeId: string): Prom
   const now = new Date();
   const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
-  const [today, balances, latestPayslip, recognitionRows] = await Promise.all([
+  const [today, leaveBalances, latestPayslip, recognitionRows] = await Promise.all([
     prisma.attendanceRecord.findFirst({
       where: { companyId, employeeId, workDate: todayStart, deletedAt: null },
       select: { clockInAt: true, clockOutAt: true },
     }),
-    prisma.leaveBalance.findMany({
-      where: { companyId, employeeId, year },
-      select: { totalDays: true, usedDays: true },
-    }),
+    Promise.all(
+      LEAVE_TYPES_FOR_SUMMARY.map(async (type) => ({
+        type,
+        label: LEAVE_TYPE_LABEL[type],
+        remaining: await getRemainingBalance(companyId, employeeId, type, year),
+      })),
+    ),
     prisma.payrollRecord.findFirst({
       where: { companyId, employeeId },
       orderBy: { period: "desc" },
@@ -137,8 +151,6 @@ export async function getMySnapshot(companyId: string, employeeId: string): Prom
     }),
   ]);
 
-  const leaveDaysRemaining = balances.reduce((sum, b) => sum + (b.totalDays - b.usedDays), 0);
-
   const recognition = { star: 0, award: 0, heart: 0, point: 0 };
   for (const row of recognitionRows) {
     if (row.type === "STAR") recognition.star = row._count._all;
@@ -150,7 +162,7 @@ export async function getMySnapshot(companyId: string, employeeId: string): Prom
   return {
     clockInAt: today?.clockInAt?.toISOString() ?? null,
     clockOutAt: today?.clockOutAt?.toISOString() ?? null,
-    leaveDaysRemaining,
+    leaveBalances,
     latestPayslip: latestPayslip ? { periodLabel: latestPayslip.periodLabel, net: Number(latestPayslip.net) } : null,
     recognition,
   };

@@ -14,11 +14,12 @@ export const overtimeKeys = {
   list: (scope: OtScope, status?: OtStatus) => ["overtime", "list", scope, status] as const,
 };
 
-export function useOvertime(scope: OtScope, status?: OtStatus) {
+export function useOvertime(scope: OtScope, status?: OtStatus, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: overtimeKeys.list(scope, status),
     queryFn: () => fetchOvertime(scope, status),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
   });
 }
 

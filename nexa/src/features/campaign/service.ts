@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { scoreBand } from "@/lib/scoring";
+import { createNotification } from "@/features/notification/service";
+import { getTemplateSnapshot } from "@/features/evaluation-template/service";
+import { scoreTemplateAnswers } from "@/features/evaluation-template/scoring";
+import type { CampaignTemplateSnapshot } from "@/features/evaluation-template/types";
+import { RATER_LABEL } from "./labels";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
   AddParticipantsInput,
@@ -87,6 +92,7 @@ export async function listCampaigns(companyId: string, query: CampaignListQuery)
       status: true,
       raterTypes: true,
       aiGenerated: true,
+      templateId: true,
       _count: { select: { participants: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -102,6 +108,7 @@ export async function listCampaigns(companyId: string, query: CampaignListQuery)
     status: c.status,
     raterTypes: c.raterTypes,
     aiGenerated: c.aiGenerated,
+    templateId: c.templateId,
     participantCount: c._count.participants,
   }));
 }
@@ -119,6 +126,8 @@ export async function getCampaign(companyId: string, id: string, session: Access
       raterTypes: true,
       aiGenerated: true,
       aiRationale: true,
+      templateId: true,
+      templateSnapshot: true,
       competencies: { select: competencySelect },
       participants: { select: participantSelect },
     },
@@ -142,6 +151,8 @@ export async function getCampaign(companyId: string, id: string, session: Access
     raterTypes: campaign.raterTypes,
     aiGenerated: campaign.aiGenerated,
     aiRationale: campaign.aiRationale,
+    templateId: campaign.templateId,
+    templateSnapshot: campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null,
     competencies: mapCompetencies(campaign.competencies),
     participants,
     participantCount: campaign.participants.length,
@@ -154,11 +165,18 @@ export async function createCampaign(
   input: CampaignCreateInput,
   meta?: Meta,
 ) {
-  const competencyIds = input.competencies.map((c) => c.competencyId);
-  const found = await prisma.competency.count({
-    where: { id: { in: competencyIds }, companyId, deletedAt: null },
-  });
-  if (found !== competencyIds.length) throw BadRequest("พบสมรรถนะที่ไม่ถูกต้อง");
+  // Template-based campaigns freeze a snapshot at create time and skip the
+  // Competency list entirely — the two paths are mutually exclusive (see
+  // campaignCreateSchema's refine).
+  const templateSnapshot = input.templateId ? await getTemplateSnapshot(companyId, input.templateId) : null;
+
+  if (!templateSnapshot) {
+    const competencyIds = (input.competencies ?? []).map((c) => c.competencyId);
+    const found = await prisma.competency.count({
+      where: { id: { in: competencyIds }, companyId, deletedAt: null },
+    });
+    if (found !== competencyIds.length) throw BadRequest("พบสมรรถนะที่ไม่ถูกต้อง");
+  }
 
   const campaign = await prisma.evaluationCampaign.create({
     data: {
@@ -172,9 +190,13 @@ export async function createCampaign(
       aiRationale: input.aiRationale,
       createdById: session.sub,
       updatedById: session.sub,
-      competencies: {
-        create: input.competencies.map((c) => ({ competencyId: c.competencyId, weight: c.weight })),
-      },
+      ...(templateSnapshot
+        ? { templateId: templateSnapshot.templateId, templateSnapshot: templateSnapshot as object }
+        : {
+            competencies: {
+              create: (input.competencies ?? []).map((c) => ({ competencyId: c.competencyId, weight: c.weight })),
+            },
+          }),
     },
     select: { id: true },
   });
@@ -239,6 +261,39 @@ export async function updateCampaign(
       });
     }
   });
+
+  // Activating a campaign is the moment every already-seeded rater (added
+  // while it was still DRAFT — the normal "set it up, then turn it on" flow)
+  // first gets notified, since addParticipants() only notifies when the
+  // campaign is already ACTIVE at that moment.
+  if (input.status === "ACTIVE" && existing.status !== "ACTIVE") {
+    const campaign = await prisma.evaluationCampaign.findUnique({ where: { id }, select: { name: true, cycle: true } });
+    const pending = await prisma.evaluationResponse.findMany({
+      where: { status: "PENDING", participant: { campaignId: id } },
+      select: {
+        raterType: true,
+        raterEmployeeId: true,
+        participant: { select: { employee: { select: { firstName: true, lastName: true } } } },
+      },
+    });
+    const cycleLabel = `${campaign!.name} · ${campaign!.cycle}`;
+    await Promise.all(
+      pending.map((r) =>
+        createNotification(
+          companyId,
+          r.raterEmployeeId,
+          r.raterType === "SELF"
+            ? { title: "มีแบบประเมินตนเองรอทำ", body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`, category: "performance" }
+            : {
+                title: r.raterType === "MANAGER" ? "มีพนักงานรอการประเมินจากคุณ" : "คุณได้รับเชิญให้ร่วมประเมิน",
+                body: `${r.participant.employee.firstName} ${r.participant.employee.lastName} — รอบประเมิน ${cycleLabel}`,
+                category: "performance",
+              },
+          session.sub,
+        ),
+      ),
+    );
+  }
 
   await writeAudit({
     companyId,
@@ -339,17 +394,58 @@ export async function addParticipants(
 ) {
   const campaign = await prisma.evaluationCampaign.findFirst({
     where: { id: campaignId, companyId, deletedAt: null },
-    select: { id: true, raterTypes: true },
+    select: { id: true, name: true, cycle: true, status: true, raterTypes: true },
   });
   if (!campaign) throw NotFound("ไม่พบแคมเปญ");
 
   const employees = await prisma.employee.findMany({
     where: { id: { in: input.employeeIds }, companyId, deletedAt: null },
-    select: { id: true, managerId: true },
+    select: { id: true, managerId: true, firstName: true, lastName: true },
   });
   if (employees.length === 0) throw BadRequest("ไม่พบพนักงานที่เลือก");
 
   const created = await seedParticipants(campaignId, campaign.raterTypes, employees);
+
+  // Notify every rater who just got a task seeded for them — otherwise the
+  // only way to discover it is to happen to open the performance menu. Only
+  // for ACTIVE campaigns: getMyPendingResponses only surfaces ACTIVE ones,
+  // so notifying about a still-DRAFT campaign would point at a task the
+  // rater can't yet find in their pending list.
+  const cycleLabel = `${campaign.name} · ${campaign.cycle}`;
+  if (campaign.status === "ACTIVE") await Promise.all(
+    employees.flatMap((emp) => {
+      const notifs: Promise<unknown>[] = [];
+      if (campaign.raterTypes.includes("SELF")) {
+        notifs.push(
+          createNotification(
+            companyId,
+            emp.id,
+            {
+              title: "มีแบบประเมินตนเองรอทำ",
+              body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`,
+              category: "performance",
+            },
+            session.sub,
+          ),
+        );
+      }
+      if (campaign.raterTypes.includes("MANAGER") && emp.managerId) {
+        notifs.push(
+          createNotification(
+            companyId,
+            emp.managerId,
+            {
+              title: "มีพนักงานรอการประเมินจากคุณ",
+              body: `${emp.firstName} ${emp.lastName} — รอบประเมิน ${cycleLabel}`,
+              category: "performance",
+            },
+            session.sub,
+          ),
+        );
+      }
+      return notifs;
+    }),
+  );
 
   await writeAudit({
     companyId,
@@ -370,7 +466,14 @@ export async function getParticipant(companyId: string, participantId: string, s
     select: {
       ...participantSelect,
       campaign: {
-        select: { id: true, name: true, cycle: true, raterTypes: true, competencies: { select: competencySelect } },
+        select: {
+          id: true,
+          name: true,
+          cycle: true,
+          raterTypes: true,
+          competencies: { select: competencySelect },
+          templateSnapshot: true,
+        },
       },
       responses: {
         select: {
@@ -379,6 +482,7 @@ export async function getParticipant(companyId: string, participantId: string, s
           raterEmployeeId: true,
           status: true,
           scores: true,
+          answers: true,
           strengths: true,
           improvements: true,
           summary: true,
@@ -408,8 +512,12 @@ export async function getParticipant(companyId: string, participantId: string, s
       cycle: participant.campaign.cycle,
       raterTypes: participant.campaign.raterTypes,
       competencies: mapCompetencies(participant.campaign.competencies),
+      templateSnapshot: participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null,
     },
-    fullResponses: participant.responses,
+    fullResponses: participant.responses.map((r) => ({
+      ...r,
+      answers: r.answers as { questionId: string; value: string }[] | null,
+    })),
   };
 }
 
@@ -428,9 +536,10 @@ async function computeAndStoreScore(participantId: string) {
         select: {
           raterTypes: true,
           competencies: { select: { competencyId: true, weight: true } },
+          templateSnapshot: true,
         },
       },
-      responses: { select: { raterType: true, status: true, scores: true } },
+      responses: { select: { raterType: true, status: true, scores: true, answers: true } },
     },
   });
   if (!participant) return;
@@ -440,6 +549,17 @@ async function computeAndStoreScore(participantId: string) {
     (r) => r.raterType === scoringRaterType && r.status === "SUBMITTED",
   );
   if (!response) return;
+
+  const templateSnapshot = participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null;
+  if (templateSnapshot) {
+    const answers = (response.answers as { questionId: string; value: string }[] | null) ?? [];
+    const overall = scoreTemplateAnswers(templateSnapshot.sections, answers);
+    await prisma.evaluationParticipant.update({
+      where: { id: participantId },
+      data: { overallScore: overall, band: scoreBand(overall) },
+    });
+    return;
+  }
 
   const raterScores = response.scores as { competencyId: string; score: number }[];
   const weightMap = new Map(participant.campaign.competencies.map((c) => [c.competencyId, c.weight]));
@@ -460,6 +580,49 @@ async function computeAndStoreScore(participantId: string) {
 }
 
 /**
+ * Every evaluation task the caller still owes a score for, across every
+ * active campaign — SELF (their own), MANAGER (their reports'), and any
+ * PEER/UPWARD invites, since all four are just rows in the same table keyed
+ * by `raterEmployeeId`. Powers both the mobile performance screen's
+ * "รายการที่ต้องให้คะแนน" list and the Home tab's pending-count card.
+ */
+export async function getMyPendingResponses(companyId: string, session: AccessClaims) {
+  const employeeId = session.employeeId;
+  if (!employeeId) return [];
+
+  const rows = await prisma.evaluationResponse.findMany({
+    where: {
+      raterEmployeeId: employeeId,
+      status: "PENDING",
+      participant: { campaign: { companyId, status: "ACTIVE", deletedAt: null } },
+    },
+    select: {
+      id: true,
+      raterType: true,
+      participant: {
+        select: {
+          id: true,
+          employee: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          campaign: { select: { id: true, name: true, cycle: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+  });
+
+  return rows.map((r) => ({
+    responseId: r.id,
+    raterType: r.raterType,
+    participantId: r.participant.id,
+    campaignId: r.participant.campaign.id,
+    campaignName: r.participant.campaign.name,
+    cycle: r.participant.campaign.cycle,
+    employee: r.participant.employee,
+  }));
+}
+
+/**
  * Which response row belongs to the caller is derived from
  * `raterEmployeeId` — never trusted from the client. SELF/MANAGER rows are
  * stamped with the employee's/manager's id at seed time; PEER/UPWARD rows
@@ -476,11 +639,14 @@ export async function submitMyResponse(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true, finalizedAt: true },
+    select: { id: true, finalizedAt: true, campaign: { select: { status: true } } },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
   if (participant.finalizedAt) {
     throw Forbidden("การประเมินนี้สรุปผลแล้ว ไม่สามารถแก้ไขคำตอบได้อีก");
+  }
+  if (participant.campaign.status === "CLOSED") {
+    throw Forbidden("แคมเปญนี้ปิดแล้ว ไม่สามารถส่งแบบประเมินได้อีก");
   }
 
   const response = await prisma.evaluationResponse.findFirst({
@@ -492,7 +658,8 @@ export async function submitMyResponse(
   await prisma.evaluationResponse.update({
     where: { id: response.id },
     data: {
-      scores: input.scores,
+      scores: input.scores ?? [],
+      answers: input.answers ?? undefined,
       strengths: input.strengths,
       improvements: input.improvements,
       summary: input.summary,
@@ -534,7 +701,12 @@ export async function invitePeerRater(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true, employeeId: true, employee: { select: { managerId: true } } },
+    select: {
+      id: true,
+      employeeId: true,
+      employee: { select: { managerId: true, firstName: true, lastName: true } },
+      campaign: { select: { name: true, cycle: true, status: true } },
+    },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
 
@@ -564,6 +736,19 @@ export async function invitePeerRater(
     },
     select: { id: true },
   });
+
+  if (participant.campaign.status === "ACTIVE") {
+    await createNotification(
+      companyId,
+      input.raterEmployeeId,
+      {
+        title: "คุณได้รับเชิญให้ร่วมประเมิน",
+        body: `ในฐานะ${RATER_LABEL[input.raterType] ?? input.raterType} — ${participant.employee.firstName} ${participant.employee.lastName} · ${participant.campaign.name} · ${participant.campaign.cycle}`,
+        category: "performance",
+      },
+      session.sub,
+    );
+  }
 
   await writeAudit({
     companyId,

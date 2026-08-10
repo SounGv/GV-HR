@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { seedParticipants } from "@/features/campaign/service";
+import { getTemplateSnapshot } from "@/features/evaluation-template/service";
 
 const DAY_MS = 86_400_000;
 
@@ -30,6 +31,7 @@ export async function runDueSchedules() {
       durationDays: true,
       raterTypes: true,
       nextRunAt: true,
+      evaluationTemplateId: true,
       competencies: { select: { competencyId: true, weight: true } },
     },
   });
@@ -39,6 +41,15 @@ export async function runDueSchedules() {
 
   for (const template of due) {
     try {
+      // Template-based schedules must re-validate the Evaluation Template is
+      // still ACTIVE right before generating — if it's been archived or left
+      // DRAFT since the schedule was set up, this throws and the template is
+      // recorded under `errors` instead of silently creating a campaign with
+      // the wrong (or no) questions.
+      const templateSnapshot = template.evaluationTemplateId
+        ? await getTemplateSnapshot(template.companyId, template.evaluationTemplateId)
+        : null;
+
       const campaign = await prisma.evaluationCampaign.create({
         data: {
           companyId: template.companyId,
@@ -49,9 +60,13 @@ export async function runDueSchedules() {
           status: "DRAFT",
           raterTypes: template.raterTypes,
           scheduleTemplateId: template.id,
-          competencies: {
-            create: template.competencies.map((c) => ({ competencyId: c.competencyId, weight: c.weight })),
-          },
+          ...(templateSnapshot
+            ? { templateId: templateSnapshot.templateId, templateSnapshot: templateSnapshot as object }
+            : {
+                competencies: {
+                  create: template.competencies.map((c) => ({ competencyId: c.competencyId, weight: c.weight })),
+                },
+              }),
         },
         select: { id: true },
       });

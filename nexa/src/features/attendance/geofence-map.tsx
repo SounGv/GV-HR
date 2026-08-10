@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css";
 
 const userIcon = L.divIcon({
   className: "",
-  html: `<div style="width:16px;height:16px;border-radius:9999px;background:#7a35ff;border:3px solid #0a0a0a;box-shadow:0 0 0 4px rgba(122,53,255,0.35);"></div>`,
+  html: `<div style="width:16px;height:16px;border-radius:9999px;background:#B7ED00;border:3px solid #10130A;box-shadow:0 0 0 4px rgba(183,237,0,0.35);"></div>`,
   iconSize: [16, 16],
   iconAnchor: [8, 8],
 });
@@ -33,14 +33,15 @@ export function GeofenceMap({
   const center: [number, number] = [branchLat, branchLng];
 
   return (
-    <div className="h-44 w-full overflow-hidden rounded-2xl">
+    <div className="h-56 w-full overflow-hidden rounded-2xl">
       <MapContainer
         center={center}
         zoom={17}
-        scrollWheelZoom={false}
-        dragging={false}
-        doubleClickZoom={false}
-        zoomControl={false}
+        scrollWheelZoom
+        dragging
+        touchZoom
+        doubleClickZoom
+        zoomControl
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
@@ -50,7 +51,7 @@ export function GeofenceMap({
         <Circle
           center={center}
           radius={radiusMeters}
-          pathOptions={{ color: "#7a35ff", weight: 2, fillColor: "#7a35ff", fillOpacity: 0.15 }}
+          pathOptions={{ color: "#88B000", weight: 2, fillColor: "#B7ED00", fillOpacity: 0.15 }}
         />
         <Marker position={[userLat, userLng]} icon={userIcon} />
       </MapContainer>

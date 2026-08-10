@@ -17,6 +17,7 @@ export interface ScheduleTemplateListItem {
   nextRunAt: string;
   lastRunAt: string | null;
   lastGeneratedCampaign: { id: string; name: string } | null;
+  evaluationTemplate: { id: string; name: string } | null;
 }
 
 export interface ScheduleTemplateDetail extends ScheduleTemplateListItem {
@@ -31,5 +32,6 @@ export interface ScheduleTemplateFormValues {
   raterTypes: RaterType[];
   nextRunAt: string;
   active?: boolean;
-  competencies: { competencyId: string; weight: number }[];
+  evaluationTemplateId?: string;
+  competencies?: { competencyId: string; weight: number }[];
 }

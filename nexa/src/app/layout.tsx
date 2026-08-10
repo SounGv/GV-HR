@@ -4,7 +4,7 @@ import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
 
-/** Loopless Thai/Latin sans — matches GV One mobile reference (clean list + purple accent UI). */
+/** Loopless Thai/Latin sans — matches GV One mobile reference (clean list + lime accent UI). */
 const prompt = Prompt({
   variable: "--font-prompt",
   subsets: ["thai", "latin"],
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#7A35FF" },
-    { media: "(prefers-color-scheme: dark)", color: "#0A0A0A" },
+    { media: "(prefers-color-scheme: light)", color: "#B7ED00" },
+    { media: "(prefers-color-scheme: dark)", color: "#10130A" },
   ],
   width: "device-width",
   initialScale: 1,

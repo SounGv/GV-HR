@@ -22,16 +22,23 @@ function filterGroups(
     .filter((group) => group.items.length > 0);
 }
 
+export interface MobileMenuGroups {
+  groups: MobileMenuGroup[];
+  /** Index into `groups` where the HR/manager zone starts — used to draw a
+   * divider so those sections read as a distinct zone from the personal
+   * quick-menu above, without hiding anything the account already has
+   * permission to see. */
+  hrStartIndex: number;
+}
+
 /** Shared across the "บริการ" full-menu view and the Home quick-menu section. */
-export function useMobileMenuGroups(): MobileMenuGroup[] {
+export function useMobileMenuGroups(): MobileMenuGroups {
   const { can } = useAuth();
   const { isVisible } = useMenuVisibility();
 
-  return useMemo(
-    () => [
-      ...filterGroups(MOBILE_EMPLOYEE_GROUPS, can, isVisible),
-      ...filterGroups(MOBILE_HR_GROUPS, can, isVisible),
-    ],
-    [can, isVisible],
-  );
+  return useMemo(() => {
+    const employee = filterGroups(MOBILE_EMPLOYEE_GROUPS, can, isVisible);
+    const hr = filterGroups(MOBILE_HR_GROUPS, can, isVisible);
+    return { groups: [...employee, ...hr], hrStartIndex: employee.length };
+  }, [can, isVisible]);
 }

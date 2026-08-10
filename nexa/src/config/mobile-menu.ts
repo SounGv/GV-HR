@@ -6,6 +6,8 @@ import {
 
   CalendarMinus,
 
+  Timer,
+
   Clock3,
 
   CalendarClock,
@@ -14,17 +16,11 @@ import {
 
   Target,
 
-  Flag,
-
   ClipboardCheck,
-
-  Heart,
 
   Receipt,
 
   Wallet,
-
-  HeartHandshake,
 
   UserCircle,
 
@@ -96,6 +92,8 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
 
       { id: "leave", label: "ขอลา", href: "/leave/new", icon: CalendarMinus, permission: "leave:read" },
 
+      { id: "overtime", label: "ขอ OT", href: "/overtime/new", icon: Timer, permission: "overtime:read" },
+
       { id: "timeedit", label: "แก้เวลาเข้า-ออกงาน", href: "/attendance/corrections/new", icon: Clock3, permission: "attendance:create" },
 
       { id: "shift", label: "ตารางกะ", href: "/shifts", icon: CalendarClock, permission: "shift:read" },
@@ -114,11 +112,7 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
 
       { id: "kpi", label: "KPI ส่วนตัว", href: "/kpi", icon: Target, permission: "kpi:read" },
 
-      { id: "goals", label: "เป้าหมาย", href: "/coming-soon?title=เป้าหมาย", icon: Flag, permission: "kpi:read" },
-
       { id: "review", label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
-
-      { id: "feedback", label: "ฟีดแบ็ก", href: "/coming-soon?title=ฟีดแบ็ก", icon: Heart, permission: "performance:read" },
 
     ],
 
@@ -133,8 +127,6 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
       { id: "payslip", label: "สลิปเงินเดือน", href: "/payroll", icon: Receipt, permission: "payroll:read" },
 
       { id: "expense", label: "เบิกค่าใช้จ่าย", href: "/expenses/new", icon: Wallet, permission: "expense:read" },
-
-      { id: "benefit", label: "สวัสดิการ", href: "/coming-soon?title=สวัสดิการ", icon: HeartHandshake, permission: "payroll:read" },
 
       { id: "profile", label: "โปรไฟล์", href: "/profile", icon: UserCircle, permission: "dashboard:read" },
 

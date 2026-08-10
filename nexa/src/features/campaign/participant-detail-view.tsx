@@ -7,10 +7,12 @@ import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScorePicker } from "@/components/shared/score-picker";
+import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
+import type { TemplateSection } from "@/features/evaluation-template/types";
 import { fullName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/features/auth/auth-context";
@@ -18,14 +20,8 @@ import { useOrgOptions } from "@/features/employee/hooks";
 import { sendChat } from "@/features/ai/api";
 import { groupByCategory } from "@/lib/competency-grouping";
 import { useInviteRater, useParticipant, useRemoveRater, useSubmitMyResponse } from "./hooks";
+import { RATER_LABEL } from "./labels";
 import type { CampaignCompetency, ParticipantDetail } from "./types";
-
-const RATER_LABEL: Record<string, string> = {
-  SELF: "ประเมินตนเอง",
-  MANAGER: "หัวหน้างาน",
-  PEER: "เพื่อนร่วมงาน",
-  UPWARD: "ผู้ใต้บังคับบัญชา",
-};
 
 /** Compact text summary of every submitted response, for the AI to reason over. */
 function participantToPrompt(participant: ParticipantDetail): string {
@@ -62,6 +58,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
   const { data, isLoading, isError, refetch } = useParticipant(participantId);
   const submitMutation = useSubmitMyResponse(participantId);
   const [scores, setScores] = useState<Record<string, number>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [strengths, setStrengths] = useState("");
   const [improvements, setImprovements] = useState("");
   const [summary, setSummary] = useState("");
@@ -82,12 +79,18 @@ export function ParticipantDetailView({ participantId }: { participantId: string
 
   useEffect(() => {
     if (!participant) return;
-    const initial: Record<string, number> = {};
-    for (const c of participant.campaign.competencies) {
-      const existing = myResponse?.scores.find((s) => s.competencyId === c.competencyId);
-      initial[c.competencyId] = existing?.score ?? 3;
+    if (participant.campaign.templateSnapshot) {
+      const initial: Record<string, string> = {};
+      for (const a of myResponse?.answers ?? []) initial[a.questionId] = a.value;
+      setAnswers(initial);
+    } else {
+      const initial: Record<string, number> = {};
+      for (const c of participant.campaign.competencies) {
+        const existing = myResponse?.scores.find((s) => s.competencyId === c.competencyId);
+        initial[c.competencyId] = existing?.score ?? 3;
+      }
+      setScores(initial);
     }
-    setScores(initial);
     setStrengths(myResponse?.strengths ?? "");
     setImprovements(myResponse?.improvements ?? "");
     setSummary(myResponse?.summary ?? "");
@@ -101,12 +104,21 @@ export function ParticipantDetailView({ participantId }: { participantId: string
 
   async function submit() {
     try {
-      await submitMutation.mutateAsync({
-        scores: Object.entries(scores).map(([competencyId, score]) => ({ competencyId, score })),
-        strengths: strengths.trim() || undefined,
-        improvements: improvements.trim() || undefined,
-        summary: summary.trim() || undefined,
-      });
+      await submitMutation.mutateAsync(
+        participant!.campaign.templateSnapshot
+          ? {
+              answers: Object.entries(answers).map(([questionId, value]) => ({ questionId, value })),
+              strengths: strengths.trim() || undefined,
+              improvements: improvements.trim() || undefined,
+              summary: summary.trim() || undefined,
+            }
+          : {
+              scores: Object.entries(scores).map(([competencyId, score]) => ({ competencyId, score })),
+              strengths: strengths.trim() || undefined,
+              improvements: improvements.trim() || undefined,
+              summary: summary.trim() || undefined,
+            },
+      );
       toast.success("บันทึกแบบประเมินเรียบร้อย");
       refetch();
     } catch (err) {
@@ -176,35 +188,37 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             <CardTitle className="text-base">{ROLE_LABEL[myRole] ?? "แบบประเมิน"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              {groupByCategory(participant.campaign.competencies).map((group) => (
-                <div key={group.categoryId} className="space-y-1.5">
-                  <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
-                  {group.items.map((c) => (
-                    <div key={c.competencyId} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">{c.name}</p>
-                        {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
-                        {c.exampleBehavior && (
-                          <p className="text-xs text-muted-foreground">ตัวอย่างพฤติกรรม: {c.exampleBehavior}</p>
-                        )}
+            {participant.campaign.templateSnapshot ? (
+              <TemplateFormRenderer
+                sections={participant.campaign.templateSnapshot.sections}
+                mode="answer"
+                answers={answers}
+                onChange={(questionId, value) => setAnswers((prev) => ({ ...prev, [questionId]: value }))}
+              />
+            ) : (
+              <div className="space-y-3">
+                {groupByCategory(participant.campaign.competencies).map((group) => (
+                  <div key={group.categoryId} className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
+                    {group.items.map((c) => (
+                      <div key={c.competencyId} className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{c.name}</p>
+                          {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
+                          {c.exampleBehavior && (
+                            <p className="text-xs text-muted-foreground">ตัวอย่างพฤติกรรม: {c.exampleBehavior}</p>
+                          )}
+                        </div>
+                        <ScorePicker
+                          value={scores[c.competencyId] ?? 3}
+                          onChange={(v) => setScores((prev) => ({ ...prev, [c.competencyId]: v }))}
+                        />
                       </div>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={5}
-                        step={0.5}
-                        className="w-20 shrink-0"
-                        value={scores[c.competencyId] ?? 3}
-                        onChange={(e) =>
-                          setScores((prev) => ({ ...prev, [c.competencyId]: Number(e.target.value) || 1 }))
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">จุดแข็ง</label>
               <Textarea rows={2} value={strengths} onChange={(e) => setStrengths(e.target.value)} />
@@ -226,10 +240,20 @@ export function ParticipantDetailView({ participantId }: { participantId: string
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {participant.campaign.raterTypes.includes("SELF") && (
-          <ResponseCard title="ประเมินตนเอง" response={selfResponse} competencies={participant.campaign.competencies} />
+          <ResponseCard
+            title="ประเมินตนเอง"
+            response={selfResponse}
+            competencies={participant.campaign.competencies}
+            templateSections={participant.campaign.templateSnapshot?.sections}
+          />
         )}
         {participant.campaign.raterTypes.includes("MANAGER") && (
-          <ResponseCard title="ประเมินโดยหัวหน้างาน" response={managerResponse} competencies={participant.campaign.competencies} />
+          <ResponseCard
+            title="ประเมินโดยหัวหน้างาน"
+            response={managerResponse}
+            competencies={participant.campaign.competencies}
+            templateSections={participant.campaign.templateSnapshot?.sections}
+          />
         )}
         {peerResponses.map((r) => (
           <ResponseCard
@@ -237,6 +261,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             title="ประเมินโดยเพื่อนร่วมงาน"
             response={r}
             competencies={participant.campaign.competencies}
+            templateSections={participant.campaign.templateSnapshot?.sections}
             removable={canManageRaters && r.status === "PENDING"}
           />
         ))}
@@ -246,6 +271,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             title="ประเมินโดยผู้ใต้บังคับบัญชา"
             response={r}
             competencies={participant.campaign.competencies}
+            templateSections={participant.campaign.templateSnapshot?.sections}
             removable={canManageRaters && r.status === "PENDING"}
           />
         ))}
@@ -390,6 +416,7 @@ function ResponseCard({
   title,
   response,
   competencies,
+  templateSections,
   removable,
 }: {
   title: string;
@@ -397,12 +424,14 @@ function ResponseCard({
     id?: string;
     status: string;
     scores: { competencyId: string; score: number }[];
+    answers?: { questionId: string; value: string }[] | null;
     strengths: string | null;
     improvements: string | null;
     summary: string | null;
     submittedAt: string | null;
   };
   competencies: CampaignCompetency[];
+  templateSections?: TemplateSection[];
   removable?: boolean;
 }) {
   const removeMutation = useRemoveRater();
@@ -440,6 +469,22 @@ function ResponseCard({
       <CardContent className="space-y-3 text-sm">
         {!response || response.status !== "SUBMITTED" ? (
           <p className="text-muted-foreground">ยังไม่ได้ส่งแบบประเมิน</p>
+        ) : templateSections ? (
+          <>
+            {templateSections.flatMap((s) => s.questions).map((q) => {
+              const a = response.answers?.find((x) => x.questionId === q.id);
+              const label = q.answerType === "LONG_TEXT" ? a?.value : q.options?.find((o) => o.value === a?.value)?.label;
+              return (
+                <div key={q.id} className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 truncate text-muted-foreground">{q.text}</span>
+                  <span className="shrink-0 max-w-[50%] truncate text-right font-medium text-foreground">{label ?? "-"}</span>
+                </div>
+              );
+            })}
+            {response.summary && (
+              <p className="mt-2 border-t border-border pt-2 text-muted-foreground">{response.summary}</p>
+            )}
+          </>
         ) : (
           <>
             {groupByCategory(competencies).map((group) => (

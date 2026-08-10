@@ -18,6 +18,7 @@ export const MOBILE_CUSTOM_PATHS = new Set([
   "/attendance",
   "/requests",
   "/payroll",
+  "/performance",
 ]);
 
 const EXACT: Record<string, MobileRouteMeta> = {

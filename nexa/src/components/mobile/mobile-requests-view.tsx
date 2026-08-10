@@ -51,13 +51,27 @@ export function MobileRequestsView() {
 
 function RequestsBody() {
   const { can } = useAuth();
-  const canApprove = can("leave:approve") || can("overtime:approve");
+  const canApproveLeave = can("leave:approve");
+  const canApproveOt = can("overtime:approve");
+  const canApprove = canApproveLeave || canApproveOt;
+  const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
+  const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
+  const pendingCount = (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0);
 
   return (
     <Tabs defaultValue="me" className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">ของฉัน</TabsTrigger>
-        {canApprove && <TabsTrigger value="approvals">รออนุมัติ</TabsTrigger>}
+        {canApprove && (
+          <TabsTrigger value="approvals" className="gap-1.5">
+            รออนุมัติ
+            {pendingCount > 0 && (
+              <span className="flex min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white">
+                {pendingCount > 9 ? "9+" : pendingCount}
+              </span>
+            )}
+          </TabsTrigger>
+        )}
       </TabsList>
 
       <TabsContent value="me" className="space-y-4">

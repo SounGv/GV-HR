@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CalendarDays, Wallet, Star } from "lucide-react";
+import { Bell, CalendarDays, Wallet, Star, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useNotifications } from "@/features/notification/hooks";
 import { ClockCard } from "@/features/attendance/clock-card";
+import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useMobileMenuGroups } from "./use-mobile-menu-groups";
 import { MobileMenuTileGrid } from "./mobile-menu-tile-grid";
 
 export interface MobileDashboardSnapshot {
   clockInAt: string | null;
   clockOutAt: string | null;
-  leaveDaysRemaining: number;
+  leaveBalances: { type: string; label: string; remaining: number }[];
   latestPayslip: { net: number; periodLabel: string } | null;
   recognition: { star: number; award: number; heart: number; point: number };
 }
@@ -37,7 +38,9 @@ export function MobileDashboardView({
 }) {
   const { data: notifData } = useNotifications();
   const unread = notifData?.data?.unread ?? 0;
-  const groups = useMobileMenuGroups();
+  const { groups, hrStartIndex } = useMobileMenuGroups();
+  const { data: pendingData } = useMyPendingResponses();
+  const pendingCount = pendingData?.data?.length ?? 0;
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -73,36 +76,64 @@ export function MobileDashboardView({
         <ClockCard />
 
         {mine && (
-          <div className="grid grid-cols-3 gap-3">
-            <Link href="/leave" className="rounded-xl bg-card p-3.5 shadow-sm">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-primary">
-                <CalendarDays className="size-4" />
-              </span>
-              <p className="mt-2 text-xs text-muted-foreground">วันลาคงเหลือ</p>
-              <p className="mt-0.5 text-base font-bold text-foreground">{mine.leaveDaysRemaining} วัน</p>
+          <>
+            {/* Broken down by leave type — a single summed number reads as
+                far larger than what's actually left to take, since sick/
+                personal quotas would otherwise get silently folded in. */}
+            <Link href="/leave" className="block rounded-xl bg-card p-3.5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-accent text-primary">
+                  <CalendarDays className="size-4" />
+                </span>
+                <p className="text-xs text-muted-foreground">วันลาคงเหลือ</p>
+              </div>
+              <div className="mt-2.5 grid grid-cols-3 gap-2 text-center">
+                {mine.leaveBalances.map((b) => (
+                  <div key={b.type}>
+                    <p className="text-base font-bold text-foreground">{b.remaining}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">{b.label}</p>
+                  </div>
+                ))}
+              </div>
             </Link>
-            <Link href="/payroll" className="rounded-xl bg-card p-3.5 shadow-sm">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-warning/10 text-warning">
-                <Wallet className="size-4" />
-              </span>
-              <p className="mt-2 text-xs text-muted-foreground">เงินเดือนล่าสุด</p>
-              <p className="mt-0.5 text-base font-bold text-foreground">
-                {mine.latestPayslip ? fmtCurrency(mine.latestPayslip.net) : "-"}
-              </p>
-            </Link>
-            <div className="rounded-xl bg-card p-3.5 shadow-sm">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-primary">
-                <Star className="size-4" />
-              </span>
-              <p className="mt-2 text-xs text-muted-foreground">คะแนนให้กำลังใจ</p>
-              <p className="mt-0.5 text-base font-bold text-foreground">
-                {mine.recognition.star + mine.recognition.award + mine.recognition.heart}
-              </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/payroll" className="rounded-xl bg-card p-3.5 shadow-sm">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-warning/10 text-warning">
+                  <Wallet className="size-4" />
+                </span>
+                <p className="mt-2 text-xs text-muted-foreground">เงินเดือนล่าสุด</p>
+                <p className="mt-0.5 text-base font-bold text-foreground">
+                  {mine.latestPayslip ? fmtCurrency(mine.latestPayslip.net) : "-"}
+                </p>
+              </Link>
+              <div className="rounded-xl bg-card p-3.5 shadow-sm">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-primary">
+                  <Star className="size-4" />
+                </span>
+                <p className="mt-2 text-xs text-muted-foreground">คะแนนให้กำลังใจ</p>
+                <p className="mt-0.5 text-base font-bold text-foreground">
+                  {mine.recognition.star + mine.recognition.award + mine.recognition.heart}
+                </p>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
-        <MobileMenuTileGrid groups={groups} />
+        {pendingCount > 0 && (
+          <Link
+            href="/performance"
+            className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm active:bg-muted"
+          >
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <ClipboardCheck className="size-4" />
+            </span>
+            <p className="flex-1 text-sm font-medium text-foreground">ประเมินค้าง {pendingCount} รายการ</p>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Link>
+        )}
+
+        <MobileMenuTileGrid groups={groups} hrStartIndex={hrStartIndex} />
       </div>
     </div>
   );
