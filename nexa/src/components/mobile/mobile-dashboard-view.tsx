@@ -82,7 +82,7 @@ export function MobileDashboardView({
                 personal quotas would otherwise get silently folded in. */}
             <Link href="/leave" className="block rounded-xl bg-card p-3.5 shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-accent text-primary">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <CalendarDays className="size-4" />
                 </span>
                 <p className="text-xs text-muted-foreground">วันลาคงเหลือ</p>
@@ -108,7 +108,7 @@ export function MobileDashboardView({
                 </p>
               </Link>
               <div className="rounded-xl bg-card p-3.5 shadow-sm">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-primary">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Star className="size-4" />
                 </span>
                 <p className="mt-2 text-xs text-muted-foreground">คะแนนให้กำลังใจ</p>
@@ -125,7 +125,7 @@ export function MobileDashboardView({
             href="/performance"
             className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm active:bg-muted"
           >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <ClipboardCheck className="size-4" />
             </span>
             <p className="flex-1 text-sm font-medium text-foreground">ประเมินค้าง {pendingCount} รายการ</p>
