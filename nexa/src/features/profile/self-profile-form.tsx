@@ -279,8 +279,8 @@ function Section({
   return (
     <Card className="gap-4 p-5">
       <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <Icon className="size-4 text-primary" />
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary">
+          <Icon className="size-4 text-primary-foreground" />
         </span>
         <div>
           <h2 className="font-semibold text-foreground">{title}</h2>
@@ -395,7 +395,7 @@ function LineConnect({ profile, onChange }: { profile: MyProfile; onChange: () =
           <p className="text-sm text-muted-foreground">
             เพิ่มเพื่อน LINE OA ของบริษัท แล้วส่งรหัสนี้เป็นข้อความ:
           </p>
-          <p className="text-center font-mono text-2xl font-bold tracking-widest text-primary">{code}</p>
+          <p className="text-center font-mono text-2xl font-bold tracking-widest text-accent-foreground">{code}</p>
           <p className="text-center text-xs text-muted-foreground">
             หมดอายุ {expiresAt ? new Date(expiresAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : ""} น.
           </p>

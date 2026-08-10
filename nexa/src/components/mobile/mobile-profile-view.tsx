@@ -141,7 +141,7 @@ export function MobileProfileView() {
 
         >
 
-          <Pencil className="size-[18px] text-primary" />
+          <Pencil className="size-[18px] text-accent-foreground" />
 
           แก้ไขโปรไฟล์ / รูปประจำตัว
 
@@ -155,7 +155,7 @@ export function MobileProfileView() {
 
         >
 
-          <ShieldCheck className="size-[18px] text-primary" />
+          <ShieldCheck className="size-[18px] text-accent-foreground" />
 
           ความปลอดภัย (รหัสผ่าน, 2FA)
 
@@ -169,7 +169,7 @@ export function MobileProfileView() {
 
         >
 
-          <Bell className="size-[18px] text-primary" />
+          <Bell className="size-[18px] text-accent-foreground" />
 
           การแจ้งเตือน
 
