@@ -7,6 +7,7 @@ import type {
   CampaignFormValues,
   CampaignListItem,
   EmployeeEvaluationHistoryItem,
+  MyPendingResponse,
   ParticipantDetail,
   SubmitResponseValues,
 } from "./types";
@@ -59,6 +60,10 @@ export function inviteRater(participantId: string, input: { raterType: "PEER" | 
 
 export function removeRater(responseId: string) {
   return api.del<Envelope<{ ok: true }>>(`/api/campaigns/responses/${responseId}`);
+}
+
+export function fetchMyPendingResponses() {
+  return api.get<Envelope<MyPendingResponse[]>>("/api/campaigns/my-pending");
 }
 
 export function fetchEmployeeEvaluationHistory(employeeId: string) {

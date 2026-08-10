@@ -24,6 +24,8 @@ import { useAuth } from "@/features/auth/auth-context";
 
 import { fullName } from "@/lib/format";
 
+import { useMyProfile } from "@/features/profile/hooks";
+
 import { MobileScreen } from "./mobile-screen";
 
 import { MobileModuleCard } from "./mobile-ui";
@@ -33,6 +35,20 @@ import { MobileModuleCard } from "./mobile-ui";
 export function MobileProfileView() {
 
   const { user, logout } = useAuth();
+
+  const { data: profileData } = useMyProfile();
+
+  const profile = profileData?.data;
+
+
+
+  const addressSummary = profile
+    ? [profile.district, profile.province].filter(Boolean).join(", ") || profile.addressLine || null
+    : null;
+
+  const emergencyContact = profile?.emergencyContactName
+    ? `${profile.emergencyContactName}${profile.emergencyContactPhone ? ` · ${profile.emergencyContactPhone}` : ""}`
+    : profile?.emergencyContactPhone ?? null;
 
 
 
@@ -89,17 +105,17 @@ export function MobileProfileView() {
 
         <div className="flex justify-between border-b border-border px-3.5 py-3 text-[13px]">
 
-          <span className="text-muted-foreground">ที่อยู่</span>
+          <span className="shrink-0 text-muted-foreground">ที่อยู่</span>
 
-          <span className="text-right">—</span>
+          <span className="ml-3 truncate text-right">{addressSummary ?? "—"}</span>
 
         </div>
 
         <div className="flex justify-between border-b border-border px-3.5 py-3 text-[13px]">
 
-          <span className="text-muted-foreground">เบอร์ฉุกเฉิน</span>
+          <span className="shrink-0 text-muted-foreground">ผู้ติดต่อฉุกเฉิน</span>
 
-          <span>—</span>
+          <span className="ml-3 truncate text-right">{emergencyContact ?? "—"}</span>
 
         </div>
 

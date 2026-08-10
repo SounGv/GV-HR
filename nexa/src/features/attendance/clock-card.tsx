@@ -11,10 +11,12 @@ import {
   Home,
   Building2,
   MapPin,
+  MapPinned,
   Loader2,
   Camera,
   X,
   AlertTriangle,
+  ShieldAlert,
   QrCode,
   Coffee,
 } from "lucide-react";
@@ -25,7 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { getCurrentPosition } from "@/lib/geolocation";
+import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
 import { ApiError } from "@/lib/api/client";
 import { useClockIn, useClockOut, useEndBreak, useStartBreak, useToday } from "./hooks";
 import { AttendanceStatusBadge, WORK_MODE_LABEL } from "./status-badge";
@@ -54,6 +56,8 @@ interface Coords {
   accuracy?: number;
 }
 
+type GpsStatus = "locating" | "ready" | "denied" | "error";
+
 const GeofenceMap = dynamic(() => import("./geofence-map").then((m) => m.GeofenceMap), {
   ssr: false,
   loading: () => <div className="h-44 w-full animate-pulse rounded-2xl bg-white/5" />,
@@ -70,9 +74,10 @@ export function ClockCard() {
   const [checking, setChecking] = useState(false);
   const [moodOpen, setMoodOpen] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
-  const [photoIntent, setPhotoIntent] = useState<"in" | "out" | null>(null);
+  const [hasPhoto, setHasPhoto] = useState(false);
   const [camReady, setCamReady] = useState(false);
   const [camError, setCamError] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [offsite, setOffsite] = useState<{
     kind: "in" | "out";
     distance: number;
@@ -83,9 +88,14 @@ export function ClockCard() {
   const [qrOpen, setQrOpen] = useState(false);
   const [qrReady, setQrReady] = useState(false);
   const [qrError, setQrError] = useState(false);
-  const [mapPreview, setMapPreview] = useState<{ kind: "in" | "out"; coords: Coords; mood?: AttendanceMood } | null>(
-    null,
-  );
+
+  // GPS is read proactively as soon as the card mounts (Home or the Attendance
+  // tab), so the status chip below already has an answer by the time the
+  // employee reaches for the check-in button — no "waiting for GPS" step
+  // wedged in between the tap and the actual submit.
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>("locating");
+  const [gpsCoords, setGpsCoords] = useState<Coords | null>(null);
+  const [gpsErrorMsg, setGpsErrorMsg] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -104,9 +114,29 @@ export function ClockCard() {
     return () => clearInterval(t);
   }, []);
 
-  // Camera: opened automatically when the photo step starts. Defaults to the
-  // rear camera (matches how this is used in practice — proof-of-location
-  // photos, not selfies).
+  async function primeGps() {
+    setGpsStatus("locating");
+    setGpsErrorMsg(null);
+    try {
+      const pos = await getCurrentPosition();
+      const c = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
+      lastCoordsRef.current = c;
+      setGpsCoords(c);
+      setGpsStatus("ready");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "ระบุตำแหน่งไม่สำเร็จ";
+      setGpsErrorMsg(msg);
+      setGpsStatus(msg.includes("อนุญาต") ? "denied" : "error");
+    }
+  }
+
+  useEffect(() => {
+    primeGps();
+  }, []);
+
+  // Camera: only opened when the employee explicitly taps "ถ่ายรูปยืนยันตัวตน"
+  // — not forced before every clock-in/out tap. Defaults to the rear camera
+  // (proof-of-location photos, not selfies).
   useEffect(() => {
     if (!photoOpen) return;
     let cancelled = false;
@@ -136,26 +166,6 @@ export function ClockCard() {
     };
   }, [photoOpen]);
 
-  /** Opens the auto-photo step before clocking in/out; resets any stale photo first. */
-  function requestPhoto(intent: "in" | "out") {
-    photoRef.current = null;
-    setPhotoIntent(intent);
-    setPhotoOpen(true);
-  }
-
-  /** Runs after the photo step closes (captured or skipped) — continues the intent's flow. */
-  function proceedAfterPhoto() {
-    const intent = photoIntent;
-    setPhotoIntent(null);
-    if (intent === "in") startClockIn();
-    else if (intent === "out") setMoodOpen(true);
-  }
-
-  function skipPhoto() {
-    setPhotoOpen(false);
-    proceedAfterPhoto();
-  }
-
   function capture() {
     const video = videoRef.current;
     if (!video) return;
@@ -168,8 +178,13 @@ export function ClockCard() {
     ctx.drawImage(video, (video.videoWidth - side) / 2, (video.videoHeight - side) / 2, side, side, 0, 0, 480, 480);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
     photoRef.current = dataUrl;
+    setHasPhoto(true);
     setPhotoOpen(false);
-    proceedAfterPhoto();
+  }
+
+  function clearPhoto() {
+    photoRef.current = null;
+    setHasPhoto(false);
   }
 
   const record = data?.data?.record ?? null;
@@ -178,6 +193,11 @@ export function ClockCard() {
   const hasOut = !!record?.clockOutAt;
   const onBreak = !!record?.breakStartAt && !record?.breakEndAt;
   const hasGeofence = branch?.lat != null && branch?.lng != null && branch?.radiusMeters != null;
+  const effectiveMode = hasIn ? record?.workMode ?? mode : mode;
+
+  const gpsDistance =
+    gpsCoords && hasGeofence ? distanceMeters(gpsCoords.lat, gpsCoords.lng, branch!.lat!, branch!.lng!) : null;
+  const gpsInRadius = gpsDistance != null && branch?.radiusMeters != null ? gpsDistance <= branch.radiusMeters : null;
 
   async function toggleBreak() {
     try {
@@ -228,7 +248,8 @@ export function ClockCard() {
   }
 
   // QR scanner: opens the back camera and decodes frames on an interval until
-  // a "NEXA-CHECKIN:<branchId>" payload is found, then auto-submits.
+  // a "NEXA-CHECKIN:<branchId>" payload is found, then auto-submits. Payload
+  // format is unchanged even though the product now presents as "GV One".
   useEffect(() => {
     if (!qrOpen) return;
     let cancelled = false;
@@ -309,7 +330,7 @@ export function ClockCard() {
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
       });
       toast.success("เช็คอินสำเร็จ");
-      photoRef.current = null;
+      clearPhoto();
       setOffsite(null);
       setOffsiteReason("");
       refetch();
@@ -339,7 +360,7 @@ export function ClockCard() {
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
       });
       toast.success("เช็คเอาท์สำเร็จ");
-      photoRef.current = null;
+      clearPhoto();
       setMoodOpen(false);
       setOffsite(null);
       setOffsiteReason("");
@@ -358,39 +379,27 @@ export function ClockCard() {
   }
 
   /**
-   * ONSITE clock-in/out with a configured geofence gets a map confirmation
-   * step first; WFH and branches without a geofence submit immediately,
-   * matching the existing skip-geofence behavior.
+   * One tap does the whole thing — GPS was already primed when the card
+   * mounted, so this reuses that fix instead of asking the browser again.
+   * ONSITE/OUTSIDE submits straight away; if the server finds the fix
+   * outside the branch's geofence, the existing offsite-reason dialog
+   * catches it (see submitClockIn's catch above). WFH skips location
+   * entirely, matching the previous behavior.
    */
-  async function startClockIn() {
-    if (mode === "WFH" || !hasGeofence) {
+  function startClockIn() {
+    if (mode === "WFH") {
       submitClockIn();
       return;
     }
-    setChecking(true);
-    const coords = await resolveCoords();
-    setChecking(false);
-    if (!coords) return;
-    setMapPreview({ kind: "in", coords });
+    submitClockIn(undefined, gpsCoords ?? undefined);
   }
 
-  async function startClockOut(mood?: AttendanceMood) {
-    if (record?.workMode === "WFH" || !hasGeofence) {
+  function startClockOut(mood?: AttendanceMood) {
+    if (record?.workMode === "WFH") {
       submitClockOut(mood);
       return;
     }
-    setChecking(true);
-    const coords = await resolveCoords();
-    setChecking(false);
-    if (!coords) return;
-    setMapPreview({ kind: "out", coords, mood });
-  }
-
-  function confirmMapPreview() {
-    if (!mapPreview) return;
-    if (mapPreview.kind === "in") submitClockIn(undefined, mapPreview.coords);
-    else submitClockOut(mapPreview.mood, undefined, mapPreview.coords);
-    setMapPreview(null);
+    submitClockOut(mood, undefined, gpsCoords ?? undefined);
   }
 
   function confirmOffsite() {
@@ -471,67 +480,85 @@ export function ClockCard() {
         </div>
       )}
 
+      {/* GPS status — resolved proactively, always visible before the tap so
+          there's never a surprise once the employee actually checks in/out. */}
+      {!isLoading && !hasOut && effectiveMode !== "WFH" && (
+        <GpsStatusChip
+          status={gpsStatus}
+          errorMsg={gpsErrorMsg}
+          hasGeofence={hasGeofence}
+          distance={gpsDistance}
+          accuracy={gpsCoords?.accuracy}
+          inRadius={gpsInRadius}
+          onRetry={primeGps}
+          showMap={showMap}
+          onToggleMap={() => setShowMap((v) => !v)}
+        />
+      )}
+      {!isLoading && !hasOut && effectiveMode === "WFH" && (
+        <p className="relative mt-3 flex items-center gap-1.5 text-xs text-slate-400">
+          <Home className="size-3.5" /> ทำงานจากที่บ้าน — ไม่ต้องตรวจสอบตำแหน่ง
+        </p>
+      )}
+
+      {showMap && hasGeofence && gpsCoords && (
+        <div className="relative mt-3">
+          <GeofenceMap
+            branchLat={branch!.lat!}
+            branchLng={branch!.lng!}
+            radiusMeters={branch!.radiusMeters!}
+            userLat={gpsCoords.lat}
+            userLng={gpsCoords.lng}
+          />
+        </div>
+      )}
+
       {/* Primary action — one big, unmistakable button; taps straight through to the API */}
       <div className="relative mt-5">
         {isLoading ? (
           <Skeleton className="h-14 w-full bg-white/10" />
-        ) : mapPreview ? null : hasOut ? (
+        ) : hasOut ? (
           <div className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-success/15 text-success">
             <CheckCircle2 className="size-5" /> ลงเวลาครบแล้ววันนี้
           </div>
-        ) : hasIn ? (
-          <Button
-            size="lg"
-            className="h-14 w-full gap-2 rounded-2xl bg-white text-base font-semibold text-slate-900 hover:bg-slate-100"
-            disabled={checking}
-            onClick={() => (moodOpen ? setMoodOpen(false) : requestPhoto("out"))}
-          >
-            {checking ? <Loader2 className="size-5 animate-spin" /> : <LogOut className="size-5" />} เช็คเอาท์
-          </Button>
         ) : (
-          <Button
-            size="lg"
-            className="h-14 w-full gap-2 rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90"
-            disabled={checking}
-            onClick={() => requestPhoto("in")}
-          >
-            {checking ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} เช็คอิน
-          </Button>
-        )}
-
-        {/* Map confirmation — only for ONSITE with a configured geofence */}
-        {mapPreview && (
-          <div className="space-y-3 rounded-2xl bg-white/5 p-3">
-            <p className="text-center text-xs text-slate-300">ยืนยันตำแหน่งของคุณก่อน{mapPreview.kind === "in" ? "เช็คอิน" : "เช็คเอาท์"}</p>
-            {branch?.lat != null && branch?.lng != null && branch?.radiusMeters != null && (
-              <GeofenceMap
-                branchLat={branch.lat}
-                branchLng={branch.lng}
-                radiusMeters={branch.radiusMeters}
-                userLat={mapPreview.coords.lat}
-                userLng={mapPreview.coords.lng}
-              />
+          <div className="flex gap-2">
+            {hasIn ? (
+              <Button
+                size="lg"
+                className="h-14 flex-1 gap-2 rounded-2xl bg-white text-base font-semibold text-slate-900 hover:bg-slate-100"
+                disabled={checking}
+                onClick={() => (moodOpen ? setMoodOpen(false) : setMoodOpen(true))}
+              >
+                {checking ? <Loader2 className="size-5 animate-spin" /> : <LogOut className="size-5" />} เช็คเอาท์
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="h-14 flex-1 gap-2 rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90"
+                disabled={checking}
+                onClick={startClockIn}
+              >
+                {checking ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} เช็คอิน
+              </Button>
             )}
-            <div className="flex gap-2">
+            {!moodOpen && (
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1 border-white/15 bg-transparent text-white hover:bg-white/10"
                 disabled={checking}
-                onClick={() => setMapPreview(null)}
+                onClick={() => setQrOpen(true)}
+                className="h-14 w-14 shrink-0 rounded-2xl border-white/15 bg-white/5 text-white hover:bg-white/10"
+                aria-label="สแกน QR ที่สาขา"
               >
-                ยกเลิก
+                <QrCode className="size-6" />
               </Button>
-              <Button type="button" className="flex-1" disabled={checking} onClick={confirmMapPreview}>
-                {checking ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-                ยืนยัน{mapPreview.kind === "in" ? "เช็คอิน" : "เช็คเอาท์"}
-              </Button>
-            </div>
+            )}
           </div>
         )}
 
         {/* Mood picker — appears in place, tap an emoji to check out immediately */}
-        {moodOpen && !mapPreview && (
+        {moodOpen && (
           <div className="mt-3 rounded-2xl bg-white/5 p-3">
             <p className="mb-2 text-center text-xs text-slate-300">วันนี้เป็นอย่างไรบ้าง? (แตะเพื่อเช็คเอาท์)</p>
             <div className="flex items-center justify-between">
@@ -559,20 +586,24 @@ export function ClockCard() {
           </div>
         )}
 
-        {!isLoading && !hasOut && !moodOpen && !mapPreview && (
-          <>
-            <p className="mt-2 text-center text-xs text-slate-400">
-              {hasIn ? "แตะเพื่อเช็คเอาท์เมื่อเลิกงาน" : "แตะเพื่อเช็คอินเข้างานทันที"}
-            </p>
-            <button
-              type="button"
-              disabled={checking}
-              onClick={() => setQrOpen(true)}
-              className="mx-auto mt-2 flex items-center gap-1.5 text-xs text-slate-300 underline-offset-2 hover:text-white hover:underline disabled:opacity-40"
-            >
-              <QrCode className="size-3.5" /> หรือสแกน QR ที่สาขา
-            </button>
-          </>
+        {/* Optional identity photo — never blocks the primary tap; attach it
+            ahead of time if wanted, or leave it and check in/out with nothing. */}
+        {!hasOut && !moodOpen && (
+          <button
+            type="button"
+            onClick={() => (hasPhoto ? clearPhoto() : setPhotoOpen(true))}
+            className="mx-auto mt-3 flex items-center gap-1.5 text-xs text-slate-300 underline-offset-2 hover:text-white hover:underline"
+          >
+            {hasPhoto ? (
+              <>
+                <CheckCircle2 className="size-3.5 text-success" /> แนบรูปยืนยันตัวตนแล้ว · แตะเพื่อลบ
+              </>
+            ) : (
+              <>
+                <Camera className="size-3.5" /> ถ่ายรูปยืนยันตัวตน (ไม่บังคับ)
+              </>
+            )}
+          </button>
         )}
       </div>
 
@@ -623,12 +654,12 @@ export function ClockCard() {
         </div>
       </div>
 
-      {/* Auto-opened on every clock-in/out tap — photo is still optional (skippable) */}
-      <Dialog open={photoOpen} onOpenChange={(v) => (v ? setPhotoOpen(true) : skipPhoto())}>
+      {/* Optional identity photo capture — opened only on request */}
+      <Dialog open={photoOpen} onOpenChange={setPhotoOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>ถ่ายรูปยืนยันตัวตน</DialogTitle>
-            <DialogDescription>ใช้สำหรับยืนยันตัวตนเพิ่มเติม — ข้ามได้หากไม่สะดวก</DialogDescription>
+            <DialogDescription>ใช้สำหรับยืนยันตัวตนเพิ่มเติม — ไม่บังคับ ปิดหน้าต่างนี้ได้ทุกเมื่อ</DialogDescription>
           </DialogHeader>
           <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900">
             <video ref={videoRef} playsInline muted className="size-full object-cover" />
@@ -644,7 +675,7 @@ export function ClockCard() {
             )}
             <button
               type="button"
-              onClick={skipPhoto}
+              onClick={() => setPhotoOpen(false)}
               className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/50 text-white"
               aria-label="ปิด"
             >
@@ -654,13 +685,6 @@ export function ClockCard() {
           <Button type="button" className="w-full" onClick={capture} disabled={!camReady}>
             <Camera className="size-4" /> ถ่ายรูป
           </Button>
-          <button
-            type="button"
-            onClick={skipPhoto}
-            className="text-center text-xs text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
-          >
-            ข้ามการถ่ายรูป
-          </button>
         </DialogContent>
       </Dialog>
 
@@ -719,5 +743,89 @@ export function ClockCard() {
         </DialogContent>
       </Dialog>
     </section>
+  );
+}
+
+function GpsStatusChip({
+  status,
+  errorMsg,
+  hasGeofence,
+  distance,
+  accuracy,
+  inRadius,
+  onRetry,
+  showMap,
+  onToggleMap,
+}: {
+  status: GpsStatus;
+  errorMsg: string | null;
+  hasGeofence: boolean;
+  distance: number | null;
+  accuracy?: number;
+  inRadius: boolean | null;
+  onRetry: () => void;
+  showMap: boolean;
+  onToggleMap: () => void;
+}) {
+  if (status === "locating") {
+    return (
+      <div className="relative mt-3 flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs text-slate-300">
+        <Loader2 className="size-3.5 shrink-0 animate-spin" /> กำลังขอตำแหน่ง…
+      </div>
+    );
+  }
+
+  if (status === "denied") {
+    return (
+      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning">
+        <span className="flex items-center gap-2">
+          <ShieldAlert className="size-3.5 shrink-0" /> ยังไม่อนุญาตตำแหน่ง — เปิดสิทธิ์เข้าถึงตำแหน่งในตั้งค่าเบราว์เซอร์
+        </span>
+        <button type="button" onClick={onRetry} className="shrink-0 font-medium underline-offset-2 hover:underline">
+          ลองใหม่
+        </button>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning">
+        <span className="flex items-center gap-2">
+          <AlertTriangle className="size-3.5 shrink-0" /> {errorMsg ?? "ระบุตำแหน่งไม่ได้ / หมดเวลา"}
+        </span>
+        <button type="button" onClick={onRetry} className="shrink-0 font-medium underline-offset-2 hover:underline">
+          ลองใหม่
+        </button>
+      </div>
+    );
+  }
+
+  if (!hasGeofence) {
+    return (
+      <div className="relative mt-3 flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs text-slate-300">
+        <MapPinned className="size-3.5 shrink-0 text-success" /> GPS พร้อม · สาขานี้ไม่ได้ตั้งเขตพื้นที่ไว้
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative mt-3 space-y-1.5">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs",
+          inRadius ? "bg-success/10 text-success" : "bg-warning/10 text-warning",
+        )}
+      >
+        <span className="flex items-center gap-2">
+          <MapPinned className="size-3.5 shrink-0" />
+          {inRadius ? "ในพื้นที่" : "นอกพื้นที่"} · ห่าง {Math.round(distance ?? 0).toLocaleString()} ม.
+          {accuracy != null && ` (±${Math.round(accuracy)} ม.)`}
+        </span>
+        <button type="button" onClick={onToggleMap} className="shrink-0 font-medium underline-offset-2 hover:underline">
+          {showMap ? "ซ่อนแผนที่" : "ดูแผนที่"}
+        </button>
+      </div>
+    </div>
   );
 }

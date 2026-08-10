@@ -114,6 +114,16 @@ export interface EmployeeEvaluationHistoryItem {
   };
 }
 
+export interface MyPendingResponse {
+  responseId: string;
+  raterType: RaterType;
+  participantId: string;
+  campaignId: string;
+  campaignName: string;
+  cycle: string;
+  employee: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
+}
+
 export interface BulkUpsertCompetencyResult {
   competencyId: string;
   name: string;

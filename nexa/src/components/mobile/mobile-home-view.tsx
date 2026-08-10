@@ -10,7 +10,7 @@ import { MobileMenuTileGrid } from "./mobile-menu-tile-grid";
  * than an individual contributor because they hold more permissions.
  */
 export function MobileHomeView({ title = "GV One" }: { title?: string }) {
-  const groups = useMobileMenuGroups();
+  const { groups, hrStartIndex } = useMobileMenuGroups();
 
   return (
     <div className="flex min-h-full flex-col bg-muted md:hidden">
@@ -19,7 +19,7 @@ export function MobileHomeView({ title = "GV One" }: { title?: string }) {
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 pb-2">
-        <MobileMenuTileGrid groups={groups} />
+        <MobileMenuTileGrid groups={groups} hrStartIndex={hrStartIndex} />
       </div>
     </div>
   );

@@ -460,6 +460,49 @@ async function computeAndStoreScore(participantId: string) {
 }
 
 /**
+ * Every evaluation task the caller still owes a score for, across every
+ * active campaign — SELF (their own), MANAGER (their reports'), and any
+ * PEER/UPWARD invites, since all four are just rows in the same table keyed
+ * by `raterEmployeeId`. Powers both the mobile performance screen's
+ * "รายการที่ต้องให้คะแนน" list and the Home tab's pending-count card.
+ */
+export async function getMyPendingResponses(companyId: string, session: AccessClaims) {
+  const employeeId = session.employeeId;
+  if (!employeeId) return [];
+
+  const rows = await prisma.evaluationResponse.findMany({
+    where: {
+      raterEmployeeId: employeeId,
+      status: "PENDING",
+      participant: { campaign: { companyId, status: "ACTIVE", deletedAt: null } },
+    },
+    select: {
+      id: true,
+      raterType: true,
+      participant: {
+        select: {
+          id: true,
+          employee: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          campaign: { select: { id: true, name: true, cycle: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+  });
+
+  return rows.map((r) => ({
+    responseId: r.id,
+    raterType: r.raterType,
+    participantId: r.participant.id,
+    campaignId: r.participant.campaign.id,
+    campaignName: r.participant.campaign.name,
+    cycle: r.participant.campaign.cycle,
+    employee: r.participant.employee,
+  }));
+}
+
+/**
  * Which response row belongs to the caller is derived from
  * `raterEmployeeId` — never trusted from the client. SELF/MANAGER rows are
  * stamped with the employee's/manager's id at seed time; PEER/UPWARD rows

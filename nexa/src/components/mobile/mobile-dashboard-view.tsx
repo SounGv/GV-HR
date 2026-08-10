@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CalendarDays, Wallet, Star } from "lucide-react";
+import { Bell, CalendarDays, Wallet, Star, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useNotifications } from "@/features/notification/hooks";
 import { ClockCard } from "@/features/attendance/clock-card";
+import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useMobileMenuGroups } from "./use-mobile-menu-groups";
 import { MobileMenuTileGrid } from "./mobile-menu-tile-grid";
 
@@ -37,7 +38,9 @@ export function MobileDashboardView({
 }) {
   const { data: notifData } = useNotifications();
   const unread = notifData?.data?.unread ?? 0;
-  const groups = useMobileMenuGroups();
+  const { groups, hrStartIndex } = useMobileMenuGroups();
+  const { data: pendingData } = useMyPendingResponses();
+  const pendingCount = pendingData?.data?.length ?? 0;
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -102,7 +105,20 @@ export function MobileDashboardView({
           </div>
         )}
 
-        <MobileMenuTileGrid groups={groups} />
+        {pendingCount > 0 && (
+          <Link
+            href="/performance"
+            className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm active:bg-muted"
+          >
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <ClipboardCheck className="size-4" />
+            </span>
+            <p className="flex-1 text-sm font-medium text-foreground">ประเมินค้าง {pendingCount} รายการ</p>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Link>
+        )}
+
+        <MobileMenuTileGrid groups={groups} hrStartIndex={hrStartIndex} />
       </div>
     </div>
   );

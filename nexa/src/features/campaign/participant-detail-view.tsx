@@ -7,10 +7,10 @@ import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScorePicker } from "@/components/shared/score-picker";
 import { fullName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/features/auth/auth-context";
@@ -18,14 +18,8 @@ import { useOrgOptions } from "@/features/employee/hooks";
 import { sendChat } from "@/features/ai/api";
 import { groupByCategory } from "@/lib/competency-grouping";
 import { useInviteRater, useParticipant, useRemoveRater, useSubmitMyResponse } from "./hooks";
+import { RATER_LABEL } from "./labels";
 import type { CampaignCompetency, ParticipantDetail } from "./types";
-
-const RATER_LABEL: Record<string, string> = {
-  SELF: "ประเมินตนเอง",
-  MANAGER: "หัวหน้างาน",
-  PEER: "เพื่อนร่วมงาน",
-  UPWARD: "ผู้ใต้บังคับบัญชา",
-};
 
 /** Compact text summary of every submitted response, for the AI to reason over. */
 function participantToPrompt(participant: ParticipantDetail): string {
@@ -181,7 +175,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
                 <div key={group.categoryId} className="space-y-1.5">
                   <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
                   {group.items.map((c) => (
-                    <div key={c.competencyId} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                    <div key={c.competencyId} className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground">{c.name}</p>
                         {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
@@ -189,16 +183,9 @@ export function ParticipantDetailView({ participantId }: { participantId: string
                           <p className="text-xs text-muted-foreground">ตัวอย่างพฤติกรรม: {c.exampleBehavior}</p>
                         )}
                       </div>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={5}
-                        step={0.5}
-                        className="w-20 shrink-0"
+                      <ScorePicker
                         value={scores[c.competencyId] ?? 3}
-                        onChange={(e) =>
-                          setScores((prev) => ({ ...prev, [c.competencyId]: Number(e.target.value) || 1 }))
-                        }
+                        onChange={(v) => setScores((prev) => ({ ...prev, [c.competencyId]: v }))}
                       />
                     </div>
                   ))}
