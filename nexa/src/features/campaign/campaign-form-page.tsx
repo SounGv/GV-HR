@@ -22,9 +22,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/client";
 import { useCompetencies } from "@/features/competency/hooks";
 import { groupByCategory } from "@/lib/competency-grouping";
+import { useEvaluationTemplates } from "@/features/evaluation-template/hooks";
 import { AiDesignerPanel } from "./ai-designer-panel";
 import { useCreateCampaign, useUpdateCampaign } from "./hooks";
 import type { CampaignDetail, RaterType } from "./types";
@@ -56,8 +59,14 @@ function defaultCycle() {
 export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
   const router = useRouter();
   const isEdit = !!campaign;
+  const isTemplateBased = isEdit && !!campaign.templateId;
   const { data: competencyData } = useCompetencies();
   const competencies = competencyData?.data ?? [];
+  const { data: templateData } = useEvaluationTemplates("ACTIVE");
+  const activeTemplates = templateData?.data ?? [];
+
+  const [useEvalTemplate, setUseEvalTemplate] = useState(false);
+  const [templateId, setTemplateId] = useState("");
 
   const [selected, setSelected] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
@@ -117,15 +126,35 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
   }
 
   async function onSubmit(values: FormSchema) {
-    const competencyList = Object.entries(selected).map(([competencyId, weight]) => ({ competencyId, weight }));
-    if (competencyList.length === 0) {
-      toast.error("กรุณาเลือกสมรรถนะอย่างน้อย 1 รายการ");
-      return;
-    }
     if (raterTypes.length === 0) {
       toast.error("กรุณาเลือกทิศทางการประเมินอย่างน้อย 1 แบบ");
       return;
     }
+
+    if (isTemplateBased) {
+      // Template selection is locked in at creation — editing only touches
+      // name/cycle/dates/rater types here, never the template/competencies.
+      try {
+        await updateMutation.mutateAsync({ ...values, raterTypes });
+        toast.success("บันทึกการแก้ไขเรียบร้อย");
+        router.push(`/performance/campaigns/${campaign.id}`);
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ");
+      }
+      return;
+    }
+
+    if (!isEdit && useEvalTemplate && !templateId) {
+      toast.error("กรุณาเลือกแบบประเมิน (Template)");
+      return;
+    }
+
+    const competencyList = Object.entries(selected).map(([competencyId, weight]) => ({ competencyId, weight }));
+    if (!(!isEdit && useEvalTemplate) && competencyList.length === 0) {
+      toast.error("กรุณาเลือกสมรรถนะอย่างน้อย 1 รายการ");
+      return;
+    }
+
     try {
       if (isEdit) {
         await updateMutation.mutateAsync({ ...values, raterTypes, competencies: competencyList });
@@ -135,7 +164,7 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
         const res = await createMutation.mutateAsync({
           ...values,
           raterTypes,
-          competencies: competencyList,
+          ...(useEvalTemplate ? { templateId } : { competencies: competencyList }),
           aiGenerated,
           aiRationale: aiRationale || undefined,
         });
@@ -238,75 +267,122 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
             </p>
           </Card>
 
-          {showAiDesigner && (
-            <AiDesignerPanel onApply={handleAiApply} onClose={() => setShowAiDesigner(false)} />
-          )}
-
-          <Card className="gap-2 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium text-foreground">สมรรถนะที่ใช้ประเมิน</p>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">เลือกแล้ว {Object.keys(selected).length} รายการ</span>
-                {!showAiDesigner && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowAiDesigner(true)}>
-                    <Sparkles className="size-4" /> ให้ AI ออกแบบให้
-                  </Button>
-                )}
-              </div>
-            </div>
-            {aiGenerated && (
-              <p className="flex items-center gap-1 text-xs text-primary">ออกแบบด้วย AI — สามารถปรับน้ำหนักหรือเพิ่ม/ลดรายการได้ตามต้องการ</p>
-            )}
-            {Object.keys(selected).length === 0 && (
-              <p className="rounded-lg bg-destructive-muted px-3 py-2 text-xs font-medium text-destructive">
-                ยังไม่ได้เลือกสมรรถนะ — ต้องเลือกอย่างน้อย 1 รายการก่อนจึงจะสร้างแคมเปญได้ (ถ้าใช้ AI ออกแบบให้ อย่าลืมกด
-                &ldquo;ใช้ผลลัพธ์นี้&rdquo; ก่อนกด &ldquo;สร้างแคมเปญ&rdquo;)
-              </p>
-            )}
-            {competencies.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                ยังไม่มีสมรรถนะในคลัง —{" "}
-                <Link href="/performance/competencies/new" className="text-primary hover:underline">
-                  เพิ่มสมรรถนะก่อน
-                </Link>
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {groupedCompetencies.map((group) => (
-                  <div key={group.categoryId} className="space-y-1.5">
-                    <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
-                    {group.items.map((c) => {
-                      const checked = c.id in selected;
-                      return (
-                        <div
-                          key={c.id}
-                          className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggle(c.id)}
-                            className="size-4 shrink-0 accent-primary"
-                          />
-                          <span className="min-w-0 flex-1 truncate text-sm text-foreground">{c.name}</span>
-                          {checked && (
-                            <Input
-                              type="number"
-                              min={1}
-                              max={5}
-                              value={selected[c.id]}
-                              onChange={(e) => setWeight(c.id, Number(e.target.value) || 1)}
-                              className="w-16 shrink-0"
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
+          {isTemplateBased ? (
+            <Card className="border-primary/30 bg-primary/5 p-4 text-sm text-foreground">
+              แคมเปญนี้ใช้แบบประเมิน (Template) — เลือก/เปลี่ยนแบบประเมินได้เฉพาะตอนสร้างแคมเปญเท่านั้น
+            </Card>
+          ) : (
+            <>
+              {!isEdit && (
+                <Card className="flex-row items-center justify-between gap-2 p-4">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium text-foreground">ใช้แบบประเมิน (Template) แทนสมรรถนะ</p>
+                    <p className="text-xs text-muted-foreground">เลือกแบบประเมินที่สร้างไว้ในหน้า “แบบประเมิน” แทนการเลือกสมรรถนะรายข้อ</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </Card>
+                  <Switch checked={useEvalTemplate} onCheckedChange={setUseEvalTemplate} />
+                </Card>
+              )}
+
+              {!isEdit && useEvalTemplate ? (
+                <Card className="gap-2 p-4">
+                  <p className="text-sm font-medium text-foreground">แบบประเมิน</p>
+                  {activeTemplates.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      ยังไม่มีแบบประเมินที่พร้อมใช้งาน —{" "}
+                      <Link href="/performance/templates/new" className="text-primary hover:underline">
+                        สร้างแบบประเมินก่อน
+                      </Link>
+                    </p>
+                  ) : (
+                    <Select value={templateId} onValueChange={(v) => setTemplateId(v ?? "")}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="เลือกแบบประเมิน" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeTemplates.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </Card>
+              ) : (
+                <>
+                  {showAiDesigner && (
+                    <AiDesignerPanel onApply={handleAiApply} onClose={() => setShowAiDesigner(false)} />
+                  )}
+
+                  <Card className="gap-2 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-foreground">สมรรถนะที่ใช้ประเมิน</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">เลือกแล้ว {Object.keys(selected).length} รายการ</span>
+                        {!showAiDesigner && (
+                          <Button type="button" variant="outline" size="sm" onClick={() => setShowAiDesigner(true)}>
+                            <Sparkles className="size-4" /> ให้ AI ออกแบบให้
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    {aiGenerated && (
+                      <p className="flex items-center gap-1 text-xs text-primary">ออกแบบด้วย AI — สามารถปรับน้ำหนักหรือเพิ่ม/ลดรายการได้ตามต้องการ</p>
+                    )}
+                    {Object.keys(selected).length === 0 && (
+                      <p className="rounded-lg bg-destructive-muted px-3 py-2 text-xs font-medium text-destructive">
+                        ยังไม่ได้เลือกสมรรถนะ — ต้องเลือกอย่างน้อย 1 รายการก่อนจึงจะสร้างแคมเปญได้ (ถ้าใช้ AI ออกแบบให้ อย่าลืมกด
+                        &ldquo;ใช้ผลลัพธ์นี้&rdquo; ก่อนกด &ldquo;สร้างแคมเปญ&rdquo;)
+                      </p>
+                    )}
+                    {competencies.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        ยังไม่มีสมรรถนะในคลัง —{" "}
+                        <Link href="/performance/competencies/new" className="text-primary hover:underline">
+                          เพิ่มสมรรถนะก่อน
+                        </Link>
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {groupedCompetencies.map((group) => (
+                          <div key={group.categoryId} className="space-y-1.5">
+                            <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
+                            {group.items.map((c) => {
+                              const checked = c.id in selected;
+                              return (
+                                <div
+                                  key={c.id}
+                                  className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggle(c.id)}
+                                    className="size-4 shrink-0 accent-primary"
+                                  />
+                                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">{c.name}</span>
+                                  {checked && (
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      max={5}
+                                      value={selected[c.id]}
+                                      onChange={(e) => setWeight(c.id, Number(e.target.value) || 1)}
+                                      className="w-16 shrink-0"
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </>
+              )}
+            </>
+          )}
         </form>
       </Form>
     </FormPageShell>

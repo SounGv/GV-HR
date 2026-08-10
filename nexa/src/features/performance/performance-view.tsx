@@ -1,7 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, ClipboardCheck, Target, Scale, Grid3x3, Users, Building2 } from "lucide-react";
+import {
+  Plus,
+  ClipboardCheck,
+  ClipboardList,
+  Target,
+  CalendarClock,
+  Sparkles,
+  Scale,
+  Grid3x3,
+  Users,
+  Building2,
+  BarChart3,
+} from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -11,11 +23,21 @@ import { CampaignView } from "@/features/campaign/campaign-view";
 import { CalibrationView } from "@/features/calibration/calibration-view";
 import { NineBoxView } from "@/features/calibration/nine-box-view";
 import { SuccessionView } from "@/features/succession/succession-view";
+import { TemplateListView } from "@/features/evaluation-template/template-list-view";
+import { ScheduleTemplateListView } from "@/features/evaluation-schedule/schedule-list-view";
+import { CompetencyView } from "@/features/competency/competency-view";
 
 import { ReviewCard } from "./review-card";
 import { DepartmentSummaryView } from "./department-summary-view";
 import { useReviews } from "./hooks";
 
+/**
+ * Three top-level tabs only — 9-Box/Calibration/Succession/AI/schedules/
+ * competencies used to all sit in one flat row, which buried the two things
+ * most people actually need (my own results, and HR's campaign setup) among
+ * rarely-used analytics tools. Everything HR-only now nests under
+ * "จัดการรอบประเมิน" / "วิเคราะห์บุคลากร" instead of competing for top billing.
+ */
 export function PerformanceView() {
   const { can } = useAuth();
   const canReview = can("performance:create");
@@ -23,20 +45,114 @@ export function PerformanceView() {
   const canCampaign = can("campaign:read");
   const canCalibration = can("calibration:read");
   const canSuccession = can("succession:read");
+  const canAnalytics = canHrLevel || canCalibration || canSuccession;
+
+  return (
+    <Tabs defaultValue="tasks" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="tasks">
+          <ClipboardCheck className="size-3.5" /> งานประเมิน
+        </TabsTrigger>
+        {canCampaign && (
+          <TabsTrigger value="manage">
+            <CalendarClock className="size-3.5" /> จัดการรอบประเมิน
+          </TabsTrigger>
+        )}
+        {canAnalytics && (
+          <TabsTrigger value="analytics">
+            <BarChart3 className="size-3.5" /> วิเคราะห์บุคลากร
+          </TabsTrigger>
+        )}
+      </TabsList>
+
+      <TabsContent value="tasks">
+        <EvaluationTasksTab canReview={canReview} />
+      </TabsContent>
+
+      {canCampaign && (
+        <TabsContent value="manage">
+          <ManageCampaignsTab />
+        </TabsContent>
+      )}
+
+      {canAnalytics && (
+        <TabsContent value="analytics">
+          <AnalyticsTab canHrLevel={canHrLevel} canCalibration={canCalibration} canSuccession={canSuccession} />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+}
+
+function EvaluationTasksTab({ canReview }: { canReview: boolean }) {
+  if (!canReview) return <MyReviews />;
 
   return (
     <Tabs defaultValue="me" className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">ผลประเมินของฉัน</TabsTrigger>
-        {canReview && <TabsTrigger value="team">ประเมินทีม</TabsTrigger>}
+        <TabsTrigger value="team">ประเมินทีม</TabsTrigger>
+      </TabsList>
+      <TabsContent value="me">
+        <MyReviews />
+      </TabsContent>
+      <TabsContent value="team">
+        <TeamReviews />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function ManageCampaignsTab() {
+  return (
+    <Tabs defaultValue="campaigns" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="templates">
+          <ClipboardList className="size-3.5" /> แบบประเมิน
+        </TabsTrigger>
+        <TabsTrigger value="campaigns">
+          <Target className="size-3.5" /> รอบประเมิน
+        </TabsTrigger>
+        <TabsTrigger value="schedules">
+          <CalendarClock className="size-3.5" /> ตารางประเมินอัตโนมัติ
+        </TabsTrigger>
+        <TabsTrigger value="competencies">
+          <Sparkles className="size-3.5" /> คลังสมรรถนะเดิม
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="templates">
+        <TemplateListView />
+      </TabsContent>
+      <TabsContent value="campaigns">
+        <CampaignView />
+      </TabsContent>
+      <TabsContent value="schedules">
+        <ScheduleTemplateListView />
+      </TabsContent>
+      <TabsContent value="competencies">
+        <CompetencyView />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function AnalyticsTab({
+  canHrLevel,
+  canCalibration,
+  canSuccession,
+}: {
+  canHrLevel: boolean;
+  canCalibration: boolean;
+  canSuccession: boolean;
+}) {
+  const first = canHrLevel ? "department-summary" : canCalibration ? "calibration" : "succession";
+
+  return (
+    <Tabs defaultValue={first} className="space-y-4">
+      <TabsList>
         {canHrLevel && (
           <TabsTrigger value="department-summary">
             <Building2 className="size-3.5" /> สรุปแผนก
-          </TabsTrigger>
-        )}
-        {canCampaign && (
-          <TabsTrigger value="campaigns">
-            <Target className="size-3.5" /> แคมเปญ
           </TabsTrigger>
         )}
         {canCalibration && (
@@ -55,41 +171,21 @@ export function PerformanceView() {
           </TabsTrigger>
         )}
       </TabsList>
-
-      <TabsContent value="me">
-        <MyReviews />
-      </TabsContent>
-
-      {canReview && (
-        <TabsContent value="team">
-          <TeamReviews />
-        </TabsContent>
-      )}
-
       {canHrLevel && (
         <TabsContent value="department-summary">
           <DepartmentSummaryView />
         </TabsContent>
       )}
-
-      {canCampaign && (
-        <TabsContent value="campaigns">
-          <CampaignView />
-        </TabsContent>
-      )}
-
       {canCalibration && (
         <TabsContent value="calibration">
           <CalibrationView />
         </TabsContent>
       )}
-
       {canCalibration && (
         <TabsContent value="nine-box">
           <NineBoxView />
         </TabsContent>
       )}
-
       {canSuccession && (
         <TabsContent value="succession">
           <SuccessionView />

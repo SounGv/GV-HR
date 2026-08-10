@@ -4,6 +4,9 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { scoreBand } from "@/lib/scoring";
 import { createNotification } from "@/features/notification/service";
+import { getTemplateSnapshot } from "@/features/evaluation-template/service";
+import { scoreTemplateAnswers } from "@/features/evaluation-template/scoring";
+import type { CampaignTemplateSnapshot } from "@/features/evaluation-template/types";
 import { RATER_LABEL } from "./labels";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
@@ -89,6 +92,7 @@ export async function listCampaigns(companyId: string, query: CampaignListQuery)
       status: true,
       raterTypes: true,
       aiGenerated: true,
+      templateId: true,
       _count: { select: { participants: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -104,6 +108,7 @@ export async function listCampaigns(companyId: string, query: CampaignListQuery)
     status: c.status,
     raterTypes: c.raterTypes,
     aiGenerated: c.aiGenerated,
+    templateId: c.templateId,
     participantCount: c._count.participants,
   }));
 }
@@ -121,6 +126,8 @@ export async function getCampaign(companyId: string, id: string, session: Access
       raterTypes: true,
       aiGenerated: true,
       aiRationale: true,
+      templateId: true,
+      templateSnapshot: true,
       competencies: { select: competencySelect },
       participants: { select: participantSelect },
     },
@@ -144,6 +151,8 @@ export async function getCampaign(companyId: string, id: string, session: Access
     raterTypes: campaign.raterTypes,
     aiGenerated: campaign.aiGenerated,
     aiRationale: campaign.aiRationale,
+    templateId: campaign.templateId,
+    templateSnapshot: campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null,
     competencies: mapCompetencies(campaign.competencies),
     participants,
     participantCount: campaign.participants.length,
@@ -156,11 +165,18 @@ export async function createCampaign(
   input: CampaignCreateInput,
   meta?: Meta,
 ) {
-  const competencyIds = input.competencies.map((c) => c.competencyId);
-  const found = await prisma.competency.count({
-    where: { id: { in: competencyIds }, companyId, deletedAt: null },
-  });
-  if (found !== competencyIds.length) throw BadRequest("พบสมรรถนะที่ไม่ถูกต้อง");
+  // Template-based campaigns freeze a snapshot at create time and skip the
+  // Competency list entirely — the two paths are mutually exclusive (see
+  // campaignCreateSchema's refine).
+  const templateSnapshot = input.templateId ? await getTemplateSnapshot(companyId, input.templateId) : null;
+
+  if (!templateSnapshot) {
+    const competencyIds = (input.competencies ?? []).map((c) => c.competencyId);
+    const found = await prisma.competency.count({
+      where: { id: { in: competencyIds }, companyId, deletedAt: null },
+    });
+    if (found !== competencyIds.length) throw BadRequest("พบสมรรถนะที่ไม่ถูกต้อง");
+  }
 
   const campaign = await prisma.evaluationCampaign.create({
     data: {
@@ -174,9 +190,13 @@ export async function createCampaign(
       aiRationale: input.aiRationale,
       createdById: session.sub,
       updatedById: session.sub,
-      competencies: {
-        create: input.competencies.map((c) => ({ competencyId: c.competencyId, weight: c.weight })),
-      },
+      ...(templateSnapshot
+        ? { templateId: templateSnapshot.templateId, templateSnapshot: templateSnapshot as object }
+        : {
+            competencies: {
+              create: (input.competencies ?? []).map((c) => ({ competencyId: c.competencyId, weight: c.weight })),
+            },
+          }),
     },
     select: { id: true },
   });
@@ -446,7 +466,14 @@ export async function getParticipant(companyId: string, participantId: string, s
     select: {
       ...participantSelect,
       campaign: {
-        select: { id: true, name: true, cycle: true, raterTypes: true, competencies: { select: competencySelect } },
+        select: {
+          id: true,
+          name: true,
+          cycle: true,
+          raterTypes: true,
+          competencies: { select: competencySelect },
+          templateSnapshot: true,
+        },
       },
       responses: {
         select: {
@@ -455,6 +482,7 @@ export async function getParticipant(companyId: string, participantId: string, s
           raterEmployeeId: true,
           status: true,
           scores: true,
+          answers: true,
           strengths: true,
           improvements: true,
           summary: true,
@@ -484,8 +512,12 @@ export async function getParticipant(companyId: string, participantId: string, s
       cycle: participant.campaign.cycle,
       raterTypes: participant.campaign.raterTypes,
       competencies: mapCompetencies(participant.campaign.competencies),
+      templateSnapshot: participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null,
     },
-    fullResponses: participant.responses,
+    fullResponses: participant.responses.map((r) => ({
+      ...r,
+      answers: r.answers as { questionId: string; value: string }[] | null,
+    })),
   };
 }
 
@@ -504,9 +536,10 @@ async function computeAndStoreScore(participantId: string) {
         select: {
           raterTypes: true,
           competencies: { select: { competencyId: true, weight: true } },
+          templateSnapshot: true,
         },
       },
-      responses: { select: { raterType: true, status: true, scores: true } },
+      responses: { select: { raterType: true, status: true, scores: true, answers: true } },
     },
   });
   if (!participant) return;
@@ -516,6 +549,17 @@ async function computeAndStoreScore(participantId: string) {
     (r) => r.raterType === scoringRaterType && r.status === "SUBMITTED",
   );
   if (!response) return;
+
+  const templateSnapshot = participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null;
+  if (templateSnapshot) {
+    const answers = (response.answers as { questionId: string; value: string }[] | null) ?? [];
+    const overall = scoreTemplateAnswers(templateSnapshot.sections, answers);
+    await prisma.evaluationParticipant.update({
+      where: { id: participantId },
+      data: { overallScore: overall, band: scoreBand(overall) },
+    });
+    return;
+  }
 
   const raterScores = response.scores as { competencyId: string; score: number }[];
   const weightMap = new Map(participant.campaign.competencies.map((c) => [c.competencyId, c.weight]));
@@ -614,7 +658,8 @@ export async function submitMyResponse(
   await prisma.evaluationResponse.update({
     where: { id: response.id },
     data: {
-      scores: input.scores,
+      scores: input.scores ?? [],
+      answers: input.answers ?? undefined,
       strengths: input.strengths,
       improvements: input.improvements,
       summary: input.summary,

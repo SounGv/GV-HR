@@ -11,7 +11,7 @@ const competencyWeightSchema = z.object({
 
 const INTERVAL_MONTHS = [1, 3, 6, 12] as const;
 
-export const scheduleTemplateCreateSchema = z.object({
+const scheduleTemplateBaseSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อรอบอัตโนมัติ").max(160),
   departmentId: z.string().uuid("กรุณาเลือกแผนก"),
   intervalMonths: z.coerce
@@ -22,9 +22,17 @@ export const scheduleTemplateCreateSchema = z.object({
   raterTypes: raterTypesSchema.default(["SELF", "MANAGER"]),
   nextRunAt: z.string().min(1, "กรุณาเลือกวันที่เริ่มรอบแรก"),
   active: z.boolean().optional(),
-  competencies: z.array(competencyWeightSchema).min(1, "ต้องมีอย่างน้อย 1 สมรรถนะ"),
+  // Mutually exclusive with `competencies` — a schedule either generates
+  // legacy Competency-based campaigns or new Template-based ones.
+  evaluationTemplateId: z.string().uuid().optional(),
+  competencies: z.array(competencyWeightSchema).optional(),
 });
+
+export const scheduleTemplateCreateSchema = scheduleTemplateBaseSchema.refine(
+  (v) => !!v.evaluationTemplateId || (v.competencies && v.competencies.length > 0),
+  { message: "ต้องเลือกแบบประเมิน (Template) หรือสมรรถนะอย่างน้อย 1 รายการ", path: ["competencies"] },
+);
 export type ScheduleTemplateCreateInput = z.infer<typeof scheduleTemplateCreateSchema>;
 
-export const scheduleTemplateUpdateSchema = scheduleTemplateCreateSchema.partial();
+export const scheduleTemplateUpdateSchema = scheduleTemplateBaseSchema.partial();
 export type ScheduleTemplateUpdateInput = z.infer<typeof scheduleTemplateUpdateSchema>;

@@ -14,6 +14,7 @@ import { getCampaign } from "@/features/campaign/service";
 import { ParticipantList } from "@/features/campaign/participant-list";
 import { AddParticipantsDialog } from "@/features/campaign/add-participants-dialog";
 import { CampaignStatusActions } from "@/features/campaign/campaign-status-actions";
+import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 
 export const metadata: Metadata = { title: "รายละเอียดแคมเปญ" };
 
@@ -84,16 +85,20 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Target className="size-4" /> สมรรถนะที่ใช้ประเมิน
+            <Target className="size-4" /> {campaign.templateSnapshot ? `แบบประเมิน: ${campaign.templateSnapshot.name}` : "สมรรถนะที่ใช้ประเมิน"}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1.5">
-          {campaign.competencies.map((c) => (
-            <div key={c.competencyId} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
-              <span className="font-medium text-foreground">{c.name}</span>
-              <span className="text-muted-foreground">น้ำหนัก {c.weight}</span>
-            </div>
-          ))}
+        <CardContent className={campaign.templateSnapshot ? undefined : "space-y-1.5"}>
+          {campaign.templateSnapshot ? (
+            <TemplateFormRenderer sections={campaign.templateSnapshot.sections} mode="preview" />
+          ) : (
+            campaign.competencies.map((c) => (
+              <div key={c.competencyId} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
+                <span className="font-medium text-foreground">{c.name}</span>
+                <span className="text-muted-foreground">น้ำหนัก {c.weight}</span>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

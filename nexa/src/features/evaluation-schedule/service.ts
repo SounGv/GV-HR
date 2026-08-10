@@ -17,6 +17,7 @@ const listSelect = {
   nextRunAt: true,
   lastRunAt: true,
   department: { select: { id: true, name: true } },
+  evaluationTemplate: { select: { id: true, name: true } },
   generatedCampaigns: {
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" as const },
@@ -44,6 +45,7 @@ function mapListItem(row: Prisma.EvaluationScheduleTemplateGetPayload<{ select: 
     nextRunAt: row.nextRunAt,
     lastRunAt: row.lastRunAt,
     lastGeneratedCampaign: row.generatedCampaigns[0] ?? null,
+    evaluationTemplate: row.evaluationTemplate,
   };
 }
 
@@ -84,11 +86,19 @@ export async function createScheduleTemplate(
   });
   if (!department) throw BadRequest("ไม่พบแผนกที่เลือก");
 
-  const competencyIds = input.competencies.map((c) => c.competencyId);
-  const found = await prisma.competency.count({
-    where: { id: { in: competencyIds }, companyId, deletedAt: null },
-  });
-  if (found !== competencyIds.length) throw BadRequest("พบสมรรถนะที่ไม่ถูกต้อง");
+  if (input.evaluationTemplateId) {
+    const template = await prisma.evaluationTemplate.findFirst({
+      where: { id: input.evaluationTemplateId, companyId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!template) throw BadRequest("ไม่พบแบบประเมินที่เลือก");
+  } else {
+    const competencyIds = (input.competencies ?? []).map((c) => c.competencyId);
+    const found = await prisma.competency.count({
+      where: { id: { in: competencyIds }, companyId, deletedAt: null },
+    });
+    if (found !== competencyIds.length) throw BadRequest("พบสมรรถนะที่ไม่ถูกต้อง");
+  }
 
   const record = await prisma.evaluationScheduleTemplate.create({
     data: {
@@ -102,9 +112,10 @@ export async function createScheduleTemplate(
       active: input.active ?? true,
       createdById: session.sub,
       updatedById: session.sub,
-      competencies: {
-        create: input.competencies.map((c) => ({ competencyId: c.competencyId, weight: c.weight })),
-      },
+      evaluationTemplateId: input.evaluationTemplateId,
+      competencies: input.evaluationTemplateId
+        ? undefined
+        : { create: (input.competencies ?? []).map((c) => ({ competencyId: c.competencyId, weight: c.weight })) },
     },
     select: { id: true },
   });
@@ -143,6 +154,14 @@ export async function updateScheduleTemplate(
     if (!department) throw BadRequest("ไม่พบแผนกที่เลือก");
   }
 
+  if (input.evaluationTemplateId !== undefined && input.evaluationTemplateId !== null) {
+    const template = await prisma.evaluationTemplate.findFirst({
+      where: { id: input.evaluationTemplateId, companyId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!template) throw BadRequest("ไม่พบแบบประเมินที่เลือก");
+  }
+
   const changingCompetencies = input.competencies !== undefined;
   if (changingCompetencies) {
     const competencyIds = input.competencies!.map((c) => c.competencyId);
@@ -163,11 +182,18 @@ export async function updateScheduleTemplate(
         ...(input.raterTypes !== undefined ? { raterTypes: input.raterTypes } : {}),
         ...(input.nextRunAt !== undefined ? { nextRunAt: new Date(input.nextRunAt) } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
+        // Switching to a Template clears the Competency link and vice versa —
+        // a schedule generates one kind of campaign at a time, never both.
+        ...(input.evaluationTemplateId !== undefined
+          ? { evaluationTemplateId: input.evaluationTemplateId }
+          : {}),
         updatedById: session.sub,
       },
     });
 
-    if (changingCompetencies) {
+    if (input.evaluationTemplateId) {
+      await tx.evaluationScheduleCompetency.deleteMany({ where: { templateId: id } });
+    } else if (changingCompetencies) {
       await tx.evaluationScheduleCompetency.deleteMany({ where: { templateId: id } });
       await tx.evaluationScheduleCompetency.createMany({
         data: input.competencies!.map((c) => ({ templateId: id, competencyId: c.competencyId, weight: c.weight })),

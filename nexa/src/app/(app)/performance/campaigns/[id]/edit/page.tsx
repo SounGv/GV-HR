@@ -28,6 +28,8 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
         raterTypes: campaign.raterTypes,
         aiGenerated: campaign.aiGenerated,
         aiRationale: campaign.aiRationale,
+        templateId: campaign.templateId,
+        templateSnapshot: campaign.templateSnapshot,
         competencies: campaign.competencies,
         participants: campaign.participants.map((p) => ({
           id: p.id,

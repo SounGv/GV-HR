@@ -1,3 +1,5 @@
+import type { CampaignTemplateSnapshot } from "@/features/evaluation-template/types";
+
 export type CampaignStatus = "DRAFT" | "ACTIVE" | "CLOSED";
 export type RaterType = "SELF" | "MANAGER" | "PEER" | "UPWARD";
 export type ResponseStatus = "PENDING" | "SUBMITTED";
@@ -22,11 +24,13 @@ export interface CampaignListItem {
   raterTypes: RaterType[];
   aiGenerated: boolean;
   participantCount: number;
+  templateId: string | null;
 }
 
 export interface CampaignDetail extends CampaignListItem {
   aiRationale: string | null;
   competencies: CampaignCompetency[];
+  templateSnapshot: CampaignTemplateSnapshot | null;
   participants: ParticipantSummary[];
 }
 
@@ -47,13 +51,21 @@ export interface ParticipantSummary {
 }
 
 export interface ParticipantDetail extends ParticipantSummary {
-  campaign: { id: string; name: string; cycle: string; raterTypes: RaterType[]; competencies: CampaignCompetency[] };
+  campaign: {
+    id: string;
+    name: string;
+    cycle: string;
+    raterTypes: RaterType[];
+    competencies: CampaignCompetency[];
+    templateSnapshot: CampaignTemplateSnapshot | null;
+  };
   fullResponses: {
     id: string;
     raterType: RaterType;
     raterEmployeeId: string;
     status: ResponseStatus;
     scores: { competencyId: string; score: number }[];
+    answers: { questionId: string; value: string }[] | null;
     strengths: string | null;
     improvements: string | null;
     summary: string | null;
@@ -68,13 +80,15 @@ export interface CampaignFormValues {
   endDate: string;
   status?: CampaignStatus;
   raterTypes: RaterType[];
-  competencies: { competencyId: string; weight: number }[];
+  templateId?: string;
+  competencies?: { competencyId: string; weight: number }[];
   aiGenerated?: boolean;
   aiRationale?: string;
 }
 
 export interface SubmitResponseValues {
-  scores: { competencyId: string; score: number }[];
+  scores?: { competencyId: string; score: number }[];
+  answers?: { questionId: string; value: string }[];
   strengths?: string;
   improvements?: string;
   summary?: string;
