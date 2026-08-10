@@ -60,7 +60,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ───────────────── GV One — Light theme (mobile reference palette) ───────────────── */
+/* ───────────────── GV One — Light theme (Gadget Villa lime palette) ───────────────── */
 :root {
   --radius: 0.75rem;
 
@@ -68,105 +68,105 @@
   --font-sans: var(--font-prompt), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-heading: var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
 
-  /* Surfaces */
-  --background: #f0f2f5;
-  --foreground: #1a1b22;
-  --card: #ffffff;
-  --card-foreground: #1a1b22;
-  --popover: #ffffff;
-  --popover-foreground: #1a1b22;
+  /* Surfaces — warm off-white, not neutral gray */
+  --background: #f5f6ef;
+  --foreground: #10130a;
+  --card: #fffef8;
+  --card-foreground: #10130a;
+  --popover: #fffef8;
+  --popover-foreground: #10130a;
 
-  /* Brand violet — Signal Violet from GV One mobile mockup */
-  --primary: #7a35ff;
-  --primary-foreground: #ffffff;
-  --secondary: #f0ebff;
-  --secondary-foreground: #7a35ff;
-  --muted: #f0f2f5;
-  --muted-foreground: #5b5f6b;
-  --accent: #f0ebff;
-  --accent-foreground: #7a35ff;
+  /* Brand lime — Gadget Villa. Neon lime backgrounds always pair with dark text. */
+  --primary: #b7ed00;
+  --primary-foreground: #111408;
+  --secondary: #eaf5b8;
+  --secondary-foreground: #33400a;
+  --muted: #e9ebdd;
+  --muted-foreground: #5c6050;
+  --accent: #eaf5b8;
+  --accent-foreground: #33400a;
   --destructive: #e4573d;
 
   --success: #0e9f8e;
   --success-foreground: #ffffff;
   --success-muted: #e6f7f4;
   --destructive-muted: #fdece8;
-  --surface-muted: #f0f1f5;
+  --surface-muted: #edeee2;
 
   --warning: #f59e0b;
   --warning-foreground: #1a1b22;
-  --info: #7a35ff;
+  --info: #2563eb;
   --info-foreground: #ffffff;
 
-  --border: #e2e4e9;
-  --input: #e2e4e9;
-  --ring: #7a35ff;
+  --border: #e0e2d3;
+  --input: #e0e2d3;
+  --ring: #88b000;
 
-  --chart-1: #7a35ff;
+  --chart-1: #b7ed00;
   --chart-2: #0e9f8e;
   --chart-3: #f59e0b;
-  --chart-4: #9b7bff;
+  --chart-4: #88b000;
   --chart-5: #e4573d;
 
-  /* Sidebar stays dark; accent aligns with brand violet */
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #7a35ff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1a1a1a;
-  --sidebar-ring: #7a35ff;
+  /* Sidebar stays carbon black; accent aligns with brand lime */
+  --sidebar: #10130a;
+  --sidebar-foreground: #cdd1bd;
+  --sidebar-primary: #b7ed00;
+  --sidebar-primary-foreground: #111408;
+  --sidebar-accent: #1b1f12;
+  --sidebar-accent-foreground: #f5f6ef;
+  --sidebar-border: #212616;
+  --sidebar-ring: #b7ed00;
 }
 
 /* ───────────────── GV One — Dark theme ───────────────── */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #e5e5e5;
-  --card: #141414;
-  --card-foreground: #e5e5e5;
-  --popover: #141414;
-  --popover-foreground: #e5e5e5;
+  --background: #10130a;
+  --foreground: #f5f6ef;
+  --card: #171b0f;
+  --card-foreground: #f5f6ef;
+  --popover: #171b0f;
+  --popover-foreground: #f5f6ef;
 
-  --primary: #7a35ff;
-  --primary-foreground: #ffffff;
-  --secondary: #1f1f1f;
-  --secondary-foreground: #e5e5e5;
-  --muted: #1f1f1f;
-  --muted-foreground: #a3a3a3;
-  --accent: #2a2650;
-  --accent-foreground: #c8c2ff;
+  --primary: #b7ed00;
+  --primary-foreground: #111408;
+  --secondary: #232916;
+  --secondary-foreground: #f5f6ef;
+  --muted: #1e2213;
+  --muted-foreground: #a8ad95;
+  --accent: #2a3018;
+  --accent-foreground: #d9f27a;
   --destructive: #e4573d;
 
   --success: #0e9f8e;
   --success-foreground: #ffffff;
   --success-muted: #0d3d38;
   --destructive-muted: #3d1f18;
-  --surface-muted: #1a1a1a;
+  --surface-muted: #1b1f12;
 
   --warning: #f59e0b;
   --warning-foreground: #1f2937;
-  --info: #7a35ff;
+  --info: #3b82f6;
   --info-foreground: #ffffff;
 
-  --border: #262626;
-  --input: #262626;
-  --ring: #7a35ff;
+  --border: #262b1a;
+  --input: #262b1a;
+  --ring: #b7ed00;
 
-  --chart-1: #7a35ff;
+  --chart-1: #b7ed00;
   --chart-2: #0e9f8e;
   --chart-3: #fbbf24;
-  --chart-4: #9b7bff;
+  --chart-4: #88b000;
   --chart-5: #e4573d;
 
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #7a35ff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1a1a1a;
-  --sidebar-ring: #7a35ff;
+  --sidebar: #10130a;
+  --sidebar-foreground: #cdd1bd;
+  --sidebar-primary: #b7ed00;
+  --sidebar-primary-foreground: #111408;
+  --sidebar-accent: #1b1f12;
+  --sidebar-accent-foreground: #f5f6ef;
+  --sidebar-border: #212616;
+  --sidebar-ring: #b7ed00;
 }
 
 @layer base {
