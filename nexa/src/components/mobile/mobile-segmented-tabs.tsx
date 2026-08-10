@@ -142,7 +142,7 @@ export function MobileFilterChip({
 
         active
 
-          ? "border-primary bg-accent text-primary"
+          ? "border-primary bg-primary text-primary-foreground"
 
           : "border-border bg-card text-muted-foreground",
 

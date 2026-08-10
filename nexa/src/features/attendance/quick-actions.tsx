@@ -33,8 +33,8 @@ export function AttendanceQuickActions() {
           href={a.href}
           className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card px-2 py-4 transition hover:border-primary/40 hover:shadow-sm active:scale-[0.98]"
         >
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-            <a.icon className="size-5 text-primary" />
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <a.icon className="size-5" />
           </span>
           <span className="text-sm font-medium text-foreground">{a.label}</span>
         </Link>

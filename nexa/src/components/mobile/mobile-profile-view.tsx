@@ -82,14 +82,14 @@ export function MobileProfileView() {
 
         <a
           href="#profile-form"
-          className="mx-auto mb-2.5 flex size-16 items-center justify-center overflow-hidden rounded-full bg-accent"
+          className="mx-auto mb-2.5 flex size-16 items-center justify-center overflow-hidden rounded-full bg-primary"
           aria-label="แก้ไขรูปโปรไฟล์"
         >
           {user.employee?.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.employee.avatarUrl} alt={displayName} className="size-full object-cover" />
           ) : (
-            <User className="size-7 text-primary" />
+            <User className="size-7 text-primary-foreground" />
           )}
         </a>
 

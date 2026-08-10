@@ -106,9 +106,9 @@ function PayslipAccordionItem({
               {record.note}
             </p>
           )}
-          <div className="flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2.5">
-            <span className="text-sm font-medium text-foreground">เงินเดือนสุทธิ</span>
-            <span className="text-base font-semibold text-primary">{formatCurrency(record.net)}</span>
+          <div className="flex items-center justify-between rounded-lg bg-primary px-3 py-2.5">
+            <span className="text-sm font-medium text-primary-foreground">เงินเดือนสุทธิ</span>
+            <span className="text-base font-semibold text-primary-foreground">{formatCurrency(record.net)}</span>
           </div>
           <a
             href={`/payslip/${record.id}`}
