@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, ClipboardCheck, Sparkles, Target, Scale, Grid3x3, Users, Building2 } from "lucide-react";
+import { Plus, ClipboardCheck, Target, Scale, Grid3x3, Users, Building2 } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
-import { AiEvaluationView } from "@/features/ai/ai-evaluation-view";
 import { CampaignView } from "@/features/campaign/campaign-view";
 import { CalibrationView } from "@/features/calibration/calibration-view";
 import { NineBoxView } from "@/features/calibration/nine-box-view";
@@ -21,7 +20,6 @@ export function PerformanceView() {
   const { can } = useAuth();
   const canReview = can("performance:create");
   const canHrLevel = can("performance:approve");
-  const canAi = can("ai:read");
   const canCampaign = can("campaign:read");
   const canCalibration = can("calibration:read");
   const canSuccession = can("succession:read");
@@ -54,11 +52,6 @@ export function PerformanceView() {
         {canSuccession && (
           <TabsTrigger value="succession">
             <Users className="size-3.5" /> แผนสืบทอด
-          </TabsTrigger>
-        )}
-        {canAi && (
-          <TabsTrigger value="ai">
-            <Sparkles className="size-3.5" /> แบบประเมิน AI
           </TabsTrigger>
         )}
       </TabsList>
@@ -100,12 +93,6 @@ export function PerformanceView() {
       {canSuccession && (
         <TabsContent value="succession">
           <SuccessionView />
-        </TabsContent>
-      )}
-
-      {canAi && (
-        <TabsContent value="ai">
-          <AiEvaluationView />
         </TabsContent>
       )}
     </Tabs>

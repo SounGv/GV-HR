@@ -66,6 +66,7 @@ export interface CampaignFormValues {
   cycle: string;
   startDate: string;
   endDate: string;
+  status?: CampaignStatus;
   raterTypes: RaterType[];
   competencies: { competencyId: string; weight: number }[];
   aiGenerated?: boolean;

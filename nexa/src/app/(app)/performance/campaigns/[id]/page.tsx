@@ -13,6 +13,7 @@ import { formatDate } from "@/lib/format";
 import { getCampaign } from "@/features/campaign/service";
 import { ParticipantList } from "@/features/campaign/participant-list";
 import { AddParticipantsDialog } from "@/features/campaign/add-participants-dialog";
+import { CampaignStatusActions } from "@/features/campaign/campaign-status-actions";
 
 export const metadata: Metadata = { title: "รายละเอียดแคมเปญ" };
 
@@ -41,10 +42,19 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
           </span>
         }
         actions={
-          canManage && campaign.status === "DRAFT" ? (
-            <Button variant="outline" size="sm" render={<Link href={`/performance/campaigns/${campaign.id}/edit`} />}>
-              <Pencil className="size-4" /> แก้ไข
-            </Button>
+          canManage ? (
+            <>
+              {campaign.status === "DRAFT" && (
+                <Button variant="outline" size="sm" render={<Link href={`/performance/campaigns/${campaign.id}/edit`} />}>
+                  <Pencil className="size-4" /> แก้ไข
+                </Button>
+              )}
+              <CampaignStatusActions
+                campaignId={campaign.id}
+                status={campaign.status}
+                participantCount={campaign.participantCount}
+              />
+            </>
           ) : undefined
         }
       />
