@@ -24,6 +24,7 @@ const ACTION_LABEL: Record<string, string> = {
   delete: "ลบ",
   approve: "อนุมัติ",
   export: "ส่งออก",
+  offsite: "เช็คอินนอกพื้นที่",
 };
 
 export function RolesMatrix() {

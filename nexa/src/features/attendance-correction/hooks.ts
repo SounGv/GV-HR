@@ -15,11 +15,16 @@ export const attendanceCorrectionKeys = {
     ["attendance-corrections", "list", scope, status] as const,
 };
 
-export function useAttendanceCorrections(scope: AttendanceCorrectionScope, status?: AttendanceCorrectionStatus) {
+export function useAttendanceCorrections(
+  scope: AttendanceCorrectionScope,
+  status?: AttendanceCorrectionStatus,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: attendanceCorrectionKeys.list(scope, status),
     queryFn: () => fetchAttendanceCorrections(scope, status),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
   });
 }
 

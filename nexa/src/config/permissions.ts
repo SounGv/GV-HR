@@ -9,14 +9,14 @@
  * Adding a module here + reseeding is all it takes to expose it to RBAC.
  */
 
-export const ACTIONS = ["read", "create", "update", "delete", "approve", "export"] as const;
+export const ACTIONS = ["read", "create", "update", "delete", "approve", "export", "offsite"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 /** Modules mirror the product spec. `actions` narrows which verbs apply. */
 export const MODULES = [
   { key: "dashboard", label: "แดชบอร์ด", actions: ["read"] },
   { key: "employee", label: "พนักงาน", actions: ["read", "create", "update", "delete", "export"] },
-  { key: "attendance", label: "เวลาเข้า-ออกงาน", actions: ["read", "create", "update", "approve", "export"] },
+  { key: "attendance", label: "เวลาเข้า-ออกงาน", actions: ["read", "create", "update", "approve", "export", "offsite"] },
   { key: "recognition", label: "ให้กำลังใจ", actions: ["read", "create"] },
   { key: "leave", label: "การลา", actions: ["read", "create", "update", "delete", "approve", "export"] },
   { key: "overtime", label: "ล่วงเวลา (OT)", actions: ["read", "create", "update", "delete", "approve", "export"] },

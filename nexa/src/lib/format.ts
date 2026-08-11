@@ -38,3 +38,19 @@ export function formatDateTime(value: string | Date | null | undefined): string 
   if (Number.isNaN(d.getTime())) return "-";
   return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" }).format(d);
 }
+
+/** "2 นาทีที่แล้ว" style relative timestamp for notification/activity feeds. */
+export function formatRelativeTime(value: string | Date | null | undefined): string {
+  if (!value) return "-";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return "-";
+  const diffSec = Math.round((Date.now() - d.getTime()) / 1000);
+  if (diffSec < 60) return "เมื่อสักครู่";
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} นาทีที่แล้ว`;
+  const diffHour = Math.round(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} ชั่วโมงที่แล้ว`;
+  const diffDay = Math.round(diffHour / 24);
+  if (diffDay < 7) return `${diffDay} วันที่แล้ว`;
+  return formatDate(d);
+}

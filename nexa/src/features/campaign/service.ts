@@ -603,7 +603,15 @@ export async function getMyPendingResponses(companyId: string, session: AccessCl
         select: {
           id: true,
           employee: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
-          campaign: { select: { id: true, name: true, cycle: true } },
+          campaign: {
+            select: {
+              id: true,
+              name: true,
+              cycle: true,
+              templateSnapshot: true,
+              _count: { select: { competencies: true } },
+            },
+          },
         },
       },
     },
@@ -611,15 +619,26 @@ export async function getMyPendingResponses(companyId: string, session: AccessCl
     take: 100,
   });
 
-  return rows.map((r) => ({
-    responseId: r.id,
-    raterType: r.raterType,
-    participantId: r.participant.id,
-    campaignId: r.participant.campaign.id,
-    campaignName: r.participant.campaign.name,
-    cycle: r.participant.campaign.cycle,
-    employee: r.participant.employee,
-  }));
+  return rows.map((r) => {
+    const snapshot = r.participant.campaign.templateSnapshot as CampaignTemplateSnapshot | null;
+    // Responses in this list are always PENDING (not yet submitted — there's
+    // no draft-save), so only the total is meaningful here; per-question
+    // answered progress is shown live on the answer form itself instead
+    // (see TemplateProgress in participant-detail-view.tsx).
+    const totalQuestions = snapshot
+      ? snapshot.sections.reduce((n, s) => n + s.questions.length, 0)
+      : r.participant.campaign._count.competencies;
+    return {
+      responseId: r.id,
+      raterType: r.raterType,
+      participantId: r.participant.id,
+      campaignId: r.participant.campaign.id,
+      campaignName: r.participant.campaign.name,
+      cycle: r.participant.campaign.cycle,
+      employee: r.participant.employee,
+      totalQuestions,
+    };
+  });
 }
 
 /**

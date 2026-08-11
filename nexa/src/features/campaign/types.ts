@@ -137,6 +137,8 @@ export interface MyPendingResponse {
   campaignName: string;
   cycle: string;
   employee: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
+  /** Total scoreable questions/competencies for this campaign's form. */
+  totalQuestions: number;
 }
 
 export interface BulkUpsertCompetencyResult {
