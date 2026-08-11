@@ -186,6 +186,9 @@ export function ParticipantDetailView({ participantId }: { participantId: string
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{ROLE_LABEL[myRole] ?? "แบบประเมิน"}</CardTitle>
+            {participant.campaign.templateSnapshot && (
+              <TemplateProgress sections={participant.campaign.templateSnapshot.sections} answers={answers} />
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             {participant.campaign.templateSnapshot ? (
@@ -318,6 +321,33 @@ const ROLE_LABEL: Record<string, string> = {
   PEER: "แบบประเมินโดยเพื่อนร่วมงาน",
   UPWARD: "แบบประเมินโดยผู้ใต้บังคับบัญชา",
 };
+
+/** Live "answered N of M" progress as the rater fills in the form, before submit. */
+function TemplateProgress({
+  sections,
+  answers,
+}: {
+  sections: TemplateSection[];
+  answers: Record<string, string>;
+}) {
+  const questions = sections.flatMap((s) => s.questions);
+  const total = questions.length;
+  const answered = questions.filter((q) => (answers[q.id] ?? "").trim() !== "").length;
+  const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          {pct}% กรอกไปแล้ว · {answered} จาก {total} หัวข้อ
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 function InviteRaterCard({
   participantId,

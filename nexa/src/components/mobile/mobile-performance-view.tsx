@@ -63,6 +63,9 @@ function PendingSection() {
               <p className="text-xs text-muted-foreground">
                 {RATER_LABEL[item.raterType] ?? item.raterType} · {item.campaignName} · {item.cycle}
               </p>
+              {item.totalQuestions > 0 && (
+                <p className="mt-0.5 text-xs text-primary">{item.totalQuestions} หัวข้อ · ยังไม่ได้ทำ</p>
+              )}
             </div>
             <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
           </Link>

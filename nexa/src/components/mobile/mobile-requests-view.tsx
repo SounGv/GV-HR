@@ -18,8 +18,14 @@ import { ApiError } from "@/lib/api/client";
 import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "@/features/leave/labels";
 import { useLeave, useCancelLeave, useDecideLeave } from "@/features/leave/hooks";
 import { useOvertime, useCancelOvertime, useDecideOvertime } from "@/features/overtime/hooks";
+import {
+  useAttendanceCorrections,
+  useCancelAttendanceCorrection,
+  useDecideAttendanceCorrection,
+} from "@/features/attendance-correction/hooks";
 import type { LeaveRequest } from "@/features/leave/types";
 import type { OvertimeRequest } from "@/features/overtime/types";
+import type { AttendanceCorrectionRequest } from "@/features/attendance-correction/types";
 
 function fmtDate(iso: string) {
   return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(
@@ -27,9 +33,23 @@ function fmtDate(iso: string) {
   );
 }
 
+function fmtTime(iso: string | null) {
+  if (!iso) return "--:--";
+  return new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(
+    new Date(iso),
+  );
+}
+
 type LeaveItem = { kind: "leave"; request: LeaveRequest };
 type OtItem = { kind: "ot"; request: OvertimeRequest };
-type ReqItem = LeaveItem | OtItem;
+type CorrectionItem = { kind: "correction"; request: AttendanceCorrectionRequest };
+type ReqItem = LeaveItem | OtItem | CorrectionItem;
+
+const KIND_LABEL: Record<ReqItem["kind"], string> = {
+  leave: "การลา",
+  ot: "ล่วงเวลา (OT)",
+  correction: "แก้ไขเวลา",
+};
 
 function itemLine(item: ReqItem) {
   if (item.kind === "leave") {
@@ -37,8 +57,18 @@ function itemLine(item: ReqItem) {
     const range = r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`;
     return `${LEAVE_TYPE_LABEL[r.type]} · ${range} · ${r.days} วัน`;
   }
+  if (item.kind === "ot") {
+    const r = item.request;
+    return `ล่วงเวลา · ${fmtDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม. · ≈ ${formatCurrency(r.estimatedAmount)}`;
+  }
   const r = item.request;
-  return `ล่วงเวลา · ${fmtDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม. · ≈ ${formatCurrency(r.estimatedAmount)}`;
+  return `แก้ไขเวลา · ${fmtDate(r.workDate)} · เข้า ${fmtTime(r.requestedClockIn)} ออก ${fmtTime(r.requestedClockOut)}`;
+}
+
+function detailHref(item: ReqItem) {
+  if (item.kind === "leave") return `/leave/${item.request.id}`;
+  if (item.kind === "ot") return `/overtime/${item.request.id}`;
+  return `/attendance/corrections/${item.request.id}`;
 }
 
 export function MobileRequestsView() {
@@ -53,10 +83,13 @@ function RequestsBody() {
   const { can } = useAuth();
   const canApproveLeave = can("leave:approve");
   const canApproveOt = can("overtime:approve");
-  const canApprove = canApproveLeave || canApproveOt;
+  const canApproveCorrection = can("attendance:approve");
+  const canApprove = canApproveLeave || canApproveOt || canApproveCorrection;
   const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
   const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
-  const pendingCount = (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0);
+  const correctionPendingQ = useAttendanceCorrections("team", "PENDING", { enabled: canApproveCorrection });
+  const pendingCount =
+    (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0) + (correctionPendingQ.data?.data.length ?? 0);
 
   return (
     <Tabs defaultValue="me" className="space-y-4">
@@ -90,23 +123,27 @@ function RequestsBody() {
 function MyRequests() {
   const leaveQ = useLeave("me");
   const otQ = useOvertime("me");
+  const correctionQ = useAttendanceCorrections("me");
   const cancelLeave = useCancelLeave();
   const cancelOt = useCancelOvertime();
+  const cancelCorrection = useCancelAttendanceCorrection();
   const [target, setTarget] = useState<ReqItem | null>(null);
 
   const items = useMemo<ReqItem[]>(() => {
     const leave: ReqItem[] = (leaveQ.data?.data ?? []).map((r) => ({ kind: "leave", request: r }));
     const ot: ReqItem[] = (otQ.data?.data ?? []).map((r) => ({ kind: "ot", request: r }));
-    return [...leave, ...ot].sort(
+    const correction: ReqItem[] = (correctionQ.data?.data ?? []).map((r) => ({ kind: "correction", request: r }));
+    return [...leave, ...ot, ...correction].sort(
       (a, b) => new Date(b.request.createdAt).getTime() - new Date(a.request.createdAt).getTime(),
     );
-  }, [leaveQ.data, otQ.data]);
+  }, [leaveQ.data, otQ.data, correctionQ.data]);
 
   async function confirmCancel() {
     if (!target) return;
     try {
       if (target.kind === "leave") await cancelLeave.mutateAsync(target.request.id);
-      else await cancelOt.mutateAsync(target.request.id);
+      else if (target.kind === "ot") await cancelOt.mutateAsync(target.request.id);
+      else await cancelCorrection.mutateAsync(target.request.id);
       toast.success("ยกเลิกคำขอเรียบร้อย");
       setTarget(null);
     } catch (err) {
@@ -114,8 +151,8 @@ function MyRequests() {
     }
   }
 
-  const isLoading = leaveQ.isLoading || otQ.isLoading;
-  const isError = leaveQ.isError || otQ.isError;
+  const isLoading = leaveQ.isLoading || otQ.isLoading || correctionQ.isLoading;
+  const isError = leaveQ.isError || otQ.isError || correctionQ.isError;
 
   return (
     <div className="space-y-4">
@@ -126,22 +163,25 @@ function MyRequests() {
         <Button className="flex-1" variant="outline" render={<Link href="/overtime/new" />}>
           <Plus className="size-4" /> ขอ OT
         </Button>
+        <Button className="flex-1" variant="outline" render={<Link href="/attendance/corrections/new" />}>
+          <Plus className="size-4" /> แก้เวลา
+        </Button>
       </div>
 
       {isError ? (
-        <ErrorState onRetry={() => { leaveQ.refetch(); otQ.refetch(); }} />
+        <ErrorState onRetry={() => { leaveQ.refetch(); otQ.refetch(); correctionQ.refetch(); }} />
       ) : isLoading ? (
         <TableLoadingState rows={4} />
       ) : items.length === 0 ? (
-        <EmptyState icon={CalendarDays} title="ยังไม่มีคำขอ" description="เริ่มต้นด้วยการยื่นคำขอลาหรือ OT" />
+        <EmptyState icon={CalendarDays} title="ยังไม่มีคำขอ" description="เริ่มต้นด้วยการยื่นคำขอลา, OT หรือแก้ไขเวลา" />
       ) : (
         <div className="space-y-2">
           {items.map((item) => (
             <Card key={`${item.kind}-${item.request.id}`} className="flex-row items-center justify-between gap-3 p-4">
-              <Link href={item.kind === "leave" ? `/leave/${item.request.id}` : `/overtime/${item.request.id}`} className="min-w-0 flex-1">
+              <Link href={detailHref(item)} className="min-w-0 flex-1">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">{item.kind === "leave" ? "การลา" : "ล่วงเวลา (OT)"}</span>
+                    <span className="font-medium text-foreground">{KIND_LABEL[item.kind]}</span>
                     <LeaveStatusBadge status={item.request.status} />
                   </div>
                   <p className="mt-0.5 text-sm text-muted-foreground">{itemLine(item)}</p>
@@ -160,12 +200,12 @@ function MyRequests() {
       <ConfirmDialog
         open={!!target}
         onOpenChange={(o) => !o && setTarget(null)}
-        title={target?.kind === "ot" ? "ยกเลิกคำขอ OT" : "ยกเลิกคำขอลา"}
+        title={`ยกเลิกคำขอ${target ? KIND_LABEL[target.kind] : ""}`}
         description={target ? `ต้องการยกเลิก${itemLine(target)} ใช่หรือไม่?` : undefined}
         destructive
         confirmLabel="ยกเลิกคำขอ"
         cancelLabel="ปิด"
-        loading={cancelLeave.isPending || cancelOt.isPending}
+        loading={cancelLeave.isPending || cancelOt.isPending || cancelCorrection.isPending}
         onConfirm={confirmCancel}
       />
     </div>
@@ -176,48 +216,52 @@ function Approvals() {
   const { can } = useAuth();
   const canApproveLeave = can("leave:approve");
   const canApproveOt = can("overtime:approve");
+  const canApproveCorrection = can("attendance:approve");
 
   const leaveQ = useLeave("team", "PENDING");
   const otQ = useOvertime("team", "PENDING");
+  const correctionQ = useAttendanceCorrections("team", "PENDING", { enabled: canApproveCorrection });
   const decideLeave = useDecideLeave();
   const decideOt = useDecideOvertime();
+  const decideCorrection = useDecideAttendanceCorrection();
 
   const items = useMemo<ReqItem[]>(() => {
     const leave: ReqItem[] = canApproveLeave ? (leaveQ.data?.data ?? []).map((r) => ({ kind: "leave", request: r })) : [];
     const ot: ReqItem[] = canApproveOt ? (otQ.data?.data ?? []).map((r) => ({ kind: "ot", request: r })) : [];
-    return [...leave, ...ot].sort(
+    const correction: ReqItem[] = canApproveCorrection
+      ? (correctionQ.data?.data ?? []).map((r) => ({ kind: "correction", request: r }))
+      : [];
+    return [...leave, ...ot, ...correction].sort(
       (a, b) => new Date(b.request.createdAt).getTime() - new Date(a.request.createdAt).getTime(),
     );
-  }, [leaveQ.data, otQ.data, canApproveLeave, canApproveOt]);
+  }, [leaveQ.data, otQ.data, correctionQ.data, canApproveLeave, canApproveOt, canApproveCorrection]);
 
   async function decide(item: ReqItem, action: "approve" | "reject") {
     try {
       if (item.kind === "leave") await decideLeave.mutateAsync({ id: item.request.id, action });
-      else await decideOt.mutateAsync({ id: item.request.id, action });
+      else if (item.kind === "ot") await decideOt.mutateAsync({ id: item.request.id, action });
+      else await decideCorrection.mutateAsync({ id: item.request.id, action });
       toast.success(action === "approve" ? "อนุมัติเรียบร้อย" : "ปฏิเสธคำขอเรียบร้อย");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
     }
   }
 
-  const isLoading = (canApproveLeave && leaveQ.isLoading) || (canApproveOt && otQ.isLoading);
-  const isError = leaveQ.isError || otQ.isError;
-  const deciding = decideLeave.isPending || decideOt.isPending;
+  const isLoading = (canApproveLeave && leaveQ.isLoading) || (canApproveOt && otQ.isLoading) || (canApproveCorrection && correctionQ.isLoading);
+  const isError = leaveQ.isError || otQ.isError || correctionQ.isError;
+  const deciding = decideLeave.isPending || decideOt.isPending || decideCorrection.isPending;
 
-  if (isError) return <ErrorState onRetry={() => { leaveQ.refetch(); otQ.refetch(); }} />;
+  if (isError) return <ErrorState onRetry={() => { leaveQ.refetch(); otQ.refetch(); correctionQ.refetch(); }} />;
   if (isLoading) return <TableLoadingState rows={4} />;
   if (items.length === 0) {
-    return <EmptyState icon={Check} title="ไม่มีคำขอรออนุมัติ" description="คำขอลาและ OT ของทีมที่รอการอนุมัติจะแสดงที่นี่" />;
+    return <EmptyState icon={Check} title="ไม่มีคำขอรออนุมัติ" description="คำขอลา, OT และแก้ไขเวลาของทีมที่รอการอนุมัติจะแสดงที่นี่" />;
   }
 
   return (
     <div className="space-y-2">
       {items.map((item) => (
         <Card key={`${item.kind}-${item.request.id}`} className="flex-col gap-3 p-4">
-          <Link
-            href={item.kind === "leave" ? `/leave/${item.request.id}` : `/overtime/${item.request.id}`}
-            className="flex min-w-0 flex-1 items-center gap-3"
-          >
+          <Link href={detailHref(item)} className="flex min-w-0 flex-1 items-center gap-3">
             <Avatar className="size-9">
               {item.request.employee.avatarUrl && (
                 <AvatarImage src={item.request.employee.avatarUrl} alt={item.request.employee.firstName} />

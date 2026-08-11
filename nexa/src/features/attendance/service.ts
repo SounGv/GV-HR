@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { AppError, BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import { checkGeofence } from "@/lib/geo";
+import { can } from "@/lib/auth/rbac";
 import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { AttendanceListQuery, ClockInput } from "./schema";
@@ -88,25 +89,38 @@ function enforceGeofence(
 }
 
 /**
- * When outside the geofence: require an off-site reason. Without one, reject with
- * `details.offsite` so the client can prompt for it. With one, return the note to
- * store on the record.
+ * When outside the geofence: the employee needs `attendance:offsite` at all —
+ * without it, reject outright with `details.offsite/permitted:false` so the
+ * client shows a hard "contact HR" screen, no reason field. With the
+ * permission, require an off-site reason instead — reject with
+ * `details.offsite/permitted:true` so the client prompts for it. With both
+ * permission and a reason, return the note to store on the record.
  */
 function resolveOffsite(
   geo: { distance: number | null; outside: boolean; branchName: string | null },
   reason: string | null | undefined,
+  permitted: boolean,
 ): string | null {
   if (!geo.outside) return null;
+  const distance = Math.round(geo.distance ?? 0);
+  if (!permitted) {
+    throw new AppError(
+      "FORBIDDEN",
+      403,
+      `คุณไม่มีสิทธิ์เช็คอินนอกพื้นที่บริษัท (${geo.branchName} — ห่าง ${distance} เมตร) กรุณาติดต่อ HR`,
+      { offsite: true, permitted: false, distance, branchName: geo.branchName },
+    );
+  }
   const trimmed = reason?.trim();
   if (!trimmed) {
     throw new AppError(
       "FORBIDDEN",
       403,
-      `อยู่นอกพื้นที่ทำงาน (${geo.branchName}) — ห่าง ${Math.round(geo.distance ?? 0)} เมตร กรุณาระบุเหตุผลการทำงานนอกสถานที่`,
-      { offsite: true, distance: Math.round(geo.distance ?? 0), branchName: geo.branchName },
+      `อยู่นอกพื้นที่ทำงาน (${geo.branchName}) — ห่าง ${distance} เมตร กรุณาระบุเหตุผลการทำงานนอกสถานที่`,
+      { offsite: true, permitted: true, distance, branchName: geo.branchName },
     );
   }
-  return `ทำงานนอกสถานที่ (ห่าง ${Math.round(geo.distance ?? 0)} ม.): ${trimmed}`;
+  return `ทำงานนอกสถานที่ (ห่าง ${distance} ม.): ${trimmed}`;
 }
 
 export async function getToday(companyId: string, session: AccessClaims) {
@@ -148,7 +162,8 @@ export async function clockIn(
     isWfh || qrVerified
       ? { distance: null, outside: false, branchName: employee.branch?.name ?? null }
       : enforceGeofence(employee.branch, input);
-  const offsiteNote = isWfh || qrVerified ? null : resolveOffsite(geo, input.offsiteReason);
+  const offsiteNote =
+    isWfh || qrVerified ? null : resolveOffsite(geo, input.offsiteReason, can(session.perms, "attendance:offsite"));
   const distance = geo.distance;
   // OUTSIDE is never chosen by the employee — it's derived from actually
   // being outside the geofence with a declared reason, not the ONSITE/WFH
