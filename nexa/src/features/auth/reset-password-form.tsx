@@ -66,7 +66,7 @@ export function ResetPasswordForm() {
     return (
       <div className="space-y-3 text-center lg:text-left">
         <p className="text-sm text-muted-foreground">ลิงก์นี้ไม่ถูกต้องหรือหมดอายุแล้ว</p>
-        <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+        <Link href="/forgot-password" className="text-sm font-medium text-accent-foreground hover:underline">
           ขอลิงก์รีเซ็ตรหัสผ่านใหม่
         </Link>
       </div>

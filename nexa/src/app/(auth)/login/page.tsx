@@ -53,7 +53,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             ยังไม่มีองค์กร?{" "}
-            <Link href="/register" className="font-medium text-primary hover:underline">
+            <Link href="/register" className="font-medium text-accent-foreground hover:underline">
               สมัครใช้งาน (สร้างองค์กรใหม่)
             </Link>
           </p>

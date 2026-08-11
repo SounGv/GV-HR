@@ -159,7 +159,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>รหัสผ่าน</FormLabel>
-                <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                <Link href="/forgot-password" className="text-xs font-medium text-accent-foreground hover:underline">
                   ลืมรหัสผ่าน?
                 </Link>
               </div>
