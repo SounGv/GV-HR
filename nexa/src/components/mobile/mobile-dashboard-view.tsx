@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { Bell, CalendarDays, Wallet, Star, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useNotifications } from "@/features/notification/hooks";
-import { ClockCard } from "@/features/attendance/clock-card";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
+import { formatRelativeTime } from "@/lib/format";
+import { MobileCheckinCard } from "./mobile-checkin-card";
 import { useMobileMenuGroups } from "./use-mobile-menu-groups";
 import { MobileMenuTileGrid } from "./mobile-menu-tile-grid";
 
@@ -22,10 +23,11 @@ function fmtCurrency(n: number) {
 
 /**
  * Mobile Home tab — greeting + notification bell, the live check-in/out
- * action (ClockCard, reused as-is from the Attendance screen), a personal
- * snapshot, then the full quick-menu grid (same groups as "บริการ"/
- * `/services`, so employees never have to leave Home to reach them). No AI
- * surface here — mobile is intentionally AI-free for employees.
+ * action (MobileCheckinCard, the mobile-only redesign of the desktop
+ * ClockCard), a personal snapshot, then the full quick-menu grid (same
+ * groups as "บริการ"/`/services`, so employees never have to leave Home to
+ * reach them). No AI surface here — mobile is intentionally AI-free for
+ * employees.
  */
 export function MobileDashboardView({
   name,
@@ -38,9 +40,12 @@ export function MobileDashboardView({
 }) {
   const { data: notifData } = useNotifications();
   const unread = notifData?.data?.unread ?? 0;
+  const latestNotif = notifData?.data?.items?.[0] ?? null;
   const { groups, hrStartIndex } = useMobileMenuGroups();
   const { data: pendingData } = useMyPendingResponses();
-  const pendingCount = pendingData?.data?.length ?? 0;
+  const pending = pendingData?.data ?? [];
+  const pendingCount = pending.length;
+  const nextPending = pending[0] ?? null;
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -73,7 +78,7 @@ export function MobileDashboardView({
       </div>
 
       <div className="-mt-3 space-y-5 px-4 pb-4">
-        <ClockCard />
+        <MobileCheckinCard />
 
         {mine && (
           <>
@@ -120,16 +125,44 @@ export function MobileDashboardView({
           </>
         )}
 
-        {pendingCount > 0 && (
-          <Link
-            href="/performance"
-            className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm active:bg-muted"
-          >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <ClipboardCheck className="size-4" />
+        {nextPending && (
+          <div className="rounded-xl bg-card p-3.5 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <ClipboardCheck className="size-4" />
+                </span>
+                <p className="text-xs text-muted-foreground">การประเมิน</p>
+              </div>
+              {pendingCount > 1 && (
+                <Link href="/performance" className="flex items-center gap-0.5 text-xs font-medium text-primary">
+                  ดูทั้งหมด <ChevronRight className="size-3.5" />
+                </Link>
+              )}
+            </div>
+            <p className="mt-2 text-sm font-semibold text-foreground">{nextPending.campaignName}</p>
+            <p className="text-xs text-muted-foreground">{nextPending.cycle}</p>
+            <Link
+              href={`/performance/campaigns/${nextPending.campaignId}/participants/${nextPending.participantId}`}
+              className="mt-3 flex h-10 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+            >
+              เริ่มประเมิน
+            </Link>
+          </div>
+        )}
+
+        {latestNotif && (
+          <Link href="/notifications" className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm active:bg-muted">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Bell className="size-4" />
             </span>
-            <p className="flex-1 text-sm font-medium text-foreground">ประเมินค้าง {pendingCount} รายการ</p>
-            <ChevronRight className="size-4 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">แจ้งเตือนล่าสุด</p>
+              <p className="truncate text-sm font-medium text-foreground">
+                {latestNotif.title} · {formatRelativeTime(latestNotif.createdAt)}
+              </p>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
           </Link>
         )}
 
