@@ -156,7 +156,7 @@ export function MobileDashboardView({
 
         {latestNotif && (
           <Link href="/notifications" className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm active:bg-muted">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Bell className="size-4" />
             </span>
             <div className="min-w-0 flex-1">

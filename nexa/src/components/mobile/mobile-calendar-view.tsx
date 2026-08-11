@@ -227,7 +227,7 @@ export function MobileCalendarView() {
                 <span className={cn("mt-1 size-2 shrink-0 rounded-full", SOURCE_DOT[it.source])} />
                 <div className="min-w-0">
                   {it.href ? (
-                    <Link href={it.href} className="text-sm font-medium leading-snug text-primary">
+                    <Link href={it.href} className="text-sm font-medium leading-snug text-accent-foreground">
                       {it.title}
                     </Link>
                   ) : (
