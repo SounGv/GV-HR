@@ -26,6 +26,7 @@ import {
   MapPinned,
   Upload,
   PencilLine,
+  Presentation,
 } from "lucide-react";
 
 export interface NavItem {
@@ -91,6 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "รายงานและวิเคราะห์", href: "/reports", icon: BarChart3, permission: "report:read", ready: true },
       { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read", ready: true },
+      { label: "นัดประชุม", href: "/meetings", icon: Presentation, permission: "meeting:read", ready: true },
     ],
   },
   {

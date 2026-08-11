@@ -114,6 +114,17 @@ enum LeaveStatus {
   CANCELLED
 }
 
+enum MeetingStatus {
+  SCHEDULED
+  CANCELLED
+}
+
+enum MeetingResponseStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
 enum PayrollStatus {
   DRAFT
   PAID
@@ -274,6 +285,7 @@ model Company {
   approvalWorkflows           ApprovalWorkflow[]
   recognitions                Recognition[]
   approvalRequests            ApprovalRequest[]
+  meetings                    Meeting[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -683,6 +695,8 @@ model Employee {
   recognitions               Recognition[]
   successionPlansAsIncumbent SuccessionPlan[]              @relation("SuccessionPlanIncumbent")
   successionCandidacies      SuccessionCandidate[]         @relation("SuccessionCandidacy")
+  meetingsOrganized         Meeting[]                      @relation("MeetingOrganizer")
+  meetingInvites            MeetingAttendee[]              @relation("MeetingAttendee")
 
   // Employment
   employmentType   EmploymentType @default(FULL_TIME)
@@ -933,6 +947,53 @@ model LeaveBalance {
   @@unique([employeeId, year, type])
   @@index([companyId, year])
   @@map("leave_balances")
+}
+
+model Meeting {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  organizerEmployeeId String
+  organizer            Employee @relation("MeetingOrganizer", fields: [organizerEmployeeId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  location    String?
+  startAt     DateTime
+  endAt       DateTime
+  status      MeetingStatus @default(SCHEDULED)
+
+  attendees MeetingAttendee[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, organizerEmployeeId])
+  @@index([companyId, startAt])
+  @@map("meetings")
+}
+
+model MeetingAttendee {
+  id        String  @id @default(uuid())
+  meetingId String
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  employeeId String
+  employee   Employee @relation("MeetingAttendee", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  status      MeetingResponseStatus @default(PENDING)
+  respondedAt DateTime?
+  note        String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([meetingId, employeeId])
+  @@index([employeeId, status])
+  @@map("meeting_attendees")
 }
 
 // ─────────────────────────── HR: Payroll ───────────────────────────

@@ -48,6 +48,8 @@ import {
 
   Settings,
 
+  Presentation,
+
 } from "lucide-react";
 
 
@@ -124,6 +126,8 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
       { id: "kpi", label: "KPI ส่วนตัว", href: "/kpi", icon: Target, permission: "kpi:read" },
 
       { id: "review", label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
+
+      { id: "meeting", label: "นัดประชุม", href: "/meetings", icon: Presentation, permission: "meeting:read" },
 
     ],
 
