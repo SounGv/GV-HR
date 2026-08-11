@@ -191,6 +191,16 @@
   h6 {
     @apply font-heading text-foreground;
   }
+
+  /* Themes native form controls (checkbox/radio/range, and — on browsers
+     that honor it — the date/time picker's selected-value highlight) to
+     the brand color instead of the browser/OS default accent (blue on
+     most Android Chrome), so the native pickers don't clash with the rest
+     of the lime UI around them. */
+  input,
+  select {
+    accent-color: var(--primary);
+  }
 }
 
 /* ── Mobile module body (auto shell pages) ── */

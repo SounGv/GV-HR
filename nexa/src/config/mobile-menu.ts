@@ -68,9 +68,16 @@ export interface MobileMenuItem {
 
 
 
+export type MobileMenuTone = "primary" | "info" | "warning" | "success" | "destructive";
+
 export interface MobileMenuGroup {
 
   title: string;
+
+  /** Icon-chip color for every item in this group — gives each section its
+   * own identity at a glance instead of every tile reading as one
+   * indistinguishable wall of lime. Defaults to "primary" if omitted. */
+  tone?: MobileMenuTone;
 
   items: MobileMenuItem[];
 
@@ -85,6 +92,8 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
   {
 
     title: "หมวดเวลาทำงาน",
+
+    tone: "primary",
 
     items: [
 
@@ -108,6 +117,8 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
 
     title: "หมวดผลงานและประเมิน",
 
+    tone: "info",
+
     items: [
 
       { id: "kpi", label: "KPI ส่วนตัว", href: "/kpi", icon: Target, permission: "kpi:read" },
@@ -121,6 +132,8 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
   {
 
     title: "หมวดเงินเดือนและสวัสดิการ",
+
+    tone: "warning",
 
     items: [
 
@@ -146,6 +159,8 @@ export const MOBILE_HR_GROUPS: MobileMenuGroup[] = [
 
     title: "หมวดบริหารพนักงาน",
 
+    tone: "success",
+
     items: [
 
       { id: "menusettings", label: "ตั้งค่าเมนูของฉัน", href: "/services?view=menu-settings", icon: SlidersHorizontal, permission: "dashboard:read" },
@@ -166,6 +181,8 @@ export const MOBILE_HR_GROUPS: MobileMenuGroup[] = [
 
     title: "หมวดอนุมัติและติดตาม",
 
+    tone: "destructive",
+
     items: [
 
       { id: "approvals", label: "อนุมัติเอกสาร", href: "/workflows?tab=inbox", icon: FileCheck, permission: "workflow:read" },
@@ -183,6 +200,8 @@ export const MOBILE_HR_GROUPS: MobileMenuGroup[] = [
   {
 
     title: "หมวดเงินเดือนและรายงาน",
+
+    tone: "warning",
 
     items: [
 
