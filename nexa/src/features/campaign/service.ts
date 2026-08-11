@@ -277,22 +277,25 @@ export async function updateCampaign(
       },
     });
     const cycleLabel = `${campaign!.name} · ${campaign!.cycle}`;
-    await Promise.all(
-      pending.map((r) =>
-        createNotification(
-          companyId,
-          r.raterEmployeeId,
-          r.raterType === "SELF"
-            ? { title: "มีแบบประเมินตนเองรอทำ", body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`, category: "performance" }
-            : {
-                title: r.raterType === "MANAGER" ? "มีพนักงานรอการประเมินจากคุณ" : "คุณได้รับเชิญให้ร่วมประเมิน",
-                body: `${r.participant.employee.firstName} ${r.participant.employee.lastName} — รอบประเมิน ${cycleLabel}`,
-                category: "performance",
-              },
-          session.sub,
-        ),
-      ),
-    );
+    // Sequential, not Promise.all — a pooled connection (e.g. PgBouncer
+    // transaction mode with a low connection_limit) can only serve one
+    // query at a time, and firing dozens/hundreds of concurrent creates at
+    // once exhausts the pool wait queue and throws P2024 well before they'd
+    // all finish anyway.
+    for (const r of pending) {
+      await createNotification(
+        companyId,
+        r.raterEmployeeId,
+        r.raterType === "SELF"
+          ? { title: "มีแบบประเมินตนเองรอทำ", body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`, category: "performance" }
+          : {
+              title: r.raterType === "MANAGER" ? "มีพนักงานรอการประเมินจากคุณ" : "คุณได้รับเชิญให้ร่วมประเมิน",
+              body: `${r.participant.employee.firstName} ${r.participant.employee.lastName} — รอบประเมิน ${cycleLabel}`,
+              category: "performance",
+            },
+        session.sub,
+      );
+    }
   }
 
   await writeAudit({
@@ -412,40 +415,38 @@ export async function addParticipants(
   // so notifying about a still-DRAFT campaign would point at a task the
   // rater can't yet find in their pending list.
   const cycleLabel = `${campaign.name} · ${campaign.cycle}`;
-  if (campaign.status === "ACTIVE") await Promise.all(
-    employees.flatMap((emp) => {
-      const notifs: Promise<unknown>[] = [];
+  // Sequential, not Promise.all — see the matching note in updateCampaign:
+  // a pooled connection can only serve one query at a time, and firing many
+  // concurrent creates at once exhausts the pool wait queue (P2024) instead
+  // of just taking a bit longer.
+  if (campaign.status === "ACTIVE") {
+    for (const emp of employees) {
       if (campaign.raterTypes.includes("SELF")) {
-        notifs.push(
-          createNotification(
-            companyId,
-            emp.id,
-            {
-              title: "มีแบบประเมินตนเองรอทำ",
-              body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`,
-              category: "performance",
-            },
-            session.sub,
-          ),
+        await createNotification(
+          companyId,
+          emp.id,
+          {
+            title: "มีแบบประเมินตนเองรอทำ",
+            body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`,
+            category: "performance",
+          },
+          session.sub,
         );
       }
       if (campaign.raterTypes.includes("MANAGER") && emp.managerId) {
-        notifs.push(
-          createNotification(
-            companyId,
-            emp.managerId,
-            {
-              title: "มีพนักงานรอการประเมินจากคุณ",
-              body: `${emp.firstName} ${emp.lastName} — รอบประเมิน ${cycleLabel}`,
-              category: "performance",
-            },
-            session.sub,
-          ),
+        await createNotification(
+          companyId,
+          emp.managerId,
+          {
+            title: "มีพนักงานรอการประเมินจากคุณ",
+            body: `${emp.firstName} ${emp.lastName} — รอบประเมิน ${cycleLabel}`,
+            category: "performance",
+          },
+          session.sub,
         );
       }
-      return notifs;
-    }),
-  );
+    }
+  }
 
   await writeAudit({
     companyId,
