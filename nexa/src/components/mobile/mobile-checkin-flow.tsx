@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, Loader2, MapPinned, RotateCcw, X, Zap, ZapOff } from "lucide-react";
+import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, Loader2, MapPinned, RotateCcw, SwitchCamera, X, Zap, ZapOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
 import { ApiError } from "@/lib/api/client";
-import { useCameraStream } from "@/features/attendance/use-camera-stream";
+import { useCameraStream, type CameraFacing } from "@/features/attendance/use-camera-stream";
 import { useClockIn, useClockOut, useToday } from "@/features/attendance/hooks";
 
 type Step = "camera" | "preview" | "processing" | "offsite" | "success" | "error";
@@ -63,7 +63,8 @@ export function MobileCheckinFlow({
     clockOutDistance: number | null;
   } | null>(null);
 
-  const cam = useCameraStream(step === "camera" && !skipCapture, "user");
+  const [facing, setFacing] = useState<CameraFacing>("user");
+  const cam = useCameraStream(step === "camera" && !skipCapture, facing);
   const submittingRef = useRef(false);
 
   const branch = todayData?.data?.branch ?? null;
@@ -222,6 +223,8 @@ export function MobileCheckinFlow({
           ready={cam.ready}
           error={cam.error}
           errorMessage={cam.errorMessage}
+          facing={facing}
+          onSwitchCamera={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
           torchOn={torchOn}
           torchSupported={torchSupported}
           onToggleTorch={toggleTorch}
@@ -277,6 +280,8 @@ function CameraStep({
   ready,
   error,
   errorMessage,
+  facing,
+  onSwitchCamera,
   torchOn,
   torchSupported,
   onToggleTorch,
@@ -292,6 +297,8 @@ function CameraStep({
   ready: boolean;
   error: boolean;
   errorMessage: string | null;
+  facing: CameraFacing;
+  onSwitchCamera: () => void;
   torchOn: boolean;
   torchSupported: boolean;
   onToggleTorch: () => void;
@@ -305,7 +312,12 @@ function CameraStep({
 }) {
   return (
     <div className="relative flex-1 overflow-hidden">
-      <video ref={videoRef} playsInline muted className="absolute inset-0 size-full -scale-x-100 object-cover" />
+      <video
+        ref={videoRef}
+        playsInline
+        muted
+        className={cn("absolute inset-0 size-full object-cover", facing === "user" && "-scale-x-100")}
+      />
       {!ready && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-slate-300">
           <Loader2 className="size-6 animate-spin" /> กำลังเปิดกล้อง…
@@ -367,7 +379,14 @@ function CameraStep({
           >
             <Camera className="size-7 text-[#14180c]" />
           </button>
-          <span className="size-11" />
+          <button
+            type="button"
+            onClick={onSwitchCamera}
+            className="flex size-11 items-center justify-center rounded-full bg-white/10 text-white"
+            aria-label="สลับกล้องหน้า/หลัง"
+          >
+            <SwitchCamera className="size-5" />
+          </button>
         </div>
       </div>
     </div>
