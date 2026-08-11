@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CalendarDays, Wallet, Star, ClipboardCheck, ChevronRight } from "lucide-react";
+import { Bell, CalendarDays, ClipboardList, Star, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useNotifications } from "@/features/notification/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { formatRelativeTime } from "@/lib/format";
@@ -15,10 +15,6 @@ export interface MobileDashboardSnapshot {
   leaveBalances: { type: string; label: string; remaining: number }[];
   latestPayslip: { net: number; periodLabel: string } | null;
   recognition: { star: number; award: number; heart: number; point: number };
-}
-
-function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("th-TH", { maximumFractionDigits: 0 }).format(n);
 }
 
 /**
@@ -56,28 +52,30 @@ export function MobileDashboardView({
 
   return (
     <div className="min-h-full bg-muted md:hidden">
-      <div className="flex items-start justify-between bg-sidebar px-4 pt-4 pb-6 text-white">
-        <div>
-          <p className="text-sm font-medium text-white">
-            {greeting}, {name} 👋
-          </p>
-          <p className="mt-0.5 text-xs text-slate-300">{companyName}</p>
+      <div className="rounded-b-3xl bg-sidebar px-4 pt-4 pb-5 text-white">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm font-medium text-white">
+              {greeting}, {name} 👋
+            </p>
+            <p className="mt-0.5 text-xs text-slate-300">{companyName}</p>
+          </div>
+          <Link
+            href="/notifications"
+            aria-label="การแจ้งเตือน"
+            className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white"
+          >
+            <Bell className="size-4.5" />
+            {unread > 0 && (
+              <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-white ring-2 ring-sidebar">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </Link>
         </div>
-        <Link
-          href="/notifications"
-          aria-label="การแจ้งเตือน"
-          className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white"
-        >
-          <Bell className="size-4.5" />
-          {unread > 0 && (
-            <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-white ring-2 ring-sidebar">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          )}
-        </Link>
       </div>
 
-      <div className="-mt-3 space-y-5 px-4 pb-4">
+      <div className="space-y-5 px-4 pt-4 pb-4">
         <MobileCheckinCard />
 
         {mine && (
@@ -103,14 +101,12 @@ export function MobileDashboardView({
             </Link>
 
             <div className="grid grid-cols-2 gap-3">
-              <Link href="/payroll" className="rounded-xl bg-card p-3.5 shadow-sm">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-warning/10 text-warning">
-                  <Wallet className="size-4" />
+              <Link href="/requests" className="rounded-xl bg-card p-3.5 shadow-sm">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <ClipboardList className="size-4" />
                 </span>
-                <p className="mt-2 text-xs text-muted-foreground">เงินเดือนล่าสุด</p>
-                <p className="mt-0.5 text-base font-bold text-foreground">
-                  {mine.latestPayslip ? fmtCurrency(mine.latestPayslip.net) : "-"}
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground">คำขอของฉัน</p>
+                <p className="mt-0.5 text-base font-bold text-foreground">ลา / OT / แก้เวลา</p>
               </Link>
               <div className="rounded-xl bg-card p-3.5 shadow-sm">
                 <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
