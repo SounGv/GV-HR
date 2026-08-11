@@ -141,7 +141,10 @@ export function MobileDashboardView({
               )}
             </div>
             <p className="mt-2 text-sm font-semibold text-foreground">{nextPending.campaignName}</p>
-            <p className="text-xs text-muted-foreground">{nextPending.cycle}</p>
+            <p className="text-xs text-muted-foreground">
+              {nextPending.cycle}
+              {nextPending.totalQuestions > 0 ? ` · ${nextPending.totalQuestions} หัวข้อ` : ""}
+            </p>
             <Link
               href={`/performance/campaigns/${nextPending.campaignId}/participants/${nextPending.participantId}`}
               className="mt-3 flex h-10 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"

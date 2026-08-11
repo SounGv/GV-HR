@@ -85,6 +85,7 @@ export function ClockCard() {
     distance: number;
     branchName: string | null;
     mood?: AttendanceMood;
+    permitted: boolean;
   } | null>(null);
   const [offsiteReason, setOffsiteReason] = useState("");
   const [qrOpen, setQrOpen] = useState(false);
@@ -289,9 +290,9 @@ export function ClockCard() {
       setOffsiteReason("");
       refetch();
     } catch (err) {
-      const details = err instanceof ApiError ? (err.details as { offsite?: boolean; distance?: number; branchName?: string | null } | undefined) : undefined;
+      const details = err instanceof ApiError ? (err.details as { offsite?: boolean; permitted?: boolean; distance?: number; branchName?: string | null } | undefined) : undefined;
       if (details?.offsite) {
-        setOffsite({ kind: "in", distance: details.distance ?? 0, branchName: details.branchName ?? null });
+        setOffsite({ kind: "in", distance: details.distance ?? 0, branchName: details.branchName ?? null, permitted: details.permitted ?? true });
       } else {
         toast.error(err instanceof ApiError || err instanceof Error ? err.message : "เช็คอินไม่สำเร็จ");
       }
@@ -321,10 +322,10 @@ export function ClockCard() {
       setOffsiteReason("");
       refetch();
     } catch (err) {
-      const details = err instanceof ApiError ? (err.details as { offsite?: boolean; distance?: number; branchName?: string | null } | undefined) : undefined;
+      const details = err instanceof ApiError ? (err.details as { offsite?: boolean; permitted?: boolean; distance?: number; branchName?: string | null } | undefined) : undefined;
       if (details?.offsite) {
         setMoodOpen(false);
-        setOffsite({ kind: "out", distance: details.distance ?? 0, branchName: details.branchName ?? null, mood });
+        setOffsite({ kind: "out", distance: details.distance ?? 0, branchName: details.branchName ?? null, mood, permitted: details.permitted ?? true });
       } else {
         toast.error(err instanceof ApiError || err instanceof Error ? err.message : "เช็คเอาท์ไม่สำเร็จ");
       }
@@ -711,7 +712,9 @@ export function ClockCard() {
         </DialogContent>
       </Dialog>
 
-      {/* Off-site fallback — only appears when the server actually rejects the location */}
+      {/* Off-site fallback — only appears when the server actually rejects the location.
+          Without `attendance:offsite`, there's no reason field at all — HR must grant
+          the permission first (per-employee, via the role/permission matrix). */}
       <Dialog open={!!offsite} onOpenChange={(v) => !v && setOffsite(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -719,19 +722,31 @@ export function ClockCard() {
               <AlertTriangle className="size-5" /> อยู่นอกพื้นที่ทำงาน
             </DialogTitle>
             <DialogDescription>
-              {offsite?.branchName ? `${offsite.branchName} — ` : ""}ห่าง {offsite?.distance.toLocaleString()} เมตร ระบุเหตุผลเพื่อลงเวลานอกสถานที่
+              {offsite?.branchName ? `${offsite.branchName} — ` : ""}ห่าง {offsite?.distance.toLocaleString()} เมตร
+              {offsite?.permitted === false
+                ? " คุณไม่มีสิทธิ์เช็คอินนอกพื้นที่บริษัท"
+                : " ระบุเหตุผลเพื่อลงเวลานอกสถานที่"}
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            rows={2}
-            autoFocus
-            value={offsiteReason}
-            onChange={(e) => setOffsiteReason(e.target.value)}
-            placeholder="เช่น ออกพบลูกค้า / ส่งของนอกสถานที่ / ทำงานไซต์งาน"
-          />
-          <Button type="button" className="w-full" onClick={confirmOffsite} disabled={checking}>
-            {checking ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />} ยืนยันลงเวลานอกสถานที่
-          </Button>
+          {offsite?.permitted === false ? (
+            <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-muted-foreground">
+              <ShieldAlert className="size-4 shrink-0 text-warning" />
+              หากจำเป็นต้องทำงานนอกสถานที่เป็นประจำ กรุณาติดต่อ HR เพื่อขอสิทธิ์
+            </div>
+          ) : (
+            <>
+              <Textarea
+                rows={2}
+                autoFocus
+                value={offsiteReason}
+                onChange={(e) => setOffsiteReason(e.target.value)}
+                placeholder="เช่น ออกพบลูกค้า / ส่งของนอกสถานที่ / ทำงานไซต์งาน"
+              />
+              <Button type="button" className="w-full" onClick={confirmOffsite} disabled={checking}>
+                {checking ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />} ยืนยันลงเวลานอกสถานที่
+              </Button>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </section>

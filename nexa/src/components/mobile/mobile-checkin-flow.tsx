@@ -53,7 +53,7 @@ export function MobileCheckinFlow({
   const [torchSupported, setTorchSupported] = useState(false);
   const [coords, setCoords] = useState<Coords | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [offsiteInfo, setOffsiteInfo] = useState<{ distance: number; branchName: string | null } | null>(null);
+  const [offsiteInfo, setOffsiteInfo] = useState<{ distance: number; branchName: string | null; permitted: boolean } | null>(null);
   const [offsiteReason, setOffsiteReason] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [resultRecord, setResultRecord] = useState<{
@@ -156,10 +156,10 @@ export function MobileCheckinFlow({
     } catch (err) {
       const details =
         err instanceof ApiError
-          ? (err.details as { offsite?: boolean; distance?: number; branchName?: string | null } | undefined)
+          ? (err.details as { offsite?: boolean; permitted?: boolean; distance?: number; branchName?: string | null } | undefined)
           : undefined;
       if (details?.offsite) {
-        setOffsiteInfo({ distance: details.distance ?? 0, branchName: details.branchName ?? null });
+        setOffsiteInfo({ distance: details.distance ?? 0, branchName: details.branchName ?? null, permitted: details.permitted ?? true });
         setStep("offsite");
       } else {
         setSubmitError(err instanceof ApiError || err instanceof Error ? err.message : "ดำเนินการไม่สำเร็จ กรุณาลองใหม่");
@@ -421,7 +421,7 @@ function OffsiteStep({
   onConfirm,
   pending,
 }: {
-  info: { distance: number; branchName: string | null };
+  info: { distance: number; branchName: string | null; permitted: boolean };
   reason: string;
   onReasonChange: (v: string) => void;
   onCancel: () => void;
@@ -437,32 +437,51 @@ function OffsiteStep({
       <p className="mt-1 text-center text-sm text-slate-300">
         {info.branchName ? `${info.branchName} — ` : ""}ห่าง {info.distance.toLocaleString()} เมตร
       </p>
-      <p className="mt-4 text-xs text-slate-400">หมายเหตุ</p>
-      <textarea
-        rows={3}
-        autoFocus
-        value={reason}
-        onChange={(e) => onReasonChange(e.target.value)}
-        placeholder="เช่น ไปพบลูกค้า / ปฏิบัติงานนอกสถานที่"
-        className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white placeholder:text-slate-500 focus:border-primary focus:outline-none"
-      />
-      <div className="mt-4 flex gap-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex h-13 flex-1 items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold text-white"
-        >
-          ยกเลิก
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={!reason.trim() || pending}
-          className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-[#14180c] disabled:opacity-40"
-        >
-          {pending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} ยืนยันเช็คอิน
-        </button>
-      </div>
+
+      {info.permitted ? (
+        <>
+          <p className="mt-4 text-xs text-slate-400">หมายเหตุ</p>
+          <textarea
+            rows={3}
+            autoFocus
+            value={reason}
+            onChange={(e) => onReasonChange(e.target.value)}
+            placeholder="เช่น ไปพบลูกค้า / ปฏิบัติงานนอกสถานที่"
+            className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white placeholder:text-slate-500 focus:border-primary focus:outline-none"
+          />
+          <div className="mt-4 flex gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex h-13 flex-1 items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold text-white"
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={!reason.trim() || pending}
+              className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-[#14180c] disabled:opacity-40"
+            >
+              {pending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} ยืนยันเช็คอิน
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mt-4 text-center text-sm font-medium text-warning">คุณไม่มีสิทธิ์เช็คอินนอกพื้นที่บริษัท</p>
+          <p className="mt-1 text-center text-xs text-slate-400">
+            หากจำเป็นต้องทำงานนอกสถานที่เป็นประจำ กรุณาติดต่อ HR เพื่อขอสิทธิ์
+          </p>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="mt-5 flex h-13 w-full items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold text-white"
+          >
+            กลับหน้าหลัก
+          </button>
+        </>
+      )}
     </div>
   );
 }
