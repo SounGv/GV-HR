@@ -1,19 +1,13 @@
 import type { NextRequest } from "next/server";
-import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { BadRequest, NotFound } from "@/lib/api/errors";
 import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError } from "@/lib/ai/client";
 import { jsonSchemaToGemini } from "@/lib/ai/tools";
 import { prisma } from "@/lib/prisma";
+import { aiTemplateDesignerRequestSchema } from "@/features/evaluation-template/schema";
 
 export const runtime = "nodejs";
-
-const bodySchema = z.object({
-  scope: z.enum(["department", "company"]),
-  targetId: z.string().uuid().optional(),
-  instruction: z.string().trim().max(2000).optional(),
-});
 
 const OUTPUT_SCHEMA = {
   type: "object",
@@ -121,7 +115,7 @@ async function buildContext(companyId: string, scope: "department" | "company", 
 export async function POST(request: NextRequest) {
   try {
     const session = await requirePermission("campaign:create");
-    const { scope, targetId, instruction } = bodySchema.parse(await request.json());
+    const { scope, targetId, instruction } = aiTemplateDesignerRequestSchema.parse(await request.json());
 
     const { label, context } = await buildContext(session.companyId, scope, targetId);
 

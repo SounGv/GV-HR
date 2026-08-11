@@ -154,40 +154,39 @@ export async function updateTemplate(
     throw BadRequest("แก้ไขหมวด/คำถามได้เฉพาะแบบประเมินที่ยังเป็นฉบับร่าง");
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.evaluationTemplate.update({
-      where: { id },
-      data: {
-        ...(input.name !== undefined ? { name: input.name } : {}),
-        ...(input.description !== undefined ? { description: input.description } : {}),
-        ...(input.status !== undefined ? { status: input.status } : {}),
-        updatedById: session.sub,
-      },
-    });
-
-    if (changingSections) {
-      await tx.evaluationTemplateSection.deleteMany({ where: { templateId: id } });
-      for (const [si, s] of input.sections!.entries()) {
-        await tx.evaluationTemplateSection.create({
-          data: {
-            templateId: id,
-            name: s.name,
-            order: s.order ?? si,
-            questions: {
-              create: s.questions.map((q, qi) => ({
-                text: q.text,
-                helpText: q.helpText,
-                answerType: q.answerType,
-                options: q.options as Prisma.InputJsonValue[] | undefined,
-                weight: q.weight,
-                required: q.required,
-                order: q.order ?? qi,
+  // A single nested write (deleteMany + create in the same `update` call)
+  // instead of a delete followed by one `create` per section — one round
+  // trip instead of N+1, and still atomic without needing $transaction.
+  await prisma.evaluationTemplate.update({
+    where: { id },
+    data: {
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
+      updatedById: session.sub,
+      ...(changingSections
+        ? {
+            sections: {
+              deleteMany: {},
+              create: input.sections!.map((s, si) => ({
+                name: s.name,
+                order: s.order ?? si,
+                questions: {
+                  create: s.questions.map((q, qi) => ({
+                    text: q.text,
+                    helpText: q.helpText,
+                    answerType: q.answerType,
+                    options: q.options as Prisma.InputJsonValue[] | undefined,
+                    weight: q.weight,
+                    required: q.required,
+                    order: q.order ?? qi,
+                  })),
+                },
               })),
             },
-          },
-        });
-      }
-    }
+          }
+        : {}),
+    },
   });
 
   await writeAudit({

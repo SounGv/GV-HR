@@ -639,7 +639,7 @@ export async function submitMyResponse(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true, finalizedAt: true, campaign: { select: { status: true } } },
+    select: { id: true, finalizedAt: true, campaign: { select: { status: true, templateSnapshot: true } } },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
   if (participant.finalizedAt) {
@@ -655,11 +655,26 @@ export async function submitMyResponse(
   });
   if (!response) throw Forbidden("ไม่มีสิทธิ์ทำแบบประเมินนี้");
 
+  // Which field is actually stored is decided here, from the campaign's own
+  // shape — never from whatever the client happened to send — so a stale
+  // client or hand-rolled request can't silently score a template-based
+  // campaign from an empty/irrelevant `scores` array (or vice versa).
+  const templateSnapshot = participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null;
+  if (templateSnapshot) {
+    const requiredIds = templateSnapshot.sections.flatMap((s) => s.questions.filter((q) => q.required).map((q) => q.id));
+    const answeredIds = new Set((input.answers ?? []).map((a) => a.questionId));
+    if (requiredIds.some((id) => !answeredIds.has(id))) {
+      throw BadRequest("กรุณาตอบคำถามที่บังคับตอบให้ครบทุกข้อ");
+    }
+  } else if (!input.scores || input.scores.length === 0) {
+    throw BadRequest("กรุณาให้คะแนนสมรรถนะอย่างน้อย 1 รายการ");
+  }
+
   await prisma.evaluationResponse.update({
     where: { id: response.id },
     data: {
-      scores: input.scores ?? [],
-      answers: input.answers ?? undefined,
+      scores: templateSnapshot ? [] : input.scores,
+      answers: templateSnapshot ? input.answers : undefined,
       strengths: input.strengths,
       improvements: input.improvements,
       summary: input.summary,

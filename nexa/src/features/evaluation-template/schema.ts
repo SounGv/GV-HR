@@ -19,6 +19,13 @@ const questionSchema = z
   .refine((q) => q.answerType === "LONG_TEXT" || (q.options && q.options.length >= 2), {
     message: "ต้องมีตัวเลือกอย่างน้อย 2 รายการ",
     path: ["options"],
+  })
+  .refine((q) => !q.options || new Set(q.options.map((o) => o.value)).size === q.options.length, {
+    // Scoring resolves an answer by matching its value against this list
+    // (see scoreTemplateAnswers) — a duplicate value would make that match
+    // ambiguous and silently score against whichever duplicate comes first.
+    message: "ตัวเลือกต้องไม่ซ้ำกัน",
+    path: ["options"],
   });
 
 const sectionSchema = z.object({
