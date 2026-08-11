@@ -44,7 +44,7 @@ export function MobilePrimaryButton({
         "flex h-[50px] w-full items-center justify-center rounded-[10px] text-sm font-bold transition active:scale-[0.99] disabled:cursor-not-allowed",
         disabled
           ? "bg-surface-muted text-muted-foreground"
-          : "bg-primary text-primary-foreground shadow-sm shadow-primary/20",
+          : "bg-gradient-to-r from-[#BEF264] to-[#84CC16] text-primary-foreground shadow-sm shadow-primary/20 active:brightness-95",
         className,
       )}
     >

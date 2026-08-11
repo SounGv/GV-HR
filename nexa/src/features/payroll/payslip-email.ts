@@ -123,7 +123,7 @@ export function renderPayslipEmailHtml({
   ${record.note ? `<p style="margin:16px 0 0;font-size:12px;color:#64748b;"><strong>หมายเหตุจาก HR:</strong> ${escapeHtml(record.note)}</p>` : ""}
 
   <p style="margin:16px 0 0;font-size:12px;color:#64748b;">
-    ตรวจสอบความถูกต้องของสลิปนี้ได้ที่ <a href="${verifyUrl}" style="color:#33400a;">${verifyUrl}</a><br/>
+    ตรวจสอบความถูกต้องของสลิปนี้ได้ที่ <a href="${verifyUrl}" style="color:#365314;">${verifyUrl}</a><br/>
     รหัสอ้างอิง: ${record.id.slice(0, 8)}
   </p>
   <p style="margin:12px 0 0;font-size:11px;color:#94a3b8;text-align:center;">เอกสารนี้ออกโดยระบบ GV One HR — ${company.name}</p>

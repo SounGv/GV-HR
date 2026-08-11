@@ -121,7 +121,7 @@ export function MobileCheckinCard() {
             <button
               type="button"
               onClick={() => setFlowMode(hasIn ? "out" : "in")}
-              className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-lg shadow-primary/20 active:scale-[0.99]"
+              className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#BEF264] to-[#84CC16] text-base font-semibold text-primary-foreground shadow-lg shadow-primary/20 active:scale-[0.99] active:brightness-95"
             >
               <Camera className="size-5" /> {hasIn ? "เช็คเอาท์" : "เช็คอิน"}
             </button>

@@ -76,15 +76,17 @@
   --popover: #fffef8;
   --popover-foreground: #10130a;
 
-  /* Brand lime — Gadget Villa. Neon lime backgrounds always pair with dark text. */
-  --primary: #b7ed00;
+  /* Brand lime — Gadget Villa, tuned to the Tailwind lime scale (lime-500
+     as primary) so it stays vividly green without reading as neon/harsh at
+     large surface area. Backgrounds always pair with dark text. */
+  --primary: #84cc16;
   --primary-foreground: #111408;
-  --secondary: #eaf5b8;
-  --secondary-foreground: #33400a;
+  --secondary: #ecfccb;
+  --secondary-foreground: #365314;
   --muted: #e9ebdd;
   --muted-foreground: #5c6050;
-  --accent: #eaf5b8;
-  --accent-foreground: #33400a;
+  --accent: #ecfccb;
+  --accent-foreground: #365314;
   --destructive: #e4573d;
 
   --success: #0e9f8e;
@@ -100,23 +102,23 @@
 
   --border: #e0e2d3;
   --input: #e0e2d3;
-  --ring: #88b000;
+  --ring: #4d7c0f;
 
-  --chart-1: #b7ed00;
+  --chart-1: #84cc16;
   --chart-2: #0e9f8e;
   --chart-3: #f59e0b;
-  --chart-4: #88b000;
+  --chart-4: #4d7c0f;
   --chart-5: #e4573d;
 
   /* Sidebar stays carbon black; accent aligns with brand lime */
   --sidebar: #10130a;
   --sidebar-foreground: #cdd1bd;
-  --sidebar-primary: #b7ed00;
+  --sidebar-primary: #84cc16;
   --sidebar-primary-foreground: #111408;
   --sidebar-accent: #1b1f12;
   --sidebar-accent-foreground: #f5f6ef;
   --sidebar-border: #212616;
-  --sidebar-ring: #b7ed00;
+  --sidebar-ring: #84cc16;
 }
 
 /* ───────────────── GV One — Dark theme ───────────────── */
@@ -128,14 +130,14 @@
   --popover: #171b0f;
   --popover-foreground: #f5f6ef;
 
-  --primary: #b7ed00;
+  --primary: #84cc16;
   --primary-foreground: #111408;
   --secondary: #232916;
   --secondary-foreground: #f5f6ef;
   --muted: #1e2213;
   --muted-foreground: #a8ad95;
   --accent: #2a3018;
-  --accent-foreground: #d9f27a;
+  --accent-foreground: #bef264;
   --destructive: #e4573d;
 
   --success: #0e9f8e;
@@ -151,22 +153,22 @@
 
   --border: #262b1a;
   --input: #262b1a;
-  --ring: #b7ed00;
+  --ring: #84cc16;
 
-  --chart-1: #b7ed00;
+  --chart-1: #84cc16;
   --chart-2: #0e9f8e;
   --chart-3: #fbbf24;
-  --chart-4: #88b000;
+  --chart-4: #4d7c0f;
   --chart-5: #e4573d;
 
   --sidebar: #10130a;
   --sidebar-foreground: #cdd1bd;
-  --sidebar-primary: #b7ed00;
+  --sidebar-primary: #84cc16;
   --sidebar-primary-foreground: #111408;
   --sidebar-accent: #1b1f12;
   --sidebar-accent-foreground: #f5f6ef;
   --sidebar-border: #212616;
-  --sidebar-ring: #b7ed00;
+  --sidebar-ring: #84cc16;
 }
 
 @layer base {
