@@ -102,10 +102,10 @@ function NexaHeaderLogo() {
   return (
     <div className="flex items-center gap-2.5">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/nexa-logo.svg" alt="GV One" className="size-8 shrink-0 rounded-lg" />
+      <img src="/nexa-logo.svg" alt="GV One" className="size-10 shrink-0 rounded-lg" />
       <div className="leading-tight group-data-[collapsible=icon]:hidden">
-        <div className="text-sm font-semibold tracking-wide text-white">GV ONE</div>
-        <div className="text-[10px] font-medium tracking-[0.16em] text-slate-400">
+        <div className="text-base font-semibold tracking-wide text-white">GV ONE</div>
+        <div className="text-[11px] font-medium tracking-[0.16em] text-slate-400">
           HR AI PLATFORM
         </div>
       </div>
