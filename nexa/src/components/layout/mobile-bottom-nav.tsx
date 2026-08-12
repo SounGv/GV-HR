@@ -99,7 +99,7 @@ function NavTab({
           </span>
         )}
       </span>
-      <span className="text-[11px] font-semibold whitespace-nowrap">{label}</span>
+      <span className="text-[12px] font-semibold whitespace-nowrap">{label}</span>
     </Link>
   );
 }

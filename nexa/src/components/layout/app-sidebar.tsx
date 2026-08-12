@@ -55,10 +55,10 @@ export function AppSidebar() {
                 type="button"
                 onClick={() => toggle(group.label)}
                 aria-expanded={expanded}
-                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs font-medium text-slate-400 transition hover:text-slate-200"
+                className="flex w-full items-center justify-between rounded-md px-2 py-2 text-sm font-semibold text-slate-300 transition hover:text-slate-100"
               >
                 <span className="tracking-wide">{group.label}</span>
-                <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
+                <ChevronDown className={cn("size-4 transition-transform", expanded && "rotate-180")} />
               </button>
               {expanded && (
                 <SidebarGroupContent>
@@ -70,7 +70,12 @@ export function AppSidebar() {
                         : `/coming-soon?title=${encodeURIComponent(item.label)}`;
                       return (
                         <SidebarMenuItem key={item.href}>
-                          <SidebarMenuButton isActive={active} tooltip={item.label} render={<Link href={href} />}>
+                          <SidebarMenuButton
+                            isActive={active}
+                            tooltip={item.label}
+                            className="h-10 text-[15px] [&_svg]:size-[18px]"
+                            render={<Link href={href} />}
+                          >
                             <item.icon />
                             <span>{item.label}</span>
                           </SidebarMenuButton>

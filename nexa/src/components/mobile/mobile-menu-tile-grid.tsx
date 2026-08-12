@@ -56,7 +56,7 @@ export function MobileMenuTileGrid({ groups, hrStartIndex }: { groups: MobileMen
                     <span className={`flex size-11 items-center justify-center rounded-2xl ${toneClass}`}>
                       <item.icon className="size-5" strokeWidth={2.25} />
                     </span>
-                    <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-foreground">
+                    <span className="line-clamp-2 text-[12.5px] font-semibold leading-tight text-foreground">
                       {item.label}
                     </span>
                   </Link>
