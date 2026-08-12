@@ -113,29 +113,71 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   }
 
   if (query.type === "attendance") {
-    const recs = await prisma.attendanceRecord.findMany({
-      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
-      select: {
-        status: true,
-        clockInAt: true,
-        clockOutAt: true,
-        employee: {
-          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+    // Absent days aren't a stored AttendanceRecord status anywhere in this
+    // app (nothing ever writes status: "ABSENT" — see attendance service) —
+    // they only exist as "a business day this employee has no record, no
+    // approved leave, and it isn't a holiday." So this report has to start
+    // from the active-employee roster (not just employees who have a
+    // record), and derive absence the same way the calendar view's
+    // getMyDayStatus does, aggregated over the period instead of per day.
+    const [employees, recs, holidays, leaves] = await Promise.all([
+      prisma.employee.findMany({
+        where: { companyId, deletedAt: null, status: "ACTIVE", ...(query.departmentId ? { departmentId: query.departmentId } : {}) },
+        select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+      }),
+      prisma.attendanceRecord.findMany({
+        where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
+        select: {
+          status: true,
+          clockInAt: true,
+          clockOutAt: true,
+          employee: { select: { employeeCode: true } },
         },
-      },
-    });
-    const map = new Map<string, { name: string; present: number; late: number; hours: number }>();
+      }),
+      prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
+      prisma.leaveRequest.findMany({
+        where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
+        select: { startDate: true, endDate: true, days: true, employee: { select: { employeeCode: true } } },
+      }),
+    ]);
+
+    const holidayDates = new Set(holidays.map((h) => h.date.toISOString().slice(0, 10)));
+    const DAY_MS = 86_400_000;
+    let businessDays = 0;
+    for (let d = new Date(start); d.getTime() < end.getTime(); d = new Date(d.getTime() + DAY_MS)) {
+      const dow = d.getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      if (holidayDates.has(d.toISOString().slice(0, 10))) continue;
+      businessDays++;
+    }
+    const clippedDays = (leaveStart: Date, leaveEnd: Date, storedDays: number) => {
+      if (leaveStart >= start && leaveEnd < end) return storedDays;
+      const clipStart = leaveStart < start ? start : leaveStart;
+      const clipEndExclusive = leaveEnd >= end ? end : new Date(leaveEnd.getTime() + DAY_MS);
+      return Math.max(0, Math.round((clipEndExclusive.getTime() - clipStart.getTime()) / DAY_MS));
+    };
+
+    const map = new Map<string, { name: string; present: number; late: number; hours: number; leave: number }>();
+    for (const e of employees) {
+      map.set(e.employeeCode, { name: `${e.firstName} ${e.lastName}`, present: 0, late: 0, hours: 0, leave: 0 });
+    }
     const deptLate = new Map<string, number>();
     for (const r of recs) {
-      const code = r.employee.employeeCode;
-      const row = map.get(code) ?? { name: `${r.employee.firstName} ${r.employee.lastName}`, present: 0, late: 0, hours: 0 };
+      const row = map.get(r.employee.employeeCode);
+      if (!row) continue; // e.g. an inactive employee's leftover record
       if (r.clockInAt) row.present += 1;
-      if (r.status === "LATE") {
-        row.late += 1;
-        bumpDept(deptLate, r.employee.department?.name, 1);
-      }
+      if (r.status === "LATE") row.late += 1;
       if (r.clockInAt && r.clockOutAt) row.hours += (r.clockOutAt.getTime() - r.clockInAt.getTime()) / 3_600_000;
-      map.set(code, row);
+    }
+    for (const l of leaves) {
+      const row = map.get(l.employee.employeeCode);
+      if (row) row.leave += clippedDays(l.startDate, l.endDate, l.days);
+    }
+    for (const [code, v] of map) {
+      if (v.late > 0) {
+        const emp = employees.find((e) => e.employeeCode === code);
+        bumpDept(deptLate, emp?.department?.name, v.late);
+      }
     }
     return {
       title,
@@ -145,10 +187,18 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "name", label: "ชื่อ-สกุล" },
         { key: "present", label: "วันมาทำงาน", numeric: true },
         { key: "late", label: "วันมาสาย", numeric: true },
+        { key: "leave", label: "วันลา", numeric: true },
+        { key: "absent", label: "วันขาดงาน", numeric: true },
         { key: "hours", label: "ชั่วโมงรวม", numeric: true },
       ],
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
-        code, name: v.name, present: v.present, late: v.late, hours: Math.round(v.hours * 10) / 10,
+        code,
+        name: v.name,
+        present: v.present,
+        late: v.late,
+        leave: Math.round(v.leave * 10) / 10,
+        absent: Math.max(0, Math.round((businessDays - v.present - v.leave) * 10) / 10),
+        hours: Math.round(v.hours * 10) / 10,
       })),
       summary: toSummary(deptLate),
       summaryLabel: "จำนวนวันมาสายตามแผนก",
@@ -210,24 +260,65 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
 
   if (query.type === "leave") {
     const year = start.getUTCFullYear();
-    const bals = await prisma.leaveBalance.findMany({
-      where: { companyId, year, ...deptRel },
-      select: {
-        type: true,
-        usedDays: true,
-        employee: {
-          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    // ANNUAL/SICK/PERSONAL usedDays comes from LeaveBalance (the authoritative
+    // running total — increment/decrement already accounts for cancellations).
+    // UNPAID/OTHER never get a balance row at all (deductsBalance() is false
+    // for both, see days.ts), so they're summed straight from approved
+    // requests instead — otherwise those two leave types silently vanish
+    // from this report despite being real, trackable leave.
+    const [bals, unpaidOther] = await Promise.all([
+      prisma.leaveBalance.findMany({
+        where: { companyId, year, ...deptRel },
+        select: {
+          type: true,
+          usedDays: true,
+          employee: {
+            select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+          },
         },
-      },
-    });
-    const map = new Map<string, { name: string; ANNUAL: number; SICK: number; PERSONAL: number }>();
+      }),
+      prisma.leaveRequest.findMany({
+        where: {
+          companyId,
+          deletedAt: null,
+          status: "APPROVED",
+          type: { in: ["UNPAID", "OTHER"] },
+          startDate: { lt: yearEnd },
+          endDate: { gte: yearStart },
+          ...deptRel,
+        },
+        select: {
+          type: true,
+          days: true,
+          employee: {
+            select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+          },
+        },
+      }),
+    ]);
+    const map = new Map<
+      string,
+      { name: string; ANNUAL: number; SICK: number; PERSONAL: number; UNPAID: number; OTHER: number }
+    >();
     const deptDays = new Map<string, number>();
+    const rowFor = (code: string, name: string) => {
+      const row = map.get(code) ?? { name, ANNUAL: 0, SICK: 0, PERSONAL: 0, UNPAID: 0, OTHER: 0 };
+      map.set(code, row);
+      return row;
+    };
     for (const b of bals) {
       const code = b.employee.employeeCode;
-      const row = map.get(code) ?? { name: `${b.employee.firstName} ${b.employee.lastName}`, ANNUAL: 0, SICK: 0, PERSONAL: 0 };
+      const row = rowFor(code, `${b.employee.firstName} ${b.employee.lastName}`);
       if (b.type === "ANNUAL" || b.type === "SICK" || b.type === "PERSONAL") row[b.type] += b.usedDays;
-      map.set(code, row);
       bumpDept(deptDays, b.employee.department?.name, b.usedDays);
+    }
+    for (const r of unpaidOther) {
+      const code = r.employee.employeeCode;
+      const row = rowFor(code, `${r.employee.firstName} ${r.employee.lastName}`);
+      row[r.type as "UNPAID" | "OTHER"] += r.days;
+      bumpDept(deptDays, r.employee.department?.name, r.days);
     }
     return {
       title,
@@ -238,9 +329,11 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "annual", label: "ลาพักร้อน (วัน)", numeric: true },
         { key: "sick", label: "ลาป่วย (วัน)", numeric: true },
         { key: "personal", label: "ลากิจ (วัน)", numeric: true },
+        { key: "unpaid", label: "ลาไม่รับค่าจ้าง (วัน)", numeric: true },
+        { key: "other", label: "ลาอื่นๆ (วัน)", numeric: true },
       ],
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
-        code, name: v.name, annual: v.ANNUAL, sick: v.SICK, personal: v.PERSONAL,
+        code, name: v.name, annual: v.ANNUAL, sick: v.SICK, personal: v.PERSONAL, unpaid: v.UNPAID, other: v.OTHER,
       })),
       summary: toSummary(deptDays),
       summaryLabel: "วันลารวมตามแผนก",
@@ -318,6 +411,13 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         }
       }
     }
+    // Same known-constant-label matching as the company-wide aggregate above,
+    // but per employee — everything else (allowances/OT/bonus/other manual
+    // adjustments) stays folded into the existing gross/deductions totals
+    // rather than exploding into one column per possible label.
+    const lineAmount = (lines: { label: string; amount: number }[], label: string) =>
+      lines.find((l) => l.label === label)?.amount ?? 0;
+
     return {
       title,
       period,
@@ -325,18 +425,27 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
         { key: "gross", label: "รายได้รวม", numeric: true },
-        { key: "deductions", label: "รายการหัก", numeric: true },
+        { key: "socialSecurity", label: "ประกันสังคม", numeric: true },
+        { key: "withholdingTax", label: "ภาษีหัก ณ ที่จ่าย", numeric: true },
+        { key: "unpaidLeave", label: "หักลาไม่รับค่าจ้าง", numeric: true },
+        { key: "deductions", label: "รายการหักรวม", numeric: true },
         { key: "net", label: "สุทธิ", numeric: true },
         { key: "status", label: "สถานะ" },
       ],
-      rows: prs.map((p) => ({
-        code: p.employee.employeeCode,
-        name: `${p.employee.firstName} ${p.employee.lastName}`,
-        gross: p.gross,
-        deductions: p.totalDeductions,
-        net: p.net,
-        status: p.status === "PAID" ? "จ่ายแล้ว" : "ฉบับร่าง",
-      })),
+      rows: prs.map((p) => {
+        const lines = (p.deductions as unknown as { label: string; amount: number }[] | null) ?? [];
+        return {
+          code: p.employee.employeeCode,
+          name: `${p.employee.firstName} ${p.employee.lastName}`,
+          gross: p.gross,
+          socialSecurity: lineAmount(lines, "ประกันสังคม"),
+          withholdingTax: lineAmount(lines, "ภาษีหัก ณ ที่จ่าย"),
+          unpaidLeave: lineAmount(lines, "หักลาไม่รับค่าจ้าง"),
+          deductions: p.totalDeductions,
+          net: p.net,
+          status: p.status === "PAID" ? "จ่ายแล้ว" : "ฉบับร่าง",
+        };
+      }),
       summary: toSummary(deptNet),
       summaryLabel: "เงินเดือนสุทธิรวมตามแผนก",
       summaryUnit: "บาท",
@@ -389,42 +498,41 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   }
 
   if (query.type === "performance") {
+    // Every review, not just the latest per employee — collapsing to one row
+    // used to silently drop all prior-cycle history from the report.
     const reviews = await prisma.performanceReview.findMany({
       where: { companyId, deletedAt: null, ...deptRel },
       select: {
         cycle: true,
         overallScore: true,
         band: true,
-        createdAt: true,
         employee: { select: { employeeCode: true, firstName: true, lastName: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ employee: { employeeCode: "asc" } }, { createdAt: "desc" }],
     });
-    const map = new Map<string, { name: string; cycle: string; score: number; band: string }>();
-    for (const r of reviews) {
-      const code = r.employee.employeeCode;
-      if (map.has(code)) continue;
-      map.set(code, { name: `${r.employee.firstName} ${r.employee.lastName}`, cycle: r.cycle, score: Math.round(r.overallScore * 10) / 10, band: r.band });
-    }
     return {
       title,
       period: null,
       columns: [
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
-        { key: "cycle", label: "รอบล่าสุด" },
+        { key: "cycle", label: "รอบประเมิน" },
         { key: "score", label: "คะแนนรวม", numeric: true },
         { key: "band", label: "ระดับ" },
       ],
-      rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
-        code, name: v.name, cycle: v.cycle, score: v.score, band: v.band,
+      rows: reviews.map((r) => ({
+        code: r.employee.employeeCode,
+        name: `${r.employee.firstName} ${r.employee.lastName}`,
+        cycle: r.cycle,
+        score: Math.round(r.overallScore * 10) / 10,
+        band: r.band,
       })),
     };
   }
 
-  if (query.type === "kpi") {
+  if (query.type === "kpi" || query.type === "okr") {
     const goals = await prisma.goal.findMany({
-      where: { companyId, deletedAt: null, type: "KPI", ...deptRel },
+      where: { companyId, deletedAt: null, type: query.type === "kpi" ? "KPI" : "OKR", ...deptRel },
       select: {
         cycle: true,
         targetValue: true,
