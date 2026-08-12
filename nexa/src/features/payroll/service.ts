@@ -46,6 +46,50 @@ const recordWithEmployeeSelect = {
   },
 } satisfies Prisma.PayrollRecordSelect;
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Approved unpaid-leave days per employee overlapping [from, to) — clipped to
+ * the period for the rare request that spans a payroll cutover (the stored
+ * `days` field covers the whole request, not just the part inside this
+ * period). Half-day precision isn't preserved across a boundary split; an
+ * acceptable simplification for that edge case.
+ */
+async function getUnpaidLeaveDaysByEmployee(
+  companyId: string,
+  from: Date,
+  to: Date,
+  employeeId?: string,
+): Promise<Map<string, number>> {
+  const requests = await prisma.leaveRequest.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      status: "APPROVED",
+      type: "UNPAID",
+      startDate: { lt: to },
+      endDate: { gte: from },
+      ...(employeeId ? { employeeId } : {}),
+    },
+    select: { employeeId: true, startDate: true, endDate: true, days: true },
+  });
+
+  const map = new Map<string, number>();
+  for (const r of requests) {
+    const fullyInside = r.startDate >= from && r.endDate < to;
+    let days: number;
+    if (fullyInside) {
+      days = r.days;
+    } else {
+      const clipStart = r.startDate < from ? from : r.startDate;
+      const clipEndExclusive = r.endDate >= to ? to : new Date(r.endDate.getTime() + DAY_MS);
+      days = Math.max(0, Math.round((clipEndExclusive.getTime() - clipStart.getTime()) / DAY_MS));
+    }
+    map.set(r.employeeId, (map.get(r.employeeId) ?? 0) + days);
+  }
+  return map;
+}
+
 function requireEmployeeId(session: AccessClaims): string {
   if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
   return session.employeeId;
@@ -55,6 +99,57 @@ export function canManagePayroll(session: AccessClaims): boolean {
   return can(session.perms, "payroll:create") || can(session.perms, "payroll:approve");
 }
 
+export async function getPayrollPeriodStatus(companyId: string, period: string) {
+  const closed = await prisma.payrollPeriod.findUnique({
+    where: { companyId_period: { companyId, period } },
+    select: { closedAt: true },
+  });
+  return { period, closed: !!closed, closedAt: closed?.closedAt ?? null };
+}
+
+async function requirePeriodOpen(companyId: string, period: string) {
+  const closed = await prisma.payrollPeriod.findUnique({
+    where: { companyId_period: { companyId, period } },
+    select: { id: true },
+  });
+  if (closed) throw BadRequest("งวดนี้ปิดแล้ว ไม่สามารถประมวลผลหรือแก้ไขได้อีก");
+}
+
+/**
+ * Close a payroll period company-wide — blocks generate/adjust for every
+ * record in that period from this point on, including brand-new employees
+ * added later (unlike the existing per-record PAID lock, which only protects
+ * records already marked paid). Same authority level as marking a payslip
+ * paid, so it reuses `payroll:approve` rather than a new permission action.
+ */
+export async function closePayrollPeriod(
+  companyId: string,
+  session: AccessClaims,
+  period: string,
+  meta?: Meta,
+) {
+  const existing = await prisma.payrollPeriod.findUnique({
+    where: { companyId_period: { companyId, period } },
+    select: { id: true },
+  });
+  if (existing) throw BadRequest("งวดนี้ปิดไปแล้ว");
+
+  await prisma.payrollPeriod.create({
+    data: { companyId, period, closedById: session.sub },
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "payroll.close_period",
+    entity: "PayrollPeriod",
+    after: { period },
+    ...meta,
+  });
+
+  return getPayrollPeriodStatus(companyId, period);
+}
+
 /** Generate/refresh DRAFT payslips for all active salaried employees in a period. */
 export async function generatePayroll(
   companyId: string,
@@ -62,6 +157,8 @@ export async function generatePayroll(
   period: string,
   meta?: Meta,
 ) {
+  await requirePeriodOpen(companyId, period);
+
   const employees = await prisma.employee.findMany({
     where: { companyId, deletedAt: null, status: "ACTIVE", baseSalary: { not: null } },
     select: { id: true, baseSalary: true },
@@ -78,6 +175,7 @@ export async function generatePayroll(
     _sum: { estimatedAmount: true },
   });
   const otMap = new Map(otAgg.map((o) => [o.employeeId, o._sum.estimatedAmount ?? 0]));
+  const unpaidLeaveMap = await getUnpaidLeaveDaysByEmployee(companyId, from, to);
 
   // Existing records for this period — read so a re-generate (e.g. after new
   // OT gets approved) never wipes HR's manual adjustments, and never touches
@@ -98,6 +196,7 @@ export async function generatePayroll(
     const comp = computePayroll({
       baseSalary: Number(emp.baseSalary),
       overtime: otMap.get(emp.id) ?? 0,
+      unpaidLeaveDays: unpaidLeaveMap.get(emp.id) ?? 0,
       extraEarnings: adj.earnings,
       extraDeductions: adj.deductions,
     });
@@ -218,6 +317,7 @@ export async function updatePayrollAdjustments(
   });
   if (!record) throw NotFound("ไม่พบสลิปเงินเดือน");
   if (record.status === "PAID") throw BadRequest("แก้ไขไม่ได้ — รายการนี้จ่ายแล้ว");
+  await requirePeriodOpen(companyId, record.period);
 
   const employee = await prisma.employee.findFirst({
     where: { id: record.employeeId, companyId, deletedAt: null },
@@ -232,6 +332,7 @@ export async function updatePayrollAdjustments(
     where: { companyId, employeeId: record.employeeId, deletedAt: null, status: "APPROVED", date: { gte: from, lt: to } },
     _sum: { estimatedAmount: true },
   });
+  const unpaidLeaveMap = await getUnpaidLeaveDaysByEmployee(companyId, from, to, record.employeeId);
 
   const adjustments: ManualAdjustments = {
     earnings: input.extraEarnings ?? [],
@@ -240,6 +341,7 @@ export async function updatePayrollAdjustments(
   const comp = computePayroll({
     baseSalary: Number(employee.baseSalary),
     overtime: otAgg._sum.estimatedAmount ?? 0,
+    unpaidLeaveDays: unpaidLeaveMap.get(record.employeeId) ?? 0,
     extraEarnings: adjustments.earnings,
     extraDeductions: adjustments.deductions,
   });

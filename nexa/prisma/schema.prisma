@@ -260,6 +260,7 @@ model Company {
   leaveRequests               LeaveRequest[]
   leaveBalances               LeaveBalance[]
   payrollRecords              PayrollRecord[]
+  payrollPeriods              PayrollPeriod[]
   performanceReviews          PerformanceReview[]
   competencies                Competency[]
   competencyCategories        CompetencyCategory[]
@@ -1038,6 +1039,28 @@ model PayrollRecord {
   @@unique([employeeId, period])
   @@index([companyId, period])
   @@map("payroll_records")
+}
+
+/**
+ * Company-wide payroll period close/lock — one row per company+period, only
+ * ever created when someone with `payroll:approve` explicitly closes it.
+ * Absence of a row means the period is still open. Closing blocks
+ * generate/adjust for every record in that period, including brand-new ones
+ * (unlike the existing per-record PAID lock, which only protects records
+ * already marked paid).
+ */
+model PayrollPeriod {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  period String // "YYYY-MM"
+
+  closedAt   DateTime @default(now())
+  closedById String?
+
+  @@unique([companyId, period])
+  @@map("payroll_periods")
 }
 
 // ─────────────────────────── HR: Performance ───────────────────────────

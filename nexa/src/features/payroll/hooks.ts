@@ -1,13 +1,38 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchPayroll, generatePayroll, payPayroll, sendPayslipEmails, updatePayrollAdjustments } from "./api";
+import {
+  closePayrollPeriod,
+  fetchPayroll,
+  fetchPayrollPeriodStatus,
+  generatePayroll,
+  payPayroll,
+  sendPayslipEmails,
+  updatePayrollAdjustments,
+} from "./api";
 import type { PayrollScope } from "./types";
 
 export const payrollKeys = {
   all: ["payroll"] as const,
   list: (scope: PayrollScope, period?: string) => ["payroll", "list", scope, period] as const,
+  periodStatus: (period: string) => ["payroll", "period-status", period] as const,
 };
+
+export function usePayrollPeriodStatus(period: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: payrollKeys.periodStatus(period),
+    queryFn: () => fetchPayrollPeriodStatus(period),
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useClosePayrollPeriod() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (period: string) => closePayrollPeriod(period),
+    onSuccess: () => qc.invalidateQueries({ queryKey: payrollKeys.all }),
+  });
+}
 
 export function usePayroll(scope: PayrollScope, period?: string) {
   return useQuery({

@@ -35,3 +35,9 @@ export interface GenerateResult {
   periodLabel: string;
   count: number;
 }
+
+export interface PayrollPeriodStatus {
+  period: string;
+  closed: boolean;
+  closedAt: string | null;
+}

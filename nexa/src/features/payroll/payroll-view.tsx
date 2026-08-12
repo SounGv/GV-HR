@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { Wallet, Play, Loader2, Eye, CircleDollarSign, RefreshCcw, Briefcase, CheckCircle2, Mail, Save } from "lucide-react";
+import { Wallet, Play, Loader2, Eye, CircleDollarSign, RefreshCcw, Briefcase, CheckCircle2, Mail, Save, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,12 +21,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions, useUpdateEmployee } from "@/features/employee/hooks";
 import { fullName, formatCurrency } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
-import { usePayroll, useGeneratePayroll, usePayPayroll, useSendPayslipEmails, payrollKeys } from "./hooks";
+import {
+  usePayroll,
+  useGeneratePayroll,
+  usePayPayroll,
+  useSendPayslipEmails,
+  usePayrollPeriodStatus,
+  useClosePayrollPeriod,
+  payrollKeys,
+} from "./hooks";
 import { PayslipDialog } from "./payslip-dialog";
 import { PayrollStatusBadge } from "./status-badge";
 import type { PayrollRecord } from "./types";
@@ -139,8 +148,12 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
   const generateMut = useGeneratePayroll();
   const payMut = usePayPayroll();
   const sendEmailMut = useSendPayslipEmails();
+  const { data: periodStatusData } = usePayrollPeriodStatus(period);
+  const closePeriodMut = useClosePayrollPeriod();
+  const [confirmClose, setConfirmClose] = useState(false);
   const [selected, setSelected] = useState<PayrollRecord | null>(null);
   const records = data?.data ?? [];
+  const periodClosed = periodStatusData?.data?.closed ?? false;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -197,6 +210,16 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
     }
   }
 
+  async function closePeriod() {
+    try {
+      await closePeriodMut.mutateAsync(period);
+      toast.success(`ปิดงวด ${period} แล้ว — จะประมวลผลหรือแก้ไขรายการในงวดนี้ไม่ได้อีก`);
+      setConfirmClose(false);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ปิดงวดไม่สำเร็จ");
+    }
+  }
+
   async function pay(id: string) {
     try {
       await payMut.mutateAsync(id);
@@ -233,13 +256,23 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
               className="w-[180px]"
             />
           </div>
-          <Button onClick={generate} disabled={generateMut.isPending}>
+          <Button onClick={generate} disabled={generateMut.isPending || periodClosed}>
             {generateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
             ออก/อัปเดตรอบเงินเดือน
           </Button>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCcw className="size-4" /> รีเฟรช
           </Button>
+          {canPay &&
+            (periodClosed ? (
+              <span className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground">
+                <Lock className="size-3.5" /> ปิดงวดแล้ว
+              </span>
+            ) : (
+              <Button variant="outline" onClick={() => setConfirmClose(true)} disabled={records.length === 0}>
+                <Lock className="size-4" /> ปิดงวด
+              </Button>
+            ))}
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">ค้นหาชื่อ/รหัส</label>
             <Input
@@ -397,6 +430,18 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
       )}
 
       <PayslipDialog record={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
+
+      <ConfirmDialog
+        open={confirmClose}
+        onOpenChange={setConfirmClose}
+        title="ปิดงวดเงินเดือน"
+        description={`ปิดงวด ${period} แล้วจะไม่สามารถออก/อัปเดตรอบเงินเดือน หรือแก้ไขรายการปรับปรุงของงวดนี้ได้อีก (รายการที่จ่ายแล้วไม่ได้รับผลกระทบอยู่แล้ว) ต้องการดำเนินการต่อหรือไม่?`}
+        destructive
+        confirmLabel="ปิดงวด"
+        cancelLabel="ยกเลิก"
+        loading={closePeriodMut.isPending}
+        onConfirm={closePeriod}
+      />
     </div>
   );
 }

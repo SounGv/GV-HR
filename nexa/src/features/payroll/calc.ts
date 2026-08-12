@@ -20,6 +20,10 @@ export interface PayrollInput {
   providentFundRate?: number; // employee PF contribution, % of base salary
   loan?: number; // monthly loan repayment
   advance?: number; // salary advance recovery
+  // Approved unpaid-leave days within this period — deducted at the same
+  // daily rate (baseSalary / 30) the overtime calc already uses, so the two
+  // stay consistent with each other.
+  unpaidLeaveDays?: number;
   // HR-entered ad-hoc line items for this period (bonus/allowance/advance/other
   // that don't come from an automatic source like approved OT) — added on top
   // of the computed lines below, and included in gross/deduction/net totals.
@@ -67,6 +71,8 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const pfRate = Math.max(0, input.providentFundRate ?? 0);
   const loan = Math.round(input.loan ?? 0);
   const advance = Math.round(input.advance ?? 0);
+  const unpaidLeaveDays = Math.max(0, input.unpaidLeaveDays ?? 0);
+  const unpaidLeaveDeduction = Math.round((salary / 30) * unpaidLeaveDays);
 
   const earnings: LineItem[] = [{ label: "เงินเดือน", amount: salary }];
   if (allowances) earnings.push({ label: "ค่าตำแหน่ง/เบี้ยเลี้ยง", amount: allowances });
@@ -98,6 +104,7 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   if (providentFund) deductions.push({ label: "กองทุนสำรองเลี้ยงชีพ", amount: providentFund });
   if (loan) deductions.push({ label: "หักชำระเงินกู้", amount: loan });
   if (advance) deductions.push({ label: "หักเบิกล่วงหน้า", amount: advance });
+  if (unpaidLeaveDeduction) deductions.push({ label: "หักลาไม่รับค่าจ้าง", amount: unpaidLeaveDeduction });
   for (const d of input.extraDeductions ?? []) {
     if (d.amount) deductions.push({ label: d.label, amount: Math.round(d.amount) });
   }

@@ -29,6 +29,10 @@ export interface ReportResult {
   summary?: ReportSummaryDatum[];
   summaryLabel?: string;
   summaryUnit?: string;
+  /** Second chart, currently only populated by the payroll report (SSO/withholding-tax totals to remit). */
+  secondarySummary?: ReportSummaryDatum[];
+  secondarySummaryLabel?: string;
+  secondarySummaryUnit?: string;
 }
 
 /** Rolls a per-department accumulator map into the chart-ready summary array, sorted by value desc. */
@@ -292,6 +296,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         totalDeductions: true,
         net: true,
         status: true,
+        deductions: true,
         employee: {
           select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
         },
@@ -299,7 +304,20 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       orderBy: { employee: { employeeCode: "asc" } },
     });
     const deptNet = new Map<string, number>();
-    for (const p of prs) bumpDept(deptNet, p.employee.department?.name, Number(p.net));
+    // "ประกันสังคม"/"ภาษีหัก ณ ที่จ่าย" are constant labels computePayroll()
+    // itself always writes (never HR-typed free text), so matching by label
+    // here is reliable — not fragile to typos the way an HR-entered line
+    // item's label would be.
+    const remittance = new Map<string, number>();
+    for (const p of prs) {
+      bumpDept(deptNet, p.employee.department?.name, Number(p.net));
+      const lines = (p.deductions as unknown as { label: string; amount: number }[] | null) ?? [];
+      for (const d of lines) {
+        if (d.label === "ประกันสังคม" || d.label === "ภาษีหัก ณ ที่จ่าย") {
+          remittance.set(d.label, (remittance.get(d.label) ?? 0) + Number(d.amount));
+        }
+      }
+    }
     return {
       title,
       period,
@@ -322,6 +340,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       summary: toSummary(deptNet),
       summaryLabel: "เงินเดือนสุทธิรวมตามแผนก",
       summaryUnit: "บาท",
+      secondarySummary: toSummary(remittance),
+      secondarySummaryLabel: "ยอดนำส่งหน่วยงานราชการ (ประกันสังคม/ภาษี) ทั้งบริษัท",
+      secondarySummaryUnit: "บาท",
     };
   }
 

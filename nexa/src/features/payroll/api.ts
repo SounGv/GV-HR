@@ -1,5 +1,5 @@
 import { api, type Envelope } from "@/lib/api/client";
-import type { GenerateResult, PayrollRecord, PayrollScope } from "./types";
+import type { GenerateResult, PayrollPeriodStatus, PayrollRecord, PayrollScope } from "./types";
 
 export function fetchPayroll(scope: PayrollScope, period?: string) {
   const params = new URLSearchParams({ scope });
@@ -28,6 +28,14 @@ export function updatePayrollAdjustments(
   },
 ) {
   return api.patch<Envelope<PayrollRecord>>(`/api/payroll/${id}`, input);
+}
+
+export function fetchPayrollPeriodStatus(period: string) {
+  return api.get<Envelope<PayrollPeriodStatus>>(`/api/payroll/periods/${period}`);
+}
+
+export function closePayrollPeriod(period: string) {
+  return api.post<Envelope<PayrollPeriodStatus>>(`/api/payroll/periods/${period}/close`);
 }
 
 export function sendPayslipEmails(payrollRecordIds: string[]) {

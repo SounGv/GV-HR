@@ -18,4 +18,8 @@ export interface ReportResult {
   summary?: ReportSummaryDatum[];
   summaryLabel?: string;
   summaryUnit?: string;
+  /** Second chart, currently only populated by the payroll report (SSO/withholding-tax totals to remit). */
+  secondarySummary?: ReportSummaryDatum[];
+  secondarySummaryLabel?: string;
+  secondarySummaryUnit?: string;
 }

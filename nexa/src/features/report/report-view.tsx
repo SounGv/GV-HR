@@ -246,6 +246,14 @@ export function ReportView() {
         <ReportSummaryChart data={result.summary} label={result.summaryLabel} unit={result.summaryUnit} />
       )}
 
+      {result && result.secondarySummary && result.secondarySummary.length > 0 && (
+        <ReportSummaryChart
+          data={result.secondarySummary}
+          label={result.secondarySummaryLabel}
+          unit={result.secondarySummaryUnit}
+        />
+      )}
+
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
       ) : isLoading ? (
