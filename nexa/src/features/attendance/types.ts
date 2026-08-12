@@ -7,8 +7,14 @@ export interface AttendanceRecord {
   workDate: string;
   clockInAt: string | null;
   clockOutAt: string | null;
+  clockInLat: number | null;
+  clockInLng: number | null;
+  clockOutLat: number | null;
+  clockOutLng: number | null;
   clockInDistance: number | null;
   clockOutDistance: number | null;
+  clockInPhotoUrl: string | null;
+  clockOutPhotoUrl: string | null;
   clockInViaQr: boolean;
   clockOutViaQr: boolean;
   breakStartAt: string | null;

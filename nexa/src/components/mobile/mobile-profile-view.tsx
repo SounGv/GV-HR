@@ -70,17 +70,46 @@ export function MobileProfileView() {
 
       {canPayroll && (
         <MobileModuleCard className="overflow-hidden p-0">
-          <div className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">
-            <Wallet className="size-[18px]" />
-            รายได้และสวัสดิการ
-          </div>
-          <Link href="/payroll" className="flex items-center justify-between px-3.5 py-3 text-[13px] active:bg-muted">
-            <span>เงินเดือนและรายได้ล่าสุด</span>
-            <span className="flex items-center gap-1 font-semibold text-foreground">
-              {latestPayslip ? formatCurrency(latestPayslip.net) : "-"}
-              <ChevronRight className="size-4 text-muted-foreground" />
+          <div className="flex items-center justify-between border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">
+            <span className="flex items-center gap-2.5">
+              <Wallet className="size-[18px]" />
+              รายได้และสวัสดิการ{latestPayslip ? ` · ${latestPayslip.periodLabel}` : ""}
             </span>
-          </Link>
+          </div>
+          {latestPayslip ? (
+            <>
+              {latestPayslip.earnings.map((line) => (
+                <div
+                  key={line.label}
+                  className="flex justify-between border-b border-border px-3.5 py-2.5 text-[13px]"
+                >
+                  <span className="text-muted-foreground">{line.label}</span>
+                  <span>{formatCurrency(line.amount)}</span>
+                </div>
+              ))}
+              {latestPayslip.deductions.length > 0 && (
+                <div className="flex justify-between border-b border-border px-3.5 py-2.5 text-[13px]">
+                  <span className="text-muted-foreground">รายการหักรวม</span>
+                  <span className="text-destructive">-{formatCurrency(latestPayslip.totalDeductions)}</span>
+                </div>
+              )}
+              <Link
+                href="/payroll"
+                className="flex items-center justify-between px-3.5 py-3 text-[13px] font-semibold active:bg-muted"
+              >
+                <span>เงินเดือนสุทธิ · ดูสลิปเงินเดือน</span>
+                <span className="flex items-center gap-1 text-foreground">
+                  {formatCurrency(latestPayslip.net)}
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </span>
+              </Link>
+            </>
+          ) : (
+            <Link href="/payroll" className="flex items-center justify-between px-3.5 py-3 text-[13px] active:bg-muted">
+              <span>ดูสลิปเงินเดือน</span>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+          )}
         </MobileModuleCard>
       )}
 

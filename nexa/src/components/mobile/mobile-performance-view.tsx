@@ -12,6 +12,10 @@ import { ReviewCard } from "@/features/performance/review-card";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { RATER_LABEL } from "@/features/campaign/labels";
 
+function fmtDate(iso: string) {
+  return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(iso));
+}
+
 /**
  * Lightweight mobile-first performance screen — my own review history plus
  * every evaluation task (self/peer/manager/upward) still owed a score,
@@ -62,6 +66,9 @@ function PendingSection() {
               </p>
               <p className="text-xs text-muted-foreground">
                 {RATER_LABEL[item.raterType] ?? item.raterType} · {item.campaignName} · {item.cycle}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {fmtDate(item.startDate)} – {fmtDate(item.endDate)}
               </p>
               {item.totalQuestions > 0 && (
                 <p className="mt-0.5 text-xs text-primary">{item.totalQuestions} หัวข้อ · ยังไม่ได้ทำ</p>

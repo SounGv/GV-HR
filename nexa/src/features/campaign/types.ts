@@ -136,6 +136,8 @@ export interface MyPendingResponse {
   campaignId: string;
   campaignName: string;
   cycle: string;
+  startDate: string;
+  endDate: string;
   employee: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
   /** Total scoreable questions/competencies for this campaign's form. */
   totalQuestions: number;

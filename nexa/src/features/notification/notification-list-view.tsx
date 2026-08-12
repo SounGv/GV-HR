@@ -2,11 +2,12 @@
 
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { formatDate } from "@/lib/format";
 import { useMarkNotificationsRead, useNotifications } from "./hooks";
 
 export function NotificationListView() {
-  const { data, isLoading } = useNotifications();
+  const { data, isLoading, isError, refetch } = useNotifications();
   const markRead = useMarkNotificationsRead();
 
   const feed = data?.data;
@@ -28,13 +29,12 @@ export function NotificationListView() {
         </Button>
       )}
 
-      {isLoading ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">กำลังโหลด…</p>
+      {isError ? (
+        <ErrorState onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <TableLoadingState rows={4} />
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
-          <Bell className="size-8 opacity-40" />
-          <p className="text-sm">ยังไม่มีการแจ้งเตือน</p>
-        </div>
+        <EmptyState icon={Bell} title="ยังไม่มีการแจ้งเตือน" />
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {items.map((n) => (

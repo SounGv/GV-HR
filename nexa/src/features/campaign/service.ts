@@ -609,6 +609,8 @@ export async function getMyPendingResponses(companyId: string, session: AccessCl
               id: true,
               name: true,
               cycle: true,
+              startDate: true,
+              endDate: true,
               templateSnapshot: true,
               _count: { select: { competencies: true } },
             },
@@ -636,6 +638,8 @@ export async function getMyPendingResponses(companyId: string, session: AccessCl
       campaignId: r.participant.campaign.id,
       campaignName: r.participant.campaign.name,
       cycle: r.participant.campaign.cycle,
+      startDate: r.participant.campaign.startDate,
+      endDate: r.participant.campaign.endDate,
       employee: r.participant.employee,
       totalQuestions,
     };

@@ -1,10 +1,12 @@
 "use client";
 
-import { CalendarX2, MapPin } from "lucide-react";
+import { useState } from "react";
+import { CalendarX2, ChevronRight, MapPin } from "lucide-react";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAttendance } from "@/features/attendance/hooks";
 import { AttendanceStatusBadge, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
 import type { AttendanceRecord } from "@/features/attendance/types";
+import { MobileAttendanceDetailDialog } from "./mobile-attendance-detail-dialog";
 
 function fmtDate(iso: string) {
   return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
@@ -34,6 +36,7 @@ function workedHours(r: AttendanceRecord): string {
 export function MobileAttendanceHistory() {
   const { data, isLoading, isError, refetch } = useAttendance("me");
   const records = data?.data ?? [];
+  const [selected, setSelected] = useState<AttendanceRecord | null>(null);
 
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={5} />;
@@ -48,31 +51,42 @@ export function MobileAttendanceHistory() {
   }
 
   return (
-    <div className="space-y-2">
-      {records.map((r) => (
-        <div key={r.id} className="rounded-xl bg-card p-3.5 shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-foreground">{fmtDate(r.workDate)}</p>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <AttendanceStatusBadge status={r.status} />
-              {r.earlyLeaveOut && (
-                <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-                  ออกก่อนเวลา
-                </span>
-              )}
+    <>
+      <div className="space-y-2">
+        {records.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => setSelected(r)}
+            className="w-full rounded-xl bg-card p-3.5 text-left shadow-sm active:bg-muted"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-foreground">{fmtDate(r.workDate)}</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <AttendanceStatusBadge status={r.status} />
+                {r.earlyLeaveOut && (
+                  <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                    ออกก่อนเวลา
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="mt-2 flex items-center justify-between">
-            <p className="font-mono text-sm tabular-nums text-foreground">
-              {fmtTime(r.clockInAt)} → {fmtTime(r.clockOutAt)}
-            </p>
-            <p className="text-xs text-muted-foreground">{workedHours(r)}</p>
-          </div>
-          <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="size-3" /> {WORK_MODE_LABEL[r.workMode]}
-          </p>
-        </div>
-      ))}
-    </div>
+            <div className="mt-2 flex items-center justify-between">
+              <p className="font-mono text-sm tabular-nums text-foreground">
+                {fmtTime(r.clockInAt)} → {fmtTime(r.clockOutAt)}
+              </p>
+              <p className="text-xs text-muted-foreground">{workedHours(r)}</p>
+            </div>
+            <div className="mt-1.5 flex items-center justify-between">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="size-3" /> {WORK_MODE_LABEL[r.workMode]}
+              </p>
+              <ChevronRight className="size-3.5 text-muted-foreground" />
+            </div>
+          </button>
+        ))}
+      </div>
+      <MobileAttendanceDetailDialog record={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
+    </>
   );
 }
