@@ -43,7 +43,7 @@ const participantSelect = {
   employee: {
     select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, managerId: true },
   },
-  responses: { select: { raterType: true, status: true, submittedAt: true } },
+  responses: { select: { raterType: true, status: true, submittedAt: true, raterEmployeeId: true } },
 } satisfies Prisma.EvaluationParticipantSelect;
 
 /**
@@ -135,10 +135,17 @@ export async function getCampaign(companyId: string, id: string, session: Access
   if (!campaign) throw NotFound("ไม่พบแคมเปญ");
 
   const hrLevel = isHrLevel(session);
+  // Own record, direct reports (as their manager), or anyone the viewer was
+  // specifically invited to rate (PEER/UPWARD — not derivable from the org
+  // chart, since that's the whole point of those rater types) — see the
+  // matching fix in getParticipant() below.
   const participants = hrLevel
     ? campaign.participants
     : campaign.participants.filter(
-        (p) => p.employee.id === session.employeeId || p.employee.managerId === session.employeeId,
+        (p) =>
+          p.employee.id === session.employeeId ||
+          p.employee.managerId === session.employeeId ||
+          p.responses.some((r) => r.raterEmployeeId === session.employeeId),
       );
 
   return {
@@ -497,7 +504,12 @@ export async function getParticipant(companyId: string, participantId: string, s
   const hrLevel = isHrLevel(session);
   const own = participant.employee.id === session.employeeId;
   const managesTarget = participant.employee.managerId === session.employeeId;
-  if (!hrLevel && !own && !managesTarget) {
+  // PEER/UPWARD raters are invited individually and aren't derivable from the
+  // org chart at all (an UPWARD rater is a direct report of the participant,
+  // the reverse of managesTarget) — without this, every UPWARD/PEER rater
+  // 404s trying to open the page they were notified to go score.
+  const isInvitedRater = participant.responses.some((r) => r.raterEmployeeId === session.employeeId);
+  if (!hrLevel && !own && !managesTarget && !isInvitedRater) {
     throw Forbidden("ไม่มีสิทธิ์ดูข้อมูลนี้");
   }
 
