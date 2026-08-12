@@ -120,10 +120,10 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // from the active-employee roster (not just employees who have a
     // record), and derive absence the same way the calendar view's
     // getMyDayStatus does, aggregated over the period instead of per day.
-    const [employees, recs, holidays, leaves] = await Promise.all([
+    const [employees, recs, holidays, leaves, ots] = await Promise.all([
       prisma.employee.findMany({
         where: { companyId, deletedAt: null, status: "ACTIVE", ...(query.departmentId ? { departmentId: query.departmentId } : {}) },
-        select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
       }),
       prisma.attendanceRecord.findMany({
         where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
@@ -131,6 +131,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           status: true,
           clockInAt: true,
           clockOutAt: true,
+          earlyLeaveOut: true,
+          workMode: true,
           employee: { select: { employeeCode: true } },
         },
       }),
@@ -138,6 +140,11 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       prisma.leaveRequest.findMany({
         where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
         select: { startDate: true, endDate: true, days: true, employee: { select: { employeeCode: true } } },
+      }),
+      prisma.overtimeRequest.groupBy({
+        by: ["employeeId"],
+        where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end } },
+        _sum: { hours: true },
       }),
     ]);
 
@@ -157,9 +164,15 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       return Math.max(0, Math.round((clipEndExclusive.getTime() - clipStart.getTime()) / DAY_MS));
     };
 
-    const map = new Map<string, { name: string; present: number; late: number; hours: number; leave: number }>();
+    const map = new Map<
+      string,
+      { name: string; present: number; late: number; hours: number; leave: number; earlyLeave: number; onsite: number; wfh: number; outside: number; otHours: number }
+    >();
     for (const e of employees) {
-      map.set(e.employeeCode, { name: `${e.firstName} ${e.lastName}`, present: 0, late: 0, hours: 0, leave: 0 });
+      map.set(e.employeeCode, {
+        name: `${e.firstName} ${e.lastName}`,
+        present: 0, late: 0, hours: 0, leave: 0, earlyLeave: 0, onsite: 0, wfh: 0, outside: 0, otHours: 0,
+      });
     }
     const deptLate = new Map<string, number>();
     for (const r of recs) {
@@ -167,11 +180,23 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       if (!row) continue; // e.g. an inactive employee's leftover record
       if (r.clockInAt) row.present += 1;
       if (r.status === "LATE") row.late += 1;
+      if (r.earlyLeaveOut) row.earlyLeave += 1;
+      if (r.clockInAt) {
+        if (r.workMode === "WFH") row.wfh += 1;
+        else if (r.workMode === "OUTSIDE") row.outside += 1;
+        else row.onsite += 1;
+      }
       if (r.clockInAt && r.clockOutAt) row.hours += (r.clockOutAt.getTime() - r.clockInAt.getTime()) / 3_600_000;
     }
     for (const l of leaves) {
       const row = map.get(l.employee.employeeCode);
       if (row) row.leave += clippedDays(l.startDate, l.endDate, l.days);
+    }
+    const codeById = new Map(employees.map((e) => [e.id, e.employeeCode]));
+    for (const o of ots) {
+      const code = codeById.get(o.employeeId);
+      const row = code ? map.get(code) : undefined;
+      if (row) row.otHours += o._sum.hours ?? 0;
     }
     for (const [code, v] of map) {
       if (v.late > 0) {
@@ -185,20 +210,34 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       columns: [
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
+        { key: "scheduled", label: "วันทำงานตามกำหนด", numeric: true },
         { key: "present", label: "วันมาทำงาน", numeric: true },
+        { key: "rate", label: "% อัตราการมาทำงาน", numeric: true },
         { key: "late", label: "วันมาสาย", numeric: true },
+        { key: "earlyLeave", label: "วันออกก่อนเวลา", numeric: true },
         { key: "leave", label: "วันลา", numeric: true },
         { key: "absent", label: "วันขาดงาน", numeric: true },
+        { key: "onsite", label: "วันที่สำนักงาน", numeric: true },
+        { key: "wfh", label: "วัน WFH", numeric: true },
+        { key: "outside", label: "วันนอกสถานที่", numeric: true },
         { key: "hours", label: "ชั่วโมงรวม", numeric: true },
+        { key: "otHours", label: "ชั่วโมง OT", numeric: true },
       ],
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
         code,
         name: v.name,
+        scheduled: businessDays,
         present: v.present,
+        rate: businessDays > 0 ? Math.round((v.present / businessDays) * 1000) / 10 : 0,
         late: v.late,
+        earlyLeave: v.earlyLeave,
         leave: Math.round(v.leave * 10) / 10,
         absent: Math.max(0, Math.round((businessDays - v.present - v.leave) * 10) / 10),
+        onsite: v.onsite,
+        wfh: v.wfh,
+        outside: v.outside,
         hours: Math.round(v.hours * 10) / 10,
+        otHours: Math.round(v.otHours * 10) / 10,
       })),
       summary: toSummary(deptLate),
       summaryLabel: "จำนวนวันมาสายตามแผนก",
