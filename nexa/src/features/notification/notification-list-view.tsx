@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, CheckCheck } from "lucide-react";
+import Link from "next/link";
+import { Bell, CheckCheck, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { formatDate } from "@/lib/format";
@@ -37,8 +38,8 @@ export function NotificationListView() {
         <EmptyState icon={Bell} title="ยังไม่มีการแจ้งเตือน" />
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-          {items.map((n) => (
-            <li key={n.id} className={`px-4 py-3 ${n.read ? "" : "bg-primary/5"}`}>
+          {items.map((n) => {
+            const body = (
               <div className="flex items-start gap-2.5">
                 {!n.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />}
                 <div className={n.read ? "min-w-0 flex-1 pl-4" : "min-w-0 flex-1"}>
@@ -46,9 +47,19 @@ export function NotificationListView() {
                   <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
                   <p className="mt-1 text-[11px] text-muted-foreground/70">{formatDate(n.createdAt)}</p>
                 </div>
+                {n.link && <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />}
               </div>
-            </li>
-          ))}
+            );
+            return n.link ? (
+              <Link key={n.id} href={n.link} className={`block px-4 py-3 transition hover:bg-muted/60 ${n.read ? "" : "bg-primary/5"}`}>
+                {body}
+              </Link>
+            ) : (
+              <li key={n.id} className={`px-4 py-3 ${n.read ? "" : "bg-primary/5"}`}>
+                {body}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

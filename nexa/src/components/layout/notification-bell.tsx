@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -53,11 +54,8 @@ export function NotificationBell() {
         ) : (
           <ScrollArea className="max-h-96">
             <ul className="divide-y divide-border">
-              {items.map((n) => (
-                <li
-                  key={n.id}
-                  className={`px-3 py-2.5 ${n.read ? "" : "bg-primary/5"}`}
-                >
+              {items.map((n) => {
+                const body = (
                   <div className="flex items-start gap-2">
                     {!n.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />}
                     <div className={n.read ? "flex-1 pl-4" : "flex-1"}>
@@ -68,8 +66,21 @@ export function NotificationBell() {
                       </p>
                     </div>
                   </div>
-                </li>
-              ))}
+                );
+                return n.link ? (
+                  <Link
+                    key={n.id}
+                    href={n.link}
+                    className={`block px-3 py-2.5 transition hover:bg-muted/60 ${n.read ? "" : "bg-primary/5"}`}
+                  >
+                    {body}
+                  </Link>
+                ) : (
+                  <li key={n.id} className={`px-3 py-2.5 ${n.read ? "" : "bg-primary/5"}`}>
+                    {body}
+                  </li>
+                );
+              })}
             </ul>
           </ScrollArea>
         )}

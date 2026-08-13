@@ -280,7 +280,7 @@ export async function updateCampaign(
       select: {
         raterType: true,
         raterEmployeeId: true,
-        participant: { select: { employee: { select: { firstName: true, lastName: true } } } },
+        participant: { select: { id: true, employee: { select: { firstName: true, lastName: true } } } },
       },
     });
     const cycleLabel = `${campaign!.name} · ${campaign!.cycle}`;
@@ -294,11 +294,17 @@ export async function updateCampaign(
         companyId,
         r.raterEmployeeId,
         r.raterType === "SELF"
-          ? { title: "มีแบบประเมินตนเองรอทำ", body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`, category: "performance" }
+          ? {
+              title: "มีแบบประเมินตนเองรอทำ",
+              body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`,
+              category: "performance",
+              link: `/performance/campaigns/${id}/participants/${r.participant.id}`,
+            }
           : {
               title: r.raterType === "MANAGER" ? "มีพนักงานรอการประเมินจากคุณ" : "คุณได้รับเชิญให้ร่วมประเมิน",
               body: `${r.participant.employee.firstName} ${r.participant.employee.lastName} — รอบประเมิน ${cycleLabel}`,
               category: "performance",
+              link: `/performance/campaigns/${id}/participants/${r.participant.id}`,
             },
         session.sub,
       );
@@ -427,7 +433,8 @@ export async function addParticipants(
   // concurrent creates at once exhausts the pool wait queue (P2024) instead
   // of just taking a bit longer.
   if (campaign.status === "ACTIVE") {
-    for (const emp of employees) {
+    for (const [i, emp] of employees.entries()) {
+      const link = `/performance/campaigns/${campaignId}/participants/${created[i]}`;
       if (campaign.raterTypes.includes("SELF")) {
         await createNotification(
           companyId,
@@ -436,6 +443,7 @@ export async function addParticipants(
             title: "มีแบบประเมินตนเองรอทำ",
             body: `รอบประเมิน ${cycleLabel} — กรุณาเข้าไปประเมินตนเอง`,
             category: "performance",
+            link,
           },
           session.sub,
         );
@@ -448,6 +456,7 @@ export async function addParticipants(
             title: "มีพนักงานรอการประเมินจากคุณ",
             body: `${emp.firstName} ${emp.lastName} — รอบประเมิน ${cycleLabel}`,
             category: "performance",
+            link,
           },
           session.sub,
         );
@@ -755,6 +764,7 @@ export async function invitePeerRater(
     select: {
       id: true,
       employeeId: true,
+      campaignId: true,
       employee: { select: { managerId: true, firstName: true, lastName: true } },
       campaign: { select: { name: true, cycle: true, status: true } },
     },
@@ -796,6 +806,7 @@ export async function invitePeerRater(
         title: "คุณได้รับเชิญให้ร่วมประเมิน",
         body: `ในฐานะ${RATER_LABEL[input.raterType] ?? input.raterType} — ${participant.employee.firstName} ${participant.employee.lastName} · ${participant.campaign.name} · ${participant.campaign.cycle}`,
         category: "performance",
+        link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
       },
       session.sub,
     );

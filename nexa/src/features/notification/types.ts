@@ -4,6 +4,7 @@ export interface AppNotification {
   body: string;
   category: string;
   read: boolean;
+  link: string | null;
   createdAt: string;
 }
 

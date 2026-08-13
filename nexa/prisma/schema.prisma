@@ -1661,6 +1661,7 @@ model Notification {
   body     String
   category String  @default("system") // system | ai | leave | payroll | ...
   read     Boolean @default(false)
+  link     String? // in-app path to navigate to on tap, e.g. /leave/{id}
 
   createdById String?
   createdAt   DateTime @default(now())

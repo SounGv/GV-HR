@@ -88,6 +88,7 @@ export async function createAttendanceCorrection(
         title: "มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ",
         body: `${employee.firstName} ${employee.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}`,
         category: "attendance",
+        link: `/attendance/corrections/${record.id}`,
       },
       session.sub,
     );
@@ -232,6 +233,7 @@ export async function decideAttendanceCorrection(
       title: nextStatus === "APPROVED" ? "คำขอแก้ไขเวลาได้รับอนุมัติ" : "คำขอแก้ไขเวลาไม่ได้รับอนุมัติ",
       body: `${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
       category: "attendance",
+      link: `/attendance/corrections/${req.id}`,
     },
     session.sub,
   );

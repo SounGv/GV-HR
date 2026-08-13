@@ -92,6 +92,7 @@ export async function createOvertime(
         title: "มีคำขอ OT รออนุมัติ",
         body: `${employee.firstName} ${employee.lastName} ขอ OT ${hours} ชั่วโมง`,
         category: "overtime",
+        link: `/overtime/${record.id}`,
       },
       session.sub,
     );
@@ -197,6 +198,7 @@ export async function decideOvertime(
       title: nextStatus === "APPROVED" ? "คำขอ OT ได้รับอนุมัติ" : "คำขอ OT ไม่ได้รับอนุมัติ",
       body: `OT ${req.hours} ชั่วโมง — ${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
       category: "overtime",
+      link: `/overtime/${req.id}`,
     },
     session.sub,
   );

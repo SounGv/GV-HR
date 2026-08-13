@@ -6,7 +6,7 @@ export async function listNotifications(companyId: string, employeeId: string) {
     where: { companyId, employeeId },
     orderBy: { createdAt: "desc" },
     take: 50,
-    select: { id: true, title: true, body: true, category: true, read: true, createdAt: true },
+    select: { id: true, title: true, body: true, category: true, read: true, link: true, createdAt: true },
   });
 }
 
@@ -31,7 +31,7 @@ export async function markAllRead(companyId: string, employeeId: string) {
 export async function createNotification(
   companyId: string,
   employeeId: string,
-  input: { title: string; body: string; category?: string },
+  input: { title: string; body: string; category?: string; link?: string },
   createdById?: string | null,
 ) {
   const record = await prisma.notification.create({
@@ -41,6 +41,7 @@ export async function createNotification(
       title: input.title,
       body: input.body,
       category: input.category ?? "system",
+      link: input.link ?? null,
       createdById: createdById ?? null,
     },
     select: { id: true },

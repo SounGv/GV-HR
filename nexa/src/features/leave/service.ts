@@ -121,6 +121,7 @@ export async function createLeave(
         title: "มีคำขอลารออนุมัติ",
         body: `${requester.firstName} ${requester.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${days} วัน`,
         category: "leave",
+        link: `/leave/${record.id}`,
       },
       session.sub,
     );
@@ -269,6 +270,7 @@ export async function decideLeave(
       title: nextStatus === "APPROVED" ? "คำขอลาได้รับอนุมัติ" : "คำขอลาไม่ได้รับอนุมัติ",
       body: `${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${req.days} วัน — ${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
       category: "leave",
+      link: `/leave/${req.id}`,
     },
     session.sub,
   );

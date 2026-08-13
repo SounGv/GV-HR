@@ -111,6 +111,7 @@ export async function createMeeting(
         title: "คุณได้รับเชิญเข้าร่วมประชุม",
         body: `${input.title} — ${when}${organizer ? ` · นัดโดย ${organizer.firstName} ${organizer.lastName}` : ""}`,
         category: "meeting",
+        link: `/meetings/${meeting.id}`,
       },
       session.sub,
     );
@@ -190,7 +191,7 @@ export async function cancelMeeting(companyId: string, session: AccessClaims, id
     await createNotification(
       companyId,
       a.employeeId,
-      { title: "การประชุมถูกยกเลิก", body: meeting.title, category: "meeting" },
+      { title: "การประชุมถูกยกเลิก", body: meeting.title, category: "meeting", link: `/meetings/${meeting.id}` },
       session.sub,
     );
   }
@@ -253,6 +254,7 @@ export async function respondToMeeting(
       title: nextStatus === "ACCEPTED" ? "ผู้เข้าร่วมตอบรับการประชุม" : "ผู้เข้าร่วมปฏิเสธการประชุม",
       body: `${responder ? `${responder.firstName} ${responder.lastName}` : "พนักงาน"} — ${meeting.title}`,
       category: "meeting",
+      link: `/meetings/${meeting.id}`,
     },
     session.sub,
   );
