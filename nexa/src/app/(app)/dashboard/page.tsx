@@ -15,6 +15,9 @@ import {
   CalendarDays,
   Wallet,
   Star,
+  ReceiptText,
+  ClipboardCheck,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -27,8 +30,10 @@ import {
   DonutLegend,
   HeadcountBar,
 } from "@/features/dashboard/dashboard-charts";
+import { QuickAccessGrid, type QuickAccessItem } from "@/features/dashboard/quick-access-grid";
 import { fullName, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { can } from "@/lib/auth/rbac";
 
 export const metadata: Metadata = { title: "แดชบอร์ด" };
 
@@ -136,6 +141,17 @@ function greeting(): string {
   return "สวัสดีตอนเย็น";
 }
 
+const ALL_QUICK_ACCESS: (QuickAccessItem & { permission: string })[] = [
+  { label: "พนักงาน", href: "/employees", icon: Users, permission: "employee:read" },
+  { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read" },
+  { label: "การลา", href: "/leave", icon: CalendarDays, permission: "leave:read" },
+  { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read" },
+  { label: "เงินเดือน", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+  { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read" },
+  { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
+  { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read" },
+];
+
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const [s, actions, mine] = await Promise.all([
@@ -147,6 +163,7 @@ export default async function DashboardPage() {
   const name = user?.employee ? fullName(user.employee.firstName, user.employee.lastName) : user?.email;
   const fmtClock = (iso: string | null) =>
     iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
+  const quickAccessItems = ALL_QUICK_ACCESS.filter((item) => can(user!.permissions, item.permission));
 
   return (
     <>
@@ -161,6 +178,8 @@ export default async function DashboardPage() {
           ยินดีต้อนรับเข้าสู่ GV One HR AI Platform · {user?.company?.name}
         </p>
       </div>
+
+      <QuickAccessGrid items={quickAccessItems} />
 
       {/* My today — personal snapshot, not company aggregates */}
       {mine && (
