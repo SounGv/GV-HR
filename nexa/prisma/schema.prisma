@@ -268,6 +268,7 @@ model Company {
   payrollRecords              PayrollRecord[]
   payrollPeriods              PayrollPeriod[]
   performanceReviews          PerformanceReview[]
+  developmentPlans            DevelopmentPlan[]
   competencies                Competency[]
   competencyCategories        CompetencyCategory[]
   evaluationCampaigns         EvaluationCampaign[]
@@ -689,6 +690,7 @@ model Employee {
   leaveBalances              LeaveBalance[]
   payrollRecords             PayrollRecord[]
   performanceReviews         PerformanceReview[]
+  developmentPlans           DevelopmentPlan[]
   evaluationParticipants     EvaluationParticipant[]
   overtimeRequests           OvertimeRequest[]
   assignedAssets             Asset[]
@@ -1107,6 +1109,68 @@ model PerformanceReview {
   @@unique([employeeId, cycle])
   @@index([companyId, cycle])
   @@map("performance_reviews")
+}
+
+enum DevelopmentPlanStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum DevelopmentItemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+/**
+ * Individual Development Plan (IDP) — one per employee per cycle, employee
+ * self-service by design (they own their own growth plan; HR/manager can
+ * view but the employee authors it). Items can be freely custom-authored, or
+ * seeded from the employee's own lowest-scoring competencies on their latest
+ * PerformanceReview (matched by name at suggestion time — that review only
+ * stores a competency *name* snapshot, not a FK, so there's nothing durable
+ * to link items back to).
+ */
+model DevelopmentPlan {
+  id         String  @id @default(uuid())
+  companyId  String
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  cycle  String // e.g. "H2/2569" — same free-text convention as PerformanceReview.cycle
+  status DevelopmentPlanStatus @default(ACTIVE)
+
+  items DevelopmentItem[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+
+  @@unique([employeeId, cycle])
+  @@map("development_plans")
+}
+
+model DevelopmentItem {
+  id     String          @id @default(uuid())
+  planId String
+  plan   DevelopmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  method      String? // e.g. "อบรม", "พี่เลี้ยง (mentoring)", "ฝึกปฏิบัติจริง", "ศึกษาด้วยตนเอง" — free text
+  targetDate  DateTime?              @db.Date
+  status      DevelopmentItemStatus  @default(NOT_STARTED)
+  // Simple dated update log: [{ at: ISOString, note: string }] — same
+  // free-form JSON-array-of-entries pattern already used for payroll line
+  // items elsewhere in this schema.
+  progressNotes Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("development_items")
 }
 
 // ─────────────── Performance & Talent: Competency / Evaluation Campaigns ───────────────

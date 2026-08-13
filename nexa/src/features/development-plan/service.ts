@@ -1,0 +1,202 @@
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import type { AccessClaims } from "@/lib/auth/jwt";
+import type { DevelopmentItemCreateInput, DevelopmentItemUpdateInput } from "./schema";
+
+const itemSelect = {
+  id: true,
+  title: true,
+  description: true,
+  method: true,
+  targetDate: true,
+  status: true,
+  progressNotes: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.DevelopmentItemSelect;
+
+const planSelect = {
+  id: true,
+  cycle: true,
+  status: true,
+  employeeId: true,
+  employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, managerId: true } },
+  items: { select: itemSelect, orderBy: { createdAt: "asc" } },
+} satisfies Prisma.DevelopmentPlanSelect;
+
+function requireEmployeeId(session: AccessClaims): string {
+  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
+  return session.employeeId;
+}
+
+function isHrLevel(session: AccessClaims): boolean {
+  return session.perms.includes("*") || session.perms.includes("performance:approve");
+}
+
+/** "H1/2569" style — same convention already used by PerformanceReview.cycle / Goal.cycle. */
+export function currentCycle(): string {
+  const now = new Date();
+  return `H${now.getMonth() < 6 ? 1 : 2}/${now.getFullYear() + 543}`;
+}
+
+/** Every employee owns exactly one plan per cycle — created on first access. */
+export async function getOrCreateMyPlan(companyId: string, session: AccessClaims, cycle?: string) {
+  const employeeId = requireEmployeeId(session);
+  const targetCycle = cycle ?? currentCycle();
+
+  const plan = await prisma.developmentPlan.upsert({
+    where: { employeeId_cycle: { employeeId, cycle: targetCycle } },
+    update: {},
+    create: { companyId, employeeId, cycle: targetCycle, createdById: session.sub, updatedById: session.sub },
+    select: planSelect,
+  });
+  return plan;
+}
+
+/** HR/manager viewing a specific employee's plan — read-only from this side. */
+export async function getEmployeePlan(companyId: string, session: AccessClaims, employeeId: string, cycle: string) {
+  const employee = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId, deletedAt: null },
+    select: { managerId: true },
+  });
+  if (!employee) throw NotFound("ไม่พบพนักงาน");
+
+  const own = employeeId === session.employeeId;
+  const manages = employee.managerId === session.employeeId;
+  if (!own && !manages && !isHrLevel(session)) throw Forbidden("ไม่มีสิทธิ์ดูแผนพัฒนานี้");
+
+  const plan = await prisma.developmentPlan.findUnique({
+    where: { employeeId_cycle: { employeeId, cycle } },
+    select: planSelect,
+  });
+  return plan; // null is a valid "not created yet" answer for someone else's plan
+}
+
+/** Direct reports' (manager) or every active employee's (HR) current-cycle plan. */
+export async function listTeamPlans(companyId: string, session: AccessClaims, cycle?: string) {
+  const targetCycle = cycle ?? currentCycle();
+  const hrLevel = isHrLevel(session);
+
+  const employees = await prisma.employee.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      status: "ACTIVE",
+      ...(hrLevel ? {} : { managerId: session.employeeId ?? "__none__" }),
+    },
+    select: { id: true },
+  });
+  if (employees.length === 0) return [];
+
+  const plans = await prisma.developmentPlan.findMany({
+    where: { companyId, cycle: targetCycle, employeeId: { in: employees.map((e) => e.id) } },
+    select: planSelect,
+    orderBy: { employee: { employeeCode: "asc" } },
+  });
+  return plans;
+}
+
+/**
+ * Suggested item titles from the employee's own latest PerformanceReview —
+ * its lowest-scoring competencies (< 3.5 / 5). That review only stores a
+ * competency *name* snapshot per line, not a FK, so there's nothing durable
+ * to link back to — these are offered as starting points the employee can
+ * add (or ignore), not auto-created.
+ */
+export async function suggestGapItems(companyId: string, session: AccessClaims) {
+  const employeeId = requireEmployeeId(session);
+  const latest = await prisma.performanceReview.findFirst({
+    where: { companyId, employeeId, deletedAt: null },
+    orderBy: { createdAt: "desc" },
+    select: { cycle: true, competencies: true },
+  });
+  if (!latest) return [];
+
+  const comps = (latest.competencies as unknown as { name: string; score: number }[] | null) ?? [];
+  return comps
+    .filter((c) => c.score < 3.5)
+    .sort((a, b) => a.score - b.score)
+    .map((c) => ({ title: c.name, score: c.score, sourceCycle: latest.cycle }));
+}
+
+async function requireOwnItem(session: AccessClaims, itemId: string) {
+  const item = await prisma.developmentItem.findFirst({
+    where: { id: itemId },
+    select: { id: true, plan: { select: { id: true, employeeId: true } } },
+  });
+  if (!item) throw NotFound("ไม่พบรายการแผนพัฒนา");
+  const own = item.plan.employeeId === session.employeeId;
+  if (!own && !isHrLevel(session)) throw Forbidden("แก้ไขได้เฉพาะแผนพัฒนาของตนเอง");
+  return item;
+}
+
+export async function addItem(
+  companyId: string,
+  session: AccessClaims,
+  planId: string,
+  input: DevelopmentItemCreateInput,
+) {
+  const employeeId = requireEmployeeId(session);
+  const plan = await prisma.developmentPlan.findFirst({
+    where: { id: planId, companyId },
+    select: { id: true, employeeId: true },
+  });
+  if (!plan) throw NotFound("ไม่พบแผนพัฒนา");
+  if (plan.employeeId !== employeeId && !isHrLevel(session)) {
+    throw Forbidden("เพิ่มรายการได้เฉพาะแผนพัฒนาของตนเอง");
+  }
+
+  await prisma.developmentItem.create({
+    data: {
+      planId,
+      title: input.title,
+      description: input.description,
+      method: input.method,
+      targetDate: input.targetDate,
+    },
+  });
+
+  return prisma.developmentPlan.findUniqueOrThrow({ where: { id: planId }, select: planSelect });
+}
+
+export async function updateItem(
+  session: AccessClaims,
+  itemId: string,
+  input: DevelopmentItemUpdateInput,
+) {
+  const item = await requireOwnItem(session, itemId);
+
+  await prisma.developmentItem.update({
+    where: { id: itemId },
+    data: {
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.method !== undefined ? { method: input.method } : {}),
+      ...(input.targetDate !== undefined ? { targetDate: input.targetDate } : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
+    },
+  });
+
+  return prisma.developmentPlan.findUniqueOrThrow({ where: { id: item.plan.id }, select: planSelect });
+}
+
+export async function addProgressNote(session: AccessClaims, itemId: string, note: string) {
+  const item = await requireOwnItem(session, itemId);
+  const existing = await prisma.developmentItem.findUnique({ where: { id: itemId }, select: { progressNotes: true } });
+  const notes = (existing?.progressNotes as unknown as { at: string; note: string }[] | null) ?? [];
+  notes.push({ at: new Date().toISOString(), note });
+
+  await prisma.developmentItem.update({
+    where: { id: itemId },
+    data: { progressNotes: notes as unknown as Prisma.InputJsonValue },
+  });
+
+  return prisma.developmentPlan.findUniqueOrThrow({ where: { id: item.plan.id }, select: planSelect });
+}
+
+export async function deleteItem(session: AccessClaims, itemId: string) {
+  const item = await requireOwnItem(session, itemId);
+  await prisma.developmentItem.delete({ where: { id: itemId } });
+  return prisma.developmentPlan.findUniqueOrThrow({ where: { id: item.plan.id }, select: planSelect });
+}

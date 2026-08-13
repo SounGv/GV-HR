@@ -13,6 +13,7 @@ import {
   Users,
   Building2,
   BarChart3,
+  Rocket,
 } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,6 +27,7 @@ import { SuccessionView } from "@/features/succession/succession-view";
 import { TemplateListView } from "@/features/evaluation-template/template-list-view";
 import { ScheduleTemplateListView } from "@/features/evaluation-schedule/schedule-list-view";
 import { CompetencyView } from "@/features/competency/competency-view";
+import { DevelopmentPlanView } from "@/features/development-plan/development-plan-view";
 
 import { ReviewCard } from "./review-card";
 import { DepartmentSummaryView } from "./department-summary-view";
@@ -85,19 +87,25 @@ export function PerformanceView() {
 }
 
 function EvaluationTasksTab({ canReview }: { canReview: boolean }) {
-  if (!canReview) return <MyReviews />;
-
   return (
     <Tabs defaultValue="me" className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">ผลประเมินของฉัน</TabsTrigger>
-        <TabsTrigger value="team">ประเมินทีม</TabsTrigger>
+        {canReview && <TabsTrigger value="team">ประเมินทีม</TabsTrigger>}
+        <TabsTrigger value="idp">
+          <Rocket className="size-3.5" /> แผนพัฒนา (IDP)
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="me">
         <MyReviews />
       </TabsContent>
-      <TabsContent value="team">
-        <TeamReviews />
+      {canReview && (
+        <TabsContent value="team">
+          <TeamReviews />
+        </TabsContent>
+      )}
+      <TabsContent value="idp">
+        <DevelopmentPlanView />
       </TabsContent>
     </Tabs>
   );
