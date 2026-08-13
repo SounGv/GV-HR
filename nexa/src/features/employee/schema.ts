@@ -19,6 +19,7 @@ export const EMPLOYEE_STATUSES = [
   "TERMINATED",
   "RESIGNED",
 ] as const;
+export const COMPENSATION_TYPES = ["MONTHLY", "DAILY", "HOURLY"] as const;
 
 /** Empty string / null → undefined, then run inner schema. */
 const optional = <T extends z.ZodTypeAny>(inner: T) =>
@@ -58,7 +59,10 @@ export const employeeCreateSchema = z.object({
   probationEndDate: optionalDate,
   terminationDate: optionalDate,
 
+  compensationType: z.enum(COMPENSATION_TYPES).default("MONTHLY"),
   baseSalary: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ")),
+  dailyRate: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ")),
+  hourlyRate: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ")),
   bankName: optional(z.string().trim().max(120)),
   bankAccountNo: optional(z.string().trim().max(40)),
 

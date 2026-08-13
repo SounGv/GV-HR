@@ -11,8 +11,16 @@ export interface PayrollComputation {
   net: number;
 }
 
+export type CompensationType = "MONTHLY" | "DAILY" | "HOURLY";
+
 export interface PayrollInput {
+  // Whatever this period's base pay already comes out to — a fixed monthly
+  // amount for MONTHLY, or dailyRate × days-actually-worked / hourlyRate ×
+  // hours-actually-worked for DAILY/HOURLY (the caller does that
+  // multiplication; this function only needs the result). Only changes the
+  // earnings line's label, not how it's summed.
   baseSalary: number;
+  compensationType?: CompensationType;
   allowances?: number; // fixed monthly allowances (position, cost of living…)
   overtime?: number; // approved OT amount for the period
   bonus?: number;
@@ -22,7 +30,10 @@ export interface PayrollInput {
   advance?: number; // salary advance recovery
   // Approved unpaid-leave days within this period — deducted at the same
   // daily rate (baseSalary / 30) the overtime calc already uses, so the two
-  // stay consistent with each other.
+  // stay consistent with each other. Only meaningful for MONTHLY employees —
+  // DAILY/HOURLY pay is already computed from days/hours actually worked, so
+  // an unpaid-leave day was never counted as worked in the first place and
+  // deducting it again here would double-count it.
   unpaidLeaveDays?: number;
   // HR-entered ad-hoc line items for this period (bonus/allowance/advance/other
   // that don't come from an automatic source like approved OT) — added on top
@@ -30,6 +41,12 @@ export interface PayrollInput {
   extraEarnings?: LineItem[];
   extraDeductions?: LineItem[];
 }
+
+const BASE_PAY_LABEL: Record<CompensationType, string> = {
+  MONTHLY: "เงินเดือน",
+  DAILY: "ค่าจ้างรายวัน",
+  HOURLY: "ค่าจ้างรายชั่วโมง",
+};
 
 /** Thailand personal income tax brackets (annual net taxable income). */
 const TAX_BRACKETS: { upTo: number; rate: number }[] = [
@@ -74,7 +91,7 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const unpaidLeaveDays = Math.max(0, input.unpaidLeaveDays ?? 0);
   const unpaidLeaveDeduction = Math.round((salary / 30) * unpaidLeaveDays);
 
-  const earnings: LineItem[] = [{ label: "เงินเดือน", amount: salary }];
+  const earnings: LineItem[] = [{ label: BASE_PAY_LABEL[input.compensationType ?? "MONTHLY"], amount: salary }];
   if (allowances) earnings.push({ label: "ค่าตำแหน่ง/เบี้ยเลี้ยง", amount: allowances });
   if (overtime) earnings.push({ label: "ค่าล่วงเวลา (OT)", amount: overtime });
   if (bonus) earnings.push({ label: "โบนัส", amount: bonus });

@@ -56,6 +56,12 @@ enum EmploymentType {
   PROBATION
 }
 
+enum CompensationType {
+  MONTHLY
+  DAILY
+  HOURLY
+}
+
 enum EmployeeStatus {
   ACTIVE
   ON_LEAVE
@@ -707,9 +713,16 @@ model Employee {
   terminationDate  DateTime?
 
   // Payroll basics (detailed payroll lives in its own module later)
-  baseSalary    Decimal? @db.Decimal(12, 2)
-  bankName      String?
-  bankAccountNo String?
+  // How this employee is paid — orthogonal to employmentType (a PART_TIME
+  // hire could still be salaried; a FULL_TIME hire could be daily-wage
+  // labor). Only the rate field matching compensationType is expected to be
+  // set; generatePayroll() picks the base-pay formula from this.
+  compensationType CompensationType @default(MONTHLY)
+  baseSalary       Decimal?         @db.Decimal(12, 2) // MONTHLY
+  dailyRate        Decimal?         @db.Decimal(12, 2) // DAILY — × actual attendance days in the period
+  hourlyRate       Decimal?         @db.Decimal(12, 2) // HOURLY — × actual clocked hours in the period
+  bankName         String?
+  bankAccountNo    String?
 
   bankBranch String?
 

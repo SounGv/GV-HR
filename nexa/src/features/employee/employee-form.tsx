@@ -28,12 +28,13 @@ import {
 import { getInitials } from "@/lib/format";
 import { fileToSquareDataUrl } from "@/lib/image";
 import {
+  COMPENSATION_TYPES,
   EMPLOYEE_STATUSES,
   EMPLOYMENT_TYPES,
   GENDERS,
   MARITAL,
 } from "./schema";
-import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL, STATUS_LABEL } from "./labels";
+import { COMPENSATION_LABEL, EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL, STATUS_LABEL } from "./labels";
 import type { EmployeeFormValues, OrgOptions } from "./types";
 
 const NONE = "__none__";
@@ -61,7 +62,10 @@ const formSchema = z.object({
   hireDate: z.string().optional(),
   probationEndDate: z.string().optional(),
   terminationDate: z.string().optional(),
+  compensationType: z.enum(COMPENSATION_TYPES),
   baseSalary: z.string().optional(),
+  dailyRate: z.string().optional(),
+  hourlyRate: z.string().optional(),
   bankName: z.string().trim().optional(),
   bankAccountNo: z.string().trim().optional(),
   addressLine: z.string().trim().optional(),
@@ -78,6 +82,7 @@ const EMPTY: FormSchema = {
   lastName: "",
   employmentType: "FULL_TIME",
   status: "ACTIVE",
+  compensationType: "MONTHLY",
 };
 
 export function EmployeeForm({
@@ -99,6 +104,7 @@ export function EmployeeForm({
   const avatarUrl = form.watch("avatarUrl");
   const firstName = form.watch("firstName");
   const lastName = form.watch("lastName");
+  const compensationType = form.watch("compensationType");
 
   // New employee: prefill the suggested next "EMP0001"-style code once it
   // loads — editing an existing employee never overwrites their real code.
@@ -213,7 +219,15 @@ export function EmployeeForm({
 
           <TabsContent value="payroll" keepMounted>
             <FieldGrid>
-              <TextField form={form} name="baseSalary" label="เงินเดือนพื้นฐาน (บาท)" type="number" />
+              <SelectField form={form} name="compensationType" label="ประเภทค่าจ้าง"
+                options={COMPENSATION_TYPES.map((t) => ({ value: t, label: COMPENSATION_LABEL[t] }))} />
+              {compensationType === "DAILY" ? (
+                <TextField form={form} name="dailyRate" label="ค่าจ้างต่อวัน (บาท)" type="number" />
+              ) : compensationType === "HOURLY" ? (
+                <TextField form={form} name="hourlyRate" label="ค่าจ้างต่อชั่วโมง (บาท)" type="number" />
+              ) : (
+                <TextField form={form} name="baseSalary" label="เงินเดือนพื้นฐาน (บาท)" type="number" />
+              )}
               <TextField form={form} name="bankName" label="ธนาคาร" />
               <TextField form={form} name="bankAccountNo" label="เลขที่บัญชี" />
             </FieldGrid>

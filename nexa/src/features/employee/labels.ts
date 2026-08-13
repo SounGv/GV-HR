@@ -1,4 +1,4 @@
-import type { EmployeeStatus, EmploymentType } from "./types";
+import type { CompensationType, EmployeeStatus, EmploymentType } from "./types";
 
 export const STATUS_LABEL: Record<EmployeeStatus, string> = {
   ACTIVE: "ปฏิบัติงาน",
@@ -14,6 +14,12 @@ export const EMPLOYMENT_LABEL: Record<EmploymentType, string> = {
   CONTRACT: "สัญญาจ้าง",
   INTERN: "ฝึกงาน",
   PROBATION: "ทดลองงาน",
+};
+
+export const COMPENSATION_LABEL: Record<CompensationType, string> = {
+  MONTHLY: "เงินเดือนประจำ",
+  DAILY: "รายวัน",
+  HOURLY: "รายชั่วโมง",
 };
 
 export const GENDER_LABEL: Record<string, string> = {

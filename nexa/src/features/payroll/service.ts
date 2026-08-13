@@ -90,6 +90,43 @@ async function getUnpaidLeaveDaysByEmployee(
   return map;
 }
 
+/**
+ * Days-present (any record with a clock-in) and total clocked hours per
+ * employee, for DAILY/HOURLY compensation — base pay for those two types is
+ * literally rate × actual attendance, unlike MONTHLY which pays the fixed
+ * baseSalary regardless (adjusted only by the unpaid-leave deduction above).
+ */
+async function getWorkedDaysAndHours(
+  companyId: string,
+  from: Date,
+  to: Date,
+  employeeIds: string[],
+): Promise<Map<string, { days: number; hours: number }>> {
+  const recs = await prisma.attendanceRecord.findMany({
+    where: { companyId, deletedAt: null, employeeId: { in: employeeIds }, workDate: { gte: from, lt: to } },
+    select: { employeeId: true, clockInAt: true, clockOutAt: true },
+  });
+  const map = new Map<string, { days: number; hours: number }>();
+  for (const r of recs) {
+    if (!r.clockInAt) continue;
+    const row = map.get(r.employeeId) ?? { days: 0, hours: 0 };
+    row.days += 1;
+    if (r.clockOutAt) row.hours += (r.clockOutAt.getTime() - r.clockInAt.getTime()) / 3_600_000;
+    map.set(r.employeeId, row);
+  }
+  return map;
+}
+
+/** Base pay this period, per the employee's own compensation type. */
+function computeBasePay(
+  emp: { compensationType: string; baseSalary: unknown; dailyRate: unknown; hourlyRate: unknown },
+  worked: { days: number; hours: number } | undefined,
+): number {
+  if (emp.compensationType === "DAILY") return Number(emp.dailyRate ?? 0) * (worked?.days ?? 0);
+  if (emp.compensationType === "HOURLY") return Number(emp.hourlyRate ?? 0) * (worked?.hours ?? 0);
+  return Number(emp.baseSalary ?? 0);
+}
+
 function requireEmployeeId(session: AccessClaims): string {
   if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
   return session.employeeId;
@@ -160,8 +197,17 @@ export async function generatePayroll(
   await requirePeriodOpen(companyId, period);
 
   const employees = await prisma.employee.findMany({
-    where: { companyId, deletedAt: null, status: "ACTIVE", baseSalary: { not: null } },
-    select: { id: true, baseSalary: true },
+    where: {
+      companyId,
+      deletedAt: null,
+      status: "ACTIVE",
+      OR: [
+        { compensationType: "MONTHLY", baseSalary: { not: null } },
+        { compensationType: "DAILY", dailyRate: { not: null } },
+        { compensationType: "HOURLY", hourlyRate: { not: null } },
+      ],
+    },
+    select: { id: true, compensationType: true, baseSalary: true, dailyRate: true, hourlyRate: true },
   });
   const label = periodLabel(period);
 
@@ -176,6 +222,9 @@ export async function generatePayroll(
   });
   const otMap = new Map(otAgg.map((o) => [o.employeeId, o._sum.estimatedAmount ?? 0]));
   const unpaidLeaveMap = await getUnpaidLeaveDaysByEmployee(companyId, from, to);
+  const wagedIds = employees.filter((e) => e.compensationType !== "MONTHLY").map((e) => e.id);
+  const workedMap =
+    wagedIds.length > 0 ? await getWorkedDaysAndHours(companyId, from, to, wagedIds) : new Map();
 
   // Existing records for this period — read so a re-generate (e.g. after new
   // OT gets approved) never wipes HR's manual adjustments, and never touches
@@ -193,10 +242,14 @@ export async function generatePayroll(
     if (prior?.status === "PAID") continue; // never recompute a finalized payslip
 
     const adj = readAdjustments(prior?.manualAdjustments);
+    const isMonthly = emp.compensationType === "MONTHLY";
     const comp = computePayroll({
-      baseSalary: Number(emp.baseSalary),
+      baseSalary: computeBasePay(emp, workedMap.get(emp.id)),
+      compensationType: emp.compensationType as "MONTHLY" | "DAILY" | "HOURLY",
       overtime: otMap.get(emp.id) ?? 0,
-      unpaidLeaveDays: unpaidLeaveMap.get(emp.id) ?? 0,
+      // Unpaid leave only makes sense to deduct for MONTHLY — DAILY/HOURLY
+      // base pay already excludes unworked days/hours by construction.
+      unpaidLeaveDays: isMonthly ? unpaidLeaveMap.get(emp.id) ?? 0 : 0,
       extraEarnings: adj.earnings,
       extraDeductions: adj.deductions,
     });
@@ -321,9 +374,14 @@ export async function updatePayrollAdjustments(
 
   const employee = await prisma.employee.findFirst({
     where: { id: record.employeeId, companyId, deletedAt: null },
-    select: { baseSalary: true },
+    select: { compensationType: true, baseSalary: true, dailyRate: true, hourlyRate: true },
   });
-  if (!employee?.baseSalary) throw BadRequest("พนักงานยังไม่มีเงินเดือนพื้นฐาน");
+  if (!employee) throw NotFound("ไม่พบข้อมูลพนักงาน");
+  const hasRate =
+    (employee.compensationType === "MONTHLY" && employee.baseSalary != null) ||
+    (employee.compensationType === "DAILY" && employee.dailyRate != null) ||
+    (employee.compensationType === "HOURLY" && employee.hourlyRate != null);
+  if (!hasRate) throw BadRequest("พนักงานยังไม่ได้ตั้งอัตราค่าจ้างสำหรับประเภทการจ้างนี้");
 
   const [y, m] = record.period.split("-").map(Number);
   const from = new Date(Date.UTC(y, m - 1, 1));
@@ -332,14 +390,21 @@ export async function updatePayrollAdjustments(
     where: { companyId, employeeId: record.employeeId, deletedAt: null, status: "APPROVED", date: { gte: from, lt: to } },
     _sum: { estimatedAmount: true },
   });
-  const unpaidLeaveMap = await getUnpaidLeaveDaysByEmployee(companyId, from, to, record.employeeId);
+  const isMonthly = employee.compensationType === "MONTHLY";
+  const unpaidLeaveMap = isMonthly
+    ? await getUnpaidLeaveDaysByEmployee(companyId, from, to, record.employeeId)
+    : new Map<string, number>();
+  const workedMap = isMonthly
+    ? new Map<string, { days: number; hours: number }>()
+    : await getWorkedDaysAndHours(companyId, from, to, [record.employeeId]);
 
   const adjustments: ManualAdjustments = {
     earnings: input.extraEarnings ?? [],
     deductions: input.extraDeductions ?? [],
   };
   const comp = computePayroll({
-    baseSalary: Number(employee.baseSalary),
+    baseSalary: computeBasePay(employee, workedMap.get(record.employeeId)),
+    compensationType: employee.compensationType as "MONTHLY" | "DAILY" | "HOURLY",
     overtime: otAgg._sum.estimatedAmount ?? 0,
     unpaidLeaveDays: unpaidLeaveMap.get(record.employeeId) ?? 0,
     extraEarnings: adjustments.earnings,

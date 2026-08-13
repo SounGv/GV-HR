@@ -18,5 +18,7 @@ export function serializeEmployeeDetail(e: PrismaEmployeeDetail): EmployeeDetail
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
     baseSalary: e.baseSalary ? e.baseSalary.toString() : null,
+    dailyRate: e.dailyRate ? e.dailyRate.toString() : null,
+    hourlyRate: e.hourlyRate ? e.hourlyRate.toString() : null,
   };
 }

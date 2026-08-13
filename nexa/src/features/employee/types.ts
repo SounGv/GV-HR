@@ -5,6 +5,7 @@ export type EmployeeStatus =
   | "TERMINATED"
   | "RESIGNED";
 export type EmploymentType = "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERN" | "PROBATION";
+export type CompensationType = "MONTHLY" | "DAILY" | "HOURLY";
 
 interface Ref {
   id: string;
@@ -37,7 +38,10 @@ export interface EmployeeDetail extends EmployeeListItem {
   nationalId: string | null;
   probationEndDate: string | null;
   terminationDate: string | null;
+  compensationType: CompensationType;
   baseSalary: string | null; // Prisma Decimal serializes to string
+  dailyRate: string | null;
+  hourlyRate: string | null;
   bankName: string | null;
   bankAccountNo: string | null;
   addressLine: string | null;
@@ -73,7 +77,10 @@ export interface EmployeeFormValues {
   hireDate?: string;
   probationEndDate?: string;
   terminationDate?: string;
+  compensationType: CompensationType;
   baseSalary?: string;
+  dailyRate?: string;
+  hourlyRate?: string;
   bankName?: string;
   bankAccountNo?: string;
   addressLine?: string;

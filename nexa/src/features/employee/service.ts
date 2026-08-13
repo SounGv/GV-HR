@@ -40,7 +40,10 @@ const detailSelect = {
   nationalId: true,
   probationEndDate: true,
   terminationDate: true,
+  compensationType: true,
   baseSalary: true,
+  dailyRate: true,
+  hourlyRate: true,
   bankName: true,
   bankAccountNo: true,
   addressLine: true,
@@ -128,13 +131,22 @@ export async function getEmployee(companyId: string, id: string, session?: Acces
   return employee;
 }
 
-/** Map a partial update payload to Prisma data (Decimal conversion for salary). */
-function toUpdateData(input: EmployeeUpdateInput) {
-  const { baseSalary, ...rest } = input;
+/** Prisma requires Decimal instances, not plain numbers, for @db.Decimal fields. */
+function toDecimalFields<T extends { baseSalary?: number; dailyRate?: number; hourlyRate?: number }>(
+  input: T,
+) {
+  const { baseSalary, dailyRate, hourlyRate, ...rest } = input;
   return {
     ...rest,
     ...(baseSalary !== undefined ? { baseSalary: new Prisma.Decimal(baseSalary) } : {}),
+    ...(dailyRate !== undefined ? { dailyRate: new Prisma.Decimal(dailyRate) } : {}),
+    ...(hourlyRate !== undefined ? { hourlyRate: new Prisma.Decimal(hourlyRate) } : {}),
   };
+}
+
+/** Map a partial update payload to Prisma data (Decimal conversion for salary/rate fields). */
+function toUpdateData(input: EmployeeUpdateInput) {
+  return toDecimalFields(input);
 }
 
 /**
@@ -163,11 +175,9 @@ export async function createEmployee(
   actor: AccessClaims,
   meta?: { ip?: string; userAgent?: string },
 ): Promise<EmployeeDetail> {
-  const { baseSalary, ...rest } = input;
   const created = await prisma.employee.create({
     data: {
-      ...rest,
-      ...(baseSalary !== undefined ? { baseSalary: new Prisma.Decimal(baseSalary) } : {}),
+      ...toDecimalFields(input),
       companyId,
       createdById: actor.sub,
       updatedById: actor.sub,
