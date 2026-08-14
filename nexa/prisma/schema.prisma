@@ -1501,6 +1501,12 @@ model EvaluationTemplateQuestion {
   required Boolean @default(true)
   order    Int     @default(0)
 
+  // Which rater types see/answer this question — empty means everyone.
+  // Lets one shared template restrict a sensitive question (e.g. only
+  // MANAGER/HR_EXEC see a compensation-related item) instead of forcing HR
+  // to build a separate template per rater type.
+  visibleTo EvaluationRaterType[] @default([])
+
   @@index([sectionId, order])
   @@map("evaluation_template_questions")
 }

@@ -762,7 +762,13 @@ export async function submitMyResponse(
   // campaign from an empty/irrelevant `scores` array (or vice versa).
   const templateSnapshot = participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null;
   if (templateSnapshot) {
-    const requiredIds = templateSnapshot.sections.flatMap((s) => s.questions.filter((q) => q.required).map((q) => q.id));
+    // Only questions this rater type can actually see are required of them —
+    // a question scoped to e.g. MANAGER must never block a PEER's submit.
+    const requiredIds = templateSnapshot.sections.flatMap((s) =>
+      s.questions
+        .filter((q) => q.required && (q.visibleTo.length === 0 || q.visibleTo.includes(response.raterType)))
+        .map((q) => q.id),
+    );
     const answeredIds = new Set((input.answers ?? []).map((a) => a.questionId));
     if (requiredIds.some((id) => !answeredIds.has(id))) {
       throw BadRequest("กรุณาตอบคำถามที่บังคับตอบให้ครบทุกข้อ");

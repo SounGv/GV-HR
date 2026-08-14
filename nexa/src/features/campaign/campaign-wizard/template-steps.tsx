@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AiTemplateDesignerPanel } from "@/features/evaluation-template/ai-template-designer-panel";
-import { SectionEditor, emptySection } from "@/features/evaluation-template/template-builder-fields";
+import { SectionListEditor, emptySection } from "@/features/evaluation-template/template-builder-fields";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 import { useEvaluationTemplates } from "@/features/evaluation-template/hooks";
 import type { SectionFormValues, TemplateSection } from "@/features/evaluation-template/types";
@@ -42,6 +42,7 @@ export function draftToRendererSections(sections: SectionFormValues[]): Template
       weight: q.weight,
       required: q.required,
       order: qi,
+      visibleTo: q.visibleTo,
     })),
   }));
 }
@@ -96,41 +97,7 @@ export function TemplateSelectStep({ draft, onChange }: { draft: TemplateDraft; 
 
 /** Step 5 — build sections/questions, reusing the exact editor from the standalone Template builder. */
 export function QuestionsStep({ draft, onChange }: { draft: TemplateDraft; onChange: (draft: TemplateDraft) => void }) {
-  function updateSection(i: number, section: SectionFormValues) {
-    const next = [...draft.sections];
-    next[i] = section;
-    onChange({ ...draft, sections: next });
-  }
-  function removeSection(i: number) {
-    onChange({ ...draft, sections: draft.sections.filter((_, idx) => idx !== i) });
-  }
-  function moveSection(i: number, dir: -1 | 1) {
-    const target = i + dir;
-    if (target < 0 || target >= draft.sections.length) return;
-    const next = [...draft.sections];
-    [next[i], next[target]] = [next[target], next[i]];
-    onChange({ ...draft, sections: next });
-  }
-
-  return (
-    <div className="space-y-3">
-      {draft.sections.map((s, i) => (
-        <SectionEditor
-          key={i}
-          section={s}
-          onChange={(section) => updateSection(i, section)}
-          onRemove={() => removeSection(i)}
-          onMoveUp={() => moveSection(i, -1)}
-          onMoveDown={() => moveSection(i, 1)}
-          canMoveUp={i > 0}
-          canMoveDown={i < draft.sections.length - 1}
-        />
-      ))}
-      <Button type="button" variant="outline" onClick={() => onChange({ ...draft, sections: [...draft.sections, emptySection(draft.sections.length)] })}>
-        <Plus className="size-4" /> เพิ่มหมวด
-      </Button>
-    </div>
-  );
+  return <SectionListEditor sections={draft.sections} onChange={(sections) => onChange({ ...draft, sections })} />;
 }
 
 /** Step 6 — AI ช่วยตรวจ/เสนอ: same designer panel the standalone Template builder uses. */

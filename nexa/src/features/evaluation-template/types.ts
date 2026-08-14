@@ -1,6 +1,11 @@
 export type TemplateStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
 export type AnswerType = "NUMERIC" | "LETTER" | "CHOICE" | "YES_NO" | "LONG_TEXT";
 
+// Duplicated from campaign/types.ts's RaterType rather than imported — that
+// module imports CampaignTemplateSnapshot from here, so importing back would
+// be circular. It's a 5-value string union, not worth a shared module for.
+export type TemplateVisibleToType = "SELF" | "MANAGER" | "PEER" | "UPWARD" | "HR_EXEC";
+
 export interface TemplateOption {
   value: string;
   label: string;
@@ -16,6 +21,8 @@ export interface TemplateQuestion {
   weight: number;
   required: boolean;
   order: number;
+  /** Which rater types see/answer this question — empty means everyone. */
+  visibleTo: TemplateVisibleToType[];
 }
 
 export interface TemplateSection {
@@ -49,6 +56,7 @@ export interface QuestionFormValues {
   weight: number;
   required: boolean;
   order: number;
+  visibleTo: TemplateVisibleToType[];
 }
 
 export interface SectionFormValues {

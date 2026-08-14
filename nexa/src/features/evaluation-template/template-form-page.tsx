@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, Plus, Sparkles } from "lucide-react";
+import { Eye, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { FormPageShell } from "@/components/shared/form-page-shell";
@@ -18,7 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api/client";
 import { AiTemplateDesignerPanel } from "./ai-template-designer-panel";
-import { SectionEditor, emptySection } from "./template-builder-fields";
+import { SectionListEditor, emptySection } from "./template-builder-fields";
 import { TemplateFormRenderer } from "./template-renderer";
 import { useCreateEvaluationTemplate, useUpdateEvaluationTemplate } from "./hooks";
 import type { SectionFormValues, TemplateDetail, TemplateSection } from "./types";
@@ -46,6 +46,7 @@ function toRendererSections(sections: SectionFormValues[]): TemplateSection[] {
       weight: q.weight,
       required: q.required,
       order: qi,
+      visibleTo: q.visibleTo,
     })),
   }));
 }
@@ -68,6 +69,7 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
             weight: q.weight,
             required: q.required,
             order: q.order ?? qi,
+            visibleTo: q.visibleTo,
           })),
         }))
       : [emptySection(0)],
@@ -85,24 +87,6 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
     resolver: zodResolver(formSchema),
     defaultValues: { name: template?.name ?? "", description: template?.description ?? "" },
   });
-
-  function updateSection(index: number, section: SectionFormValues) {
-    const next = [...sections];
-    next[index] = section;
-    setSections(next);
-  }
-
-  function removeSection(index: number) {
-    setSections(sections.filter((_, i) => i !== index));
-  }
-
-  function moveSection(index: number, dir: -1 | 1) {
-    const target = index + dir;
-    if (target < 0 || target >= sections.length) return;
-    const next = [...sections];
-    [next[index], next[target]] = [next[target], next[index]];
-    setSections(next);
-  }
 
   function handleAiApply(values: { name: string; description: string; sections: SectionFormValues[]; rationale: string }) {
     form.setValue("name", values.name);
@@ -267,23 +251,7 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
               ))}
             </div>
           ) : (
-            <div className="space-y-3">
-              {sections.map((s, i) => (
-                <SectionEditor
-                  key={i}
-                  section={s}
-                  onChange={(section) => updateSection(i, section)}
-                  onRemove={() => removeSection(i)}
-                  onMoveUp={() => moveSection(i, -1)}
-                  onMoveDown={() => moveSection(i, 1)}
-                  canMoveUp={i > 0}
-                  canMoveDown={i < sections.length - 1}
-                />
-              ))}
-              <Button type="button" variant="outline" onClick={() => setSections([...sections, emptySection(sections.length)])}>
-                <Plus className="size-4" /> เพิ่มหมวด
-              </Button>
-            </div>
+            <SectionListEditor sections={sections} onChange={setSections} />
           )}
         </form>
       </Form>

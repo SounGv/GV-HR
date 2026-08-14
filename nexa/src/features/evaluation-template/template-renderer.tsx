@@ -2,32 +2,47 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { TemplateQuestion, TemplateSection } from "./types";
+import type { TemplateQuestion, TemplateSection, TemplateVisibleToType } from "./types";
 
 /**
  * Renders a template's sections/questions two ways with the same markup:
- * "preview" (HR checking the form before activating it, inputs disabled) and
- * "answer" (a rater actually filling it in). Kept in one component so the
- * preview HR sees is pixel-identical to what raters will fill out.
+ * "preview" (HR checking the form before activating it, inputs disabled —
+ * always shows every question, regardless of `visibleTo`, since HR needs to
+ * see the whole structure) and "answer" (a rater actually filling it in —
+ * filtered to only the questions targeting their rater type, or unrestricted
+ * ones). Kept in one component so the preview HR sees is pixel-identical to
+ * what raters will fill out, modulo that visibility filter.
  */
 export function TemplateFormRenderer({
   sections,
   mode,
   answers,
   onChange,
+  viewerRaterType,
 }: {
   sections: TemplateSection[];
   mode: "preview" | "answer";
   answers?: Record<string, string>;
   onChange?: (questionId: string, value: string) => void;
+  viewerRaterType?: TemplateVisibleToType;
 }) {
   if (sections.length === 0) {
     return <p className="text-sm text-muted-foreground">ยังไม่มีหมวด/คำถามในแบบประเมินนี้</p>;
   }
 
+  const visibleSections =
+    mode === "answer"
+      ? sections
+          .map((s) => ({
+            ...s,
+            questions: s.questions.filter((q) => q.visibleTo.length === 0 || (!!viewerRaterType && q.visibleTo.includes(viewerRaterType))),
+          }))
+          .filter((s) => s.questions.length > 0)
+      : sections;
+
   return (
     <div className="space-y-6">
-      {sections.map((section) => (
+      {visibleSections.map((section) => (
         <div key={section.id} className="space-y-3">
           <h3 className="text-base font-semibold text-foreground">{section.name}</h3>
           <div className="space-y-3">

@@ -15,6 +15,7 @@ const questionSchema = z
     weight: z.coerce.number().int().min(1, "1-10").max(10, "1-10").default(1),
     required: z.boolean().default(true),
     order: z.coerce.number().int().min(0).default(0),
+    visibleTo: z.array(z.enum(["SELF", "MANAGER", "PEER", "UPWARD", "HR_EXEC"])).default([]),
   })
   .refine((q) => q.answerType === "LONG_TEXT" || (q.options && q.options.length >= 2), {
     message: "ต้องมีตัวเลือกอย่างน้อย 2 รายการ",

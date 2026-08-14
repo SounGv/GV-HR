@@ -1,13 +1,15 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { Reorder, useDragControls } from "framer-motion";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { AnswerType, QuestionFormValues, SectionFormValues, TemplateOption } from "./types";
+import { cn } from "@/lib/utils";
+import type { AnswerType, QuestionFormValues, SectionFormValues, TemplateOption, TemplateVisibleToType } from "./types";
 
 export const ANSWER_TYPE_LABEL: Record<AnswerType, string> = {
   NUMERIC: "คะแนนตัวเลข",
@@ -52,6 +54,7 @@ export function emptyQuestion(order: number): QuestionFormValues {
     weight: 1,
     required: true,
     order,
+    visibleTo: [],
   };
 }
 
@@ -176,30 +179,47 @@ function OptionsEditor({
   );
 }
 
+const VISIBLE_TO_OPTIONS: { value: TemplateVisibleToType; label: string }[] = [
+  { value: "SELF", label: "ตนเอง" },
+  { value: "MANAGER", label: "หัวหน้างาน" },
+  { value: "PEER", label: "เพื่อนร่วมงาน" },
+  { value: "UPWARD", label: "ลูกน้อง" },
+  { value: "HR_EXEC", label: "HR/ผู้บริหาร" },
+];
+
 export function QuestionEditor({
   question,
   onChange,
   onRemove,
-  onMoveUp,
-  onMoveDown,
-  canMoveUp,
-  canMoveDown,
+  dragHandleProps,
 }: {
   question: QuestionFormValues;
   onChange: (question: QuestionFormValues) => void;
   onRemove: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
+  dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
 }) {
   function setAnswerType(type: AnswerType) {
     onChange({ ...question, answerType: type, options: defaultOptionsFor(type) });
   }
 
+  function toggleVisibleTo(type: TemplateVisibleToType) {
+    const next = question.visibleTo.includes(type)
+      ? question.visibleTo.filter((t) => t !== type)
+      : [...question.visibleTo, type];
+    onChange({ ...question, visibleTo: next });
+  }
+
   return (
     <div className="space-y-2.5 rounded-xl border border-border bg-card p-3">
       <div className="flex items-start gap-2">
+        <button
+          type="button"
+          className="mt-1.5 flex size-7 shrink-0 cursor-grab items-center justify-center text-muted-foreground active:cursor-grabbing"
+          aria-label="ลากเพื่อจัดลำดับ"
+          {...dragHandleProps}
+        >
+          <GripVertical className="size-4" />
+        </button>
         <Textarea
           rows={1}
           className="min-h-9 flex-1 resize-none"
@@ -207,14 +227,6 @@ export function QuestionEditor({
           value={question.text}
           onChange={(e) => onChange({ ...question, text: e.target.value })}
         />
-        <div className="flex shrink-0 flex-col gap-0.5">
-          <Button type="button" variant="ghost" size="icon" className="size-7" disabled={!canMoveUp} onClick={onMoveUp} aria-label="เลื่อนขึ้น">
-            <ChevronUp className="size-3.5" />
-          </Button>
-          <Button type="button" variant="ghost" size="icon" className="size-7" disabled={!canMoveDown} onClick={onMoveDown} aria-label="เลื่อนลง">
-            <ChevronDown className="size-3.5" />
-          </Button>
-        </div>
         <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={onRemove} aria-label="ลบข้อคำถาม">
           <Trash2 className="size-3.5 text-destructive" />
         </Button>
@@ -264,7 +276,50 @@ export function QuestionEditor({
         options={question.options ?? []}
         onChange={(options) => onChange({ ...question, options })}
       />
+
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">มองเห็นเฉพาะ (ไม่เลือก = ทุกคนเห็น)</p>
+        <div className="flex flex-wrap gap-1.5">
+          {VISIBLE_TO_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => toggleVisibleTo(opt.value)}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                question.visibleTo.includes(opt.value)
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
+  );
+}
+
+function DraggableQuestionItem({
+  question,
+  onChange,
+  onRemove,
+}: {
+  question: QuestionFormValues;
+  onChange: (question: QuestionFormValues) => void;
+  onRemove: () => void;
+}) {
+  const dragControls = useDragControls();
+  return (
+    <Reorder.Item value={question} dragListener={false} dragControls={dragControls}>
+      <QuestionEditor
+        question={question}
+        onChange={onChange}
+        onRemove={onRemove}
+        dragHandleProps={{ onPointerDown: (e) => dragControls.start(e) }}
+      />
+    </Reorder.Item>
   );
 }
 
@@ -272,18 +327,12 @@ export function SectionEditor({
   section,
   onChange,
   onRemove,
-  onMoveUp,
-  onMoveDown,
-  canMoveUp,
-  canMoveDown,
+  dragHandleProps,
 }: {
   section: SectionFormValues;
   onChange: (section: SectionFormValues) => void;
   onRemove: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
+  dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
 }) {
   function updateQuestion(qi: number, question: QuestionFormValues) {
     const questions = [...section.questions];
@@ -295,50 +344,43 @@ export function SectionEditor({
     onChange({ ...section, questions: section.questions.filter((_, i) => i !== qi) });
   }
 
-  function moveQuestion(qi: number, dir: -1 | 1) {
-    const questions = [...section.questions];
-    const target = qi + dir;
-    if (target < 0 || target >= questions.length) return;
-    [questions[qi], questions[target]] = [questions[target], questions[qi]];
-    onChange({ ...section, questions });
-  }
-
   return (
     <div className="space-y-3 rounded-2xl border border-border p-4">
       <div className="flex items-start gap-2">
+        <button
+          type="button"
+          className="mt-2 flex size-7 shrink-0 cursor-grab items-center justify-center text-muted-foreground active:cursor-grabbing"
+          aria-label="ลากเพื่อจัดลำดับหมวด"
+          {...dragHandleProps}
+        >
+          <GripVertical className="size-4" />
+        </button>
         <Input
           className="flex-1 font-medium"
           placeholder="ชื่อหมวด เช่น ผลการปฏิบัติงาน"
           value={section.name}
           onChange={(e) => onChange({ ...section, name: e.target.value })}
         />
-        <div className="flex shrink-0 flex-col gap-0.5">
-          <Button type="button" variant="ghost" size="icon" className="size-7" disabled={!canMoveUp} onClick={onMoveUp} aria-label="เลื่อนหมวดขึ้น">
-            <ChevronUp className="size-4" />
-          </Button>
-          <Button type="button" variant="ghost" size="icon" className="size-7" disabled={!canMoveDown} onClick={onMoveDown} aria-label="เลื่อนหมวดลง">
-            <ChevronDown className="size-4" />
-          </Button>
-        </div>
         <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={onRemove} aria-label="ลบหมวด">
           <Trash2 className="size-4 text-destructive" />
         </Button>
       </div>
 
-      <div className="space-y-2.5">
+      <Reorder.Group
+        axis="y"
+        values={section.questions}
+        onReorder={(questions) => onChange({ ...section, questions })}
+        className="space-y-2.5"
+      >
         {section.questions.map((q, qi) => (
-          <QuestionEditor
+          <DraggableQuestionItem
             key={qi}
             question={q}
             onChange={(question) => updateQuestion(qi, question)}
             onRemove={() => removeQuestion(qi)}
-            onMoveUp={() => moveQuestion(qi, -1)}
-            onMoveDown={() => moveQuestion(qi, 1)}
-            canMoveUp={qi > 0}
-            canMoveDown={qi < section.questions.length - 1}
           />
         ))}
-      </div>
+      </Reorder.Group>
 
       <Button
         type="button"
@@ -347,6 +389,67 @@ export function SectionEditor({
         onClick={() => onChange({ ...section, questions: [...section.questions, emptyQuestion(section.questions.length)] })}
       >
         <Plus className="size-3.5" /> เพิ่มข้อย่อย
+      </Button>
+    </div>
+  );
+}
+
+function DraggableSectionItem({
+  section,
+  onChange,
+  onRemove,
+}: {
+  section: SectionFormValues;
+  onChange: (section: SectionFormValues) => void;
+  onRemove: () => void;
+}) {
+  const dragControls = useDragControls();
+  return (
+    <Reorder.Item value={section} dragListener={false} dragControls={dragControls}>
+      <SectionEditor
+        section={section}
+        onChange={onChange}
+        onRemove={onRemove}
+        dragHandleProps={{ onPointerDown: (e) => dragControls.start(e) }}
+      />
+    </Reorder.Item>
+  );
+}
+
+/** Full "หมวด/ข้อย่อย" editor — drag-and-drop for both sections and the
+ * questions inside each one, shared by the standalone Template builder page
+ * and the campaign wizard's "แก้ไขหัวข้อ" step so both stay in sync. */
+export function SectionListEditor({
+  sections,
+  onChange,
+}: {
+  sections: SectionFormValues[];
+  onChange: (sections: SectionFormValues[]) => void;
+}) {
+  function updateSection(i: number, section: SectionFormValues) {
+    const next = [...sections];
+    next[i] = section;
+    onChange(next);
+  }
+
+  function removeSection(i: number) {
+    onChange(sections.filter((_, idx) => idx !== i));
+  }
+
+  return (
+    <div className="space-y-3">
+      <Reorder.Group axis="y" values={sections} onReorder={onChange} className="space-y-3">
+        {sections.map((s, i) => (
+          <DraggableSectionItem
+            key={i}
+            section={s}
+            onChange={(section) => updateSection(i, section)}
+            onRemove={() => removeSection(i)}
+          />
+        ))}
+      </Reorder.Group>
+      <Button type="button" variant="outline" onClick={() => onChange([...sections, emptySection(sections.length)])}>
+        <Plus className="size-4" /> เพิ่มหมวด
       </Button>
     </div>
   );

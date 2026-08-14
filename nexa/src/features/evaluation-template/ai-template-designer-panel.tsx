@@ -42,6 +42,7 @@ function draftToSections(draft: AiTemplateDraft): SectionFormValues[] {
         weight: Math.min(10, Math.max(1, Math.round(q.weight) || 1)),
         required: q.required,
         order: qi,
+        visibleTo: [],
       };
     }),
   }));

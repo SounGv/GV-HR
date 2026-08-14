@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScorePicker } from "@/components/shared/score-picker";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
-import type { TemplateSection } from "@/features/evaluation-template/types";
+import type { TemplateSection, TemplateVisibleToType } from "@/features/evaluation-template/types";
 import { fullName, getInitials } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/features/auth/auth-context";
@@ -194,7 +194,11 @@ export function ParticipantDetailView({ participantId }: { participantId: string
           <CardHeader>
             <CardTitle className="text-lg">{ROLE_LABEL[myRole] ?? "แบบประเมิน"}</CardTitle>
             {participant.campaign.templateSnapshot && (
-              <TemplateProgress sections={participant.campaign.templateSnapshot.sections} answers={answers} />
+              <TemplateProgress
+                sections={participant.campaign.templateSnapshot.sections}
+                answers={answers}
+                viewerRaterType={myResponse?.raterType}
+              />
             )}
           </CardHeader>
           <CardContent className="space-y-4">
@@ -204,6 +208,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
                 mode="answer"
                 answers={answers}
                 onChange={(questionId, value) => setAnswers((prev) => ({ ...prev, [questionId]: value }))}
+                viewerRaterType={myResponse?.raterType}
               />
             ) : (
               <div className="space-y-3">
@@ -372,11 +377,15 @@ const ROLE_LABEL: Record<string, string> = {
 function TemplateProgress({
   sections,
   answers,
+  viewerRaterType,
 }: {
   sections: TemplateSection[];
   answers: Record<string, string>;
+  viewerRaterType?: TemplateVisibleToType;
 }) {
-  const questions = sections.flatMap((s) => s.questions);
+  const questions = sections
+    .flatMap((s) => s.questions)
+    .filter((q) => q.visibleTo.length === 0 || (!!viewerRaterType && q.visibleTo.includes(viewerRaterType)));
   const total = questions.length;
   const answered = questions.filter((q) => (answers[q.id] ?? "").trim() !== "").length;
   const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
@@ -498,6 +507,7 @@ function ResponseCard({
   response?: {
     id?: string;
     status: string;
+    raterType?: string;
     scores: { competencyId: string; score: number }[];
     answers?: { questionId: string; value: string }[] | null;
     strengths: string | null;
@@ -562,16 +572,19 @@ function ResponseCard({
           <p className="text-sm text-muted-foreground">ยังไม่ได้ส่งแบบประเมิน</p>
         ) : templateSections ? (
           <>
-            {templateSections.flatMap((s) => s.questions).map((q) => {
-              const a = response.answers?.find((x) => x.questionId === q.id);
-              const label = q.answerType === "LONG_TEXT" ? a?.value : q.options?.find((o) => o.value === a?.value)?.label;
-              return (
-                <div key={q.id} className="flex items-center justify-between gap-2">
-                  <span className="min-w-0 truncate text-sm text-muted-foreground">{q.text}</span>
-                  <span className="shrink-0 max-w-[50%] truncate text-right font-semibold text-foreground">{label ?? "-"}</span>
-                </div>
-              );
-            })}
+            {templateSections
+              .flatMap((s) => s.questions)
+              .filter((q) => q.visibleTo.length === 0 || (!!response.raterType && q.visibleTo.includes(response.raterType as TemplateVisibleToType)))
+              .map((q) => {
+                const a = response.answers?.find((x) => x.questionId === q.id);
+                const label = q.answerType === "LONG_TEXT" ? a?.value : q.options?.find((o) => o.value === a?.value)?.label;
+                return (
+                  <div key={q.id} className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate text-sm text-muted-foreground">{q.text}</span>
+                    <span className="shrink-0 max-w-[50%] truncate text-right font-semibold text-foreground">{label ?? "-"}</span>
+                  </div>
+                );
+              })}
             {response.summary && (
               <p className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">{response.summary}</p>
             )}
