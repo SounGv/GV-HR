@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { formatCurrency, fullName } from "@/lib/format";
+import { useEmployeeEvaluationHistory } from "@/features/campaign/hooks";
 import { PayrollStatusBadge } from "./status-badge";
 import { useUpdatePayrollAdjustments } from "./hooks";
 import type { PayrollLineItem, PayrollRecord } from "./types";
@@ -37,7 +38,10 @@ export function PayslipDialog({
 }) {
   const { can } = useAuth();
   const canEdit = can("payroll:update");
+  const canViewEvaluations = can("campaign:read");
   const adjustMut = useUpdatePayrollAdjustments();
+  const { data: evalHistory } = useEmployeeEvaluationHistory(canViewEvaluations ? record?.employee?.id : undefined);
+  const latestEval = evalHistory?.data?.[0];
 
   const [earningRows, setEarningRows] = useState<AdjustRow[]>([]);
   const [deductionRows, setDeductionRows] = useState<AdjustRow[]>([]);
@@ -133,6 +137,19 @@ export function PayslipDialog({
             <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">หมายเหตุจาก HR: </span>
               {view.note}
+            </p>
+          )}
+
+          {canEditThis && latestEval && (latestEval.calibratedScore ?? latestEval.overallScore) != null && (
+            <p className="rounded-lg bg-primary/5 px-3 py-2 text-xs text-foreground">
+              <span className="font-medium">ผลประเมินล่าสุด: </span>
+              {(latestEval.calibratedScore ?? latestEval.overallScore)!.toFixed(1)}
+              {" · "}
+              {latestEval.calibratedBand ?? latestEval.band}
+              {" · "}
+              {latestEval.campaign.name}
+              {" — "}
+              ใช้ประกอบการพิจารณาโบนัส/รายการเพิ่มเติมด้านล่าง
             </p>
           )}
 

@@ -121,6 +121,8 @@ export interface EmployeeEvaluationHistoryItem {
   participantId: string;
   overallScore: number | null;
   band: string | null;
+  calibratedScore: number | null;
+  calibratedBand: string | null;
   finalizedAt: string | null;
   campaign: {
     id: string;

@@ -983,6 +983,8 @@ export async function getEmployeeEvaluationHistory(
       id: true,
       overallScore: true,
       band: true,
+      calibratedScore: true,
+      calibratedBand: true,
       finalizedAt: true,
       campaign: {
         select: { id: true, name: true, cycle: true, status: true, startDate: true, endDate: true },
@@ -995,6 +997,10 @@ export async function getEmployeeEvaluationHistory(
     participantId: r.id,
     overallScore: r.overallScore,
     band: r.band,
+    // Calibration (when it's happened) supersedes the raw manager score —
+    // same fallback the 9-Box/calibration views already use.
+    calibratedScore: r.calibratedScore,
+    calibratedBand: r.calibratedBand,
     finalizedAt: r.finalizedAt,
     campaign: r.campaign,
   }));
