@@ -64,7 +64,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/performance/competencies": { title: "สมรรถนะ", backHref: "/performance" },
   "/performance/competencies/new": { title: "เพิ่มสมรรถนะ", backHref: "/performance/competencies" },
   "/performance/competencies/categories/new": { title: "เพิ่มหมวดสมรรถนะ", backHref: "/performance/competencies" },
-  "/performance/campaigns/new": { title: "สร้างแคมเปญ", backHref: "/performance" },
+  "/performance/campaigns/new": { title: "สร้างรอบประเมิน", backHref: "/performance" },
   "/performance/campaigns/schedules": { title: "ตารางประเมิน", backHref: "/performance" },
   "/performance/campaigns/schedules/new": { title: "สร้างตารางประเมิน", backHref: "/performance/campaigns/schedules" },
   "/performance/succession/new": { title: "แผนทดแทน", backHref: "/performance" },

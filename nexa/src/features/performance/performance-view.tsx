@@ -4,10 +4,7 @@ import Link from "next/link";
 import {
   Plus,
   ClipboardCheck,
-  ClipboardList,
-  Target,
   CalendarClock,
-  Sparkles,
   Scale,
   Grid3x3,
   Users,
@@ -24,9 +21,6 @@ import { CampaignView } from "@/features/campaign/campaign-view";
 import { CalibrationView } from "@/features/calibration/calibration-view";
 import { NineBoxView } from "@/features/calibration/nine-box-view";
 import { SuccessionView } from "@/features/succession/succession-view";
-import { TemplateListView } from "@/features/evaluation-template/template-list-view";
-import { ScheduleTemplateListView } from "@/features/evaluation-schedule/schedule-list-view";
-import { CompetencyView } from "@/features/competency/competency-view";
 import { DevelopmentPlanView } from "@/features/development-plan/development-plan-view";
 
 import { ReviewCard } from "./review-card";
@@ -111,37 +105,12 @@ function EvaluationTasksTab({ canReview }: { canReview: boolean }) {
   );
 }
 
+/** One screen: the campaign list plus a single "+ สร้างรอบประเมิน" entry
+ * point into the wizard. Templates/legacy competency library/auto-schedule
+ * used to be separate tabs here — they're still reachable, just tucked into
+ * CampaignView's "จัดการเพิ่มเติม" menu instead of competing for top billing. */
 function ManageCampaignsTab() {
-  return (
-    <Tabs defaultValue="campaigns" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="templates">
-          <ClipboardList className="size-3.5" /> แบบประเมิน
-        </TabsTrigger>
-        <TabsTrigger value="campaigns">
-          <Target className="size-3.5" /> รอบประเมิน
-        </TabsTrigger>
-        <TabsTrigger value="schedules">
-          <CalendarClock className="size-3.5" /> ตารางประเมินอัตโนมัติ
-        </TabsTrigger>
-        <TabsTrigger value="competencies">
-          <Sparkles className="size-3.5" /> คลังสมรรถนะเดิม
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="templates">
-        <TemplateListView />
-      </TabsContent>
-      <TabsContent value="campaigns">
-        <CampaignView />
-      </TabsContent>
-      <TabsContent value="schedules">
-        <ScheduleTemplateListView />
-      </TabsContent>
-      <TabsContent value="competencies">
-        <CompetencyView />
-      </TabsContent>
-    </Tabs>
-  );
+  return <CampaignView />;
 }
 
 function AnalyticsTab({

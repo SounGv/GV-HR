@@ -152,6 +152,7 @@ enum EvaluationRaterType {
   MANAGER
   PEER
   UPWARD
+  HR_EXEC
 }
 
 enum EvaluationResponseStatus {

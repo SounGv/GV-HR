@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Sparkles, Target, BookOpen, CalendarClock } from "lucide-react";
+import { Plus, Sparkles, Target, BookOpen, CalendarClock, ClipboardList, MoreHorizontal } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
 import { formatDate } from "@/lib/format";
@@ -27,21 +28,29 @@ export function CampaignView() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">แคมเปญประเมินผลแบบหลายผู้ประเมิน (ตนเอง + หัวหน้างาน)</p>
+        <p className="text-sm text-muted-foreground">รอบประเมินผลงาน — ตนเอง / หัวหน้างาน / เพื่อนร่วมงาน / ลูกทีม / HR</p>
         <div className="flex items-center gap-2">
           {canManage && (
-            <Button variant="outline" size="sm" render={<Link href="/performance/competencies" />}>
-              <BookOpen className="size-4" /> คลังสมรรถนะ
-            </Button>
-          )}
-          {canManage && (
-            <Button variant="outline" size="sm" render={<Link href="/performance/campaigns/schedules" />}>
-              <CalendarClock className="size-4" /> รอบอัตโนมัติ
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="จัดการเพิ่มเติม" />}>
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem render={<Link href="/performance/templates" />}>
+                  <ClipboardList className="size-4" /> แบบประเมิน
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/performance/competencies" />}>
+                  <BookOpen className="size-4" /> คลังสมรรถนะเดิม
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/performance/campaigns/schedules" />}>
+                  <CalendarClock className="size-4" /> รอบอัตโนมัติ
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           {canManage && (
             <Button render={<Link href="/performance/campaigns/new" />}>
-              <Plus className="size-4" /> สร้างแคมเปญ
+              <Plus className="size-4" /> สร้างรอบประเมิน
             </Button>
           )}
         </div>

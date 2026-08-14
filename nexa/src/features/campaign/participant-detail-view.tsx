@@ -77,6 +77,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
   const managerResponse = participant?.fullResponses.find((r) => r.raterType === "MANAGER");
   const peerResponses = participant?.fullResponses.filter((r) => r.raterType === "PEER") ?? [];
   const upwardResponses = participant?.fullResponses.filter((r) => r.raterType === "UPWARD") ?? [];
+  const hrExecResponses = participant?.fullResponses.filter((r) => r.raterType === "HR_EXEC") ?? [];
 
   useEffect(() => {
     if (!participant) return;
@@ -279,15 +280,28 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             removable={canManageRaters && r.status === "PENDING"}
           />
         ))}
+        {hrExecResponses.map((r) => (
+          <ResponseCard
+            key={r.id}
+            title="ประเมินโดย HR / ผู้บริหาร"
+            response={r}
+            competencies={participant.campaign.competencies}
+            templateSections={participant.campaign.templateSnapshot?.sections}
+            removable={canManageRaters && r.status === "PENDING"}
+          />
+        ))}
       </div>
 
-      {canManageRaters && (participant.campaign.raterTypes.includes("PEER") || participant.campaign.raterTypes.includes("UPWARD")) && (
-        <InviteRaterCard
-          participantId={participant.id}
-          employeeId={participant.employee.id}
-          raterTypes={participant.campaign.raterTypes}
-        />
-      )}
+      {canManageRaters &&
+        (participant.campaign.raterTypes.includes("PEER") ||
+          participant.campaign.raterTypes.includes("UPWARD") ||
+          participant.campaign.raterTypes.includes("HR_EXEC")) && (
+          <InviteRaterCard
+            participantId={participant.id}
+            employeeId={participant.employee.id}
+            raterTypes={participant.campaign.raterTypes}
+          />
+        )}
 
       <Dialog open={aiOpen} onOpenChange={setAiOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -321,6 +335,7 @@ const ROLE_LABEL: Record<string, string> = {
   MANAGER: "แบบประเมินโดยหัวหน้างาน",
   PEER: "แบบประเมินโดยเพื่อนร่วมงาน",
   UPWARD: "แบบประเมินโดยผู้ใต้บังคับบัญชา",
+  HR_EXEC: "แบบประเมินโดย HR / ผู้บริหาร",
 };
 
 /** Live "answered N of M" progress as the rater fills in the form, before submit. */
@@ -350,6 +365,12 @@ function TemplateProgress({
   );
 }
 
+const INVITABLE_TYPES: { value: "PEER" | "UPWARD" | "HR_EXEC"; label: string }[] = [
+  { value: "PEER", label: "เพื่อนร่วมงาน" },
+  { value: "UPWARD", label: "ผู้ใต้บังคับบัญชา" },
+  { value: "HR_EXEC", label: "HR / ผู้บริหาร" },
+];
+
 function InviteRaterCard({
   participantId,
   employeeId,
@@ -359,8 +380,9 @@ function InviteRaterCard({
   employeeId: string;
   raterTypes: string[];
 }) {
+  const invitableTypes = INVITABLE_TYPES.filter((t) => raterTypes.includes(t.value));
   const [open, setOpen] = useState(false);
-  const [raterType, setRaterType] = useState<"PEER" | "UPWARD">(raterTypes.includes("PEER") ? "PEER" : "UPWARD");
+  const [raterType, setRaterType] = useState<"PEER" | "UPWARD" | "HR_EXEC">(invitableTypes[0]?.value ?? "PEER");
   const [raterId, setRaterId] = useState("");
   const { data: orgData } = useOrgOptions();
   const inviteMutation = useInviteRater(participantId);
@@ -396,30 +418,22 @@ function InviteRaterCard({
           <DialogDescription>เลือกประเภทและพนักงานที่จะเชิญให้ร่วมประเมิน</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          {raterTypes.includes("PEER") && raterTypes.includes("UPWARD") && (
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={raterType === "PEER" ? "default" : "outline"}
-                onClick={() => {
-                  setRaterType("PEER");
-                  setRaterId("");
-                }}
-              >
-                เพื่อนร่วมงาน
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={raterType === "UPWARD" ? "default" : "outline"}
-                onClick={() => {
-                  setRaterType("UPWARD");
-                  setRaterId("");
-                }}
-              >
-                ผู้ใต้บังคับบัญชา
-              </Button>
+          {invitableTypes.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {invitableTypes.map((t) => (
+                <Button
+                  key={t.value}
+                  type="button"
+                  size="sm"
+                  variant={raterType === t.value ? "default" : "outline"}
+                  onClick={() => {
+                    setRaterType(t.value);
+                    setRaterId("");
+                  }}
+                >
+                  {t.label}
+                </Button>
+              ))}
             </div>
           )}
           <Select value={raterId} onValueChange={(v) => setRaterId(v ?? "")}>

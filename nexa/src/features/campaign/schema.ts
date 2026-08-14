@@ -6,7 +6,7 @@ const competencyWeightSchema = z.object({
 });
 
 const raterTypesSchema = z
-  .array(z.enum(["SELF", "MANAGER", "PEER", "UPWARD"]))
+  .array(z.enum(["SELF", "MANAGER", "PEER", "UPWARD", "HR_EXEC"]))
   .min(1, "ต้องเลือกทิศทางการประเมินอย่างน้อย 1 แบบ");
 
 const campaignCreateBaseSchema = z.object({
@@ -70,7 +70,7 @@ export const submitResponseSchema = z
 export type SubmitResponseInput = z.infer<typeof submitResponseSchema>;
 
 export const inviteRaterSchema = z.object({
-  raterType: z.enum(["PEER", "UPWARD"]),
+  raterType: z.enum(["PEER", "UPWARD", "HR_EXEC"]),
   raterEmployeeId: z.string().uuid(),
 });
 export type InviteRaterInput = z.infer<typeof inviteRaterSchema>;

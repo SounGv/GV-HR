@@ -117,7 +117,7 @@ export function useFinalizeParticipant() {
 export function useInviteRater(participantId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { raterType: "PEER" | "UPWARD"; raterEmployeeId: string }) => inviteRater(participantId, input),
+    mutationFn: (input: { raterType: "PEER" | "UPWARD" | "HR_EXEC"; raterEmployeeId: string }) => inviteRater(participantId, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
   });
 }

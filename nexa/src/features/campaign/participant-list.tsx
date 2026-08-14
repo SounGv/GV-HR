@@ -62,6 +62,7 @@ export function ParticipantList({
         const managerStatus = managerResponse?.status === "SUBMITTED" ? "SUBMITTED" : "PENDING";
         const peerResponses = p.responses.filter((r) => r.raterType === "PEER");
         const upwardResponses = p.responses.filter((r) => r.raterType === "UPWARD");
+        const hrExecResponses = p.responses.filter((r) => r.raterType === "HR_EXEC");
 
         return (
           <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -80,6 +81,11 @@ export function ParticipantList({
                 {upwardResponses.length > 0 && (
                   <span className="text-xs text-muted-foreground">
                     ผู้ใต้บังคับบัญชา {upwardResponses.filter((r) => r.status === "SUBMITTED").length}/{upwardResponses.length}
+                  </span>
+                )}
+                {hrExecResponses.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    HR/ผู้บริหาร {hrExecResponses.filter((r) => r.status === "SUBMITTED").length}/{hrExecResponses.length}
                   </span>
                 )}
               </div>

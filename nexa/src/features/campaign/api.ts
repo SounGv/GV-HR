@@ -54,7 +54,7 @@ export function finalizeParticipant(participantId: string) {
   return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/finalize`);
 }
 
-export function inviteRater(participantId: string, input: { raterType: "PEER" | "UPWARD"; raterEmployeeId: string }) {
+export function inviteRater(participantId: string, input: { raterType: "PEER" | "UPWARD" | "HR_EXEC"; raterEmployeeId: string }) {
   return api.post<Envelope<{ id: string }>>(`/api/campaigns/participants/${participantId}/raters`, input);
 }
 

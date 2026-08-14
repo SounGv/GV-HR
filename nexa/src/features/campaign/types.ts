@@ -1,7 +1,7 @@
 import type { CampaignTemplateSnapshot } from "@/features/evaluation-template/types";
 
 export type CampaignStatus = "DRAFT" | "ACTIVE" | "CLOSED";
-export type RaterType = "SELF" | "MANAGER" | "PEER" | "UPWARD";
+export type RaterType = "SELF" | "MANAGER" | "PEER" | "UPWARD" | "HR_EXEC";
 export type ResponseStatus = "PENDING" | "SUBMITTED";
 
 export interface CampaignCompetency {

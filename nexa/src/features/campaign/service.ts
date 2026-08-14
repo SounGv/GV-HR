@@ -364,6 +364,24 @@ export async function seedParticipants(
   raterTypes: RaterType[],
   employees: { id: string; managerId: string | null }[],
 ) {
+  // UPWARD is the one invite-based rater type that's actually fully derivable
+  // from the org chart (a participant's own direct reports), unlike PEER/
+  // HR_EXEC which need HR to pick a specific person — so it auto-seeds here
+  // too, instead of requiring one manual invite per report.
+  const directReportsByManager = new Map<string, { id: string }[]>();
+  if (raterTypes.includes("UPWARD")) {
+    const reports = await prisma.employee.findMany({
+      where: { managerId: { in: employees.map((e) => e.id) }, deletedAt: null },
+      select: { id: true, managerId: true },
+    });
+    for (const r of reports) {
+      if (!r.managerId) continue;
+      const list = directReportsByManager.get(r.managerId) ?? [];
+      list.push({ id: r.id });
+      directReportsByManager.set(r.managerId, list);
+    }
+  }
+
   const created: string[] = [];
   for (const emp of employees) {
     const participant = await prisma.evaluationParticipant.upsert({
@@ -395,6 +413,20 @@ export async function seedParticipants(
         },
         update: {},
         create: { participantId: participant.id, raterType: "MANAGER", raterEmployeeId: emp.managerId, scores: [] },
+      });
+    }
+
+    for (const report of directReportsByManager.get(emp.id) ?? []) {
+      await prisma.evaluationResponse.upsert({
+        where: {
+          participantId_raterType_raterEmployeeId: {
+            participantId: participant.id,
+            raterType: "UPWARD",
+            raterEmployeeId: report.id,
+          },
+        },
+        update: {},
+        create: { participantId: participant.id, raterType: "UPWARD", raterEmployeeId: report.id, scores: [] },
       });
     }
   }
@@ -853,8 +885,8 @@ export async function removeRater(companyId: string, session: AccessClaims, resp
     },
   });
   if (!response) throw NotFound("ไม่พบผู้ประเมิน");
-  if (response.raterType !== "PEER" && response.raterType !== "UPWARD") {
-    throw BadRequest("ยกเลิกได้เฉพาะผู้ประเมินแบบ Peer/Upward");
+  if (response.raterType !== "PEER" && response.raterType !== "UPWARD" && response.raterType !== "HR_EXEC") {
+    throw BadRequest("ยกเลิกได้เฉพาะผู้ประเมินที่เชิญเป็นรายบุคคล (Peer/Upward/HR)");
   }
   if (response.status !== "PENDING") {
     throw BadRequest("ผู้ประเมินคนนี้ส่งแบบประเมินไปแล้ว");

@@ -37,6 +37,7 @@ const RATER_TYPE_OPTIONS: { value: RaterType; label: string }[] = [
   { value: "MANAGER", label: "หัวหน้างานประเมิน" },
   { value: "PEER", label: "เพื่อนร่วมงานประเมิน (Peer)" },
   { value: "UPWARD", label: "ผู้ใต้บังคับบัญชาประเมิน (Upward)" },
+  { value: "HR_EXEC", label: "HR / ผู้บริหารประเมิน" },
 ];
 
 const FORM_ID = "campaign-form";
