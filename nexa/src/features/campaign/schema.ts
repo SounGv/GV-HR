@@ -62,6 +62,7 @@ export const submitResponseSchema = z
     strengths: z.string().max(1000).optional(),
     improvements: z.string().max(1000).optional(),
     summary: z.string().max(1000).optional(),
+    evidenceUrls: z.array(z.string()).max(3, "แนบหลักฐานได้สูงสุด 3 ไฟล์").optional(),
   })
   .refine((v) => (v.scores && v.scores.length > 0) || (v.answers && v.answers.length > 0), {
     message: "กรุณาตอบคำถามอย่างน้อย 1 ข้อ",

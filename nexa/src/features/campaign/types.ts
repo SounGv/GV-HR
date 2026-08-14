@@ -69,6 +69,7 @@ export interface ParticipantDetail extends ParticipantSummary {
     strengths: string | null;
     improvements: string | null;
     summary: string | null;
+    evidenceUrls: string[] | null;
     submittedAt: string | null;
     raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null;
   }[];
@@ -93,6 +94,7 @@ export interface SubmitResponseValues {
   strengths?: string;
   improvements?: string;
   summary?: string;
+  evidenceUrls?: string[];
 }
 
 export interface AiDesignerDraft {

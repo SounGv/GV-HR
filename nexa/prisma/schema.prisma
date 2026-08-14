@@ -1361,6 +1361,11 @@ model EvaluationResponse {
   // templateSnapshot; `scores` above is simply left `[]` in that case.
   answers Json?
 
+  // Supporting files the rater attaches (reports, screenshots) — same
+  // base64-data-URL-in-DB pattern as every other attachment in this app
+  // (no server upload route exists anywhere), just stored as a JSON array.
+  evidenceUrls Json? // string[]
+
   status      EvaluationResponseStatus @default(PENDING)
   submittedAt DateTime?
   createdAt   DateTime                 @default(now())

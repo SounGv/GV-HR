@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronLeft, Loader2, Plus, Sparkles, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, FileText, Loader2, Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScorePicker } from "@/components/shared/score-picker";
+import { FileAttachField } from "@/components/shared/file-attach-field";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 import type { TemplateSection } from "@/features/evaluation-template/types";
 import { fullName, getInitials } from "@/lib/format";
@@ -63,6 +64,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
   const [strengths, setStrengths] = useState("");
   const [improvements, setImprovements] = useState("");
   const [summary, setSummary] = useState("");
+  const [evidenceUrls, setEvidenceUrls] = useState<string[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState("");
@@ -96,6 +98,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
     setStrengths(myResponse?.strengths ?? "");
     setImprovements(myResponse?.improvements ?? "");
     setSummary(myResponse?.summary ?? "");
+    setEvidenceUrls(myResponse?.evidenceUrls ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [participant?.id]);
 
@@ -113,12 +116,14 @@ export function ParticipantDetailView({ participantId }: { participantId: string
               strengths: strengths.trim() || undefined,
               improvements: improvements.trim() || undefined,
               summary: summary.trim() || undefined,
+              evidenceUrls: evidenceUrls.length > 0 ? evidenceUrls : undefined,
             }
           : {
               scores: Object.entries(scores).map(([competencyId, score]) => ({ competencyId, score })),
               strengths: strengths.trim() || undefined,
               improvements: improvements.trim() || undefined,
               summary: summary.trim() || undefined,
+              evidenceUrls: evidenceUrls.length > 0 ? evidenceUrls : undefined,
             },
       );
       toast.success("บันทึกแบบประเมินเรียบร้อย");
@@ -235,6 +240,31 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             <div className="space-y-1.5">
               <label className="text-base font-medium text-foreground">สรุป</label>
               <Textarea rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-base font-medium text-foreground">แนบหลักฐาน (ไม่บังคับ)</label>
+              <div className="space-y-2">
+                {evidenceUrls.map((url, i) => (
+                  <FileAttachField
+                    key={i}
+                    value={url}
+                    maxBytes={2_000_000}
+                    onChange={(dataUrl) => {
+                      const next = [...evidenceUrls];
+                      if (dataUrl) next[i] = dataUrl;
+                      else next.splice(i, 1);
+                      setEvidenceUrls(next);
+                    }}
+                  />
+                ))}
+                {evidenceUrls.length < 3 && (
+                  <FileAttachField
+                    key={evidenceUrls.length}
+                    maxBytes={2_000_000}
+                    onChange={(dataUrl) => dataUrl && setEvidenceUrls([...evidenceUrls, dataUrl])}
+                  />
+                )}
+              </div>
             </div>
             <Button size="lg" className="w-full" onClick={submit} disabled={submitMutation.isPending}>
               {submitMutation.isPending && <Loader2 className="size-4 animate-spin" />} ส่งแบบประเมิน
@@ -473,6 +503,7 @@ function ResponseCard({
     strengths: string | null;
     improvements: string | null;
     summary: string | null;
+    evidenceUrls?: string[] | null;
     submittedAt: string | null;
     raterEmployee?: { firstName: string; lastName: string; avatarUrl: string | null } | null;
   };
@@ -565,6 +596,21 @@ function ResponseCard({
               <p className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">{response.summary}</p>
             )}
           </>
+        )}
+        {response?.status === "SUBMITTED" && response.evidenceUrls && response.evidenceUrls.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2 border-t border-border pt-2">
+            {response.evidenceUrls.map((url, i) => (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/70"
+              >
+                <FileText className="size-3.5" /> หลักฐาน {i + 1}
+              </a>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

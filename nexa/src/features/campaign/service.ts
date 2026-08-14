@@ -535,6 +535,7 @@ export async function getParticipant(companyId: string, participantId: string, s
           strengths: true,
           improvements: true,
           summary: true,
+          evidenceUrls: true,
           submittedAt: true,
         },
       },
@@ -575,9 +576,15 @@ export async function getParticipant(companyId: string, participantId: string, s
 /** Attaches each response's rater's name/photo — raterEmployeeId has no FK
  * (PEER/UPWARD raters aren't derivable from the org chart at all, so the
  * column is just a plain id), hence the separate lookup instead of a select. */
-async function withRaterEmployees<T extends { raterEmployeeId: string; answers: unknown }>(
+async function withRaterEmployees<T extends { raterEmployeeId: string; answers: unknown; evidenceUrls: unknown }>(
   responses: T[],
-): Promise<(Omit<T, "answers"> & { answers: { questionId: string; value: string }[] | null; raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null })[]> {
+): Promise<
+  (Omit<T, "answers" | "evidenceUrls"> & {
+    answers: { questionId: string; value: string }[] | null;
+    evidenceUrls: string[] | null;
+    raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null;
+  })[]
+> {
   const raterIds = [...new Set(responses.map((r) => r.raterEmployeeId))];
   const raters = await prisma.employee.findMany({
     where: { id: { in: raterIds } },
@@ -587,6 +594,7 @@ async function withRaterEmployees<T extends { raterEmployeeId: string; answers: 
   return responses.map((r) => ({
     ...r,
     answers: r.answers as { questionId: string; value: string }[] | null,
+    evidenceUrls: r.evidenceUrls as string[] | null,
     raterEmployee: raterMap.get(r.raterEmployeeId) ?? null,
   }));
 }
@@ -771,6 +779,7 @@ export async function submitMyResponse(
       strengths: input.strengths,
       improvements: input.improvements,
       summary: input.summary,
+      evidenceUrls: input.evidenceUrls,
       status: "SUBMITTED",
       submittedAt: new Date(),
     },
