@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScorePicker } from "@/components/shared/score-picker";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 import type { TemplateSection } from "@/features/evaluation-template/types";
-import { fullName } from "@/lib/format";
+import { fullName, getInitials } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
@@ -185,7 +186,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
       {canRespond ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{ROLE_LABEL[myRole] ?? "แบบประเมิน"}</CardTitle>
+            <CardTitle className="text-lg">{ROLE_LABEL[myRole] ?? "แบบประเมิน"}</CardTitle>
             {participant.campaign.templateSnapshot && (
               <TemplateProgress sections={participant.campaign.templateSnapshot.sections} answers={answers} />
             )}
@@ -201,15 +202,15 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             ) : (
               <div className="space-y-3">
                 {groupByCategory(participant.campaign.competencies).map((group) => (
-                  <div key={group.categoryId} className="space-y-1.5">
-                    <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
+                  <div key={group.categoryId} className="space-y-2">
+                    <p className="text-sm font-semibold text-muted-foreground">{group.categoryName}</p>
                     {group.items.map((c) => (
-                      <div key={c.competencyId} className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div key={c.competencyId} className="flex flex-col gap-2.5 rounded-lg border border-border p-3.5 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground">{c.name}</p>
-                          {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
+                          <p className="text-base font-semibold text-foreground">{c.name}</p>
+                          {c.description && <p className="mt-0.5 text-sm text-muted-foreground">{c.description}</p>}
                           {c.exampleBehavior && (
-                            <p className="text-xs text-muted-foreground">ตัวอย่างพฤติกรรม: {c.exampleBehavior}</p>
+                            <p className="mt-0.5 text-sm text-muted-foreground">ตัวอย่างพฤติกรรม: {c.exampleBehavior}</p>
                           )}
                         </div>
                         <ScorePicker
@@ -223,18 +224,18 @@ export function ParticipantDetailView({ participantId }: { participantId: string
               </div>
             )}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">จุดแข็ง</label>
+              <label className="text-base font-medium text-foreground">จุดแข็ง</label>
               <Textarea rows={2} value={strengths} onChange={(e) => setStrengths(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">สิ่งที่ควรพัฒนา</label>
+              <label className="text-base font-medium text-foreground">สิ่งที่ควรพัฒนา</label>
               <Textarea rows={2} value={improvements} onChange={(e) => setImprovements(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">สรุป</label>
+              <label className="text-base font-medium text-foreground">สรุป</label>
               <Textarea rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} />
             </div>
-            <Button onClick={submit} disabled={submitMutation.isPending}>
+            <Button size="lg" className="w-full" onClick={submit} disabled={submitMutation.isPending}>
               {submitMutation.isPending && <Loader2 className="size-4 animate-spin" />} ส่งแบบประเมิน
             </Button>
           </CardContent>
@@ -459,12 +460,14 @@ function ResponseCard({
     improvements: string | null;
     summary: string | null;
     submittedAt: string | null;
+    raterEmployee?: { firstName: string; lastName: string; avatarUrl: string | null } | null;
   };
   competencies: CampaignCompetency[];
   templateSections?: TemplateSection[];
   removable?: boolean;
 }) {
   const removeMutation = useRemoveRater();
+  const raterName = response?.raterEmployee ? fullName(response.raterEmployee.firstName, response.raterEmployee.lastName) : null;
 
   async function remove() {
     if (!response?.id) return;
@@ -479,10 +482,23 @@ function ResponseCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between text-base">
-          {title}
-          <span className="flex items-center gap-2">
-            {response?.status === "SUBMITTED" && <CheckCircle2 className="size-4 text-success" />}
+        <CardTitle className="flex items-center justify-between gap-2 text-base">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <Avatar className="size-9 shrink-0">
+              {response?.raterEmployee?.avatarUrl && (
+                <AvatarImage src={response.raterEmployee.avatarUrl} alt={raterName ?? ""} />
+              )}
+              <AvatarFallback className="bg-primary/10 text-sm text-primary">
+                {raterName ? getInitials(response!.raterEmployee!.firstName, response!.raterEmployee!.lastName) : "?"}
+              </AvatarFallback>
+            </Avatar>
+            <span className="min-w-0">
+              <span className="block truncate text-base font-semibold text-foreground">{raterName ?? title}</span>
+              <span className="block text-sm font-normal text-muted-foreground">{title}</span>
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            {response?.status === "SUBMITTED" && <CheckCircle2 className="size-5 text-success" />}
             {removable && (
               <button
                 onClick={remove}
@@ -490,15 +506,15 @@ function ResponseCard({
                 aria-label="ยกเลิกผู้ประเมิน"
                 className="text-muted-foreground hover:text-destructive"
               >
-                <X className="size-4" />
+                <X className="size-5" />
               </button>
             )}
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
+      <CardContent className="space-y-3 text-base">
         {!response || response.status !== "SUBMITTED" ? (
-          <p className="text-muted-foreground">ยังไม่ได้ส่งแบบประเมิน</p>
+          <p className="text-sm text-muted-foreground">ยังไม่ได้ส่งแบบประเมิน</p>
         ) : templateSections ? (
           <>
             {templateSections.flatMap((s) => s.questions).map((q) => {
@@ -506,33 +522,33 @@ function ResponseCard({
               const label = q.answerType === "LONG_TEXT" ? a?.value : q.options?.find((o) => o.value === a?.value)?.label;
               return (
                 <div key={q.id} className="flex items-center justify-between gap-2">
-                  <span className="min-w-0 truncate text-muted-foreground">{q.text}</span>
-                  <span className="shrink-0 max-w-[50%] truncate text-right font-medium text-foreground">{label ?? "-"}</span>
+                  <span className="min-w-0 truncate text-sm text-muted-foreground">{q.text}</span>
+                  <span className="shrink-0 max-w-[50%] truncate text-right font-semibold text-foreground">{label ?? "-"}</span>
                 </div>
               );
             })}
             {response.summary && (
-              <p className="mt-2 border-t border-border pt-2 text-muted-foreground">{response.summary}</p>
+              <p className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">{response.summary}</p>
             )}
           </>
         ) : (
           <>
             {groupByCategory(competencies).map((group) => (
               <div key={group.categoryId} className="space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground">{group.categoryName}</p>
+                <p className="text-sm font-semibold text-muted-foreground">{group.categoryName}</p>
                 {group.items.map((c) => {
                   const s = response.scores.find((x) => x.competencyId === c.competencyId);
                   return (
                     <div key={c.competencyId} className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate text-muted-foreground">{c.name}</span>
-                      <span className="shrink-0 font-medium text-foreground">{s?.score.toFixed(1) ?? "-"}</span>
+                      <span className="min-w-0 truncate text-sm text-muted-foreground">{c.name}</span>
+                      <span className="shrink-0 font-semibold text-foreground">{s?.score.toFixed(1) ?? "-"}</span>
                     </div>
                   );
                 })}
               </div>
             ))}
             {response.summary && (
-              <p className="mt-2 border-t border-border pt-2 text-muted-foreground">{response.summary}</p>
+              <p className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">{response.summary}</p>
             )}
           </>
         )}

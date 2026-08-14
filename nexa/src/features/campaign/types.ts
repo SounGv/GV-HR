@@ -70,6 +70,7 @@ export interface ParticipantDetail extends ParticipantSummary {
     improvements: string | null;
     summary: string | null;
     submittedAt: string | null;
+    raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null;
   }[];
 }
 

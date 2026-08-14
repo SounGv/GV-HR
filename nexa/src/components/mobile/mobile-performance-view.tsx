@@ -27,7 +27,7 @@ export function MobilePerformanceView() {
     <MobileScreen title="ประเมินผล" backHref="/services" contentClassName="space-y-4 p-4">
       <PendingSection />
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-foreground">ผลประเมินของฉัน</h2>
+        <h2 className="text-base font-semibold text-foreground">ผลประเมินของฉัน</h2>
         <MyReviews />
       </div>
     </MobileScreen>
@@ -42,7 +42,7 @@ function PendingSection() {
 
   return (
     <div className="space-y-2">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+      <h2 className="flex items-center gap-1.5 text-base font-semibold text-foreground">
         <ListChecks className="size-4 text-primary" /> รายการที่ต้องให้คะแนน ({items.length})
       </h2>
       <div className="space-y-2">
@@ -50,31 +50,31 @@ function PendingSection() {
           <Link
             key={item.responseId}
             href={`/performance/campaigns/${item.campaignId}/participants/${item.participantId}`}
-            className="flex items-center gap-3 rounded-xl bg-card p-3 shadow-sm active:bg-muted"
+            className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm active:bg-muted"
           >
-            <Avatar className="size-9">
+            <Avatar className="size-11">
               {item.employee.avatarUrl && (
                 <AvatarImage src={item.employee.avatarUrl} alt={item.employee.firstName} />
               )}
-              <AvatarFallback className="bg-primary/10 text-xs text-primary">
+              <AvatarFallback className="bg-primary/10 text-sm text-primary">
                 {getInitials(item.employee.firstName, item.employee.lastName)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">
+              <p className="truncate text-base font-semibold text-foreground">
                 {fullName(item.employee.firstName, item.employee.lastName)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="truncate text-sm text-muted-foreground">
                 {RATER_LABEL[item.raterType] ?? item.raterType} · {item.campaignName} · {item.cycle}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {fmtDate(item.startDate)} – {fmtDate(item.endDate)}
               </p>
               {item.totalQuestions > 0 && (
-                <p className="mt-0.5 text-xs text-primary">{item.totalQuestions} หัวข้อ · ยังไม่ได้ทำ</p>
+                <p className="mt-0.5 text-sm font-semibold text-primary">{item.totalQuestions} หัวข้อ · ยังไม่ได้ทำ</p>
               )}
             </div>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
           </Link>
         ))}
       </div>

@@ -13,7 +13,7 @@ export function ScorePicker({
   onChange: (score: number) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5" role="group" aria-label="ให้คะแนน 1 ถึง 5">
+    <div className="flex items-center gap-2" role="group" aria-label="ให้คะแนน 1 ถึง 5">
       {SCORES.map((s) => (
         <button
           key={s}
@@ -21,7 +21,7 @@ export function ScorePicker({
           aria-pressed={Math.round(value) === s}
           onClick={() => onChange(s)}
           className={cn(
-            "flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold transition active:scale-95",
+            "flex size-11 shrink-0 items-center justify-center rounded-xl text-base font-semibold transition active:scale-95",
             Math.round(value) === s
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-muted text-muted-foreground hover:bg-muted/80",

@@ -536,11 +536,27 @@ export async function getParticipant(companyId: string, participantId: string, s
       competencies: mapCompetencies(participant.campaign.competencies),
       templateSnapshot: participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null,
     },
-    fullResponses: participant.responses.map((r) => ({
-      ...r,
-      answers: r.answers as { questionId: string; value: string }[] | null,
-    })),
+    fullResponses: await withRaterEmployees(participant.responses),
   };
+}
+
+/** Attaches each response's rater's name/photo — raterEmployeeId has no FK
+ * (PEER/UPWARD raters aren't derivable from the org chart at all, so the
+ * column is just a plain id), hence the separate lookup instead of a select. */
+async function withRaterEmployees<T extends { raterEmployeeId: string; answers: unknown }>(
+  responses: T[],
+): Promise<(Omit<T, "answers"> & { answers: { questionId: string; value: string }[] | null; raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null })[]> {
+  const raterIds = [...new Set(responses.map((r) => r.raterEmployeeId))];
+  const raters = await prisma.employee.findMany({
+    where: { id: { in: raterIds } },
+    select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+  });
+  const raterMap = new Map(raters.map((r) => [r.id, r]));
+  return responses.map((r) => ({
+    ...r,
+    answers: r.answers as { questionId: string; value: string }[] | null,
+    raterEmployee: raterMap.get(r.raterEmployeeId) ?? null,
+  }));
 }
 
 /**

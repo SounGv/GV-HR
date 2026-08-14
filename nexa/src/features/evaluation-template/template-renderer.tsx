@@ -29,15 +29,15 @@ export function TemplateFormRenderer({
     <div className="space-y-6">
       {sections.map((section) => (
         <div key={section.id} className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">{section.name}</h3>
+          <h3 className="text-base font-semibold text-foreground">{section.name}</h3>
           <div className="space-y-3">
             {section.questions.map((q) => (
-              <div key={q.id} className="space-y-1.5 rounded-xl border border-border p-3">
-                <p className="text-sm font-medium text-foreground">
+              <div key={q.id} className="space-y-2 rounded-xl border border-border p-3.5">
+                <p className="text-base font-semibold text-foreground">
                   {q.text}
                   {q.required && <span className="ml-1 text-destructive">*</span>}
                 </p>
-                {q.helpText && <p className="text-xs text-muted-foreground">{q.helpText}</p>}
+                {q.helpText && <p className="text-sm text-muted-foreground">{q.helpText}</p>}
                 <QuestionAnswerInput
                   question={q}
                   disabled={mode === "preview"}
@@ -77,8 +77,8 @@ function QuestionAnswerInput({
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {(question.options ?? []).map((opt) => (
+    <div className="space-y-2">
+      {(question.options ?? []).map((opt, i) => (
         <button
           key={opt.value}
           type="button"
@@ -86,13 +86,21 @@ function QuestionAnswerInput({
           aria-pressed={value === opt.value}
           onClick={() => onChange(opt.value)}
           className={cn(
-            "rounded-lg border px-3 py-1.5 text-sm font-medium transition",
+            "flex w-full items-center gap-2.5 rounded-lg border px-4 py-3 text-left text-base font-medium transition",
             value === opt.value
               ? "border-primary bg-primary text-primary-foreground"
               : "border-border bg-card text-foreground hover:bg-muted",
             disabled && "cursor-default opacity-70",
           )}
         >
+          <span
+            className={cn(
+              "flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+              value === opt.value ? "bg-primary-foreground/20" : "bg-muted-foreground/10 text-muted-foreground",
+            )}
+          >
+            {i + 1}
+          </span>
           {opt.label}
         </button>
       ))}
