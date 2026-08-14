@@ -58,14 +58,21 @@ function draftToSections(draft: AiTemplateDraft): SectionFormValues[] {
 export function AiTemplateDesignerPanel({
   onApply,
   onClose,
+  currentDraft,
 }: {
   onApply: (values: { name: string; description: string; sections: SectionFormValues[]; rationale: string }) => void;
   onClose: () => void;
+  /** When provided with at least one real question, enables "ให้ AI ช่วยตรวจสอบ"
+   * mode — AI critiques this draft instead of generating from scratch. */
+  currentDraft?: { name: string; description?: string; sections: SectionFormValues[] };
 }) {
+  const hasDraftToCritique = !!currentDraft?.sections.some((s) => s.questions.some((q) => q.text.trim()));
   const [scope, setScope] = useState<AiTemplateScope>("company");
   const [targetId, setTargetId] = useState("");
   const [instruction, setInstruction] = useState("");
+  const [aiMode, setAiMode] = useState<"generate" | "critique">(hasDraftToCritique ? "critique" : "generate");
   const [draft, setDraft] = useState<AiTemplateDraft | null>(null);
+  const [findings, setFindings] = useState<string[] | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
 
   const { data: orgData } = useOrgOptions();
@@ -73,6 +80,7 @@ export function AiTemplateDesignerPanel({
 
   const generate = useGenerateAiTemplateDesign();
   const needsTarget = scope === "department";
+  const isCritique = aiMode === "critique";
 
   async function generateDraft() {
     if (needsTarget && !targetId) {
@@ -81,19 +89,23 @@ export function AiTemplateDesignerPanel({
     }
     try {
       const res = await generate.mutateAsync({
+        mode: aiMode,
         scope,
         targetId: needsTarget ? targetId : undefined,
         instruction: instruction.trim() || undefined,
+        draft: isCritique ? currentDraft : undefined,
       });
       if (!res.data.configured) {
         setNotConfigured(true);
         setDraft(null);
+        setFindings(null);
         return;
       }
       setNotConfigured(false);
       setDraft(res.data.draft);
+      setFindings(res.data.findings);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "สร้างแบบประเมินไม่สำเร็จ");
+      toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
     }
   }
 
@@ -115,6 +127,27 @@ export function AiTemplateDesignerPanel({
         </Button>
       </CardHeader>
       <CardContent className="space-y-4 p-0">
+        {hasDraftToCritique && (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={isCritique ? "default" : "outline"}
+              onClick={() => setAiMode("critique")}
+            >
+              ตรวจสอบสิ่งที่มีอยู่
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={!isCritique ? "default" : "outline"}
+              onClick={() => setAiMode("generate")}
+            >
+              ออกแบบใหม่ทั้งหมด
+            </Button>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">ขอบเขต</label>
@@ -169,12 +202,24 @@ export function AiTemplateDesignerPanel({
         </div>
 
         <Button type="button" onClick={generateDraft} disabled={generate.isPending} className="w-full">
-          {generate.isPending && <Loader2 className="size-4 animate-spin" />} สร้างแบบประเมิน
+          {generate.isPending && <Loader2 className="size-4 animate-spin" />}
+          {isCritique ? "ให้ AI ช่วยตรวจสอบ" : "สร้างแบบประเมิน"}
         </Button>
 
         {notConfigured && (
           <Card className="p-3 text-sm text-muted-foreground">
             ระบบ AI Assistant ยังไม่ได้ตั้งค่า API key จึงยังสร้างแบบประเมินอัตโนมัติไม่ได้
+          </Card>
+        )}
+
+        {findings && findings.length > 0 && (
+          <Card className="gap-1.5 bg-background p-3 text-sm">
+            <p className="font-medium text-foreground">ข้อสังเกตจาก AI</p>
+            <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+              {findings.map((f, i) => (
+                <li key={i}>{f}</li>
+              ))}
+            </ul>
           </Card>
         )}
 

@@ -58,8 +58,17 @@ export const templateListQuerySchema = z.object({
 export type TemplateListQuery = z.infer<typeof templateListQuerySchema>;
 
 export const aiTemplateDesignerRequestSchema = z.object({
+  mode: z.enum(["generate", "critique"]).default("generate"),
   scope: z.enum(["department", "company"]),
   targetId: z.string().uuid().optional(),
   instruction: z.string().max(2000).optional(),
+  // Only used when mode === "critique" — the HR-edited draft to review.
+  draft: z
+    .object({
+      name: z.string(),
+      description: z.string().optional(),
+      sections: z.array(sectionSchema),
+    })
+    .optional(),
 });
 export type AiTemplateDesignerRequestInput = z.infer<typeof aiTemplateDesignerRequestSchema>;

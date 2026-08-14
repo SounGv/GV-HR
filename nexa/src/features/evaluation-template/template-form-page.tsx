@@ -238,7 +238,11 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
           )}
 
           {showAiDesigner && !locked && (
-            <AiTemplateDesignerPanel onApply={handleAiApply} onClose={() => setShowAiDesigner(false)} />
+            <AiTemplateDesignerPanel
+              onApply={handleAiApply}
+              onClose={() => setShowAiDesigner(false)}
+              currentDraft={{ name: form.watch("name"), description: form.watch("description"), sections }}
+            />
           )}
 
           {locked ? (

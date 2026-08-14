@@ -86,9 +86,12 @@ export interface CampaignTemplateSnapshot {
 export type AiTemplateScope = "department" | "company";
 
 export interface AiTemplateDesignerRequest {
+  mode?: "generate" | "critique";
   scope: AiTemplateScope;
   targetId?: string;
   instruction?: string;
+  /** Only used when mode === "critique" — the HR-edited draft to review. */
+  draft?: { name: string; description?: string; sections: SectionFormValues[] };
 }
 
 export interface AiTemplateDraft {
@@ -111,5 +114,8 @@ export interface AiTemplateDraft {
 export interface AiTemplateDesignerResponse {
   target: { scope: AiTemplateScope; label: string };
   draft: AiTemplateDraft | null;
+  /** Only present for mode === "critique" — short bullet feedback on the
+   * HR-edited draft, alongside the (optional) improved `draft` above. */
+  findings: string[] | null;
   configured: boolean;
 }

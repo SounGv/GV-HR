@@ -110,6 +110,7 @@ export function AiReviewStep({ draft, onChange }: { draft: TemplateDraft; onChan
       <AiTemplateDesignerPanel
         onApply={(v) => onChange({ ...draft, name: v.name, description: v.description, sections: v.sections, aiGenerated: true, aiRationale: v.rationale })}
         onClose={() => {}}
+        currentDraft={{ name: draft.name, description: draft.description, sections: draft.sections }}
       />
     </div>
   );
