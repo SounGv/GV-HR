@@ -27,6 +27,9 @@ export interface PayrollRecord {
     avatarUrl: string | null;
     email: string | null;
     departmentId: string | null;
+    nationalId: string | null;
+    bankName: string | null;
+    bankAccountNo: string | null;
   };
 }
 

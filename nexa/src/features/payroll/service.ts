@@ -42,7 +42,18 @@ const recordSelect = {
 const recordWithEmployeeSelect = {
   ...recordSelect,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, email: true, departmentId: true },
+    select: {
+      id: true,
+      employeeCode: true,
+      firstName: true,
+      lastName: true,
+      avatarUrl: true,
+      email: true,
+      departmentId: true,
+      nationalId: true,
+      bankName: true,
+      bankAccountNo: true,
+    },
   },
 } satisfies Prisma.PayrollRecordSelect;
 

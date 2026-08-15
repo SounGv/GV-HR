@@ -37,6 +37,7 @@ import {
   payrollKeys,
 } from "./hooks";
 import { PayslipDialog } from "./payslip-dialog";
+import { PayrollFilingExports } from "./filing-exports";
 import { PayrollStatusBadge } from "./status-badge";
 import type { PayrollRecord } from "./types";
 
@@ -335,6 +336,8 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
               <CheckCircle2 className="size-4" /> พร้อมประมวลผลและจ่ายเงินได้ทันที
             </span>
           </div>
+
+          {canSendEmail && <PayrollFilingExports records={records} period={period} />}
 
           {canSendEmail && selectedIds.size > 0 && (
             <div className="flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
