@@ -44,6 +44,12 @@ export interface EmployeeDetail extends EmployeeListItem {
   hourlyRate: string | null;
   bankName: string | null;
   bankAccountNo: string | null;
+  taxSpouseNoIncome: boolean;
+  taxChildrenStandard: number;
+  taxChildrenEnhanced: number;
+  taxParentCareCount: number;
+  taxLifeInsurance: string | null; // Prisma Decimal serializes to string
+  taxHealthInsurance: string | null;
   addressLine: string | null;
   district: string | null;
   province: string | null;
@@ -83,6 +89,12 @@ export interface EmployeeFormValues {
   hourlyRate?: string;
   bankName?: string;
   bankAccountNo?: string;
+  taxSpouseNoIncome?: boolean;
+  taxChildrenStandard?: string;
+  taxChildrenEnhanced?: string;
+  taxParentCareCount?: string;
+  taxLifeInsurance?: string;
+  taxHealthInsurance?: string;
   addressLine?: string;
   district?: string;
   province?: string;

@@ -66,6 +66,14 @@ export const employeeCreateSchema = z.object({
   bankName: optional(z.string().trim().max(120)),
   bankAccountNo: optional(z.string().trim().max(40)),
 
+  // ค่าลดหย่อนภาษีส่วนบุคคล
+  taxSpouseNoIncome: z.coerce.boolean().default(false),
+  taxChildrenStandard: optional(z.coerce.number().int().min(0).max(50)),
+  taxChildrenEnhanced: optional(z.coerce.number().int().min(0).max(50)),
+  taxParentCareCount: optional(z.coerce.number().int().min(0).max(4)),
+  taxLifeInsurance: optional(z.coerce.number().min(0)),
+  taxHealthInsurance: optional(z.coerce.number().min(0)),
+
   addressLine: optional(z.string().trim().max(255)),
   district: optional(z.string().trim().max(120)),
   province: optional(z.string().trim().max(120)),

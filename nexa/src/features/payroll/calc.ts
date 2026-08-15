@@ -13,6 +13,16 @@ export interface PayrollComputation {
 
 export type CompensationType = "MONTHLY" | "DAILY" | "HOURLY";
 
+/** Personal tax deductions the employee has declared (all annual amounts/counts). */
+export interface TaxDeductionInputs {
+  spouseNoIncome?: boolean; // คู่สมรสไม่มีเงินได้ — 60,000/ปี
+  childrenStandard?: number; // บุตรลดหย่อนคนละ 30,000/ปี
+  childrenEnhanced?: number; // บุตรคนที่ 2 เป็นต้นไป เกิดปี 2561+ — คนละ 60,000/ปี
+  parentCareCount?: number; // อุปการะบิดามารดา — คนละ 30,000/ปี, สูงสุด 4 คน
+  lifeInsurance?: number; // เบี้ยประกันชีวิตที่จ่ายจริงในปีนี้
+  healthInsurance?: number; // เบี้ยประกันสุขภาพที่จ่ายจริงในปีนี้ — รวมกับประกันชีวิตไม่เกิน 100,000
+}
+
 export interface PayrollInput {
   // Whatever this period's base pay already comes out to — a fixed monthly
   // amount for MONTHLY, or dailyRate × days-actually-worked / hourlyRate ×
@@ -40,6 +50,9 @@ export interface PayrollInput {
   // of the computed lines below, and included in gross/deduction/net totals.
   extraEarnings?: LineItem[];
   extraDeductions?: LineItem[];
+  // Employee-declared personal tax deductions — only affects the withholding
+  // tax estimate below, never a separate deduction line item.
+  taxDeductions?: TaxDeductionInputs;
 }
 
 const BASE_PAY_LABEL: Record<CompensationType, string> = {
@@ -77,7 +90,8 @@ export function annualIncomeTax(annualTaxable: number): number {
  *  - Social Security: 5% of wage, floored at 1,650 / capped at 15,000 → 83–750 THB.
  *  - Provident fund: employee % of base salary (optional).
  *  - Withholding tax: monthly estimate = annualIncomeTax(annualized income −
- *    50% expense (cap 100k) − 60k personal allowance − SS (cap 9k) − PF) / 12.
+ *    50% expense (cap 100k) − 60k personal allowance − SS (cap 9k) − PF −
+ *    employee-declared personal deductions) / 12.
  */
 export function computePayroll(input: PayrollInput): PayrollComputation {
   const salary = Math.round(input.baseSalary);
@@ -110,9 +124,18 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const personalAllowance = 60_000;
   const ssAnnual = Math.min(socialSecurity * 12, 9_000);
   const pfAnnual = providentFund * 12;
+
+  const td = input.taxDeductions ?? {};
+  const spouseDeduction = td.spouseNoIncome ? 60_000 : 0;
+  const childrenDeduction =
+    Math.max(0, td.childrenStandard ?? 0) * 30_000 + Math.max(0, td.childrenEnhanced ?? 0) * 60_000;
+  const parentCareDeduction = Math.min(Math.max(0, td.parentCareCount ?? 0), 4) * 30_000;
+  const insuranceDeduction = Math.min((td.lifeInsurance ?? 0) + (td.healthInsurance ?? 0), 100_000);
+  const personalTaxDeductions = spouseDeduction + childrenDeduction + parentCareDeduction + insuranceDeduction;
+
   const annualTaxable = Math.max(
     0,
-    annualIncome - expenseDeduction - personalAllowance - ssAnnual - pfAnnual,
+    annualIncome - expenseDeduction - personalAllowance - ssAnnual - pfAnnual - personalTaxDeductions,
   );
   const tax = Math.round(annualIncomeTax(annualTaxable) / 12);
 

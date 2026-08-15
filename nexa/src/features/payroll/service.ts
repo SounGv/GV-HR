@@ -6,7 +6,7 @@ import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { sendEmail } from "@/lib/email";
 import { getCompanyProfile } from "@/features/company/service";
-import { computePayroll, periodLabel, type LineItem } from "./calc";
+import { computePayroll, periodLabel, type LineItem, type TaxDeductionInputs } from "./calc";
 import { renderPayslipEmailHtml } from "./payslip-email";
 import type { PayrollAdjustInput, PayrollListQuery } from "./schema";
 
@@ -22,6 +22,25 @@ interface ManualAdjustments {
 function readAdjustments(raw: unknown): ManualAdjustments {
   const v = raw as Partial<ManualAdjustments> | null | undefined;
   return { earnings: v?.earnings ?? [], deductions: v?.deductions ?? [] };
+}
+
+/** Map an employee's declared tax-deduction fields onto computePayroll()'s input shape. */
+function toTaxDeductions(emp: {
+  taxSpouseNoIncome: boolean;
+  taxChildrenStandard: number;
+  taxChildrenEnhanced: number;
+  taxParentCareCount: number;
+  taxLifeInsurance: Prisma.Decimal;
+  taxHealthInsurance: Prisma.Decimal;
+}): TaxDeductionInputs {
+  return {
+    spouseNoIncome: emp.taxSpouseNoIncome,
+    childrenStandard: emp.taxChildrenStandard,
+    childrenEnhanced: emp.taxChildrenEnhanced,
+    parentCareCount: emp.taxParentCareCount,
+    lifeInsurance: Number(emp.taxLifeInsurance),
+    healthInsurance: Number(emp.taxHealthInsurance),
+  };
 }
 
 const recordSelect = {
@@ -218,7 +237,19 @@ export async function generatePayroll(
         { compensationType: "HOURLY", hourlyRate: { not: null } },
       ],
     },
-    select: { id: true, compensationType: true, baseSalary: true, dailyRate: true, hourlyRate: true },
+    select: {
+      id: true,
+      compensationType: true,
+      baseSalary: true,
+      dailyRate: true,
+      hourlyRate: true,
+      taxSpouseNoIncome: true,
+      taxChildrenStandard: true,
+      taxChildrenEnhanced: true,
+      taxParentCareCount: true,
+      taxLifeInsurance: true,
+      taxHealthInsurance: true,
+    },
   });
   const label = periodLabel(period);
 
@@ -263,6 +294,7 @@ export async function generatePayroll(
       unpaidLeaveDays: isMonthly ? unpaidLeaveMap.get(emp.id) ?? 0 : 0,
       extraEarnings: adj.earnings,
       extraDeductions: adj.deductions,
+      taxDeductions: toTaxDeductions(emp),
     });
     await prisma.payrollRecord.upsert({
       where: { employeeId_period: { employeeId: emp.id, period } },
@@ -385,7 +417,18 @@ export async function updatePayrollAdjustments(
 
   const employee = await prisma.employee.findFirst({
     where: { id: record.employeeId, companyId, deletedAt: null },
-    select: { compensationType: true, baseSalary: true, dailyRate: true, hourlyRate: true },
+    select: {
+      compensationType: true,
+      baseSalary: true,
+      dailyRate: true,
+      hourlyRate: true,
+      taxSpouseNoIncome: true,
+      taxChildrenStandard: true,
+      taxChildrenEnhanced: true,
+      taxParentCareCount: true,
+      taxLifeInsurance: true,
+      taxHealthInsurance: true,
+    },
   });
   if (!employee) throw NotFound("ไม่พบข้อมูลพนักงาน");
   const hasRate =
@@ -420,6 +463,7 @@ export async function updatePayrollAdjustments(
     unpaidLeaveDays: unpaidLeaveMap.get(record.employeeId) ?? 0,
     extraEarnings: adjustments.earnings,
     extraDeductions: adjustments.deductions,
+    taxDeductions: toTaxDeductions(employee),
   });
 
   const updated = await prisma.payrollRecord.update({

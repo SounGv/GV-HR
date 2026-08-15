@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -68,6 +69,12 @@ const formSchema = z.object({
   hourlyRate: z.string().optional(),
   bankName: z.string().trim().optional(),
   bankAccountNo: z.string().trim().optional(),
+  taxSpouseNoIncome: z.boolean().optional(),
+  taxChildrenStandard: z.string().optional(),
+  taxChildrenEnhanced: z.string().optional(),
+  taxParentCareCount: z.string().optional(),
+  taxLifeInsurance: z.string().optional(),
+  taxHealthInsurance: z.string().optional(),
   addressLine: z.string().trim().optional(),
   district: z.string().trim().optional(),
   province: z.string().trim().optional(),
@@ -143,6 +150,7 @@ export function EmployeeForm({
               <TabsTrigger value="personal">ข้อมูลส่วนตัว</TabsTrigger>
               <TabsTrigger value="employment">การจ้างงาน</TabsTrigger>
               <TabsTrigger value="payroll">เงินเดือน &amp; บัญชี</TabsTrigger>
+              <TabsTrigger value="tax">ลดหย่อนภาษี</TabsTrigger>
               <TabsTrigger value="address">ที่อยู่</TabsTrigger>
             </TabsList>
           </div>
@@ -230,6 +238,32 @@ export function EmployeeForm({
               )}
               <TextField form={form} name="bankName" label="ธนาคาร" />
               <TextField form={form} name="bankAccountNo" label="เลขที่บัญชี" />
+            </FieldGrid>
+          </TabsContent>
+
+          <TabsContent value="tax" keepMounted>
+            <p className="mb-4 text-sm text-muted-foreground">
+              ใช้คำนวณภาษีหัก ณ ที่จ่ายรายเดือนให้ตรงกับสถานการณ์จริงของพนักงานแต่ละคน — ไม่กรอกจะถือว่าไม่มีค่าลดหย่อนส่วนนี้
+            </p>
+            <div className="mb-4 flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">คู่สมรสไม่มีเงินได้</p>
+                <p className="text-xs text-muted-foreground">ลดหย่อน 60,000 บาท/ปี</p>
+              </div>
+              <FormField
+                control={form.control}
+                name="taxSpouseNoIncome"
+                render={({ field }) => (
+                  <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                )}
+              />
+            </div>
+            <FieldGrid>
+              <TextField form={form} name="taxChildrenStandard" label="จำนวนบุตร (ลดหย่อนคนละ 30,000)" type="number" />
+              <TextField form={form} name="taxChildrenEnhanced" label="บุตรคนที่ 2+ เกิดปี 2561 ขึ้นไป (คนละ 60,000)" type="number" />
+              <TextField form={form} name="taxParentCareCount" label="อุปการะบิดามารดา (คนละ 30,000, สูงสุด 4 คน)" type="number" />
+              <TextField form={form} name="taxLifeInsurance" label="เบี้ยประกันชีวิต/ปี (บาท)" type="number" />
+              <TextField form={form} name="taxHealthInsurance" label="เบี้ยประกันสุขภาพ/ปี (บาท)" type="number" />
             </FieldGrid>
           </TabsContent>
 

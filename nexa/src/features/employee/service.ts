@@ -46,6 +46,12 @@ const detailSelect = {
   hourlyRate: true,
   bankName: true,
   bankAccountNo: true,
+  taxSpouseNoIncome: true,
+  taxChildrenStandard: true,
+  taxChildrenEnhanced: true,
+  taxParentCareCount: true,
+  taxLifeInsurance: true,
+  taxHealthInsurance: true,
   addressLine: true,
   district: true,
   province: true,
@@ -132,15 +138,23 @@ export async function getEmployee(companyId: string, id: string, session?: Acces
 }
 
 /** Prisma requires Decimal instances, not plain numbers, for @db.Decimal fields. */
-function toDecimalFields<T extends { baseSalary?: number; dailyRate?: number; hourlyRate?: number }>(
-  input: T,
-) {
-  const { baseSalary, dailyRate, hourlyRate, ...rest } = input;
+function toDecimalFields<
+  T extends {
+    baseSalary?: number;
+    dailyRate?: number;
+    hourlyRate?: number;
+    taxLifeInsurance?: number;
+    taxHealthInsurance?: number;
+  },
+>(input: T) {
+  const { baseSalary, dailyRate, hourlyRate, taxLifeInsurance, taxHealthInsurance, ...rest } = input;
   return {
     ...rest,
     ...(baseSalary !== undefined ? { baseSalary: new Prisma.Decimal(baseSalary) } : {}),
     ...(dailyRate !== undefined ? { dailyRate: new Prisma.Decimal(dailyRate) } : {}),
     ...(hourlyRate !== undefined ? { hourlyRate: new Prisma.Decimal(hourlyRate) } : {}),
+    ...(taxLifeInsurance !== undefined ? { taxLifeInsurance: new Prisma.Decimal(taxLifeInsurance) } : {}),
+    ...(taxHealthInsurance !== undefined ? { taxHealthInsurance: new Prisma.Decimal(taxHealthInsurance) } : {}),
   };
 }
 

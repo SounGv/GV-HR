@@ -731,6 +731,17 @@ model Employee {
 
   bankBranch String?
 
+  // Personal tax deductions (ลดหย่อนภาษีส่วนบุคคล) — feeds computePayroll()'s
+  // withholding-tax estimate. All default to "none" so WHT stays at the
+  // conservative baseline (standard allowance only) until HR/the employee
+  // declares these.
+  taxSpouseNoIncome     Boolean @default(false) // คู่สมรสไม่มีเงินได้ — ลดหย่อน 60,000/ปี
+  taxChildrenStandard   Int     @default(0) // บุตร ลดหย่อนคนละ 30,000/ปี (คนแรกทุกกรณี + คนอื่นที่เกิดก่อนปี 2561)
+  taxChildrenEnhanced   Int     @default(0) // บุตรคนที่ 2 เป็นต้นไป เกิดปี 2561+ — ลดหย่อนคนละ 60,000/ปี
+  taxParentCareCount    Int     @default(0) // อุปการะบิดามารดา (ตนเอง+คู่สมรส รวมสูงสุด 4 คน) — 30,000/คน/ปี
+  taxLifeInsurance      Decimal @default(0) @db.Decimal(12, 2) // เบี้ยประกันชีวิต — ลดหย่อนสูงสุด 100,000/ปี
+  taxHealthInsurance    Decimal @default(0) @db.Decimal(12, 2) // เบี้ยประกันสุขภาพ — รวมกับประกันชีวิตไม่เกิน 100,000/ปี
+
   // Address
   addressLine String?
   subDistrict String?
