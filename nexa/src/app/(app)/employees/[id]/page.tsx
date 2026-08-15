@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmployeeStatusBadge } from "@/features/employee/status-badge";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
+import { EmployeeDocumentList } from "@/features/employee-document/employee-document-list";
 import { fullName, getInitials, formatDate, formatCurrency } from "@/lib/format";
 
 export const metadata: Metadata = { title: "รายละเอียดพนักงาน" };
@@ -169,6 +170,8 @@ export default async function EmployeeDetailPage({
           <InfoRow label="ธนาคาร" value={employee.bankName} />
           <InfoRow label="เลขที่บัญชี" value={employee.bankAccountNo} />
         </InfoCard>
+
+        <EmployeeDocumentList employeeId={employee.id} canEdit={canEdit} />
       </div>
     </div>
   );

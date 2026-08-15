@@ -295,6 +295,7 @@ model Company {
   recognitions                Recognition[]
   approvalRequests            ApprovalRequest[]
   meetings                    Meeting[]
+  employeeDocuments           EmployeeDocument[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -707,6 +708,7 @@ model Employee {
   successionCandidacies      SuccessionCandidate[]         @relation("SuccessionCandidacy")
   meetingsOrganized         Meeting[]                      @relation("MeetingOrganizer")
   meetingInvites            MeetingAttendee[]              @relation("MeetingAttendee")
+  documents                 EmployeeDocument[]
 
   // Employment
   employmentType   EmploymentType @default(FULL_TIME)
@@ -1605,6 +1607,36 @@ model Asset {
   @@unique([companyId, assetCode])
   @@index([companyId, status])
   @@map("assets")
+}
+
+enum EmployeeDocumentType {
+  ID_CARD
+  DEGREE
+  CONTRACT
+  WORK_PERMIT
+  OTHER
+}
+
+/** Scanned personal documents (ID card, degree, contract, work permit) —
+ * same base64-data-URL-in-DB pattern as every other attachment in this app,
+ * kept as its own table (not a JSON list on Employee) since HR needs to
+ * query/list "who's missing a document" across employees. */
+model EmployeeDocument {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  type    EmployeeDocumentType
+  label   String
+  fileUrl String
+
+  uploadedAt  DateTime @default(now())
+  createdById String?
+
+  @@index([employeeId])
+  @@map("employee_documents")
 }
 
 // ─────────────────────────── HR: Recruitment ───────────────────────────
