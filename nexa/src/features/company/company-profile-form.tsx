@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Building2, Upload, X, Save, Loader2, Palette, MapPin, Phone, Globe2 } from "lucide-react";
+import { Building2, Upload, X, Save, Loader2, Palette, MapPin, Phone, Globe2, ClockAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
@@ -214,6 +215,39 @@ export function CompanyProfileForm() {
           </Field>
           <Field label="ภาษาหลัก">
             <NativeSelect value={form.language} onChange={(v) => set("language", v)} disabled={!canEdit} options={LANGUAGES} />
+          </Field>
+        </div>
+      </Section>
+
+      {/* Attendance-to-payroll deduction policy */}
+      <Section
+        icon={ClockAlert}
+        title="หักเงินจากขาด/มาสาย"
+        desc="ใช้ตอนออกรอบเงินเดือน — ปิดอยู่โดยค่าเริ่มต้น ไม่กระทบเงินเดือนใครจนกว่าจะเปิดใช้งาน"
+      >
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-border p-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">เปิดใช้งานการหักเงินอัตโนมัติ</p>
+            <p className="text-xs text-muted-foreground">
+              ขาดงาน (ไม่ลงเวลาและไม่มีใบลาอนุมัติในวันทำงาน) หักเท่าอัตราลาไม่รับค่าจ้าง — มาสายหักตามจำนวนครั้ง × อัตราด้านล่าง
+              — ใช้กับพนักงานรายเดือนเท่านั้น
+            </p>
+          </div>
+          <Switch
+            checked={form.attendanceDeductionEnabled === "true"}
+            onCheckedChange={(v) => set("attendanceDeductionEnabled", String(v))}
+            disabled={!canEdit}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="หักเงินต่อการมาสาย 1 ครั้ง (บาท)" error={errors.lateDeductionPerOccurrence}>
+            <Input
+              type="number"
+              min={0}
+              value={form.lateDeductionPerOccurrence}
+              onChange={(e) => set("lateDeductionPerOccurrence", e.target.value)}
+              disabled={!canEdit}
+            />
           </Field>
         </div>
       </Section>

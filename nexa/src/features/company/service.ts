@@ -29,6 +29,8 @@ const profileSelect = {
   province: true,
   postalCode: true,
   country: true,
+  attendanceDeductionEnabled: true,
+  lateDeductionPerOccurrence: true,
   updatedAt: true,
 } satisfies Prisma.CompanySelect;
 
@@ -50,9 +52,16 @@ export async function updateCompanyProfile(
   meta?: Meta,
 ) {
   // zod has already trimmed and converted empty strings to null.
+  const { lateDeductionPerOccurrence, ...rest } = input;
   const updated = await prisma.company.update({
     where: { id: companyId },
-    data: { ...input, updatedById: session.sub },
+    data: {
+      ...rest,
+      ...(lateDeductionPerOccurrence !== undefined
+        ? { lateDeductionPerOccurrence: new Prisma.Decimal(lateDeductionPerOccurrence) }
+        : {}),
+      updatedById: session.sub,
+    },
     select: profileSelect,
   });
 

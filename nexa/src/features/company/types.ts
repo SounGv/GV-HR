@@ -22,5 +22,7 @@ export interface CompanyProfile {
   province: string | null;
   postalCode: string | null;
   country: string | null;
+  attendanceDeductionEnabled: boolean;
+  lateDeductionPerOccurrence: string; // Prisma Decimal serializes to string
   updatedAt: string;
 }

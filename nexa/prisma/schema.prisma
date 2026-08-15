@@ -247,6 +247,18 @@ model Company {
   postalCode    String?
   country       String? @default("ไทย")
 
+  // Attendance-to-payroll deduction policy — off by default so generating
+  // payroll never silently starts docking pay until HR explicitly turns it
+  // on. When enabled, generatePayroll() checks each MONTHLY employee's
+  // workdays (Mon–Fri minus company Holidays) against attendance/leave
+  // records, mirroring the existing calendar "my day status" derivation:
+  // no clock-in and no approved leave covering that day → an absence
+  // deduction (same day-rate formula as unpaid leave); an AttendanceRecord
+  // already marked "LATE" (lib/datetime.ts's existing shift-time check) →
+  // a flat late deduction.
+  attendanceDeductionEnabled Boolean @default(false)
+  lateDeductionPerOccurrence Decimal @default(0) @db.Decimal(12, 2) // baht deducted per late day
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   createdById String?

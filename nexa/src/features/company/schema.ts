@@ -61,6 +61,10 @@ export const companyProfileSchema = z.object({
   province: optText(120),
   postalCode: optText(10),
   country: optText(80),
+
+  // Attendance-to-payroll deduction policy
+  attendanceDeductionEnabled: z.preprocess((v) => v === "true" || v === true, z.boolean()).default(false),
+  lateDeductionPerOccurrence: z.coerce.number().min(0).default(0),
 });
 
 export type CompanyProfileInput = z.infer<typeof companyProfileSchema>;

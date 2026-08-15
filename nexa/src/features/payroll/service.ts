@@ -147,6 +147,77 @@ async function getWorkedDaysAndHours(
   return map;
 }
 
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+/**
+ * Per-employee absence/lateness for MONTHLY employees over [from, to),
+ * mirroring the day-status derivation already used by the "my calendar"
+ * view (features/calendar/service.ts): a Mon–Fri day counts as absent only
+ * if it isn't a company holiday, isn't covered by any APPROVED leave
+ * (any type), and has no clock-in at all. Lateness reuses the AttendanceRecord
+ * "LATE" status already set at clock-in time (lib/datetime.ts) rather than
+ * re-deriving it against shift times here.
+ */
+async function getAbsenceAndLateByEmployee(
+  companyId: string,
+  from: Date,
+  to: Date,
+  employeeIds: string[],
+): Promise<Map<string, { absentDays: number; lateOccurrences: number }>> {
+  const [holidays, leaves, records] = [
+    await prisma.holiday.findMany({
+      where: { companyId, deletedAt: null, date: { gte: from, lt: to } },
+      select: { date: true },
+    }),
+    await prisma.leaveRequest.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: "APPROVED",
+        employeeId: { in: employeeIds },
+        startDate: { lt: to },
+        endDate: { gte: from },
+      },
+      select: { employeeId: true, startDate: true, endDate: true },
+    }),
+    await prisma.attendanceRecord.findMany({
+      where: { companyId, deletedAt: null, employeeId: { in: employeeIds }, workDate: { gte: from, lt: to } },
+      select: { employeeId: true, workDate: true, clockInAt: true, status: true },
+    }),
+  ];
+
+  const holidaySet = new Set(holidays.map((h) => iso(h.date)));
+  const leavesByEmployee = new Map<string, { startDate: Date; endDate: Date }[]>();
+  for (const l of leaves) {
+    const list = leavesByEmployee.get(l.employeeId) ?? [];
+    list.push(l);
+    leavesByEmployee.set(l.employeeId, list);
+  }
+  const recordByKey = new Map(records.map((r) => [`${r.employeeId}|${iso(r.workDate)}`, r]));
+
+  const result = new Map<string, { absentDays: number; lateOccurrences: number }>();
+  for (const employeeId of employeeIds) {
+    const myLeaves = leavesByEmployee.get(employeeId) ?? [];
+    let absentDays = 0;
+    let lateOccurrences = 0;
+    for (let cur = new Date(from); cur.getTime() < to.getTime(); cur = new Date(cur.getTime() + DAY_MS)) {
+      const weekday = cur.getUTCDay();
+      if (weekday === 0 || weekday === 6) continue; // weekend
+      if (holidaySet.has(iso(cur))) continue;
+      const onLeave = myLeaves.some((l) => l.startDate.getTime() <= cur.getTime() && cur.getTime() <= l.endDate.getTime());
+      if (onLeave) continue;
+      const rec = recordByKey.get(`${employeeId}|${iso(cur)}`);
+      if (!rec?.clockInAt) {
+        absentDays += 1;
+      } else if (rec.status === "LATE") {
+        lateOccurrences += 1;
+      }
+    }
+    result.set(employeeId, { absentDays, lateOccurrences });
+  }
+  return result;
+}
+
 /** Base pay this period, per the employee's own compensation type. */
 function computeBasePay(
   emp: { compensationType: string; baseSalary: unknown; dailyRate: unknown; hourlyRate: unknown },
@@ -268,6 +339,16 @@ export async function generatePayroll(
   const workedMap =
     wagedIds.length > 0 ? await getWorkedDaysAndHours(companyId, from, to, wagedIds) : new Map();
 
+  const attendancePolicy = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { attendanceDeductionEnabled: true, lateDeductionPerOccurrence: true },
+  });
+  const monthlyIds = employees.filter((e) => e.compensationType === "MONTHLY").map((e) => e.id);
+  const absenceMap =
+    attendancePolicy?.attendanceDeductionEnabled && monthlyIds.length > 0
+      ? await getAbsenceAndLateByEmployee(companyId, from, to, monthlyIds)
+      : new Map<string, { absentDays: number; lateOccurrences: number }>();
+
   // Existing records for this period — read so a re-generate (e.g. after new
   // OT gets approved) never wipes HR's manual adjustments, and never touches
   // a payslip that's already been marked PAID.
@@ -292,6 +373,9 @@ export async function generatePayroll(
       // Unpaid leave only makes sense to deduct for MONTHLY — DAILY/HOURLY
       // base pay already excludes unworked days/hours by construction.
       unpaidLeaveDays: isMonthly ? unpaidLeaveMap.get(emp.id) ?? 0 : 0,
+      absentDays: absenceMap.get(emp.id)?.absentDays ?? 0,
+      lateOccurrences: absenceMap.get(emp.id)?.lateOccurrences ?? 0,
+      lateDeductionPerOccurrence: Number(attendancePolicy?.lateDeductionPerOccurrence ?? 0),
       extraEarnings: adj.earnings,
       extraDeductions: adj.deductions,
       taxDeductions: toTaxDeductions(emp),
@@ -452,6 +536,15 @@ export async function updatePayrollAdjustments(
     ? new Map<string, { days: number; hours: number }>()
     : await getWorkedDaysAndHours(companyId, from, to, [record.employeeId]);
 
+  const attendancePolicy = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { attendanceDeductionEnabled: true, lateDeductionPerOccurrence: true },
+  });
+  const absenceMap =
+    isMonthly && attendancePolicy?.attendanceDeductionEnabled
+      ? await getAbsenceAndLateByEmployee(companyId, from, to, [record.employeeId])
+      : new Map<string, { absentDays: number; lateOccurrences: number }>();
+
   const adjustments: ManualAdjustments = {
     earnings: input.extraEarnings ?? [],
     deductions: input.extraDeductions ?? [],
@@ -461,6 +554,9 @@ export async function updatePayrollAdjustments(
     compensationType: employee.compensationType as "MONTHLY" | "DAILY" | "HOURLY",
     overtime: otAgg._sum.estimatedAmount ?? 0,
     unpaidLeaveDays: unpaidLeaveMap.get(record.employeeId) ?? 0,
+    absentDays: absenceMap.get(record.employeeId)?.absentDays ?? 0,
+    lateOccurrences: absenceMap.get(record.employeeId)?.lateOccurrences ?? 0,
+    lateDeductionPerOccurrence: Number(attendancePolicy?.lateDeductionPerOccurrence ?? 0),
     extraEarnings: adjustments.earnings,
     extraDeductions: adjustments.deductions,
     taxDeductions: toTaxDeductions(employee),

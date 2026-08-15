@@ -45,6 +45,15 @@ export interface PayrollInput {
   // an unpaid-leave day was never counted as worked in the first place and
   // deducting it again here would double-count it.
   unpaidLeaveDays?: number;
+  // Workdays with no clock-in and no approved leave of any type covering
+  // them — detected by the caller from attendance + shift + leave records.
+  // Same day-rate deduction as unpaid leave, but shown as its own line so
+  // HR can tell "approved unpaid leave" apart from "just didn't show up".
+  absentDays?: number;
+  // Count of workdays clocked in later than the expected start + grace —
+  // deducted at the company's configured flat rate per occurrence.
+  lateOccurrences?: number;
+  lateDeductionPerOccurrence?: number;
   // HR-entered ad-hoc line items for this period (bonus/allowance/advance/other
   // that don't come from an automatic source like approved OT) — added on top
   // of the computed lines below, and included in gross/deduction/net totals.
@@ -104,6 +113,10 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const advance = Math.round(input.advance ?? 0);
   const unpaidLeaveDays = Math.max(0, input.unpaidLeaveDays ?? 0);
   const unpaidLeaveDeduction = Math.round((salary / 30) * unpaidLeaveDays);
+  const absentDays = Math.max(0, input.absentDays ?? 0);
+  const absenceDeduction = Math.round((salary / 30) * absentDays);
+  const lateOccurrences = Math.max(0, input.lateOccurrences ?? 0);
+  const lateDeduction = Math.round(lateOccurrences * (input.lateDeductionPerOccurrence ?? 0));
 
   const earnings: LineItem[] = [{ label: BASE_PAY_LABEL[input.compensationType ?? "MONTHLY"], amount: salary }];
   if (allowances) earnings.push({ label: "ค่าตำแหน่ง/เบี้ยเลี้ยง", amount: allowances });
@@ -145,6 +158,8 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   if (loan) deductions.push({ label: "หักชำระเงินกู้", amount: loan });
   if (advance) deductions.push({ label: "หักเบิกล่วงหน้า", amount: advance });
   if (unpaidLeaveDeduction) deductions.push({ label: "หักลาไม่รับค่าจ้าง", amount: unpaidLeaveDeduction });
+  if (absenceDeduction) deductions.push({ label: `หักขาดงาน (${absentDays} วัน)`, amount: absenceDeduction });
+  if (lateDeduction) deductions.push({ label: `หักมาสาย (${lateOccurrences} ครั้ง)`, amount: lateDeduction });
   for (const d of input.extraDeductions ?? []) {
     if (d.amount) deductions.push({ label: d.label, amount: Math.round(d.amount) });
   }
