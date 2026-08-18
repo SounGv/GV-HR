@@ -1,3 +1,14 @@
+import {
+  Rocket,
+  Users,
+  Clock,
+  Wallet,
+  Target,
+  Network,
+  HelpCircle,
+  type LucideIcon,
+} from "lucide-react";
+
 /**
  * Detailed HR user-guide content. Text-first (no mockup illustrations) —
  * numbered procedures, reference tables, and inline tips, matching the
@@ -19,6 +30,7 @@ export interface GuideTable {
 export interface GuideSection {
   id: string;
   title: string;
+  icon: LucideIcon;
   roleLabel: string;
   intro?: string;
   procedures?: Procedure[];
@@ -30,6 +42,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "start",
     title: "เริ่มต้นใช้งาน",
+    icon: Rocket,
     roleLabel: "ทุกคน",
     procedures: [
       {
@@ -57,6 +70,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "employee",
     title: "จัดการพนักงาน",
+    icon: Users,
     roleLabel: "ฝ่ายบุคคล (HR Manager) · ใช้บนคอมพิวเตอร์",
     procedures: [
       {
@@ -118,6 +132,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "attendance",
     title: "เวลาทำงาน: เช็คอิน / ลา / OT",
+    icon: Clock,
     roleLabel: "พนักงานใช้เอง · หัวหน้างาน/ฝ่ายบุคคลอนุมัติ",
     procedures: [
       {
@@ -177,6 +192,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "payroll",
     title: "เงินเดือน",
+    icon: Wallet,
     roleLabel: "ฝ่ายบุคคล/การเงิน · ใช้บนคอมพิวเตอร์",
     procedures: [
       {
@@ -235,6 +251,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "performance",
     title: "ประเมินผลงาน",
+    icon: Target,
     roleLabel: "ฝ่ายบุคคล/หัวหน้างาน",
     procedures: [
       {
@@ -284,6 +301,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "org",
     title: "โครงสร้างองค์กร",
+    icon: Network,
     roleLabel: "ฝ่ายบุคคล/Super Admin",
     procedures: [
       {
@@ -301,6 +319,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "faq",
     title: "คำถามที่พบบ่อย",
+    icon: HelpCircle,
     roleLabel: "อ้างอิง / แก้ปัญหา",
     tables: [
       {
