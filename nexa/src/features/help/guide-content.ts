@@ -8,17 +8,19 @@ import {
   HelpCircle,
   type LucideIcon,
 } from "lucide-react";
+import type { EvalIllustrationKind } from "./evaluation-step-illustration";
 
 /**
- * Detailed HR user-guide content. Text-first (no mockup illustrations) —
- * numbered procedures, reference tables, and inline tips, matching the
- * denser reference format the user asked to follow instead of a short
- * icon-card summary.
+ * Detailed HR user-guide content — mostly text-first (numbered procedures,
+ * reference tables, inline tips), matching the denser reference format the
+ * user asked to follow. One procedure (employees actually filling out an
+ * evaluation) also carries a small illustration per step, since that's the
+ * flow the user specifically asked to see pictured in detail.
  */
 
 export interface Procedure {
   title: string;
-  steps: { text: string; sub?: string[] }[];
+  steps: { text: string; sub?: string[]; illustration?: EvalIllustrationKind }[];
 }
 
 export interface GuideTable {
@@ -267,11 +269,51 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         ],
       },
       {
-        title: "พนักงาน: ทำแบบประเมิน",
+        title: "พนักงาน: ทำแบบประเมิน (ละเอียดทีละขั้นตอน)",
         steps: [
-          { text: "เมนู \"ประเมิน\" หรือแจ้งเตือน → กดรายชื่อที่รอประเมิน" },
-          { text: "ตอบคำถามแต่ละหมวด แนบหลักฐานประกอบได้ (ไฟล์/รูป) ถ้าคำถามนั้นเปิดให้แนบ" },
-          { text: "กด \"ส่งแบบประเมิน\" — แก้ไขไม่ได้อีกหลังส่ง" },
+          {
+            text: "เปิดแบบประเมินที่รอทำ",
+            sub: [
+              "เข้าได้ 2 ทาง: กดที่การ์ดแจ้งเตือนบนหน้าหลัก หรือเมนู \"ประเมิน\" แล้วเลือกรายชื่อที่ขึ้น \"รอทำ\"",
+              "1 รอบประเมินอาจมีมากกว่า 1 แบบให้ทำ (เช่น ประเมินตนเอง + ประเมินหัวหน้า) — แต่ละแบบเป็นคนละรายการแยกกัน",
+            ],
+            illustration: "open",
+          },
+          {
+            text: "อ่านคำถามแต่ละหมวดทีละหมวด",
+            sub: ["คำถามถูกจัดกลุ่มเป็นหมวด (เช่น \"ทักษะการทำงาน\", \"พฤติกรรม\") — ทำทีละหมวดจากบนลงล่างได้เลย ไม่ต้องข้ามไปมา"],
+          },
+          {
+            text: "คำถามแบบให้คะแนน/เลือกตัวเลือก — แตะตัวเลือกที่ตรงที่สุด",
+            sub: [
+              "ตัวเลือกเรียงเป็นลำดับ (เช่น ควรปรับปรุง → พอใช้ → ดี → ดีมาก) แตะได้ทีละ 1 ข้อ",
+              "ข้อที่เลือกจะเปลี่ยนเป็นพื้นเขียว ตัวหนังสือขาว ทันที — แตะข้ออื่นเพื่อเปลี่ยนคำตอบได้ตลอดจนกว่าจะส่ง",
+            ],
+            illustration: "choice",
+          },
+          {
+            text: "คำถามปลายเปิด (ถ้ามี) — พิมพ์คำตอบเป็นข้อความ",
+            sub: ["ใช้สำหรับคำถามที่ต้องอธิบาย เช่น \"ยกตัวอย่างผลงานที่ภูมิใจที่สุด\""],
+            illustration: "text",
+          },
+          {
+            text: "แนบหลักฐานประกอบ (ถ้าคำถามนั้นเปิดให้แนบ — ไม่บังคับ)",
+            sub: [
+              "แตะปุ่มแนบไฟล์/รูปภาพ ใต้คำถามที่เปิดให้แนบ",
+              "แนบได้สูงสุด 3 ไฟล์ต่อคำตอบ ไฟล์ละไม่เกิน 2 MB",
+            ],
+            illustration: "evidence",
+          },
+          {
+            text: "ตรวจว่าตอบครบทุกข้อที่จำเป็นแล้ว",
+            sub: ["คำถามที่มีเครื่องหมาย * สีแดง ต้องตอบก่อนถึงจะส่งได้ — ข้อที่ไม่ได้บังคับข้ามได้"],
+            illustration: "required",
+          },
+          {
+            text: "กด \"ส่งแบบประเมิน\"",
+            sub: ["ส่งแล้วแก้ไขคำตอบไม่ได้อีก — ตรวจให้ครบก่อนกดส่งจริง ๆ", "ผู้ที่มีสิทธิ์ดูผล (เช่น หัวหน้างานที่เกี่ยวข้อง) จะเห็นคำตอบหลังส่งทันที"],
+            illustration: "submit",
+          },
         ],
       },
       {

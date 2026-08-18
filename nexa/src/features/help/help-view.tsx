@@ -1,5 +1,6 @@
 import { Lightbulb, ListOrdered } from "lucide-react";
 import { GUIDE_SECTIONS } from "./guide-content";
+import { EvalStepIllustration } from "./evaluation-step-illustration";
 
 /**
  * Dense, anchor-navigable manual — table of contents up top, then every
@@ -63,20 +64,34 @@ export function HelpView() {
                 </h3>
                 <ol className="space-y-3.5">
                   {proc.steps.map((step, si) => (
-                    <li key={si} className="flex gap-3 text-sm">
-                      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground shadow-sm">
-                        {si + 1}
-                      </span>
-                      <div className="min-w-0 pt-0.5">
-                        <p className="font-medium text-foreground">{step.text}</p>
-                        {step.sub && (
-                          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[13px] text-muted-foreground marker:text-primary/50">
-                            {step.sub.map((s, ssi) => (
-                              <li key={ssi}>{s}</li>
-                            ))}
-                          </ul>
-                        )}
+                    <li
+                      key={si}
+                      className={
+                        step.illustration
+                          ? "grid grid-cols-1 gap-3 sm:grid-cols-[1fr_260px] sm:items-start"
+                          : "flex gap-3"
+                      }
+                    >
+                      <div className="flex gap-3 text-sm">
+                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground shadow-sm">
+                          {si + 1}
+                        </span>
+                        <div className="min-w-0 pt-0.5">
+                          <p className="font-medium text-foreground">{step.text}</p>
+                          {step.sub && (
+                            <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[13px] text-muted-foreground marker:text-primary/50">
+                              {step.sub.map((s, ssi) => (
+                                <li key={ssi}>{s}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
                       </div>
+                      {step.illustration && (
+                        <div className="pl-10 sm:pl-0">
+                          <EvalStepIllustration kind={step.illustration} />
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ol>
