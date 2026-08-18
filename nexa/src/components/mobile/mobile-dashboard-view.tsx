@@ -85,7 +85,7 @@ export function MobileDashboardView({
                 personal quotas would otherwise get silently folded in. */}
             <Link href="/leave" className="block rounded-xl bg-card p-3.5 shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
                   <CalendarDays className="size-4" />
                 </span>
                 <p className="text-xs text-muted-foreground">วันลาคงเหลือ</p>
@@ -102,14 +102,14 @@ export function MobileDashboardView({
 
             <div className="grid grid-cols-2 gap-3">
               <Link href="/requests" className="rounded-xl bg-card p-3.5 shadow-sm">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
                   <ClipboardList className="size-4" />
                 </span>
                 <p className="mt-2 text-xs text-muted-foreground">คำขอของฉัน</p>
                 <p className="mt-0.5 text-base font-bold text-foreground">ลา / OT / แก้เวลา</p>
               </Link>
               <div className="rounded-xl bg-card p-3.5 shadow-sm">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-300">
                   <Star className="size-4" />
                 </span>
                 <p className="mt-2 text-xs text-muted-foreground">คะแนนให้กำลังใจ</p>
@@ -125,7 +125,7 @@ export function MobileDashboardView({
           <div className="rounded-xl bg-card p-3.5 shadow-sm">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
                   <ClipboardCheck className="size-4" />
                 </span>
                 <p className="text-xs text-muted-foreground">การประเมิน</p>
@@ -152,7 +152,7 @@ export function MobileDashboardView({
 
         {latestNotif && (
           <Link href="/notifications" className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm active:bg-muted">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
               <Bell className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
