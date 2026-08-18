@@ -27,6 +27,7 @@ import {
   Upload,
   PencilLine,
   Presentation,
+  BookOpen,
 } from "lucide-react";
 
 export interface NavItem {
@@ -51,6 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarRange, permission: "calendar:read", ready: true },
       { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
+      { label: "คู่มือการใช้งาน", href: "/help", icon: BookOpen, permission: "dashboard:read", ready: true },
     ],
   },
   {
