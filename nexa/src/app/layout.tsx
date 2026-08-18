@@ -38,10 +38,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#84CC16" },
-    { media: "(prefers-color-scheme: dark)", color: "#10130A" },
-  ],
+  // A single unconditional tag — MobileDefaultDarkTheme keeps its `content`
+  // in sync with the actual resolved app theme client-side, which can differ
+  // from OS-level prefers-color-scheme (e.g. mobile forced into dark by
+  // default). Two media-scoped tags here would fight that override.
+  themeColor: "#84CC16",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
