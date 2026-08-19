@@ -57,12 +57,6 @@ export default function LoginPage() {
               สมัครใช้งาน (สร้างองค์กรใหม่)
             </Link>
           </p>
-
-          <div className="rounded-lg border border-dashed border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">บัญชีทดลอง</p>
-            <p>hr@nexa.co.th · manager@nexa.co.th · employee@nexa.co.th</p>
-            <p>รหัสผ่าน: Password123!</p>
-          </div>
         </div>
       </div>
     </div>
