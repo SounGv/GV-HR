@@ -9,18 +9,28 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { EvalIllustrationKind } from "./evaluation-step-illustration";
+import type { IllustrationKind } from "./step-illustration";
 
 /**
- * Detailed HR user-guide content — mostly text-first (numbered procedures,
- * reference tables, inline tips), matching the denser reference format the
- * user asked to follow. One procedure (employees actually filling out an
- * evaluation) also carries a small illustration per step, since that's the
- * flow the user specifically asked to see pictured in detail.
+ * Detailed HR user-guide content — numbered procedures, reference tables,
+ * inline tips, PLUS a small schematic illustration on the key step of every
+ * procedure (this guide is for first-time users with no HR-software
+ * background at all, so every topic gets a visual anchor, not just text).
  */
+
+export interface GuideStep {
+  text: string;
+  sub?: string[];
+  illustration?: IllustrationKind;
+  illustrationLabel?: string;
+  illustrationChips?: string[];
+  illustrationLines?: { label: string; amount: string }[];
+  evalIllustration?: EvalIllustrationKind;
+}
 
 export interface Procedure {
   title: string;
-  steps: { text: string; sub?: string[]; illustration?: EvalIllustrationKind }[];
+  steps: GuideStep[];
 }
 
 export interface GuideTable {
@@ -50,7 +60,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         title: "เข้าสู่ระบบ",
         steps: [
-          { text: "ใช้อีเมล + รหัสผ่านที่ HR ตั้งให้ตอนสร้างบัญชี" },
+          { text: "ใช้อีเมล + รหัสผ่านที่ HR ตั้งให้ตอนสร้างบัญชี", illustration: "login" },
           { text: "ลืมรหัสผ่าน — กด \"ลืมรหัสผ่าน\" หน้าล็อกอิน หรือให้ HR รีเซ็ตให้ที่หน้าโปรไฟล์พนักงานของคุณ" },
         ],
       },
@@ -78,13 +88,19 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         title: "เพิ่มพนักงานใหม่",
         steps: [
-          { text: "เมนู \"พนักงาน\" (แถบซ้าย) → กด \"+ เพิ่มพนักงาน\" มุมขวาบน" },
+          {
+            text: "เมนู \"พนักงาน\" (แถบซ้าย) → กด \"+ เพิ่มพนักงาน\" มุมขวาบน",
+            illustration: "nav",
+            illustrationLabel: "พนักงาน",
+          },
           {
             text: "แท็บ \"ข้อมูลส่วนตัว\"",
             sub: [
               "รหัสพนักงาน — ระบบเสนอลำดับถัดไปให้อัตโนมัติ (เช่น EMP0001) แก้ไขเองได้",
               "ชื่อ-นามสกุล (ไทย/อังกฤษ), เพศ, วันเกิด, เลขบัตรประชาชน, สถานภาพสมรส",
             ],
+            illustration: "tabs",
+            illustrationChips: ["ข้อมูลส่วนตัว", "การจ้างงาน", "เงินเดือน"],
           },
           {
             text: "แท็บ \"การจ้างงาน\"",
@@ -102,7 +118,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
             sub: ["คู่สมรสไม่มีเงินได้, จำนวนบุตร, อุปการะบิดามารดา, เบี้ยประกันชีวิต/สุขภาพ — ไม่กรอกได้ ระบบจะหักภาษีแบบมาตรฐานให้"],
           },
           { text: "แท็บ \"ที่อยู่\" — ที่อยู่ปัจจุบันของพนักงาน" },
-          { text: "กด \"บันทึก\" — พนักงานเข้ารายชื่อในระบบทันที (ยังล็อกอินแอปไม่ได้จนกว่าจะสร้างบัญชีให้ ดูขั้นตอนถัดไป)" },
+          {
+            text: "กด \"บันทึก\" — พนักงานเข้ารายชื่อในระบบทันที (ยังล็อกอินแอปไม่ได้จนกว่าจะสร้างบัญชีให้ ดูขั้นตอนถัดไป)",
+            illustration: "button",
+            illustrationLabel: "บันทึก",
+          },
         ],
       },
       {
@@ -112,6 +132,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           {
             text: "กด \"สร้างบัญชีเข้าใช้งาน\" → ตั้งอีเมล (ใช้เป็นไอดีล็อกอิน) + รหัสผ่านเริ่มต้น → บันทึก",
             sub: ["บัญชีที่สร้างใหม่จะได้สิทธิ์ระดับ \"Employee\" (พนักงานทั่วไป) โดยอัตโนมัติ — ถ้าต้องการให้สิทธิ์สูงกว่านี้ ดูขั้นตอนถัดไป"],
+            illustration: "form",
           },
           { text: "แจ้งพนักงานให้ล็อกอินด้วยอีเมล/รหัสผ่านนี้ (แนะนำให้เปลี่ยนรหัสเองภายหลังที่หน้าโปรไฟล์)" },
         ],
@@ -127,6 +148,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           {
             text: "เลือกบทบาทที่ต้องการให้ (เลือกได้มากกว่า 1 บทบาทพร้อมกัน เช่น Manager + Finance)",
             sub: ["ดูตารางบทบาทในหมวด \"1. เริ่มต้นใช้งาน\" ด้านบนว่าแต่ละบทบาททำอะไรได้บ้าง"],
+            illustration: "select",
+            illustrationChips: ["Manager", "HR Manager", "Finance"],
           },
           { text: "กด \"บันทึก\" — สิทธิ์ใหม่มีผลตั้งแต่การล็อกอินครั้งถัดไปของผู้ใช้คนนั้น" },
         ],
@@ -158,7 +181,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         title: "พนักงาน: เช็คอิน–เช็คเอาท์ (แอปมือถือ)",
         steps: [
-          { text: "หน้า \"หน้าหลัก\" กด \"เช็คอิน\" — ต้องอยู่ในรัศมีพื้นที่ที่ตั้งไว้ (GPS) หรือสแกน QR ประจำสาขา" },
+          {
+            text: "หน้า \"หน้าหลัก\" กด \"เช็คอิน\" — ต้องอยู่ในรัศมีพื้นที่ที่ตั้งไว้ (GPS) หรือสแกน QR ประจำสาขา",
+            illustration: "checkin",
+          },
           { text: "ระบบเปิดกล้องให้ถ่ายรูปยืนยันตัวตน" },
           { text: "ถ่ายเสร็จ ระบบบันทึกเวลาเข้างานทันที — ขึ้น \"มาสาย\" อัตโนมัติถ้าเข้าหลังเวลาที่กำหนด" },
           { text: "ตอนเลิกงาน กดปุ่มเดิม (เปลี่ยนเป็น \"เช็คเอาท์\") ทำซ้ำขั้นตอนเดิม" },
@@ -168,8 +194,12 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         title: "พนักงาน: ขอลา",
         steps: [
           { text: "เมนู \"การลา\" → \"+ ขอลา\"" },
-          { text: "เลือกประเภทการลา, วันที่, ครึ่งวัน/เต็มวัน, เหตุผล, แนบเอกสาร (เช่น ใบรับรองแพทย์) ถ้ามี" },
-          { text: "กด \"ส่งคำขอ\" → รอหัวหน้างานอนุมัติ" },
+          {
+            text: "เลือกประเภทการลา, วันที่, ครึ่งวัน/เต็มวัน, เหตุผล, แนบเอกสาร (เช่น ใบรับรองแพทย์) ถ้ามี",
+            illustration: "select",
+            illustrationChips: ["ลาพักร้อน", "ลาป่วย", "ลากิจ"],
+          },
+          { text: "กด \"ส่งคำขอ\" → รอหัวหน้างานอนุมัติ", illustration: "button", illustrationLabel: "ส่งคำขอ" },
         ],
       },
       {
@@ -182,8 +212,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         title: "หัวหน้างาน/ฝ่ายบุคคล: อนุมัติคำขอ",
         steps: [
-          { text: "เปิดจากกระดิ่งแจ้งเตือน หรือเมนู \"การลา\" / \"ล่วงเวลา (OT)\" / \"แก้ไขเวลาเข้า-ออกงาน\"" },
-          { text: "ดูรายละเอียดคำขอ กด \"อนุมัติ\" หรือ \"ไม่อนุมัติ\" (ต้องระบุเหตุผลถ้าไม่อนุมัติ)" },
+          { text: "เปิดจากกระดิ่งแจ้งเตือน หรือเมนู \"การลา\" / \"ล่วงเวลา (OT)\" / \"แก้ไขเวลาเข้า-ออกงาน\"", illustration: "notify" },
+          { text: "ดูรายละเอียดคำขอ กด \"อนุมัติ\" หรือ \"ไม่อนุมัติ\" (ต้องระบุเหตุผลถ้าไม่อนุมัติ)", illustration: "approve" },
           { text: "พนักงานได้รับแจ้งเตือนผลทันที" },
         ],
       },
@@ -226,7 +256,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         title: "ออกเงินเดือนประจำงวด",
         steps: [
-          { text: "เมนู \"เงินเดือนและสลิป\" เลือกเดือน/ปี" },
+          {
+            text: "เมนู \"เงินเดือนและสลิป\" เลือกเดือน/ปี",
+            illustration: "select",
+            illustrationChips: ["ส.ค. 2569", "ก.ย. 2569", "ต.ค. 2569"],
+          },
           {
             text: "กด \"ออก/อัปเดตรอบเงินเดือน\" — ระบบคำนวณให้ทุกคนอัตโนมัติ",
             sub: [
@@ -235,6 +269,12 @@ export const GUIDE_SECTIONS: GuideSection[] = [
               "หักลาไม่รับค่าจ้าง และหักขาดงาน/มาสาย (ถ้าเปิดใช้)",
               "ประกันสังคม (5% ของค่าจ้าง เพดานสูงสุด 750 บาท/เดือน)",
               "ภาษีหัก ณ ที่จ่าย (คำนวณแบบขั้นบันไดตามกฎหมาย รวมค่าลดหย่อนที่กรอกไว้)",
+            ],
+            illustration: "payslip",
+            illustrationLines: [
+              { label: "เงินเดือน", amount: "35,000" },
+              { label: "ประกันสังคม", amount: "-750" },
+              { label: "ภาษี", amount: "-171" },
             ],
           },
           { text: "กดซ้ำได้เรื่อย ๆ ก่อนปิดงวด (เช่น มี OT อนุมัติเพิ่มทีหลัง) — จะไม่กระทบสลิปที่ \"จ่ายแล้ว\" ไปแล้ว" },
@@ -253,7 +293,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         steps: [
           { text: "โอนเงินจริงผ่านธนาคาร (ดูขั้นตอนไฟล์สำหรับยื่นหน่วยงานถัดไป)" },
           { text: "กลับมากด \"จ่ายแล้ว\" ทีละคนหรือทั้งหมด" },
-          { text: "กด \"ปิดงวด\" เมื่อเสร็จสมบูรณ์ทั้งเดือน — ปิดแล้วแก้ไขไม่ได้อีก" },
+          { text: "กด \"ปิดงวด\" เมื่อเสร็จสมบูรณ์ทั้งเดือน — ปิดแล้วแก้ไขไม่ได้อีก", illustration: "button", illustrationLabel: "ปิดงวด" },
         ],
       },
       {
@@ -277,13 +317,21 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         title: "สร้างรอบประเมิน",
         steps: [
-          { text: "เมนู \"ประเมินผลงาน\" → \"+ สร้างรอบประเมิน\"" },
+          { text: "เมนู \"ประเมินผลงาน\" → \"+ สร้างรอบประเมิน\"", illustration: "nav", illustrationLabel: "ประเมินผลงาน" },
           { text: "ตั้งชื่อรอบ + ช่วงเวลาประเมิน" },
-          { text: "เลือกกลุ่มพนักงาน — ทั้งบริษัท / เลือกแผนก / เลือกทีม / เลือกเป็นรายคน" },
+          {
+            text: "เลือกกลุ่มพนักงาน — ทั้งบริษัท / เลือกแผนก / เลือกทีม / เลือกเป็นรายคน",
+            illustration: "select",
+            illustrationChips: ["ทั้งบริษัท", "แผนก", "เลือกเอง"],
+          },
           { text: "เลือกผู้ประเมิน (เลือกได้มากกว่า 1 แบบต่อรอบ — ดูตาราง)" },
           { text: "เลือกแบบประเมินที่มีอยู่แล้ว หรือสร้างใหม่ (เพิ่มหมวด/คำถาม พิมพ์เอง หรือให้ AI ช่วยร่างแล้วแก้เอง, ลากสลับลำดับคำถามได้, ตั้งน้ำหนักคะแนน, ตั้งว่าคำถามข้อนี้ให้ผู้ประเมินแบบไหนเห็นบ้าง)" },
           { text: "(ไม่บังคับ) ใช้ \"AI ช่วยตรวจ\" ให้ AI วิจารณ์แบบร่างก่อนเผยแพร่จริง" },
-          { text: "ดูตัวอย่าง (Preview) แล้วกด \"เผยแพร่\" — ระบบสร้างรายการประเมินและแจ้งเตือนผู้ประเมินที่เกี่ยวข้องทันที" },
+          {
+            text: "ดูตัวอย่าง (Preview) แล้วกด \"เผยแพร่\" — ระบบสร้างรายการประเมินและแจ้งเตือนผู้ประเมินที่เกี่ยวข้องทันที",
+            illustration: "button",
+            illustrationLabel: "เผยแพร่",
+          },
         ],
       },
       {
@@ -295,7 +343,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
               "เข้าได้ 2 ทาง: กดที่การ์ดแจ้งเตือนบนหน้าหลัก หรือเมนู \"ประเมิน\" แล้วเลือกรายชื่อที่ขึ้น \"รอทำ\"",
               "1 รอบประเมินอาจมีมากกว่า 1 แบบให้ทำ (เช่น ประเมินตนเอง + ประเมินหัวหน้า) — แต่ละแบบเป็นคนละรายการแยกกัน",
             ],
-            illustration: "open",
+            evalIllustration: "open",
           },
           {
             text: "อ่านคำถามแต่ละหมวดทีละหมวด",
@@ -307,12 +355,12 @@ export const GUIDE_SECTIONS: GuideSection[] = [
               "ตัวเลือกเรียงเป็นลำดับ (เช่น ควรปรับปรุง → พอใช้ → ดี → ดีมาก) แตะได้ทีละ 1 ข้อ",
               "ข้อที่เลือกจะเปลี่ยนเป็นพื้นเขียว ตัวหนังสือขาว ทันที — แตะข้ออื่นเพื่อเปลี่ยนคำตอบได้ตลอดจนกว่าจะส่ง",
             ],
-            illustration: "choice",
+            evalIllustration: "choice",
           },
           {
             text: "คำถามปลายเปิด (ถ้ามี) — พิมพ์คำตอบเป็นข้อความ",
             sub: ["ใช้สำหรับคำถามที่ต้องอธิบาย เช่น \"ยกตัวอย่างผลงานที่ภูมิใจที่สุด\""],
-            illustration: "text",
+            evalIllustration: "text",
           },
           {
             text: "แนบหลักฐานประกอบ (ถ้าคำถามนั้นเปิดให้แนบ — ไม่บังคับ)",
@@ -320,17 +368,17 @@ export const GUIDE_SECTIONS: GuideSection[] = [
               "แตะปุ่มแนบไฟล์/รูปภาพ ใต้คำถามที่เปิดให้แนบ",
               "แนบได้สูงสุด 3 ไฟล์ต่อคำตอบ ไฟล์ละไม่เกิน 2 MB",
             ],
-            illustration: "evidence",
+            evalIllustration: "evidence",
           },
           {
             text: "ตรวจว่าตอบครบทุกข้อที่จำเป็นแล้ว",
             sub: ["คำถามที่มีเครื่องหมาย * สีแดง ต้องตอบก่อนถึงจะส่งได้ — ข้อที่ไม่ได้บังคับข้ามได้"],
-            illustration: "required",
+            evalIllustration: "required",
           },
           {
             text: "กด \"ส่งแบบประเมิน\"",
             sub: ["ส่งแล้วแก้ไขคำตอบไม่ได้อีก — ตรวจให้ครบก่อนกดส่งจริง ๆ", "ผู้ที่มีสิทธิ์ดูผล (เช่น หัวหน้างานที่เกี่ยวข้อง) จะเห็นคำตอบหลังส่งทันที"],
-            illustration: "submit",
+            evalIllustration: "submit",
           },
         ],
       },
@@ -367,7 +415,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         title: "แผนก / ตำแหน่ง / สาขา",
         steps: [
-          { text: "เมนู \"โครงสร้างองค์กร\" → เพิ่ม/แก้ไขแผนกและตำแหน่ง (เมนู \"สาขา\" แยกต่างหากในหมวดเดียวกัน)" },
+          {
+            text: "เมนู \"โครงสร้างองค์กร\" → เพิ่ม/แก้ไขแผนกและตำแหน่ง (เมนู \"สาขา\" แยกต่างหากในหมวดเดียวกัน)",
+            illustration: "nav",
+            illustrationLabel: "โครงสร้างองค์กร",
+          },
           { text: "กำหนดหัวหน้างานให้พนักงานแต่ละคนได้ทั้งจากหน้านี้ หรือหน้าโปรไฟล์พนักงาน (แท็บการจ้างงาน)" },
         ],
       },

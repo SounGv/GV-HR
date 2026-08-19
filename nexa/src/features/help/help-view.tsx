@@ -1,6 +1,11 @@
 import { Lightbulb, ListOrdered } from "lucide-react";
-import { GUIDE_SECTIONS } from "./guide-content";
+import { GUIDE_SECTIONS, type GuideStep } from "./guide-content";
 import { EvalStepIllustration } from "./evaluation-step-illustration";
+import { StepIllustration } from "./step-illustration";
+
+function hasIllustration(step: GuideStep): boolean {
+  return !!step.illustration || !!step.evalIllustration;
+}
 
 /**
  * Dense, anchor-navigable manual — table of contents up top, then every
@@ -67,7 +72,7 @@ export function HelpView() {
                     <li
                       key={si}
                       className={
-                        step.illustration
+                        hasIllustration(step)
                           ? "grid grid-cols-1 gap-3 sm:grid-cols-[1fr_260px] sm:items-start"
                           : "flex gap-3"
                       }
@@ -87,11 +92,20 @@ export function HelpView() {
                           )}
                         </div>
                       </div>
-                      {step.illustration && (
+                      {step.evalIllustration ? (
                         <div className="pl-10 sm:pl-0">
-                          <EvalStepIllustration kind={step.illustration} />
+                          <EvalStepIllustration kind={step.evalIllustration} />
                         </div>
-                      )}
+                      ) : step.illustration ? (
+                        <div className="pl-10 sm:pl-0">
+                          <StepIllustration
+                            kind={step.illustration}
+                            label={step.illustrationLabel}
+                            chips={step.illustrationChips}
+                            lines={step.illustrationLines}
+                          />
+                        </div>
+                      ) : null}
                     </li>
                   ))}
                 </ol>
