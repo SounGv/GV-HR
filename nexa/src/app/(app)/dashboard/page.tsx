@@ -30,6 +30,7 @@ import {
   DonutLegend,
   HeadcountBar,
 } from "@/features/dashboard/dashboard-charts";
+import { groupTopDepartments } from "@/features/dashboard/group-departments";
 import { QuickAccessGrid, type QuickAccessItem } from "@/features/dashboard/quick-access-grid";
 import { fullName, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -164,6 +165,7 @@ export default async function DashboardPage() {
   const fmtClock = (iso: string | null) =>
     iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
   const quickAccessItems = ALL_QUICK_ACCESS.filter((item) => can(user!.permissions, item.permission));
+  const departmentDonutData = groupTopDepartments(s.byDepartment);
 
   return (
     <>
@@ -286,8 +288,8 @@ export default async function DashboardPage() {
             <CardTitle>สัดส่วนพนักงานตามแผนก</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <DepartmentDonut data={s.byDepartment} />
-            <DonutLegend data={s.byDepartment} />
+            <DepartmentDonut data={departmentDonutData} />
+            <DonutLegend data={departmentDonutData} />
           </CardContent>
         </Card>
 
