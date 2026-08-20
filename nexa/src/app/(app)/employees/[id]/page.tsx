@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmployeeStatusBadge } from "@/features/employee/status-badge";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
 import { EmployeeDocumentList } from "@/features/employee-document/employee-document-list";
+import { EmployeeCompetencyGapView } from "@/features/competency-matrix/employee-gap-view";
 import { fullName, getInitials, formatDate, formatCurrency } from "@/lib/format";
 
 export const metadata: Metadata = { title: "รายละเอียดพนักงาน" };
@@ -39,6 +40,8 @@ export default async function EmployeeDetailPage({
   const canViewEvaluationHistory =
     can(session.perms, "campaign:read") &&
     (isHrLevelRecognition || employee.manager?.id === session.employeeId || employee.id === session.employeeId);
+  const canViewCompetencyGap = canViewEvaluationHistory;
+  const canEditCompetencyGap = can(session.perms, "campaign:update") && isHrLevelRecognition;
   const name = fullName(employee.firstName, employee.lastName);
 
   return (
@@ -173,6 +176,10 @@ export default async function EmployeeDetailPage({
 
         <EmployeeDocumentList employeeId={employee.id} canEdit={canEdit} />
       </div>
+
+      {canViewCompetencyGap && (
+        <EmployeeCompetencyGapView employeeId={employee.id} canEdit={canEditCompetencyGap} />
+      )}
     </div>
   );
 }

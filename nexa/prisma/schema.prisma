@@ -308,6 +308,8 @@ model Company {
   approvalRequests            ApprovalRequest[]
   meetings                    Meeting[]
   employeeDocuments           EmployeeDocument[]
+  positionCompetencyRequirements PositionCompetencyRequirement[]
+  employeeCompetencyLevels       EmployeeCompetencyLevel[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -415,6 +417,7 @@ model Position {
 
   employees       Employee[]
   successionPlans SuccessionPlan[]
+  competencyRequirements PositionCompetencyRequirement[]
 
   @@unique([companyId, code])
   @@index([companyId, deletedAt])
@@ -721,6 +724,7 @@ model Employee {
   meetingsOrganized         Meeting[]                      @relation("MeetingOrganizer")
   meetingInvites            MeetingAttendee[]              @relation("MeetingAttendee")
   documents                 EmployeeDocument[]
+  competencyLevels          EmployeeCompetencyLevel[]
 
   // Employment
   employmentType   EmploymentType @default(FULL_TIME)
@@ -1244,9 +1248,60 @@ model Competency {
 
   campaignLinks EvaluationCampaignCompetency[]
   scheduleLinks EvaluationScheduleCompetency[]
+  positionRequirements PositionCompetencyRequirement[]
+  employeeLevels       EmployeeCompetencyLevel[]
 
   @@unique([companyId, name])
   @@map("competencies")
+}
+
+// ───────── Competency Matrix: position requirements + assessed employee levels ─────────
+
+/** How proficient a position expects an employee to be in a given competency (1-5). */
+model PositionCompetencyRequirement {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  positionId   String
+  position     Position   @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  competencyId String
+  competency   Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  requiredLevel Int // 1-5
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  updatedById String?
+
+  @@unique([positionId, competencyId])
+  @@index([companyId])
+  @@map("position_competency_requirements")
+}
+
+/** An employee's current assessed proficiency in a competency (1-5) — manually rated by HR/manager. */
+model EmployeeCompetencyLevel {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  employeeId   String
+  employee     Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  competencyId String
+  competency   Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  level        Int // 1-5
+  note         String?
+  assessedAt   DateTime @default(now())
+  assessedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([employeeId, competencyId])
+  @@index([companyId])
+  @@map("employee_competency_levels")
 }
 
 model EvaluationCampaign {

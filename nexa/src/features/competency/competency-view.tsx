@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Sparkles, FolderKanban } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, FolderKanban, Grid3x3 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -47,9 +47,14 @@ export function CompetencyView() {
           สมรรถนะในคลังนี้ใช้ประกอบสร้างแคมเปญประเมินผล
         </p>
         {canManage && (
-          <Button render={<Link href="/performance/competencies/new" />}>
-            <Plus className="size-4" /> เพิ่มสมรรถนะ
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" render={<Link href="/performance/competencies/matrix" />}>
+              <Grid3x3 className="size-4" /> Competency Matrix
+            </Button>
+            <Button render={<Link href="/performance/competencies/new" />}>
+              <Plus className="size-4" /> เพิ่มสมรรถนะ
+            </Button>
+          </div>
         )}
       </div>
 
