@@ -44,7 +44,7 @@ export function CompetencyView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          สมรรถนะในคลังนี้ใช้ประกอบสร้างแคมเปญประเมินผล
+          เกณฑ์การประเมินเหล่านี้ใช้ประกอบสร้างแคมเปญประเมินผล
         </p>
         {canManage && (
           <div className="flex gap-2">
@@ -52,7 +52,7 @@ export function CompetencyView() {
               <Grid3x3 className="size-4" /> Competency Matrix
             </Button>
             <Button render={<Link href="/performance/competencies/new" />}>
-              <Plus className="size-4" /> เพิ่มสมรรถนะ
+              <Plus className="size-4" /> เพิ่มหัวข้อ
             </Button>
           </div>
         )}
@@ -67,8 +67,8 @@ export function CompetencyView() {
       ) : competencies.length === 0 ? (
         <EmptyState
           icon={Sparkles}
-          title="ยังไม่มีสมรรถนะในคลัง"
-          description={canManage ? "เพิ่มสมรรถนะแรก หรือให้ AI ออกแบบให้ตอนสร้างแคมเปญ" : "ยังไม่มีข้อมูล"}
+          title="ยังไม่มีเกณฑ์การประเมิน"
+          description={canManage ? "เพิ่มหัวข้อแรก หรือให้ AI ออกแบบให้ตอนสร้างแคมเปญ" : "ยังไม่มีข้อมูล"}
         />
       ) : (
         <div className="space-y-4">

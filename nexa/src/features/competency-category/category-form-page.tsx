@@ -67,7 +67,7 @@ export function CompetencyCategoryFormPage({ category }: { category?: Competency
     <FormPageShell
       breadcrumbs={[
         { label: "ประเมินผล", href: "/performance" },
-        { label: "คลังสมรรถนะ", href: LIST },
+        { label: "เกณฑ์การประเมิน", href: LIST },
         { label: isEdit ? "แก้ไขหมวดหมู่" : "เพิ่มหมวดหมู่" },
       ]}
       backHref={LIST}

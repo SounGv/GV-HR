@@ -338,9 +338,9 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
                     )}
                     {competencies.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        ยังไม่มีสมรรถนะในคลัง —{" "}
+                        ยังไม่มีเกณฑ์การประเมิน —{" "}
                         <Link href="/performance/competencies/new" className="text-primary hover:underline">
-                          เพิ่มสมรรถนะก่อน
+                          เพิ่มหัวข้อก่อน
                         </Link>
                       </p>
                     ) : (

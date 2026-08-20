@@ -51,7 +51,7 @@ export function EmployeeCompetencyGapView({ employeeId, canEdit }: { employeeId:
       <CardContent className="space-y-2">
         {requiredRows.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            ยังไม่ได้กำหนดระดับสมรรถนะที่ต้องการสำหรับตำแหน่งนี้ — ตั้งค่าได้ที่ &quot;ประเมินผลงาน &gt; คลังสมรรถนะ &gt; Competency Matrix&quot;
+            ยังไม่ได้กำหนดระดับที่ต้องการสำหรับตำแหน่งนี้ — ตั้งค่าได้ที่ &quot;ประเมินผลงาน &gt; เกณฑ์การประเมิน &gt; Competency Matrix&quot;
           </p>
         )}
         {requiredRows.map((r) => (

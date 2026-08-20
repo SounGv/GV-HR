@@ -94,7 +94,7 @@ export function CompetencyMatrixView() {
       ) : loadingReqs ? (
         <p className="p-6 text-center text-sm text-muted-foreground">กำลังโหลด…</p>
       ) : rows.length === 0 ? (
-        <p className="p-6 text-center text-sm text-muted-foreground">ยังไม่มีสมรรถนะในคลัง — เพิ่มที่เมนู &quot;คลังสมรรถนะ&quot; ก่อน</p>
+        <p className="p-6 text-center text-sm text-muted-foreground">ยังไม่มีหัวข้อในเกณฑ์การประเมิน — เพิ่มที่เมนู &quot;เกณฑ์การประเมิน&quot; ก่อน</p>
       ) : (
         <>
           {Object.entries(grouped).map(([category, items]) => (

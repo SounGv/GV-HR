@@ -102,12 +102,12 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
     <FormPageShell
       breadcrumbs={[
         { label: "ประเมินผล", href: "/performance" },
-        { label: "คลังสมรรถนะ", href: LIST },
+        { label: "เกณฑ์การประเมิน", href: LIST },
         { label: isEdit ? "แก้ไข" : "เพิ่มใหม่" },
       ]}
       backHref={LIST}
-      title={isEdit ? "แก้ไขสมรรถนะ" : "เพิ่มสมรรถนะ"}
-      description="สมรรถนะในคลังนี้ใช้ประกอบแคมเปญประเมินผล"
+      title={isEdit ? "แก้ไขหัวข้อประเมิน" : "เพิ่มหัวข้อประเมิน"}
+      description="เกณฑ์การประเมินนี้ใช้ประกอบแคมเปญประเมินผล"
       formId={FORM_ID}
       pending={pending}
       onCancel={() => router.push(LIST)}

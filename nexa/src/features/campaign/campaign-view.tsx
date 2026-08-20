@@ -40,7 +40,7 @@ export function CampaignView() {
                   <ClipboardList className="size-4" /> แบบประเมิน
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/performance/competencies" />}>
-                  <BookOpen className="size-4" /> คลังสมรรถนะเดิม
+                  <BookOpen className="size-4" /> เกณฑ์การประเมิน (แบบเดิม)
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/performance/campaigns/schedules" />}>
                   <CalendarClock className="size-4" /> รอบอัตโนมัติ

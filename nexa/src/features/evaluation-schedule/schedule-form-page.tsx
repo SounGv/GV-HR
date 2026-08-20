@@ -335,14 +335,14 @@ export function ScheduleTemplateFormPage({ template }: { template?: ScheduleTemp
           ) : (
           <Card className="gap-2 p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium text-foreground">สมรรถนะที่ใช้ประเมิน</p>
+              <p className="text-sm font-medium text-foreground">หัวข้อที่ใช้ประเมิน</p>
               <span className="text-xs text-muted-foreground">เลือกแล้ว {Object.keys(selected).length} รายการ</span>
             </div>
             {competencies.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                ยังไม่มีสมรรถนะในคลัง —{" "}
+                ยังไม่มีเกณฑ์การประเมิน —{" "}
                 <Link href="/performance/competencies/new" className="text-primary hover:underline">
-                  เพิ่มสมรรถนะก่อน
+                  เพิ่มหัวข้อก่อน
                 </Link>
               </p>
             ) : (

@@ -13,7 +13,7 @@ export default async function CompetencyMatrixPage() {
       <PageHeaderBar
         breadcrumbs={[
           { label: "ประเมินผลงาน", href: "/performance" },
-          { label: "คลังสมรรถนะ", href: "/performance/competencies" },
+          { label: "เกณฑ์การประเมิน", href: "/performance/competencies" },
           { label: "Competency Matrix" },
         ]}
         backHref="/performance/competencies"
