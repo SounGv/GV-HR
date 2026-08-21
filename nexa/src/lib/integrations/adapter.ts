@@ -52,7 +52,11 @@ export const CATEGORY_LABEL: Record<IntegrationCategory, string> = {
   api: "API & Automation",
 };
 
-/** The registry of adapters exposed in the Integration Hub. */
+/**
+ * The registry of adapters exposed in the Integration Hub — deliberately
+ * scoped to the two systems Gadget Villa actually uses (TR Cloud ERP, LINE),
+ * not a showcase list of every vendor a generic HR product might support.
+ */
 export const INTEGRATIONS: IntegrationDescriptor[] = [
   {
     id: "tr-cloud",
@@ -68,47 +72,6 @@ export const INTEGRATIONS: IntegrationDescriptor[] = [
     ],
   },
   {
-    id: "sap",
-    name: "SAP SuccessFactors",
-    category: "erp",
-    description: "เชื่อมข้อมูลบุคลากรและโครงสร้างองค์กรกับ SAP",
-    icon: "Building2",
-    status: "coming_soon",
-    capabilities: ["ซิงก์พนักงาน", "โครงสร้างองค์กร"],
-    configFields: [
-      { key: "tenant", label: "Tenant" },
-      { key: "clientId", label: "Client ID" },
-      { key: "clientSecret", label: "Client Secret", secret: true },
-    ],
-  },
-  {
-    id: "microsoft-365",
-    name: "Microsoft 365",
-    category: "productivity",
-    description: "Azure AD SSO, ปฏิทิน Outlook และแจ้งเตือนผ่าน Teams",
-    icon: "LayoutGrid",
-    status: "available",
-    capabilities: ["SSO", "ปฏิทิน", "Teams แจ้งเตือน"],
-    configFields: [
-      { key: "tenantId", label: "Directory (tenant) ID" },
-      { key: "clientId", label: "Application (client) ID" },
-      { key: "clientSecret", label: "Client Secret", secret: true },
-    ],
-  },
-  {
-    id: "google-workspace",
-    name: "Google Workspace",
-    category: "productivity",
-    description: "Google SSO, ซิงก์ปฏิทิน และไดเรกทอรีผู้ใช้",
-    icon: "Globe",
-    status: "available",
-    capabilities: ["SSO", "ปฏิทิน", "Directory"],
-    configFields: [
-      { key: "clientId", label: "OAuth Client ID" },
-      { key: "clientSecret", label: "OAuth Client Secret", secret: true },
-    ],
-  },
-  {
     id: "line",
     name: "LINE Official Account",
     category: "messaging",
@@ -121,40 +84,5 @@ export const INTEGRATIONS: IntegrationDescriptor[] = [
       { key: "channelSecret", label: "Channel Secret", secret: true },
       { key: "accessToken", label: "Access Token", secret: true },
     ],
-  },
-  {
-    id: "cloudflare-r2",
-    name: "Cloudflare R2",
-    category: "storage",
-    description: "จัดเก็บเอกสาร สลิป และไฟล์แนบบน object storage",
-    icon: "HardDrive",
-    status: "available",
-    capabilities: ["เอกสาร", "สลิป PDF", "ไฟล์แนบ"],
-    configFields: [
-      { key: "accountId", label: "Account ID" },
-      { key: "accessKeyId", label: "Access Key ID" },
-      { key: "secretAccessKey", label: "Secret Access Key", secret: true },
-      { key: "bucket", label: "Bucket" },
-    ],
-  },
-  {
-    id: "rest-webhook",
-    name: "REST API & Webhooks",
-    category: "api",
-    description: "เปิด REST API (OpenAPI/Swagger) และส่ง Webhook เมื่อมีเหตุการณ์",
-    icon: "Webhook",
-    status: "available",
-    capabilities: ["REST API", "Webhook", "OpenAPI"],
-    configFields: [{ key: "webhookUrl", label: "Webhook URL" }],
-  },
-  {
-    id: "graphql",
-    name: "GraphQL Gateway",
-    category: "api",
-    description: "GraphQL endpoint สำหรับดึงข้อมูลแบบยืดหยุ่น (Ready)",
-    icon: "Share2",
-    status: "coming_soon",
-    capabilities: ["GraphQL", "Schema-first"],
-    configFields: [],
   },
 ];
