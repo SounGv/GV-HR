@@ -28,11 +28,39 @@ export function getModelCandidates(): string[] {
   ];
 }
 
-/** True when the error means "try the next model" (unavailable / no quota). */
+/** True when the error means "try the next model" (unavailable / no quota / persistently overloaded). */
 export function isModelFallbackError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
-  // Only fall through when the MODEL is unavailable (404) or out of quota (429).
-  return /\b404\b|is not found|\b429\b|quota|exceeded|RESOURCE_EXHAUSTED/i.test(msg);
+  // 404/429 = this key can't use this model at all. 503/UNAVAILABLE = the
+  // model is up but overloaded right now — worth a couple of quick retries
+  // (see isRetryableBusyError) before giving up on it and moving on.
+  return /\b404\b|is not found|\b429\b|quota|exceeded|RESOURCE_EXHAUSTED|\b503\b|UNAVAILABLE|overloaded|high demand/i.test(msg);
+}
+
+/** True when the error is Gemini saying "temporarily busy" — worth retrying the *same* model briefly. */
+export function isRetryableBusyError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /\b503\b|UNAVAILABLE|overloaded|high demand/i.test(msg);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Gemini's own 503 message says demand spikes are "usually temporary" — one
+ * short retry on the *same* model/call before the caller's outer loop falls
+ * through to the next model candidate often succeeds without bothering the
+ * user to resend anything. Shared by every route that calls generateContent.
+ */
+export async function withGeminiRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (!isRetryableBusyError(err)) throw err;
+    await sleep(1200);
+    return await fn();
+  }
 }
 
 export const AI_MODEL = getModelCandidates()[0];

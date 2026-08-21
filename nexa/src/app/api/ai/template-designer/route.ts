@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { BadRequest, NotFound } from "@/lib/api/errors";
-import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError } from "@/lib/ai/client";
+import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError, withGeminiRetry } from "@/lib/ai/client";
 import { jsonSchemaToGemini } from "@/lib/ai/tools";
 import { prisma } from "@/lib/prisma";
 import { aiTemplateDesignerRequestSchema } from "@/features/evaluation-template/schema";
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
             maxOutputTokens: 4096,
           },
         });
-        const response = await model.generateContent(userPrompt);
+        const response = await withGeminiRetry(() => model.generateContent(userPrompt));
         text = response.response.text();
         break;
       } catch (err) {

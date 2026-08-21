@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
 import { getRequestMeta } from "@/lib/api/request";
 import { ok, handleApiError } from "@/lib/api/response";
-import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError } from "@/lib/ai/client";
+import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError, withGeminiRetry } from "@/lib/ai/client";
 import { executeTool, toGeminiTools } from "@/lib/ai/tools";
 import { prisma } from "@/lib/prisma";
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
         let reply = "";
         for (let i = 0; i < MAX_STEPS; i++) {
-          const result = await model.generateContent({ contents });
+          const result = await withGeminiRetry(() => model.generateContent({ contents }));
           const calls = result.response.functionCalls();
           if (!calls || calls.length === 0) {
             try {

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { BadRequest, NotFound } from "@/lib/api/errors";
-import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError } from "@/lib/ai/client";
+import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError, withGeminiRetry } from "@/lib/ai/client";
 import { jsonSchemaToGemini } from "@/lib/ai/tools";
 import { prisma } from "@/lib/prisma";
 import { fullName } from "@/lib/format";
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
             maxOutputTokens: 2048,
           },
         });
-        const response = await model.generateContent(userPrompt);
+        const response = await withGeminiRetry(() => model.generateContent(userPrompt));
         text = response.response.text();
         break;
       } catch (err) {
