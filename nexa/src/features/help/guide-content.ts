@@ -64,6 +64,43 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           { text: "ลืมรหัสผ่าน — กด \"ลืมรหัสผ่าน\" หน้าล็อกอิน หรือให้ HR รีเซ็ตให้ที่หน้าโปรไฟล์พนักงานของคุณ" },
         ],
       },
+      {
+        title: "ติดตั้งไอคอนลัดบนหน้าจอมือถือ — iPhone (Safari)",
+        steps: [
+          {
+            text: "เปิดเว็บระบบด้วยแอป Safari เท่านั้น",
+            sub: ["เบราว์เซอร์อื่น (เช่น Chrome บน iPhone) ไม่มีปุ่มนี้ ต้องใช้ Safari"],
+          },
+          {
+            text: "กดปุ่ม \"แชร์\" (สี่เหลี่ยมมีลูกศรชี้ขึ้น) แถบด้านล่างจอ",
+            illustration: "button",
+            illustrationLabel: "แชร์",
+          },
+          {
+            text: "เลื่อนหาแล้วกด \"เพิ่มไปยังหน้าจอโฮม\" (Add to Home Screen)",
+            illustration: "button",
+            illustrationLabel: "เพิ่มไปยังหน้าจอโฮม",
+          },
+          { text: "กด \"เพิ่ม\" มุมขวาบน — จะมีไอคอนแอปขึ้นที่หน้าจอโฮมทันที กดเปิดได้เหมือนแอปทั่วไป" },
+        ],
+      },
+      {
+        title: "ติดตั้งไอคอนลัดบนหน้าจอมือถือ — Android (Chrome)",
+        steps: [
+          { text: "เปิดเว็บระบบด้วยแอป Chrome" },
+          {
+            text: "กดปุ่มจุด 3 จุด (⋮) มุมขวาบน",
+            illustration: "button",
+            illustrationLabel: "⋮ เมนู",
+          },
+          {
+            text: "เลือก \"ติดตั้งแอป\" หรือ \"เพิ่มไปยังหน้าจอหลัก\" (Install app / Add to Home screen)",
+            illustration: "button",
+            illustrationLabel: "ติดตั้งแอป",
+          },
+          { text: "กด \"ติดตั้ง\" — ไอคอนแอปจะขึ้นที่หน้าจอหลักเหมือนแอปที่โหลดจาก Play Store" },
+        ],
+      },
     ],
     tables: [
       {
