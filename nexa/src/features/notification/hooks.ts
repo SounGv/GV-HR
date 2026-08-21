@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchNotifications, markNotificationsRead } from "./api";
+import { fetchNotifications, markNotificationsRead, sendBroadcastNotification } from "./api";
 
 export const notificationKeys = {
   all: ["notifications"] as const,
@@ -21,5 +21,11 @@ export function useMarkNotificationsRead() {
   return useMutation({
     mutationFn: markNotificationsRead,
     onSuccess: () => qc.invalidateQueries({ queryKey: notificationKeys.all }),
+  });
+}
+
+export function useSendBroadcastNotification() {
+  return useMutation({
+    mutationFn: sendBroadcastNotification,
   });
 }

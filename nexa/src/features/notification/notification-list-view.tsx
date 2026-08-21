@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CheckCheck, ChevronRight } from "lucide-react";
+import { Bell, CheckCheck, ChevronRight, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { formatDate } from "@/lib/format";
+import { useAuth } from "@/features/auth/auth-context";
 import { useMarkNotificationsRead, useNotifications } from "./hooks";
 
 export function NotificationListView() {
+  const { can } = useAuth();
   const { data, isLoading, isError, refetch } = useNotifications();
   const markRead = useMarkNotificationsRead();
 
@@ -17,18 +19,28 @@ export function NotificationListView() {
 
   return (
     <div className="space-y-3">
-      {unread > 0 && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          onClick={() => markRead.mutate()}
-          disabled={markRead.isPending}
-        >
-          <CheckCheck className="size-3.5" />
-          อ่านทั้งหมด ({unread})
-        </Button>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {unread > 0 ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => markRead.mutate()}
+            disabled={markRead.isPending}
+          >
+            <CheckCheck className="size-3.5" />
+            อ่านทั้งหมด ({unread})
+          </Button>
+        ) : (
+          <span />
+        )}
+        {can("notification:create") && (
+          <Button size="sm" className="gap-1.5" render={<Link href="/notifications/new" />}>
+            <Send className="size-3.5" />
+            ส่งแจ้งเตือน
+          </Button>
+        )}
+      </div>
 
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
