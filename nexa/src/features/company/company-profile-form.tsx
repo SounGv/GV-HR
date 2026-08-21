@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Building2, Upload, X, Save, Loader2, Palette, MapPin, Phone, Globe2, ClockAlert } from "lucide-react";
+import { Building2, Upload, X, Save, Loader2, Palette, MapPin, Phone, Globe2, ClockAlert, CalendarRange } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -246,6 +246,46 @@ export function CompanyProfileForm() {
               min={0}
               value={form.lateDeductionPerOccurrence}
               onChange={(e) => set("lateDeductionPerOccurrence", e.target.value)}
+              disabled={!canEdit}
+            />
+          </Field>
+        </div>
+      </Section>
+
+      {/* Leave quota policy */}
+      <Section
+        icon={CalendarRange}
+        title="โควตาวันลาต่อปี"
+        desc="ค่าเริ่มต้นที่ใช้กับพนักงานทุกคน — เปลี่ยนแล้วมีผลกับปีถัดไปหรือคนที่ยังไม่เคยลาประเภทนั้นในปีนี้ ไม่กระทบสิทธิ์ที่พนักงานใช้ไปแล้ว"
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="ลาพักร้อน (วัน/ปี)" error={errors.leaveQuotaAnnualDays}>
+            <Input
+              type="number"
+              min={0}
+              max={365}
+              value={form.leaveQuotaAnnualDays}
+              onChange={(e) => set("leaveQuotaAnnualDays", e.target.value)}
+              disabled={!canEdit}
+            />
+          </Field>
+          <Field label="ลาป่วย (วัน/ปี)" error={errors.leaveQuotaSickDays}>
+            <Input
+              type="number"
+              min={0}
+              max={365}
+              value={form.leaveQuotaSickDays}
+              onChange={(e) => set("leaveQuotaSickDays", e.target.value)}
+              disabled={!canEdit}
+            />
+          </Field>
+          <Field label="ลากิจ (วัน/ปี)" error={errors.leaveQuotaPersonalDays}>
+            <Input
+              type="number"
+              min={0}
+              max={365}
+              value={form.leaveQuotaPersonalDays}
+              onChange={(e) => set("leaveQuotaPersonalDays", e.target.value)}
               disabled={!canEdit}
             />
           </Field>

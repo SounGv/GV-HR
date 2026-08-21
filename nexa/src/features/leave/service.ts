@@ -1,10 +1,10 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
-import { computeLeaveDays, deductsBalance, DEFAULT_QUOTA } from "./days";
+import { computeLeaveDays, deductsBalance, PAID_LEAVE_TYPES } from "./days";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -46,6 +46,21 @@ function isHrLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("leave:approve");
 }
 
+/** HR-configured default quota (days/year) per paid leave type, for this company. */
+async function getCompanyLeaveQuota(companyId: string): Promise<Record<string, number>> {
+  const company = await prisma.company.findFirst({
+    where: { id: companyId, deletedAt: null },
+    select: { leaveQuotaAnnualDays: true, leaveQuotaSickDays: true, leaveQuotaPersonalDays: true },
+  });
+  return {
+    ANNUAL: company?.leaveQuotaAnnualDays ?? 0,
+    SICK: company?.leaveQuotaSickDays ?? 0,
+    PERSONAL: company?.leaveQuotaPersonalDays ?? 0,
+    UNPAID: 0,
+    OTHER: 0,
+  };
+}
+
 /** Remaining days for a paid leave type this year — quota if no balance row exists yet. */
 export async function getRemainingBalance(
   companyId: string,
@@ -57,9 +72,9 @@ export async function getRemainingBalance(
     where: { employeeId_year_type: { employeeId, year, type: type as never } },
     select: { totalDays: true, usedDays: true },
   });
-  const total = balance?.totalDays ?? DEFAULT_QUOTA[type] ?? 0;
-  const used = balance?.usedDays ?? 0;
-  return Math.max(0, total - used);
+  if (balance) return Math.max(0, balance.totalDays - balance.usedDays);
+  const quota = await getCompanyLeaveQuota(companyId);
+  return Math.max(0, quota[type] ?? 0);
 }
 
 export async function createLeave(
@@ -211,6 +226,7 @@ export async function decideLeave(
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
 
+  let quotaForNewBalance = 0;
   if (input.action === "approve" && deductsBalance(req.type)) {
     const remaining = await getRemainingBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
     if (req.days > remaining) {
@@ -218,6 +234,8 @@ export async function decideLeave(
         `ไม่สามารถอนุมัติได้ — วัน${LEAVE_TYPE_LABEL[req.type] ?? req.type}คงเหลือของพนักงานไม่พอ (คงเหลือ ${remaining} วัน แต่คำขอนี้ ${req.days} วัน)`,
       );
     }
+    const quota = await getCompanyLeaveQuota(companyId);
+    quotaForNewBalance = quota[req.type] ?? 0;
   }
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -244,7 +262,7 @@ export async function decideLeave(
           employeeId: req.employeeId,
           year,
           type: req.type,
-          totalDays: DEFAULT_QUOTA[req.type] ?? 0,
+          totalDays: quotaForNewBalance,
           usedDays: req.days,
         },
       });
@@ -326,12 +344,31 @@ export async function cancelLeave(
   return updated;
 }
 
+/**
+ * Balances for all paid leave types this year, in a fixed display order.
+ * A type with no LeaveBalance row yet (no leave of that type ever approved
+ * this year) is synthesized from the company's default quota so the UI shows
+ * the full entitlement from day one instead of an empty state.
+ */
 export async function getBalances(companyId: string, session: AccessClaims, year?: number) {
   const employeeId = requireEmployeeId(session);
   const y = year ?? new Date().getFullYear();
-  return prisma.leaveBalance.findMany({
+  const rows = await prisma.leaveBalance.findMany({
     where: { companyId, employeeId, year: y },
     select: { id: true, type: true, year: true, totalDays: true, usedDays: true },
-    orderBy: { type: "asc" },
+  });
+  const byType = new Map(rows.map((r) => [r.type as string, r]));
+  const quota = await getCompanyLeaveQuota(companyId);
+
+  return PAID_LEAVE_TYPES.map((type) => {
+    const existing = byType.get(type);
+    if (existing) return existing;
+    return {
+      id: `virtual-${type}-${y}`,
+      type: type as LeaveType,
+      year: y,
+      totalDays: quota[type] ?? 0,
+      usedDays: 0,
+    };
   });
 }

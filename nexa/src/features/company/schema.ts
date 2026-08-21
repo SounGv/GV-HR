@@ -65,6 +65,11 @@ export const companyProfileSchema = z.object({
   // Attendance-to-payroll deduction policy
   attendanceDeductionEnabled: z.preprocess((v) => v === "true" || v === true, z.boolean()).default(false),
   lateDeductionPerOccurrence: z.coerce.number().min(0).default(0),
+
+  // Default annual leave quota (days/year) per paid leave type
+  leaveQuotaAnnualDays: z.coerce.number().int().min(0).max(365).default(10),
+  leaveQuotaSickDays: z.coerce.number().int().min(0).max(365).default(30),
+  leaveQuotaPersonalDays: z.coerce.number().int().min(0).max(365).default(3),
 });
 
 export type CompanyProfileInput = z.infer<typeof companyProfileSchema>;

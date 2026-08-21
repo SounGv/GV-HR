@@ -259,6 +259,15 @@ model Company {
   attendanceDeductionEnabled Boolean @default(false)
   lateDeductionPerOccurrence Decimal @default(0) @db.Decimal(12, 2) // baht deducted per late day
 
+  // Default annual leave quota (days/year) per paid leave type — HR-editable
+  // company-wide default. Applied lazily: each employee's LeaveBalance row is
+  // only created the first time a leave of that type is approved for them in
+  // a given year (see leave/service.ts), snapshotting whatever this default
+  // was at that moment. Changing this only affects rows not yet created.
+  leaveQuotaAnnualDays   Int @default(10)
+  leaveQuotaSickDays     Int @default(30)
+  leaveQuotaPersonalDays Int @default(3)
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   createdById String?

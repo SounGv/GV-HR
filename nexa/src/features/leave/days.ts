@@ -17,11 +17,5 @@ export function deductsBalance(type: string): boolean {
   return type === "ANNUAL" || type === "SICK" || type === "PERSONAL";
 }
 
-/** Default annual quota (days) per leave type, used when a balance row is first created. */
-export const DEFAULT_QUOTA: Record<string, number> = {
-  ANNUAL: 10,
-  SICK: 30,
-  PERSONAL: 3,
-  UNPAID: 0,
-  OTHER: 0,
-};
+/** Leave types with an HR-configurable annual quota (see Company.leaveQuota* fields). */
+export const PAID_LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL"] as const;

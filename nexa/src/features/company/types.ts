@@ -24,5 +24,8 @@ export interface CompanyProfile {
   country: string | null;
   attendanceDeductionEnabled: boolean;
   lateDeductionPerOccurrence: string; // Prisma Decimal serializes to string
+  leaveQuotaAnnualDays: number;
+  leaveQuotaSickDays: number;
+  leaveQuotaPersonalDays: number;
   updatedAt: string;
 }

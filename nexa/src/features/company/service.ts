@@ -31,6 +31,9 @@ const profileSelect = {
   country: true,
   attendanceDeductionEnabled: true,
   lateDeductionPerOccurrence: true,
+  leaveQuotaAnnualDays: true,
+  leaveQuotaSickDays: true,
+  leaveQuotaPersonalDays: true,
   updatedAt: true,
 } satisfies Prisma.CompanySelect;
 
