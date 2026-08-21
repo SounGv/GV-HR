@@ -18,8 +18,6 @@ import {
 
   ClipboardCheck,
 
-  Receipt,
-
   Wallet,
 
   UserCircle,
@@ -39,8 +37,6 @@ import {
   MapPin,
 
   CalendarRange,
-
-  Banknote,
 
   BarChart3,
 
@@ -141,8 +137,6 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
 
     items: [
 
-      { id: "payslip", label: "สลิปเงินเดือน", href: "/payroll", icon: Receipt, permission: "payroll:read" },
-
       { id: "expense", label: "เบิกค่าใช้จ่าย", href: "/expenses/new", icon: Wallet, permission: "expense:read" },
 
       { id: "profile", label: "โปรไฟล์", href: "/profile", icon: UserCircle, permission: "dashboard:read" },
@@ -208,8 +202,6 @@ export const MOBILE_HR_GROUPS: MobileMenuGroup[] = [
     tone: "warning",
 
     items: [
-
-      { id: "payrollrun", label: "ประมวลผลเงินเดือน", href: "/payroll?view=run", icon: Banknote, permission: "payroll:update" },
 
       { id: "kpiorg", label: "KPI องค์กร", href: "/kpi?view=org", icon: BarChart3, permission: "kpi:read" },
 

@@ -13,7 +13,6 @@ import {
   ArrowUpRight,
   LogIn,
   CalendarDays,
-  Wallet,
   Star,
   ReceiptText,
   ClipboardCheck,
@@ -32,7 +31,7 @@ import {
 } from "@/features/dashboard/dashboard-charts";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
 import { QuickAccessGrid, type QuickAccessItem } from "@/features/dashboard/quick-access-grid";
-import { fullName, formatCurrency } from "@/lib/format";
+import { fullName } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { can } from "@/lib/auth/rbac";
 
@@ -142,12 +141,15 @@ function greeting(): string {
   return "สวัสดีตอนเย็น";
 }
 
+// "เงินเดือน" deliberately left out for now — HR wants to focus rollout on
+// attendance/leave and the evaluation system first. Re-add a
+// { label: "เงินเดือน", href: "/payroll", permission: "payroll:read" } entry
+// (import the Wallet icon from lucide-react again) here when ready.
 const ALL_QUICK_ACCESS: (QuickAccessItem & { permission: string })[] = [
   { label: "พนักงาน", href: "/employees", icon: Users, permission: "employee:read" },
   { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read" },
   { label: "การลา", href: "/leave", icon: CalendarDays, permission: "leave:read" },
   { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read" },
-  { label: "เงินเดือน", href: "/payroll", icon: Wallet, permission: "payroll:read" },
   { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read" },
   { label: "ประเมินผลงาน", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
   { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings, permission: "admin:read" },
@@ -183,9 +185,10 @@ export default async function DashboardPage() {
 
       <QuickAccessGrid items={quickAccessItems} />
 
-      {/* My today — personal snapshot, not company aggregates */}
+      {/* My today — personal snapshot, not company aggregates. "เงินเดือนล่าสุด"
+          deliberately left out for now, same reasoning as ALL_QUICK_ACCESS above. */}
       {mine && (
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <MyTile
             icon={LogIn}
             tone="success"
@@ -195,14 +198,6 @@ export default async function DashboardPage() {
             href="/attendance"
           />
           <LeaveBalanceTile balances={mine.leaveBalances} href="/leave" />
-          <MyTile
-            icon={Wallet}
-            tone="warning"
-            label="เงินเดือนล่าสุด"
-            value={mine.latestPayslip ? formatCurrency(mine.latestPayslip.net) : "-"}
-            sub={mine.latestPayslip?.periodLabel}
-            href="/payroll"
-          />
           <MyTile
             icon={Star}
             tone="primary"

@@ -83,9 +83,12 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    // "เงินเดือนและสลิป" (payroll) deliberately hidden for now — HR wants
+    // to focus rollout on attendance/leave and the evaluation system first.
+    // Re-add { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet,
+    // permission: "payroll:read", ready: true } here when ready.
     label: "เงินเดือน",
     items: [
-      { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet, permission: "payroll:read", ready: true },
       { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
     ],
   },
