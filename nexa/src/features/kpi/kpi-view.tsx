@@ -92,7 +92,9 @@ export function KpiView() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {goals.map((g) => {
-                const pct = progressPercent(g.currentValue, g.targetValue);
+                const hasKeyResults = g.keyResults.length > 0;
+                const pct = hasKeyResults ? g.rollup!.percent : progressPercent(g.currentValue, g.targetValue);
+                const effectiveStatus = hasKeyResults ? g.rollup!.status : g.status;
                 const isOwner = g.employee.id === myEmployeeId;
                 return (
                   <Card key={g.id} className="gap-0 p-4">
@@ -112,7 +114,7 @@ export function KpiView() {
                             </p>
                           )}
                         </div>
-                        <GoalStatusBadge status={g.status} />
+                        <GoalStatusBadge status={effectiveStatus} />
                       </div>
 
                     {scope !== "me" && (
@@ -132,16 +134,16 @@ export function KpiView() {
                       <div className="mt-3 space-y-1.5">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
-                            {g.currentValue} / {g.targetValue} {g.unit}
+                            {hasKeyResults ? `${g.keyResults.length} Key Results` : `${g.currentValue} / ${g.targetValue} ${g.unit}`}
                           </span>
                           <span className="font-semibold">{pct}%</span>
                         </div>
                         <div className="h-2 overflow-hidden rounded-full bg-muted">
                           <div
                             className={`h-full rounded-full transition-all ${
-                              g.status === "AT_RISK"
+                              effectiveStatus === "AT_RISK"
                                 ? "bg-warning"
-                                : g.status === "COMPLETED"
+                                : effectiveStatus === "COMPLETED"
                                   ? "bg-success"
                                   : "bg-primary"
                             }`}
@@ -149,6 +151,20 @@ export function KpiView() {
                           />
                         </div>
                       </div>
+
+                      {hasKeyResults && (
+                        <ul className="mt-3 space-y-1.5 border-t border-border pt-2">
+                          {g.keyResults.map((kr) => {
+                            const krPct = progressPercent(kr.currentValue, kr.targetValue);
+                            return (
+                              <li key={kr.id} className="flex items-center gap-2 text-xs">
+                                <span className="min-w-0 flex-1 truncate text-muted-foreground">{kr.title}</span>
+                                <span className="w-9 shrink-0 text-right font-medium">{krPct}%</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
                     </Link>
 
                     <div className="mt-3 flex items-center justify-between">
@@ -157,6 +173,17 @@ export function KpiView() {
                         {g.dueDate ? ` · ครบกำหนด ${formatDate(g.dueDate)}` : ""}
                       </span>
                       <div className="flex items-center gap-1">
+                        {g.type === "OKR" && canCreate && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1 text-xs"
+                            render={<Link href={`/kpi/new?parentGoalId=${g.id}`} />}
+                          >
+                            <Plus className="size-3.5" />
+                            Key Result
+                          </Button>
+                        )}
                         {isOwner && g.status !== "CANCELLED" && (
                           <Button
                             variant="ghost"

@@ -1804,6 +1804,14 @@ model Goal {
   ownerEmployeeId String? // who assigned/created the goal (manager)
   ownerUserId     String?
 
+  // OKR hierarchy: an Objective (type=OKR, parentGoalId=null) can have Key
+  // Results — child Goals of its own. Only one level deep (a Key Result's
+  // own parentGoalId is never itself set to a goal that already has a
+  // parent). KPI-type goals never set this; they stay flat as today.
+  parentGoalId String?
+  parent       Goal?   @relation("GoalKeyResults", fields: [parentGoalId], references: [id], onDelete: Cascade)
+  keyResults   Goal[]  @relation("GoalKeyResults")
+
   title        String
   description  String?
   type         GoalType   @default(KPI)
@@ -1823,6 +1831,7 @@ model Goal {
 
   @@index([companyId, cycle])
   @@index([employeeId, status])
+  @@index([parentGoalId])
   @@map("goals")
 }
 

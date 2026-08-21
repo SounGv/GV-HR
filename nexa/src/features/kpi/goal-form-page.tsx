@@ -38,6 +38,7 @@ const LIST = "/kpi";
 
 const formSchema = z.object({
   employeeId: z.string().uuid("กรุณาเลือกพนักงาน"),
+  parentGoalId: z.string().uuid().optional(),
   title: z.string().min(1, "กรุณาระบุชื่อเป้าหมาย"),
   description: z.string().optional(),
   type: z.enum(GOAL_TYPES),
@@ -51,15 +52,24 @@ const formSchema = z.object({
 });
 type FormSchema = z.infer<typeof formSchema>;
 
-export function GoalFormPage({ goal }: { goal?: Goal }) {
+interface ParentGoal {
+  id: string;
+  title: string;
+  cycle: string;
+  employee: { id: string; employeeCode: string; firstName: string; lastName: string };
+}
+
+export function GoalFormPage({ goal, parentGoal }: { goal?: Goal; parentGoal?: ParentGoal }) {
   const router = useRouter();
   const isEdit = !!goal;
+  const isKeyResult = !!parentGoal;
   const { data: orgData } = useOrgOptions();
   const employees = orgData?.data.managers ?? [];
   const createMut = useCreateGoal();
   const updateMut = useUpdateGoal();
   const pending = createMut.isPending || updateMut.isPending;
   const againRef = useRef(false);
+  const backHref = parentGoal ? `/kpi/${parentGoal.id}` : LIST;
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -78,11 +88,12 @@ export function GoalFormPage({ goal }: { goal?: Goal }) {
           dueDate: goal.dueDate ? goal.dueDate.slice(0, 10) : "",
         }
       : {
-          employeeId: "",
+          employeeId: parentGoal?.employee.id ?? "",
+          parentGoalId: parentGoal?.id,
           title: "",
           description: "",
           type: "KPI",
-          cycle: "",
+          cycle: parentGoal?.cycle ?? "",
           unit: "%",
           targetValue: "100",
           currentValue: "0",
@@ -95,19 +106,22 @@ export function GoalFormPage({ goal }: { goal?: Goal }) {
   async function onSubmit(values: FormSchema) {
     try {
       if (isEdit && goal) {
-        const { employeeId: _drop, ...rest } = values;
+        const { employeeId: _drop, parentGoalId: _drop2, ...rest } = values;
         void _drop;
+        void _drop2;
         await updateMut.mutateAsync({ id: goal.id, input: rest as Partial<GoalFormValues> });
         toast.success("บันทึกเป้าหมายแล้ว");
         router.push(LIST);
       } else {
-        await createMut.mutateAsync(values as GoalFormValues);
-        toast.success("สร้างเป้าหมายแล้ว");
-        if (againRef.current) {
+        const record = await createMut.mutateAsync(values as GoalFormValues);
+        toast.success(isKeyResult ? "เพิ่ม Key Result แล้ว" : "สร้างเป้าหมายแล้ว");
+        if (isKeyResult && parentGoal) {
+          router.push(`/kpi/${parentGoal.id}`);
+        } else if (againRef.current) {
           form.reset();
           if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
-          router.push(LIST);
+          router.push(`/kpi/${record.data.id}`);
         }
       }
     } catch (err) {
@@ -116,82 +130,104 @@ export function GoalFormPage({ goal }: { goal?: Goal }) {
   }
 
   const actions: FormFooterAction[] = [
-    ...(isEdit ? [] : [{ label: "บันทึกและสร้างใหม่", onClick: () => (againRef.current = true) }]),
-    { label: isEdit ? "บันทึก" : "สร้างเป้าหมาย", onClick: () => (againRef.current = false), primary: true },
+    ...(isEdit || isKeyResult ? [] : [{ label: "บันทึกและสร้างใหม่", onClick: () => (againRef.current = true) }]),
+    {
+      label: isEdit ? "บันทึก" : isKeyResult ? "เพิ่ม Key Result" : "สร้างเป้าหมาย",
+      onClick: () => (againRef.current = false),
+      primary: true,
+    },
   ];
 
   return (
     <FormPageShell
-      breadcrumbs={[{ label: "KPI & Level", href: LIST }, { label: isEdit ? "แก้ไขเป้าหมาย" : "สร้างเป้าหมาย" }]}
-      backHref={LIST}
-      title={isEdit ? "แก้ไขเป้าหมาย" : "สร้างเป้าหมาย / KPI"}
-      description="กำหนดเป้าหมายที่วัดผลได้ พร้อมค่าเป้าหมายและหน่วยวัด"
+      breadcrumbs={[
+        { label: "KPI & Level", href: LIST },
+        ...(parentGoal ? [{ label: parentGoal.title, href: `/kpi/${parentGoal.id}` }] : []),
+        { label: isEdit ? "แก้ไขเป้าหมาย" : isKeyResult ? "เพิ่ม Key Result" : "สร้างเป้าหมาย" },
+      ]}
+      backHref={backHref}
+      title={isEdit ? "แก้ไขเป้าหมาย" : isKeyResult ? "เพิ่ม Key Result" : "สร้างเป้าหมาย / KPI"}
+      description={
+        isKeyResult
+          ? `ตัวชี้วัดย่อยของ Objective "${parentGoal!.title}" — ความคืบหน้าของทุก Key Result จะรวมเป็นความคืบหน้าของ Objective`
+          : "กำหนดเป้าหมายที่วัดผลได้ พร้อมค่าเป้าหมายและหน่วยวัด"
+      }
       formId={FORM_ID}
       pending={pending}
-      onCancel={() => router.push(LIST)}
+      onCancel={() => router.push(backHref)}
       actions={actions}
     >
       <Form {...form}>
         <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="employeeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>พนักงาน</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="เลือกพนักงาน" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {employees.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.firstName} {m.lastName} ({m.employeeCode})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ประเภท</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {GOAL_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          {isKeyResult ? (
+            <div className="rounded-lg border border-primary/30 bg-secondary/60 px-3 py-2 text-sm text-secondary-foreground">
+              สำหรับ <b>{parentGoal!.employee.firstName} {parentGoal!.employee.lastName}</b> · Objective:{" "}
+              <b>{parentGoal!.title}</b> · รอบ {parentGoal!.cycle}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="employeeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>พนักงาน</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="เลือกพนักงาน" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {employees.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.firstName} {m.lastName} ({m.employeeCode})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ประเภท</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {GOAL_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
 
           <FormField
             control={form.control}
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>ชื่อเป้าหมาย</FormLabel>
+                <FormLabel>{isKeyResult ? "ชื่อ Key Result" : "ชื่อเป้าหมาย"}</FormLabel>
                 <FormControl>
-                  <Input placeholder="เช่น ปิดการขาย 20 ดีลต่อไตรมาส" {...field} />
+                  <Input
+                    placeholder={isKeyResult ? "เช่น NPS เพิ่มเป็น 60 คะแนน" : "เช่น ปิดการขาย 20 ดีลต่อไตรมาส"}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

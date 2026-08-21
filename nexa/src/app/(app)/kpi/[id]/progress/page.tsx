@@ -35,6 +35,9 @@ export default async function GoalProgressPage({
         status: g.status,
         dueDate: g.dueDate ? g.dueDate.toISOString() : null,
         createdAt: g.createdAt.toISOString(),
+        parentGoalId: g.parentGoalId,
+        keyResults: g.keyResults,
+        rollup: g.rollup,
         employee: g.employee,
       }}
     />

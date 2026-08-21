@@ -7,6 +7,16 @@ export type GoalStatus =
 export type GoalType = "KPI" | "OKR";
 export type GoalScope = "me" | "team" | "all";
 
+export interface KeyResultSummary {
+  id: string;
+  title: string;
+  unit: string;
+  targetValue: number;
+  currentValue: number;
+  weight: number;
+  status: GoalStatus;
+}
+
 export interface Goal {
   id: string;
   title: string;
@@ -20,6 +30,9 @@ export interface Goal {
   status: GoalStatus;
   dueDate: string | null;
   createdAt: string;
+  parentGoalId: string | null;
+  keyResults: KeyResultSummary[];
+  rollup: { percent: number; status: GoalStatus } | null;
   employee: {
     id: string;
     employeeCode: string;
@@ -31,6 +44,7 @@ export interface Goal {
 
 export interface GoalFormValues {
   employeeId: string;
+  parentGoalId?: string;
   title: string;
   description?: string;
   type: GoalType;

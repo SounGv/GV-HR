@@ -16,6 +16,9 @@ const optionalText = z.preprocess(
 
 export const goalCreateSchema = z.object({
   employeeId: z.string().uuid("กรุณาเลือกพนักงาน"),
+  // Set only when creating a Key Result under an existing OKR Objective —
+  // the service then forces employeeId to match the parent's owner.
+  parentGoalId: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.string().uuid().optional()),
   title: z.string().trim().min(1, "กรุณาระบุชื่อเป้าหมาย").max(200),
   description: optionalText,
   type: z.enum(GOAL_TYPES).default("KPI"),

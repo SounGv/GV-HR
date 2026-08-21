@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, FileText, Target, TrendingUp, UserRound } from "lucide-react";
+import { CalendarDays, FileText, Plus, Target, TrendingUp, UserRound } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
+import { can } from "@/lib/auth/rbac";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { GoalStatusBadge, GOAL_TYPE_LABEL } from "@/features/kpi/labels";
+import { rollupKeyResults } from "@/features/kpi/service";
 
 export const metadata: Metadata = { title: "รายละเอียด KPI / เป้าหมาย" };
+
+function progressPercent(current: number, target: number): number {
+  return target <= 0 ? 0 : Math.min(100, Math.round((current / target) * 100));
+}
 
 export default async function KpiDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePagePermission("kpi:read");
@@ -32,13 +39,22 @@ export default async function KpiDetailPage({ params }: { params: Promise<{ id: 
       dueDate: true,
       createdAt: true,
       employee: { select: { id: true, firstName: true, lastName: true } },
+      keyResults: {
+        where: { deletedAt: null },
+        select: { id: true, title: true, unit: true, targetValue: true, currentValue: true, weight: true, status: true },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
   if (!goal) notFound();
 
   const employeeName = [goal.employee.firstName, goal.employee.lastName].filter(Boolean).join(" ");
-  const progress = goal.targetValue <= 0 ? 0 : Math.min(100, Math.round((goal.currentValue / goal.targetValue) * 100));
+  const rollup = rollupKeyResults(goal.keyResults);
+  const progress = rollup ? rollup.percent : progressPercent(goal.currentValue, goal.targetValue);
+  const effectiveStatus = rollup ? rollup.status : goal.status;
+  const canCreateKeyResult = can(session.perms, "kpi:create") && goal.type === "OKR";
+  const isOwner = goal.employee.id === session.employeeId;
 
   return (
     <div className="space-y-6">
@@ -47,7 +63,7 @@ export default async function KpiDetailPage({ params }: { params: Promise<{ id: 
         backHref="/kpi"
         title={goal.title}
         description={`${GOAL_TYPE_LABEL[goal.type]} · ${goal.cycle}`}
-        status={<GoalStatusBadge status={goal.status} />}
+        status={<GoalStatusBadge status={effectiveStatus} />}
         actions={
           <Link href="/kpi" className="text-sm text-muted-foreground hover:text-foreground">
             กลับรายการ
@@ -62,7 +78,11 @@ export default async function KpiDetailPage({ params }: { params: Promise<{ id: 
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <InfoRow icon={UserRound} label="เจ้าของเป้าหมาย" value={employeeName} />
-            <InfoRow icon={Target} label="เป้าหมาย" value={`${goal.currentValue} / ${goal.targetValue} ${goal.unit}`} />
+            <InfoRow
+              icon={Target}
+              label="เป้าหมาย"
+              value={rollup ? `${goal.keyResults.length} Key Results` : `${goal.currentValue} / ${goal.targetValue} ${goal.unit}`}
+            />
             <InfoRow icon={TrendingUp} label="ความก้าวหน้า" value={`${progress}%`} />
             <InfoRow icon={CalendarDays} label="ครบกำหนด" value={goal.dueDate ? formatDate(goal.dueDate) : "—"} />
             <InfoRow label="น้ำหนัก" value={`${goal.weight}`} />
@@ -77,6 +97,60 @@ export default async function KpiDetailPage({ params }: { params: Promise<{ id: 
           <p className="text-xs text-muted-foreground">สร้างเมื่อ {formatDate(goal.createdAt)}</p>
         </CardContent>
       </Card>
+
+      {goal.type === "OKR" && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-base">Key Results</CardTitle>
+            {canCreateKeyResult && (
+              <Button size="sm" variant="outline" render={<Link href={`/kpi/new?parentGoalId=${goal.id}`} />}>
+                <Plus className="size-4" /> เพิ่ม Key Result
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {goal.keyResults.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                ยังไม่มี Key Result — เพิ่มตัวชี้วัดย่อยที่วัดผลได้เพื่อติดตามความคืบหน้าของ Objective นี้
+              </p>
+            ) : (
+              goal.keyResults.map((kr) => {
+                const krPct = progressPercent(kr.currentValue, kr.targetValue);
+                return (
+                  <div key={kr.id} className="space-y-1.5 rounded-lg border border-border p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium text-foreground">{kr.title}</span>
+                      <div className="flex items-center gap-2">
+                        <GoalStatusBadge status={kr.status} />
+                        {isOwner && kr.status !== "CANCELLED" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 gap-1 text-xs"
+                            render={<Link href={`/kpi/${kr.id}/progress`} />}
+                          >
+                            <TrendingUp className="size-3" /> อัปเดต
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{kr.currentValue} / {kr.targetValue} {kr.unit}</span>
+                      <span className="font-semibold text-foreground">{krPct}%</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full ${kr.status === "AT_RISK" ? "bg-warning" : kr.status === "COMPLETED" ? "bg-success" : "bg-primary"}`}
+                        style={{ width: `${krPct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

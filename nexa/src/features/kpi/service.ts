@@ -12,6 +12,16 @@ import type {
 
 type Meta = { ip?: string; userAgent?: string };
 
+const keyResultSelect = {
+  id: true,
+  title: true,
+  unit: true,
+  targetValue: true,
+  currentValue: true,
+  weight: true,
+  status: true,
+} satisfies Prisma.GoalSelect;
+
 const goalSelect = {
   id: true,
   title: true,
@@ -25,6 +35,12 @@ const goalSelect = {
   status: true,
   dueDate: true,
   createdAt: true,
+  parentGoalId: true,
+  keyResults: {
+    where: { deletedAt: null },
+    select: keyResultSelect,
+    orderBy: { createdAt: "asc" },
+  },
   employee: {
     select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
   },
@@ -42,13 +58,43 @@ export function deriveStatus(
   return explicit ?? "NOT_STARTED";
 }
 
+/**
+ * An Objective's own currentValue/targetValue stay untouched (never
+ * silently overwritten from key-result data) — rollup is computed fresh on
+ * every read instead, so there's exactly one source of truth per Key Result
+ * and no risk of the two drifting apart.
+ */
+export function rollupKeyResults(
+  keyResults: { targetValue: number; currentValue: number; weight: number }[],
+): { percent: number; status: GoalCreateInput["status"] } | null {
+  if (keyResults.length === 0) return null;
+  const totalWeight = keyResults.reduce((s, k) => s + k.weight, 0) || keyResults.length;
+  const percent = Math.round(
+    keyResults.reduce((sum, k) => {
+      const pct = k.targetValue > 0 ? Math.min(100, (k.currentValue / k.targetValue) * 100) : 0;
+      return sum + pct * (k.weight / totalWeight);
+    }, 0),
+  );
+  const allCompleted = keyResults.every((k) => k.targetValue > 0 && k.currentValue >= k.targetValue);
+  const anyStarted = keyResults.some((k) => k.currentValue > 0);
+  const status: GoalCreateInput["status"] = allCompleted ? "COMPLETED" : anyStarted ? "IN_PROGRESS" : "NOT_STARTED";
+  return { percent, status };
+}
+
+type GoalWithKeyResults = Prisma.GoalGetPayload<{ select: typeof goalSelect }>;
+
+/** Attach the live-computed rollup (never stored) so the client never has to re-derive it. */
+function withRollup<T extends GoalWithKeyResults>(goal: T) {
+  return { ...goal, rollup: rollupKeyResults(goal.keyResults) };
+}
+
 export async function getGoal(companyId: string, id: string) {
   const goal = await prisma.goal.findFirst({
     where: { id, companyId, deletedAt: null },
     select: goalSelect,
   });
   if (!goal) throw NotFound("ไม่พบเป้าหมาย");
-  return goal;
+  return withRollup(goal);
 }
 
 export async function createGoal(
@@ -57,8 +103,23 @@ export async function createGoal(
   input: GoalCreateInput,
   meta?: Meta,
 ) {
+  let employeeId = input.employeeId;
+
+  if (input.parentGoalId) {
+    const parent = await prisma.goal.findFirst({
+      where: { id: input.parentGoalId, companyId, deletedAt: null },
+      select: { id: true, type: true, parentGoalId: true, employeeId: true },
+    });
+    if (!parent) throw BadRequest("ไม่พบ Objective ที่เลือก");
+    if (parent.type !== "OKR") throw BadRequest("เพิ่ม Key Result ได้เฉพาะใต้ Objective ประเภท OKR");
+    if (parent.parentGoalId) throw BadRequest("Key Result ซ้อนกันเกิน 1 ชั้นไม่ได้");
+    // A Key Result always belongs to its Objective's owner — never a
+    // different employee than the Objective it measures.
+    employeeId = parent.employeeId;
+  }
+
   const employee = await prisma.employee.findFirst({
-    where: { id: input.employeeId, companyId, deletedAt: null },
+    where: { id: employeeId, companyId, deletedAt: null },
     select: { id: true },
   });
   if (!employee) throw BadRequest("ไม่พบพนักงานที่เลือก");
@@ -66,12 +127,13 @@ export async function createGoal(
   const record = await prisma.goal.create({
     data: {
       companyId,
-      employeeId: input.employeeId,
+      employeeId,
+      parentGoalId: input.parentGoalId ?? null,
       ownerEmployeeId: session.employeeId ?? null,
       ownerUserId: session.sub,
       title: input.title,
       description: input.description,
-      type: input.type,
+      type: input.parentGoalId ? "KPI" : input.type, // key results are measurable line items, not nested OKRs
       cycle: input.cycle,
       unit: input.unit,
       targetValue: input.targetValue,
@@ -91,11 +153,11 @@ export async function createGoal(
     action: "kpi.create",
     entity: "Goal",
     entityId: record.id,
-    after: { title: input.title, employeeId: input.employeeId },
+    after: { title: input.title, employeeId, parentGoalId: input.parentGoalId },
     ...meta,
   });
 
-  return record;
+  return withRollup(record);
 }
 
 export async function listGoals(
@@ -117,10 +179,11 @@ export async function listGoals(
     if (employeeIds.length === 0) return [];
   }
 
-  return prisma.goal.findMany({
+  const goals = await prisma.goal.findMany({
     where: {
       companyId,
       deletedAt: null,
+      parentGoalId: null, // Key Results are shown nested under their Objective, never as their own row
       ...(employeeIds ? { employeeId: { in: employeeIds } } : {}),
       ...(query.cycle ? { cycle: query.cycle } : {}),
       ...(query.status ? { status: query.status } : {}),
@@ -129,6 +192,7 @@ export async function listGoals(
     orderBy: [{ cycle: "desc" }, { weight: "desc" }, { createdAt: "desc" }],
     take: 300,
   });
+  return goals.map(withRollup);
 }
 
 /** Full edit — caller must hold kpi:update (enforced at the route). */
@@ -175,7 +239,7 @@ export async function updateGoal(
     ...meta,
   });
 
-  return record;
+  return withRollup(record);
 }
 
 /** Progress-only update — allowed for the goal's own employee. */
@@ -215,7 +279,7 @@ export async function updateGoalProgress(
     ...meta,
   });
 
-  return record;
+  return withRollup(record);
 }
 
 export async function deleteGoal(
@@ -230,9 +294,17 @@ export async function deleteGoal(
   });
   if (!goal) throw NotFound("ไม่พบเป้าหมาย");
 
+  const deletedAt = new Date();
   await prisma.goal.update({
     where: { id: goal.id },
-    data: { deletedAt: new Date(), updatedById: session.sub },
+    data: { deletedAt, updatedById: session.sub },
+  });
+  // Soft-delete is an UPDATE, not a real row delete, so the FK's ON DELETE
+  // CASCADE never fires — an Objective's Key Results would otherwise become
+  // invisible orphans (not deleted, just no longer reachable from anywhere).
+  await prisma.goal.updateMany({
+    where: { parentGoalId: goal.id, deletedAt: null },
+    data: { deletedAt, updatedById: session.sub },
   });
 
   await writeAudit({
