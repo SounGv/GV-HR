@@ -21,11 +21,14 @@ interface ApprovalTile {
   tone: string;
 }
 
+// Monochrome-green icon-chip system (redesign spec) — same chip for every
+// approval type, matching the nav/menu icon treatment.
+const ICON_CHIP = "bg-icon-chip-bg text-icon-chip-fg";
 const TILES: ApprovalTile[] = [
-  { key: "leave", label: "การลารออนุมัติ", href: "/leave", icon: CalendarDays, tone: "bg-primary/10 text-primary" },
-  { key: "overtime", label: "OT รออนุมัติ", href: "/overtime", icon: Timer, tone: "bg-info/10 text-info" },
-  { key: "expense", label: "เบิกจ่ายรออนุมัติ", href: "/expenses", icon: ReceiptText, tone: "bg-warning/10 text-warning" },
-  { key: "workflow", label: "คำขออนุมัติ", href: "/workflows", icon: GitBranch, tone: "bg-success/10 text-success" },
+  { key: "leave", label: "การลารออนุมัติ", href: "/leave", icon: CalendarDays, tone: ICON_CHIP },
+  { key: "overtime", label: "OT รออนุมัติ", href: "/overtime", icon: Timer, tone: ICON_CHIP },
+  { key: "expense", label: "เบิกจ่ายรออนุมัติ", href: "/expenses", icon: ReceiptText, tone: ICON_CHIP },
+  { key: "workflow", label: "คำขออนุมัติ", href: "/workflows", icon: GitBranch, tone: ICON_CHIP },
 ];
 
 export function ActionCenter({ data }: { data: DashboardActions }) {

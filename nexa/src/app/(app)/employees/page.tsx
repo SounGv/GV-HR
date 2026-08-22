@@ -10,11 +10,13 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Employee Center" };
 
+// Monochrome-green icon-chip system (redesign spec) — same chip for every
+// metric type, matching the nav/menu icon treatment.
 const TONES = {
-  primary: "bg-primary/10 text-primary",
-  success: "bg-success/10 text-success",
-  warning: "bg-warning/10 text-warning",
-  info: "bg-info/10 text-info",
+  primary: "bg-icon-chip-bg text-icon-chip-fg",
+  success: "bg-icon-chip-bg text-icon-chip-fg",
+  warning: "bg-icon-chip-bg text-icon-chip-fg",
+  info: "bg-icon-chip-bg text-icon-chip-fg",
 } as const;
 
 function MiniStat({

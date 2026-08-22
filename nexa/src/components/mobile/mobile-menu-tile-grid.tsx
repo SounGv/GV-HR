@@ -4,15 +4,15 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import type { MobileMenuGroup, MobileMenuTone } from "@/config/mobile-menu";
 
-// One color per section instead of every tile being identical lime — makes
-// each group instantly recognizable at a glance instead of reading as one
-// undifferentiated wall of tiles.
+// Monochrome-green icon-chip system (redesign spec) — every group uses the
+// same lime chip instead of a color-per-section, matching the desktop
+// nav/menu icon treatment everywhere else in the app.
 const TONE_CLASSES: Record<MobileMenuTone, string> = {
-  primary: "bg-primary text-primary-foreground",
-  info: "bg-info text-info-foreground",
-  warning: "bg-warning text-warning-foreground",
-  success: "bg-success text-success-foreground",
-  destructive: "bg-destructive text-white",
+  primary: "bg-icon-chip-bg text-icon-chip-fg",
+  info: "bg-icon-chip-bg text-icon-chip-fg",
+  warning: "bg-icon-chip-bg text-icon-chip-fg",
+  success: "bg-icon-chip-bg text-icon-chip-fg",
+  destructive: "bg-icon-chip-bg text-icon-chip-fg",
 };
 
 /**

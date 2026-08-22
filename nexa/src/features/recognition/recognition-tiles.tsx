@@ -4,11 +4,13 @@ import { Award, Heart, Sparkle, Star } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { useRecognitionSummary } from "./hooks";
 
+// Monochrome-green icon system (redesign spec) — same icon color for every
+// recognition type, matching the nav/menu icon treatment.
 const TILES = [
-  { key: "star" as const, label: "Star", icon: Star, tone: "text-warning" },
-  { key: "award" as const, label: "Award", icon: Award, tone: "text-primary" },
-  { key: "heart" as const, label: "Heart", icon: Heart, tone: "text-destructive" },
-  { key: "point" as const, label: "Point", icon: Sparkle, tone: "text-info" },
+  { key: "star" as const, label: "Star", icon: Star, tone: "text-icon-chip-fg" },
+  { key: "award" as const, label: "Award", icon: Award, tone: "text-icon-chip-fg" },
+  { key: "heart" as const, label: "Heart", icon: Heart, tone: "text-icon-chip-fg" },
+  { key: "point" as const, label: "Point", icon: Sparkle, tone: "text-icon-chip-fg" },
 ];
 
 /** Recognition summary tiles — shows how many Star/Award/Heart/Point the current employee has received. */

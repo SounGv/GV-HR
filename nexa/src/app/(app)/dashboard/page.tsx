@@ -37,12 +37,16 @@ import { can } from "@/lib/auth/rbac";
 
 export const metadata: Metadata = { title: "แดชบอร์ด" };
 
+// Monochrome-green icon-chip system (redesign spec) — every KPI card icon
+// uses the same lime chip regardless of metric, matching the nav/menu icon
+// treatment. Kept as a lookup (not a single constant) so callers keep their
+// existing `tone` prop untouched; every key now resolves to the same class.
 const TONES = {
-  primary: "bg-accent text-accent-foreground",
-  success: "bg-success-muted text-success",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-destructive-muted text-destructive",
-  info: "bg-accent text-accent-foreground",
+  primary: "bg-icon-chip-bg text-icon-chip-fg",
+  success: "bg-icon-chip-bg text-icon-chip-fg",
+  warning: "bg-icon-chip-bg text-icon-chip-fg",
+  danger: "bg-icon-chip-bg text-icon-chip-fg",
+  info: "bg-icon-chip-bg text-icon-chip-fg",
 } as const;
 
 function Kpi({

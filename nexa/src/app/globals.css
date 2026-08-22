@@ -21,6 +21,10 @@
   --color-info-foreground: var(--info-foreground);
   --color-destructive-muted: var(--destructive-muted);
   --color-surface-muted: var(--surface-muted);
+  --color-icon-chip-bg: var(--icon-chip-bg);
+  --color-icon-chip-fg: var(--icon-chip-fg);
+  --color-badge: var(--badge);
+  --color-badge-foreground: var(--badge-foreground);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -68,13 +72,15 @@
   --font-sans: var(--font-prompt), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-heading: var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
 
-  /* Surfaces — warm off-white, not neutral gray */
-  --background: #f5f6ef;
-  --foreground: #10130a;
-  --card: #fffef8;
-  --card-foreground: #10130a;
-  --popover: #fffef8;
-  --popover-foreground: #10130a;
+  /* Surfaces — warm off-white, not neutral gray. Reconciled to the exact
+     GV ONE HR palette (background/card/ink/muted/line) from the redesign
+     spec — these were already ~99% this palette, this is the exact match. */
+  --background: #f4f7ef;
+  --foreground: #182014;
+  --card: #ffffff;
+  --card-foreground: #182014;
+  --popover: #ffffff;
+  --popover-foreground: #182014;
 
   /* Brand lime — Gadget Villa, tuned to the Tailwind lime scale (lime-500
      as primary) so it stays vividly green without reading as neon/harsh at
@@ -84,7 +90,7 @@
   --secondary: #ecfccb;
   --secondary-foreground: #365314;
   --muted: #e9ebdd;
-  --muted-foreground: #5c6050;
+  --muted-foreground: #6b7668;
   --accent: #ecfccb;
   --accent-foreground: #365314;
   --destructive: #e4573d;
@@ -100,8 +106,8 @@
   --info: #2563eb;
   --info-foreground: #ffffff;
 
-  --border: #e0e2d3;
-  --input: #e0e2d3;
+  --border: #dce6d4;
+  --input: #dce6d4;
   --ring: #4d7c0f;
 
   --chart-1: #84cc16;
@@ -110,8 +116,16 @@
   --chart-4: #4d7c0f;
   --chart-5: #e4573d;
 
+  /* Monochrome-green icon-chip system (redesign spec: every menu/KPI/tile
+     icon uses this one light-bg + dark-stroke pair — no per-section hues).
+     Red is reserved for notification-count badges only (--badge below). */
+  --icon-chip-bg: #dff3bd;
+  --icon-chip-fg: #3f6f12;
+  --badge: #dc2626;
+  --badge-foreground: #ffffff;
+
   /* Sidebar stays carbon black; accent aligns with brand lime */
-  --sidebar: #10130a;
+  --sidebar: #15200f;
   --sidebar-foreground: #cdd1bd;
   --sidebar-primary: #84cc16;
   --sidebar-primary-foreground: #111408;
@@ -161,7 +175,12 @@
   --chart-4: #4d7c0f;
   --chart-5: #e4573d;
 
-  --sidebar: #10130a;
+  --icon-chip-bg: #2a3018;
+  --icon-chip-fg: #bef264;
+  --badge: #ef4444;
+  --badge-foreground: #ffffff;
+
+  --sidebar: #15200f;
   --sidebar-foreground: #cdd1bd;
   --sidebar-primary: #84cc16;
   --sidebar-primary-foreground: #111408;
