@@ -7,11 +7,14 @@ export interface AdminRole {
   userCount: number;
 }
 
+export type AiAccessScope = "TEAM" | "DEPARTMENT" | "COMPANY";
+
 export interface AdminUser {
   id: string;
   email: string;
   status: string;
-  employee: { firstName: string; lastName: string; employeeCode: string } | null;
+  employee: { id: string; firstName: string; lastName: string; employeeCode: string } | null;
+  aiAccessScope: AiAccessScope | null;
   roleIds: string[];
   roleNames: string[];
 }

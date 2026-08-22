@@ -29,3 +29,8 @@ export const setUserRolesSchema = z.object({
   roleIds: z.array(z.string().uuid()),
 });
 export type SetUserRolesInput = z.infer<typeof setUserRolesSchema>;
+
+export const setAiAccessGrantSchema = z.object({
+  scope: z.enum(["TEAM", "DEPARTMENT", "COMPANY"]),
+});
+export type SetAiAccessGrantInput = z.infer<typeof setAiAccessGrantSchema>;

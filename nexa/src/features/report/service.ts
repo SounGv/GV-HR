@@ -73,12 +73,18 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   const title = REPORT_LABELS[query.type];
   const { start, end } = computeRange(query);
   const label = rangeLabel(start, end);
-  // Relation filter to scope record-based reports to one department.
-  const deptRel = query.departmentId ? { employee: { departmentId: query.departmentId } } : {};
+  // Direct + relation filters to scope reports to one department and/or an
+  // AI-granted employee scope (see ReportQuery.employeeWhere) — merged into
+  // one place so every report type below picks it up automatically.
+  const employeeFilter = {
+    ...(query.departmentId ? { departmentId: query.departmentId } : {}),
+    ...(query.employeeWhere ?? {}),
+  };
+  const deptRel = Object.keys(employeeFilter).length ? { employee: employeeFilter } : {};
 
   if (query.type === "employees") {
     const emps = await prisma.employee.findMany({
-      where: { companyId, deletedAt: null, ...(query.departmentId ? { departmentId: query.departmentId } : {}) },
+      where: { companyId, deletedAt: null, ...employeeFilter },
       select: {
         employeeCode: true,
         firstName: true,
@@ -122,7 +128,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // getMyDayStatus does, aggregated over the period instead of per day.
     const [employees, recs, holidays, leaves, ots] = await Promise.all([
       prisma.employee.findMany({
-        where: { companyId, deletedAt: null, status: "ACTIVE", ...(query.departmentId ? { departmentId: query.departmentId } : {}) },
+        where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
         select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
       }),
       prisma.attendanceRecord.findMany({

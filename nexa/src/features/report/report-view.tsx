@@ -39,6 +39,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { sendChat } from "@/features/ai/api";
+import { useAiAccess } from "@/features/ai/hooks";
 import { cn } from "@/lib/utils";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import { REPORT_LABELS, REPORT_TYPES, type ReportType } from "./schema";
@@ -85,7 +86,8 @@ function reportToPrompt(label: string, result: ReportResult): string {
 export function ReportView() {
   const { can } = useAuth();
   const canExport = can("report:export");
-  const canAi = can("ai:read");
+  const { data: aiAccess } = useAiAccess();
+  const canAi = !!aiAccess?.data.allowed;
 
   const [type, setType] = useState<ReportType>("employees");
   const [from, setFrom] = useState<string>(firstOfMonth());

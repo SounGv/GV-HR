@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Bot, X } from "lucide-react";
 
-import { useAuth } from "@/features/auth/auth-context";
+import { useAiAccess } from "./hooks";
 import { AiChatView } from "./ai-chat-view";
 
 /**
@@ -15,10 +15,10 @@ import { AiChatView } from "./ai-chat-view";
  */
 export function FloatingAiLauncher() {
   const pathname = usePathname();
-  const { can } = useAuth();
+  const { data: aiAccess } = useAiAccess();
   const [open, setOpen] = useState(false);
 
-  if (pathname === "/ai" || !can("ai:read")) return null;
+  if (pathname === "/ai" || !aiAccess?.data.allowed) return null;
 
   return (
     <div className="hidden md:block">

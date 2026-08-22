@@ -13,3 +13,8 @@ export interface ChatResponse {
   steps: ChatStep[];
   configured: boolean;
 }
+
+export interface AiAccess {
+  allowed: boolean;
+  scope: "TEAM" | "DEPARTMENT" | "COMPANY";
+}

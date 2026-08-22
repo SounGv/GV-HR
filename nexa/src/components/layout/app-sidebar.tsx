@@ -17,11 +17,19 @@ import {
 } from "@/components/ui/sidebar";
 import { NAV_GROUPS } from "@/config/navigation";
 import { useAuth } from "@/features/auth/auth-context";
+import { useAiAccess } from "@/features/ai/hooks";
 import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { can } = useAuth();
+  const { data: aiAccess } = useAiAccess();
+
+  // A grant-only user (see src/lib/ai/scope.ts) has no ai:* key in their JWT
+  // claims, so the plain permission filter below would hide "AI Assistant"
+  // for them even though the API would let them through.
+  const canSee = (permission: string) =>
+    can(permission) || (permission === "ai:read" && !!aiAccess?.data.allowed);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const groupHasActive = (labels: { href: string }[]) => labels.some((i) => isActive(i.href));
@@ -45,7 +53,7 @@ export function AppSidebar() {
 
       <SidebarContent className="gap-0.5">
         {NAV_GROUPS.map((group) => {
-          const items = group.items.filter((item) => can(item.permission));
+          const items = group.items.filter((item) => canSee(item.permission));
           if (items.length === 0) return null;
 
           const expanded = open[group.label] ?? false;

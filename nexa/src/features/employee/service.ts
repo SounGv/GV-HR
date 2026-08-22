@@ -73,7 +73,7 @@ export type EmployeeDetail = Prisma.EmployeeGetPayload<{ select: typeof detailSe
  * "employee:*" — checking for the real `employee:update` permission is what
  * actually distinguishes HR from a plain `employee:read`-only Manager.
  */
-function isCompanyWideEmployeeViewer(session: AccessClaims): boolean {
+export function isCompanyWideEmployeeViewer(session: AccessClaims): boolean {
   return (
     session.perms.includes("*") ||
     session.perms.includes("employee:update") ||

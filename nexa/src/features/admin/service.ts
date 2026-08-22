@@ -1,3 +1,4 @@
+import { AiAccessScope } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
@@ -147,7 +148,15 @@ export async function listUsers(companyId: string) {
       email: true,
       status: true,
       roles: { select: { role: { select: { id: true, name: true } } } },
-      employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      employee: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          employeeCode: true,
+          aiAccessGrant: { select: { scope: true } },
+        },
+      },
     },
     orderBy: { email: "asc" },
   });
@@ -156,7 +165,15 @@ export async function listUsers(companyId: string) {
     id: u.id,
     email: u.email,
     status: u.status,
-    employee: u.employee,
+    employee: u.employee
+      ? {
+          id: u.employee.id,
+          firstName: u.employee.firstName,
+          lastName: u.employee.lastName,
+          employeeCode: u.employee.employeeCode,
+        }
+      : null,
+    aiAccessScope: u.employee?.aiAccessGrant?.scope ?? null,
     roleIds: u.roles.map((r) => r.role.id),
     roleNames: u.roles.map((r) => r.role.name),
   }));
@@ -170,7 +187,15 @@ export async function getUser(companyId: string, id: string) {
       email: true,
       status: true,
       roles: { select: { role: { select: { id: true, name: true } } } },
-      employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      employee: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          employeeCode: true,
+          aiAccessGrant: { select: { scope: true } },
+        },
+      },
     },
   });
   if (!user) throw NotFound("ไม่พบผู้ใช้");
@@ -179,10 +204,84 @@ export async function getUser(companyId: string, id: string) {
     id: user.id,
     email: user.email,
     status: user.status,
-    employee: user.employee,
+    employee: user.employee
+      ? {
+          id: user.employee.id,
+          firstName: user.employee.firstName,
+          lastName: user.employee.lastName,
+          employeeCode: user.employee.employeeCode,
+        }
+      : null,
+    aiAccessScope: user.employee?.aiAccessGrant?.scope ?? null,
     roleIds: user.roles.map((r) => r.role.id),
     roleNames: user.roles.map((r) => r.role.name),
   };
+}
+
+export async function setAiAccessGrant(
+  companyId: string,
+  session: AccessClaims,
+  userId: string,
+  scope: AiAccessScope,
+  meta?: Meta,
+) {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, companyId, deletedAt: null },
+    select: { employee: { select: { id: true } } },
+  });
+  if (!user) throw NotFound("ไม่พบผู้ใช้");
+  if (!user.employee) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน จึงกำหนดขอบเขต AI ให้ไม่ได้");
+
+  const grant = await prisma.aiAccessGrant.upsert({
+    where: { employeeId: user.employee.id },
+    create: { companyId, employeeId: user.employee.id, scope, grantedById: session.sub },
+    update: { scope, grantedById: session.sub },
+    select: { id: true },
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "ai_access_grant.set",
+    entity: "AiAccessGrant",
+    entityId: grant.id,
+    after: { userId, employeeId: user.employee.id, scope },
+    ...meta,
+  });
+
+  return grant;
+}
+
+export async function revokeAiAccessGrant(
+  companyId: string,
+  session: AccessClaims,
+  userId: string,
+  meta?: Meta,
+) {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, companyId, deletedAt: null },
+    select: { employee: { select: { id: true } } },
+  });
+  if (!user) throw NotFound("ไม่พบผู้ใช้");
+  if (!user.employee) return; // nothing to revoke
+
+  const grant = await prisma.aiAccessGrant.findUnique({
+    where: { employeeId: user.employee.id },
+    select: { id: true },
+  });
+  if (!grant) return; // idempotent
+
+  await prisma.aiAccessGrant.delete({ where: { id: grant.id } });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "ai_access_grant.revoke",
+    entity: "AiAccessGrant",
+    entityId: grant.id,
+    before: { userId, employeeId: user.employee.id },
+    ...meta,
+  });
 }
 
 export async function setUserRoles(

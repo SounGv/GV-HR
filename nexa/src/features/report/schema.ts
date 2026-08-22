@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 export const REPORT_TYPES = [
@@ -54,4 +55,12 @@ export const reportQuerySchema = z.object({
   to: dateStr.optional(),
   departmentId: z.string().uuid().optional(),
 });
-export type ReportQuery = z.infer<typeof reportQuerySchema>;
+/**
+ * `employeeWhere` is intentionally NOT part of `reportQuerySchema` (never
+ * accepted from a user request body) — it's set only by the AI Assistant's
+ * scoped tool caller (`src/lib/ai/scope.ts`) to narrow a report down to a
+ * manager's granted team/department, in-process before `getReport` runs.
+ */
+export type ReportQuery = z.infer<typeof reportQuerySchema> & {
+  employeeWhere?: Prisma.EmployeeWhereInput;
+};

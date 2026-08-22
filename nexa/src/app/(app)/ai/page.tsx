@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Database, Calculator, Bell, Sparkles } from "lucide-react";
-import { requirePagePermission } from "@/lib/auth/page-guard";
+import { requireAiPageAccess } from "@/lib/auth/page-guard";
 import { Card } from "@/components/ui/card";
 import { AiChatView } from "@/features/ai/ai-chat-view";
 
@@ -14,7 +14,7 @@ const CAPABILITIES = [
 ];
 
 export default async function AiPage() {
-  await requirePagePermission("ai:read");
+  await requireAiPageAccess();
 
   return (
     <div className="space-y-5">

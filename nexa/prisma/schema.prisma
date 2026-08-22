@@ -165,6 +165,13 @@ enum AnnouncementStatus {
   PUBLISHED
 }
 
+/** Data-visibility scope for an HR-granted per-manager AI Assistant override. */
+enum AiAccessScope {
+  TEAM       // direct reports only (managerId == grantee's employeeId), + self
+  DEPARTMENT // same departmentId as the grantee
+  COMPANY    // no filter — same visibility HR already has
+}
+
 enum AssetStatus {
   AVAILABLE
   ASSIGNED
@@ -319,6 +326,7 @@ model Company {
   employeeDocuments           EmployeeDocument[]
   positionCompetencyRequirements PositionCompetencyRequirement[]
   employeeCompetencyLevels       EmployeeCompetencyLevel[]
+  aiAccessGrants                 AiAccessGrant[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -734,6 +742,7 @@ model Employee {
   meetingInvites            MeetingAttendee[]              @relation("MeetingAttendee")
   documents                 EmployeeDocument[]
   competencyLevels          EmployeeCompetencyLevel[]
+  aiAccessGrant             AiAccessGrant?
 
   // Employment
   employmentType   EmploymentType @default(FULL_TIME)
@@ -1724,6 +1733,34 @@ model EmployeeDocument {
 
   @@index([employeeId])
   @@map("employee_documents")
+}
+
+/**
+ * HR-granted, per-employee override that either (a) turns on AI Assistant
+ * access for someone whose role doesn't include ai:read/ai:create, or
+ * (b) sets the *data scope* the AI's tools apply for someone who already
+ * has ai:read from their role. This sits alongside RBAC, not in place of
+ * it — role permissions still gate which tools the AI can call at all;
+ * this only gates how much data those tools can see, and whether the AI
+ * is reachable at all for someone with no ai:* permission in their role.
+ */
+model AiAccessGrant {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // One active grant per employee — granting again just updates the scope.
+  employeeId String   @unique
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  scope AiAccessScope @default(TEAM)
+
+  grantedById String?
+  grantedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("ai_access_grants")
 }
 
 // ─────────────────────────── HR: Recruitment ───────────────────────────

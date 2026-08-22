@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { RequestStep } from "@/features/workflow/types";
 import { getRemainingBalance } from "@/features/leave/service";
@@ -183,17 +184,33 @@ export interface DashboardSummary {
   byEmploymentType: { type: string; count: number }[];
 }
 
-/** Real, company-scoped headcount analytics derived from the Employee table. */
-export async function getDashboardSummary(companyId: string): Promise<DashboardSummary> {
+/**
+ * Real, company-scoped headcount analytics derived from the Employee table.
+ * `employeeWhere` narrows every count/query down to a subset of employees —
+ * used only by the AI Assistant's scoped access (see `src/lib/ai/scope.ts`);
+ * the real dashboard page never passes it, so its behavior is unchanged.
+ */
+export async function getDashboardSummary(
+  companyId: string,
+  employeeWhere?: Prisma.EmployeeWhereInput,
+): Promise<DashboardSummary> {
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const activeFilter = { companyId, deletedAt: null };
+  const activeFilter = { companyId, deletedAt: null, ...(employeeWhere ?? {}) };
 
   const now = new Date();
   const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   const todayEnd = new Date(todayStart.getTime() + 86_400_000);
+
+  // Only resolved when scoped — the unscoped (real dashboard) path never
+  // needs a concrete id list since it filters attendance/leave/OT by
+  // companyId alone.
+  const scopedIds = employeeWhere
+    ? (await prisma.employee.findMany({ where: activeFilter, select: { id: true } })).map((e) => e.id)
+    : null;
+  const employeeIdFilter = scopedIds ? { employeeId: { in: scopedIds } } : {};
 
   const [
     headcount,
@@ -214,18 +231,18 @@ export async function getDashboardSummary(companyId: string): Promise<DashboardS
       prisma.employee.count({ where: { ...activeFilter, status: "ON_LEAVE" } }),
       prisma.employee.count({ where: { ...activeFilter, hireDate: { gte: startOfMonth } } }),
       prisma.attendanceRecord.count({
-        where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, clockInAt: { not: null } },
+        where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, clockInAt: { not: null }, ...employeeIdFilter },
       }),
       prisma.attendanceRecord.count({
-        where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, status: "LATE" },
+        where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, status: "LATE", ...employeeIdFilter },
       }),
       prisma.leaveRequest.findMany({
-        where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: todayEnd }, endDate: { gte: todayStart } },
+        where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: todayEnd }, endDate: { gte: todayStart }, ...employeeIdFilter },
         select: { employeeId: true },
       }),
       prisma.overtimeRequest.aggregate({
         _sum: { hours: true },
-        where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: todayStart, lt: todayEnd } },
+        where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: todayStart, lt: todayEnd }, ...employeeIdFilter },
       }),
       prisma.employee.groupBy({
         by: ["departmentId"],

@@ -1,11 +1,11 @@
 import { SchemaType, type FunctionDeclaration } from "@google/generative-ai";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { getDashboardSummary } from "@/features/dashboard/service";
 import { getReport } from "@/features/report/service";
 import { REPORT_TYPES } from "@/features/report/schema";
-import { listEmployees } from "@/features/employee/service";
 import { createAnnouncement } from "@/features/announcement/service";
 import { createNotification } from "@/features/notification/service";
 import { computePayroll } from "@/features/payroll/calc";
@@ -132,10 +132,14 @@ export const NEXA_TOOLS: NexaTool[] = [
   },
 ];
 
-async function resolveEmployees(companyId: string, target: string) {
+async function resolveEmployees(
+  companyId: string,
+  target: string,
+  scopeWhere?: Prisma.EmployeeWhereInput,
+) {
   if (target.trim().toLowerCase() === "all") {
     return prisma.employee.findMany({
-      where: { companyId, deletedAt: null, status: "ACTIVE" },
+      where: { companyId, deletedAt: null, status: "ACTIVE", ...(scopeWhere ?? {}) },
       select: { id: true },
     });
   }
@@ -143,10 +147,17 @@ async function resolveEmployees(companyId: string, target: string) {
     where: {
       companyId,
       deletedAt: null,
-      OR: [
-        { employeeCode: { equals: target, mode: "insensitive" } },
-        { firstName: { contains: target, mode: "insensitive" } },
-        { lastName: { contains: target, mode: "insensitive" } },
+      // AND (not spread) — scopeWhere may itself be an `OR` filter (TEAM
+      // scope), which a sibling `OR:` key here would silently overwrite.
+      AND: [
+        scopeWhere ?? {},
+        {
+          OR: [
+            { employeeCode: { equals: target, mode: "insensitive" } },
+            { firstName: { contains: target, mode: "insensitive" } },
+            { lastName: { contains: target, mode: "insensitive" } },
+          ],
+        },
       ],
     },
     select: { id: true },
@@ -193,6 +204,7 @@ export async function executeTool(
   name: string,
   rawInput: unknown,
   meta?: Meta,
+  scopeWhere?: Prisma.EmployeeWhereInput,
 ): Promise<string> {
   const input = (rawInput ?? {}) as Record<string, unknown>;
   const companyId = session.companyId;
@@ -203,7 +215,7 @@ export async function executeTool(
       case "get_headcount": {
         if (!can(session.perms, "dashboard:read") && !can(session.perms, "report:read"))
           return deny("dashboard:read");
-        return JSON.stringify(await getDashboardSummary(companyId));
+        return JSON.stringify(await getDashboardSummary(companyId, scopeWhere));
       }
 
       case "get_hr_report": {
@@ -224,6 +236,7 @@ export async function executeTool(
           type: input.type as (typeof REPORT_TYPES)[number],
           from,
           to,
+          employeeWhere: scopeWhere,
         });
         return JSON.stringify({
           title: report.title,
@@ -235,11 +248,35 @@ export async function executeTool(
 
       case "search_employees": {
         if (!can(session.perms, "employee:read")) return deny("employee:read");
-        const { items } = await listEmployees(
-          companyId,
-          { page: 1, pageSize: 20, sortDir: "asc", search: String(input.query ?? "") },
-          session,
-        );
+        const q = String(input.query ?? "");
+        const items = await prisma.employee.findMany({
+          where: {
+            companyId,
+            deletedAt: null,
+            // AND (not spread) — scopeWhere may itself be an `OR` filter
+            // (TEAM scope), which a sibling `OR:` key here would silently
+            // overwrite via object-literal key collision.
+            AND: [
+              scopeWhere ?? {},
+              {
+                OR: [
+                  { employeeCode: { contains: q, mode: "insensitive" } },
+                  { firstName: { contains: q, mode: "insensitive" } },
+                  { lastName: { contains: q, mode: "insensitive" } },
+                ],
+              },
+            ],
+          },
+          select: {
+            employeeCode: true,
+            firstName: true,
+            lastName: true,
+            status: true,
+            department: { select: { name: true } },
+            position: { select: { title: true } },
+          },
+          take: 20,
+        });
         return JSON.stringify(
           items.map((e) => ({
             code: e.employeeCode,
@@ -258,10 +295,15 @@ export async function executeTool(
           where: {
             companyId,
             deletedAt: null,
-            OR: [
-              { employeeCode: { equals: q, mode: "insensitive" } },
-              { firstName: { contains: q, mode: "insensitive" } },
-              { lastName: { contains: q, mode: "insensitive" } },
+            AND: [
+              scopeWhere ?? {},
+              {
+                OR: [
+                  { employeeCode: { equals: q, mode: "insensitive" } },
+                  { firstName: { contains: q, mode: "insensitive" } },
+                  { lastName: { contains: q, mode: "insensitive" } },
+                ],
+              },
             ],
           },
           select: {
@@ -306,7 +348,7 @@ export async function executeTool(
 
       case "send_notification": {
         if (!can(session.perms, "notification:create")) return deny("notification:create");
-        const targets = await resolveEmployees(companyId, String(input.target ?? ""));
+        const targets = await resolveEmployees(companyId, String(input.target ?? ""), scopeWhere);
         if (targets.length === 0) return "ไม่พบพนักงานปลายทาง";
         for (const t of targets) {
           await createNotification(
@@ -352,10 +394,15 @@ export async function executeTool(
             where: {
               companyId,
               deletedAt: null,
-              OR: [
-                { employeeCode: { equals: q, mode: "insensitive" } },
-                { firstName: { contains: q, mode: "insensitive" } },
-                { lastName: { contains: q, mode: "insensitive" } },
+              AND: [
+                scopeWhere ?? {},
+                {
+                  OR: [
+                    { employeeCode: { equals: q, mode: "insensitive" } },
+                    { firstName: { contains: q, mode: "insensitive" } },
+                    { lastName: { contains: q, mode: "insensitive" } },
+                  ],
+                },
               ],
             },
             select: { firstName: true, lastName: true, baseSalary: true },

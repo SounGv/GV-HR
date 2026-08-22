@@ -1,5 +1,5 @@
 import { api, type Envelope } from "@/lib/api/client";
-import type { AdminRole, AdminUser, RoleFormValues } from "./types";
+import type { AdminRole, AdminUser, AiAccessScope, RoleFormValues } from "./types";
 
 export function fetchRoles() {
   return api.get<Envelope<AdminRole[]>>("/api/admin/roles");
@@ -23,4 +23,12 @@ export function fetchUsers() {
 
 export function setUserRoles(id: string, roleIds: string[]) {
   return api.put<Envelope<{ ok: true }>>(`/api/admin/users/${id}/roles`, { roleIds });
+}
+
+export function setAiAccessGrant(id: string, scope: AiAccessScope) {
+  return api.put<Envelope<{ ok: true }>>(`/api/admin/users/${id}/ai-access`, { scope });
+}
+
+export function revokeAiAccessGrant(id: string) {
+  return api.del<Envelope<{ ok: true }>>(`/api/admin/users/${id}/ai-access`);
 }

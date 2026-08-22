@@ -14,6 +14,13 @@ import { Button } from "@/components/ui/button";
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
 import { fullName } from "@/lib/format";
 import { useUsers } from "./hooks";
+import type { AiAccessScope } from "./types";
+
+const AI_SCOPE_LABEL: Record<AiAccessScope, string> = {
+  TEAM: "AI: ทีม",
+  DEPARTMENT: "AI: แผนก",
+  COMPANY: "AI: องค์กร",
+};
 
 export function UsersRoles() {
   const { data, isLoading, isError, refetch } = useUsers();
@@ -52,12 +59,22 @@ export function UsersRoles() {
                   ) : (
                     <span className="text-xs text-muted-foreground">— ไม่มีบทบาท —</span>
                   )}
+                  {u.aiAccessScope && (
+                    <span className="rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
+                      {AI_SCOPE_LABEL[u.aiAccessScope]}
+                    </span>
+                  )}
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="outline" size="sm" render={<Link href={`/admin/users/${u.id}/roles`} />}>
-                  แก้ไขบทบาท
-                </Button>
+                <div className="flex justify-end gap-1.5">
+                  <Button variant="outline" size="sm" render={<Link href={`/admin/users/${u.id}/roles`} />}>
+                    แก้ไขบทบาท
+                  </Button>
+                  <Button variant="outline" size="sm" render={<Link href={`/admin/users/${u.id}/ai-access`} />}>
+                    AI Assistant
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}

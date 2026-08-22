@@ -1,10 +1,12 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { requirePermission } from "@/lib/auth/guard";
+import { requireSession } from "@/lib/auth/guard";
+import { Forbidden } from "@/lib/api/errors";
 import { getRequestMeta } from "@/lib/api/request";
 import { ok, handleApiError } from "@/lib/api/response";
 import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError, withGeminiRetry } from "@/lib/ai/client";
 import { executeTool, toGeminiTools } from "@/lib/ai/tools";
+import { resolveAiAccess, employeeScopeWhere } from "@/lib/ai/scope";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -45,7 +47,10 @@ function buildSystemPrompt(companyName: string, userName: string, today: string)
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requirePermission("ai:read");
+    const session = await requireSession();
+    const access = await resolveAiAccess(session);
+    if (!access.allowed) throw Forbidden();
+    const scopeWhere = await employeeScopeWhere(session, access.scope);
     const { messages: input } = bodySchema.parse(await request.json());
 
     if (!isAiConfigured()) {
@@ -107,7 +112,7 @@ export async function POST(request: NextRequest) {
           const respParts: any[] = [];
           for (const call of calls) {
             steps.push({ tool: call.name, detail: describeTool(call.name, call.args) });
-            const out = await executeTool(session, call.name, call.args as Record<string, unknown>, meta);
+            const out = await executeTool(session, call.name, call.args as Record<string, unknown>, meta, scopeWhere);
             respParts.push({ functionResponse: { name: call.name, response: { result: out } } });
           }
           contents.push({ role: "user", parts: respParts });

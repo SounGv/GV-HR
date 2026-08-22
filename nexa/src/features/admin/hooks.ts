@@ -6,10 +6,12 @@ import {
   deleteRole,
   fetchRoles,
   fetchUsers,
+  revokeAiAccessGrant,
+  setAiAccessGrant,
   setUserRoles,
   updateRole,
 } from "./api";
-import type { RoleFormValues } from "./types";
+import type { AiAccessScope, RoleFormValues } from "./types";
 
 export const adminKeys = {
   roles: ["admin", "roles"] as const,
@@ -52,6 +54,22 @@ export function useSetUserRoles() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: { id: string; roleIds: string[] }) => setUserRoles(v.id, v.roleIds),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.users }),
+  });
+}
+
+export function useSetAiAccessGrant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; scope: AiAccessScope }) => setAiAccessGrant(v.id, v.scope),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.users }),
+  });
+}
+
+export function useRevokeAiAccessGrant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => revokeAiAccessGrant(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.users }),
   });
 }
