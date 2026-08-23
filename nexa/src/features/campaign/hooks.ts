@@ -11,6 +11,8 @@ import {
   deleteCampaign,
   fetchCampaign,
   fetchCampaigns,
+  fetchDashboard,
+  fetchDashboardCycles,
   fetchEmployeeEvaluationHistory,
   fetchEvaluationThresholds,
   fetchMyEvaluationAssignments,
@@ -26,7 +28,15 @@ import {
   updateCampaign,
   updateEvaluationThresholds,
 } from "./api";
-import type { AiDesignerRequest, CampaignFormValues, CloneCampaignValues, EvaluationThresholds, SaveDraftValues, SubmitResponseValues } from "./types";
+import type {
+  AiDesignerRequest,
+  CampaignFormValues,
+  CloneCampaignValues,
+  DashboardFilters,
+  EvaluationThresholds,
+  SaveDraftValues,
+  SubmitResponseValues,
+} from "./types";
 import { competencyKeys } from "@/features/competency/hooks";
 
 export const campaignKeys = {
@@ -38,6 +48,8 @@ export const campaignKeys = {
   myPending: ["campaigns", "my-pending"] as const,
   myAssignments: ["campaigns", "my-assignments"] as const,
   thresholds: ["campaigns", "thresholds"] as const,
+  dashboard: (filters: DashboardFilters) => ["campaigns", "dashboard", filters] as const,
+  dashboardCycles: ["campaigns", "dashboard-cycles"] as const,
 };
 
 export function useMyPendingResponses() {
@@ -165,6 +177,18 @@ export function useCloneCampaign() {
     mutationFn: ({ campaignId, input }: { campaignId: string; input: CloneCampaignValues }) => cloneCampaign(campaignId, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
   });
+}
+
+export function useDashboard(filters: DashboardFilters) {
+  return useQuery({
+    queryKey: campaignKeys.dashboard(filters),
+    queryFn: () => fetchDashboard(filters),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useDashboardCycles() {
+  return useQuery({ queryKey: campaignKeys.dashboardCycles, queryFn: fetchDashboardCycles });
 }
 
 export function useEvaluationThresholds() {

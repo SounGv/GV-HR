@@ -7,6 +7,9 @@ import type {
   CampaignFormValues,
   CampaignListItem,
   CloneCampaignValues,
+  DashboardCycle,
+  DashboardFilters,
+  DashboardResult,
   EmployeeEvaluationHistoryItem,
   EvaluationThresholds,
   MyEvaluationAssignment,
@@ -76,6 +79,23 @@ export function approveReopen(responseId: string) {
 
 export function cloneCampaign(campaignId: string, input: CloneCampaignValues) {
   return api.post<Envelope<{ id: string }>>(`/api/campaigns/${campaignId}/clone`, input);
+}
+
+export function fetchDashboard(filters: DashboardFilters) {
+  const params = new URLSearchParams();
+  if (filters.campaignId) params.set("campaignId", filters.campaignId);
+  if (filters.departmentId) params.set("departmentId", filters.departmentId);
+  if (filters.positionId) params.set("positionId", filters.positionId);
+  if (filters.managerId) params.set("managerId", filters.managerId);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.scoreMin != null) params.set("scoreMin", String(filters.scoreMin));
+  if (filters.scoreMax != null) params.set("scoreMax", String(filters.scoreMax));
+  const qs = params.toString();
+  return api.get<Envelope<DashboardResult>>(`/api/campaigns/dashboard${qs ? `?${qs}` : ""}`);
+}
+
+export function fetchDashboardCycles() {
+  return api.get<Envelope<DashboardCycle[]>>("/api/campaigns/dashboard/cycles");
 }
 
 export function fetchEvaluationThresholds() {

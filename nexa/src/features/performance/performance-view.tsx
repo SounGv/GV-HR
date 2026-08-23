@@ -31,6 +31,7 @@ import { RATER_LABEL } from "@/features/campaign/labels";
 
 import { ReviewCard } from "./review-card";
 import { DepartmentSummaryView } from "./department-summary-view";
+import { EvaluationDashboardView } from "@/features/campaign/evaluation-dashboard-view";
 import { useReviews } from "./hooks";
 
 /**
@@ -191,11 +192,16 @@ function AnalyticsTab({
   canCalibration: boolean;
   canSuccession: boolean;
 }) {
-  const first = canHrLevel ? "department-summary" : canCalibration ? "calibration" : "succession";
+  const first = canHrLevel ? "evaluation-dashboard" : canCalibration ? "calibration" : "succession";
 
   return (
     <Tabs defaultValue={first} className="space-y-4">
       <TabsList>
+        {canHrLevel && (
+          <TabsTrigger value="evaluation-dashboard">
+            <BarChart3 className="size-3.5" /> Dashboard ผลประเมิน
+          </TabsTrigger>
+        )}
         {canHrLevel && (
           <TabsTrigger value="department-summary">
             <Building2 className="size-3.5" /> สรุปแผนก
@@ -217,6 +223,11 @@ function AnalyticsTab({
           </TabsTrigger>
         )}
       </TabsList>
+      {canHrLevel && (
+        <TabsContent value="evaluation-dashboard">
+          <EvaluationDashboardView />
+        </TabsContent>
+      )}
       {canHrLevel && (
         <TabsContent value="department-summary">
           <DepartmentSummaryView />

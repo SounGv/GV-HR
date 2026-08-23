@@ -130,6 +130,58 @@ export interface EvaluationThresholds {
   evalThresholdGoodMin: number;
 }
 
+export interface DashboardFilters {
+  campaignId?: string;
+  departmentId?: string;
+  positionId?: string;
+  managerId?: string;
+  status?: ScoreStatus;
+  scoreMin?: number;
+  scoreMax?: number;
+}
+
+export interface DashboardCycle {
+  id: string;
+  name: string;
+  cycle: string;
+}
+
+export interface DashboardResult {
+  campaign: { id: string; name: string; cycle: string; status: CampaignStatus };
+  kpi: {
+    totalParticipants: number;
+    completed: number;
+    notDone: number;
+    avgScore: number | null;
+    countNeedsImprovementOrWatch: number;
+    countUrgent: number;
+    pendingPlans: number;
+    previousCycleName: string | null;
+    previousAvgScore: number | null;
+  };
+  charts: {
+    statusDistribution: { status: ScoreStatus; count: number }[];
+    avgByDepartment: { name: string; avgScore: number }[];
+    avgByPosition: { name: string; avgScore: number }[];
+    lowestTopicsOverall: { label: string; avgScorePercent: number; mentions: number }[];
+  };
+  table: {
+    participantId: string;
+    employeeId: string;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    department: string | null;
+    position: string | null;
+    scorePercent: number | null;
+    scoreStatus: ScoreStatus | null;
+    lowestTopic: string | null;
+    finalized: boolean;
+    planStatus: string | null;
+    followUpDate: string | null;
+  }[];
+}
+
 export interface SubmitResponseValues {
   scores?: { competencyId: string; score: number }[];
   answers?: { questionId: string; value: string }[];
