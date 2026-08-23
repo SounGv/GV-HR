@@ -1675,6 +1675,8 @@ enum EvaluationAnswerType {
   CHOICE
   YES_NO
   LONG_TEXT
+  SHORT_TEXT // never scored, same as LONG_TEXT — UI hint only (single-line input)
+  FILE_EVIDENCE // never scored — pairs with EvaluationResponse.evidenceUrls
 }
 
 model EvaluationTemplate {

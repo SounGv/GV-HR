@@ -27,5 +27,8 @@ export interface CompanyProfile {
   leaveQuotaAnnualDays: number;
   leaveQuotaSickDays: number;
   leaveQuotaPersonalDays: number;
+  evalThresholdUrgentMax: number;
+  evalThresholdWatchMax: number;
+  evalThresholdGoodMin: number;
   updatedAt: string;
 }

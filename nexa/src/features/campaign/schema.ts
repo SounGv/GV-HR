@@ -14,6 +14,8 @@ const campaignCreateBaseSchema = z.object({
   cycle: z.string().trim().min(1, "กรุณาระบุรอบการประเมิน").max(40),
   startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่ม"),
   endDate: z.string().min(1, "กรุณาเลือกวันที่สิ้นสุด"),
+  acknowledgeDueDate: z.string().optional(),
+  followUpDate: z.string().optional(),
   raterTypes: raterTypesSchema.default(["SELF", "MANAGER"]),
   // Mutually exclusive — a campaign either scores against the new Evaluation
   // Template (Section -> Question) or the legacy Competency list, never both.
@@ -21,6 +23,9 @@ const campaignCreateBaseSchema = z.object({
   competencies: z.array(competencyWeightSchema).optional(),
   aiGenerated: z.boolean().optional(),
   aiRationale: z.string().max(2000).optional(),
+  // "สร้างรอบใหม่จากรอบเดิม" lineage — set by cloneCampaign, never by the
+  // client directly (not part of the create form).
+  clonedFromId: z.string().uuid().optional(),
 });
 
 export const campaignCreateSchema = campaignCreateBaseSchema.refine(
@@ -34,16 +39,52 @@ export const campaignUpdateSchema = z.object({
   cycle: z.string().trim().min(1).max(40).optional(),
   startDate: z.string().min(1).optional(),
   endDate: z.string().min(1).optional(),
-  status: z.enum(["DRAFT", "ACTIVE", "CLOSED"]).optional(),
+  acknowledgeDueDate: z.string().optional(),
+  followUpDate: z.string().optional(),
+  status: z.enum(["DRAFT", "ACTIVE", "CLOSED", "ARCHIVED"]).optional(),
   raterTypes: raterTypesSchema.optional(),
   competencies: z.array(competencyWeightSchema).min(1).optional(),
 });
 export type CampaignUpdateInput = z.infer<typeof campaignUpdateSchema>;
 
 export const campaignListQuerySchema = z.object({
-  status: z.enum(["DRAFT", "ACTIVE", "CLOSED"]).optional(),
+  status: z.enum(["DRAFT", "ACTIVE", "CLOSED", "ARCHIVED"]).optional(),
 });
 export type CampaignListQuery = z.infer<typeof campaignListQuerySchema>;
+
+/** "สร้างรอบใหม่จากรอบเดิม" — see cloneCampaign in service.ts. */
+export const cloneCampaignSchema = z.object({
+  name: z.string().trim().min(1, "กรุณาระบุชื่อรอบใหม่").max(200),
+  cycle: z.string().trim().min(1, "กรุณาระบุรอบการประเมิน").max(40),
+  startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่ม"),
+  endDate: z.string().min(1, "กรุณาเลือกวันที่สิ้นสุด"),
+  acknowledgeDueDate: z.string().optional(),
+  followUpDate: z.string().optional(),
+  // Which of the source campaign's competency categories to bring along —
+  // omitted/empty means "all". Only meaningful for the legacy Competency
+  // path; a Template-based source is always cloned in full (the template
+  // itself is versioned, not filtered question-by-question).
+  categoryIds: z.array(z.string().uuid()).optional(),
+  raterTypes: raterTypesSchema.optional(),
+  employeeIds: z.array(z.string().uuid()).optional(),
+});
+export type CloneCampaignInput = z.infer<typeof cloneCampaignSchema>;
+
+export const evaluationThresholdsSchema = z
+  .object({
+    evalThresholdUrgentMax: z.coerce.number().min(0).max(100),
+    evalThresholdWatchMax: z.coerce.number().min(0).max(100),
+    evalThresholdGoodMin: z.coerce.number().min(0).max(100),
+  })
+  .refine((v) => v.evalThresholdUrgentMax < v.evalThresholdWatchMax, {
+    message: "เกณฑ์ 'ต้องแก้ไขเร่งด่วน' ต้องน้อยกว่าเกณฑ์ 'ต้องติดตาม'",
+    path: ["evalThresholdWatchMax"],
+  })
+  .refine((v) => v.evalThresholdWatchMax < v.evalThresholdGoodMin, {
+    message: "เกณฑ์ 'ต้องติดตาม' ต้องน้อยกว่าเกณฑ์ 'ดี/ดีเยี่ยม'",
+    path: ["evalThresholdGoodMin"],
+  });
+export type EvaluationThresholdsInput = z.infer<typeof evaluationThresholdsSchema>;
 
 export const addParticipantsSchema = z.object({
   employeeIds: z.array(z.string().uuid()).min(1, "กรุณาเลือกพนักงานอย่างน้อย 1 คน"),

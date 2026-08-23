@@ -1079,3 +1079,39 @@ export async function getEmployeeEvaluationHistory(
     campaign: r.campaign,
   }));
 }
+
+const thresholdSelect = {
+  evalThresholdUrgentMax: true,
+  evalThresholdWatchMax: true,
+  evalThresholdGoodMin: true,
+} satisfies Prisma.CompanySelect;
+
+/** HR-editable score bands (%) — see EvaluationScoreStatus. Never hardcoded
+ * in the frontend; read fresh on every score computation. */
+export async function getEvaluationThresholds(companyId: string) {
+  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: thresholdSelect });
+  return company;
+}
+
+export async function updateEvaluationThresholds(
+  companyId: string,
+  input: { evalThresholdUrgentMax: number; evalThresholdWatchMax: number; evalThresholdGoodMin: number },
+  session: AccessClaims,
+  meta?: Meta,
+) {
+  const before = await prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: thresholdSelect });
+  const updated = await prisma.company.update({ where: { id: companyId }, data: input, select: thresholdSelect });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.update_thresholds",
+    entity: "Company",
+    entityId: companyId,
+    before,
+    after: updated,
+    ...meta,
+  });
+
+  return updated;
+}

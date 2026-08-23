@@ -34,6 +34,9 @@ const profileSelect = {
   leaveQuotaAnnualDays: true,
   leaveQuotaSickDays: true,
   leaveQuotaPersonalDays: true,
+  evalThresholdUrgentMax: true,
+  evalThresholdWatchMax: true,
+  evalThresholdGoodMin: true,
   updatedAt: true,
 } satisfies Prisma.CompanySelect;
 

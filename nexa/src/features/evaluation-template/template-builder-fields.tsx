@@ -17,7 +17,11 @@ export const ANSWER_TYPE_LABEL: Record<AnswerType, string> = {
   CHOICE: "ตัวเลือก",
   YES_NO: "ใช่ / ไม่ใช่",
   LONG_TEXT: "ข้อความยาว",
+  SHORT_TEXT: "ข้อความสั้น",
+  FILE_EVIDENCE: "แนบไฟล์หลักฐาน",
 };
+
+const NON_SCORING_TYPES = new Set<AnswerType>(["LONG_TEXT", "SHORT_TEXT", "FILE_EVIDENCE"]);
 
 function defaultOptionsFor(type: AnswerType): TemplateOption[] | undefined {
   switch (type) {
@@ -41,6 +45,8 @@ function defaultOptionsFor(type: AnswerType): TemplateOption[] | undefined {
         { value: "", label: "", score: 0 },
       ];
     case "LONG_TEXT":
+    case "SHORT_TEXT":
+    case "FILE_EVIDENCE":
       return undefined;
   }
 }
@@ -71,7 +77,7 @@ function OptionsEditor({
   options: TemplateOption[];
   onChange: (options: TemplateOption[]) => void;
 }) {
-  if (answerType === "LONG_TEXT") return null;
+  if (NON_SCORING_TYPES.has(answerType)) return null;
 
   if (answerType === "NUMERIC") {
     const min = options[0] ? Number(options[0].value) : 1;
@@ -254,13 +260,14 @@ export function QuestionEditor({
         </Select>
 
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          น้ำหนัก
+          น้ำหนัก (%)
           <Input
             type="number"
             min={1}
-            max={10}
+            max={100}
             className="h-8 w-16"
-            value={question.weight}
+            disabled={NON_SCORING_TYPES.has(question.answerType)}
+            value={NON_SCORING_TYPES.has(question.answerType) ? 0 : question.weight}
             onChange={(e) => onChange({ ...question, weight: Number(e.target.value) || 1 })}
           />
         </label>
@@ -436,8 +443,24 @@ export function SectionListEditor({
     onChange(sections.filter((_, idx) => idx !== i));
   }
 
+  const totalWeight = sections
+    .flatMap((s) => s.questions)
+    .filter((q) => !NON_SCORING_TYPES.has(q.answerType))
+    .reduce((sum, q) => sum + (q.weight || 0), 0);
+  const weightOk = totalWeight === 100;
+
   return (
     <div className="space-y-3">
+      <div
+        className={cn(
+          "flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium",
+          weightOk ? "border-success/30 bg-success/10 text-success" : "border-destructive/30 bg-destructive/10 text-destructive",
+        )}
+      >
+        <span>น้ำหนักคะแนนรวม (ไม่นับข้อความอิสระ/แนบไฟล์)</span>
+        <span>{totalWeight}% {weightOk ? "✓" : "— ต้องเท่ากับ 100% จึงจะบันทึกได้"}</span>
+      </div>
+
       <Reorder.Group axis="y" values={sections} onReorder={onChange} className="space-y-3">
         {sections.map((s, i) => (
           <DraggableSectionItem

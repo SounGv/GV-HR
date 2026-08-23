@@ -47,6 +47,7 @@ function toRendererSections(sections: SectionFormValues[]): TemplateSection[] {
       required: q.required,
       order: qi,
       visibleTo: q.visibleTo,
+      competencyId: q.competencyId ?? null,
     })),
   }));
 }
@@ -70,6 +71,7 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
             required: q.required,
             order: q.order ?? qi,
             visibleTo: q.visibleTo,
+            competencyId: q.competencyId ?? undefined,
           })),
         }))
       : [emptySection(0)],

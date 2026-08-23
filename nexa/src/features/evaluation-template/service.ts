@@ -8,6 +8,8 @@ import type { CampaignTemplateSnapshot } from "./types";
 
 type Meta = { ip?: string; userAgent?: string };
 
+const NON_SCORING_ANSWER_TYPES = new Set(["LONG_TEXT", "SHORT_TEXT", "FILE_EVIDENCE"]);
+
 const sectionSelect = {
   id: true,
   name: true,
@@ -23,10 +25,18 @@ const sectionSelect = {
       required: true,
       order: true,
       visibleTo: true,
+      competencyId: true,
     },
     orderBy: { order: "asc" },
   },
 } satisfies Prisma.EvaluationTemplateSectionSelect;
+
+function totalWeightOf(sections: { questions: { answerType: string; weight: number }[] }[]): number {
+  return sections
+    .flatMap((s) => s.questions)
+    .filter((q) => !NON_SCORING_ANSWER_TYPES.has(q.answerType))
+    .reduce((sum, q) => sum + q.weight, 0);
+}
 
 export async function listTemplates(companyId: string, query: TemplateListQuery) {
   const templates = await prisma.evaluationTemplate.findMany({
@@ -38,7 +48,12 @@ export async function listTemplates(companyId: string, query: TemplateListQuery)
       status: true,
       aiGenerated: true,
       updatedAt: true,
-      sections: { select: { _count: { select: { questions: true } } } },
+      version: true,
+      evaluationType: true,
+      departmentId: true,
+      positionId: true,
+      clonedFromId: true,
+      sections: { select: { questions: { select: { answerType: true, weight: true } }, _count: { select: { questions: true } } } },
       _count: { select: { sections: true } },
     },
     orderBy: { updatedAt: "desc" },
@@ -52,8 +67,14 @@ export async function listTemplates(companyId: string, query: TemplateListQuery)
     status: t.status,
     aiGenerated: t.aiGenerated,
     updatedAt: t.updatedAt,
+    version: t.version,
+    evaluationType: t.evaluationType,
+    departmentId: t.departmentId,
+    positionId: t.positionId,
+    clonedFromId: t.clonedFromId,
     sectionCount: t._count.sections,
     questionCount: t.sections.reduce((sum, s) => sum + s._count.questions, 0),
+    totalWeight: totalWeightOf(t.sections),
   }));
 }
 
@@ -68,7 +89,13 @@ export async function getTemplate(companyId: string, id: string) {
       aiGenerated: true,
       aiRationale: true,
       updatedAt: true,
+      version: true,
+      evaluationType: true,
+      departmentId: true,
+      positionId: true,
+      clonedFromId: true,
       sections: { select: sectionSelect, orderBy: { order: "asc" } },
+      _count: { select: { campaigns: true } },
     },
   });
   if (!template) throw NotFound("ไม่พบแบบประเมิน");
@@ -78,6 +105,8 @@ export async function getTemplate(companyId: string, id: string) {
     sections: template.sections as unknown as CampaignTemplateSnapshot["sections"],
     sectionCount: template.sections.length,
     questionCount: template.sections.reduce((sum, s) => sum + s.questions.length, 0),
+    totalWeight: totalWeightOf(template.sections),
+    campaignCount: template._count.campaigns,
   };
 }
 
@@ -92,6 +121,9 @@ export async function createTemplate(
       companyId,
       name: input.name,
       description: input.description,
+      evaluationType: input.evaluationType,
+      departmentId: input.departmentId,
+      positionId: input.positionId,
       aiGenerated: input.aiGenerated ?? false,
       aiRationale: input.aiRationale,
       createdById: session.sub,
@@ -110,6 +142,7 @@ export async function createTemplate(
               required: q.required,
               order: q.order ?? qi,
               visibleTo: q.visibleTo,
+              competencyId: q.competencyId,
             })),
           },
         })),
@@ -165,6 +198,9 @@ export async function updateTemplate(
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
+      ...(input.evaluationType !== undefined ? { evaluationType: input.evaluationType } : {}),
+      ...(input.departmentId !== undefined ? { departmentId: input.departmentId } : {}),
+      ...(input.positionId !== undefined ? { positionId: input.positionId } : {}),
       updatedById: session.sub,
       ...(changingSections
         ? {
@@ -182,6 +218,8 @@ export async function updateTemplate(
                     weight: q.weight,
                     required: q.required,
                     order: q.order ?? qi,
+                    visibleTo: q.visibleTo,
+                    competencyId: q.competencyId,
                   })),
                 },
               })),
@@ -225,6 +263,78 @@ export async function deleteTemplate(companyId: string, session: AccessClaims, i
     before: { name: existing.name },
     ...meta,
   });
+}
+
+/**
+ * "คัดลอกแบบประเมิน" — a fresh DRAFT template (version = source.version + 1,
+ * clonedFromId = source.id) with every section/question deep-copied,
+ * including each question's bank link (competencyId) so it still counts
+ * toward that bank item's usage. The source template — and every campaign
+ * that already snapshotted it — is completely untouched.
+ */
+export async function cloneTemplate(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+  const source = await prisma.evaluationTemplate.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: {
+      name: true,
+      description: true,
+      evaluationType: true,
+      departmentId: true,
+      positionId: true,
+      version: true,
+      sections: { select: sectionSelect, orderBy: { order: "asc" } },
+    },
+  });
+  if (!source) throw NotFound("ไม่พบแบบประเมิน");
+
+  const clone = await prisma.evaluationTemplate.create({
+    data: {
+      companyId,
+      name: `${source.name} (คัดลอก)`,
+      description: source.description,
+      evaluationType: source.evaluationType,
+      departmentId: source.departmentId,
+      positionId: source.positionId,
+      version: source.version + 1,
+      clonedFromId: id,
+      status: "DRAFT",
+      createdById: session.sub,
+      updatedById: session.sub,
+      sections: {
+        create: source.sections.map((s) => ({
+          name: s.name,
+          order: s.order,
+          questions: {
+            create: s.questions.map((q) => ({
+              text: q.text,
+              helpText: q.helpText,
+              answerType: q.answerType,
+              options: q.options as Prisma.InputJsonValue[] | undefined,
+              weight: q.weight,
+              required: q.required,
+              order: q.order,
+              visibleTo: q.visibleTo,
+              competencyId: q.competencyId,
+            })),
+          },
+        })),
+      },
+    },
+    select: { id: true },
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "evaluation_template.clone",
+    entity: "EvaluationTemplate",
+    entityId: clone.id,
+    before: { clonedFromId: id },
+    after: { name: `${source.name} (คัดลอก)` },
+    ...meta,
+  });
+
+  return { id: clone.id };
 }
 
 /**

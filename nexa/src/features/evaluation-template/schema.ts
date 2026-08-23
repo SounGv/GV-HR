@@ -6,18 +6,28 @@ const optionSchema = z.object({
   score: z.coerce.number().min(0).max(100),
 });
 
+const ANSWER_TYPES = ["NUMERIC", "LETTER", "CHOICE", "YES_NO", "LONG_TEXT", "SHORT_TEXT", "FILE_EVIDENCE"] as const;
+const NON_SCORING_ANSWER_TYPES = new Set(["LONG_TEXT", "SHORT_TEXT", "FILE_EVIDENCE"]);
+
 const questionSchema = z
   .object({
     text: z.string().trim().min(1, "กรุณาระบุคำถาม").max(500),
     helpText: z.string().trim().max(500).optional(),
-    answerType: z.enum(["NUMERIC", "LETTER", "CHOICE", "YES_NO", "LONG_TEXT"]),
+    answerType: z.enum(ANSWER_TYPES),
     options: z.array(optionSchema).max(20).optional(),
-    weight: z.coerce.number().int().min(1, "1-10").max(10, "1-10").default(1),
+    // Weight is now a percentage-point share of the whole template (see the
+    // template-level sum-to-100 refine below), not a small 1-10 relative
+    // importance number — HR sees this as "% of total score" in the UI.
+    weight: z.coerce.number().int().min(1, "1-100").max(100, "1-100").default(1),
     required: z.boolean().default(true),
     order: z.coerce.number().int().min(0).default(0),
     visibleTo: z.array(z.enum(["SELF", "MANAGER", "PEER", "UPWARD", "HR_EXEC"])).default([]),
+    // Set when this question was pulled from the reusable Question Bank
+    // (Competency) — text/weight/options above are still copied per-template
+    // so they can be tweaked without mutating the shared bank entry.
+    competencyId: z.string().uuid().optional(),
   })
-  .refine((q) => q.answerType === "LONG_TEXT" || (q.options && q.options.length >= 2), {
+  .refine((q) => NON_SCORING_ANSWER_TYPES.has(q.answerType) || (q.options && q.options.length >= 2), {
     message: "ต้องมีตัวเลือกอย่างน้อย 2 รายการ",
     path: ["options"],
   })
@@ -35,21 +45,61 @@ const sectionSchema = z.object({
   questions: z.array(questionSchema).min(1, "ต้องมีอย่างน้อย 1 ข้อย่อยต่อหมวด"),
 });
 
-export const templateCreateSchema = z.object({
-  name: z.string().trim().min(1, "กรุณาระบุชื่อแบบประเมิน").max(200),
-  description: z.string().trim().max(1000).optional(),
-  sections: z.array(sectionSchema).min(1, "ต้องมีอย่างน้อย 1 หมวด"),
-  aiGenerated: z.boolean().optional(),
-  aiRationale: z.string().max(2000).optional(),
-});
+/** Every scoring question's weight (across every section) must sum to
+ * exactly 100 — non-scoring types (LONG_TEXT/SHORT_TEXT/FILE_EVIDENCE) are
+ * excluded since they never contribute to the score. */
+function weightSumsTo100(sections: { questions: { answerType: string; weight: number }[] }[]): boolean {
+  const total = sections
+    .flatMap((s) => s.questions)
+    .filter((q) => !NON_SCORING_ANSWER_TYPES.has(q.answerType))
+    .reduce((sum, q) => sum + q.weight, 0);
+  return total === 100;
+}
+
+/** Flags an exact-duplicate question (same text + answerType) so HR notices
+ * before publishing rather than after employees start answering it twice. */
+function hasNoDuplicateQuestions(sections: { questions: { text: string; answerType: string }[] }[]): boolean {
+  const seen = new Set<string>();
+  for (const q of sections.flatMap((s) => s.questions)) {
+    const key = `${q.text.trim().toLowerCase()}|${q.answerType}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+  }
+  return true;
+}
+
+const WEIGHT_MESSAGE = { message: "น้ำหนักคะแนนรวมของทุกข้อ (ไม่นับข้อความอิสระ/แนบไฟล์) ต้องเท่ากับ 100%", path: ["sections"] as string[] };
+const DUPLICATE_MESSAGE = { message: "มีคำถามซ้ำกันในแบบประเมินนี้", path: ["sections"] as string[] };
+
+export const templateCreateSchema = z
+  .object({
+    name: z.string().trim().min(1, "กรุณาระบุชื่อแบบประเมิน").max(200),
+    description: z.string().trim().max(1000).optional(),
+    evaluationType: z.string().trim().max(60).optional(),
+    departmentId: z.string().uuid().optional(),
+    positionId: z.string().uuid().optional(),
+    sections: z.array(sectionSchema).min(1, "ต้องมีอย่างน้อย 1 หมวด"),
+    aiGenerated: z.boolean().optional(),
+    aiRationale: z.string().max(2000).optional(),
+  })
+  .refine((v) => weightSumsTo100(v.sections), WEIGHT_MESSAGE)
+  .refine((v) => hasNoDuplicateQuestions(v.sections), DUPLICATE_MESSAGE);
 export type TemplateCreateInput = z.infer<typeof templateCreateSchema>;
 
-export const templateUpdateSchema = z.object({
-  name: z.string().trim().min(1).max(200).optional(),
-  description: z.string().trim().max(1000).optional(),
-  status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
-  sections: z.array(sectionSchema).min(1).optional(),
-});
+// The weight/duplicate check only makes sense when `sections` is actually
+// part of this particular update — a status-only PATCH has none.
+export const templateUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200).optional(),
+    description: z.string().trim().max(1000).optional(),
+    status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
+    evaluationType: z.string().trim().max(60).optional(),
+    departmentId: z.string().uuid().optional(),
+    positionId: z.string().uuid().optional(),
+    sections: z.array(sectionSchema).min(1).optional(),
+  })
+  .refine((v) => !v.sections || weightSumsTo100(v.sections), WEIGHT_MESSAGE)
+  .refine((v) => !v.sections || hasNoDuplicateQuestions(v.sections), DUPLICATE_MESSAGE);
 export type TemplateUpdateInput = z.infer<typeof templateUpdateSchema>;
 
 export const templateListQuerySchema = z.object({

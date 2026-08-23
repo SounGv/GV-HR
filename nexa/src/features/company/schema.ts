@@ -70,6 +70,21 @@ export const companyProfileSchema = z.object({
   leaveQuotaAnnualDays: z.coerce.number().int().min(0).max(365).default(10),
   leaveQuotaSickDays: z.coerce.number().int().min(0).max(365).default(30),
   leaveQuotaPersonalDays: z.coerce.number().int().min(0).max(365).default(3),
-});
+
+  // Evaluation score bands (%) — see EvaluationScoreStatus. HR-editable so
+  // nothing is hardcoded in the frontend; cross-field order is enforced
+  // below so the three cut points can never end up non-ascending.
+  evalThresholdUrgentMax: z.coerce.number().min(0).max(100).default(66.67),
+  evalThresholdWatchMax: z.coerce.number().min(0).max(100).default(74.99),
+  evalThresholdGoodMin: z.coerce.number().min(0).max(100).default(83.33),
+})
+  .refine((v) => v.evalThresholdUrgentMax < v.evalThresholdWatchMax, {
+    message: "เกณฑ์ 'ต้องแก้ไขเร่งด่วน' ต้องน้อยกว่าเกณฑ์ 'ต้องติดตาม'",
+    path: ["evalThresholdWatchMax"],
+  })
+  .refine((v) => v.evalThresholdWatchMax < v.evalThresholdGoodMin, {
+    message: "เกณฑ์ 'ต้องติดตาม' ต้องน้อยกว่าเกณฑ์ 'ดี/ดีเยี่ยม'",
+    path: ["evalThresholdGoodMin"],
+  });
 
 export type CompanyProfileInput = z.infer<typeof companyProfileSchema>;

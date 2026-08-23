@@ -1,5 +1,5 @@
 export type TemplateStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
-export type AnswerType = "NUMERIC" | "LETTER" | "CHOICE" | "YES_NO" | "LONG_TEXT";
+export type AnswerType = "NUMERIC" | "LETTER" | "CHOICE" | "YES_NO" | "LONG_TEXT" | "SHORT_TEXT" | "FILE_EVIDENCE";
 
 // Duplicated from campaign/types.ts's RaterType rather than imported — that
 // module imports CampaignTemplateSnapshot from here, so importing back would
@@ -23,6 +23,9 @@ export interface TemplateQuestion {
   order: number;
   /** Which rater types see/answer this question — empty means everyone. */
   visibleTo: TemplateVisibleToType[];
+  /** Set when this question was pulled from the reusable Question Bank
+   * (Competency) rather than authored ad-hoc. */
+  competencyId: string | null;
 }
 
 export interface TemplateSection {
@@ -40,12 +43,21 @@ export interface TemplateListItem {
   aiGenerated: boolean;
   sectionCount: number;
   questionCount: number;
+  totalWeight: number;
+  version: number;
+  evaluationType: string | null;
+  departmentId: string | null;
+  positionId: string | null;
+  clonedFromId: string | null;
   updatedAt: string;
 }
 
 export interface TemplateDetail extends TemplateListItem {
   aiRationale: string | null;
   sections: TemplateSection[];
+  /** How many campaigns (any status) currently reference this template —
+   * "used in N cycles" hint in the list/detail view. */
+  campaignCount: number;
 }
 
 export interface QuestionFormValues {
@@ -57,6 +69,7 @@ export interface QuestionFormValues {
   required: boolean;
   order: number;
   visibleTo: TemplateVisibleToType[];
+  competencyId?: string | null;
 }
 
 export interface SectionFormValues {
@@ -69,6 +82,9 @@ export interface TemplateFormValues {
   name: string;
   description?: string;
   status?: TemplateStatus;
+  evaluationType?: string;
+  departmentId?: string;
+  positionId?: string;
   sections: SectionFormValues[];
   aiGenerated?: boolean;
   aiRationale?: string;

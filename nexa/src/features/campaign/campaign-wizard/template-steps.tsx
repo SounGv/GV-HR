@@ -43,6 +43,7 @@ export function draftToRendererSections(sections: SectionFormValues[]): Template
       required: q.required,
       order: qi,
       visibleTo: q.visibleTo,
+      competencyId: q.competencyId ?? null,
     })),
   }));
 }
