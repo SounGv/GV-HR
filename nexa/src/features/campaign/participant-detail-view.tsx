@@ -21,9 +21,40 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { sendChat } from "@/features/ai/api";
 import { groupByCategory } from "@/lib/competency-grouping";
-import { useInviteRater, useParticipant, useRemoveRater, useSubmitMyResponse } from "./hooks";
+import {
+  useAcknowledgeResult,
+  useApproveReopen,
+  useInviteRater,
+  useParticipant,
+  useRemoveRater,
+  useRequestReopen,
+  useSaveDraftResponse,
+  useSubmitMyResponse,
+} from "./hooks";
 import { RATER_LABEL } from "./labels";
-import type { CampaignCompetency, ParticipantDetail } from "./types";
+import type { CampaignCompetency, ParticipantDetail, ScoreStatus } from "./types";
+
+const SCORE_STATUS_LABEL: Record<ScoreStatus, string> = {
+  GOOD: "ดี/ดีเยี่ยม",
+  NEEDS_IMPROVEMENT: "มีบางจุดต้องปรับปรุง",
+  WATCH: "ต้องติดตาม",
+  URGENT: "ต้องแก้ไขเร่งด่วน",
+};
+
+const SCORE_STATUS_CLASS: Record<ScoreStatus, string> = {
+  GOOD: "bg-success/10 text-success",
+  NEEDS_IMPROVEMENT: "bg-warning/10 text-warning",
+  WATCH: "bg-warning/10 text-warning",
+  URGENT: "bg-destructive/10 text-destructive",
+};
+
+/** Per requirement 7's wording rule — never a harsh phrase like "ทำงานแย่". */
+const SCORE_STATUS_MESSAGE: Record<ScoreStatus, string> = {
+  GOOD: "ผลงานอยู่ในเกณฑ์ดี",
+  NEEDS_IMPROVEMENT: "มีบางหัวข้อที่ควรพัฒนาเพิ่มเติม หัวหน้าจะช่วยวางแผนปรับปรุงร่วมกัน",
+  WATCH: "ควรติดตามผลอย่างใกล้ชิดในรอบถัดไป",
+  URGENT: "มีบางหัวข้อที่ควรพัฒนาเพิ่มเติม หัวหน้าจะช่วยวางแผนปรับปรุงร่วมกัน — ระบบสร้างแผนพัฒนาให้อัตโนมัติแล้ว",
+};
 
 /** Compact text summary of every submitted response, for the AI to reason over. */
 function participantToPrompt(participant: ParticipantDetail): string {
@@ -70,6 +101,11 @@ export function ParticipantDetailView({ participantId }: { participantId: string
   const [aiText, setAiText] = useState("");
 
   const participant = data?.data;
+  const saveDraftMutation = useSaveDraftResponse(participantId);
+  const acknowledgeMutation = useAcknowledgeResult();
+  const requestReopenMutation = useRequestReopen();
+  const approveReopenMutation = useApproveReopen();
+  const [reopenTarget, setReopenTarget] = useState<{ responseId: string; note: string } | null>(null);
 
   const canManageRaters = can("campaign:approve") || (!!myEmployeeId && myEmployeeId === participant?.employee.managerId);
 
@@ -133,7 +169,54 @@ export function ParticipantDetailView({ participantId }: { participantId: string
     }
   }
 
+  async function saveDraft() {
+    try {
+      await saveDraftMutation.mutateAsync(
+        participant!.campaign.templateSnapshot
+          ? { answers: Object.entries(answers).map(([questionId, value]) => ({ questionId, value })) }
+          : { scores: Object.entries(scores).map(([competencyId, score]) => ({ competencyId, score })) },
+      );
+      toast.success("บันทึกแบบร่างแล้ว — กลับมาทำต่อได้ทีหลัง");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "บันทึกแบบร่างไม่สำเร็จ");
+    }
+  }
+
+  async function acknowledge() {
+    try {
+      await acknowledgeMutation.mutateAsync(participantId);
+      toast.success("รับทราบผลการประเมินแล้ว");
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "รับทราบไม่สำเร็จ");
+    }
+  }
+
+  async function submitReopenRequest() {
+    if (!reopenTarget) return;
+    try {
+      await requestReopenMutation.mutateAsync({ responseId: reopenTarget.responseId, note: reopenTarget.note });
+      toast.success("ส่งคำขอเปิดแก้ไขใหม่แล้ว — รอ HR อนุมัติ");
+      setReopenTarget(null);
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ส่งคำขอไม่สำเร็จ");
+    }
+  }
+
+  async function approveReopen(responseId: string) {
+    try {
+      await approveReopenMutation.mutateAsync(responseId);
+      toast.success("เปิดแก้ไขใหม่แล้ว");
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "อนุมัติไม่สำเร็จ");
+    }
+  }
+
   const hasSubmittedResponses = participant.fullResponses.some((r) => r.status === "SUBMITTED");
+  const canAcknowledge =
+    !!myEmployeeId && myEmployeeId === participant.employee.id && !!participant.finalizedAt && !participant.employeeAcknowledged;
 
   async function analyzeWithAi() {
     setAiOpen(true);
@@ -180,12 +263,52 @@ export function ParticipantDetailView({ participantId }: { participantId: string
         )}
       </div>
 
-      {participant.overallScore != null && (
-        <Card className="gap-1 bg-primary/5 p-4">
-          <p className="text-xs text-muted-foreground">คะแนนรวม (จากหัวหน้างาน)</p>
-          <p className="text-2xl font-semibold text-foreground">
-            {participant.overallScore.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">· {participant.band}</span>
-          </p>
+      {participant.scorePercent != null && (
+        <Card className="gap-2 bg-primary/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs text-muted-foreground">คะแนนรวม (ถ่วงน้ำหนัก)</p>
+              <p className="text-2xl font-semibold text-foreground">
+                {participant.scorePercent.toFixed(1)}%
+                {participant.rawScore != null && participant.maxScore != null && (
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                    ({participant.rawScore.toFixed(1)}/{participant.maxScore.toFixed(1)} คะแนนดิบ · {participant.questionCount} ข้อ · ผู้ประเมิน {participant.evaluatorCount} คน)
+                  </span>
+                )}
+              </p>
+            </div>
+            {participant.scoreStatus && (
+              <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium ${SCORE_STATUS_CLASS[participant.scoreStatus]}`}>
+                {SCORE_STATUS_LABEL[participant.scoreStatus]}
+              </span>
+            )}
+          </div>
+          {participant.scoreStatus && participant.scoreStatus !== "GOOD" && (
+            <p className="text-sm text-muted-foreground">{SCORE_STATUS_MESSAGE[participant.scoreStatus]}</p>
+          )}
+          {participant.lowestTopics && participant.lowestTopics.length > 0 && participant.scoreStatus !== "GOOD" && (
+            <div className="mt-1 space-y-1 border-t border-border pt-2">
+              <p className="text-xs font-medium text-muted-foreground">หัวข้อที่คะแนนต่ำสุด</p>
+              {participant.lowestTopics.map((t) => (
+                <div key={t.key} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{t.label}</span>
+                  <span className="font-medium text-foreground">{t.score}/{t.maxScore}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {participant.finalizedAt && (
+            <div className="mt-1 flex items-center justify-between gap-2 border-t border-border pt-2">
+              <span className="text-sm text-muted-foreground">
+                {participant.employeeAcknowledged ? "พนักงานรับทราบผลแล้ว" : "รอพนักงานรับทราบผล"}
+              </span>
+              {canAcknowledge && (
+                <Button size="sm" onClick={acknowledge} disabled={acknowledgeMutation.isPending}>
+                  {acknowledgeMutation.isPending && <Loader2 className="size-4 animate-spin" />} รับทราบผลการประเมิน
+                </Button>
+              )}
+            </div>
+          )}
         </Card>
       )}
 
@@ -271,9 +394,23 @@ export function ParticipantDetailView({ participantId }: { participantId: string
                 )}
               </div>
             </div>
-            <Button size="lg" className="w-full" onClick={submit} disabled={submitMutation.isPending}>
-              {submitMutation.isPending && <Loader2 className="size-4 animate-spin" />} ส่งแบบประเมิน
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                className="shrink-0"
+                onClick={saveDraft}
+                disabled={saveDraftMutation.isPending || submitMutation.isPending}
+              >
+                {saveDraftMutation.isPending && <Loader2 className="size-4 animate-spin" />} บันทึกแบบร่าง
+              </Button>
+              <Button size="lg" className="flex-1" onClick={submit} disabled={submitMutation.isPending}>
+                {submitMutation.isPending && <Loader2 className="size-4 animate-spin" />} ส่งแบบประเมิน
+              </Button>
+            </div>
+            <p className="text-center text-xs text-muted-foreground">
+              กดยืนยันก่อนส่ง — หลังส่งแล้วจะแก้ไขไม่ได้ ต้องขอเปิดแก้ไขใหม่ผ่าน HR
+            </p>
           </CardContent>
         </Card>
       ) : null}
@@ -285,6 +422,10 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             response={selfResponse}
             competencies={participant.campaign.competencies}
             templateSections={participant.campaign.templateSnapshot?.sections}
+            myEmployeeId={myEmployeeId}
+            canApproveReopen={canManageRaters}
+            onRequestReopen={(responseId) => setReopenTarget({ responseId, note: "" })}
+            onApproveReopen={approveReopen}
           />
         )}
         {participant.campaign.raterTypes.includes("MANAGER") && (
@@ -293,6 +434,10 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             response={managerResponse}
             competencies={participant.campaign.competencies}
             templateSections={participant.campaign.templateSnapshot?.sections}
+            myEmployeeId={myEmployeeId}
+            canApproveReopen={canManageRaters}
+            onRequestReopen={(responseId) => setReopenTarget({ responseId, note: "" })}
+            onApproveReopen={approveReopen}
           />
         )}
         {peerResponses.map((r) => (
@@ -303,6 +448,10 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             competencies={participant.campaign.competencies}
             templateSections={participant.campaign.templateSnapshot?.sections}
             removable={canManageRaters && r.status === "PENDING"}
+            myEmployeeId={myEmployeeId}
+            canApproveReopen={canManageRaters}
+            onRequestReopen={(responseId) => setReopenTarget({ responseId, note: "" })}
+            onApproveReopen={approveReopen}
           />
         ))}
         {upwardResponses.map((r) => (
@@ -313,6 +462,10 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             competencies={participant.campaign.competencies}
             templateSections={participant.campaign.templateSnapshot?.sections}
             removable={canManageRaters && r.status === "PENDING"}
+            myEmployeeId={myEmployeeId}
+            canApproveReopen={canManageRaters}
+            onRequestReopen={(responseId) => setReopenTarget({ responseId, note: "" })}
+            onApproveReopen={approveReopen}
           />
         ))}
         {hrExecResponses.map((r) => (
@@ -323,9 +476,31 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             competencies={participant.campaign.competencies}
             templateSections={participant.campaign.templateSnapshot?.sections}
             removable={canManageRaters && r.status === "PENDING"}
+            myEmployeeId={myEmployeeId}
+            canApproveReopen={canManageRaters}
+            onRequestReopen={(responseId) => setReopenTarget({ responseId, note: "" })}
+            onApproveReopen={approveReopen}
           />
         ))}
       </div>
+
+      <Dialog open={!!reopenTarget} onOpenChange={(open) => !open && setReopenTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>ขอเปิดแก้ไขแบบประเมินใหม่</DialogTitle>
+            <DialogDescription>ระบุเหตุผล — HR จะเป็นผู้พิจารณาอนุมัติ</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={3}
+            placeholder="เหตุผลที่ต้องการแก้ไข"
+            value={reopenTarget?.note ?? ""}
+            onChange={(e) => setReopenTarget((prev) => (prev ? { ...prev, note: e.target.value } : prev))}
+          />
+          <Button className="w-full" onClick={submitReopenRequest} disabled={requestReopenMutation.isPending || !reopenTarget?.note.trim()}>
+            {requestReopenMutation.isPending && <Loader2 className="size-4 animate-spin" />} ส่งคำขอ
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {canManageRaters &&
         (participant.campaign.raterTypes.includes("PEER") ||
@@ -502,12 +677,19 @@ function ResponseCard({
   competencies,
   templateSections,
   removable,
+  myEmployeeId,
+  canApproveReopen,
+  onRequestReopen,
+  onApproveReopen,
 }: {
   title: string;
   response?: {
     id?: string;
     status: string;
     raterType?: string;
+    raterEmployeeId?: string;
+    reopenRequested?: boolean;
+    reopenRequestNote?: string | null;
     scores: { competencyId: string; score: number }[];
     answers?: { questionId: string; value: string }[] | null;
     strengths: string | null;
@@ -520,9 +702,14 @@ function ResponseCard({
   competencies: CampaignCompetency[];
   templateSections?: TemplateSection[];
   removable?: boolean;
+  myEmployeeId?: string;
+  canApproveReopen?: boolean;
+  onRequestReopen?: (responseId: string) => void;
+  onApproveReopen?: (responseId: string) => void;
 }) {
   const removeMutation = useRemoveRater();
   const raterName = response?.raterEmployee ? fullName(response.raterEmployee.firstName, response.raterEmployee.lastName) : null;
+  const isMyResponse = !!response?.raterEmployeeId && response.raterEmployeeId === myEmployeeId;
 
   async function remove() {
     if (!response?.id) return;
@@ -623,6 +810,28 @@ function ResponseCard({
                 <FileText className="size-3.5" /> หลักฐาน {i + 1}
               </a>
             ))}
+          </div>
+        )}
+        {response?.status === "SUBMITTED" && response.id && (
+          <div className="mt-2 border-t border-border pt-2">
+            {response.reopenRequested ? (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-warning">
+                  ขอเปิดแก้ไขใหม่: {response.reopenRequestNote ?? "-"}
+                </p>
+                {canApproveReopen && (
+                  <Button size="sm" variant="outline" onClick={() => onApproveReopen?.(response.id!)}>
+                    อนุมัติเปิดแก้ไข
+                  </Button>
+                )}
+              </div>
+            ) : (
+              isMyResponse && (
+                <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => onRequestReopen?.(response.id!)}>
+                  ขอเปิดแก้ไขใหม่
+                </Button>
+              )
+            )}
           </div>
         )}
       </CardContent>
