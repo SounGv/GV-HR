@@ -213,39 +213,6 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {/* AI Daily Briefing */}
-      <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
-        <div className="pointer-events-none absolute -top-20 -right-10 size-72 rounded-full bg-primary/25 blur-[90px]" />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-              <Sparkles className="size-5 text-primary" />
-            </span>
-            <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                AI Daily Briefing
-              </p>
-              <p className="text-sm leading-relaxed text-slate-100">
-                วันนี้พนักงานเข้างาน <b className="text-white">{s.presentToday}</b> คน
-                ({s.attendanceRate}%) · มาสาย <b className="text-white">{s.lateToday}</b> คน ·
-                ลา <b className="text-white">{s.onLeaveToday}</b> คน ·
-                OT <b className="text-white">{s.otHoursToday}</b> ชม.
-                {s.lateToday > 0
-                  ? " แนะนำให้ตรวจสอบพนักงานที่มาสายและติดตามเป็นรายบุคคล"
-                  : " อัตราการเข้างานอยู่ในเกณฑ์ดี 👍"}
-              </p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            className="shrink-0 bg-white/10 text-white hover:bg-white/20"
-            render={<Link href="/ai" />}
-          >
-            <Sparkles className="size-4" /> ถาม AI Assistant
-          </Button>
-        </div>
-      </Card>
-
       {/* KPI cards (today) */}
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Kpi
@@ -304,6 +271,40 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* AI Daily Briefing — last per the redesign spec's section order
+          (Header → KPI → Tasks → Charts → Recent → AI Briefing). */}
+      <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
+        <div className="pointer-events-none absolute -top-20 -right-10 size-72 rounded-full bg-primary/25 blur-[90px]" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
+              <Sparkles className="size-5 text-primary" />
+            </span>
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                AI Daily Briefing
+              </p>
+              <p className="text-sm leading-relaxed text-slate-100">
+                วันนี้พนักงานเข้างาน <b className="text-white">{s.presentToday}</b> คน
+                ({s.attendanceRate}%) · มาสาย <b className="text-white">{s.lateToday}</b> คน ·
+                ลา <b className="text-white">{s.onLeaveToday}</b> คน ·
+                OT <b className="text-white">{s.otHoursToday}</b> ชม.
+                {s.lateToday > 0
+                  ? " แนะนำให้ตรวจสอบพนักงานที่มาสายและติดตามเป็นรายบุคคล"
+                  : " อัตราการเข้างานอยู่ในเกณฑ์ดี 👍"}
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 bg-white/10 text-white hover:bg-white/20"
+            render={<Link href="/ai" />}
+          >
+            <Sparkles className="size-4" /> ถาม AI Assistant
+          </Button>
+        </div>
+      </Card>
       </div>
     </>
   );

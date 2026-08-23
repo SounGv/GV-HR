@@ -1,14 +1,23 @@
 "use client";
 
 import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RolesMatrix } from "./roles-matrix";
 import { UsersRoles } from "./users-roles";
 import { AuditLogView } from "@/features/audit/audit-log-view";
 
+const TABS = ["roles", "users", "audit"] as const;
+
 export function AdminView() {
+  // Nav links deep-link here via ?tab=<roles|users|audit> (e.g.
+  // "ประวัติการนำเข้า/ส่งออก" → /admin?tab=audit).
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialTab = (TABS as readonly string[]).includes(tabParam ?? "") ? tabParam! : "roles";
+
   return (
-    <Tabs defaultValue="roles" className="space-y-4">
+    <Tabs defaultValue={initialTab} className="space-y-4">
       <TabsList>
         <TabsTrigger value="roles">บทบาทและสิทธิ์</TabsTrigger>
         <TabsTrigger value="users">ผู้ใช้และบทบาท</TabsTrigger>

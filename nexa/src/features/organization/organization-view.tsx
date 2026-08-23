@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus, Pencil, Trash2, Building2, Briefcase, CornerDownRight, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,11 +40,20 @@ function levelLabel(level: number): string {
   return JOB_LEVELS.find((l) => l.value === level)?.label ?? `ระดับ ${level}`;
 }
 
+const TABS = ["departments", "positions", "chart"] as const;
+
 export function OrganizationView() {
   const { can, user } = useAuth();
   const canCreate = can("employee:create");
   const canUpdate = can("employee:update");
   const canDelete = can("employee:delete");
+
+  // Nav links deep-link here via ?tab=<departments|positions|chart> (e.g.
+  // "โครงสร้างองค์กร" → /organization?tab=chart) — read once so those links
+  // land on the intended tab instead of always defaulting to "departments".
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialTab = (TABS as readonly string[]).includes(tabParam ?? "") ? tabParam! : "departments";
 
   const deptQuery = useDepartments();
   const posQuery = usePositions();
@@ -137,7 +147,7 @@ export function OrganizationView() {
   }
 
   return (
-    <Tabs defaultValue="departments" className="space-y-4">
+    <Tabs defaultValue={initialTab} className="space-y-4">
       <TabsList>
         <TabsTrigger value="departments">ฝ่าย / แผนก</TabsTrigger>
         <TabsTrigger value="positions">ตำแหน่ง / ระดับ</TabsTrigger>

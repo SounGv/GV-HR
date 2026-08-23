@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Download, FileSpreadsheet, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -89,7 +90,15 @@ export function ReportView() {
   const { data: aiAccess } = useAiAccess();
   const canAi = !!aiAccess?.data.allowed;
 
-  const [type, setType] = useState<ReportType>("employees");
+  // Nav/quick-menu links deep-link here via ?view=<ReportType> (e.g.
+  // "รายงานการเข้างาน" → /reports?view=attendance) — read once on mount so
+  // those links actually land on the intended report instead of always
+  // defaulting to "employees".
+  const searchParams = useSearchParams();
+  const initialView = searchParams.get("view");
+  const [type, setType] = useState<ReportType>(
+    initialView && (REPORT_TYPES as readonly string[]).includes(initialView) ? (initialView as ReportType) : "employees",
+  );
   const [from, setFrom] = useState<string>(firstOfMonth());
   const [to, setTo] = useState<string>(todayStr());
   const [departmentId, setDepartmentId] = useState<string>(ALL_DEPT);

@@ -15,14 +15,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { NAV_GROUPS } from "@/config/navigation";
+import { NAV_GROUPS, type NavItem } from "@/config/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { useAiAccess } from "@/features/ai/hooks";
+import { useLeave } from "@/features/leave/hooks";
+import { useOvertime } from "@/features/overtime/hooks";
+import { useMyPendingResponses } from "@/features/campaign/hooks";
+import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { can } = useAuth();
+  const { can, logout } = useAuth();
   const { data: aiAccess } = useAiAccess();
 
   // A grant-only user (see src/lib/ai/scope.ts) has no ai:* key in their JWT
@@ -30,6 +34,28 @@ export function AppSidebar() {
   // for them even though the API would let them through.
   const canSee = (permission: string) =>
     can(permission) || (permission === "ai:read" && !!aiAccess?.data.allowed);
+
+  // Live sidebar badges — same data sources already powering the mobile
+  // bottom nav's badges, just surfaced here too (a first for desktop).
+  const canApproveLeave = can("leave:approve");
+  const canApproveOt = can("overtime:approve");
+  const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
+  const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
+  const pendingApprovals = (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0);
+
+  const canReview = can("performance:read");
+  const pendingReviewsQ = useMyPendingResponses();
+  const pendingReviews = canReview ? (pendingReviewsQ.data?.data.length ?? 0) : 0;
+
+  const notificationsQ = useNotifications();
+  const unreadNotifications = notificationsQ.data?.data.unread ?? 0;
+
+  const badgeValue = (key: NavItem["badgeKey"]): number => {
+    if (key === "pendingApprovals") return pendingApprovals;
+    if (key === "pendingReviews") return pendingReviews;
+    if (key === "unreadNotifications") return unreadNotifications;
+    return 0;
+  };
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const groupHasActive = (labels: { href: string }[]) => labels.some((i) => isActive(i.href));
@@ -76,13 +102,20 @@ export function AppSidebar() {
                       const href = item.ready
                         ? item.href
                         : `/coming-soon?title=${encodeURIComponent(item.label)}`;
+                      const badge = item.badgeKey ? badgeValue(item.badgeKey) : 0;
                       return (
                         <SidebarMenuItem key={item.href}>
                           <SidebarMenuButton
                             isActive={active}
                             tooltip={item.label}
                             className="h-10 text-[15px] [&_svg]:size-[18px]"
-                            render={<Link href={href} />}
+                            render={
+                              item.isLogout ? (
+                                <button type="button" onClick={() => logout()} />
+                              ) : (
+                                <Link href={href} />
+                              )
+                            }
                           >
                             <item.icon />
                             <span>{item.label}</span>
@@ -90,6 +123,11 @@ export function AppSidebar() {
                           {!item.ready && (
                             <SidebarMenuBadge className="text-[10px] text-slate-400">
                               เร็วๆ นี้
+                            </SidebarMenuBadge>
+                          )}
+                          {item.ready && badge > 0 && (
+                            <SidebarMenuBadge className="bg-badge text-badge-foreground">
+                              {badge > 9 ? "9+" : badge}
                             </SidebarMenuBadge>
                           )}
                         </SidebarMenuItem>
