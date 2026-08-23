@@ -6,10 +6,13 @@ import type {
   CampaignDetail,
   CampaignFormValues,
   CampaignListItem,
+  CloneCampaignValues,
   EmployeeEvaluationHistoryItem,
+  EvaluationThresholds,
   MyEvaluationAssignment,
   MyPendingResponse,
   ParticipantDetail,
+  SaveDraftValues,
   SubmitResponseValues,
 } from "./types";
 
@@ -53,6 +56,34 @@ export function submitMyResponse(participantId: string, input: SubmitResponseVal
 
 export function finalizeParticipant(participantId: string) {
   return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/finalize`);
+}
+
+export function saveDraftResponse(participantId: string, input: SaveDraftValues) {
+  return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/draft`, input);
+}
+
+export function acknowledgeResult(participantId: string) {
+  return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/acknowledge`);
+}
+
+export function requestReopen(responseId: string, note: string) {
+  return api.post<Envelope<{ ok: true }>>(`/api/campaigns/responses/${responseId}/reopen-request`, { note });
+}
+
+export function approveReopen(responseId: string) {
+  return api.post<Envelope<{ ok: true }>>(`/api/campaigns/responses/${responseId}/reopen-approve`);
+}
+
+export function cloneCampaign(campaignId: string, input: CloneCampaignValues) {
+  return api.post<Envelope<{ id: string }>>(`/api/campaigns/${campaignId}/clone`, input);
+}
+
+export function fetchEvaluationThresholds() {
+  return api.get<Envelope<EvaluationThresholds>>("/api/campaigns/settings/thresholds");
+}
+
+export function updateEvaluationThresholds(input: EvaluationThresholds) {
+  return api.patch<Envelope<EvaluationThresholds>>("/api/campaigns/settings/thresholds", input);
 }
 
 export function inviteRater(participantId: string, input: { raterType: "PEER" | "UPWARD" | "HR_EXEC"; raterEmployeeId: string }) {

@@ -34,11 +34,16 @@ export interface CampaignDetail extends CampaignListItem {
   participants: ParticipantSummary[];
 }
 
+export type ScoreStatus = "GOOD" | "NEEDS_IMPROVEMENT" | "WATCH" | "URGENT";
+
 export interface ParticipantSummary {
   id: string;
   overallScore: number | null;
   band: string | null;
   finalizedAt: string | null;
+  scorePercent: number | null;
+  scoreStatus: ScoreStatus | null;
+  employeeAcknowledged: boolean;
   employee: {
     id: string;
     employeeCode: string;
@@ -47,10 +52,15 @@ export interface ParticipantSummary {
     avatarUrl: string | null;
     managerId: string | null;
   };
-  responses: { raterType: RaterType; status: ResponseStatus; submittedAt: string | null }[];
+  responses: { raterType: RaterType; status: ResponseStatus; submittedAt: string | null; reopenRequested: boolean; dueDate: string | null }[];
 }
 
 export interface ParticipantDetail extends ParticipantSummary {
+  rawScore: number | null;
+  maxScore: number | null;
+  questionCount: number | null;
+  evaluatorCount: number | null;
+  lowestTopics: { key: string; label: string; score: number; maxScore: number }[] | null;
   campaign: {
     id: string;
     name: string;
@@ -71,6 +81,8 @@ export interface ParticipantDetail extends ParticipantSummary {
     summary: string | null;
     evidenceUrls: string[] | null;
     submittedAt: string | null;
+    reopenRequested: boolean;
+    reopenRequestNote: string | null;
     raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null;
   }[];
 }
@@ -80,12 +92,42 @@ export interface CampaignFormValues {
   cycle: string;
   startDate: string;
   endDate: string;
+  acknowledgeDueDate?: string;
+  followUpDate?: string;
   status?: CampaignStatus;
   raterTypes: RaterType[];
   templateId?: string;
   competencies?: { competencyId: string; weight: number }[];
   aiGenerated?: boolean;
   aiRationale?: string;
+  clonedFromId?: string;
+}
+
+export interface SaveDraftValues {
+  scores?: { competencyId: string; score: number }[];
+  answers?: { questionId: string; value: string }[];
+  strengths?: string;
+  improvements?: string;
+  summary?: string;
+  evidenceUrls?: string[];
+}
+
+export interface CloneCampaignValues {
+  name: string;
+  cycle: string;
+  startDate: string;
+  endDate: string;
+  acknowledgeDueDate?: string;
+  followUpDate?: string;
+  categoryIds?: string[];
+  raterTypes?: RaterType[];
+  employeeIds?: string[];
+}
+
+export interface EvaluationThresholds {
+  evalThresholdUrgentMax: number;
+  evalThresholdWatchMax: number;
+  evalThresholdGoodMin: number;
 }
 
 export interface SubmitResponseValues {

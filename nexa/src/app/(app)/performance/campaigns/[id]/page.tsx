@@ -120,11 +120,16 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
             overallScore: p.overallScore,
             band: p.band,
             finalizedAt: p.finalizedAt?.toISOString() ?? null,
+            scorePercent: p.scorePercent,
+            scoreStatus: p.scoreStatus,
+            employeeAcknowledged: p.employeeAcknowledged,
             employee: p.employee,
             responses: p.responses.map((r) => ({
               raterType: r.raterType,
               status: r.status,
               submittedAt: r.submittedAt?.toISOString() ?? null,
+              reopenRequested: r.reopenRequested,
+              dueDate: r.dueDate?.toISOString() ?? null,
             })),
           }))}
         />

@@ -2,13 +2,17 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  acknowledgeResult,
   addParticipants,
+  approveReopen,
   bulkUpsertCompetencies,
+  cloneCampaign,
   createCampaign,
   deleteCampaign,
   fetchCampaign,
   fetchCampaigns,
   fetchEmployeeEvaluationHistory,
+  fetchEvaluationThresholds,
   fetchMyEvaluationAssignments,
   fetchMyPendingResponses,
   fetchParticipant,
@@ -16,10 +20,13 @@ import {
   generateAiDesign,
   inviteRater,
   removeRater,
+  requestReopen,
+  saveDraftResponse,
   submitMyResponse,
   updateCampaign,
+  updateEvaluationThresholds,
 } from "./api";
-import type { AiDesignerRequest, CampaignFormValues, SubmitResponseValues } from "./types";
+import type { AiDesignerRequest, CampaignFormValues, CloneCampaignValues, EvaluationThresholds, SaveDraftValues, SubmitResponseValues } from "./types";
 import { competencyKeys } from "@/features/competency/hooks";
 
 export const campaignKeys = {
@@ -30,6 +37,7 @@ export const campaignKeys = {
   employeeHistory: (employeeId: string) => ["campaigns", "employee-history", employeeId] as const,
   myPending: ["campaigns", "my-pending"] as const,
   myAssignments: ["campaigns", "my-assignments"] as const,
+  thresholds: ["campaigns", "thresholds"] as const,
 };
 
 export function useMyPendingResponses() {
@@ -118,6 +126,56 @@ export function useFinalizeParticipant() {
   return useMutation({
     mutationFn: (participantId: string) => finalizeParticipant(participantId),
     onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
+  });
+}
+
+export function useSaveDraftResponse(participantId: string) {
+  return useMutation({
+    mutationFn: (input: SaveDraftValues) => saveDraftResponse(participantId, input),
+  });
+}
+
+export function useAcknowledgeResult() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (participantId: string) => acknowledgeResult(participantId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
+  });
+}
+
+export function useRequestReopen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ responseId, note }: { responseId: string; note: string }) => requestReopen(responseId, note),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
+  });
+}
+
+export function useApproveReopen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (responseId: string) => approveReopen(responseId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
+  });
+}
+
+export function useCloneCampaign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ campaignId, input }: { campaignId: string; input: CloneCampaignValues }) => cloneCampaign(campaignId, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
+  });
+}
+
+export function useEvaluationThresholds() {
+  return useQuery({ queryKey: campaignKeys.thresholds, queryFn: fetchEvaluationThresholds });
+}
+
+export function useUpdateEvaluationThresholds() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EvaluationThresholds) => updateEvaluationThresholds(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.thresholds }),
   });
 }
 

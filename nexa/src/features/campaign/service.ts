@@ -43,10 +43,18 @@ const participantSelect = {
   overallScore: true,
   band: true,
   finalizedAt: true,
+  scorePercent: true,
+  scoreStatus: true,
+  employeeAcknowledged: true,
+  rawScore: true,
+  maxScore: true,
+  questionCount: true,
+  evaluatorCount: true,
+  lowestTopics: true,
   employee: {
     select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, managerId: true },
   },
-  responses: { select: { raterType: true, status: true, submittedAt: true, raterEmployeeId: true } },
+  responses: { select: { raterType: true, status: true, submittedAt: true, raterEmployeeId: true, reopenRequested: true, dueDate: true } },
 } satisfies Prisma.EvaluationParticipantSelect;
 
 /**
@@ -625,6 +633,8 @@ export async function getParticipant(companyId: string, participantId: string, s
           summary: true,
           evidenceUrls: true,
           submittedAt: true,
+          reopenRequested: true,
+          reopenRequestNote: true,
         },
       },
     },
@@ -648,6 +658,14 @@ export async function getParticipant(companyId: string, participantId: string, s
     overallScore: participant.overallScore,
     band: participant.band,
     finalizedAt: participant.finalizedAt,
+    scorePercent: participant.scorePercent,
+    scoreStatus: participant.scoreStatus,
+    employeeAcknowledged: participant.employeeAcknowledged,
+    rawScore: participant.rawScore,
+    maxScore: participant.maxScore,
+    questionCount: participant.questionCount,
+    evaluatorCount: participant.evaluatorCount,
+    lowestTopics: participant.lowestTopics as unknown as { key: string; label: string; score: number; maxScore: number }[] | null,
     employee: participant.employee,
     campaign: {
       id: participant.campaign.id,
