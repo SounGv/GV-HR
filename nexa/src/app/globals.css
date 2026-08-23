@@ -224,6 +224,16 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+  /* Mobile Home redesign spec's font, applied consistently across every
+     mobile screen (bottom nav, profile drawer, services tile grid, Home) —
+     not just the one page it first shipped on — via the same md breakpoint
+     every mobile/desktop split in this app already keys off. Desktop keeps
+     Prompt untouched. */
+  @media (max-width: 767px) {
+    body {
+      font-family: var(--font-anuphan), var(--font-prompt), "Noto Sans Thai", ui-sans-serif, sans-serif;
+    }
+  }
   h1,
   h2,
   h3,

@@ -78,7 +78,7 @@ export function MobileDashboardView({
   const hasTodo = actions.myPending > 0 || pendingCount > 0;
 
   return (
-    <div className="min-h-full bg-gv-bg font-anuphan md:hidden">
+    <div className="min-h-full bg-gv-bg md:hidden">
       {/* Header — plain background, no dark card here: the Attendance Card
           below is deliberately the only high-emphasis surface on the page. */}
       <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
@@ -92,19 +92,19 @@ export function MobileDashboardView({
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/notifications"
-            className="relative flex size-10 items-center justify-center rounded-full bg-card text-gv-dark-green shadow-sm active:scale-95"
+            className="relative flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-sm active:scale-95"
             aria-label="แจ้งเตือน"
           >
             <Bell className="size-[18px]" strokeWidth={2.5} />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex min-w-4.5 items-center justify-center rounded-full bg-gv-notif-red px-1 text-[10px] font-bold text-white ring-2 ring-gv-bg">
+              <span className="absolute -top-1 -right-1 flex min-w-4.5 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-gv-bg">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </Link>
           <Link
             href="/profile"
-            className="flex size-10 items-center justify-center rounded-full bg-card text-gv-dark-green shadow-sm active:scale-95"
+            className="flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-sm active:scale-95"
             aria-label="โปรไฟล์"
           >
             <UserRound className="size-[18px]" strokeWidth={2.5} />
@@ -123,13 +123,13 @@ export function MobileDashboardView({
             <div className="h-20 animate-pulse rounded-2xl bg-card" />
           ) : !hasTodo ? (
             <div className="flex items-center gap-2.5 rounded-2xl bg-card p-3.5 text-muted-foreground shadow-sm">
-              <CheckCircle2 className="size-5 shrink-0 text-gv-dark-green" strokeWidth={2.5} />
+              <CheckCircle2 className="size-5 shrink-0 text-icon-chip-fg" strokeWidth={2.5} />
               <p className="text-sm">ไม่มีรายการที่ต้องทำวันนี้</p>
             </div>
           ) : (
             <div className="divide-y divide-gv-border overflow-hidden rounded-2xl bg-card shadow-sm">
               {actions.myPending > 0 && (
-                <Link href="/requests" className="flex items-center gap-3 p-3.5 active:bg-gv-pale-green/60">
+                <Link href="/requests" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
                   <TodoIcon icon={FilePlus2} count={actions.myPending} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">มีคำขอรออนุมัติ</p>
@@ -145,7 +145,7 @@ export function MobileDashboardView({
                       ? `/performance/campaigns/${nextPending.campaignId}/participants/${nextPending.participantId}`
                       : "/performance"
                   }
-                  className="flex items-center gap-3 p-3.5 active:bg-gv-pale-green/60"
+                  className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60"
                 >
                   <TodoIcon icon={Star} count={pendingCount} />
                   <div className="min-w-0 flex-1">
@@ -173,9 +173,9 @@ export function MobileDashboardView({
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-gv-pale-green/60"
+                className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-icon-chip-bg/60"
               >
-                <span className="flex size-11 items-center justify-center rounded-2xl bg-gv-pale-green text-gv-dark-green">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg">
                   <item.icon className="size-5" strokeWidth={2.5} />
                 </span>
                 <span className="text-[12px] font-medium text-foreground">{item.label}</span>
@@ -211,10 +211,10 @@ export function MobileDashboardView({
 
 function TodoIcon({ icon: Icon, count }: { icon: typeof ClipboardCheck; count: number }) {
   return (
-    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-gv-pale-green text-gv-dark-green">
+    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-icon-chip-bg text-icon-chip-fg">
       <Icon className="size-[18px]" strokeWidth={2.5} />
       {count > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-gv-notif-red px-1 text-[10px] font-bold text-white ring-2 ring-card">
+        <span className="absolute -top-1.5 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">
           {count > 9 ? "9+" : count}
         </span>
       )}
@@ -237,7 +237,7 @@ function SummaryTile({
 }) {
   const inner = (
     <div className="flex h-full flex-col gap-1.5 rounded-2xl bg-card p-3 shadow-sm">
-      <span className="flex size-7 items-center justify-center rounded-lg bg-gv-pale-green text-gv-dark-green">
+      <span className="flex size-7 items-center justify-center rounded-lg bg-icon-chip-bg text-icon-chip-fg">
         <Icon className="size-3.5" strokeWidth={2.5} />
       </span>
       <p className="truncate text-[11px] text-muted-foreground">{label}</p>
