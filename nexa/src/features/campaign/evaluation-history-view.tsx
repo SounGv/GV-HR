@@ -13,6 +13,7 @@ const STATUS_LABEL: Record<CampaignStatus, string> = {
   DRAFT: "ฉบับร่าง",
   ACTIVE: "กำลังดำเนินการ",
   CLOSED: "ปิดแล้ว",
+  ARCHIVED: "จัดเก็บถาวร",
 };
 
 export function EvaluationHistoryView({ employeeId }: { employeeId: string }) {
