@@ -56,8 +56,13 @@ export function useAddDevelopmentItem() {
 export function useUpdateDevelopmentItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ itemId, input }: { itemId: string; input: Partial<DevelopmentItemFormValues> & { status?: string } }) =>
-      updateItem(itemId, input),
+    mutationFn: ({
+      itemId,
+      input,
+    }: {
+      itemId: string;
+      input: Partial<DevelopmentItemFormValues> & { status?: string; managerNote?: string; employeeNote?: string };
+    }) => updateItem(itemId, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: developmentPlanKeys.all }),
   });
 }

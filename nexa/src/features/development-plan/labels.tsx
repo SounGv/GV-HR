@@ -5,12 +5,16 @@ export const ITEM_STATUS_LABEL: Record<DevelopmentItemStatus, string> = {
   NOT_STARTED: "ยังไม่เริ่ม",
   IN_PROGRESS: "กำลังดำเนินการ",
   COMPLETED: "สำเร็จแล้ว",
+  OVERDUE: "เกินกำหนด",
+  CANCELLED: "ยกเลิก",
 };
 
 const ITEM_STATUS_TONE: Record<DevelopmentItemStatus, StatusTone> = {
   NOT_STARTED: "neutral",
   IN_PROGRESS: "warning",
   COMPLETED: "success",
+  OVERDUE: "danger",
+  CANCELLED: "neutral",
 };
 
 export function ItemStatusBadge({ status }: { status: DevelopmentItemStatus }) {

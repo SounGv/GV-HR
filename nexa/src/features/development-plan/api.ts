@@ -25,7 +25,10 @@ export function addItem(planId: string, input: DevelopmentItemFormValues) {
   return api.post<Envelope<DevelopmentPlan>>(`/api/development-plans/${planId}/items`, input);
 }
 
-export function updateItem(itemId: string, input: Partial<DevelopmentItemFormValues> & { status?: string }) {
+export function updateItem(
+  itemId: string,
+  input: Partial<DevelopmentItemFormValues> & { status?: string; managerNote?: string; employeeNote?: string },
+) {
   return api.patch<Envelope<DevelopmentPlan>>(`/api/development-plans/items/${itemId}`, input);
 }
 
