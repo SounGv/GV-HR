@@ -38,12 +38,40 @@ const FORM_ID = "competency-form";
 const LIST = "/performance/competencies";
 const NO_CATEGORY = "__none";
 
+const QUESTION_TYPES = [
+  "RATING_1_TO_5",
+  "PERCENTAGE",
+  "NUMERIC_TARGET",
+  "SINGLE_CHOICE",
+  "MULTIPLE_CHOICE",
+  "YES_NO",
+  "SHORT_TEXT",
+  "LONG_TEXT",
+  "FILE_EVIDENCE",
+] as const;
+
+const QUESTION_TYPE_LABEL: Record<(typeof QUESTION_TYPES)[number], string> = {
+  RATING_1_TO_5: "คะแนน 1-5",
+  PERCENTAGE: "เปอร์เซ็นต์",
+  NUMERIC_TARGET: "เป้าหมายตัวเลข",
+  SINGLE_CHOICE: "เลือกตอบข้อเดียว",
+  MULTIPLE_CHOICE: "เลือกตอบหลายข้อ",
+  YES_NO: "ใช่ / ไม่ใช่",
+  SHORT_TEXT: "ข้อความสั้น",
+  LONG_TEXT: "ข้อความยาว",
+  FILE_EVIDENCE: "แนบไฟล์หลักฐาน",
+};
+
 const formSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อสมรรถนะ"),
   description: z.string().optional(),
   exampleBehavior: z.string().optional(),
   categoryId: z.string(),
   active: z.boolean(),
+  questionType: z.enum(QUESTION_TYPES),
+  maxScore: z.number().min(1, "1-1000").max(1000, "1-1000"),
+  defaultWeight: z.number().int().min(1, "1-100").max(100, "1-100"),
+  isRequired: z.boolean(),
 });
 type FormSchema = z.infer<typeof formSchema>;
 
@@ -65,6 +93,10 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
       exampleBehavior: competency?.exampleBehavior ?? "",
       categoryId: competency?.categoryId ?? NO_CATEGORY,
       active: competency?.active ?? true,
+      questionType: competency?.questionType ?? "RATING_1_TO_5",
+      maxScore: competency?.maxScore ?? 5,
+      defaultWeight: competency?.defaultWeight ?? 1,
+      isRequired: competency?.isRequired ?? true,
     },
   });
 
@@ -82,7 +114,17 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
         await createMutation.mutateAsync(payload);
         toast.success("เพิ่มสมรรถนะเรียบร้อย");
         if (againRef.current) {
-          form.reset({ name: "", description: "", exampleBehavior: "", categoryId: NO_CATEGORY, active: true });
+          form.reset({
+            name: "",
+            description: "",
+            exampleBehavior: "",
+            categoryId: NO_CATEGORY,
+            active: true,
+            questionType: "RATING_1_TO_5",
+            maxScore: 5,
+            defaultWeight: 1,
+            isRequired: true,
+          });
           if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
           router.push(LIST);
@@ -151,6 +193,86 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
                   <Textarea rows={2} placeholder="เช่น คิดหาทางแก้ปัญหาโดยไม่ต้องรอคำสั่ง" {...field} />
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="questionType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>รูปแบบคำถาม</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {QUESTION_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {QUESTION_TYPE_LABEL[t]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="maxScore"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>คะแนนเต็ม</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={1000}
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="defaultWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>น้ำหนักเริ่มต้น (%)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                    />
+                  </FormControl>
+                  <FormDescription>ค่าตั้งต้นเมื่อดึงหัวข้อนี้ไปใส่ในแบบประเมิน — ปรับได้ต่อแบบประเมิน</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <FormField
+            control={form.control}
+            name="isRequired"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
+                <div className="space-y-0.5">
+                  <FormLabel>บังคับตอบ</FormLabel>
+                  <FormDescription>ค่าตั้งต้นเมื่อดึงหัวข้อนี้ไปใส่ในแบบประเมิน</FormDescription>
+                </div>
+                <FormControl>
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
               </FormItem>
             )}
           />

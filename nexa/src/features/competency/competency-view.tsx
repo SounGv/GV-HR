@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Sparkles, FolderKanban, Grid3x3 } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, Sparkles, FolderKanban, Grid3x3, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
@@ -15,16 +16,25 @@ import { groupByCategory } from "@/lib/competency-grouping";
 import { useCompetencyCategories, useDeleteCompetencyCategory } from "@/features/competency-category/hooks";
 import type { CompetencyCategory } from "@/features/competency-category/types";
 
-import { useCompetencies, useDeleteCompetency } from "./hooks";
+import { useCompetencies, useDeleteCompetency, useDuplicateCompetency } from "./hooks";
 import type { Competency } from "./types";
 
+/**
+ * "คลังคำถามประเมิน" (Question Bank) — this is still the Competency model/
+ * feature underneath (reused, not duplicated: see the schema doc comment)
+ * so a campaign built from the legacy Competency path keeps working
+ * unchanged; the rebranded name/UI here just surfaces the fields that make
+ * it reusable across templates (search, usage count, duplicate).
+ */
 export function CompetencyView() {
   const { can } = useAuth();
   const canManage = can("campaign:create");
   const canDelete = can("campaign:delete");
 
-  const { data, isLoading, isError, refetch } = useCompetencies({ includeInactive: true });
+  const [search, setSearch] = useState("");
+  const { data, isLoading, isError, refetch } = useCompetencies({ includeInactive: true, search: search || undefined });
   const deleteMutation = useDeleteCompetency();
+  const duplicateMutation = useDuplicateCompetency();
   const [deleteTarget, setDeleteTarget] = useState<Competency | null>(null);
   const competencies = data?.data ?? [];
   const groups = groupByCategory(competencies);
@@ -33,10 +43,19 @@ export function CompetencyView() {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
-      toast.success("ลบสมรรถนะเรียบร้อย");
+      toast.success("ลบหัวข้อเรียบร้อย");
       setDeleteTarget(null);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ลบไม่สำเร็จ");
+    }
+  }
+
+  async function duplicate(c: Competency) {
+    try {
+      await duplicateMutation.mutateAsync(c.id);
+      toast.success(`คัดลอก "${c.name}" เรียบร้อย`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "คัดลอกไม่สำเร็จ");
     }
   }
 
@@ -44,7 +63,7 @@ export function CompetencyView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          เกณฑ์การประเมินเหล่านี้ใช้ประกอบสร้างแคมเปญประเมินผล
+          คลังคำถามกลาง — ใช้สร้างแบบประเมิน/แคมเปญได้ซ้ำ ไม่ต้องสร้างหัวข้อใหม่ทุกครั้ง
         </p>
         {canManage && (
           <div className="flex gap-2">
@@ -58,6 +77,16 @@ export function CompetencyView() {
         )}
       </div>
 
+      <div className="relative max-w-sm">
+        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          placeholder="ค้นหาหัวข้อ..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
       {canManage && <CategoryManagementPanel />}
 
       {isError ? (
@@ -67,7 +96,7 @@ export function CompetencyView() {
       ) : competencies.length === 0 ? (
         <EmptyState
           icon={Sparkles}
-          title="ยังไม่มีเกณฑ์การประเมิน"
+          title="ยังไม่มีหัวข้อในคลังคำถาม"
           description={canManage ? "เพิ่มหัวข้อแรก หรือให้ AI ออกแบบให้ตอนสร้างแคมเปญ" : "ยังไม่มีข้อมูล"}
         />
       ) : (
@@ -86,6 +115,11 @@ export function CompetencyView() {
                             ปิดใช้งาน
                           </span>
                         )}
+                        {c.usageCount > 0 && (
+                          <span className="shrink-0 rounded-full bg-icon-chip-bg px-2 py-0.5 text-xs text-icon-chip-fg">
+                            ใช้อยู่ {c.usageCount} จุด
+                          </span>
+                        )}
                       </div>
                       {c.description && (
                         <p className="mt-0.5 truncate text-sm text-muted-foreground">{c.description}</p>
@@ -98,6 +132,17 @@ export function CompetencyView() {
                     </div>
                     {(canManage || canDelete) && (
                       <div className="flex shrink-0 items-center gap-1">
+                        {canManage && (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="คัดลอก"
+                            onClick={() => duplicate(c)}
+                            disabled={duplicateMutation.isPending}
+                          >
+                            <Copy className="size-4" />
+                          </Button>
+                        )}
                         {canManage && (
                           <Button
                             variant="ghost"
