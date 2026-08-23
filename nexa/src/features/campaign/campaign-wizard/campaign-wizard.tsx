@@ -43,12 +43,21 @@ interface Basics {
   cycle: string;
   startDate: string;
   endDate: string;
+  acknowledgeDueDate: string;
+  followUpDate: string;
 }
 
 export function CampaignWizard() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
-  const [basics, setBasics] = useState<Basics>({ name: "", cycle: "", startDate: "", endDate: "" });
+  const [basics, setBasics] = useState<Basics>({
+    name: "",
+    cycle: "",
+    startDate: "",
+    endDate: "",
+    acknowledgeDueDate: "",
+    followUpDate: "",
+  });
   const [raterTypes, setRaterTypes] = useState<RaterType[]>(["SELF", "MANAGER"]);
   const [participantIds, setParticipantIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState<TemplateDraft>(emptyTemplateDraft());
@@ -123,6 +132,8 @@ export function CampaignWizard() {
         cycle: basics.cycle,
         startDate: basics.startDate,
         endDate: basics.endDate,
+        acknowledgeDueDate: basics.acknowledgeDueDate || undefined,
+        followUpDate: basics.followUpDate || undefined,
         raterTypes,
         templateId: templateId!,
       });
@@ -185,6 +196,24 @@ export function CampaignWizard() {
               <label className="space-y-1.5">
                 <span className="text-sm font-medium text-foreground">วันที่สิ้นสุด</span>
                 <Input type="date" value={basics.endDate} onChange={(e) => setBasics({ ...basics, endDate: e.target.value })} />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-foreground">วันครบกำหนดรับทราบผล (ไม่บังคับ)</span>
+                <Input
+                  type="date"
+                  value={basics.acknowledgeDueDate}
+                  onChange={(e) => setBasics({ ...basics, acknowledgeDueDate: e.target.value })}
+                />
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-foreground">วันติดตามผล (ไม่บังคับ)</span>
+                <Input
+                  type="date"
+                  value={basics.followUpDate}
+                  onChange={(e) => setBasics({ ...basics, followUpDate: e.target.value })}
+                />
               </label>
             </div>
           </div>

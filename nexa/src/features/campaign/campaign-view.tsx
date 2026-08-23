@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Sparkles, Target, BookOpen, CalendarClock, ClipboardList, MoreHorizontal } from "lucide-react";
+import { Plus, Sparkles, Target, BookOpen, CalendarClock, ClipboardList, MoreHorizontal, Gauge } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { useAuth } from "@/features/auth/auth-context";
 import { formatDate } from "@/lib/format";
 import { useCampaigns } from "./hooks";
+import { CloneCampaignDialog } from "./clone-campaign-dialog";
 
 const STATUS_LABEL: Record<string, string> = { DRAFT: "ฉบับร่าง", ACTIVE: "กำลังดำเนินการ", CLOSED: "ปิดแล้ว" };
 const STATUS_TONE: Record<string, string> = {
@@ -44,6 +45,9 @@ export function CampaignView() {
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/performance/campaigns/schedules" />}>
                   <CalendarClock className="size-4" /> รอบอัตโนมัติ
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/performance/settings/thresholds" />}>
+                  <Gauge className="size-4" /> เกณฑ์คะแนนประเมินผล
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -85,9 +89,12 @@ export function CampaignView() {
                       {c.cycle} · {formatDate(c.startDate)} - {formatDate(c.endDate)}
                     </p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[c.status]}`}>
-                    {STATUS_LABEL[c.status]}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[c.status]}`}>
+                      {STATUS_LABEL[c.status]}
+                    </span>
+                    {canManage && <CloneCampaignDialog campaignId={c.id} sourceName={c.name} sourceCycle={c.cycle} />}
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground">ผู้เข้าร่วม {c.participantCount} คน</p>
               </Card>
