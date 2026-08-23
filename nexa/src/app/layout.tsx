@@ -32,8 +32,17 @@ export const metadata: Metadata = {
     title: "GV One",
   },
   icons: {
-    icon: "/nexa-logo.svg",
-    apple: "/nexa-logo.svg",
+    // Home-screen/tab icons — PNG, not SVG: iOS Safari's apple-touch-icon
+    // link doesn't support SVG at all, so it was silently falling back to
+    // a screenshot of the page (the "square plate" look). These PNGs are
+    // full-bleed with no baked-in corner rounding — iOS/Android apply
+    // their own mask on top, which is why nexa-logo.svg (rx=112 baked in)
+    // left a transparent margin showing through as a square backing plate.
+    icon: [
+      { url: "/nexa-logo.svg", type: "image/svg+xml" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
