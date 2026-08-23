@@ -76,7 +76,10 @@ export const NAV_GROUPS: NavGroup[] = [
         ready: true,
         badgeKey: "unreadNotifications",
       },
-      { label: "คู่มือการใช้งาน", href: "/help", icon: BookOpen, permission: "dashboard:read", ready: true },
+      // HR-level only (employee:update — HR Manager/Super Admin by default,
+      // or any custom role explicitly granted it) — the guide documents
+      // HR-facing workflows, not something every employee needs to see.
+      { label: "คู่มือการใช้งาน", href: "/help", icon: BookOpen, permission: "employee:update", ready: true },
     ],
   },
   {

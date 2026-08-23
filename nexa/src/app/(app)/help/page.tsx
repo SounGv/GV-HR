@@ -1,20 +1,17 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { requirePagePermission } from "@/lib/auth/page-guard";
 import { PageHeader } from "@/components/shared/page-header";
 import { HelpView } from "@/features/help/help-view";
 
 export const metadata: Metadata = { title: "คู่มือการใช้งาน" };
 
 /**
- * Documentation only — no data, no permission gate beyond "logged in", since
- * seeing "how to do X" isn't sensitive even for a role that lacks X itself
- * (e.g. a manager who can't manage employees still benefits from reading the
- * leave-approval guide).
+ * HR-level only (employee:update — see navigation.ts): the guide documents
+ * HR-facing workflows, so it's gated the same as the nav item that links
+ * here, not left open to every logged-in employee.
  */
 export default async function HelpPage() {
-  const session = await getSession();
-  if (!session) redirect("/login?redirect=/help");
+  await requirePagePermission("employee:update");
 
   return (
     <div className="space-y-6">

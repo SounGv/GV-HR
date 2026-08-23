@@ -22,8 +22,9 @@ export function ProfileDrawer({
   onOpenChange: (open: boolean) => void;
   unreadCount: number;
 }) {
-  const { user, logout } = useAuth();
+  const { user, can, logout } = useAuth();
   const { groups, hrStartIndex } = useMobileMenuGroups();
+  const canSeeHelp = can("employee:update");
 
   const displayName = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : user.email;
   const subtitle = user.employee
@@ -57,7 +58,7 @@ export function ProfileDrawer({
           <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
         </Link>
 
-        <div className="mb-4 grid grid-cols-2 gap-2">
+        <div className={`mb-4 grid gap-2 ${canSeeHelp ? "grid-cols-2" : "grid-cols-1"}`}>
           <Link
             href="/notifications"
             onClick={() => onOpenChange(false)}
@@ -73,14 +74,16 @@ export function ProfileDrawer({
             </span>
             แจ้งเตือน
           </Link>
-          <Link
-            href="/help"
-            onClick={() => onOpenChange(false)}
-            className="flex items-center gap-2 rounded-xl bg-card px-3 py-2.5 text-[13px] font-semibold text-foreground active:bg-muted"
-          >
-            <Settings2 className="size-[18px] text-icon-chip-fg" />
-            คู่มือการใช้งาน
-          </Link>
+          {canSeeHelp && (
+            <Link
+              href="/help"
+              onClick={() => onOpenChange(false)}
+              className="flex items-center gap-2 rounded-xl bg-card px-3 py-2.5 text-[13px] font-semibold text-foreground active:bg-muted"
+            >
+              <Settings2 className="size-[18px] text-icon-chip-fg" />
+              คู่มือการใช้งาน
+            </Link>
+          )}
         </div>
 
         <div className="space-y-5" onClick={() => onOpenChange(false)}>
