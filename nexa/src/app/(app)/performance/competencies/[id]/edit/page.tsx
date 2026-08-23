@@ -23,14 +23,7 @@ export default async function EditCompetencyPage({
   return (
     <CompetencyFormPage
       competency={{
-        id: competency.id,
-        name: competency.name,
-        description: competency.description,
-        exampleBehavior: competency.exampleBehavior,
-        categoryId: competency.categoryId,
-        category: competency.category,
-        order: competency.order,
-        active: competency.active,
+        ...competency,
         createdAt: competency.createdAt.toISOString(),
       }}
     />

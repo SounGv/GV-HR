@@ -23,7 +23,7 @@ export function CompetencyView() {
   const canManage = can("campaign:create");
   const canDelete = can("campaign:delete");
 
-  const { data, isLoading, isError, refetch } = useCompetencies(true);
+  const { data, isLoading, isError, refetch } = useCompetencies({ includeInactive: true });
   const deleteMutation = useDeleteCompetency();
   const [deleteTarget, setDeleteTarget] = useState<Competency | null>(null);
   const competencies = data?.data ?? [];
