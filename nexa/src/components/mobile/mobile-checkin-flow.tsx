@@ -61,6 +61,7 @@ export function MobileCheckinFlow({
     clockOutAt: string | null;
     clockInDistance: number | null;
     clockOutDistance: number | null;
+    status: string;
   } | null>(null);
 
   const [facing, setFacing] = useState<CameraFacing>("user");
@@ -265,6 +266,7 @@ export function MobileCheckinFlow({
         <SuccessStep
           mode={mode}
           record={resultRecord}
+          isLate={mode === "in" && resultRecord?.status === "LATE"}
           photo={photo}
           branchName={branch?.name ?? null}
           coords={coords}
@@ -527,6 +529,7 @@ function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onR
 function SuccessStep({
   mode,
   record,
+  isLate,
   photo,
   branchName,
   coords,
@@ -539,6 +542,7 @@ function SuccessStep({
     clockInDistance: number | null;
     clockOutDistance: number | null;
   } | null;
+  isLate?: boolean;
   photo: string | null;
   branchName: string | null;
   coords: Coords | null;
@@ -570,6 +574,9 @@ function SuccessStep({
         <p className="mt-1 text-sm text-white/85">
           {fmtTime(time)} น. · {fmtDate()}
         </p>
+        {isLate && (
+          <span className="mt-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">มาสาย</span>
+        )}
       </div>
 
       <div className="space-y-3 rounded-2xl bg-white p-4 text-[#14180c]">

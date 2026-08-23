@@ -175,7 +175,7 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <MobileDashboardView name={name} companyName={user?.company?.name} mine={mine} />
+      <MobileDashboardView name={name} mine={mine} />
       <div className="hidden space-y-6 md:block">
       {/* Greeting */}
       <div className="flex flex-col gap-1">
