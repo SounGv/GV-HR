@@ -12,7 +12,8 @@ export type IllustrationKind =
   | "notify"
   | "checkin"
   | "payslip"
-  | "approve";
+  | "approve"
+  | "dashboard";
 
 /**
  * Small schematic mockups for readers with zero HR-software background —
@@ -166,6 +167,30 @@ export function StepIllustration({
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {kind === "dashboard" && (
+        <div className="w-full max-w-[240px] space-y-2">
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { n: "42", l: "เสร็จแล้ว" },
+              { n: "8", l: "ยังไม่ทำ" },
+              { n: "76.4%", l: "ค่าเฉลี่ย" },
+            ].map((k) => (
+              <div key={k.l} className="rounded-md border border-border bg-card p-1.5 text-center">
+                <p className="text-[11px] font-bold text-foreground">{k.n}</p>
+                <p className="text-[8px] text-muted-foreground">{k.l}</p>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-1 rounded-md border border-border bg-card p-2">
+            {[70, 45, 90].map((w, i) => (
+              <div key={i} className="h-2 rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${w}%` }} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

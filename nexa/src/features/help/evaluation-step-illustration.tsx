@@ -1,4 +1,4 @@
-import { Bell, Paperclip, Send, Check } from "lucide-react";
+import { Bell, Paperclip, Send, Check, ThumbsUp } from "lucide-react";
 
 export type EvalIllustrationKind =
   | "open"
@@ -6,7 +6,10 @@ export type EvalIllustrationKind =
   | "text"
   | "evidence"
   | "required"
-  | "submit";
+  | "submit"
+  | "draft"
+  | "acknowledge"
+  | "reopen";
 
 /**
  * Miniature, honest recreations of the real evaluation-taking screen
@@ -102,6 +105,45 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
       {kind === "submit" && (
         <div className="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary text-[12px] font-bold text-primary-foreground shadow-sm">
           <Send className="size-3.5" /> ส่งแบบประเมิน
+        </div>
+      )}
+
+      {kind === "draft" && (
+        <div className="flex gap-1.5">
+          <div className="flex h-8 flex-1 items-center justify-center rounded-lg border border-border text-[10.5px] font-bold text-muted-foreground">
+            บันทึกแบบร่าง
+          </div>
+          <div className="flex h-8 flex-[1.4] items-center justify-center gap-1 rounded-lg bg-primary text-[10.5px] font-bold text-primary-foreground shadow-sm">
+            <Send className="size-3" /> ส่งแบบประเมิน
+          </div>
+        </div>
+      )}
+
+      {kind === "acknowledge" && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
+            <div>
+              <p className="text-[9.5px] text-muted-foreground">คะแนนรวม (ถ่วงน้ำหนัก)</p>
+              <p className="text-[15px] font-bold text-foreground">82.4%</p>
+            </div>
+            <span className="rounded-full bg-success/15 px-2 py-0.5 text-[9px] font-bold text-success">ดี/ดีเยี่ยม</span>
+          </div>
+          <div className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground shadow-sm">
+            <ThumbsUp className="size-3.5" /> รับทราบผลการประเมิน
+          </div>
+        </div>
+      )}
+
+      {kind === "reopen" && (
+        <div className="space-y-2">
+          <div className="space-y-1 rounded-lg border border-border p-2">
+            <p className="text-[10px] font-semibold text-foreground">เหตุผลที่ต้องการแก้ไข</p>
+            <div className="h-1.5 w-full rounded-full bg-muted-foreground/20" />
+            <div className="h-1.5 w-3/5 rounded-full bg-muted-foreground/15" />
+          </div>
+          <div className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground shadow-sm">
+            <Send className="size-3.5" /> ส่งคำขอ
+          </div>
         </div>
       )}
     </div>
