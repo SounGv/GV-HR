@@ -111,6 +111,23 @@ export const submitResponseSchema = z
   });
 export type SubmitResponseInput = z.infer<typeof submitResponseSchema>;
 
+/** Autosave draft — unlike submitResponseSchema, a partially-filled (or
+ * even empty) draft is valid; nothing here is required or scored yet. */
+export const saveDraftSchema = z.object({
+  scores: z.array(z.object({ competencyId: z.string().uuid(), score: z.coerce.number().min(1).max(5) })).optional(),
+  answers: z.array(z.object({ questionId: z.string(), value: z.string().max(2000) })).optional(),
+  strengths: z.string().max(1000).optional(),
+  improvements: z.string().max(1000).optional(),
+  summary: z.string().max(1000).optional(),
+  evidenceUrls: z.array(z.string()).max(3, "แนบหลักฐานได้สูงสุด 3 ไฟล์").optional(),
+});
+export type SaveDraftInput = z.infer<typeof saveDraftSchema>;
+
+export const requestReopenSchema = z.object({
+  note: z.string().trim().min(1, "กรุณาระบุเหตุผลที่ต้องการแก้ไข").max(500),
+});
+export type RequestReopenInput = z.infer<typeof requestReopenSchema>;
+
 export const inviteRaterSchema = z.object({
   raterType: z.enum(["PEER", "UPWARD", "HR_EXEC"]),
   raterEmployeeId: z.string().uuid(),

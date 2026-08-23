@@ -4,9 +4,9 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { scoreBand } from "@/lib/scoring";
 import { createNotification } from "@/features/notification/service";
-import { getTemplateSnapshot } from "@/features/evaluation-template/service";
-import { scoreTemplateAnswers } from "@/features/evaluation-template/scoring";
+import { getTemplateSnapshot, cloneTemplate, updateTemplate as updateEvaluationTemplate } from "@/features/evaluation-template/service";
 import type { CampaignTemplateSnapshot } from "@/features/evaluation-template/types";
+import { scoreTemplateAnswersDetailed, scoreCompetenciesDetailed, bandScoreStatus } from "./scoring";
 import { RATER_LABEL } from "./labels";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
@@ -14,7 +14,10 @@ import type {
   CampaignCreateInput,
   CampaignListQuery,
   CampaignUpdateInput,
+  CloneCampaignInput,
   InviteRaterInput,
+  RequestReopenInput,
+  SaveDraftInput,
   SubmitResponseInput,
 } from "./schema";
 import type { RaterType } from "./types";
@@ -192,6 +195,9 @@ export async function createCampaign(
       cycle: input.cycle,
       startDate: new Date(input.startDate),
       endDate: new Date(input.endDate),
+      acknowledgeDueDate: input.acknowledgeDueDate ? new Date(input.acknowledgeDueDate) : undefined,
+      followUpDate: input.followUpDate ? new Date(input.followUpDate) : undefined,
+      clonedFromId: input.clonedFromId,
       raterTypes: input.raterTypes,
       aiGenerated: input.aiGenerated ?? false,
       aiRationale: input.aiRationale,
@@ -219,6 +225,84 @@ export async function createCampaign(
   });
 
   return { id: campaign.id };
+}
+
+/**
+ * "สร้างรอบใหม่จากรอบเดิม" — Q2/2569 -> Q3/2569. Never touches the source
+ * campaign or its results: a template-based source gets its template cloned
+ * to a fresh (auto-activated) DRAFT version first, so questions can be
+ * tweaked for the new cycle without affecting the old one's frozen
+ * templateSnapshot; a Competency-based source's weight list is copied as-is
+ * (optionally filtered to a subset of categories). Participants default to
+ * the source's own list unless the caller overrides it.
+ */
+export async function cloneCampaign(
+  companyId: string,
+  session: AccessClaims,
+  sourceCampaignId: string,
+  input: CloneCampaignInput,
+  meta?: Meta,
+) {
+  const source = await prisma.evaluationCampaign.findFirst({
+    where: { id: sourceCampaignId, companyId, deletedAt: null },
+    select: {
+      templateId: true,
+      raterTypes: true,
+      competencies: { select: { competencyId: true, weight: true, competency: { select: { categoryId: true } } } },
+      participants: { select: { employeeId: true, employee: { select: { managerId: true } } } },
+    },
+  });
+  if (!source) throw NotFound("ไม่พบแคมเปญต้นทาง");
+
+  let templateId: string | undefined;
+  let competencies: { competencyId: string; weight: number }[] | undefined;
+
+  if (source.templateId) {
+    const cloned = await cloneTemplate(companyId, session, source.templateId, meta);
+    await updateEvaluationTemplate(companyId, session, cloned.id, { status: "ACTIVE" }, meta);
+    templateId = cloned.id;
+  } else {
+    competencies = source.competencies
+      .filter((c) => !input.categoryIds || input.categoryIds.length === 0 || (c.competency.categoryId && input.categoryIds.includes(c.competency.categoryId)))
+      .map((c) => ({ competencyId: c.competencyId, weight: c.weight }));
+  }
+
+  const created = await createCampaign(
+    companyId,
+    session,
+    {
+      name: input.name,
+      cycle: input.cycle,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      acknowledgeDueDate: input.acknowledgeDueDate,
+      followUpDate: input.followUpDate,
+      raterTypes: input.raterTypes ?? source.raterTypes,
+      templateId,
+      competencies,
+      clonedFromId: sourceCampaignId,
+    },
+    meta,
+  );
+
+  const employees = input.employeeIds
+    ? await prisma.employee.findMany({ where: { id: { in: input.employeeIds }, companyId, deletedAt: null }, select: { id: true, managerId: true } })
+    : source.participants.map((p) => ({ id: p.employeeId, managerId: p.employee.managerId }));
+
+  await seedParticipants(created.id, input.raterTypes ?? source.raterTypes, employees);
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.clone",
+    entity: "EvaluationCampaign",
+    entityId: created.id,
+    before: { clonedFromId: sourceCampaignId },
+    after: { name: input.name, cycle: input.cycle },
+    ...meta,
+  });
+
+  return { id: created.id };
 }
 
 export async function updateCampaign(
@@ -255,7 +339,11 @@ export async function updateCampaign(
         ...(input.cycle !== undefined ? { cycle: input.cycle } : {}),
         ...(input.startDate !== undefined ? { startDate: new Date(input.startDate) } : {}),
         ...(input.endDate !== undefined ? { endDate: new Date(input.endDate) } : {}),
+        ...(input.acknowledgeDueDate !== undefined ? { acknowledgeDueDate: new Date(input.acknowledgeDueDate) } : {}),
+        ...(input.followUpDate !== undefined ? { followUpDate: new Date(input.followUpDate) } : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.status === "ACTIVE" && existing.status !== "ACTIVE" ? { publishedAt: new Date() } : {}),
+        ...(input.status === "CLOSED" && existing.status !== "CLOSED" ? { closedAt: new Date() } : {}),
         ...(input.raterTypes !== undefined ? { raterTypes: input.raterTypes } : {}),
         updatedById: session.sub,
       },
@@ -606,14 +694,22 @@ async function withRaterEmployees<T extends { raterEmployeeId: string; answers: 
  * one-directional rounds still produce a score/band once their single rater
  * submits.
  */
-async function computeAndStoreScore(participantId: string) {
+/**
+ * Recomputes and stores the full score breakdown (not just a final percent —
+ * raw/max/weighted-percent/question count/evaluator count/lowest topics)
+ * plus the HR-configurable band (scoreStatus). Runs every time the scoring
+ * rater (re-)submits; does NOT trigger the low-score automation itself —
+ * that only fires once at finalize time (see finalizeParticipant), since a
+ * score can still change before HR/the manager actually finalizes it.
+ */
+async function computeAndStoreScore(companyId: string, participantId: string) {
   const participant = await prisma.evaluationParticipant.findUnique({
     where: { id: participantId },
     select: {
       campaign: {
         select: {
           raterTypes: true,
-          competencies: { select: { competencyId: true, weight: true } },
+          competencies: { select: { competencyId: true, weight: true, competency: { select: { name: true, maxScore: true } } } },
           templateSnapshot: true,
         },
       },
@@ -629,31 +725,35 @@ async function computeAndStoreScore(participantId: string) {
   if (!response) return;
 
   const templateSnapshot = participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null;
-  if (templateSnapshot) {
-    const answers = (response.answers as { questionId: string; value: string }[] | null) ?? [];
-    const overall = scoreTemplateAnswers(templateSnapshot.sections, answers);
-    await prisma.evaluationParticipant.update({
-      where: { id: participantId },
-      data: { overallScore: overall, band: scoreBand(overall) },
-    });
-    return;
-  }
+  const breakdown = templateSnapshot
+    ? scoreTemplateAnswersDetailed(templateSnapshot.sections, (response.answers as { questionId: string; value: string }[] | null) ?? [])
+    : scoreCompetenciesDetailed(
+        response.scores as { competencyId: string; score: number }[],
+        new Map(
+          participant.campaign.competencies.map((c) => [c.competencyId, { name: c.competency.name, weight: c.weight, maxScore: c.competency.maxScore }]),
+        ),
+      );
 
-  const raterScores = response.scores as { competencyId: string; score: number }[];
-  const weightMap = new Map(participant.campaign.competencies.map((c) => [c.competencyId, c.weight]));
-
-  let weightedSum = 0;
-  let totalWeight = 0;
-  for (const s of raterScores) {
-    const weight = weightMap.get(s.competencyId) ?? 1;
-    weightedSum += s.score * weight;
-    totalWeight += weight;
-  }
-  const overall = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 100) / 100 : 0;
+  const thresholds = await getEvaluationThresholds(companyId);
+  const evaluatorCount = participant.responses.filter((r) => r.status === "SUBMITTED").length;
+  // Legacy 1-5 band (scoreBand/band) kept alongside the new percent-based
+  // scoreStatus — existing UI (9-Box, calibration, evaluation history) still
+  // reads overallScore/band and shouldn't have to change to keep working.
+  const legacyOverall = breakdown.maxScore > 0 ? Math.round((breakdown.rawScore / breakdown.maxScore) * 5 * 100) / 100 : 0;
 
   await prisma.evaluationParticipant.update({
     where: { id: participantId },
-    data: { overallScore: overall, band: scoreBand(overall) },
+    data: {
+      overallScore: legacyOverall,
+      band: scoreBand(legacyOverall),
+      rawScore: breakdown.rawScore,
+      maxScore: breakdown.maxScore,
+      scorePercent: breakdown.scorePercent,
+      questionCount: breakdown.questionCount,
+      evaluatorCount,
+      lowestTopics: breakdown.lowestTopics as unknown as Prisma.InputJsonValue,
+      scoreStatus: bandScoreStatus(breakdown.scorePercent, thresholds),
+    },
   });
 }
 
@@ -868,7 +968,7 @@ export async function submitMyResponse(
   // Idempotent w.r.t. which rater just submitted — it looks up the campaign's
   // configured scoring rater type itself (MANAGER if the round collects it,
   // else SELF) and only computes once that specific response exists.
-  await computeAndStoreScore(participantId);
+  await computeAndStoreScore(companyId, participantId);
 
   await writeAudit({
     companyId,
@@ -881,6 +981,127 @@ export async function submitMyResponse(
   });
 
   return { ok: true as const, raterType: response.raterType };
+}
+
+/** Autosave — writes whatever the rater has filled in so far without
+ * requiring every required question to be answered yet, and without
+ * touching the stored score (that only ever runs on actual submit). Keeps
+ * status PENDING on the very first save, IN_PROGRESS after — so "resume"
+ * (getParticipant) can tell a genuinely-untouched task apart from one the
+ * rater already started. */
+export async function saveDraftResponse(
+  companyId: string,
+  session: AccessClaims,
+  participantId: string,
+  input: SaveDraftInput,
+) {
+  const participant = await prisma.evaluationParticipant.findFirst({
+    where: { id: participantId, campaign: { companyId, deletedAt: null } },
+    select: { finalizedAt: true, campaign: { select: { templateSnapshot: true, status: true } } },
+  });
+  if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
+  if (participant.finalizedAt) throw Forbidden("การประเมินนี้สรุปผลแล้ว ไม่สามารถแก้ไขคำตอบได้อีก");
+  if (participant.campaign.status === "CLOSED") throw Forbidden("แคมเปญนี้ปิดแล้ว ไม่สามารถบันทึกแบบร่างได้");
+
+  const response = await prisma.evaluationResponse.findFirst({
+    where: { participantId, raterEmployeeId: session.employeeId ?? "" },
+    select: { id: true, status: true },
+  });
+  if (!response) throw Forbidden("ไม่มีสิทธิ์ทำแบบประเมินนี้");
+  if (response.status === "SUBMITTED") throw Forbidden("ส่งแบบประเมินนี้ไปแล้ว");
+
+  const templateSnapshot = participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null;
+  await prisma.evaluationResponse.update({
+    where: { id: response.id },
+    data: {
+      scores: templateSnapshot ? [] : (input.scores ?? []),
+      answers: templateSnapshot ? input.answers : undefined,
+      strengths: input.strengths,
+      improvements: input.improvements,
+      summary: input.summary,
+      evidenceUrls: input.evidenceUrls,
+      status: "IN_PROGRESS",
+    },
+  });
+
+  return { ok: true as const };
+}
+
+/** Rater flags intent to change a SUBMITTED response — does not itself
+ * reopen anything; only an HR/authorized approver acting on this flag can
+ * (see approveReopen), and every step is audit-logged since a submitted
+ * evaluation answer is the kind of thing "silently edited" would be bad. */
+export async function requestReopen(
+  companyId: string,
+  session: AccessClaims,
+  responseId: string,
+  input: RequestReopenInput,
+  meta?: Meta,
+) {
+  const response = await prisma.evaluationResponse.findFirst({
+    where: { id: responseId, participant: { campaign: { companyId, deletedAt: null } } },
+    select: { id: true, status: true, raterEmployeeId: true, participantId: true },
+  });
+  if (!response) throw NotFound("ไม่พบแบบประเมิน");
+  if (response.raterEmployeeId !== session.employeeId) throw Forbidden("ขอแก้ไขได้เฉพาะแบบประเมินของตนเอง");
+  if (response.status !== "SUBMITTED") throw BadRequest("ขอแก้ไขได้เฉพาะแบบประเมินที่ส่งไปแล้ว");
+
+  await prisma.evaluationResponse.update({
+    where: { id: responseId },
+    data: { reopenRequested: true, reopenRequestedAt: new Date(), reopenRequestNote: input.note },
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.request_reopen",
+    entity: "EvaluationResponse",
+    entityId: responseId,
+    after: { note: input.note },
+    ...meta,
+  });
+
+  return { ok: true as const };
+}
+
+/** HR-only (campaign:approve) — reverts a SUBMITTED response back to
+ * PENDING so the rater can edit and resubmit. Never touches the stored
+ * score directly; the next real submit recomputes it as usual. */
+export async function approveReopen(
+  companyId: string,
+  session: AccessClaims,
+  responseId: string,
+  meta?: Meta,
+) {
+  const response = await prisma.evaluationResponse.findFirst({
+    where: { id: responseId, participant: { campaign: { companyId, deletedAt: null } } },
+    select: { id: true, status: true, reopenRequested: true, participant: { select: { finalizedAt: true } } },
+  });
+  if (!response) throw NotFound("ไม่พบแบบประเมิน");
+  if (!isHrLevel(session)) throw Forbidden("เปิดแก้ไขใหม่ได้เฉพาะ HR");
+  if (response.status !== "SUBMITTED") throw BadRequest("เปิดแก้ไขใหม่ได้เฉพาะแบบประเมินที่ส่งไปแล้ว");
+  if (response.participant.finalizedAt) throw BadRequest("ผลการประเมินนี้สรุปผลแล้ว ไม่สามารถเปิดแก้ไขได้");
+
+  await prisma.evaluationResponse.update({
+    where: { id: responseId },
+    data: {
+      status: "PENDING",
+      reopenRequested: false,
+      reopenedAt: new Date(),
+      reopenedById: session.sub,
+    },
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.approve_reopen",
+    entity: "EvaluationResponse",
+    entityId: responseId,
+    ...meta,
+  });
+
+  return { ok: true as const };
 }
 
 /**
@@ -1001,6 +1222,90 @@ export async function removeRater(companyId: string, session: AccessClaims, resp
   return { ok: true as const };
 }
 
+/**
+ * Score <= evalThresholdUrgentMax (URGENT): auto-create (or reuse, if one
+ * already exists for this employee+cycle) an improvement plan seeded from
+ * the participant's lowest-scoring topics, and notify the employee's
+ * manager + every HR-level user. Called only from finalizeParticipant —
+ * "auto-generated" per the spec means at the moment a result becomes
+ * official, not on every intermediate score recompute.
+ */
+async function maybeCreateImprovementPlan(
+  companyId: string,
+  participantId: string,
+  session: AccessClaims,
+) {
+  const participant = await prisma.evaluationParticipant.findUniqueOrThrow({
+    where: { id: participantId },
+    select: {
+      scoreStatus: true,
+      lowestTopics: true,
+      employeeId: true,
+      employee: { select: { firstName: true, lastName: true, managerId: true } },
+      campaign: { select: { name: true, cycle: true, followUpDate: true } },
+    },
+  });
+  if (participant.scoreStatus !== "URGENT") return;
+
+  const cycle = participant.campaign.cycle;
+  const topics = (participant.lowestTopics as { key: string; label: string; score: number; maxScore: number }[] | null) ?? [];
+
+  const plan = await prisma.developmentPlan.upsert({
+    where: { employeeId_cycle: { employeeId: participant.employeeId, cycle } },
+    create: {
+      companyId,
+      employeeId: participant.employeeId,
+      cycle,
+      participantId,
+      managerId: participant.employee.managerId,
+      autoGenerated: true,
+      createdById: session.sub,
+      updatedById: session.sub,
+      items: {
+        create: topics.map((t) => ({
+          title: t.label,
+          problemDescription: `คะแนนหัวข้อนี้อยู่ที่ ${t.score}/${t.maxScore} ซึ่งต่ำกว่าเกณฑ์`,
+          followUpDate: participant.campaign.followUpDate,
+        })),
+      },
+    },
+    update: { participantId, autoGenerated: true, updatedById: session.sub },
+    select: { id: true },
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "development_plan.auto_generate",
+    entity: "DevelopmentPlan",
+    entityId: plan.id,
+    after: { employeeId: participant.employeeId, cycle, reason: "URGENT score" },
+  });
+
+  const employeeName = `${participant.employee.firstName} ${participant.employee.lastName}`;
+  const notifyBody = `${employeeName} มีคะแนนประเมิน ${participant.campaign.name} · ${cycle} อยู่ในเกณฑ์ต้องแก้ไขเร่งด่วน ระบบสร้างแผนพัฒนาให้อัตโนมัติแล้ว`;
+  const recipients = new Set<string>();
+  if (participant.employee.managerId) recipients.add(participant.employee.managerId);
+  const hrEmployees = await prisma.employee.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      user: { roles: { some: { role: { permissions: { some: { permission: { key: "campaign:approve" } } } } } } },
+    },
+    select: { id: true },
+  });
+  hrEmployees.forEach((e) => recipients.add(e.id));
+
+  for (const employeeId of recipients) {
+    await createNotification(
+      companyId,
+      employeeId,
+      { title: "มีพนักงานคะแนนประเมินต่ำกว่าเกณฑ์", body: notifyBody, category: "performance", link: `/performance/campaigns/${participantId}` },
+      session.sub,
+    );
+  }
+}
+
 export async function finalizeParticipant(
   companyId: string,
   session: AccessClaims,
@@ -1021,10 +1326,40 @@ export async function finalizeParticipant(
     data: { finalizedAt: new Date() },
   });
 
+  await maybeCreateImprovementPlan(companyId, participantId, session);
+
   await writeAudit({
     companyId,
     actorUserId: session.sub,
     action: "campaign.finalize_participant",
+    entity: "EvaluationParticipant",
+    entityId: participantId,
+    ...meta,
+  });
+
+  return { ok: true as const };
+}
+
+/** Employee acknowledges their own finalized result — required before HR can
+ * consider the cycle's feedback loop closed for that person. */
+export async function acknowledgeResult(companyId: string, session: AccessClaims, participantId: string, meta?: Meta) {
+  const participant = await prisma.evaluationParticipant.findFirst({
+    where: { id: participantId, campaign: { companyId, deletedAt: null } },
+    select: { id: true, employeeId: true, finalizedAt: true },
+  });
+  if (!participant) throw NotFound("ไม่พบผลการประเมิน");
+  if (participant.employeeId !== session.employeeId) throw Forbidden("รับทราบได้เฉพาะผลของตนเอง");
+  if (!participant.finalizedAt) throw BadRequest("ผลการประเมินยังไม่สรุป ยังไม่สามารถรับทราบได้");
+
+  await prisma.evaluationParticipant.update({
+    where: { id: participantId },
+    data: { employeeAcknowledged: true, acknowledgedAt: new Date() },
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.acknowledge_result",
     entity: "EvaluationParticipant",
     entityId: participantId,
     ...meta,
