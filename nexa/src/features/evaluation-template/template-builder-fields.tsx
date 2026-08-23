@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { BankQuestionPicker } from "./bank-question-picker";
+import { defaultOptionsFor } from "./question-defaults";
 import type { AnswerType, QuestionFormValues, SectionFormValues, TemplateOption, TemplateVisibleToType } from "./types";
 
 export const ANSWER_TYPE_LABEL: Record<AnswerType, string> = {
@@ -22,34 +24,6 @@ export const ANSWER_TYPE_LABEL: Record<AnswerType, string> = {
 };
 
 const NON_SCORING_TYPES = new Set<AnswerType>(["LONG_TEXT", "SHORT_TEXT", "FILE_EVIDENCE"]);
-
-function defaultOptionsFor(type: AnswerType): TemplateOption[] | undefined {
-  switch (type) {
-    case "NUMERIC":
-      return [1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n), score: n }));
-    case "YES_NO":
-      return [
-        { value: "YES", label: "ใช่", score: 1 },
-        { value: "NO", label: "ไม่ใช่", score: 0 },
-      ];
-    case "LETTER":
-      return [
-        { value: "A", label: "A", score: 4 },
-        { value: "B", label: "B", score: 3 },
-        { value: "C", label: "C", score: 2 },
-        { value: "D", label: "D", score: 1 },
-      ];
-    case "CHOICE":
-      return [
-        { value: "", label: "", score: 0 },
-        { value: "", label: "", score: 0 },
-      ];
-    case "LONG_TEXT":
-    case "SHORT_TEXT":
-    case "FILE_EVIDENCE":
-      return undefined;
-  }
-}
 
 export function emptyQuestion(order: number): QuestionFormValues {
   return {
@@ -389,14 +363,21 @@ export function SectionEditor({
         ))}
       </Reorder.Group>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => onChange({ ...section, questions: [...section.questions, emptyQuestion(section.questions.length)] })}
-      >
-        <Plus className="size-3.5" /> เพิ่มข้อย่อย
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onChange({ ...section, questions: [...section.questions, emptyQuestion(section.questions.length)] })}
+        >
+          <Plus className="size-3.5" /> เพิ่มข้อย่อย
+        </Button>
+        <BankQuestionPicker
+          onAdd={(question) =>
+            onChange({ ...section, questions: [...section.questions, { ...question, order: section.questions.length }] })
+          }
+        />
+      </div>
     </div>
   );
 }
