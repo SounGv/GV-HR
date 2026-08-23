@@ -157,6 +157,16 @@
   --gv-notif-red: #e53935;
 }
 
+/* Reference mockup's icon chips read as white (not green-tinted) with a
+   soft shadow for depth — green is carried by the icon stroke only
+   (--icon-chip-fg, unchanged). Mobile-only override, same max-width as the
+   Anuphan font rule below, so desktop's icon-chip-bg is untouched. */
+@media (max-width: 767px) {
+  :root {
+    --icon-chip-bg: #ffffff;
+  }
+}
+
 /* ───────────────── GV One — Dark theme ───────────────── */
 .dark {
   --background: #10130a;

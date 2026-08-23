@@ -175,7 +175,7 @@ export function MobileDashboardView({
                 href={item.href}
                 className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-icon-chip-bg/60"
               >
-                <span className="flex size-11 items-center justify-center rounded-full bg-icon-chip-bg text-icon-chip-fg">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-sm">
                   <item.icon className="size-5" strokeWidth={2.5} />
                 </span>
                 <span className="text-[12px] font-medium text-foreground">{item.label}</span>
@@ -211,7 +211,7 @@ export function MobileDashboardView({
 
 function TodoIcon({ icon: Icon, count }: { icon: typeof ClipboardCheck; count: number }) {
   return (
-    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-icon-chip-bg text-icon-chip-fg">
+    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-sm">
       <Icon className="size-[18px]" strokeWidth={2.5} />
       {count > 0 && (
         <span className="absolute -top-1.5 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">
@@ -237,7 +237,7 @@ function SummaryTile({
 }) {
   const inner = (
     <div className="flex h-full flex-col gap-1.5 rounded-2xl bg-card p-3 shadow-sm">
-      <span className="flex size-7 items-center justify-center rounded-full bg-icon-chip-bg text-icon-chip-fg">
+      <span className="flex size-7 items-center justify-center rounded-xl bg-icon-chip-bg text-icon-chip-fg shadow-sm">
         <Icon className="size-3.5" strokeWidth={2.5} />
       </span>
       <p className="truncate text-[11px] text-muted-foreground">{label}</p>
