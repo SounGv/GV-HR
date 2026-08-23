@@ -148,6 +148,12 @@ export interface MyPendingResponse {
   totalQuestions: number;
 }
 
+/** Same shape as `MyPendingResponse`, plus status — pending AND submitted, with history. */
+export interface MyEvaluationAssignment extends MyPendingResponse {
+  status: "PENDING" | "SUBMITTED";
+  submittedAt: string | null;
+}
+
 export interface BulkUpsertCompetencyResult {
   competencyId: string;
   name: string;

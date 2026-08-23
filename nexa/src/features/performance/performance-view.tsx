@@ -11,17 +11,23 @@ import {
   Building2,
   BarChart3,
   Rocket,
+  ListChecks,
 } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { fullName, getInitials } from "@/lib/format";
 import { useAuth } from "@/features/auth/auth-context";
 import { CampaignView } from "@/features/campaign/campaign-view";
 import { CalibrationView } from "@/features/calibration/calibration-view";
 import { NineBoxView } from "@/features/calibration/nine-box-view";
 import { SuccessionView } from "@/features/succession/succession-view";
 import { DevelopmentPlanView } from "@/features/development-plan/development-plan-view";
+import { useMyEvaluationAssignments } from "@/features/campaign/hooks";
+import { RATER_LABEL } from "@/features/campaign/labels";
 
 import { ReviewCard } from "./review-card";
 import { DepartmentSummaryView } from "./department-summary-view";
@@ -82,14 +88,20 @@ export function PerformanceView() {
 
 function EvaluationTasksTab({ canReview }: { canReview: boolean }) {
   return (
-    <Tabs defaultValue="me" className="space-y-4">
+    <Tabs defaultValue="assignments" className="space-y-4">
       <TabsList>
+        <TabsTrigger value="assignments">
+          <ListChecks className="size-3.5" /> งานที่ต้องประเมิน
+        </TabsTrigger>
         <TabsTrigger value="me">ผลประเมินของฉัน</TabsTrigger>
         {canReview && <TabsTrigger value="team">ประเมินทีม</TabsTrigger>}
         <TabsTrigger value="idp">
           <Rocket className="size-3.5" /> แผนพัฒนา (IDP)
         </TabsTrigger>
       </TabsList>
+      <TabsContent value="assignments">
+        <MyAssignments />
+      </TabsContent>
       <TabsContent value="me">
         <MyReviews />
       </TabsContent>
@@ -102,6 +114,63 @@ function EvaluationTasksTab({ canReview }: { canReview: boolean }) {
         <DevelopmentPlanView />
       </TabsContent>
     </Tabs>
+  );
+}
+
+function fmtDate(iso: string) {
+  return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
+    new Date(iso),
+  );
+}
+
+/** Every evaluation I've been asked to do — pending and already-submitted, active and closed campaigns — so a completed evaluation stays visible with history instead of disappearing from the list. */
+function MyAssignments() {
+  const { data, isLoading, isError, refetch } = useMyEvaluationAssignments();
+  const items = data?.data ?? [];
+
+  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (isLoading) return <TableLoadingState rows={3} />;
+  if (items.length === 0) {
+    return (
+      <EmptyState
+        icon={ListChecks}
+        title="ยังไม่มีงานที่ต้องประเมิน"
+        description="เมื่อมีคนให้คุณประเมิน รายการจะแสดงที่นี่ พร้อมประวัติหลังทำเสร็จ"
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {items.map((item) => (
+        <Link
+          key={item.responseId}
+          href={`/performance/campaigns/${item.campaignId}/participants/${item.participantId}`}
+          className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-muted/50"
+        >
+          <Avatar className="size-10">
+            {item.employee.avatarUrl && <AvatarImage src={item.employee.avatarUrl} alt={item.employee.firstName} />}
+            <AvatarFallback className="bg-primary/10 text-sm text-primary">
+              {getInitials(item.employee.firstName, item.employee.lastName)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {fullName(item.employee.firstName, item.employee.lastName)}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {RATER_LABEL[item.raterType] ?? item.raterType} · {item.campaignName} · {item.cycle}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {fmtDate(item.startDate)} – {fmtDate(item.endDate)}
+            </p>
+          </div>
+          <Badge variant={item.status === "SUBMITTED" ? "secondary" : "default"}>
+            {item.status === "SUBMITTED" ? "ทำแล้ว" : "รอทำ"}
+          </Badge>
+        </Link>
+      ))}
+    </div>
   );
 }
 

@@ -724,6 +724,80 @@ export async function getMyPendingResponses(companyId: string, session: AccessCl
 }
 
 /**
+ * Every evaluation the caller has ever been asked to give a score for —
+ * SELF/MANAGER/PEER/UPWARD/HR_EXEC alike, pending *and* already submitted,
+ * across active and closed campaigns — so nothing drops out of view just
+ * because it was finished or the campaign ended. `getMyPendingResponses`
+ * above stays pending-only/active-only on purpose (it feeds the sidebar and
+ * bottom-nav "still owe this" badge counts); this is the separate "my full
+ * list, with history" view the task list/UI actually renders.
+ */
+export async function getMyEvaluationAssignments(companyId: string, session: AccessClaims) {
+  const employeeId = session.employeeId;
+  if (!employeeId) return [];
+
+  const rows = await prisma.evaluationResponse.findMany({
+    where: {
+      raterEmployeeId: employeeId,
+      participant: { campaign: { companyId, deletedAt: null } },
+    },
+    select: {
+      id: true,
+      raterType: true,
+      status: true,
+      submittedAt: true,
+      participant: {
+        select: {
+          id: true,
+          employee: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          campaign: {
+            select: {
+              id: true,
+              name: true,
+              cycle: true,
+              startDate: true,
+              endDate: true,
+              templateSnapshot: true,
+              _count: { select: { competencies: true } },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 200,
+  });
+
+  // Still-pending items first (they need action); submitted ones after,
+  // most recently submitted first.
+  const sorted = [...rows].sort((a, b) => {
+    if (a.status !== b.status) return a.status === "PENDING" ? -1 : 1;
+    return 0; // createdAt: "desc" from the query already orders each group
+  });
+
+  return sorted.map((r) => {
+    const snapshot = r.participant.campaign.templateSnapshot as CampaignTemplateSnapshot | null;
+    const totalQuestions = snapshot
+      ? snapshot.sections.reduce((n, s) => n + s.questions.length, 0)
+      : r.participant.campaign._count.competencies;
+    return {
+      responseId: r.id,
+      raterType: r.raterType,
+      status: r.status,
+      submittedAt: r.submittedAt,
+      participantId: r.participant.id,
+      campaignId: r.participant.campaign.id,
+      campaignName: r.participant.campaign.name,
+      cycle: r.participant.campaign.cycle,
+      startDate: r.participant.campaign.startDate,
+      endDate: r.participant.campaign.endDate,
+      employee: r.participant.employee,
+      totalQuestions,
+    };
+  });
+}
+
+/**
  * Which response row belongs to the caller is derived from
  * `raterEmployeeId` — never trusted from the client. SELF/MANAGER rows are
  * stamped with the employee's/manager's id at seed time; PEER/UPWARD rows

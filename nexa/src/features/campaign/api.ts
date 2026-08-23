@@ -7,6 +7,7 @@ import type {
   CampaignFormValues,
   CampaignListItem,
   EmployeeEvaluationHistoryItem,
+  MyEvaluationAssignment,
   MyPendingResponse,
   ParticipantDetail,
   SubmitResponseValues,
@@ -64,6 +65,10 @@ export function removeRater(responseId: string) {
 
 export function fetchMyPendingResponses() {
   return api.get<Envelope<MyPendingResponse[]>>("/api/campaigns/my-pending");
+}
+
+export function fetchMyEvaluationAssignments() {
+  return api.get<Envelope<MyEvaluationAssignment[]>>("/api/campaigns/my-assignments");
 }
 
 export function fetchEmployeeEvaluationHistory(employeeId: string) {

@@ -6,10 +6,11 @@ import { ClipboardCheck, ChevronRight, ListChecks } from "lucide-react";
 import { MobileScreen } from "./mobile-screen";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { fullName, getInitials } from "@/lib/format";
 import { useReviews } from "@/features/performance/hooks";
 import { ReviewCard } from "@/features/performance/review-card";
-import { useMyPendingResponses } from "@/features/campaign/hooks";
+import { useMyEvaluationAssignments } from "@/features/campaign/hooks";
 import { RATER_LABEL } from "@/features/campaign/labels";
 
 function fmtDate(iso: string) {
@@ -18,9 +19,11 @@ function fmtDate(iso: string) {
 
 /**
  * Lightweight mobile-first performance screen — my own review history plus
- * every evaluation task (self/peer/manager/upward) still owed a score,
- * instead of making phones fight the desktop tab bar (campaigns/9-box/
- * succession). Desktop keeps `PerformanceView` unchanged.
+ * every campaign evaluation I've been asked to do (self/peer/manager/upward),
+ * pending AND already-submitted so a finished one stays visible with
+ * history instead of vanishing, instead of making phones fight the desktop
+ * tab bar (campaigns/9-box/succession). Desktop keeps `PerformanceView`
+ * with an equivalent "งานที่ต้องประเมิน" tab.
  */
 export function MobilePerformanceView() {
   return (
@@ -35,15 +38,17 @@ export function MobilePerformanceView() {
 }
 
 function PendingSection() {
-  const { data, isLoading } = useMyPendingResponses();
+  const { data, isLoading } = useMyEvaluationAssignments();
   const items = data?.data ?? [];
 
   if (isLoading || items.length === 0) return null;
 
+  const pendingCount = items.filter((i) => i.status === "PENDING").length;
+
   return (
     <div className="space-y-2">
       <h2 className="flex items-center gap-1.5 text-base font-semibold text-foreground">
-        <ListChecks className="size-4 text-primary" /> รายการที่ต้องให้คะแนน ({items.length})
+        <ListChecks className="size-4 text-primary" /> รายการที่ให้ประเมิน ({items.length})
       </h2>
       <div className="space-y-2">
         {items.map((item) => (
@@ -70,14 +75,17 @@ function PendingSection() {
               <p className="text-sm text-muted-foreground">
                 {fmtDate(item.startDate)} – {fmtDate(item.endDate)}
               </p>
-              {item.totalQuestions > 0 && (
-                <p className="mt-0.5 text-sm font-semibold text-primary">{item.totalQuestions} หัวข้อ · ยังไม่ได้ทำ</p>
-              )}
             </div>
+            <Badge variant={item.status === "SUBMITTED" ? "secondary" : "default"}>
+              {item.status === "SUBMITTED" ? "ทำแล้ว" : "รอทำ"}
+            </Badge>
             <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
           </Link>
         ))}
       </div>
+      {pendingCount === 0 && (
+        <p className="text-center text-xs text-muted-foreground">ทำครบทุกรายการแล้ว</p>
+      )}
     </div>
   );
 }

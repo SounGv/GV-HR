@@ -9,6 +9,7 @@ import {
   fetchCampaign,
   fetchCampaigns,
   fetchEmployeeEvaluationHistory,
+  fetchMyEvaluationAssignments,
   fetchMyPendingResponses,
   fetchParticipant,
   finalizeParticipant,
@@ -28,10 +29,16 @@ export const campaignKeys = {
   participant: (id: string) => ["campaigns", "participant", id] as const,
   employeeHistory: (employeeId: string) => ["campaigns", "employee-history", employeeId] as const,
   myPending: ["campaigns", "my-pending"] as const,
+  myAssignments: ["campaigns", "my-assignments"] as const,
 };
 
 export function useMyPendingResponses() {
   return useQuery({ queryKey: campaignKeys.myPending, queryFn: fetchMyPendingResponses });
+}
+
+/** Pending + submitted, with history — see getMyEvaluationAssignments for why this is separate from useMyPendingResponses. */
+export function useMyEvaluationAssignments() {
+  return useQuery({ queryKey: campaignKeys.myAssignments, queryFn: fetchMyEvaluationAssignments });
 }
 
 export function useCampaigns(status?: string) {
