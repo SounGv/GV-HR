@@ -10,6 +10,10 @@ const LEAVE_TYPES_FOR_SUMMARY = ["ANNUAL", "SICK", "PERSONAL"] as const;
 export interface DashboardActions {
   approvals: { leave: number; overtime: number; expense: number; workflow: number };
   myPending: number;
+  /** All of my own leave/OT/expense/workflow requests, any status — for a
+   * "how many have I filed" glance stat, distinct from myPending's "how many
+   * still need a decision" (mobile Home's "สรุปของฉัน"/"คำขอของฉัน" tile). */
+  myTotal: number;
   shiftToday: { name: string; startTime: string; endTime: string } | null;
 }
 
@@ -49,6 +53,10 @@ export async function getActionCenter(
     myOvertime,
     myExpense,
     myWorkflow,
+    myLeaveTotal,
+    myOvertimeTotal,
+    myExpenseTotal,
+    myWorkflowTotal,
     shift,
   ] = await Promise.all([
     hasReports
@@ -80,6 +88,18 @@ export async function getActionCenter(
         })
       : Promise.resolve(0),
     employeeId
+      ? prisma.leaveRequest.count({ where: { companyId, deletedAt: null, employeeId } })
+      : Promise.resolve(0),
+    employeeId
+      ? prisma.overtimeRequest.count({ where: { companyId, deletedAt: null, employeeId } })
+      : Promise.resolve(0),
+    employeeId
+      ? prisma.expenseClaim.count({ where: { companyId, deletedAt: null, employeeId } })
+      : Promise.resolve(0),
+    employeeId
+      ? prisma.approvalRequest.count({ where: { companyId, requesterEmployeeId: employeeId } })
+      : Promise.resolve(0),
+    employeeId
       ? prisma.shiftAssignment.findUnique({
           where: { employeeId_date: { employeeId, date: todayUtc } },
           select: { template: { select: { name: true, startTime: true, endTime: true } } },
@@ -98,6 +118,7 @@ export async function getActionCenter(
   return {
     approvals: { leave, overtime, expense, workflow },
     myPending: myLeave + myOvertime + myExpense + myWorkflow,
+    myTotal: myLeaveTotal + myOvertimeTotal + myExpenseTotal + myWorkflowTotal,
     shiftToday: shift?.template ?? null,
   };
 }

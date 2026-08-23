@@ -10,6 +10,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-heading: var(--font-heading);
+  --font-anuphan: var(--font-anuphan), var(--font-prompt), "Noto Sans Thai", ui-sans-serif, sans-serif;
 
   /* Semantic status colors (GV One) */
   --color-success: var(--success);
@@ -25,6 +26,17 @@
   --color-icon-chip-fg: var(--icon-chip-fg);
   --color-badge: var(--badge);
   --color-badge-foreground: var(--badge-foreground);
+
+  /* Mobile Home redesign — exact brand tokens from the spec, additive only
+     (no existing token above is redefined) so this ships isolated to the
+     mobile Home page without any risk to the rest of the app. */
+  --color-gv-lime: var(--gv-lime);
+  --color-gv-dark-green: var(--gv-dark-green);
+  --color-gv-deep-green: var(--gv-deep-green);
+  --color-gv-pale-green: var(--gv-pale-green);
+  --color-gv-bg: var(--gv-bg);
+  --color-gv-border: var(--gv-border);
+  --color-gv-notif-red: var(--gv-notif-red);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -133,6 +145,16 @@
   --sidebar-accent-foreground: #f5f6ef;
   --sidebar-border: #212616;
   --sidebar-ring: #84cc16;
+
+  /* Mobile Home redesign tokens — light-mode only (the mobile Home page is
+     not tested in dark mode per the spec). */
+  --gv-lime: #78c900;
+  --gv-dark-green: #1d5e22;
+  --gv-deep-green: #0f1b0c;
+  --gv-pale-green: #eaf7d6;
+  --gv-bg: #f7f9f2;
+  --gv-border: #d8e4d0;
+  --gv-notif-red: #e53935;
 }
 
 /* ───────────────── GV One — Dark theme ───────────────── */

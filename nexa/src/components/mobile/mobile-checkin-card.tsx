@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, Camera, CheckCircle2, Home, MapPinned } from "lucide-react";
+import { Building2, Camera, CheckCircle2, Home, MapPinned, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
 import { useToday } from "@/features/attendance/hooks";
@@ -73,20 +73,21 @@ export function MobileCheckinCard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasOut, isWfh, hasGeofence]);
 
-  const statusLabel = hasOut ? "เลิกงานแล้ว" : hasIn ? "กำลังทำงาน" : "พร้อมเข้างาน";
+  const statusLabel = hasOut ? "ออกงานแล้ว" : hasIn ? "เข้างานแล้ว" : "พร้อมเข้างาน";
   const clockLabel = now
     ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Bangkok" }).format(now)
     : "--:--:--";
+  const showDistance = gpsReady && distance != null && !hasOut && !isWfh;
 
   return (
     <>
-      <section className="relative overflow-hidden rounded-3xl bg-sidebar p-5 text-white">
-        <div className="pointer-events-none absolute -top-20 -right-14 size-64 rounded-full bg-primary/25 blur-[90px]" />
+      <section className="relative overflow-hidden rounded-3xl bg-gv-deep-green p-5 text-white">
+        <div className="pointer-events-none absolute -top-20 -right-14 size-64 rounded-full bg-gv-lime/25 blur-[90px]" />
 
         <div className="relative flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-xs text-slate-300">
-            {isWfh ? <Home className="size-3.5" /> : <Building2 className="size-3.5" />}
-            {isWfh ? WORK_MODE_LABEL.WFH : (branch?.name ?? "ไม่ระบุสาขา")}
+            <span className="size-1.5 rounded-full bg-gv-lime" />
+            สถานะวันนี้
           </span>
           {!hasOut && !isWfh && (
             <span
@@ -100,17 +101,30 @@ export function MobileCheckinCard() {
           )}
         </div>
 
-        <div className="relative mt-3">
-          <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">{clockLabel}</p>
-          <p className="mt-0.5 text-xs text-slate-300">
-            {statusLabel}
-            {gpsReady && distance != null && !hasOut && !isWfh
-              ? ` · ห่าง ${Math.round(distance).toLocaleString()} เมตร`
-              : ""}
-          </p>
+        <p className="relative mt-1.5 text-2xl font-bold tracking-tight text-gv-lime">{statusLabel}</p>
+        <p className="relative mt-0.5 flex items-center gap-1.5 text-xs text-slate-400">
+          {isWfh ? <Home className="size-3.5" /> : <Building2 className="size-3.5" />}
+          {isWfh ? WORK_MODE_LABEL.WFH : (branch?.name ?? "ไม่ระบุสาขา")}
+        </p>
+
+        <div className="relative mt-4 border-t border-dashed border-white/15 pt-4">
+          <div className={cn("grid gap-3", showDistance ? "grid-cols-2" : "grid-cols-1")}>
+            <div>
+              <p className="text-[11px] text-slate-400">เวลา ณ ปัจจุบัน</p>
+              <p className="mt-0.5 font-mono text-xl font-semibold tracking-tight tabular-nums">{clockLabel}</p>
+            </div>
+            {showDistance && (
+              <div>
+                <p className="text-[11px] text-slate-400">ระยะห่างจากที่ทำงาน</p>
+                <p className="mt-0.5 text-xl font-semibold tabular-nums">
+                  {Math.round(distance!).toLocaleString()} <span className="text-xs font-normal text-slate-400">เมตร</span>
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="relative mt-4">
+        <div className="relative mt-4 border-t border-dashed border-white/15 pt-4">
           {isLoading ? (
             <div className="h-13 w-full animate-pulse rounded-2xl bg-white/10" />
           ) : hasOut ? (
@@ -121,14 +135,20 @@ export function MobileCheckinCard() {
             <button
               type="button"
               onClick={() => setFlowMode(hasIn ? "out" : "in")}
-              className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#BEF264] to-[#84CC16] text-base font-semibold text-primary-foreground shadow-lg shadow-primary/20 active:scale-[0.99] active:brightness-95"
+              className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-gv-lime text-base font-semibold text-gv-deep-green shadow-lg shadow-black/20 active:scale-[0.99] active:brightness-95"
             >
-              <Camera className="size-5" /> {hasIn ? "เช็คเอาท์" : "เช็คอิน"}
+              <Camera className="size-5" /> {hasIn ? "เช็กเอาต์" : "เช็กอิน"}
             </button>
           )}
           {!hasOut && (
-            <p className="mt-2 text-center text-[11px] text-slate-400">
-              {isWfh ? "ทำงานจากที่บ้าน — ไม่ต้องถ่ายรูป/ตรวจตำแหน่ง" : "กดเพื่อเปิดกล้องถ่ายรูปยืนยันตัวตน"}
+            <p className="mt-2 flex items-center justify-center gap-1 text-center text-[11px] text-slate-400">
+              {isWfh ? (
+                "ทำงานจากที่บ้าน — ไม่ต้องถ่ายรูป/ตรวจตำแหน่ง"
+              ) : (
+                <>
+                  <ShieldCheck className="size-3.5" /> ยืนยันตัวตนด้วยกล้องเพื่อความปลอดภัย
+                </>
+              )}
             </p>
           )}
         </div>
