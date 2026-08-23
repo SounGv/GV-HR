@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { FloatingAiLauncher } from "@/features/ai/floating-ai-launcher";
 import { MobileContentWrapper } from "@/components/mobile/mobile-content-wrapper";
+import { AppBadgeSync } from "@/components/pwa/app-badge-sync";
 import { AppSidebar } from "./app-sidebar";
 import { AppTopbar } from "./app-topbar";
 import { MobileBottomNav } from "./mobile-bottom-nav";
@@ -11,6 +12,7 @@ import { MobileBottomNav } from "./mobile-bottom-nav";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
+      <AppBadgeSync />
       <AppSidebar />
       <SidebarInset className="bg-background">
         <div className="hidden md:block">
