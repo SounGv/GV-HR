@@ -1,4 +1,4 @@
-export type ExpenseStatus = "PENDING" | "APPROVED" | "REJECTED" | "PAID" | "CANCELLED";
+export type ExpenseStatus = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "PAID" | "CANCELLED";
 export type ExpenseCategory = "travel" | "food" | "supplies" | "accommodation" | "medical" | "other";
 export type ExpenseScope = "me" | "team" | "all";
 
@@ -10,6 +10,8 @@ export interface ExpenseClaim {
   expenseDate: string;
   description: string | null;
   receiptUrl: string | null;
+  hospitalName: string | null;
+  sickLeaveRequestId: string | null;
   status: ExpenseStatus;
   decidedAt: string | null;
   decisionNote: string | null;
@@ -31,4 +33,15 @@ export interface ExpenseFormValues {
   expenseDate: string;
   description?: string;
   receiptUrl?: string;
+  hospitalName?: string;
+  sickLeaveRequestId?: string;
+  status?: "DRAFT" | "PENDING";
+}
+
+export interface MedicalBenefitSummary {
+  year: number;
+  cap: number;
+  approved: number;
+  pending: number;
+  remaining: number;
 }

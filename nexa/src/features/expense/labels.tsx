@@ -2,6 +2,7 @@ import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import type { ExpenseCategory, ExpenseStatus } from "./types";
 
 export const EXPENSE_STATUS_LABEL: Record<ExpenseStatus, string> = {
+  DRAFT: "ร่าง",
   PENDING: "รออนุมัติ",
   APPROVED: "อนุมัติแล้ว",
   REJECTED: "ไม่อนุมัติ",
@@ -19,6 +20,7 @@ export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
 };
 
 const STATUS_TONE: Record<ExpenseStatus, StatusTone> = {
+  DRAFT: "neutral",
   PENDING: "warning",
   APPROVED: "primary",
   REJECTED: "danger",

@@ -49,6 +49,17 @@ export default async function ExpenseDetailPage({ params }: { params: Promise<{ 
             <InfoRow icon={CalendarDays} label="วันที่เบิก" value={formatDate(claim.expenseDate)} />
             <InfoRow icon={Coins} label="จำนวน" value={formatCurrency(Number(claim.amount))} />
             <InfoRow label="หมวดหมู่" value={EXPENSE_CATEGORY_LABEL[claim.category]} />
+            {claim.hospitalName && <InfoRow label="โรงพยาบาล / คลินิก" value={claim.hospitalName} />}
+            {claim.sickLeaveRequestId && (
+              <InfoRow
+                label="ใบลาป่วยที่อ้างอิง"
+                value={
+                  <Link href={`/leave/${claim.sickLeaveRequestId}`} className="text-primary hover:underline">
+                    ดูใบลาป่วย
+                  </Link>
+                }
+              />
+            )}
           </div>
           <div className="rounded-lg border border-border bg-muted/40 p-3">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -82,7 +93,7 @@ export default async function ExpenseDetailPage({ params }: { params: Promise<{ 
   );
 }
 
-function InfoRow({ icon: Icon, label, value }: { icon?: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+function InfoRow({ icon: Icon, label, value }: { icon?: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">
       <span className="flex items-center gap-2 text-muted-foreground">

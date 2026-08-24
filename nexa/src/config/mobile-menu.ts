@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   CalendarPlus,
   Wallet,
+  HeartPulse,
   SlidersHorizontal,
   UsersRound,
   UserPlus,
@@ -64,6 +65,7 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
       { id: "leave", label: "ขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read" },
       { id: "overtime", label: "ขอ OT", href: "/overtime/new", icon: Timer, permission: "overtime:read" },
       { id: "expense", label: "เบิกค่าใช้จ่าย", href: "/expenses/new", icon: Wallet, permission: "expense:read" },
+      { id: "benefits", label: "สวัสดิการ", href: "/benefits", icon: HeartPulse, permission: "expense:read" },
     ],
   },
   {

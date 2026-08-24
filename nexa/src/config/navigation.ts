@@ -22,6 +22,9 @@ import {
   CalendarPlus,
   GraduationCap,
   ReceiptText,
+  Stethoscope,
+  Landmark,
+  History,
   BarChart3,
   Megaphone,
   Upload,
@@ -135,7 +138,11 @@ export const NAV_GROUPS: NavGroup[] = [
     // permission: "payroll:read", ready: true } here when ready.
     label: "เบิกจ่าย",
     items: [
-      { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
+      { label: "เบิกจ่ายทั่วไป", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
+      { label: "ค่ารักษาพยาบาล", href: "/benefits/medical", icon: Stethoscope, permission: "expense:read", ready: true },
+      { label: "กู้เงินบริษัท", href: "/benefits/loans", icon: Landmark, permission: "expense:read", ready: true },
+      { label: "ประวัติสวัสดิการของฉัน", href: "/benefits/history", icon: History, permission: "expense:read", ready: true },
+      { label: "รายงานสวัสดิการ", href: "/benefits/report", icon: BarChart3, permission: "expense:approve", ready: true },
     ],
   },
   {

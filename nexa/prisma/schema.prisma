@@ -258,6 +258,7 @@ enum EnrollmentStatus {
 }
 
 enum ExpenseStatus {
+  DRAFT
   PENDING
   APPROVED
   REJECTED
@@ -374,6 +375,7 @@ model Company {
   trainingCourses             TrainingCourse[]
   trainingEnrollments         TrainingEnrollment[]
   expenses                    ExpenseClaim[]
+  companyLoanRequests         CompanyLoanRequest[]
   calendarEvents              CalendarEvent[]
   shiftTemplates              ShiftTemplate[]
   shiftAssignments            ShiftAssignment[]
@@ -795,6 +797,7 @@ model Employee {
   goals                      Goal[]
   enrollments                TrainingEnrollment[]
   expenses                   ExpenseClaim[]
+  companyLoanRequests        CompanyLoanRequest[]
   shiftAssignments           ShiftAssignment[]
   shiftSwapRequestsMade      ShiftSwapRequest[]            @relation("ShiftSwapRequester")
   shiftSwapRequestsReceived  ShiftSwapRequest[]            @relation("ShiftSwapTarget")
@@ -2140,12 +2143,20 @@ model ExpenseClaim {
   employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   title       String
-  category    String        @default("other") // travel | food | supplies | accommodation | other
+  category    String        @default("other") // travel | food | supplies | accommodation | medical | other
   amount      Decimal       @db.Decimal(12, 2)
   expenseDate DateTime
   description String?
   receiptUrl  String?
   status      ExpenseStatus @default(PENDING)
+
+  // Medical-benefit-only fields (category === "medical") — see
+  // expense/service.ts's assertMedicalExpenseAllowed. sickLeaveRequestId is
+  // a loose id reference (no @relation), same convention this model
+  // already uses for approverEmployeeId/approverUserId, specifically so
+  // adding it never requires touching the LeaveRequest model at all.
+  hospitalName       String?
+  sickLeaveRequestId String?
 
   approverEmployeeId String?
   approverUserId     String?
@@ -2162,6 +2173,50 @@ model ExpenseClaim {
   @@index([companyId, status])
   @@index([employeeId, status])
   @@map("expense_claims")
+}
+
+/**
+ * "กู้เงินบริษัท" benefit — once per calendar year, capped at the employee's
+ * baseSalary snapshotted at request time (see company-loan/service.ts).
+ * repaidAmount is a simple running total set via a dedicated "record
+ * repayment" action; there's no full amortization ledger since nothing in
+ * this feature's spec asked for one beyond the report's outstanding-balance
+ * column (amount - repaidAmount).
+ */
+model CompanyLoanRequest {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  year             Int // calendar year of the request — enforces "once per year"
+  amount           Decimal @db.Decimal(12, 2)
+  salarySnapshot   Decimal @db.Decimal(12, 2) // employee's baseSalary at request time
+  installmentCount Int     @default(1)
+  reason           String?
+  bankName         String?
+  bankAccountNo    String?
+  attachmentUrl    String?
+  repaidAmount     Decimal @default(0) @db.Decimal(12, 2)
+
+  status ExpenseStatus @default(PENDING)
+
+  approverEmployeeId String?
+  approverUserId     String?
+  decidedAt          DateTime?
+  decisionNote       String?
+  paidAt             DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([employeeId, year])
+  @@map("company_loan_requests")
 }
 
 // ─────────────────────────── Org: Calendar event ───────────────────────────

@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { hasCompletedOneYear, hasPassedProbation } from "@/lib/tenure";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ExpenseClaim } from "./types";
 import type { ExpenseCreateInput, ExpenseDecideInput, ExpenseListQuery } from "./schema";
@@ -16,6 +17,8 @@ const claimSelect = {
   expenseDate: true,
   description: true,
   receiptUrl: true,
+  hospitalName: true,
+  sickLeaveRequestId: true,
   status: true,
   decidedAt: true,
   decisionNote: true,
@@ -37,6 +40,8 @@ function serialize(c: RawClaim): ExpenseClaim {
     expenseDate: c.expenseDate.toISOString(),
     description: c.description,
     receiptUrl: c.receiptUrl,
+    hospitalName: c.hospitalName,
+    sickLeaveRequestId: c.sickLeaveRequestId,
     status: c.status,
     decidedAt: c.decidedAt ? c.decidedAt.toISOString() : null,
     decisionNote: c.decisionNote,
@@ -55,16 +60,7 @@ function isFinanceLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("expense:approve");
 }
 
-/** True once `asOf` is at least one full year past `hireDate` (calendar-year
- * anniversary, not a fixed 365-day count — matches how tenure is normally
- * meant in HR policy, including leap years). */
-function hasCompletedOneYear(hireDate: Date, asOf: Date): boolean {
-  const anniversary = new Date(hireDate);
-  anniversary.setUTCFullYear(anniversary.getUTCFullYear() + 1);
-  return asOf >= anniversary;
-}
-
-async function getMedicalExpenseCap(companyId: string): Promise<number> {
+export async function getMedicalExpenseCap(companyId: string): Promise<number> {
   const company = await prisma.company.findFirst({
     where: { id: companyId, deletedAt: null },
     select: { medicalExpenseCapAmount: true },
@@ -72,25 +68,57 @@ async function getMedicalExpenseCap(companyId: string): Promise<number> {
   return Number(company?.medicalExpenseCapAmount ?? 4000);
 }
 
-/** Medical reimbursement is a benefit gated to employees who have both
- * passed probation and completed a full year of tenure, capped at
- * Company.medicalExpenseCapAmount baht per employee per calendar year
- * (counting PENDING/APPROVED/PAID claims so concurrent submissions can't
- * jointly exceed the cap before any of them are decided). */
-async function assertMedicalExpenseAllowed(
-  companyId: string,
-  employeeId: string,
-  amount: number,
-  expenseDate: Date,
-) {
+/** Sum of this employee's medical claims for `year`, split by status bucket
+ * — the basis for both the eligibility check below and the balance summary
+ * shown on the claim form / mobile card. */
+export async function getMedicalBenefitSummary(companyId: string, employeeId: string, year: number) {
+  const [cap, rows] = await Promise.all([
+    getMedicalExpenseCap(companyId),
+    prisma.expenseClaim.findMany({
+      where: {
+        companyId,
+        employeeId,
+        category: "medical",
+        status: { in: ["PENDING", "APPROVED", "PAID"] },
+        expenseDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
+        deletedAt: null,
+      },
+      select: { amount: true, status: true },
+    }),
+  ]);
+  const approved = rows.filter((r) => r.status === "APPROVED" || r.status === "PAID").reduce((s, r) => s + Number(r.amount), 0);
+  const pending = rows.filter((r) => r.status === "PENDING").reduce((s, r) => s + Number(r.amount), 0);
+  const remaining = Math.max(0, cap - approved - pending);
+  return { year, cap, approved, pending, remaining };
+}
+
+/** Employee-facing eligibility check, exposed separately so the claim form
+ * can show it before the employee fills anything in. */
+export async function getMedicalEligibility(companyId: string, employeeId: string) {
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
     select: { hireDate: true, probationEndDate: true },
   });
   const now = new Date();
-  const passedProbation = !employee?.probationEndDate || employee.probationEndDate <= now;
+  const passedProbation = hasPassedProbation(employee?.probationEndDate ?? null, now);
   const completedOneYear = !!employee?.hireDate && hasCompletedOneYear(employee.hireDate, now);
-  if (!passedProbation || !completedOneYear) {
+  return { eligible: passedProbation && completedOneYear, passedProbation, completedOneYear };
+}
+
+/** Medical reimbursement is a benefit gated to employees who have both
+ * passed probation and completed a full year of tenure, capped at
+ * Company.medicalExpenseCapAmount baht per employee per calendar year
+ * (counting DRAFT/PENDING/APPROVED/PAID claims so concurrent submissions
+ * can't jointly exceed the cap before any of them are decided). */
+async function assertMedicalExpenseAllowed(
+  companyId: string,
+  employeeId: string,
+  amount: number,
+  expenseDate: Date,
+  excludeClaimId?: string,
+) {
+  const { eligible } = await getMedicalEligibility(companyId, employeeId);
+  if (!eligible) {
     throw BadRequest("สิทธิ์เบิกค่ารักษาพยาบาลจะเปิดให้เมื่อผ่านทดลองงานและทำงานครบ 1 ปีแล้ว");
   }
 
@@ -106,6 +134,7 @@ async function assertMedicalExpenseAllowed(
       status: { in: ["PENDING", "APPROVED", "PAID"] },
       expenseDate: { gte: yearStart, lt: yearEnd },
       deletedAt: null,
+      ...(excludeClaimId ? { id: { not: excludeClaimId } } : {}),
     },
     _sum: { amount: true },
   });
@@ -118,6 +147,46 @@ async function assertMedicalExpenseAllowed(
   }
 }
 
+/** Same document can't be claimed twice — checked only for medical claims,
+ * where "ห้ามใช้เอกสารหรือเลขที่ใบเสร็จซ้ำ" was explicit. Compares the
+ * attached file itself (there's no separate receipt-number field). */
+async function assertReceiptNotReused(
+  companyId: string,
+  employeeId: string,
+  receiptUrl: string | null | undefined,
+  excludeClaimId?: string,
+) {
+  if (!receiptUrl) return;
+  const existing = await prisma.expenseClaim.findFirst({
+    where: {
+      companyId,
+      employeeId,
+      category: "medical",
+      receiptUrl,
+      status: { notIn: ["REJECTED", "CANCELLED"] },
+      deletedAt: null,
+      ...(excludeClaimId ? { id: { not: excludeClaimId } } : {}),
+    },
+    select: { id: true },
+  });
+  if (existing) throw BadRequest("เอกสารใบเสร็จนี้ถูกใช้เบิกไปแล้ว ไม่สามารถใช้ซ้ำได้");
+}
+
+/** Validates and returns a snapshot of the referenced sick-leave request —
+ * read-only lookup against the leave module's own table; never writes to it
+ * or touches its balance, per the explicit "don't modify the leave system"
+ * constraint. Loose reference (like this model's existing approverEmployeeId
+ * pattern) rather than a formal Prisma relation, so the LeaveRequest model
+ * itself never needs to change for this. */
+export async function resolveSickLeaveReference(companyId: string, employeeId: string, sickLeaveRequestId: string) {
+  const leave = await prisma.leaveRequest.findFirst({
+    where: { id: sickLeaveRequestId, companyId, employeeId, type: "SICK", deletedAt: null },
+    select: { id: true, startDate: true, endDate: true, type: true, attachmentUrl: true },
+  });
+  if (!leave) throw BadRequest("ไม่พบใบลาป่วยที่อ้างอิง หรือใบลานี้ไม่ใช่ของคุณ");
+  return leave;
+}
+
 export async function createExpense(
   companyId: string,
   session: AccessClaims,
@@ -125,9 +194,18 @@ export async function createExpense(
   meta?: Meta,
 ) {
   const employeeId = requireEmployeeId(session);
+  const isDraft = input.status === "DRAFT";
+
   if (input.category === "medical") {
-    await assertMedicalExpenseAllowed(companyId, employeeId, input.amount, input.expenseDate);
+    if (input.sickLeaveRequestId) {
+      await resolveSickLeaveReference(companyId, employeeId, input.sickLeaveRequestId);
+    }
+    if (!isDraft) {
+      await assertReceiptNotReused(companyId, employeeId, input.receiptUrl);
+      await assertMedicalExpenseAllowed(companyId, employeeId, input.amount, input.expenseDate);
+    }
   }
+
   const record = await prisma.expenseClaim.create({
     data: {
       companyId,
@@ -138,7 +216,9 @@ export async function createExpense(
       expenseDate: input.expenseDate,
       description: input.description,
       receiptUrl: input.receiptUrl,
-      status: "PENDING",
+      hospitalName: input.hospitalName,
+      sickLeaveRequestId: input.sickLeaveRequestId,
+      status: isDraft ? "DRAFT" : "PENDING",
       createdById: session.sub,
       updatedById: session.sub,
     },
@@ -147,10 +227,45 @@ export async function createExpense(
   await writeAudit({
     companyId,
     actorUserId: session.sub,
-    action: "expense.create",
+    action: isDraft ? "expense.draft" : "expense.create",
     entity: "ExpenseClaim",
     entityId: record.id,
     after: { title: input.title, amount: input.amount },
+    ...meta,
+  });
+  return serialize(record);
+}
+
+/** Transitions a medical DRAFT claim to PENDING, running the full
+ * eligibility/cap/receipt-dedup validation that draft-saving deliberately
+ * skips (a draft is allowed to be incomplete or momentarily over-cap while
+ * still being edited). */
+export async function submitExpense(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+  const employeeId = requireEmployeeId(session);
+  const claim = await prisma.expenseClaim.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, employeeId: true, category: true, amount: true, expenseDate: true, receiptUrl: true, status: true },
+  });
+  if (!claim) throw NotFound("ไม่พบรายการเบิกจ่าย");
+  if (claim.employeeId !== employeeId) throw Forbidden("ส่งได้เฉพาะรายการของตนเอง");
+  if (claim.status !== "DRAFT") throw BadRequest("ส่งได้เฉพาะรายการที่ยังเป็นฉบับร่าง");
+
+  if (claim.category === "medical") {
+    await assertReceiptNotReused(companyId, employeeId, claim.receiptUrl ?? undefined, claim.id);
+    await assertMedicalExpenseAllowed(companyId, employeeId, Number(claim.amount), claim.expenseDate, claim.id);
+  }
+
+  const record = await prisma.expenseClaim.update({
+    where: { id: claim.id },
+    data: { status: "PENDING", updatedById: session.sub },
+    select: claimSelect,
+  });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "expense.submit",
+    entity: "ExpenseClaim",
+    entityId: claim.id,
     ...meta,
   });
   return serialize(record);
@@ -289,7 +404,9 @@ export async function cancelExpense(
   });
   if (!claim) throw NotFound("ไม่พบรายการเบิกจ่าย");
   if (claim.employeeId !== employeeId) throw Forbidden("ยกเลิกได้เฉพาะรายการของตนเอง");
-  if (claim.status !== "PENDING") throw BadRequest("ยกเลิกได้เฉพาะรายการที่รออนุมัติ");
+  if (claim.status !== "PENDING" && claim.status !== "DRAFT") {
+    throw BadRequest("ยกเลิกได้เฉพาะรายการที่เป็นฉบับร่างหรือรออนุมัติ");
+  }
 
   const record = await prisma.expenseClaim.update({
     where: { id: claim.id },
