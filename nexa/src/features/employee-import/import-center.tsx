@@ -193,7 +193,7 @@ export function ImportCenter() {
           </div>
 
           <div className="max-h-[420px] overflow-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
+            <table className="w-full text-[15px]">
               <thead className="sticky top-0 bg-muted/80 backdrop-blur">
                 <tr className="text-left">
                   <th className="px-2 py-2 text-xs font-medium text-muted-foreground">สถานะ</th>

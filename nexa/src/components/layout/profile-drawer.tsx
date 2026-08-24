@@ -55,25 +55,43 @@ function useCloseOnBackButton(open: boolean, close: () => void) {
 }
 
 /** Swipe-right-to-dismiss on touch devices — the panel is anchored to the
- * right edge, so dragging further right is the natural "push it away" gesture. */
+ * right edge, so dragging further right is the natural "push it away" gesture.
+ *
+ * Only commits to a drag (and only then touches `transform`, which is what
+ * matters here) once the finger has actually moved past a small slop
+ * threshold, and only when the movement reads as horizontal rather than
+ * vertical scroll. A plain tap — the finger never moves, or barely
+ * trembles — never enters the "dragging" branch at all, so it never
+ * mutates the element and never risks the browser suppressing the
+ * synthetic click it would otherwise dispatch after touchend. Without this
+ * threshold, *every* tap inside the drawer — including on the "ข้อมูลส่วนตัว"
+ * row — went through this handler on every touchmove, which is exactly the
+ * kind of thing that makes a tap silently fail to navigate on real phones. */
 function useSwipeToClose(onClose: () => void) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const DRAG_THRESHOLD = 10;
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     let startX = 0;
+    let startY = 0;
     let dragging = false;
 
     function onTouchStart(e: TouchEvent) {
       startX = e.touches[0]!.clientX;
-      dragging = true;
-      el!.style.transition = "none";
+      startY = e.touches[0]!.clientY;
+      dragging = false;
     }
     function onTouchMove(e: TouchEvent) {
-      if (!dragging) return;
-      const dx = Math.max(0, e.touches[0]!.clientX - startX);
-      el!.style.transform = `translateX(${dx}px)`;
+      const dx = e.touches[0]!.clientX - startX;
+      const dy = e.touches[0]!.clientY - startY;
+      if (!dragging) {
+        if (Math.abs(dx) < DRAG_THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+        dragging = true;
+        el!.style.transition = "none";
+      }
+      el!.style.transform = `translateX(${Math.max(0, dx)}px)`;
     }
     function onTouchEnd(e: TouchEvent) {
       if (!dragging) return;
@@ -149,7 +167,7 @@ export function ProfileDrawer() {
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-bold text-foreground">{displayName}</p>
+                <p className="truncate text-lg font-bold text-foreground">{displayName}</p>
                 <p className="truncate text-sm text-muted-foreground">
                   {user.employee?.position?.title ?? "—"}
                   {user.employee?.department?.name ? ` · ${user.employee.department.name}` : ""}
@@ -176,7 +194,8 @@ export function ProfileDrawer() {
                   key={item.label}
                   href={item.href}
                   onClick={closeDrawer}
-                  className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-foreground transition active:scale-[0.99] active:bg-muted"
+                  aria-label={item.label}
+                  className="flex min-h-16 items-center gap-3 rounded-xl px-3 py-3 text-[17px] font-semibold text-foreground transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.99] active:bg-muted"
                 >
                   <span className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-sm ring-1 ring-border/60">
                     <item.icon className="size-[18px]" strokeWidth={2.5} />

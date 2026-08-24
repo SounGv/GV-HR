@@ -116,7 +116,7 @@ export function HelpView() {
               <div key={table.caption} className="space-y-2">
                 <p className="text-sm font-bold text-foreground">{table.caption}</p>
                 <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full min-w-[480px] text-left text-sm">
+                  <table className="w-full min-w-[480px] text-left text-[15px]">
                     <thead className="bg-primary text-primary-foreground">
                       <tr>
                         {table.headers.map((h) => (

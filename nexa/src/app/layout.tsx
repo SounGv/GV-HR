@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Anuphan } from "next/font/google";
+import { JetBrains_Mono, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
@@ -11,9 +11,9 @@ const mono = JetBrains_Mono({
 });
 
 /** Design-system spec's primary typeface, used app-wide (mobile and desktop
- * alike) — see `--font-sans`/`--font-anuphan` in globals.css. */
-const anuphan = Anuphan({
-  variable: "--font-anuphan",
+ * alike) — see `--font-sans`/`--font-noto-sans-thai` in globals.css. */
+const notoSansThai = Noto_Sans_Thai({
+  variable: "--font-noto-sans-thai",
   subsets: ["thai", "latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
@@ -63,7 +63,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th" suppressHydrationWarning>
-      <body className={`${mono.variable} ${anuphan.variable} font-sans`}>
+      <body className={`${mono.variable} ${notoSansThai.variable} font-sans`}>
         <AppProviders>{children}</AppProviders>
         <PwaRegister />
       </body>

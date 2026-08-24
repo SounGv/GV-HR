@@ -263,7 +263,7 @@ export function EvaluationDashboardView() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-[15px]">
                   <thead>
                     <tr className="border-b border-border text-left text-xs text-muted-foreground">
                       <th className="p-3 font-medium">ชื่อพนักงาน</th>

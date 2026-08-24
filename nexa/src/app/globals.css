@@ -10,7 +10,6 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-heading: var(--font-heading);
-  --font-anuphan: var(--font-anuphan), "Noto Sans Thai", Tahoma, Arial, sans-serif;
 
   /* Semantic status colors (GV One) */
   --color-success: var(--success);
@@ -80,10 +79,10 @@
 :root {
   --radius: 0.75rem;
 
-  /* Anuphan via next/font — single family for body + headings, mobile and
-     desktop alike (design-system spec's primary typeface). */
-  --font-sans: var(--font-anuphan), "Noto Sans Thai", Tahoma, Arial, sans-serif;
-  --font-heading: var(--font-anuphan), "Noto Sans Thai", Tahoma, Arial, sans-serif;
+  /* Noto Sans Thai via next/font — single family for body + headings,
+     mobile and desktop alike (design-system spec's primary typeface). */
+  --font-sans: var(--font-noto-sans-thai), "Sarabun", system-ui, sans-serif;
+  --font-heading: var(--font-noto-sans-thai), "Sarabun", system-ui, sans-serif;
 
   /* Surfaces — warm off-white, not neutral gray. Reconciled to the exact
      GV ONE HR palette (background/card/ink/muted/line) from the redesign
@@ -165,6 +164,30 @@
 @media (max-width: 767px) {
   :root {
     --icon-chip-bg: #ffffff;
+  }
+}
+
+/* Comfortable touch targets on phones — 44px minimum height for the
+   buttons/inputs/selects people actually tap to act, without shrinking
+   desktop's denser default sizing. Scoped to the "default"/"lg" Button
+   size and the default-size Select trigger — the xs/sm/icon-* variants
+   stay compact on purpose (dense table-row actions, inline icon buttons);
+   mobile-specific screens already size their own primary buttons well
+   above this (see MobilePrimaryButton, already 50px), so this mainly
+   covers the shared desktop-style form controls that some mobile forms
+   still render directly (e.g. the expense form has no bespoke mobile
+   variant). Un-layered, so it overrides Tailwind's `@layer utilities`
+   height classes without needing `!important`. */
+@media (max-width: 767px) {
+  [data-slot="button"][data-size="default"],
+  [data-slot="button"][data-size="lg"] {
+    height: auto;
+    min-height: 44px;
+  }
+  [data-slot="input"],
+  [data-slot="select-trigger"][data-size="default"] {
+    height: auto;
+    min-height: 44px;
   }
 }
 

@@ -150,7 +150,7 @@ function NexaHeaderLogo() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/nexa-logo.svg" alt="GV One" className="size-10 shrink-0 rounded-lg" />
       <div className="leading-tight group-data-[collapsible=icon]:hidden">
-        <div className="text-base font-semibold tracking-wide text-white">GV ONE</div>
+        <div className="text-lg font-semibold tracking-wide text-white">GV ONE</div>
         <div className="text-[11px] font-medium tracking-[0.16em] text-slate-400">
           HR AI PLATFORM
         </div>

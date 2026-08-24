@@ -462,7 +462,7 @@ function RosterGrid() {
         <TableLoadingState rows={6} />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full border-collapse text-[15px]">
             <thead>
               <tr className="border-b border-border">
                 <th className="sticky left-0 z-10 min-w-40 bg-card px-3 py-2 text-left font-medium">
