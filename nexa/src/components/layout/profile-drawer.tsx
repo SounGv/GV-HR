@@ -27,8 +27,16 @@ import { useProfileDrawer } from "./profile-drawer-context";
  * intercept; if the drawer closes some other way (X, outside click, ESC),
  * the effect's cleanup pops that same entry so the history stack doesn't
  * grow by one every time someone opens the drawer.
+ *
+ * `skipPopRef` is the fix for a real bug: tapping a nav Link both closes
+ * the drawer AND pushes a new history entry (the Link's own navigation) in
+ * the same click. Those two `pushState`s race — if this cleanup's
+ * `history.back()` fires after the Link's navigation already landed, it
+ * steps back and silently undoes it, so the tap looks like it did nothing.
+ * Callers set `skipPopRef.current = true` right before triggering a close
+ * that's actually a navigation, so this cleanup knows to leave history alone.
  */
-function useCloseOnBackButton(open: boolean, close: () => void) {
+function useCloseOnBackButton(open: boolean, close: () => void, skipPopRef: React.RefObject<boolean>) {
   const pushedRef = useRef(false);
 
   useEffect(() => {
@@ -47,7 +55,11 @@ function useCloseOnBackButton(open: boolean, close: () => void) {
       window.removeEventListener("popstate", onPopState);
       if (pushedRef.current) {
         pushedRef.current = false;
-        window.history.back();
+        if (skipPopRef.current) {
+          skipPopRef.current = false;
+        } else {
+          window.history.back();
+        }
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,23 +69,24 @@ function useCloseOnBackButton(open: boolean, close: () => void) {
 /** Swipe-right-to-dismiss on touch devices — the panel is anchored to the
  * right edge, so dragging further right is the natural "push it away" gesture.
  *
- * Only commits to a drag (and only then touches `transform`, which is what
- * matters here) once the finger has actually moved past a small slop
- * threshold, and only when the movement reads as horizontal rather than
- * vertical scroll. A plain tap — the finger never moves, or barely
- * trembles — never enters the "dragging" branch at all, so it never
- * mutates the element and never risks the browser suppressing the
- * synthetic click it would otherwise dispatch after touchend. Without this
- * threshold, *every* tap inside the drawer — including on the "ข้อมูลส่วนตัว"
- * row — went through this handler on every touchmove, which is exactly the
- * kind of thing that makes a tap silently fail to navigate on real phones. */
+ * The touch listeners attach only to `handleRef` (the header, which has no
+ * links/buttons in it) while the visual slide `transform` is applied to
+ * `panelRef` (the whole drawer content) — so a tap on any nav item never
+ * reaches a touch handler that could interfere with it at all, structurally,
+ * not just via the drag threshold below. The threshold is a second layer of
+ * defense in case swiping ever gets attached somewhere with interactive
+ * content: it only commits to a drag once the finger has moved past a small
+ * slop and the movement reads as horizontal rather than vertical scroll, so
+ * a plain tap never mutates anything. */
 function useSwipeToClose(onClose: () => void) {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const handleRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const DRAG_THRESHOLD = 10;
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const handle = handleRef.current;
+    const panel = panelRef.current;
+    if (!handle || !panel) return;
     let startX = 0;
     let startY = 0;
     let dragging = false;
@@ -89,30 +102,30 @@ function useSwipeToClose(onClose: () => void) {
       if (!dragging) {
         if (Math.abs(dx) < DRAG_THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
         dragging = true;
-        el!.style.transition = "none";
+        panel!.style.transition = "none";
       }
-      el!.style.transform = `translateX(${Math.max(0, dx)}px)`;
+      panel!.style.transform = `translateX(${Math.max(0, dx)}px)`;
     }
     function onTouchEnd(e: TouchEvent) {
       if (!dragging) return;
       dragging = false;
-      el!.style.transition = "";
-      el!.style.transform = "";
+      panel!.style.transition = "";
+      panel!.style.transform = "";
       const endX = e.changedTouches[0]?.clientX ?? startX;
       if (endX - startX > 80) onClose();
     }
 
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: true });
-    el.addEventListener("touchend", onTouchEnd);
+    handle.addEventListener("touchstart", onTouchStart, { passive: true });
+    handle.addEventListener("touchmove", onTouchMove, { passive: true });
+    handle.addEventListener("touchend", onTouchEnd);
     return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
+      handle.removeEventListener("touchstart", onTouchStart);
+      handle.removeEventListener("touchmove", onTouchMove);
+      handle.removeEventListener("touchend", onTouchEnd);
     };
   }, [onClose]);
 
-  return ref;
+  return { handleRef, panelRef };
 }
 
 /**
@@ -130,8 +143,16 @@ export function ProfileDrawer() {
   const unreadCount = notificationsData?.data.unread ?? 0;
   const canSeeHelp = can("employee:update");
 
-  useCloseOnBackButton(open, closeDrawer);
-  const swipeRef = useSwipeToClose(closeDrawer);
+  const skipPopRef = useRef(false);
+  useCloseOnBackButton(open, closeDrawer, skipPopRef);
+  const { handleRef, panelRef } = useSwipeToClose(closeDrawer);
+
+  /** Every nav Link uses this instead of `closeDrawer` directly — see the
+   * skipPopRef doc comment on useCloseOnBackButton for why. */
+  function handleNavigate() {
+    skipPopRef.current = true;
+    closeDrawer();
+  }
 
   const displayName = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : user.email;
   const roleLabel = user.roles[0] ?? "ผู้ใช้งาน";
@@ -155,8 +176,8 @@ export function ProfileDrawer() {
           <SheetTitle>โปรไฟล์</SheetTitle>
         </SheetHeader>
 
-        <div ref={swipeRef} className="flex h-full flex-col">
-          <div className="border-b border-border bg-gv-pale-green/40 p-5 pt-8">
+        <div ref={panelRef} className="flex h-full flex-col">
+          <div ref={handleRef} className="border-b border-border bg-gv-pale-green/40 p-5 pt-8">
             <div className="flex items-center gap-3">
               <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-icon-chip-bg text-icon-chip-fg ring-2 ring-card">
                 {user.employee?.avatarUrl ? (
@@ -193,7 +214,7 @@ export function ProfileDrawer() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  onClick={closeDrawer}
+                  onClick={handleNavigate}
                   aria-label={item.label}
                   className="flex min-h-16 items-center gap-3 rounded-xl px-3 py-3 text-[17px] font-semibold text-foreground transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.99] active:bg-muted"
                 >
