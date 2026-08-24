@@ -29,6 +29,7 @@ export interface CompanyProfile {
   leaveQuotaPersonalDays: number;
   leaveQuotaSickHours: number;
   leaveQuotaPersonalHours: number;
+  medicalExpenseCapAmount: string; // Prisma Decimal serializes to string
   evalThresholdUrgentMax: number;
   evalThresholdWatchMax: number;
   evalThresholdGoodMin: number;

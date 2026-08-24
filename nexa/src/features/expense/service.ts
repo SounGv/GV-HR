@@ -55,6 +55,69 @@ function isFinanceLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("expense:approve");
 }
 
+/** True once `asOf` is at least one full year past `hireDate` (calendar-year
+ * anniversary, not a fixed 365-day count — matches how tenure is normally
+ * meant in HR policy, including leap years). */
+function hasCompletedOneYear(hireDate: Date, asOf: Date): boolean {
+  const anniversary = new Date(hireDate);
+  anniversary.setUTCFullYear(anniversary.getUTCFullYear() + 1);
+  return asOf >= anniversary;
+}
+
+async function getMedicalExpenseCap(companyId: string): Promise<number> {
+  const company = await prisma.company.findFirst({
+    where: { id: companyId, deletedAt: null },
+    select: { medicalExpenseCapAmount: true },
+  });
+  return Number(company?.medicalExpenseCapAmount ?? 4000);
+}
+
+/** Medical reimbursement is a benefit gated to employees who have both
+ * passed probation and completed a full year of tenure, capped at
+ * Company.medicalExpenseCapAmount baht per employee per calendar year
+ * (counting PENDING/APPROVED/PAID claims so concurrent submissions can't
+ * jointly exceed the cap before any of them are decided). */
+async function assertMedicalExpenseAllowed(
+  companyId: string,
+  employeeId: string,
+  amount: number,
+  expenseDate: Date,
+) {
+  const employee = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId, deletedAt: null },
+    select: { hireDate: true, probationEndDate: true },
+  });
+  const now = new Date();
+  const passedProbation = !employee?.probationEndDate || employee.probationEndDate <= now;
+  const completedOneYear = !!employee?.hireDate && hasCompletedOneYear(employee.hireDate, now);
+  if (!passedProbation || !completedOneYear) {
+    throw BadRequest("สิทธิ์เบิกค่ารักษาพยาบาลจะเปิดให้เมื่อผ่านทดลองงานและทำงานครบ 1 ปีแล้ว");
+  }
+
+  const cap = await getMedicalExpenseCap(companyId);
+  const year = expenseDate.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(year, 0, 1));
+  const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+  const used = await prisma.expenseClaim.aggregate({
+    where: {
+      companyId,
+      employeeId,
+      category: "medical",
+      status: { in: ["PENDING", "APPROVED", "PAID"] },
+      expenseDate: { gte: yearStart, lt: yearEnd },
+      deletedAt: null,
+    },
+    _sum: { amount: true },
+  });
+  const usedAmount = Number(used._sum.amount ?? 0);
+  const remaining = Math.max(0, cap - usedAmount);
+  if (amount > remaining) {
+    throw BadRequest(
+      `วงเงินค่ารักษาพยาบาลคงเหลือไม่พอ — คงเหลือ ${remaining.toFixed(2)} บาทในปีนี้ (สิทธิ์ ${cap.toFixed(2)} บาท/ปี) แต่ขอเบิก ${amount.toFixed(2)} บาท`,
+    );
+  }
+}
+
 export async function createExpense(
   companyId: string,
   session: AccessClaims,
@@ -62,6 +125,9 @@ export async function createExpense(
   meta?: Meta,
 ) {
   const employeeId = requireEmployeeId(session);
+  if (input.category === "medical") {
+    await assertMedicalExpenseAllowed(companyId, employeeId, input.amount, input.expenseDate);
+  }
   const record = await prisma.expenseClaim.create({
     data: {
       companyId,

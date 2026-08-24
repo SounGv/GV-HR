@@ -36,6 +36,7 @@ const profileSelect = {
   leaveQuotaPersonalDays: true,
   leaveQuotaSickHours: true,
   leaveQuotaPersonalHours: true,
+  medicalExpenseCapAmount: true,
   evalThresholdUrgentMax: true,
   evalThresholdWatchMax: true,
   evalThresholdGoodMin: true,
@@ -60,13 +61,16 @@ export async function updateCompanyProfile(
   meta?: Meta,
 ) {
   // zod has already trimmed and converted empty strings to null.
-  const { lateDeductionPerOccurrence, ...rest } = input;
+  const { lateDeductionPerOccurrence, medicalExpenseCapAmount, ...rest } = input;
   const updated = await prisma.company.update({
     where: { id: companyId },
     data: {
       ...rest,
       ...(lateDeductionPerOccurrence !== undefined
         ? { lateDeductionPerOccurrence: new Prisma.Decimal(lateDeductionPerOccurrence) }
+        : {}),
+      ...(medicalExpenseCapAmount !== undefined
+        ? { medicalExpenseCapAmount: new Prisma.Decimal(medicalExpenseCapAmount) }
         : {}),
       updatedById: session.sub,
     },

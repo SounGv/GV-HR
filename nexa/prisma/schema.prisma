@@ -319,6 +319,13 @@ model Company {
   leaveQuotaSickHours     Int @default(0)
   leaveQuotaPersonalHours Int @default(0)
 
+  // Medical expense reimbursement benefit — a per-employee annual cap (baht,
+  // resets each calendar year based on ExpenseClaim.expenseDate), gated in
+  // expense/service.ts to employees who have both passed probation and
+  // completed 1 year of tenure. Category itself is free-text ("medical" in
+  // EXPENSE_CATEGORIES), so this cap is the only DB-level piece.
+  medicalExpenseCapAmount Decimal @default(4000) @db.Decimal(12, 2)
+
   // Evaluation score bands (% of weighted max), HR-editable from Settings —
   // never hardcoded in the frontend. Contiguous ascending cut points define
   // 4 bands: <=urgentMax -> URGENT, <=watchMax -> WATCH, <goodMin ->

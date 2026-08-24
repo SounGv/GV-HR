@@ -14,6 +14,7 @@ export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
   food: "อาหาร",
   supplies: "อุปกรณ์",
   accommodation: "ที่พัก",
+  medical: "ค่ารักษาพยาบาล",
   other: "อื่น ๆ",
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Building2, Upload, X, Save, Loader2, Palette, MapPin, Phone, Globe2, ClockAlert, CalendarRange } from "lucide-react";
+import { Building2, Upload, X, Save, Loader2, Palette, MapPin, Phone, Globe2, ClockAlert, CalendarRange, HeartPulse } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -311,6 +311,26 @@ export function CompanyProfileForm() {
               max={999}
               value={form.leaveQuotaPersonalHours}
               onChange={(e) => set("leaveQuotaPersonalHours", e.target.value)}
+              disabled={!canEdit}
+            />
+          </Field>
+        </div>
+      </Section>
+
+      {/* Benefits — expense claims tied to a cap/eligibility rule (see expense/service.ts) */}
+      <Section
+        icon={HeartPulse}
+        title="สวัสดิการพนักงาน"
+        desc="วงเงินเบิกค่ารักษาพยาบาล — เฉพาะพนักงานที่ผ่านทดลองงานและทำงานครบ 1 ปีแล้ว นับใหม่ทุกปีตามวันที่ในรายการเบิก"
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="ค่ารักษาพยาบาล (บาท/ปี)" error={errors.medicalExpenseCapAmount}>
+            <Input
+              type="number"
+              min={0}
+              max={1_000_000}
+              value={form.medicalExpenseCapAmount}
+              onChange={(e) => set("medicalExpenseCapAmount", e.target.value)}
               disabled={!canEdit}
             />
           </Field>

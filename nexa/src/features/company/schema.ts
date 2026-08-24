@@ -76,6 +76,10 @@ export const companyProfileSchema = z.object({
   leaveQuotaSickHours: z.coerce.number().int().min(0).max(999).default(0),
   leaveQuotaPersonalHours: z.coerce.number().int().min(0).max(999).default(0),
 
+  // Medical expense reimbursement cap (baht/year per employee) — see
+  // expense/service.ts's assertMedicalExpenseAllowed.
+  medicalExpenseCapAmount: z.coerce.number().min(0).max(1_000_000).default(4000),
+
   // Evaluation score bands (%) — see EvaluationScoreStatus. HR-editable so
   // nothing is hardcoded in the frontend; cross-field order is enforced
   // below so the three cut points can never end up non-ascending.

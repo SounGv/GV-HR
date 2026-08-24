@@ -1,5 +1,5 @@
 export type ExpenseStatus = "PENDING" | "APPROVED" | "REJECTED" | "PAID" | "CANCELLED";
-export type ExpenseCategory = "travel" | "food" | "supplies" | "accommodation" | "other";
+export type ExpenseCategory = "travel" | "food" | "supplies" | "accommodation" | "medical" | "other";
 export type ExpenseScope = "me" | "team" | "all";
 
 export interface ExpenseClaim {
