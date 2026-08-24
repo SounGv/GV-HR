@@ -282,16 +282,14 @@ export function MobileLeaveForm() {
           {isHourly ? (
             <>
               <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">วันที่ลา</p>
-              <label className="rounded-[10px] border border-border px-3 py-2.5">
+              <label className="block rounded-[10px] border border-border px-3 py-2.5">
                 <span className="block text-[10px] text-muted-foreground">วันที่</span>
                 <input
                   type="date"
-                  className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
-                  {...form.register("startDate")}
-                  onChange={(e) => {
-                    form.setValue("startDate", e.target.value);
-                    form.setValue("endDate", e.target.value);
-                  }}
+                  className="mt-0.5 w-full appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+                  {...form.register("startDate", {
+                    onChange: (e) => form.setValue("endDate", e.target.value),
+                  })}
                 />
               </label>
 
