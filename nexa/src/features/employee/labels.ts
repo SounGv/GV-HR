@@ -14,6 +14,8 @@ export const EMPLOYMENT_LABEL: Record<EmploymentType, string> = {
   CONTRACT: "สัญญาจ้าง",
   INTERN: "ฝึกงาน",
   PROBATION: "ทดลองงาน",
+  TEMPORARY: "พนักงานชั่วคราว",
+  DAILY_WORKER: "พนักงานรายวัน",
 };
 
 export const COMPENSATION_LABEL: Record<CompensationType, string> = {

@@ -54,6 +54,8 @@ enum EmploymentType {
   CONTRACT
   INTERN
   PROBATION
+  TEMPORARY
+  DAILY_WORKER
 }
 
 enum CompensationType {

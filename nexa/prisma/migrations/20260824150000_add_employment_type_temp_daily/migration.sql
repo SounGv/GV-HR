@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "EmploymentType" ADD VALUE 'TEMPORARY';
+ALTER TYPE "EmploymentType" ADD VALUE 'DAILY_WORKER';

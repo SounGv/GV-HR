@@ -4,7 +4,14 @@ export type EmployeeStatus =
   | "SUSPENDED"
   | "TERMINATED"
   | "RESIGNED";
-export type EmploymentType = "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERN" | "PROBATION";
+export type EmploymentType =
+  | "FULL_TIME"
+  | "PART_TIME"
+  | "CONTRACT"
+  | "INTERN"
+  | "PROBATION"
+  | "TEMPORARY"
+  | "DAILY_WORKER";
 export type CompensationType = "MONTHLY" | "DAILY" | "HOURLY";
 
 interface Ref {

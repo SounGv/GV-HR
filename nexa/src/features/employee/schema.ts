@@ -11,6 +11,8 @@ export const EMPLOYMENT_TYPES = [
   "CONTRACT",
   "INTERN",
   "PROBATION",
+  "TEMPORARY",
+  "DAILY_WORKER",
 ] as const;
 export const EMPLOYEE_STATUSES = [
   "ACTIVE",
