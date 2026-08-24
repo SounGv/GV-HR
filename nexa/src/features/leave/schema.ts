@@ -1,8 +1,14 @@
 import { z } from "zod";
 import { dataUrlFileOrHttpUrlSchema } from "@/lib/image-schema";
+import { HOURLY_LEAVE_TYPES, computeLeaveHours } from "./days";
 
 export const LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL", "UNPAID", "OTHER"] as const;
 export const LEAVE_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
+export const LEAVE_UNITS = ["DAY", "HOUR"] as const;
+
+const TIME_STRING = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "รูปแบบเวลาไม่ถูกต้อง (HH:mm)");
 
 function sameDay(a: Date, b: Date) {
   return (
@@ -18,6 +24,9 @@ export const leaveCreateSchema = z
     startDate: z.coerce.date({ message: "กรุณาเลือกวันเริ่ม" }),
     endDate: z.coerce.date({ message: "กรุณาเลือกวันสิ้นสุด" }),
     halfDay: z.coerce.boolean().default(false),
+    unit: z.enum(LEAVE_UNITS).default("DAY"),
+    startTime: z.preprocess((v) => (v === "" || v == null ? undefined : v), TIME_STRING.optional()),
+    endTime: z.preprocess((v) => (v === "" || v == null ? undefined : v), TIME_STRING.optional()),
     reason: z.preprocess(
       (v) => (v === "" || v == null ? undefined : v),
       z.string().trim().max(500).optional(),
@@ -31,7 +40,27 @@ export const leaveCreateSchema = z
   .refine((d) => !d.halfDay || sameDay(d.startDate, d.endDate), {
     message: "ลาครึ่งวันต้องเป็นวันเดียว",
     path: ["halfDay"],
-  });
+  })
+  .refine((d) => d.unit !== "HOUR" || (HOURLY_LEAVE_TYPES as readonly string[]).includes(d.type), {
+    message: "ลาเป็นชั่วโมงได้เฉพาะลาป่วย/ลากิจ",
+    path: ["unit"],
+  })
+  .refine((d) => d.unit !== "HOUR" || sameDay(d.startDate, d.endDate), {
+    message: "ลาเป็นชั่วโมงต้องเป็นวันเดียว",
+    path: ["endDate"],
+  })
+  .refine((d) => d.unit !== "HOUR" || !!(d.startTime && d.endTime), {
+    message: "กรุณาระบุเวลาเริ่ม-สิ้นสุด",
+    path: ["startTime"],
+  })
+  .refine((d) => d.unit !== "HOUR" || !d.startTime || !d.endTime || d.endTime > d.startTime, {
+    message: "เวลาสิ้นสุดต้องหลังเวลาเริ่ม",
+    path: ["endTime"],
+  })
+  .refine(
+    (d) => d.unit !== "HOUR" || !d.startTime || !d.endTime || d.endTime <= d.startTime || computeLeaveHours(d.startTime, d.endTime) >= 1,
+    { message: "ลาเป็นชั่วโมงได้อย่างน้อย 1 ชั่วโมง", path: ["endTime"] },
+  );
 export type LeaveCreateInput = z.infer<typeof leaveCreateSchema>;
 
 export const decideSchema = z.object({

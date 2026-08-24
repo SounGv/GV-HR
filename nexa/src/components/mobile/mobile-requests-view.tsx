@@ -54,8 +54,14 @@ const KIND_LABEL: Record<ReqItem["kind"], string> = {
 function itemLine(item: ReqItem) {
   if (item.kind === "leave") {
     const r = item.request;
-    const range = r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`;
-    return `${LEAVE_TYPE_LABEL[r.type]} · ${range} · ${r.days} วัน`;
+    const isHourly = r.unit === "HOUR";
+    const range = isHourly
+      ? `${fmtDate(r.startDate)} (${r.startTime}–${r.endTime})`
+      : r.startDate === r.endDate
+        ? fmtDate(r.startDate)
+        : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`;
+    const amount = isHourly ? `${r.hours} ชม.` : `${r.days} วัน`;
+    return `${LEAVE_TYPE_LABEL[r.type]} · ${range} · ${amount}`;
   }
   if (item.kind === "ot") {
     const r = item.request;

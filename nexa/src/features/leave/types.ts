@@ -1,6 +1,7 @@
 export type LeaveType = "ANNUAL" | "SICK" | "PERSONAL" | "UNPAID" | "OTHER";
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 export type LeaveScope = "me" | "team" | "all";
+export type LeaveUnit = "DAY" | "HOUR";
 
 export interface LeaveRequest {
   id: string;
@@ -9,6 +10,10 @@ export interface LeaveRequest {
   endDate: string;
   halfDay: boolean;
   days: number;
+  unit: LeaveUnit;
+  hours: number | null;
+  startTime: string | null;
+  endTime: string | null;
   reason: string | null;
   attachmentUrl: string | null;
   status: LeaveStatus;
@@ -31,6 +36,8 @@ export interface LeaveBalance {
   year: number;
   totalDays: number;
   usedDays: number;
+  totalHours: number;
+  usedHours: number;
 }
 
 export interface LeaveFormValues {
@@ -38,6 +45,9 @@ export interface LeaveFormValues {
   startDate: string;
   endDate: string;
   halfDay: boolean;
+  unit?: LeaveUnit;
+  startTime?: string;
+  endTime?: string;
   reason?: string;
   attachmentUrl?: string;
 }

@@ -27,7 +27,14 @@ function fmtDate(iso: string) {
 }
 
 function dateRange(r: LeaveRequest) {
+  if (r.unit === "HOUR" && r.startTime && r.endTime) {
+    return `${fmtDate(r.startDate)} (${r.startTime}–${r.endTime})`;
+  }
   return r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`;
+}
+
+function amountLabel(r: LeaveRequest) {
+  return r.unit === "HOUR" ? `${r.hours} ชม.` : `${r.days} วัน`;
 }
 
 export function LeaveView() {
@@ -99,7 +106,7 @@ function MyRequests() {
                     <LeaveStatusBadge status={r.status} />
                   </div>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    {dateRange(r)} · {r.days} วัน{r.reason ? ` · ${r.reason}` : ""}
+                    {dateRange(r)} · {amountLabel(r)}{r.reason ? ` · ${r.reason}` : ""}
                   </p>
                 </div>
               </Link>
@@ -169,7 +176,7 @@ function Approvals() {
                 {fullName(r.employee.firstName, r.employee.lastName)}
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {LEAVE_TYPE_LABEL[r.type]} · {dateRange(r)} · {r.days} วัน
+                {LEAVE_TYPE_LABEL[r.type]} · {dateRange(r)} · {amountLabel(r)}
                 {r.reason ? ` · ${r.reason}` : ""}
               </p>
             </div>

@@ -23,6 +23,11 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
   });
 
   const employeeName = fullName(request.employee.firstName, request.employee.lastName);
+  const isHourly = request.unit === "HOUR";
+  const rangeValue = isHourly
+    ? `${formatDate(request.startDate)} (${request.startTime}–${request.endTime})`
+    : `${formatDate(request.startDate)} - ${formatDate(request.endDate)}`;
+  const amountValue = isHourly ? `${request.hours} ชม.` : `${request.days} วัน`;
 
   return (
     <div className="space-y-6">
@@ -46,8 +51,8 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <InfoRow icon={UserRound} label="พนักงาน" value={employeeName} />
-            <InfoRow icon={CalendarDays} label="ช่วงวันที่" value={`${formatDate(request.startDate)} - ${formatDate(request.endDate)}`} />
-            <InfoRow icon={Clock3} label="วันลา" value={`${request.days} วัน`} />
+            <InfoRow icon={CalendarDays} label="ช่วงวันที่" value={rangeValue} />
+            <InfoRow icon={Clock3} label={isHourly ? "ชั่วโมงลา" : "วันลา"} value={amountValue} />
             <InfoRow label="ประเภท" value={LEAVE_TYPE_LABEL[request.type]} />
           </div>
           <div className="rounded-lg border border-border bg-muted/40 p-3">

@@ -71,6 +71,11 @@ export const companyProfileSchema = z.object({
   leaveQuotaSickDays: z.coerce.number().int().min(0).max(365).default(30),
   leaveQuotaPersonalDays: z.coerce.number().int().min(0).max(365).default(3),
 
+  // Separate hourly leave quota (hours/year) — 0 = hourly leave not offered
+  // for that type. Never converted to/from the day quota above.
+  leaveQuotaSickHours: z.coerce.number().int().min(0).max(999).default(0),
+  leaveQuotaPersonalHours: z.coerce.number().int().min(0).max(999).default(0),
+
   // Evaluation score bands (%) — see EvaluationScoreStatus. HR-editable so
   // nothing is hardcoded in the frontend; cross-field order is enforced
   // below so the three cut points can never end up non-ascending.

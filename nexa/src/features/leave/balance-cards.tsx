@@ -65,6 +65,11 @@ export function BalanceCards() {
               </div>
               <p className="text-[11px] text-muted-foreground">ใช้ไป {b.usedDays} วัน</p>
             </div>
+            {b.totalHours > 0 && (
+              <p className="border-t border-border pt-1.5 text-[11px] text-muted-foreground">
+                ลาเป็นชั่วโมง: เหลือ <span className="font-medium text-foreground">{Math.max(0, b.totalHours - b.usedHours)}</span> จาก {b.totalHours} ชม.
+              </p>
+            )}
           </Card>
         );
       })}

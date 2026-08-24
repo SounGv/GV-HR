@@ -19,3 +19,21 @@ export function deductsBalance(type: string): boolean {
 
 /** Leave types with an HR-configurable annual quota (see Company.leaveQuota* fields). */
 export const PAID_LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL"] as const;
+
+/** Leave types that can be requested by the hour instead of by the day. */
+export const HOURLY_LEAVE_TYPES = ["SICK", "PERSONAL"] as const;
+
+const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** Minutes since midnight for an "HH:mm" string — throws if malformed. */
+function parseTimeToMinutes(time: string): number {
+  const match = TIME_RE.exec(time);
+  if (!match) throw new Error(`Invalid time "${time}"`);
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+/** Hours between two "HH:mm" wall-clock times on the same day (e.g. "09:00"→"11:30" = 2.5). */
+export function computeLeaveHours(startTime: string, endTime: string): number {
+  const minutes = parseTimeToMinutes(endTime) - parseTimeToMinutes(startTime);
+  return Math.round((minutes / 60) * 100) / 100;
+}

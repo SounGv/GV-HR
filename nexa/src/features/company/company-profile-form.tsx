@@ -290,6 +290,31 @@ export function CompanyProfileForm() {
             />
           </Field>
         </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          โควตาลาเป็นชั่วโมง (แยกจากโควตาวันด้านบน — ใส่ 0 = ไม่เปิดให้ลาเป็นชั่วโมงสำหรับประเภทนั้น)
+        </p>
+        <div className="mt-2 grid gap-4 sm:grid-cols-3">
+          <Field label="ลาป่วย (ชม./ปี)" error={errors.leaveQuotaSickHours}>
+            <Input
+              type="number"
+              min={0}
+              max={999}
+              value={form.leaveQuotaSickHours}
+              onChange={(e) => set("leaveQuotaSickHours", e.target.value)}
+              disabled={!canEdit}
+            />
+          </Field>
+          <Field label="ลากิจ (ชม./ปี)" error={errors.leaveQuotaPersonalHours}>
+            <Input
+              type="number"
+              min={0}
+              max={999}
+              value={form.leaveQuotaPersonalHours}
+              onChange={(e) => set("leaveQuotaPersonalHours", e.target.value)}
+              disabled={!canEdit}
+            />
+          </Field>
+        </div>
       </Section>
 
       {/* Sticky save bar */}

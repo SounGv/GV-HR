@@ -4,7 +4,7 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
-import { computeLeaveDays, deductsBalance, PAID_LEAVE_TYPES } from "./days";
+import { computeLeaveDays, computeLeaveHours, deductsBalance, HOURLY_LEAVE_TYPES, PAID_LEAVE_TYPES } from "./days";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -24,6 +24,10 @@ const requestSelect = {
   endDate: true,
   halfDay: true,
   days: true,
+  unit: true,
+  hours: true,
+  startTime: true,
+  endTime: true,
   reason: true,
   attachmentUrl: true,
   status: true,
@@ -77,6 +81,35 @@ export async function getRemainingBalance(
   return Math.max(0, quota[type] ?? 0);
 }
 
+/** HR-configured hourly quota (hours/year) for the leave types that support it. */
+async function getCompanyLeaveHourQuota(companyId: string): Promise<Record<string, number>> {
+  const company = await prisma.company.findFirst({
+    where: { id: companyId, deletedAt: null },
+    select: { leaveQuotaSickHours: true, leaveQuotaPersonalHours: true },
+  });
+  return {
+    SICK: company?.leaveQuotaSickHours ?? 0,
+    PERSONAL: company?.leaveQuotaPersonalHours ?? 0,
+  };
+}
+
+/** Remaining hours for a leave type this year — a separate pool from
+ * `getRemainingBalance`'s days, never converted to/from it. */
+export async function getRemainingHourBalance(
+  companyId: string,
+  employeeId: string,
+  type: string,
+  year: number,
+): Promise<number> {
+  const balance = await prisma.leaveBalance.findUnique({
+    where: { employeeId_year_type: { employeeId, year, type: type as never } },
+    select: { totalHours: true, usedHours: true },
+  });
+  if (balance) return Math.max(0, balance.totalHours - balance.usedHours);
+  const quota = await getCompanyLeaveHourQuota(companyId);
+  return Math.max(0, quota[type] ?? 0);
+}
+
 export async function createLeave(
   companyId: string,
   session: AccessClaims,
@@ -84,9 +117,21 @@ export async function createLeave(
   meta?: Meta,
 ) {
   const employeeId = requireEmployeeId(session);
-  const days = computeLeaveDays(input.startDate, input.endDate, input.halfDay);
+  const isHourly = input.unit === "HOUR";
+  const days = isHourly ? 0 : computeLeaveDays(input.startDate, input.endDate, input.halfDay);
+  const hours = isHourly ? computeLeaveHours(input.startTime!, input.endTime!) : null;
 
-  if (deductsBalance(input.type)) {
+  if (isHourly) {
+    if (!(HOURLY_LEAVE_TYPES as readonly string[]).includes(input.type)) {
+      throw BadRequest("ลาเป็นชั่วโมงได้เฉพาะลาป่วย/ลากิจ");
+    }
+    const remaining = await getRemainingHourBalance(companyId, employeeId, input.type, input.startDate.getUTCFullYear());
+    if (hours! > remaining) {
+      throw BadRequest(
+        `ชั่วโมง${LEAVE_TYPE_LABEL[input.type] ?? input.type}คงเหลือไม่พอ — คุณมีสิทธิ์คงเหลือ ${remaining} ชม. แต่ขอลา ${hours} ชม.`,
+      );
+    }
+  } else if (deductsBalance(input.type)) {
     const remaining = await getRemainingBalance(companyId, employeeId, input.type, input.startDate.getUTCFullYear());
     if (days > remaining) {
       throw BadRequest(
@@ -109,6 +154,10 @@ export async function createLeave(
       endDate: input.endDate,
       halfDay: input.halfDay,
       days,
+      unit: input.unit,
+      hours,
+      startTime: isHourly ? input.startTime : null,
+      endTime: isHourly ? input.endTime : null,
       reason: input.reason,
       attachmentUrl: input.attachmentUrl,
       status: "PENDING",
@@ -124,17 +173,18 @@ export async function createLeave(
     action: "leave.create",
     entity: "LeaveRequest",
     entityId: record.id,
-    after: { type: input.type, days },
+    after: isHourly ? { type: input.type, hours } : { type: input.type, days },
     ...meta,
   });
 
+  const amountLabel = isHourly ? `${hours} ชม. (${input.startTime}–${input.endTime})` : `${days} วัน`;
   if (requester?.managerId) {
     await createNotification(
       companyId,
       requester.managerId,
       {
         title: "มีคำขอลารออนุมัติ",
-        body: `${requester.firstName} ${requester.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${days} วัน`,
+        body: `${requester.firstName} ${requester.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}`,
         category: "leave",
         link: `/leave/${record.id}`,
       },
@@ -206,6 +256,8 @@ export async function decideLeave(
       employeeId: true,
       type: true,
       days: true,
+      unit: true,
+      hours: true,
       status: true,
       startDate: true,
       employee: { select: { managerId: true } },
@@ -225,17 +277,32 @@ export async function decideLeave(
   }
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
+  const isHourly = req.unit === "HOUR";
 
-  let quotaForNewBalance = 0;
-  if (input.action === "approve" && deductsBalance(req.type)) {
-    const remaining = await getRemainingBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
-    if (req.days > remaining) {
-      throw BadRequest(
-        `ไม่สามารถอนุมัติได้ — วัน${LEAVE_TYPE_LABEL[req.type] ?? req.type}คงเหลือของพนักงานไม่พอ (คงเหลือ ${remaining} วัน แต่คำขอนี้ ${req.days} วัน)`,
-      );
+  let quotaDaysForNewBalance = 0;
+  let quotaHoursForNewBalance = 0;
+  if (input.action === "approve") {
+    if (isHourly) {
+      const remaining = await getRemainingHourBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
+      if ((req.hours ?? 0) > remaining) {
+        throw BadRequest(
+          `ไม่สามารถอนุมัติได้ — ชั่วโมง${LEAVE_TYPE_LABEL[req.type] ?? req.type}คงเหลือของพนักงานไม่พอ (คงเหลือ ${remaining} ชม. แต่คำขอนี้ ${req.hours} ชม.)`,
+        );
+      }
+      const hourQuota = await getCompanyLeaveHourQuota(companyId);
+      quotaHoursForNewBalance = hourQuota[req.type] ?? 0;
+      const dayQuota = await getCompanyLeaveQuota(companyId);
+      quotaDaysForNewBalance = dayQuota[req.type] ?? 0;
+    } else if (deductsBalance(req.type)) {
+      const remaining = await getRemainingBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
+      if (req.days > remaining) {
+        throw BadRequest(
+          `ไม่สามารถอนุมัติได้ — วัน${LEAVE_TYPE_LABEL[req.type] ?? req.type}คงเหลือของพนักงานไม่พอ (คงเหลือ ${remaining} วัน แต่คำขอนี้ ${req.days} วัน)`,
+        );
+      }
+      const quota = await getCompanyLeaveQuota(companyId);
+      quotaDaysForNewBalance = quota[req.type] ?? 0;
     }
-    const quota = await getCompanyLeaveQuota(companyId);
-    quotaForNewBalance = quota[req.type] ?? 0;
   }
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -252,18 +319,20 @@ export async function decideLeave(
       select: requestSelect,
     });
 
-    if (input.action === "approve" && deductsBalance(req.type)) {
+    if (input.action === "approve" && (isHourly || deductsBalance(req.type))) {
       const year = req.startDate.getUTCFullYear();
       await tx.leaveBalance.upsert({
         where: { employeeId_year_type: { employeeId: req.employeeId, year, type: req.type } },
-        update: { usedDays: { increment: req.days } },
+        update: isHourly ? { usedHours: { increment: req.hours ?? 0 } } : { usedDays: { increment: req.days } },
         create: {
           companyId,
           employeeId: req.employeeId,
           year,
           type: req.type,
-          totalDays: quotaForNewBalance,
-          usedDays: req.days,
+          totalDays: quotaDaysForNewBalance,
+          usedDays: isHourly ? 0 : req.days,
+          totalHours: quotaHoursForNewBalance,
+          usedHours: isHourly ? req.hours ?? 0 : 0,
         },
       });
     }
@@ -281,12 +350,13 @@ export async function decideLeave(
     ...meta,
   });
 
+  const decidedAmountLabel = isHourly ? `${req.hours} ชม.` : `${req.days} วัน`;
   await createNotification(
     companyId,
     req.employeeId,
     {
       title: nextStatus === "APPROVED" ? "คำขอลาได้รับอนุมัติ" : "คำขอลาไม่ได้รับอนุมัติ",
-      body: `${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${req.days} วัน — ${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
+      body: `${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${decidedAmountLabel} — ${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
       category: "leave",
       link: `/leave/${req.id}`,
     },
@@ -305,13 +375,15 @@ export async function cancelLeave(
   const employeeId = requireEmployeeId(session);
   const req = await prisma.leaveRequest.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeId: true, type: true, days: true, status: true, startDate: true },
+    select: { id: true, employeeId: true, type: true, days: true, unit: true, hours: true, status: true, startDate: true },
   });
   if (!req) throw NotFound("ไม่พบคำขอลา");
   if (req.employeeId !== employeeId) throw Forbidden("ยกเลิกได้เฉพาะคำขอของตนเอง");
   if (req.status !== "PENDING" && req.status !== "APPROVED") {
     throw BadRequest("คำขอนี้ยกเลิกไม่ได้");
   }
+
+  const isHourly = req.unit === "HOUR";
 
   const updated = await prisma.$transaction(async (tx) => {
     const rec = await tx.leaveRequest.update({
@@ -321,11 +393,11 @@ export async function cancelLeave(
     });
 
     // Restore balance if a previously-approved paid leave is cancelled.
-    if (req.status === "APPROVED" && deductsBalance(req.type)) {
+    if (req.status === "APPROVED" && (isHourly || deductsBalance(req.type))) {
       const year = req.startDate.getUTCFullYear();
       await tx.leaveBalance.updateMany({
         where: { employeeId: req.employeeId, year, type: req.type },
-        data: { usedDays: { decrement: req.days } },
+        data: isHourly ? { usedHours: { decrement: req.hours ?? 0 } } : { usedDays: { decrement: req.days } },
       });
     }
 
@@ -355,10 +427,11 @@ export async function getBalances(companyId: string, session: AccessClaims, year
   const y = year ?? new Date().getFullYear();
   const rows = await prisma.leaveBalance.findMany({
     where: { companyId, employeeId, year: y },
-    select: { id: true, type: true, year: true, totalDays: true, usedDays: true },
+    select: { id: true, type: true, year: true, totalDays: true, usedDays: true, totalHours: true, usedHours: true },
   });
   const byType = new Map(rows.map((r) => [r.type as string, r]));
   const quota = await getCompanyLeaveQuota(companyId);
+  const hourQuota = await getCompanyLeaveHourQuota(companyId);
 
   return PAID_LEAVE_TYPES.map((type) => {
     const existing = byType.get(type);
@@ -369,6 +442,8 @@ export async function getBalances(companyId: string, session: AccessClaims, year
       year: y,
       totalDays: quota[type] ?? 0,
       usedDays: 0,
+      totalHours: hourQuota[type] ?? 0,
+      usedHours: 0,
     };
   });
 }

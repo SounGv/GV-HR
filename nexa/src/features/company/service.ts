@@ -34,6 +34,8 @@ const profileSelect = {
   leaveQuotaAnnualDays: true,
   leaveQuotaSickDays: true,
   leaveQuotaPersonalDays: true,
+  leaveQuotaSickHours: true,
+  leaveQuotaPersonalHours: true,
   evalThresholdUrgentMax: true,
   evalThresholdWatchMax: true,
   evalThresholdGoodMin: true,

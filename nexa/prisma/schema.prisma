@@ -122,6 +122,15 @@ enum LeaveStatus {
   CANCELLED
 }
 
+/** DAY covers full-day and half-day requests (see LeaveRequest.halfDay/days).
+ * HOUR is a separate, HR-configurable per-type quota (see LeaveBalance's
+ * totalHours/usedHours and Company.leaveQuota{Sick,Personal}Hours) — hours
+ * are never converted into/out of the day quota. */
+enum LeaveUnit {
+  DAY
+  HOUR
+}
+
 enum MeetingStatus {
   SCHEDULED
   CANCELLED
@@ -305,6 +314,10 @@ model Company {
   leaveQuotaAnnualDays   Int @default(10)
   leaveQuotaSickDays     Int @default(30)
   leaveQuotaPersonalDays Int @default(3)
+  // Separate hour-based quota for the two leave types that support hourly
+  // requests — 0 means "not offered", not "unlimited" (see leave/service.ts).
+  leaveQuotaSickHours     Int @default(0)
+  leaveQuotaPersonalHours Int @default(0)
 
   // Evaluation score bands (% of weighted max), HR-editable from Settings —
   // never hardcoded in the frontend. Contiguous ascending cut points define
@@ -1012,6 +1025,15 @@ model LeaveRequest {
   endDate       DateTime  @db.Date
   halfDay       Boolean   @default(false)
   days          Float
+  // Hour-based leave (currently SICK/PERSONAL only, see leave/days.ts's
+  // HOURLY_LEAVE_TYPES) — startDate must equal endDate, days is 0, and these
+  // three carry the actual request instead. startTime/endTime are "HH:mm"
+  // wall-clock strings (no timezone math needed — they're paired with the
+  // already-known startDate).
+  unit          LeaveUnit @default(DAY)
+  hours         Float?
+  startTime     String?
+  endTime       String?
   reason        String?
   // Supporting document (e.g. a medical certificate) — a client-uploaded
   // data URL or an https link, same pattern as other attachment fields.
@@ -1047,6 +1069,10 @@ model LeaveBalance {
   type      LeaveType
   totalDays Float     @default(0)
   usedDays  Float     @default(0)
+  // Separate hour-based quota tracking (see LeaveRequest.unit) — never
+  // converted to/from totalDays/usedDays, an intentionally independent pool.
+  totalHours Float    @default(0)
+  usedHours  Float    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
