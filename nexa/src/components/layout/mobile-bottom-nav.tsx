@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,7 +18,7 @@ import { useOvertime } from "@/features/overtime/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
-import { ProfileDrawer } from "./profile-drawer";
+import { useProfileDrawer } from "./profile-drawer-context";
 
 /**
  * 5-slot flat bottom tab bar for phones — hidden on md+. Three role-variant
@@ -38,7 +37,7 @@ import { ProfileDrawer } from "./profile-drawer";
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { can } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
+  const { open: profileOpen, openDrawer } = useProfileDrawer();
 
   const canApproveLeave = can("leave:approve");
   const canApproveOt = can("overtime:approve");
@@ -117,7 +116,7 @@ export function MobileBottomNav() {
           ))}
           <button
             type="button"
-            onClick={() => setProfileOpen(true)}
+            onClick={openDrawer}
             className={cn(
               "flex h-full flex-col items-center justify-center gap-0.5 transition active:scale-95",
               profileOpen ? "text-primary" : "text-muted-foreground",
@@ -135,7 +134,6 @@ export function MobileBottomNav() {
           </button>
         </div>
       </nav>
-      <ProfileDrawer open={profileOpen} onOpenChange={setProfileOpen} unreadCount={unreadCount} />
     </>
   );
 }

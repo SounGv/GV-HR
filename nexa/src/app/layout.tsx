@@ -1,16 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Prompt, JetBrains_Mono, Anuphan } from "next/font/google";
+import { JetBrains_Mono, Anuphan } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
-
-/** Loopless Thai/Latin sans — matches GV One mobile reference (clean list + lime accent UI). */
-const prompt = Prompt({
-  variable: "--font-prompt",
-  subsets: ["thai", "latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
 
 const mono = JetBrains_Mono({
   variable: "--font-mono",
@@ -18,9 +10,8 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-/** Mobile Home redesign spec's primary font — scoped to that page only via
- * the `--font-anuphan` var (registered here, applied there), so the rest of
- * the app keeps Prompt untouched. */
+/** Design-system spec's primary typeface, used app-wide (mobile and desktop
+ * alike) — see `--font-sans`/`--font-anuphan` in globals.css. */
 const anuphan = Anuphan({
   variable: "--font-anuphan",
   subsets: ["thai", "latin"],
@@ -72,7 +63,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th" suppressHydrationWarning>
-      <body className={`${prompt.variable} ${mono.variable} ${anuphan.variable} font-sans`}>
+      <body className={`${mono.variable} ${anuphan.variable} font-sans`}>
         <AppProviders>{children}</AppProviders>
         <PwaRegister />
       </body>

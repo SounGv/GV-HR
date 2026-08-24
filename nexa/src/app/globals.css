@@ -10,7 +10,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-heading: var(--font-heading);
-  --font-anuphan: var(--font-anuphan), var(--font-prompt), "Noto Sans Thai", ui-sans-serif, sans-serif;
+  --font-anuphan: var(--font-anuphan), "Noto Sans Thai", Tahoma, Arial, sans-serif;
 
   /* Semantic status colors (GV One) */
   --color-success: var(--success);
@@ -80,9 +80,10 @@
 :root {
   --radius: 0.75rem;
 
-  /* Prompt via next/font — single family for body + headings (loopless Thai sans). */
-  --font-sans: var(--font-prompt), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-heading: var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
+  /* Anuphan via next/font — single family for body + headings, mobile and
+     desktop alike (design-system spec's primary typeface). */
+  --font-sans: var(--font-anuphan), "Noto Sans Thai", Tahoma, Arial, sans-serif;
+  --font-heading: var(--font-anuphan), "Noto Sans Thai", Tahoma, Arial, sans-serif;
 
   /* Surfaces — warm off-white, not neutral gray. Reconciled to the exact
      GV ONE HR palette (background/card/ink/muted/line) from the redesign
@@ -233,16 +234,6 @@
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-  }
-  /* Mobile Home redesign spec's font, applied consistently across every
-     mobile screen (bottom nav, profile drawer, services tile grid, Home) —
-     not just the one page it first shipped on — via the same md breakpoint
-     every mobile/desktop split in this app already keys off. Desktop keeps
-     Prompt untouched. */
-  @media (max-width: 767px) {
-    body {
-      font-family: var(--font-anuphan), var(--font-prompt), "Noto Sans Thai", ui-sans-serif, sans-serif;
-    }
   }
   h1,
   h2,

@@ -16,6 +16,7 @@ import {
 import { useNotifications } from "@/features/notification/hooks";
 import { useMyPendingResponses, useEmployeeEvaluationHistory } from "@/features/campaign/hooks";
 import { useAuth } from "@/features/auth/auth-context";
+import { useProfileDrawer } from "@/components/layout/profile-drawer-context";
 import type { DashboardActions } from "@/features/dashboard/service";
 import { MobileCheckinCard } from "./mobile-checkin-card";
 
@@ -56,8 +57,10 @@ export function MobileDashboardView({
   actions: DashboardActions;
 }) {
   const { user, can } = useAuth();
+  const { openDrawer } = useProfileDrawer();
   const { data: notifData } = useNotifications();
   const unreadCount = notifData?.data?.unread ?? 0;
+  const hrNotifCount = notifData?.data?.items.filter((n) => !n.read && n.category === "hr").length ?? 0;
 
   const { data: pendingData, isLoading: evalLoading } = useMyPendingResponses();
   const pending = pendingData?.data ?? [];
@@ -75,7 +78,7 @@ export function MobileDashboardView({
   const greetName = user.employee ? `คุณ${user.employee.firstName}` : name ?? "";
 
   const leaveRemaining = mine ? mine.leaveBalances.reduce((sum, b) => sum + b.remaining, 0) : null;
-  const hasTodo = actions.myPending > 0 || pendingCount > 0;
+  const hasTodo = actions.myPending > 0 || pendingCount > 0 || hrNotifCount > 0;
 
   return (
     <div className="min-h-full bg-gv-bg md:hidden">
@@ -92,7 +95,7 @@ export function MobileDashboardView({
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/notifications"
-            className="relative flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-sm active:scale-95"
+            className="relative flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
             aria-label="แจ้งเตือน"
           >
             <Bell className="size-[18px]" strokeWidth={2.5} />
@@ -102,13 +105,14 @@ export function MobileDashboardView({
               </span>
             )}
           </Link>
-          <Link
-            href="/profile"
-            className="flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-sm active:scale-95"
+          <button
+            type="button"
+            onClick={openDrawer}
+            className="flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
             aria-label="โปรไฟล์"
           >
             <UserRound className="size-[18px]" strokeWidth={2.5} />
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -155,6 +159,16 @@ export function MobileDashboardView({
                   <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                 </Link>
               )}
+              {hrNotifCount > 0 && (
+                <Link href="/notifications" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
+                  <TodoIcon icon={Bell} count={hrNotifCount} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">แจ้งเตือนจากหัวหน้า/HR</p>
+                    <p className="text-xs text-muted-foreground">{hrNotifCount} รายการ</p>
+                  </div>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </Link>
+              )}
             </div>
           )}
         </section>
@@ -175,7 +189,7 @@ export function MobileDashboardView({
                 href={item.href}
                 className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-icon-chip-bg/60"
               >
-                <span className="flex size-11 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-sm">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60">
                   <item.icon className="size-5" strokeWidth={2.5} />
                 </span>
                 <span className="text-[12px] font-medium text-foreground">{item.label}</span>
@@ -211,7 +225,7 @@ export function MobileDashboardView({
 
 function TodoIcon({ icon: Icon, count }: { icon: typeof ClipboardCheck; count: number }) {
   return (
-    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-sm">
+    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60">
       <Icon className="size-[18px]" strokeWidth={2.5} />
       {count > 0 && (
         <span className="absolute -top-1.5 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">

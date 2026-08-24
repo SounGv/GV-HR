@@ -53,8 +53,10 @@ export function MobileMenuTileGrid({ groups, hrStartIndex }: { groups: MobileMen
                     href={item.href}
                     className="flex flex-col items-center gap-2 rounded-xl px-0.5 py-1 text-center transition active:scale-95 active:bg-muted"
                   >
-                    <span className={`flex size-11 items-center justify-center rounded-2xl ${toneClass} shadow-sm`}>
-                      <item.icon className="size-5" strokeWidth={2.25} />
+                    <span
+                      className={`flex size-11 items-center justify-center rounded-2xl ${toneClass} shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60`}
+                    >
+                      <item.icon className="size-5" strokeWidth={2.5} />
                     </span>
                     <span className="line-clamp-2 text-[12.5px] font-semibold leading-tight text-foreground">
                       {item.label}

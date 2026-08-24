@@ -8,24 +8,29 @@ import { AppBadgeSync } from "@/components/pwa/app-badge-sync";
 import { AppSidebar } from "./app-sidebar";
 import { AppTopbar } from "./app-topbar";
 import { MobileBottomNav } from "./mobile-bottom-nav";
+import { ProfileDrawer } from "./profile-drawer";
+import { ProfileDrawerProvider } from "./profile-drawer-context";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
-      <AppBadgeSync />
-      <AppSidebar />
-      <SidebarInset className="bg-background">
-        <div className="hidden md:block">
-          <AppTopbar />
-        </div>
-        <main className="flex-1 pb-24 md:space-y-6 md:p-6 md:pb-6">
-          <Suspense fallback={children}>
-            <MobileContentWrapper>{children}</MobileContentWrapper>
-          </Suspense>
-        </main>
-      </SidebarInset>
-      <MobileBottomNav />
-      <FloatingAiLauncher />
-    </SidebarProvider>
+    <ProfileDrawerProvider>
+      <SidebarProvider>
+        <AppBadgeSync />
+        <AppSidebar />
+        <SidebarInset className="bg-background">
+          <div className="hidden md:block">
+            <AppTopbar />
+          </div>
+          <main className="flex-1 pb-24 md:space-y-6 md:p-6 md:pb-6">
+            <Suspense fallback={children}>
+              <MobileContentWrapper>{children}</MobileContentWrapper>
+            </Suspense>
+          </main>
+        </SidebarInset>
+        <MobileBottomNav />
+        <FloatingAiLauncher />
+      </SidebarProvider>
+      <ProfileDrawer />
+    </ProfileDrawerProvider>
   );
 }
