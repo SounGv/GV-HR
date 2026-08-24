@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const session = await requirePermission("campaign:read");
+    const session = await requirePermission("campaign:manage");
     const categories = await listCompetencyCategories(session.companyId);
     return ok(categories);
   } catch (err) {

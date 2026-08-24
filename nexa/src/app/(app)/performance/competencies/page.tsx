@@ -6,7 +6,7 @@ import { CompetencyView } from "@/features/competency/competency-view";
 export const metadata: Metadata = { title: "เกณฑ์การประเมิน" };
 
 export default async function CompetenciesPage() {
-  await requirePagePermission("campaign:read");
+  await requirePagePermission("campaign:manage");
 
   return (
     <div className="space-y-6">

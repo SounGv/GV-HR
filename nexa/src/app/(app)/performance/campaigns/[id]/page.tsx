@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: "รายละเอียดแค
 const STATUS_LABEL: Record<string, string> = { DRAFT: "ฉบับร่าง", ACTIVE: "กำลังดำเนินการ", CLOSED: "ปิดแล้ว" };
 
 export default async function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requirePagePermission("campaign:read");
+  const session = await requirePagePermission("campaign:manage");
   const { id } = await params;
 
   const campaign = await getCampaign(session.companyId, id, session).catch((e) => {

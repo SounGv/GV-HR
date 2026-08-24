@@ -5,6 +5,6 @@ import { ScheduleTemplateListView } from "@/features/evaluation-schedule/schedul
 export const metadata: Metadata = { title: "รอบประเมินอัตโนมัติ" };
 
 export default async function EvaluationSchedulesPage() {
-  await requirePagePermission("campaign:read");
+  await requirePagePermission("campaign:manage");
   return <ScheduleTemplateListView />;
 }

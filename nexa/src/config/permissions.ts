@@ -9,7 +9,7 @@
  * Adding a module here + reseeding is all it takes to expose it to RBAC.
  */
 
-export const ACTIONS = ["read", "create", "update", "delete", "approve", "export", "offsite"] as const;
+export const ACTIONS = ["read", "create", "update", "delete", "approve", "export", "offsite", "manage"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 /** Modules mirror the product spec. `actions` narrows which verbs apply. */
@@ -24,7 +24,16 @@ export const MODULES = [
   { key: "recruitment", label: "สรรหาพนักงาน", actions: ["read", "create", "update", "delete"] },
   { key: "training", label: "อบรมและพัฒนา", actions: ["read", "create", "update", "delete"] },
   { key: "performance", label: "ประเมินผลงาน", actions: ["read", "create", "update", "delete", "approve"] },
-  { key: "campaign", label: "แคมเปญประเมินผล", actions: ["read", "create", "update", "delete", "approve"] },
+  {
+    key: "campaign",
+    label: "แคมเปญประเมินผล",
+    // "manage" gates the admin surfaces (campaign list/detail, Question Bank,
+    // templates, auto-schedules, score thresholds) separately from "read",
+    // which plain employees keep so they can see + respond to their OWN
+    // evaluation assignments — see requirePagePermission("campaign:manage")
+    // call sites for the split.
+    actions: ["read", "create", "update", "delete", "approve", "manage"],
+  },
   { key: "calibration", label: "การปรับเทียบผลประเมิน", actions: ["read", "create", "update", "approve"] },
   { key: "succession", label: "แผนสืบทอดตำแหน่ง", actions: ["read", "create", "update", "delete"] },
   { key: "kpi", label: "KPI", actions: ["read", "create", "update", "delete"] },
@@ -135,6 +144,7 @@ export const ROLE_PRESETS: RolePreset[] = [
       "performance:create",
       "performance:update",
       "campaign:read",
+      "campaign:manage",
       "calibration:read",
       "kpi:read",
       "okr:read",

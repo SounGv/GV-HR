@@ -6,7 +6,7 @@ import { TemplateListView } from "@/features/evaluation-template/template-list-v
 export const metadata: Metadata = { title: "แบบประเมิน" };
 
 export default async function EvaluationTemplatesPage() {
-  await requirePagePermission("campaign:read");
+  await requirePagePermission("campaign:manage");
 
   return (
     <div className="space-y-6">

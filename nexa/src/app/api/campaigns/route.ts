@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await requirePermission("campaign:read");
+    const session = await requirePermission("campaign:manage");
     const query = campaignListQuerySchema.parse(
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );

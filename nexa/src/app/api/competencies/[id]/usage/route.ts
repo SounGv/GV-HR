@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Ctx) {
   try {
-    const session = await requirePermission("campaign:read");
+    const session = await requirePermission("campaign:manage");
     const { id } = await params;
     return ok(await getCompetencyUsage(session.companyId, id));
   } catch (err) {

@@ -45,7 +45,7 @@ export function PerformanceView() {
   const { can } = useAuth();
   const canReview = can("performance:create");
   const canHrLevel = can("performance:approve");
-  const canCampaign = can("campaign:read");
+  const canCampaign = can("campaign:manage");
   const canCalibration = can("calibration:read");
   const canSuccession = can("succession:read");
   const canAnalytics = canHrLevel || canCalibration || canSuccession;
