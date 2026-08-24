@@ -263,7 +263,10 @@ export function CampaignWizard() {
         )}
       </Card>
 
-      <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between border-t border-border bg-card px-4 py-3 md:-mx-6 md:bg-background/85 md:px-6 md:backdrop-blur-xl">
+      {/* md:pr-24 (not the plain md:px-6 the left side gets) clears the
+          floating AI launcher (fixed bottom-6 right-6, size-14, desktop-
+          only, z-40) so it never renders on top of "ถัดไป"/"เผยแพร่". */}
+      <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between border-t border-border bg-card px-4 py-3 md:-mx-6 md:bg-background/85 md:py-3 md:pr-24 md:pl-6 md:backdrop-blur-xl">
         <Button variant="ghost" onClick={back}>
           <ChevronLeft className="size-4" /> {isFirst ? "ยกเลิก" : "ย้อนกลับ"}
         </Button>

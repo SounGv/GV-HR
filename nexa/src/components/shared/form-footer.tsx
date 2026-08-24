@@ -34,7 +34,11 @@ export function FormFooter({
   return (
     <div
       className={cn(
-        "sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-card px-4 py-3 md:-mx-6 md:bg-background/85 md:px-6 md:backdrop-blur-xl",
+        // md:pr-24 (not the plain md:px-6 the left side gets) reserves room
+        // for the floating AI launcher (FloatingAiLauncher — fixed bottom-6
+        // right-6, size-14, desktop-only) so its z-40 button never renders
+        // on top of the primary save button here, which sits at z-20.
+        "sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-card px-4 py-3 md:-mx-6 md:bg-background/85 md:py-3 md:pr-24 md:pl-6 md:backdrop-blur-xl",
         className,
       )}
     >
