@@ -71,7 +71,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="h-14 justify-center px-4">
+      <SidebarHeader className="h-16 justify-center px-4">
         <Link href="/dashboard" aria-label="GV One">
           {/* Import kept inline to avoid a client/server import cycle warning */}
           <NexaHeaderLogo />
@@ -152,8 +152,8 @@ export function AppSidebar() {
 function NexaHeaderLogo() {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/5">
-        <Logo size={36} className="size-9" />
+      <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-md ring-1 ring-black/5">
+        <Logo size={48} className="size-12" />
       </div>
       <div className="leading-tight group-data-[collapsible=icon]:hidden">
         <div className="text-lg font-semibold tracking-wide text-white">GV ONE</div>
