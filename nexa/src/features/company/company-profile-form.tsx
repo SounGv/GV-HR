@@ -337,8 +337,10 @@ export function CompanyProfileForm() {
         </div>
       </Section>
 
-      {/* Sticky save bar */}
-      <div className="sticky bottom-20 z-10 flex justify-end md:bottom-4">
+      {/* Sticky save bar — md:pr-24 clears the floating AI launcher
+          (FloatingAiLauncher, fixed bottom-6 right-6 size-14, z-40),
+          same fix as FormFooter's. */}
+      <div className="sticky bottom-20 z-10 flex justify-end md:bottom-4 md:pr-24">
         <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/90 p-2 shadow-lg backdrop-blur">
           {!canEdit && <span className="px-2 text-xs text-muted-foreground">คุณไม่มีสิทธิ์แก้ไข</span>}
           <Button type="submit" disabled={!canEdit || updateMut.isPending}>

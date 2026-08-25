@@ -119,7 +119,8 @@ export function CompetencyMatrixView() {
             </Card>
           ))}
 
-          <div className="sticky bottom-20 z-10 flex justify-end md:bottom-4">
+          {/* md:pr-24 clears the floating AI launcher (fixed bottom-6 right-6 size-14, z-40) */}
+          <div className="sticky bottom-20 z-10 flex justify-end md:bottom-4 md:pr-24">
             <Button onClick={save} disabled={setReqs.isPending} className="shadow-lg">
               {setReqs.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               บันทึก
