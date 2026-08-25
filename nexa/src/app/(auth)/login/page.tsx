@@ -15,7 +15,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-primary/60 blur-3xl" />
-            <Logo size={160} className="relative size-40" />
+            <Logo size={224} className="relative size-56" variant="dark" />
           </div>
           <div>
             <div className="text-4xl font-bold tracking-wide">GV ONE</div>
