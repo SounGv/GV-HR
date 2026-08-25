@@ -152,7 +152,9 @@ export function AppSidebar() {
 function NexaHeaderLogo() {
   return (
     <div className="flex items-center gap-2.5">
-      <Logo size={40} className="size-10 rounded-lg" />
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/5">
+        <Logo size={36} className="size-9" />
+      </div>
       <div className="leading-tight group-data-[collapsible=icon]:hidden">
         <div className="text-lg font-semibold tracking-wide text-white">GV ONE</div>
         <div className="text-[11px] font-medium tracking-[0.16em] text-slate-400">
