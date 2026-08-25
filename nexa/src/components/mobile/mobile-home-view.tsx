@@ -13,7 +13,7 @@ export function MobileHomeView({ title = "GV One" }: { title?: string }) {
   const { groups, hrStartIndex } = useMobileMenuGroups();
 
   return (
-    <div className="flex min-h-full flex-col bg-muted md:hidden">
+    <div className="flex min-h-full flex-col bg-background md:hidden">
       <div className="sticky top-0 z-30 bg-sidebar px-4 py-3">
         <h1 className="text-lg font-bold text-white">{title}</h1>
       </div>

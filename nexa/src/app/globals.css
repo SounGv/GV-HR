@@ -99,10 +99,10 @@
   --font-sans: var(--font-noto-sans-thai), "Sarabun", system-ui, sans-serif;
   --font-heading: var(--font-noto-sans-thai), "Sarabun", system-ui, sans-serif;
 
-  /* Surfaces — warm off-white, not neutral gray. Reconciled to the exact
-     GV ONE HR palette (background/card/ink/muted/line) from the redesign
-     spec — these were already ~99% this palette, this is the exact match. */
-  --background: #f4f7ef;
+  /* Surfaces — plain white page background (2026-08-26 feedback: the
+     previous warm off-white read as a yellowish/cream tint and was hard
+     to look at — back to true white, both web and mobile). */
+  --background: #ffffff;
   --foreground: #182014;
   --card: #ffffff;
   --card-foreground: #182014;
@@ -181,7 +181,7 @@
   --gv-dark-green: #1d5e22;
   --gv-deep-green: #0f1b0c;
   --gv-pale-green: #eaf7d6;
-  --gv-bg: #f7f9f2;
+  --gv-bg: #ffffff;
   --gv-border: #d8e4d0;
   --gv-notif-red: #e53935;
 }

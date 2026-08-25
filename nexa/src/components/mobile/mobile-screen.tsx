@@ -23,7 +23,7 @@ export function MobileScreen({
   contentClassName?: string;
 }) {
   return (
-    <div className={cn("flex min-h-full flex-col bg-muted md:hidden", className)}>
+    <div className={cn("flex min-h-full flex-col bg-background md:hidden", className)}>
       <MobileHeader title={title} backHref={backHref} onBack={onBack} trailing={headerTrailing} />
       <div className={cn("flex-1 overflow-y-auto", contentClassName)}>{children}</div>
       {footer}
