@@ -25,9 +25,7 @@ export function AuthBrandPanel({
 
       {cornerLogo ? (
         <Link href="/login" className="relative flex items-center gap-3">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg">
-            <Logo size={44} className="size-11" />
-          </div>
+          <Logo size={44} className="size-11" />
           <div className="leading-tight">
             <div className="font-semibold tracking-wide">GV ONE</div>
             <div className="text-[11px] tracking-[0.18em] text-slate-400">AI WORKFORCE PLATFORM</div>
