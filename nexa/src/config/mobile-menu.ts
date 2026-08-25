@@ -23,12 +23,18 @@ import {
   Settings2,
 } from "lucide-react";
 
+/** Per-category icon tone (2026-08-25 icon/logo spec) — items without a
+ * `tone` fall back to the shared green icon-chip (bg-icon-chip-bg /
+ * text-icon-chip-fg), which is itself one of these categories' colors. */
+export type MenuIconTone = "overtime" | "calendar" | "violet" | "profile";
+
 export interface MobileMenuItem {
   id: string;
   label: string;
   href: string;
   icon: LucideIcon;
   permission: string;
+  tone?: MenuIconTone;
 }
 
 export type MobileMenuTone = "primary" | "info" | "warning" | "success" | "destructive";
@@ -55,7 +61,7 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
       { id: "checkin", label: "เข้างาน / ออกงาน", href: "/attendance", icon: ScanLine, permission: "attendance:read" },
       { id: "timeedit", label: "แก้เวลาเข้า-ออกงาน", href: "/attendance/corrections/new", icon: Clock3, permission: "attendance:create" },
       { id: "shift", label: "ตารางกะ", href: "/shifts", icon: CalendarClock, permission: "shift:read" },
-      { id: "calendar", label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read" },
+      { id: "calendar", label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", tone: "calendar" },
     ],
   },
   {
@@ -63,9 +69,9 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
     tone: "primary",
     items: [
       { id: "leave", label: "ขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read" },
-      { id: "overtime", label: "ขอ OT", href: "/overtime/new", icon: Timer, permission: "overtime:read" },
+      { id: "overtime", label: "ขอ OT", href: "/overtime/new", icon: Timer, permission: "overtime:read", tone: "overtime" },
       { id: "expense", label: "เบิกค่าใช้จ่าย", href: "/expenses/new", icon: Wallet, permission: "expense:read" },
-      { id: "benefits", label: "สวัสดิการ", href: "/benefits", icon: HeartPulse, permission: "expense:read" },
+      { id: "benefits", label: "สวัสดิการ", href: "/benefits", icon: HeartPulse, permission: "expense:read", tone: "violet" },
     ],
   },
   {
@@ -73,7 +79,7 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
     tone: "primary",
     items: [
       { id: "kpi", label: "KPI ส่วนตัว", href: "/kpi", icon: Target, permission: "kpi:read" },
-      { id: "review", label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
+      { id: "review", label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read", tone: "violet" },
       { id: "meeting", label: "นัดประชุม", href: "/meetings", icon: CalendarPlus, permission: "meeting:read" },
     ],
   },

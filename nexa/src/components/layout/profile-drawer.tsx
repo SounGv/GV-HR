@@ -159,7 +159,7 @@ export function ProfileDrawer() {
   const statusLabel = user.employee ? STATUS_LABEL[user.employee.status as EmployeeStatus] ?? user.employee.status : null;
 
   const items = [
-    { href: "/profile", label: "ข้อมูลส่วนตัว", icon: User, show: true },
+    { href: "/profile", label: "ข้อมูลส่วนตัว", icon: User, show: true, tone: "bg-tone-profile-bg text-tone-profile-fg" },
     { href: "/notifications", label: "การแจ้งเตือน", icon: Bell, show: true, badge: unreadCount },
     { href: "/profile#security", label: "ความปลอดภัย", icon: ShieldCheck, show: true },
     { href: "/profile#security", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound, show: true },
@@ -179,12 +179,12 @@ export function ProfileDrawer() {
         <div ref={panelRef} className="flex h-full flex-col">
           <div ref={handleRef} className="border-b border-border bg-gv-pale-green/40 p-5 pt-8">
             <div className="flex items-center gap-3">
-              <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-icon-chip-bg text-icon-chip-fg ring-2 ring-card">
+              <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tone-profile-bg text-tone-profile-fg ring-2 ring-card">
                 {user.employee?.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={user.employee.avatarUrl} alt={displayName} className="size-full object-cover" />
                 ) : (
-                  <UserRound className="size-7" strokeWidth={2.5} />
+                  <UserRound className="size-7" strokeWidth={3} />
                 )}
               </span>
               <div className="min-w-0 flex-1">
@@ -218,8 +218,10 @@ export function ProfileDrawer() {
                   aria-label={item.label}
                   className="flex min-h-16 items-center gap-3 rounded-xl px-3 py-3 text-[17px] font-semibold text-foreground transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.99] active:bg-muted"
                 >
-                  <span className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-sm ring-1 ring-border/60">
-                    <item.icon className="size-[18px]" strokeWidth={2.5} />
+                  <span
+                    className={`relative flex size-10 shrink-0 items-center justify-center rounded-2xl ${item.tone ?? "bg-icon-chip-bg text-icon-chip-fg"} shadow-sm ring-1 ring-border/60`}
+                  >
+                    <item.icon className="size-[18px]" strokeWidth={3} />
                     {!!item.badge && item.badge > 0 && (
                       <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[9px] font-semibold text-badge-foreground ring-2 ring-card">
                         {item.badge > 9 ? "9+" : item.badge}

@@ -23,6 +23,7 @@ import { useOvertime } from "@/features/overtime/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/shared/logo";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -108,7 +109,11 @@ export function AppSidebar() {
                           <SidebarMenuButton
                             isActive={active}
                             tooltip={item.label}
-                            className="h-10 text-[15px] [&_svg]:size-[18px]"
+                            className={cn(
+                              "h-10 text-[15px] [&_svg]:size-[18px]",
+                              active &&
+                                "data-active:bg-[#E5F6B8] data-active:font-bold data-active:text-[#2F6B24] data-active:hover:bg-[#E5F6B8] data-active:hover:text-[#2F6B24]",
+                            )}
                             render={
                               item.isLogout ? (
                                 <button type="button" onClick={() => logout()} />
@@ -117,7 +122,7 @@ export function AppSidebar() {
                               )
                             }
                           >
-                            <item.icon />
+                            <item.icon strokeWidth={2.8} />
                             <span>{item.label}</span>
                           </SidebarMenuButton>
                           {!item.ready && (
@@ -147,8 +152,7 @@ export function AppSidebar() {
 function NexaHeaderLogo() {
   return (
     <div className="flex items-center gap-2.5">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/nexa-logo.svg" alt="GV One" className="size-10 shrink-0 rounded-lg" />
+      <Logo size={40} className="size-10 rounded-lg" />
       <div className="leading-tight group-data-[collapsible=icon]:hidden">
         <div className="text-lg font-semibold tracking-wide text-white">GV ONE</div>
         <div className="text-[11px] font-medium tracking-[0.16em] text-slate-400">

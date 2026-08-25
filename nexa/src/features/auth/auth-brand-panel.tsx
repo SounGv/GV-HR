@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { Logo } from "@/components/shared/logo";
 
 export function AuthBrandPanel({
   eyebrow,
@@ -24,8 +25,7 @@ export function AuthBrandPanel({
 
       {cornerLogo ? (
         <Link href="/login" className="relative flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/nexa-logo.svg" alt="GV One" className="size-12 rounded-2xl shadow-lg shadow-black/30" />
+          <Logo size={48} className="size-12 rounded-2xl" />
           <div className="leading-tight">
             <div className="font-semibold tracking-wide">GV ONE</div>
             <div className="text-[11px] tracking-[0.18em] text-slate-400">AI WORKFORCE PLATFORM</div>

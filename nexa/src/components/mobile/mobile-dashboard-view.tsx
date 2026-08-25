@@ -98,7 +98,7 @@ export function MobileDashboardView({
             className="relative flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
             aria-label="แจ้งเตือน"
           >
-            <Bell className="size-[18px]" strokeWidth={2.5} />
+            <Bell className="size-[18px]" strokeWidth={3} />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 flex min-w-4.5 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-gv-bg">
                 {unreadCount > 9 ? "9+" : unreadCount}
@@ -108,10 +108,10 @@ export function MobileDashboardView({
           <button
             type="button"
             onClick={openDrawer}
-            className="flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
+            className="flex size-10 items-center justify-center rounded-full bg-tone-profile-bg text-tone-profile-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
             aria-label="โปรไฟล์"
           >
-            <UserRound className="size-[18px]" strokeWidth={2.5} />
+            <UserRound className="size-[18px]" strokeWidth={3} />
           </button>
         </div>
       </div>
@@ -127,7 +127,7 @@ export function MobileDashboardView({
             <div className="h-20 animate-pulse rounded-2xl bg-card" />
           ) : !hasTodo ? (
             <div className="flex items-center gap-2.5 rounded-2xl bg-card p-3.5 text-muted-foreground shadow-sm">
-              <CheckCircle2 className="size-5 shrink-0 text-icon-chip-fg" strokeWidth={2.5} />
+              <CheckCircle2 className="size-5 shrink-0 text-icon-chip-fg" strokeWidth={3} />
               <p className="text-sm">ไม่มีรายการที่ต้องทำวันนี้</p>
             </div>
           ) : (
@@ -149,9 +149,9 @@ export function MobileDashboardView({
                       ? `/performance/campaigns/${nextPending.campaignId}/participants/${nextPending.participantId}`
                       : "/performance"
                   }
-                  className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60"
+                  className="flex items-center gap-3 p-3.5 active:bg-tone-violet-bg/60"
                 >
-                  <TodoIcon icon={Star} count={pendingCount} />
+                  <TodoIcon icon={Star} count={pendingCount} tone="bg-tone-violet-bg text-tone-violet-fg" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">มีการประเมินที่ต้องทำ</p>
                     <p className="text-xs text-muted-foreground">{pendingCount} รายการ</p>
@@ -180,17 +180,19 @@ export function MobileDashboardView({
           <h2 className="px-1 text-[13px] font-bold text-foreground">เมนูด่วน</h2>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { href: "/leave/new", label: "ขอลา", icon: FilePlus2 },
-              { href: "/overtime/new", label: "ขอ OT", icon: Timer },
-              { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays },
+              { href: "/leave/new", label: "ขอลา", icon: FilePlus2, tone: "bg-icon-chip-bg text-icon-chip-fg" },
+              { href: "/overtime/new", label: "ขอ OT", icon: Timer, tone: "bg-tone-overtime-bg text-tone-overtime-fg" },
+              { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays, tone: "bg-tone-calendar-bg text-tone-calendar-fg" },
             ].map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-icon-chip-bg/60"
               >
-                <span className="flex size-11 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60">
-                  <item.icon className="size-5" strokeWidth={2.5} />
+                <span
+                  className={`flex size-11 items-center justify-center rounded-2xl ${item.tone} shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60`}
+                >
+                  <item.icon className="size-7" strokeWidth={3} />
                 </span>
                 <span className="text-[12px] font-medium text-foreground">{item.label}</span>
               </Link>
@@ -215,6 +217,7 @@ export function MobileDashboardView({
               label="คะแนนการประเมิน"
               value={scoreLoading ? "…" : latestScore != null ? `${latestScore.toFixed(1)} / 5` : "—"}
               disabled={!canViewEvalHistory}
+              tone="bg-tone-violet-bg text-tone-violet-fg"
             />
           </div>
         </section>
@@ -223,10 +226,20 @@ export function MobileDashboardView({
   );
 }
 
-function TodoIcon({ icon: Icon, count }: { icon: typeof ClipboardCheck; count: number }) {
+function TodoIcon({
+  icon: Icon,
+  count,
+  tone = "bg-icon-chip-bg text-icon-chip-fg",
+}: {
+  icon: typeof ClipboardCheck;
+  count: number;
+  tone?: string;
+}) {
   return (
-    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60">
-      <Icon className="size-[18px]" strokeWidth={2.5} />
+    <span
+      className={`relative flex size-10 shrink-0 items-center justify-center rounded-2xl ${tone} shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60`}
+    >
+      <Icon className="size-[18px]" strokeWidth={3} />
       {count > 0 && (
         <span className="absolute -top-1.5 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">
           {count > 9 ? "9+" : count}
@@ -242,17 +255,19 @@ function SummaryTile({
   label,
   value,
   disabled,
+  tone = "bg-icon-chip-bg text-icon-chip-fg",
 }: {
   href: string;
   icon: typeof ClipboardCheck;
   label: string;
   value: string;
   disabled?: boolean;
+  tone?: string;
 }) {
   const inner = (
     <div className="flex h-full flex-col gap-1.5 rounded-2xl bg-card p-3 shadow-sm">
-      <span className="flex size-7 items-center justify-center rounded-xl bg-icon-chip-bg text-icon-chip-fg shadow-sm">
-        <Icon className="size-3.5" strokeWidth={2.5} />
+      <span className={`flex size-7 items-center justify-center rounded-xl ${tone} shadow-sm`}>
+        <Icon className="size-3.5" strokeWidth={3} />
       </span>
       <p className="truncate text-[11px] text-muted-foreground">{label}</p>
       <p className="truncate text-sm font-bold text-foreground">{value}</p>

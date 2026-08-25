@@ -26,6 +26,21 @@
   --color-badge: var(--badge);
   --color-badge-foreground: var(--badge-foreground);
 
+  /* Per-category menu-icon tones (2026-08-25 icon/logo spec) — ขอลา/คำขอ
+     reuse the green icon-chip pair above (same exact values), these three
+     cover the categories that need a different hue. */
+  --color-tone-overtime-bg: var(--tone-overtime-bg);
+  --color-tone-overtime-fg: var(--tone-overtime-fg);
+  --color-tone-calendar-bg: var(--tone-calendar-bg);
+  --color-tone-calendar-fg: var(--tone-calendar-fg);
+  --color-tone-violet-bg: var(--tone-violet-bg);
+  --color-tone-violet-fg: var(--tone-violet-fg);
+  --color-tone-profile-bg: var(--tone-profile-bg);
+  --color-tone-profile-fg: var(--tone-profile-fg);
+  --color-menu-active-bg: var(--menu-active-bg);
+  --color-menu-active-fg: var(--menu-active-fg);
+  --color-menu-inactive-fg: var(--menu-inactive-fg);
+
   /* Mobile Home redesign — exact brand tokens from the spec, additive only
      (no existing token above is redefined) so this ships isolated to the
      mobile Home page without any risk to the rest of the app. */
@@ -128,13 +143,27 @@
   --chart-4: #4d7c0f;
   --chart-5: #e4573d;
 
-  /* Monochrome-green icon-chip system (redesign spec: every menu/KPI/tile
-     icon uses this one light-bg + dark-stroke pair — no per-section hues).
-     Red is reserved for notification-count badges only (--badge below). */
-  --icon-chip-bg: #dff3bd;
-  --icon-chip-fg: #3f6f12;
-  --badge: #dc2626;
+  /* Per-category menu-icon system (2026-08-25 spec) — exact hex values from
+     the reference mockups. ขอลา/คำขอ (the "default" nav icon) uses this
+     green pair; ขอ OT/ปฏิทิน/สวัสดิการ+ประเมิน/โปรไฟล์ get their own tone
+     below. Red is reserved for notification-count badges (--badge). */
+  --icon-chip-bg: #edf8e5;
+  --icon-chip-fg: #2f6b24;
+  --tone-overtime-bg: #fff4e5;
+  --tone-overtime-fg: #b45309;
+  --tone-calendar-bg: #eaf2ff;
+  --tone-calendar-fg: #2563eb;
+  --tone-violet-bg: #f2efff;
+  --tone-violet-fg: #6d28d9;
+  --tone-profile-bg: #f1f3f5;
+  --tone-profile-fg: #374151;
+  --badge: #d92d20;
   --badge-foreground: #ffffff;
+
+  /* Selected-menu state (sidebar nav item / bottom-nav tab) */
+  --menu-active-bg: #e5f6b8;
+  --menu-active-fg: #2f6b24;
+  --menu-inactive-fg: #374151;
 
   /* Sidebar stays carbon black; accent aligns with brand lime */
   --sidebar: #15200f;
@@ -155,16 +184,6 @@
   --gv-bg: #f7f9f2;
   --gv-border: #d8e4d0;
   --gv-notif-red: #e53935;
-}
-
-/* Reference mockup's icon chips read as white (not green-tinted) with a
-   soft shadow for depth — green is carried by the icon stroke only
-   (--icon-chip-fg, unchanged). Mobile-only override, same max-width as the
-   Anuphan font rule below, so desktop's icon-chip-bg is untouched. */
-@media (max-width: 767px) {
-  :root {
-    --icon-chip-bg: #ffffff;
-  }
 }
 
 /* Comfortable touch targets on phones — 44px minimum height for the
@@ -233,8 +252,20 @@
 
   --icon-chip-bg: #2a3018;
   --icon-chip-fg: #bef264;
+  --tone-overtime-bg: #3a2510;
+  --tone-overtime-fg: #fbbf24;
+  --tone-calendar-bg: #172554;
+  --tone-calendar-fg: #60a5fa;
+  --tone-violet-bg: #2e1065;
+  --tone-violet-fg: #c4b5fd;
+  --tone-profile-bg: #262b33;
+  --tone-profile-fg: #cbd5e1;
   --badge: #ef4444;
   --badge-foreground: #ffffff;
+
+  --menu-active-bg: #33421a;
+  --menu-active-fg: #bef264;
+  --menu-inactive-fg: #cdd1bd;
 
   --sidebar: #15200f;
   --sidebar-foreground: #cdd1bd;
