@@ -50,6 +50,7 @@ import { REPORT_LABELS, REPORT_TYPES, REPORT_PERIOD_KIND, type ReportType } from
 import { useCostCenters } from "@/features/cost-center/hooks";
 import { useReport } from "./hooks";
 import { ReportSummaryChart } from "./report-summary-chart";
+import { ReportMobileCards } from "./report-mobile-cards";
 import type { ReportResult } from "./types";
 
 const ALL_DEPT = "ALL";
@@ -404,30 +405,33 @@ export function ReportView() {
       ) : !result || result.rows.length === 0 ? (
         <EmptyState icon={FileSpreadsheet} title="ไม่มีข้อมูลสำหรับรายงานนี้" description="ลองเปลี่ยนงวดหรือประเภทรายงาน" />
       ) : (
-        <Card className="gap-0 overflow-x-auto p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                {result.columns.map((c) => (
-                  <TableHead key={c.key} className={cn(c.numeric && "text-right")}>
-                    {c.label}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {result.rows.map((row, i) => (
-                <TableRow key={i}>
+        <>
+          <Card className="hidden gap-0 overflow-x-auto p-0 md:block print:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
                   {result.columns.map((c) => (
-                    <TableCell key={c.key} className={cn(c.numeric && "text-right tabular-nums")}>
-                      {fmtNum(row[c.key])}
-                    </TableCell>
+                    <TableHead key={c.key} className={cn(c.numeric && "text-right")}>
+                      {c.label}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {result.rows.map((row, i) => (
+                  <TableRow key={i}>
+                    {result.columns.map((c) => (
+                      <TableCell key={c.key} className={cn(c.numeric && "text-right tabular-nums")}>
+                        {fmtNum(row[c.key])}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+          <ReportMobileCards result={result} />
+        </>
       )}
 
       {result && result.rows.length > 0 && (
