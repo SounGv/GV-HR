@@ -53,6 +53,7 @@ import type { ReportResult } from "./types";
 
 const ALL_DEPT = "ALL";
 const ALL_TYPE = "ALL";
+const ALL_EMPLOYEE = "ALL";
 function firstOfMonth(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
@@ -107,12 +108,16 @@ export function ReportView() {
   const [to, setTo] = useState<string>(todayStr());
   const [departmentId, setDepartmentId] = useState<string>(ALL_DEPT);
   const [employmentType, setEmploymentType] = useState<string>(ALL_TYPE);
+  const [employeeId, setEmployeeId] = useState<string>(ALL_EMPLOYEE);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState("");
 
   const { data: orgData } = useOrgOptions();
   const departments = orgData?.data.departments ?? [];
+  const employees = [...(orgData?.data.managers ?? [])].sort((a, b) =>
+    `${a.firstName}${a.lastName}`.localeCompare(`${b.firstName}${b.lastName}`, "th"),
+  );
 
   const { data, isLoading, isError, refetch } = useReport({
     type,
@@ -120,6 +125,7 @@ export function ReportView() {
     to,
     departmentId: departmentId === ALL_DEPT ? undefined : departmentId,
     employmentType: employmentType === ALL_TYPE ? undefined : employmentType,
+    employeeId: employeeId === ALL_EMPLOYEE ? undefined : employeeId,
   });
   const result = data?.data;
 
@@ -235,6 +241,22 @@ export function ReportView() {
                 {EMPLOYMENT_TYPES.map((t) => (
                   <SelectItem key={t} value={t}>
                     {EMPLOYMENT_LABEL[t as EmploymentType]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">พนักงาน</label>
+            <Select value={employeeId} onValueChange={(v) => setEmployeeId(v ?? ALL_EMPLOYEE)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="ทุกคน" />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectItem value={ALL_EMPLOYEE}>ทุกคน</SelectItem>
+                {employees.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.firstName} {e.lastName} ({e.employeeCode})
                   </SelectItem>
                 ))}
               </SelectContent>

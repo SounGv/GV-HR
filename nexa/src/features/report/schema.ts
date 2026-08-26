@@ -56,6 +56,7 @@ export const reportQuerySchema = z.object({
   to: dateStr.optional(),
   departmentId: z.string().uuid().optional(),
   employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
+  employeeId: z.string().uuid().optional(),
 });
 /**
  * `employeeWhere` is intentionally NOT part of `reportQuerySchema` (never
