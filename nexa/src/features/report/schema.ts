@@ -14,6 +14,7 @@ export const REPORT_TYPES = [
   "kpi",
   "okr",
   "training",
+  "validation",
 ] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
 
@@ -29,6 +30,7 @@ export const REPORT_LABELS: Record<ReportType, string> = {
   kpi: "สรุป KPI",
   okr: "สรุป OKR",
   training: "สรุปการอบรม",
+  validation: "รายงานตรวจสอบข้อมูล",
 };
 
 /** Which reports take a month (YYYY-MM), a year (YYYY), or no period. */
@@ -44,6 +46,7 @@ export const REPORT_PERIOD_KIND: Record<ReportType, "month" | "year" | "none"> =
   kpi: "none",
   okr: "none",
   training: "none",
+  validation: "month",
 };
 
 const dateStr = z
@@ -57,6 +60,8 @@ export const reportQuerySchema = z.object({
   departmentId: z.string().uuid().optional(),
   employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
   employeeId: z.string().uuid().optional(),
+  branchId: z.string().trim().min(1).max(100).optional(),
+  costCenterId: z.string().uuid().optional(),
 });
 /**
  * `employeeWhere` is intentionally NOT part of `reportQuerySchema` (never

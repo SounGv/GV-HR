@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { formatDate } from "@/lib/format";
+import { formatDate, loginIdentifier } from "@/lib/format";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
+import { EXPENSE_STATUS_LABEL, EXPENSE_CATEGORY_LABEL } from "@/features/expense/labels";
 import { bangkokParts, lateOrPresent } from "@/lib/datetime";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
@@ -51,6 +52,30 @@ function bumpDept(map: Map<string, number>, deptName: string | undefined, amount
   map.set(key, (map.get(key) ?? 0) + amount);
 }
 
+/** "09:00" from a minutes-of-day integer — for displaying a resolved shift's
+ * start/end alongside the actual clock-in/out, not just using it internally. */
+function minutesToHHMM(min: number): string {
+  const h = Math.floor(min / 60) % 24;
+  const m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/** Batch-resolve user ids (updatedById/approverUserId etc.) to a display
+ * name — the linked employee's real name when there is one, else the login
+ * identifier (email/username) for accounts with no employee record. One
+ * query for the whole result set instead of N+1 per row. */
+async function resolveUserNames(userIds: (string | null | undefined)[]): Promise<Map<string, string>> {
+  const ids = [...new Set(userIds.filter((id): id is string => !!id))];
+  if (ids.length === 0) return new Map();
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, email: true, username: true, employee: { select: { firstName: true, lastName: true } } },
+  });
+  return new Map(
+    users.map((u) => [u.id, u.employee ? `${u.employee.firstName} ${u.employee.lastName}` : loginIdentifier(u)]),
+  );
+}
+
 /** [start, end) date window. Defaults to the current calendar month. */
 function computeRange(q: ReportQuery) {
   const now = new Date();
@@ -84,6 +109,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     ...(query.departmentId ? { departmentId: query.departmentId } : {}),
     ...(query.employmentType ? { employmentType: query.employmentType } : {}),
     ...(query.employeeId ? { id: query.employeeId } : {}),
+    ...(query.branchId ? { branchId: query.branchId } : {}),
+    ...(query.costCenterId ? { costCenterId: query.costCenterId } : {}),
     ...(query.employeeWhere ?? {}),
   };
   const deptRel = Object.keys(employeeFilter).length ? { employee: employeeFilter } : {};
@@ -132,7 +159,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // from the active-employee roster (not just employees who have a
     // record), and derive absence the same way the calendar view's
     // getMyDayStatus does, aggregated over the period instead of per day.
-    const [employees, recs, holidays, leaves, ots] = await Promise.all([
+    const [employees, recs, holidays, leaves, pendingLeaves, ots] = await Promise.all([
       prisma.employee.findMany({
         where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
         select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
@@ -151,7 +178,23 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
       prisma.leaveRequest.findMany({
         where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
-        select: { startDate: true, endDate: true, days: true, employee: { select: { employeeCode: true } } },
+        select: {
+          startDate: true,
+          endDate: true,
+          days: true,
+          type: true,
+          attachmentUrl: true,
+          employee: { select: { employeeCode: true } },
+        },
+      }),
+      // Pending requests are invisible from every other angle of this report
+      // (the "leave" report type only ever queries APPROVED) — surfaced here
+      // as a per-employee count so HR sees what's still awaiting a decision,
+      // not just what's already settled.
+      prisma.leaveRequest.groupBy({
+        by: ["employeeId"],
+        where: { companyId, deletedAt: null, status: "PENDING", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
+        _count: { _all: true },
       }),
       prisma.overtimeRequest.groupBy({
         by: ["employeeId"],
@@ -178,12 +221,18 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
 
     const map = new Map<
       string,
-      { name: string; present: number; late: number; hours: number; leave: number; earlyLeave: number; onsite: number; wfh: number; outside: number; otHours: number }
+      {
+        name: string; present: number; late: number; hours: number; leave: number; earlyLeave: number;
+        onsite: number; wfh: number; outside: number; otHours: number; noClockOut: number;
+        sick: number; personal: number; annual: number; unpaidOther: number;
+        attachedLeaves: number; pendingLeave: number;
+      }
     >();
     for (const e of employees) {
       map.set(e.employeeCode, {
         name: `${e.firstName} ${e.lastName}`,
         present: 0, late: 0, hours: 0, leave: 0, earlyLeave: 0, onsite: 0, wfh: 0, outside: 0, otHours: 0,
+        noClockOut: 0, sick: 0, personal: 0, annual: 0, unpaidOther: 0, attachedLeaves: 0, pendingLeave: 0,
       });
     }
     const deptLate = new Map<string, number>();
@@ -193,6 +242,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       if (r.clockInAt) row.present += 1;
       if (r.status === "LATE") row.late += 1;
       if (r.earlyLeaveOut) row.earlyLeave += 1;
+      if (r.clockInAt && !r.clockOutAt) row.noClockOut += 1;
       if (r.clockInAt) {
         if (r.workMode === "WFH") row.wfh += 1;
         else if (r.workMode === "OUTSIDE") row.outside += 1;
@@ -202,7 +252,19 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     }
     for (const l of leaves) {
       const row = map.get(l.employee.employeeCode);
-      if (row) row.leave += clippedDays(l.startDate, l.endDate, l.days);
+      if (!row) continue;
+      const days = clippedDays(l.startDate, l.endDate, l.days);
+      row.leave += days;
+      if (l.type === "SICK") row.sick += days;
+      else if (l.type === "PERSONAL") row.personal += days;
+      else if (l.type === "ANNUAL") row.annual += days;
+      else row.unpaidOther += days; // UNPAID/OTHER
+      if (l.attachmentUrl) row.attachedLeaves += 1;
+    }
+    for (const p of pendingLeaves) {
+      const code = employees.find((e) => e.id === p.employeeId)?.employeeCode;
+      const row = code ? map.get(code) : undefined;
+      if (row) row.pendingLeave += p._count._all;
     }
     const codeById = new Map(employees.map((e) => [e.id, e.employeeCode]));
     for (const o of ots) {
@@ -227,7 +289,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "rate", label: "% อัตราการมาทำงาน", numeric: true },
         { key: "late", label: "วันมาสาย", numeric: true },
         { key: "earlyLeave", label: "วันออกก่อนเวลา", numeric: true },
-        { key: "leave", label: "วันลา", numeric: true },
+        { key: "noClockOut", label: "ไม่ลงเวลาออก (วัน)", numeric: true },
+        { key: "sick", label: "ลาป่วย (วัน)", numeric: true },
+        { key: "personal", label: "ลากิจ (วัน)", numeric: true },
+        { key: "annual", label: "ลาพักร้อน (วัน)", numeric: true },
+        { key: "unpaidOther", label: "ลาไม่รับค่าจ้าง/อื่นๆ (วัน)", numeric: true },
+        { key: "leave", label: "วันลารวม", numeric: true },
+        { key: "attachedLeaves", label: "ใบลามีเอกสารแนบ", numeric: true },
+        { key: "pendingLeave", label: "รออนุมัติ (รายการ)", numeric: true },
         { key: "absent", label: "วันขาดงาน", numeric: true },
         { key: "onsite", label: "วันที่สำนักงาน", numeric: true },
         { key: "wfh", label: "วัน WFH", numeric: true },
@@ -243,7 +312,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         rate: businessDays > 0 ? Math.round((v.present / businessDays) * 1000) / 10 : 0,
         late: v.late,
         earlyLeave: v.earlyLeave,
+        noClockOut: v.noClockOut,
+        sick: Math.round(v.sick * 10) / 10,
+        personal: Math.round(v.personal * 10) / 10,
+        annual: Math.round(v.annual * 10) / 10,
+        unpaidOther: Math.round(v.unpaidOther * 10) / 10,
         leave: Math.round(v.leave * 10) / 10,
+        attachedLeaves: v.attachedLeaves,
+        pendingLeave: v.pendingLeave,
         absent: Math.max(0, Math.round((businessDays - v.present - v.leave) * 10) / 10),
         onsite: v.onsite,
         wfh: v.wfh,
@@ -266,10 +342,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           workDate: true,
           clockInAt: true,
           clockOutAt: true,
+          breakStartAt: true,
+          breakEndAt: true,
           status: true,
           workMode: true,
+          note: true,
           clockInBranchId: true,
           clockInDistance: true,
+          updatedById: true,
           employee: {
             select: {
               employeeCode: true,
@@ -296,6 +376,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // connection reasoning as elsewhere in this codebase (e.g. the
     // dashboard): a 4th concurrent query risks P2024 under connection_limit=1.
     const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
+    const editorNameById = await resolveUserNames(recs.map((r) => r.updatedById));
     const branchName = new Map(branches.map((b) => [b.id, b.name]));
     const otByKey = new Map<string, number>();
     for (const o of ots) {
@@ -323,6 +404,18 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       if (!clockInAt) return "-";
       const late = bangkokParts(clockInAt).minutesOfDay - shiftStartMin;
       return late > 0 ? late : "-";
+    };
+    // Symmetric to lateMinutesOf, but for clocking out before the shift ends
+    // — "-" once clocked out at/after shift end (nothing early to report).
+    const earlyMinutesOf = (clockOutAt: Date | null, shiftEndMin: number): number | "-" => {
+      if (!clockOutAt) return "-";
+      const early = shiftEndMin - bangkokParts(clockOutAt).minutesOfDay;
+      return early > 0 ? early : "-";
+    };
+    const breakMinutesOf = (breakStartAt: Date | null, breakEndAt: Date | null): number | "-" => {
+      if (!breakStartAt || !breakEndAt) return "-";
+      const ms = breakEndAt.getTime() - breakStartAt.getTime();
+      return ms > 0 ? Math.round(ms / 60_000) : "-";
     };
     // Hours actually worked past the shift end (real shift if assigned, else
     // the 09:00–18:00 default) — most employees (esp. daily-wage warehouse
@@ -378,13 +471,19 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         name: `${r.employee.firstName} ${r.employee.lastName}`,
         department: r.employee.department?.name ?? "-",
         employmentType: EMPLOYMENT_LABEL[r.employee.employmentType] ?? r.employee.employmentType,
+        shiftStart: minutesToHHMM(shift.startMin),
+        shiftEnd: minutesToHHMM(shift.endMin),
         clockIn: fmtTime(r.clockInAt),
         clockOut: fmtTime(r.clockOutAt),
+        breakMinutes: breakMinutesOf(r.breakStartAt, r.breakEndAt),
         hours,
         otHours: otHoursNum ? Math.round(otHoursNum * 100) / 100 : "-",
         lateMinutes,
+        earlyMinutes: earlyMinutesOf(r.clockOutAt, shift.endMin),
         status: ATTENDANCE_STATUS_LABEL[status] ?? status,
         workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
+        note: r.note ?? "-",
+        editor: r.updatedById ? editorNameById.get(r.updatedById) ?? "-" : "-",
         location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
         distance: r.clockInDistance != null ? Math.round(r.clockInDistance) : "-",
       };
@@ -406,13 +505,19 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "name", label: "ชื่อ-สกุล" },
         { key: "department", label: "แผนก" },
         { key: "employmentType", label: "ประเภทการจ้าง" },
+        { key: "shiftStart", label: "เวลาเริ่มกะ" },
+        { key: "shiftEnd", label: "เวลาเลิกกะ" },
         { key: "clockIn", label: "เวลาเข้า" },
         { key: "clockOut", label: "เวลาออก" },
+        { key: "breakMinutes", label: "เวลาพัก (นาที)", numeric: true },
         { key: "hours", label: "ชั่วโมงทำงาน", numeric: true },
         { key: "otHours", label: "ชั่วโมง OT", numeric: true },
         { key: "status", label: "สถานะ" },
         { key: "lateMinutes", label: "สาย (นาที)", numeric: true },
+        { key: "earlyMinutes", label: "ออกก่อน (นาที)", numeric: true },
         { key: "workMode", label: "รูปแบบงาน" },
+        { key: "note", label: "หมายเหตุ" },
+        { key: "editor", label: "ผู้แก้ไขเวลา" },
         { key: "location", label: "สถานที่" },
         { key: "distance", label: "ระยะห่าง (ม.)", numeric: true },
       ],
@@ -504,40 +609,80 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   }
 
   if (query.type === "overtime") {
+    // Every request in range regardless of status (not just APPROVED) — one
+    // row per request, since date/start-end/reason/approver only make sense
+    // per-record, not aggregated. The department chart below still only
+    // counts APPROVED hours (an OT that was never approved never happened).
     const ots = await prisma.overtimeRequest.findMany({
-      where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end }, ...deptRel },
+      where: { companyId, deletedAt: null, date: { gte: start, lt: end }, ...deptRel },
       select: {
+        date: true,
+        startTime: true,
+        endTime: true,
         hours: true,
+        multiplier: true,
         estimatedAmount: true,
+        reason: true,
+        status: true,
+        paidAt: true,
+        approverUserId: true,
         employee: {
           select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
         },
       },
+      orderBy: [{ date: "desc" }, { employee: { employeeCode: "asc" } }],
     });
-    const map = new Map<string, { name: string; hours: number; amount: number }>();
+    const approverNameById = await resolveUserNames(ots.map((o) => o.approverUserId));
     const deptHours = new Map<string, number>();
     for (const o of ots) {
-      const code = o.employee.employeeCode;
-      const row = map.get(code) ?? { name: `${o.employee.firstName} ${o.employee.lastName}`, hours: 0, amount: 0 };
-      row.hours += o.hours;
-      row.amount += o.estimatedAmount;
-      map.set(code, row);
-      bumpDept(deptHours, o.employee.department?.name, o.hours);
+      if (o.status === "APPROVED") bumpDept(deptHours, o.employee.department?.name, o.hours);
     }
+    // 4 real states — PENDING/REJECTED/CANCELLED come straight from the
+    // stored status; APPROVED splits into "อนุมัติแล้ว" vs "จ่ายแล้ว" based
+    // on paidAt (set once a payroll run that included it is marked PAID —
+    // see payroll/service.ts's markPaid()).
+    const OT_STATUS_LABEL: Record<string, string> = {
+      PENDING: "รออนุมัติ",
+      APPROVED: "อนุมัติแล้ว",
+      REJECTED: "ไม่อนุมัติ",
+      CANCELLED: "ยกเลิก",
+    };
+    const statusLabel = (o: (typeof ots)[number]) =>
+      o.status === "APPROVED" && o.paidAt ? "จ่ายแล้ว" : OT_STATUS_LABEL[o.status] ?? o.status;
+
     return {
       title,
       period: label,
       columns: [
+        { key: "date", label: "วันที่ทำ OT" },
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
-        { key: "hours", label: "ชั่วโมง OT", numeric: true },
-        { key: "amount", label: "ค่าล่วงเวลา (บาท)", numeric: true },
+        { key: "department", label: "แผนก" },
+        { key: "startTime", label: "เวลาเริ่ม OT" },
+        { key: "endTime", label: "เวลาสิ้นสุด OT" },
+        { key: "hours", label: "จำนวนชั่วโมง", numeric: true },
+        { key: "multiplier", label: "อัตรา OT", numeric: true },
+        { key: "amount", label: "จำนวนเงิน OT (บาท)", numeric: true },
+        { key: "reason", label: "เหตุผล" },
+        { key: "approver", label: "ผู้อนุมัติ" },
+        { key: "status", label: "สถานะ" },
       ],
-      rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
-        code, name: v.name, hours: Math.round(v.hours * 10) / 10, amount: v.amount,
+      rows: ots.map((o) => ({
+        date: formatDate(o.date),
+        code: o.employee.employeeCode,
+        name: `${o.employee.firstName} ${o.employee.lastName}`,
+        department: o.employee.department?.name ?? "-",
+        startTime: o.startTime,
+        endTime: o.endTime,
+        hours: Math.round(o.hours * 100) / 100,
+        multiplier: o.multiplier,
+        amount: o.estimatedAmount,
+        reason: o.reason ?? "-",
+        approver: o.approverUserId ? approverNameById.get(o.approverUserId) ?? "-" : "-",
+        status: statusLabel(o),
       })),
       summary: toSummary(deptHours),
-      summaryLabel: "ชั่วโมง OT รวมตามแผนก",
+      summaryLabel: "ชั่วโมง OT ที่อนุมัติแล้วตามแผนก",
       summaryUnit: "ชม.",
     };
   }
@@ -551,6 +696,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         totalDeductions: true,
         net: true,
         status: true,
+        earnings: true,
         deductions: true,
         employee: {
           select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
@@ -574,11 +720,27 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       }
     }
     // Same known-constant-label matching as the company-wide aggregate above,
-    // but per employee — everything else (allowances/OT/bonus/other manual
-    // adjustments) stays folded into the existing gross/deductions totals
-    // rather than exploding into one column per possible label.
+    // but per employee.
     const lineAmount = (lines: { label: string; amount: number }[], label: string) =>
       lines.find((l) => l.label === label)?.amount ?? 0;
+    // calc.ts embeds a count in a few deduction labels (e.g. "หักมาสาย (3
+    // ครั้ง)") since the count itself has no separate storage — matched by
+    // prefix (not exact label) and the count parsed back out of the text so
+    // the report can show both the count and the amount as real columns.
+    const linePrefix = (lines: { label: string; amount: number }[], prefix: string) => {
+      const line = lines.find((l) => l.label.startsWith(prefix));
+      if (!line) return { amount: 0, count: 0 };
+      const count = Number(/\((\d+(?:\.\d+)?)\s/.exec(line.label)?.[1] ?? 0);
+      return { amount: line.amount, count };
+    };
+    const KNOWN_DEDUCTION_LABELS = [
+      "ประกันสังคม",
+      "ภาษีหัก ณ ที่จ่าย",
+      "กองทุนสำรองเลี้ยงชีพ",
+      "หักชำระเงินกู้",
+      "หักเบิกล่วงหน้า",
+      "หักลาไม่รับค่าจ้าง",
+    ];
 
     return {
       title,
@@ -587,22 +749,47 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
         { key: "gross", label: "รายได้รวม", numeric: true },
+        { key: "otAmount", label: "OT (บาท)", numeric: true },
+        { key: "allowances", label: "เบี้ยเลี้ยง (บาท)", numeric: true },
         { key: "socialSecurity", label: "ประกันสังคม", numeric: true },
         { key: "withholdingTax", label: "ภาษีหัก ณ ที่จ่าย", numeric: true },
+        { key: "loanDeduction", label: "หักชำระเงินกู้", numeric: true },
         { key: "unpaidLeave", label: "หักลาไม่รับค่าจ้าง", numeric: true },
+        { key: "absentDays", label: "จำนวนวันขาดงาน", numeric: true },
+        { key: "absenceDeduction", label: "หักขาดงาน (บาท)", numeric: true },
+        { key: "lateCount", label: "จำนวนครั้งมาสาย", numeric: true },
+        { key: "lateDeduction", label: "หักมาสาย (บาท)", numeric: true },
+        { key: "pendingReviewDays", label: "รอตรวจสอบเวลาเข้า-ออก (วัน)", numeric: true },
+        { key: "otherDeductions", label: "รายการหักอื่น (บาท)", numeric: true },
         { key: "deductions", label: "รายการหักรวม", numeric: true },
         { key: "net", label: "สุทธิ", numeric: true },
         { key: "status", label: "สถานะ" },
       ],
       rows: prs.map((p) => {
+        const earningLines = (p.earnings as unknown as { label: string; amount: number }[] | null) ?? [];
         const lines = (p.deductions as unknown as { label: string; amount: number }[] | null) ?? [];
+        const late = linePrefix(lines, "หักมาสาย");
+        const absence = linePrefix(lines, "หักขาดงาน");
+        const pending = linePrefix(lines, "รอตรวจสอบเวลาเข้า-ออก");
+        const knownDeductionsTotal = lines
+          .filter((l) => KNOWN_DEDUCTION_LABELS.includes(l.label) || l.label.startsWith("หักมาสาย") || l.label.startsWith("หักขาดงาน"))
+          .reduce((s, l) => s + l.amount, 0);
         return {
           code: p.employee.employeeCode,
           name: `${p.employee.firstName} ${p.employee.lastName}`,
           gross: p.gross,
+          otAmount: lineAmount(earningLines, "ค่าล่วงเวลา (OT)"),
+          allowances: lineAmount(earningLines, "ค่าตำแหน่ง/เบี้ยเลี้ยง"),
           socialSecurity: lineAmount(lines, "ประกันสังคม"),
           withholdingTax: lineAmount(lines, "ภาษีหัก ณ ที่จ่าย"),
+          loanDeduction: lineAmount(lines, "หักชำระเงินกู้"),
           unpaidLeave: lineAmount(lines, "หักลาไม่รับค่าจ้าง"),
+          absentDays: absence.count,
+          absenceDeduction: absence.amount,
+          lateCount: late.count,
+          lateDeduction: late.amount,
+          pendingReviewDays: pending.count,
+          otherDeductions: Math.max(0, p.totalDeductions - knownDeductionsTotal),
           deductions: p.totalDeductions,
           net: p.net,
           status: p.status === "PAID" ? "จ่ายแล้ว" : "ฉบับร่าง",
@@ -618,43 +805,61 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   }
 
   if (query.type === "expense") {
+    // One row per claim (not per-employee-aggregate) — date/category/
+    // attachment/approver/payment-date are inherently per-claim, an
+    // aggregate row can't show them. Every status, not just APPROVED/PAID,
+    // so pending/rejected claims are visible too; the department chart below
+    // still only counts APPROVED+PAID (money actually approved/paid).
     const claims = await prisma.expenseClaim.findMany({
-      where: { companyId, deletedAt: null, status: { in: ["APPROVED", "PAID"] }, expenseDate: { gte: start, lt: end }, ...deptRel },
+      where: { companyId, deletedAt: null, expenseDate: { gte: start, lt: end }, ...deptRel },
       select: {
+        expenseDate: true,
+        category: true,
         amount: true,
+        receiptUrl: true,
         status: true,
+        approverUserId: true,
+        paidAt: true,
         employee: {
           select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
         },
       },
+      orderBy: [{ expenseDate: "desc" }, { employee: { employeeCode: "asc" } }],
     });
-    const map = new Map<string, { name: string; count: number; approved: number; paid: number }>();
+    const approverNameById = await resolveUserNames(claims.map((c) => c.approverUserId));
     const deptApproved = new Map<string, number>();
     for (const c of claims) {
-      const code = c.employee.employeeCode;
-      const row = map.get(code) ?? { name: `${c.employee.firstName} ${c.employee.lastName}`, count: 0, approved: 0, paid: 0 };
-      const amt = Number(c.amount);
-      row.count += 1;
-      row.approved += amt;
-      if (c.status === "PAID") row.paid += amt;
-      map.set(code, row);
-      bumpDept(deptApproved, c.employee.department?.name, amt);
+      if (c.status === "APPROVED" || c.status === "PAID") bumpDept(deptApproved, c.employee.department?.name, Number(c.amount));
     }
     return {
       title,
       period: label,
       columns: [
+        { key: "date", label: "วันที่เบิก" },
         { key: "code", label: "รหัส" },
-        { key: "name", label: "ชื่อ-สกุล" },
-        { key: "count", label: "จำนวนรายการ", numeric: true },
-        { key: "approved", label: "อนุมัติรวม (บาท)", numeric: true },
-        { key: "paid", label: "จ่ายแล้ว (บาท)", numeric: true },
+        { key: "name", label: "ชื่อพนักงาน" },
+        { key: "department", label: "แผนก" },
+        { key: "category", label: "ประเภทการเบิก" },
+        { key: "amount", label: "จำนวนเงิน (บาท)", numeric: true },
+        { key: "attachment", label: "เอกสารแนบ" },
+        { key: "approver", label: "ผู้อนุมัติ" },
+        { key: "status", label: "สถานะ" },
+        { key: "paidDate", label: "วันที่จ่ายเงิน" },
       ],
-      rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
-        code, name: v.name, count: v.count, approved: Math.round(v.approved * 100) / 100, paid: Math.round(v.paid * 100) / 100,
+      rows: claims.map((c) => ({
+        date: formatDate(c.expenseDate),
+        code: c.employee.employeeCode,
+        name: `${c.employee.firstName} ${c.employee.lastName}`,
+        department: c.employee.department?.name ?? "-",
+        category: EXPENSE_CATEGORY_LABEL[c.category as keyof typeof EXPENSE_CATEGORY_LABEL] ?? c.category,
+        amount: Math.round(Number(c.amount) * 100) / 100,
+        attachment: c.receiptUrl ? "มีเอกสาร" : "-",
+        approver: c.approverUserId ? approverNameById.get(c.approverUserId) ?? "-" : "-",
+        status: EXPENSE_STATUS_LABEL[c.status] ?? c.status,
+        paidDate: c.paidAt ? formatDate(c.paidAt) : "-",
       })),
       summary: toSummary(deptApproved),
-      summaryLabel: "ค่าใช้จ่ายอนุมัติรวมตามแผนก",
+      summaryLabel: "ค่าใช้จ่ายอนุมัติ/จ่ายแล้วรวมตามแผนก",
       summaryUnit: "บาท",
     };
   }
@@ -737,6 +942,212 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         achievement: v.target > 0 ? Math.round((v.actual / v.target) * 1000) / 10 : 0,
         status: v.status,
       })),
+    };
+  }
+
+  if (query.type === "validation") {
+    // Every check below is a genuine query against real data — nothing here
+    // is estimated/sampled. Each finding becomes one row so every check can
+    // share one table; "ประเภทปัญหา" tells them apart.
+    interface Finding {
+      [key: string]: string;
+      date: string;
+      code: string;
+      name: string;
+      department: string;
+      issueType: string;
+      detail: string;
+    }
+    const findings: Finding[] = [];
+
+    const [employees, recs, holidays, leaves, pendingOts, correctionReqs, payrolls] = await Promise.all([
+      prisma.employee.findMany({
+        where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
+        select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+      }),
+      prisma.attendanceRecord.findMany({
+        where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
+        select: {
+          employeeId: true, workDate: true, clockInAt: true, clockOutAt: true, status: true,
+          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        },
+      }),
+      prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
+      prisma.leaveRequest.findMany({
+        where: { companyId, deletedAt: null, startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
+        select: {
+          status: true, startDate: true, endDate: true,
+          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        },
+      }),
+      prisma.overtimeRequest.findMany({
+        where: { companyId, deletedAt: null, status: "PENDING", date: { gte: start, lt: end }, ...deptRel },
+        select: {
+          date: true, hours: true,
+          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        },
+      }),
+      prisma.attendanceCorrectionRequest.findMany({
+        where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
+        select: {
+          workDate: true, status: true, decidedAt: true, createdAt: true,
+          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        },
+      }),
+      prisma.payrollRecord.findMany({
+        where: { companyId, deletedAt: null, period: start.toISOString().slice(0, 7), ...deptRel },
+        select: {
+          net: true,
+          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        },
+      }),
+    ]);
+    const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
+    const deptOf = (e: { department: { name: string | null } | null }) => e.department?.name ?? "-";
+    const nameOf = (e: { firstName: string; lastName: string }) => `${e.firstName} ${e.lastName}`;
+
+    // No clock-out, and it isn't still today's in-progress shift.
+    const todayIso = new Date().toISOString().slice(0, 10);
+    for (const r of recs) {
+      const d = r.workDate.toISOString().slice(0, 10);
+      if (r.clockInAt && !r.clockOutAt && d < todayIso) {
+        findings.push({
+          date: formatDate(r.workDate), code: r.employee.employeeCode, name: nameOf(r.employee), department: deptOf(r.employee),
+          issueType: "ไม่มีเวลาออก", detail: `เช็คอิน ${new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(r.clockInAt)} แต่ไม่มีเวลาออก`,
+        });
+      }
+      if (r.clockInAt && r.clockOutAt && r.clockOutAt.getTime() < r.clockInAt.getTime()) {
+        findings.push({
+          date: formatDate(r.workDate), code: r.employee.employeeCode, name: nameOf(r.employee), department: deptOf(r.employee),
+          issueType: "ชั่วโมงทำงานติดลบ", detail: "เวลาออกมาก่อนเวลาเข้า — ตรวจสอบว่าเป็นข้อมูลผิดวันหรือผิด AM/PM",
+        });
+      }
+      if (r.clockInAt && r.status === "LATE") {
+        const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate);
+        const lateMin = bangkokParts(r.clockInAt).minutesOfDay - shift.startMin;
+        if (lateMin > 180) {
+          findings.push({
+            date: formatDate(r.workDate), code: r.employee.employeeCode, name: nameOf(r.employee), department: deptOf(r.employee),
+            issueType: "มาสายผิดปกติ", detail: `สาย ${lateMin} นาที (เกิน 3 ชม.) — ตรวจสอบว่าลงเวลาถูกต้องหรือควรแก้ไขกะ`,
+          });
+        }
+      }
+    }
+
+    // Duplicate correction requests for the same day, and retroactive edits.
+    const correctionsByKey = new Map<string, typeof correctionReqs>();
+    for (const c of correctionReqs) {
+      const key = `${c.employee.employeeCode}|${c.workDate.toISOString().slice(0, 10)}`;
+      const list = correctionsByKey.get(key) ?? [];
+      list.push(c);
+      correctionsByKey.set(key, list);
+    }
+    for (const [, list] of correctionsByKey) {
+      const pendingCount = list.filter((c) => c.status === "PENDING").length;
+      if (pendingCount > 1) {
+        const c = list[0];
+        findings.push({
+          date: formatDate(c.workDate), code: c.employee.employeeCode, name: nameOf(c.employee), department: deptOf(c.employee),
+          issueType: "ข้อมูลเวลาซ้ำ", detail: `มีคำขอแก้ไขเวลาที่รออนุมัติซ้ำกัน ${pendingCount} รายการในวันเดียวกัน`,
+        });
+      }
+    }
+    for (const c of correctionReqs) {
+      if (c.status === "APPROVED" && c.decidedAt) {
+        const gapDays = Math.round((c.decidedAt.getTime() - c.workDate.getTime()) / 86_400_000);
+        if (gapDays > 7) {
+          findings.push({
+            date: formatDate(c.workDate), code: c.employee.employeeCode, name: nameOf(c.employee), department: deptOf(c.employee),
+            issueType: "มีการแก้ไขเวลาย้อนหลัง", detail: `อนุมัติแก้ไขเวลา ${gapDays} วันหลังจากวันที่จริง`,
+          });
+        }
+      }
+    }
+
+    for (const o of pendingOts) {
+      findings.push({
+        date: formatDate(o.date), code: o.employee.employeeCode, name: nameOf(o.employee), department: deptOf(o.employee),
+        issueType: "OT ยังไม่อนุมัติ", detail: `${o.hours} ชม. รอการอนุมัติ`,
+      });
+    }
+    for (const l of leaves) {
+      if (l.status === "PENDING") {
+        findings.push({
+          date: formatDate(l.startDate), code: l.employee.employeeCode, name: nameOf(l.employee), department: deptOf(l.employee),
+          issueType: "ใบลายังไม่อนุมัติ", detail: `${formatDate(l.startDate)} ถึง ${formatDate(l.endDate)} รอการอนุมัติ`,
+        });
+      }
+    }
+
+    // "Absent but a leave document exists" — a business day with no clock-in
+    // and no APPROVED leave, where a PENDING/REJECTED leave request still
+    // overlaps it (should probably be approved instead of counted absent).
+    const holidaySet = new Set(holidays.map((h) => h.date.toISOString().slice(0, 10)));
+    const approvedLeavesByEmp = new Map<string, { startDate: Date; endDate: Date }[]>();
+    const otherLeavesByEmp = new Map<string, { startDate: Date; endDate: Date; status: string }[]>();
+    for (const l of leaves) {
+      const code = l.employee.employeeCode;
+      if (l.status === "APPROVED") {
+        const list = approvedLeavesByEmp.get(code) ?? [];
+        list.push(l);
+        approvedLeavesByEmp.set(code, list);
+      } else if (l.status === "PENDING" || l.status === "REJECTED") {
+        const list = otherLeavesByEmp.get(code) ?? [];
+        list.push(l);
+        otherLeavesByEmp.set(code, list);
+      }
+    }
+    const recordedDays = new Set(recs.filter((r) => r.clockInAt).map((r) => `${r.employee.employeeCode}|${r.workDate.toISOString().slice(0, 10)}`));
+    const DAY_MS = 86_400_000;
+    for (const e of employees) {
+      for (let d = new Date(start); d.getTime() < end.getTime(); d = new Date(d.getTime() + DAY_MS)) {
+        const dow = d.getUTCDay();
+        if (dow === 0 || dow === 6) continue;
+        const dIso = d.toISOString().slice(0, 10);
+        if (holidaySet.has(dIso) || dIso >= todayIso) continue;
+        if (recordedDays.has(`${e.employeeCode}|${dIso}`)) continue;
+        const covered = (approvedLeavesByEmp.get(e.employeeCode) ?? []).some((l) => l.startDate.getTime() <= d.getTime() && d.getTime() <= l.endDate.getTime());
+        if (covered) continue;
+        const pendingOrRejected = (otherLeavesByEmp.get(e.employeeCode) ?? []).find((l) => l.startDate.getTime() <= d.getTime() && d.getTime() <= l.endDate.getTime());
+        if (pendingOrRejected) {
+          findings.push({
+            date: formatDate(d), code: e.employeeCode, name: `${e.firstName} ${e.lastName}`, department: e.department?.name ?? "-",
+            issueType: "ขาดงานแต่มีเอกสารลา",
+            detail: `ไม่มีข้อมูลลงเวลา แต่มีใบลาสถานะ "${pendingOrRejected.status === "PENDING" ? "รออนุมัติ" : "ไม่อนุมัติ"}" ครอบคลุมวันนี้ — ตรวจสอบว่าควรอนุมัติหรือไม่`,
+          });
+        }
+      }
+    }
+
+    for (const p of payrolls) {
+      if (p.net < 0) {
+        findings.push({
+          date: label, code: p.employee.employeeCode, name: nameOf(p.employee), department: deptOf(p.employee),
+          issueType: "เงินเดือนติดลบ", detail: `เงินเดือนสุทธิ ${p.net.toLocaleString("th-TH")} บาท — รายการหักเกินรายได้`,
+        });
+      }
+    }
+
+    findings.sort((a, b) => a.date.localeCompare(b.date) || a.code.localeCompare(b.code));
+    const byType = new Map<string, number>();
+    for (const f of findings) byType.set(f.issueType, (byType.get(f.issueType) ?? 0) + 1);
+
+    return {
+      title,
+      period: label,
+      footnote: `พบทั้งหมด ${findings.length} รายการที่ต้องตรวจสอบ`,
+      columns: [
+        { key: "date", label: "วันที่" },
+        { key: "code", label: "รหัส" },
+        { key: "name", label: "ชื่อ-สกุล" },
+        { key: "department", label: "แผนก" },
+        { key: "issueType", label: "ประเภทปัญหา" },
+        { key: "detail", label: "รายละเอียด" },
+      ],
+      rows: findings,
+      summary: toSummary(byType),
+      summaryLabel: "จำนวนรายการตามประเภทปัญหา",
+      summaryUnit: "รายการ",
     };
   }
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Download, FileSpreadsheet, Sparkles, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, Printer, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -46,7 +46,8 @@ import { sendChat } from "@/features/ai/api";
 import { useAiAccess } from "@/features/ai/hooks";
 import { cn } from "@/lib/utils";
 import { toCsv, downloadCsv } from "@/lib/csv";
-import { REPORT_LABELS, REPORT_TYPES, type ReportType } from "./schema";
+import { REPORT_LABELS, REPORT_TYPES, REPORT_PERIOD_KIND, type ReportType } from "./schema";
+import { useCostCenters } from "@/features/cost-center/hooks";
 import { useReport } from "./hooks";
 import { ReportSummaryChart } from "./report-summary-chart";
 import type { ReportResult } from "./types";
@@ -54,6 +55,10 @@ import type { ReportResult } from "./types";
 const ALL_DEPT = "ALL";
 const ALL_TYPE = "ALL";
 const ALL_EMPLOYEE = "ALL";
+const ALL_BRANCH = "ALL";
+const ALL_COST_CENTER = "ALL";
+const YEAR_NOW = new Date().getFullYear();
+const REPORT_YEARS = [YEAR_NOW, YEAR_NOW - 1, YEAR_NOW - 2, YEAR_NOW - 3];
 function firstOfMonth(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
@@ -114,15 +119,31 @@ export function ReportView() {
   const [departmentId, setDepartmentId] = useState<string>(ALL_DEPT);
   const [employmentType, setEmploymentType] = useState<string>(ALL_TYPE);
   const [employeeId, setEmployeeId] = useState<string>(ALL_EMPLOYEE);
+  const [branchId, setBranchId] = useState<string>(ALL_BRANCH);
+  const [costCenterId, setCostCenterId] = useState<string>(ALL_COST_CENTER);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState("");
 
+  // Some report types are period-less ("none") or year-grained ("year")
+  // rather than the default day-range — the filter bar below swaps in a
+  // year Select or hides the date inputs entirely to match, instead of
+  // showing a day-precision range that the query underneath just ignores.
+  const periodKind = REPORT_PERIOD_KIND[type];
+  const selectedYear = Number(from.slice(0, 4)) || YEAR_NOW;
+  function setYear(y: number) {
+    setFrom(`${y}-01-01`);
+    setTo(`${y}-12-31`);
+  }
+
   const { data: orgData } = useOrgOptions();
   const departments = orgData?.data.departments ?? [];
+  const branches = orgData?.data.branches ?? [];
   const employees = [...(orgData?.data.managers ?? [])].sort((a, b) =>
     `${a.firstName}${a.lastName}`.localeCompare(`${b.firstName}${b.lastName}`, "th"),
   );
+  const { data: costCenterData } = useCostCenters();
+  const costCenters = costCenterData?.data ?? [];
 
   const { data, isLoading, isError, refetch } = useReport({
     type,
@@ -131,6 +152,8 @@ export function ReportView() {
     departmentId: departmentId === ALL_DEPT ? undefined : departmentId,
     employmentType: employmentType === ALL_TYPE ? undefined : employmentType,
     employeeId: employeeId === ALL_EMPLOYEE ? undefined : employeeId,
+    branchId: branchId === ALL_BRANCH ? undefined : branchId,
+    costCenterId: costCenterId === ALL_COST_CENTER ? undefined : costCenterId,
   });
   const result = data?.data;
 
@@ -211,14 +234,35 @@ export function ReportView() {
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">ตั้งแต่วันที่</label>
-            <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="w-[160px]" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">ถึงวันที่</label>
-            <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="w-[160px]" />
-          </div>
+          {periodKind === "month" && (
+            <>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">ตั้งแต่วันที่</label>
+                <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="w-[160px]" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">ถึงวันที่</label>
+                <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="w-[160px]" />
+              </div>
+            </>
+          )}
+          {periodKind === "year" && (
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">ปี</label>
+              <Select value={String(selectedYear)} onValueChange={(v) => setYear(v ? Number(v) : YEAR_NOW)}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  {REPORT_YEARS.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      ปี {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">แผนก</label>
             <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL_DEPT)}>
@@ -267,9 +311,41 @@ export function ReportView() {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">สาขา</label>
+            <Select value={branchId} onValueChange={(v) => setBranchId(v ?? ALL_BRANCH)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="ทุกสาขา" />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectItem value={ALL_BRANCH}>ทุกสาขา</SelectItem>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">ศูนย์ต้นทุน</label>
+            <Select value={costCenterId} onValueChange={(v) => setCostCenterId(v ?? ALL_COST_CENTER)}>
+              <SelectTrigger className="w-[170px]">
+                <SelectValue placeholder="ทุกศูนย์ต้นทุน" />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectItem value={ALL_COST_CENTER}>ทุกศูนย์ต้นทุน</SelectItem>
+                {costCenters.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 print:hidden">
           {canAi && (
             <Button
               variant="outline"
@@ -299,6 +375,13 @@ export function ReportView() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            disabled={!result || result.rows.length === 0}
+          >
+            <Printer className="size-4" /> พิมพ์
+          </Button>
         </div>
       </div>
 

@@ -13,6 +13,8 @@ import { useOrgOptions } from "@/features/employee/hooks";
 import { api, type Envelope } from "@/lib/api/client";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { EXPENSE_STATUS_LABEL } from "@/features/expense/labels";
+import type { ExpenseStatus } from "@/features/expense/types";
 import type { MedicalReportRow, LoanReportRow } from "./report-service";
 
 const ALL = "__all";
@@ -57,6 +59,8 @@ export function BenefitsReportView() {
         { key: "pendingTotal", label: "ยอดรออนุมัติ" },
         { key: "remaining", label: "ยอดคงเหลือ" },
         { key: "lastClaimDate", label: "วันที่เบิกล่าสุด" },
+        { key: "sickLeaveRefCount", label: "จำนวนใบลาป่วยอ้างอิง" },
+        { key: "attachmentCount", label: "จำนวนเอกสารแนบ" },
       ];
       downloadCsv(
         `benefits-medical-report`,
@@ -66,6 +70,8 @@ export function BenefitsReportView() {
             ...r,
             department: r.department ?? "-",
             lastClaimDate: r.lastClaimDate ? formatDate(r.lastClaimDate) : "-",
+            sickLeaveRefCount: r.sickLeaveRefs.length,
+            attachmentCount: r.attachments.length,
           })),
         ),
       );
@@ -86,7 +92,12 @@ export function BenefitsReportView() {
         `benefits-loan-report`,
         toCsv(
           columns,
-          loanRows.map((r) => ({ ...r, department: r.department ?? "-", loanDate: formatDate(r.loanDate) })),
+          loanRows.map((r) => ({
+            ...r,
+            department: r.department ?? "-",
+            loanDate: formatDate(r.loanDate),
+            status: EXPENSE_STATUS_LABEL[r.status as ExpenseStatus] ?? r.status,
+          })),
         ),
       );
     }
@@ -100,7 +111,7 @@ export function BenefitsReportView() {
     let body: (string | number)[][];
     if (tab === "medical") {
       const medicalRows = rows as MedicalReportRow[];
-      header = ["รหัสพนักงาน", "ชื่อพนักงาน", "แผนก", "วงเงินทั้งหมด", "จำนวนครั้งที่เบิก", "ยอดอนุมัติสะสม", "ยอดรออนุมัติ", "ยอดคงเหลือ", "วันที่เบิกล่าสุด"];
+      header = ["รหัสพนักงาน", "ชื่อพนักงาน", "แผนก", "วงเงินทั้งหมด", "จำนวนครั้งที่เบิก", "ยอดอนุมัติสะสม", "ยอดรออนุมัติ", "ยอดคงเหลือ", "วันที่เบิกล่าสุด", "จำนวนใบลาป่วยอ้างอิง", "จำนวนเอกสารแนบ"];
       body = medicalRows.map((r) => [
         r.employeeCode,
         r.employeeName,
@@ -111,6 +122,8 @@ export function BenefitsReportView() {
         r.pendingTotal,
         r.remaining,
         r.lastClaimDate ? formatDate(r.lastClaimDate) : "-",
+        r.sickLeaveRefs.length,
+        r.attachments.length,
       ]);
     } else {
       const loanRows = rows as LoanReportRow[];
@@ -122,7 +135,7 @@ export function BenefitsReportView() {
         r.salarySnapshot,
         r.amount,
         formatDate(r.loanDate),
-        r.status,
+        EXPENSE_STATUS_LABEL[r.status as ExpenseStatus] ?? r.status,
         r.usageCountThisYear,
         r.outstanding,
       ]);
@@ -213,6 +226,8 @@ function MedicalTable({ rows }: { rows: MedicalReportRow[] }) {
             <Th>รออนุมัติ</Th>
             <Th>คงเหลือ</Th>
             <Th>เบิกล่าสุด</Th>
+            <Th>ใบลาป่วยอ้างอิง</Th>
+            <Th>เอกสารแนบ</Th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -228,6 +243,8 @@ function MedicalTable({ rows }: { rows: MedicalReportRow[] }) {
               <Td>{formatCurrency(r.pendingTotal)}</Td>
               <Td className="font-semibold text-primary">{formatCurrency(r.remaining)}</Td>
               <Td>{r.lastClaimDate ? formatDate(r.lastClaimDate) : "-"}</Td>
+              <Td>{r.sickLeaveRefs.length > 0 ? `${r.sickLeaveRefs.length} ใบ` : "-"}</Td>
+              <Td>{r.attachments.length > 0 ? `${r.attachments.length} ไฟล์` : "-"}</Td>
             </tr>
           ))}
         </tbody>
@@ -262,7 +279,7 @@ function LoanTable({ rows }: { rows: LoanReportRow[] }) {
               <Td>{formatCurrency(r.salarySnapshot)}</Td>
               <Td>{formatCurrency(r.amount)}</Td>
               <Td>{formatDate(r.loanDate)}</Td>
-              <Td>{r.status}</Td>
+              <Td>{EXPENSE_STATUS_LABEL[r.status as ExpenseStatus] ?? r.status}</Td>
               <Td>{r.usageCountThisYear}</Td>
               <Td className="font-semibold text-primary">{formatCurrency(r.outstanding)}</Td>
             </tr>

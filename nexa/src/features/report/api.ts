@@ -9,6 +9,8 @@ export interface ReportParams {
   departmentId?: string;
   employmentType?: string;
   employeeId?: string;
+  branchId?: string;
+  costCenterId?: string;
 }
 
 export function fetchReport(q: ReportParams) {
@@ -18,5 +20,7 @@ export function fetchReport(q: ReportParams) {
   if (q.departmentId) params.set("departmentId", q.departmentId);
   if (q.employmentType) params.set("employmentType", q.employmentType);
   if (q.employeeId) params.set("employeeId", q.employeeId);
+  if (q.branchId) params.set("branchId", q.branchId);
+  if (q.costCenterId) params.set("costCenterId", q.costCenterId);
   return api.get<Envelope<ReportResult>>(`/api/reports?${params.toString()}`);
 }
