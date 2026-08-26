@@ -22,4 +22,6 @@ export interface ReportResult {
   secondarySummary?: ReportSummaryDatum[];
   secondarySummaryLabel?: string;
   secondarySummaryUnit?: string;
+  /** Totals/averages line shown under the table, replacing the generic "รวม N รายการ" when set. */
+  footnote?: string;
 }

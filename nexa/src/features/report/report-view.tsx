@@ -321,7 +321,7 @@ export function ReportView() {
       )}
 
       {result && result.rows.length > 0 && (
-        <p className="text-sm text-muted-foreground">รวม {result.rows.length} รายการ</p>
+        <p className="text-sm text-muted-foreground">{result.footnote ?? `รวม ${result.rows.length} รายการ`}</p>
       )}
 
       <Dialog open={aiOpen} onOpenChange={setAiOpen}>

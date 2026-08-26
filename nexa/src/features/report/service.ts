@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
+import { bangkokParts, SHIFT_START_MIN } from "@/lib/datetime";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
 
 const GOAL_STATUS_LABEL: Record<string, string> = {
@@ -33,6 +34,8 @@ export interface ReportResult {
   secondarySummary?: ReportSummaryDatum[];
   secondarySummaryLabel?: string;
   secondarySummaryUnit?: string;
+  /** Totals/averages line shown under the table, replacing the generic "รวม N รายการ" when set. */
+  footnote?: string;
 }
 
 /** Rolls a per-department accumulator map into the chart-ready summary array, sorted by value desc. */
@@ -253,10 +256,11 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   }
 
   if (query.type === "attendance_daily") {
-    const [recs, branches] = await Promise.all([
+    const [recs, branches, ots] = await Promise.all([
       prisma.attendanceRecord.findMany({
         where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
         select: {
+          employeeId: true,
           workDate: true,
           clockInAt: true,
           clockOutAt: true,
@@ -278,8 +282,20 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         take: 1000,
       }),
       prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } }),
+      // Same APPROVED-only convention as the standalone "overtime" report
+      // below — joined in here by (employeeId, date) so each attendance row
+      // can show that day's OT alongside its regular hours.
+      prisma.overtimeRequest.findMany({
+        where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end }, ...deptRel },
+        select: { employeeId: true, date: true, hours: true },
+      }),
     ]);
     const branchName = new Map(branches.map((b) => [b.id, b.name]));
+    const otByKey = new Map<string, number>();
+    for (const o of ots) {
+      const key = `${o.employeeId}|${o.date.toISOString().slice(0, 10)}`;
+      otByKey.set(key, (otByKey.get(key) ?? 0) + o.hours);
+    }
     const fmtTime = (d: Date | null) =>
       d
         ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(d)
@@ -293,9 +309,63 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       const ms = clockOutAt.getTime() - clockInAt.getTime();
       return ms > 0 ? Math.round((ms / 3_600_000) * 100) / 100 : "-";
     };
+    // Minutes late vs. the standard 09:00 shift start (same cutoff as
+    // lib/datetime.ts's lateOrPresent) — "-" when on time/early so it doesn't
+    // just duplicate the "สถานะ" column with a redundant "0".
+    const lateMinutesOf = (clockInAt: Date | null): number | "-" => {
+      if (!clockInAt) return "-";
+      const late = bangkokParts(clockInAt).minutesOfDay - SHIFT_START_MIN;
+      return late > 0 ? late : "-";
+    };
+
+    let totalHours = 0;
+    let hoursCount = 0;
+    let totalOt = 0;
+    let lateCount = 0;
+    let totalLateMinutes = 0;
+
+    const rows = recs.map((r) => {
+      const hours = hoursWorked(r.clockInAt, r.clockOutAt);
+      if (typeof hours === "number") {
+        totalHours += hours;
+        hoursCount++;
+      }
+      const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
+      const otHoursNum = otByKey.get(otKey);
+      if (otHoursNum) totalOt += otHoursNum;
+      const lateMinutes = lateMinutesOf(r.clockInAt);
+      if (typeof lateMinutes === "number") {
+        lateCount++;
+        totalLateMinutes += lateMinutes;
+      }
+      return {
+        date: formatDate(r.workDate),
+        code: r.employee.employeeCode,
+        name: `${r.employee.firstName} ${r.employee.lastName}`,
+        department: r.employee.department?.name ?? "-",
+        employmentType: EMPLOYMENT_LABEL[r.employee.employmentType] ?? r.employee.employmentType,
+        clockIn: fmtTime(r.clockInAt),
+        clockOut: fmtTime(r.clockOutAt),
+        hours,
+        otHours: otHoursNum ? Math.round(otHoursNum * 100) / 100 : "-",
+        lateMinutes,
+        status: ATTENDANCE_STATUS_LABEL[r.status] ?? r.status,
+        workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
+        location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
+        distance: r.clockInDistance != null ? Math.round(r.clockInDistance) : "-",
+      };
+    });
+
+    const avgHours = hoursCount ? totalHours / hoursCount : 0;
+    const footnote =
+      `รวม ${recs.length} รายการ · ชั่วโมงทำงานรวม ${totalHours.toFixed(2)} ชม. ` +
+      `(เฉลี่ย ${avgHours.toFixed(2)} ชม./วัน) · OT รวม ${totalOt.toFixed(2)} ชม. · ` +
+      `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)`;
+
     return {
       title,
       period: label,
+      footnote,
       columns: [
         { key: "date", label: "วันที่" },
         { key: "code", label: "รหัส" },
@@ -305,25 +375,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "clockIn", label: "เวลาเข้า" },
         { key: "clockOut", label: "เวลาออก" },
         { key: "hours", label: "ชั่วโมงทำงาน", numeric: true },
+        { key: "otHours", label: "ชั่วโมง OT", numeric: true },
         { key: "status", label: "สถานะ" },
+        { key: "lateMinutes", label: "สาย (นาที)", numeric: true },
         { key: "workMode", label: "รูปแบบงาน" },
         { key: "location", label: "สถานที่" },
         { key: "distance", label: "ระยะห่าง (ม.)", numeric: true },
       ],
-      rows: recs.map((r) => ({
-        date: formatDate(r.workDate),
-        code: r.employee.employeeCode,
-        name: `${r.employee.firstName} ${r.employee.lastName}`,
-        department: r.employee.department?.name ?? "-",
-        employmentType: EMPLOYMENT_LABEL[r.employee.employmentType] ?? r.employee.employmentType,
-        clockIn: fmtTime(r.clockInAt),
-        clockOut: fmtTime(r.clockOutAt),
-        hours: hoursWorked(r.clockInAt, r.clockOutAt),
-        status: ATTENDANCE_STATUS_LABEL[r.status] ?? r.status,
-        workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
-        location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
-        distance: r.clockInDistance != null ? Math.round(r.clockInDistance) : "-",
-      })),
+      rows,
     };
   }
 
