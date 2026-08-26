@@ -3,7 +3,11 @@
 import {
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
+  Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -12,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import type { DeptDatum } from "./group-departments";
+import type { AttendanceTrendPoint } from "./service";
 
 // A wider, distinct categorical palette (not just the 5 --chart-* tokens
 // cycling and repeating every 5 slices — with ~19 departments that made
@@ -124,6 +129,50 @@ function EmptyChart() {
     <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">
       ยังไม่มีข้อมูลเพียงพอ
     </div>
+  );
+}
+
+const TREND_SERIES: { key: keyof AttendanceTrendPoint; label: string; color: string }[] = [
+  { key: "present", label: "มาทำงาน", color: "#0e9f8e" },
+  { key: "late", label: "มาสาย", color: "#f59e0b" },
+  { key: "absent", label: "ขาดงาน", color: "#e4573d" },
+  { key: "leave", label: "ลา", color: "#8b5cf6" },
+  { key: "otHours", label: "OT (ชม.)", color: "#3b82f6" },
+];
+
+/** Companywide attendance/leave/OT trend over the last N business days —
+ * "จุดสังเกต" for HR: a late/absent spike or a leave cluster reads at a
+ * glance instead of needing to compare daily reports by hand. */
+export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] }) {
+  if (data.length === 0) return <EmptyChart />;
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <LineChart data={data} margin={{ top: 4, right: 12, bottom: 4, left: 4 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+          tickLine={false}
+          axisLine={false}
+          interval="preserveStartEnd"
+        />
+        <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} allowDecimals={false} />
+        <Tooltip contentStyle={tooltipStyle} labelStyle={{ fontWeight: 600, marginBottom: 4 }} />
+        <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
+        {TREND_SERIES.map((s) => (
+          <Line
+            key={s.key}
+            type="monotone"
+            dataKey={s.key}
+            name={s.label}
+            stroke={s.color}
+            strokeWidth={2}
+            dot={{ r: 2.5 }}
+            activeDot={{ r: 4 }}
+          />
+        ))}
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
 

@@ -311,3 +311,167 @@ export async function getDashboardSummary(
     byEmploymentType: byTypeRaw.map((r) => ({ type: r.employmentType, count: r._count._all })),
   };
 }
+
+export interface AttendanceTrendPoint {
+  date: string; // "YYYY-MM-DD"
+  label: string; // "26 ส.ค."
+  present: number;
+  late: number;
+  absent: number;
+  leave: number;
+  otHours: number;
+}
+
+const THAI_MONTH_SHORT = [
+  "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+  "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+];
+
+/**
+ * Day-by-day attendance/leave/OT trend for the last `days` business days —
+ * "absent" isn't a status anything ever writes (same as the report/payroll
+ * absence logic elsewhere): a business day this employee has no clock-in and
+ * no approved leave, and it isn't a holiday. `active` is snapshotted once
+ * (today's headcount) rather than reconstructed historically — a reasonable
+ * approximation for a trend chart, not a payroll-grade figure.
+ */
+export async function getAttendanceTrend(companyId: string, days = 14): Promise<AttendanceTrendPoint[]> {
+  const DAY_MS = 86_400_000;
+  const now = new Date();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const start = new Date(end.getTime() - days * DAY_MS);
+
+  const [activeCount, records, holidays, leaves, otRows] = await Promise.all([
+    prisma.employee.count({ where: { companyId, deletedAt: null, status: "ACTIVE" } }),
+    prisma.attendanceRecord.findMany({
+      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end } },
+      select: { workDate: true, status: true, clockInAt: true, employeeId: true },
+    }),
+    prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
+    prisma.leaveRequest.findMany({
+      where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start } },
+      select: { startDate: true, endDate: true, employeeId: true },
+    }),
+    prisma.overtimeRequest.groupBy({
+      by: ["date"],
+      where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end } },
+      _sum: { hours: true },
+    }),
+  ]);
+
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const holidaySet = new Set(holidays.map((h) => iso(h.date)));
+  const otByDate = new Map(otRows.map((r) => [iso(r.date), r._sum.hours ?? 0]));
+
+  const recordsByDate = new Map<string, typeof records>();
+  for (const r of records) {
+    const key = iso(r.workDate);
+    const list = recordsByDate.get(key) ?? [];
+    list.push(r);
+    recordsByDate.set(key, list);
+  }
+
+  const points: AttendanceTrendPoint[] = [];
+  for (let d = new Date(start); d.getTime() < end.getTime(); d = new Date(d.getTime() + DAY_MS)) {
+    const dow = d.getUTCDay();
+    if (dow === 0 || dow === 6) continue; // weekend
+    const key = iso(d);
+    if (holidaySet.has(key)) continue;
+
+    const dayRecords = recordsByDate.get(key) ?? [];
+    const present = dayRecords.filter((r) => r.clockInAt).length;
+    const late = dayRecords.filter((r) => r.status === "LATE").length;
+    const onLeaveEmployeeIds = new Set(
+      leaves.filter((l) => l.startDate.getTime() <= d.getTime() && l.endDate.getTime() >= d.getTime()).map((l) => l.employeeId),
+    );
+    const absent = Math.max(0, activeCount - present - onLeaveEmployeeIds.size);
+
+    points.push({
+      date: key,
+      label: `${d.getUTCDate()} ${THAI_MONTH_SHORT[d.getUTCMonth()]}`,
+      present,
+      late,
+      absent,
+      leave: onLeaveEmployeeIds.size,
+      otHours: Math.round((otByDate.get(key) ?? 0) * 10) / 10,
+    });
+  }
+
+  return points;
+}
+
+export interface DepartmentWatchRow {
+  name: string;
+  count: number;
+}
+
+/**
+ * "Which departments need attention" — late + absent occurrences per
+ * department over the last `days` days, descending. Reuses the same absence
+ * derivation as `getAttendanceTrend` but bucketed by department instead of
+ * by day, so HR gets a ranked list to focus on instead of just a companywide
+ * trend line.
+ */
+export async function getDepartmentWatchlist(companyId: string, days = 30): Promise<DepartmentWatchRow[]> {
+  const DAY_MS = 86_400_000;
+  const now = new Date();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const start = new Date(end.getTime() - days * DAY_MS);
+
+  const [employees, records, holidays, leaves] = await Promise.all([
+    prisma.employee.findMany({
+      where: { companyId, deletedAt: null, status: "ACTIVE" },
+      select: { id: true, departmentId: true, department: { select: { name: true } } },
+    }),
+    prisma.attendanceRecord.findMany({
+      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end } },
+      select: { workDate: true, status: true, clockInAt: true, employeeId: true },
+    }),
+    prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
+    prisma.leaveRequest.findMany({
+      where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start } },
+      select: { startDate: true, endDate: true, employeeId: true },
+    }),
+  ]);
+
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const holidaySet = new Set(holidays.map((h) => iso(h.date)));
+  const deptById = new Map(employees.map((e) => [e.id, e.department?.name ?? "ไม่ระบุแผนก"]));
+
+  const recordsByEmployeeDay = new Map<string, { status: string; clockInAt: Date | null }>();
+  for (const r of records) {
+    recordsByEmployeeDay.set(`${r.employeeId}|${iso(r.workDate)}`, r);
+  }
+  const leavesByEmployee = new Map<string, { startDate: Date; endDate: Date }[]>();
+  for (const l of leaves) {
+    const list = leavesByEmployee.get(l.employeeId) ?? [];
+    list.push(l);
+    leavesByEmployee.set(l.employeeId, list);
+  }
+
+  const scoreByDept = new Map<string, number>();
+  for (const emp of employees) {
+    const deptName = deptById.get(emp.id) ?? "ไม่ระบุแผนก";
+    const myLeaves = leavesByEmployee.get(emp.id) ?? [];
+    for (let d = new Date(start); d.getTime() < end.getTime(); d = new Date(d.getTime() + DAY_MS)) {
+      const dow = d.getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      const key = iso(d);
+      if (holidaySet.has(key)) continue;
+      const onLeave = myLeaves.some((l) => l.startDate.getTime() <= d.getTime() && l.endDate.getTime() >= d.getTime());
+      if (onLeave) continue;
+      const rec = recordsByEmployeeDay.get(`${emp.id}|${key}`);
+      if (!rec?.clockInAt) {
+        scoreByDept.set(deptName, (scoreByDept.get(deptName) ?? 0) + 1); // absent
+      } else if (rec.status === "LATE") {
+        scoreByDept.set(deptName, (scoreByDept.get(deptName) ?? 0) + 1); // late
+      }
+    }
+  }
+
+  return [...scoreByDept.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .filter((r) => r.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+}

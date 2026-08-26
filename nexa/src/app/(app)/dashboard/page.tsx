@@ -20,18 +20,28 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getDashboardSummary, getActionCenter, getMySnapshot, type LeaveBalanceSummary } from "@/features/dashboard/service";
+import {
+  getDashboardSummary,
+  getActionCenter,
+  getMySnapshot,
+  getAttendanceTrend,
+  getDepartmentWatchlist,
+  type LeaveBalanceSummary,
+} from "@/features/dashboard/service";
 import { ActionCenter } from "@/features/dashboard/action-center";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
+  AttendanceTrendChart,
   DepartmentDonut,
   DonutLegend,
   HeadcountBar,
 } from "@/features/dashboard/dashboard-charts";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
 import { QuickAccessGrid, type QuickAccessItem } from "@/features/dashboard/quick-access-grid";
-import { fullName } from "@/lib/format";
+import { fullName, loginIdentifier } from "@/lib/format";
+import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
+import type { EmploymentType } from "@/features/employee/types";
 import { cn } from "@/lib/utils";
 import { can } from "@/lib/auth/rbac";
 
@@ -166,12 +176,21 @@ export default async function DashboardPage() {
     getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles),
     user!.employee ? getMySnapshot(user!.companyId, user!.employee.id) : Promise.resolve(null),
   ]);
+  // Sequential, not folded into the Promise.all above — the pooled
+  // connection (pgbouncer, connection_limit=1) chokes if too many Prisma
+  // calls race at once; the existing 3-way Promise.all was already right at
+  // the edge, these two heavier day-by-day aggregations tip it over.
+  const attendanceTrend = await getAttendanceTrend(user!.companyId);
+  const departmentWatchlist = await getDepartmentWatchlist(user!.companyId);
 
-  const name = user?.employee ? fullName(user.employee.firstName, user.employee.lastName) : user?.email;
+  const name = user?.employee ? fullName(user.employee.firstName, user.employee.lastName) : loginIdentifier(user ?? {});
   const fmtClock = (iso: string | null) =>
     iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
   const quickAccessItems = ALL_QUICK_ACCESS.filter((item) => can(user!.permissions, item.permission));
   const departmentDonutData = groupTopDepartments(s.byDepartment);
+  const employmentTypeDonutData = groupTopDepartments(
+    s.byEmploymentType.map((r) => ({ name: EMPLOYMENT_LABEL[r.type as EmploymentType] ?? r.type, count: r.count })),
+  );
 
   return (
     <>
@@ -268,6 +287,43 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <HeadcountBar data={s.byDepartment} />
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Attendance/leave/OT trend — "จุดสังเกต" for HR: a late/absent spike
+          or a leave cluster over the last few weeks reads at a glance. */}
+      <Card>
+        <CardHeader>
+          <CardTitle>แนวโน้มการเข้างาน 14 วันทำการล่าสุด</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AttendanceTrendChart data={attendanceTrend} />
+        </CardContent>
+      </Card>
+
+      {/* Employee-type breakdown + department watchlist */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>สัดส่วนพนักงานตามประเภทการจ้าง</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <DepartmentDonut data={employmentTypeDonutData} />
+            <DonutLegend data={employmentTypeDonutData} />
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>แผนกที่ควรติดตาม (ขาด/สาย สะสม 30 วัน)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {departmentWatchlist.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">ไม่มีแผนกที่ต้องติดตามในช่วงนี้ 👍</p>
+            ) : (
+              <HeadcountBar data={departmentWatchlist} />
+            )}
           </CardContent>
         </Card>
       </section>
