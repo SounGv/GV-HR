@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Search, ArrowRight, User } from "lucide-react";
 
 import {
   Command,
-  CommandDialog,
   CommandInput,
   CommandList,
   CommandEmpty,
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { NAV_GROUPS } from "@/config/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { fetchEmployees } from "@/features/employee/api";
@@ -22,6 +22,7 @@ type FlatNav = { label: string; href: string; group: string; icon: React.Element
 
 export function CommandPalette() {
   const router = useRouter();
+  const pathname = usePathname();
   const { can } = useAuth();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -76,37 +77,46 @@ export function CommandPalette() {
     router.push(href);
   };
 
+  // On the reports page, picking an employee should search *within* the
+  // report you're already looking at (apply it as the report's own
+  // employee filter) instead of navigating you away to their profile —
+  // ReportView reads this same "employeeId" param on mount, mirroring how
+  // it already reads "view" for deep-linked report types.
+  const goToEmployee = (id: string) => {
+    setOpen(false);
+    if (pathname?.startsWith("/reports")) {
+      router.push(`/reports?employeeId=${id}`);
+    } else {
+      router.push(`/employees/${id}`);
+    }
+  };
+
   return (
-    <>
-      {/* Trigger — matches the topbar search field styling */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="group hidden h-9 w-full max-w-md items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 text-sm text-muted-foreground transition hover:border-primary/40 hover:bg-muted/60 md:flex"
+    <Popover open={open} onOpenChange={setOpen}>
+      {/* Single trigger element, always mounted (never display:none) so the
+       * popover has a real anchor at every breakpoint — its visible content
+       * just reflows responsively instead of swapping between two buttons. */}
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            aria-label="ค้นหา"
+            className="flex h-9 w-9 items-center justify-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-0 text-sm text-muted-foreground transition hover:border-primary/40 hover:bg-muted/60 md:w-full md:max-w-md md:justify-start md:px-3"
+          />
+        }
       >
         <Search className="size-4 shrink-0" />
-        <span className="flex-1 text-left">ค้นหาเมนู, พนักงาน, รายงาน…</span>
+        <span className="hidden flex-1 text-left md:inline">ค้นหาเมนู, พนักงาน, รายงาน…</span>
         <kbd className="hidden items-center gap-0.5 rounded-md border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground lg:inline-flex">
           Ctrl K
         </kbd>
-      </button>
+      </PopoverTrigger>
 
-      {/* Compact icon trigger for small screens */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="ค้นหา"
-        className="flex size-9 items-center justify-center rounded-xl border border-border/70 bg-muted/40 text-muted-foreground transition hover:bg-muted/60 md:hidden"
-      >
-        <Search className="size-4" />
-      </button>
-
-      <CommandDialog
-        open={open}
-        onOpenChange={setOpen}
-        title="ค้นหา"
-        description="ค้นหาเมนูและพนักงาน"
-        className="sm:max-w-lg"
+      <PopoverContent
+        align="start"
+        side="bottom"
+        sideOffset={6}
+        className="w-[min(440px,calc(100vw-2rem))] max-h-[70vh] overflow-hidden p-0"
       >
         <Command shouldFilter={false}>
           <CommandInput placeholder="ค้นหาเมนู, พนักงาน…" value={query} onValueChange={setQuery} autoFocus />
@@ -130,7 +140,7 @@ export function CommandPalette() {
             {employees.length > 0 && (
               <CommandGroup heading="พนักงาน">
                 {employees.map((e) => (
-                  <CommandItem key={e.id} value={`emp-${e.id}`} onSelect={() => go(`/employees/${e.id}`)}>
+                  <CommandItem key={e.id} value={`emp-${e.id}`} onSelect={() => goToEmployee(e.id)}>
                     <User className="text-muted-foreground" />
                     <span>
                       {e.firstName} {e.lastName}
@@ -148,7 +158,7 @@ export function CommandPalette() {
             )}
           </CommandList>
         </Command>
-      </CommandDialog>
-    </>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Download, FileSpreadsheet, Printer, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -119,7 +119,20 @@ export function ReportView() {
   const [to, setTo] = useState<string>(todayStr());
   const [departmentId, setDepartmentId] = useState<string>(ALL_DEPT);
   const [employmentType, setEmploymentType] = useState<string>(ALL_TYPE);
-  const [employeeId, setEmployeeId] = useState<string>(ALL_EMPLOYEE);
+  // Same deep-link convention as "view" above — the command palette's
+  // employee search links here with ?employeeId= when you're already on
+  // the reports page, so picking a person filters the current report
+  // instead of navigating away to their profile.
+  const initialEmployeeId = searchParams.get("employeeId");
+  const [employeeId, setEmployeeId] = useState<string>(initialEmployeeId ?? ALL_EMPLOYEE);
+  // useState's initializer only runs on first mount — if you're already on
+  // /reports and the palette pushes a new ?employeeId= without a full
+  // remount (same route, just a query-string change), pick that up too.
+  useEffect(() => {
+    const urlEmployeeId = searchParams.get("employeeId");
+    if (urlEmployeeId) setEmployeeId(urlEmployeeId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [branchId, setBranchId] = useState<string>(ALL_BRANCH);
   const [costCenterId, setCostCenterId] = useState<string>(ALL_COST_CENTER);
   const [aiOpen, setAiOpen] = useState(false);
