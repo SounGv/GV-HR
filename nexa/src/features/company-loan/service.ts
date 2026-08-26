@@ -298,6 +298,86 @@ export async function markLoanPaid(companyId: string, session: AccessClaims, id:
   return serialize(record);
 }
 
+export interface PayrollLoanInstallment {
+  loanId: string;
+  installment: number;
+}
+
+/**
+ * This period's loan installment per employee, for every outstanding
+ * (status PAID, not yet fully repaid) loan — amount / installmentCount,
+ * capped to whatever's actually left owing so the final installment can't
+ * overshoot. Feeds payroll/service.ts's generatePayroll() so loan repayment
+ * is deducted automatically every run instead of HR retyping an amount by
+ * hand each period. An employee can have more than one outstanding loan
+ * (e.g. a prior year's loan still repaying when a new one is approved) — all
+ * are summed for display but tracked separately so applyPayrollLoanInstallments
+ * can credit the right loan(s).
+ */
+export async function getOutstandingLoansForPayroll(
+  companyId: string,
+  employeeIds: string[],
+): Promise<Map<string, PayrollLoanInstallment[]>> {
+  if (employeeIds.length === 0) return new Map();
+  const loans = await prisma.companyLoanRequest.findMany({
+    where: { companyId, deletedAt: null, employeeId: { in: employeeIds }, status: "PAID" },
+    select: { id: true, employeeId: true, amount: true, repaidAmount: true, installmentCount: true },
+  });
+  const map = new Map<string, PayrollLoanInstallment[]>();
+  for (const l of loans) {
+    const remaining = Number(l.amount) - Number(l.repaidAmount);
+    if (remaining <= 0) continue;
+    const perInstallment = Math.round(Number(l.amount) / Math.max(1, l.installmentCount));
+    const installment = Math.min(perInstallment, remaining);
+    if (installment <= 0) continue;
+    const list = map.get(l.employeeId) ?? [];
+    list.push({ loanId: l.id, installment });
+    map.set(l.employeeId, list);
+  }
+  return map;
+}
+
+export function sumInstallments(list: PayrollLoanInstallment[] | undefined): number {
+  return (list ?? []).reduce((s, x) => s + x.installment, 0);
+}
+
+/**
+ * Credits each installment against its loan's repaidAmount — called once a
+ * payslip that included these installments is actually marked PAID (see
+ * payroll/service.ts's markPaid()), never at draft-generate time, so a
+ * regenerated-but-still-DRAFT payslip never double-credits a repayment.
+ * Sequential, not Promise.all — same pooled-connection reasoning used
+ * elsewhere in this codebase (connection_limit=1).
+ */
+export async function applyPayrollLoanInstallments(
+  companyId: string,
+  session: AccessClaims,
+  installments: PayrollLoanInstallment[],
+  meta?: Meta,
+): Promise<void> {
+  for (const { loanId, installment } of installments) {
+    const loan = await prisma.companyLoanRequest.findFirst({
+      where: { id: loanId, companyId, deletedAt: null },
+      select: { repaidAmount: true },
+    });
+    if (!loan) continue;
+    const newRepaid = Number(loan.repaidAmount) + installment;
+    await prisma.companyLoanRequest.update({
+      where: { id: loanId },
+      data: { repaidAmount: new Prisma.Decimal(newRepaid), updatedById: session.sub },
+    });
+    await writeAudit({
+      companyId,
+      actorUserId: session.sub,
+      action: "loan.repay",
+      entity: "CompanyLoanRequest",
+      entityId: loanId,
+      after: { amount: installment, source: "payroll" },
+      ...meta,
+    });
+  }
+}
+
 /** Finance/HR records a repayment against a disbursed loan — a running
  * total only (repaidAmount), not a full installment ledger; see the model's
  * own doc comment for why. */

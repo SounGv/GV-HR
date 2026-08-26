@@ -8,6 +8,11 @@ import { sendEmail } from "@/lib/email";
 import { getCompanyProfile } from "@/features/company/service";
 import { computePayroll, periodLabel, type LineItem, type TaxDeductionInputs } from "./calc";
 import { renderPayslipEmailHtml } from "./payslip-email";
+import {
+  getOutstandingLoansForPayroll,
+  sumInstallments,
+  applyPayrollLoanInstallments,
+} from "@/features/company-loan/service";
 import type { PayrollAdjustInput, PayrollListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -152,18 +157,27 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 /**
  * Per-employee absence/lateness for MONTHLY employees over [from, to),
  * mirroring the day-status derivation already used by the "my calendar"
- * view (features/calendar/service.ts): a Mon–Fri day counts as absent only
+ * view (features/calendar/service.ts): a Mon–Fri day is a candidate only
  * if it isn't a company holiday, isn't covered by any APPROVED leave
- * (any type), and has no clock-in at all. Lateness reuses the AttendanceRecord
- * "LATE" status already set at clock-in time (lib/datetime.ts) rather than
- * re-deriving it against shift times here.
+ * (any type), and isn't still in the future. Lateness reuses the
+ * AttendanceRecord "LATE" status already set at clock-in time
+ * (lib/datetime.ts) rather than re-deriving it against shift times here.
+ *
+ * A day with no AttendanceRecord at all is NOT auto-counted as an absence —
+ * there is no confirmed-absent signal anywhere in this app today; "no
+ * record" only ever means nobody's clocked in yet or the punch was never
+ * imported. Treating that as absence auto-deducted real pay for a day HR
+ * never actually reviewed. Those days land in `pendingReviewDays` instead
+ * (zero deduction) so payroll/reports can flag them for a human to check —
+ * confirming a genuine unexcused absence, if HR wants it deducted, still
+ * goes through the existing manual extraDeductions adjustment.
  */
 async function getAbsenceAndLateByEmployee(
   companyId: string,
   from: Date,
   to: Date,
   employeeIds: string[],
-): Promise<Map<string, { absentDays: number; lateOccurrences: number }>> {
+): Promise<Map<string, { absentDays: number; pendingReviewDays: number; lateOccurrences: number }>> {
   const [holidays, leaves, records] = [
     await prisma.holiday.findMany({
       where: { companyId, deletedAt: null, date: { gte: from, lt: to } },
@@ -194,26 +208,31 @@ async function getAbsenceAndLateByEmployee(
     leavesByEmployee.set(l.employeeId, list);
   }
   const recordByKey = new Map(records.map((r) => [`${r.employeeId}|${iso(r.workDate)}`, r]));
+  const todayIso = iso(new Date());
 
-  const result = new Map<string, { absentDays: number; lateOccurrences: number }>();
+  const result = new Map<string, { absentDays: number; pendingReviewDays: number; lateOccurrences: number }>();
   for (const employeeId of employeeIds) {
     const myLeaves = leavesByEmployee.get(employeeId) ?? [];
-    let absentDays = 0;
+    let pendingReviewDays = 0;
     let lateOccurrences = 0;
     for (let cur = new Date(from); cur.getTime() < to.getTime(); cur = new Date(cur.getTime() + DAY_MS)) {
+      const curIso = iso(cur);
+      if (curIso > todayIso) continue; // hasn't happened yet — not absent, not pending
       const weekday = cur.getUTCDay();
       if (weekday === 0 || weekday === 6) continue; // weekend
-      if (holidaySet.has(iso(cur))) continue;
+      if (holidaySet.has(curIso)) continue;
       const onLeave = myLeaves.some((l) => l.startDate.getTime() <= cur.getTime() && cur.getTime() <= l.endDate.getTime());
       if (onLeave) continue;
-      const rec = recordByKey.get(`${employeeId}|${iso(cur)}`);
+      const rec = recordByKey.get(`${employeeId}|${curIso}`);
       if (!rec?.clockInAt) {
-        absentDays += 1;
+        pendingReviewDays += 1;
       } else if (rec.status === "LATE") {
         lateOccurrences += 1;
       }
     }
-    result.set(employeeId, { absentDays, lateOccurrences });
+    // absentDays stays 0 automatically — no code path today confirms a real
+    // unexcused absence; see doc comment above.
+    result.set(employeeId, { absentDays: 0, pendingReviewDays, lateOccurrences });
   }
   return result;
 }
@@ -325,12 +344,16 @@ export async function generatePayroll(
   const label = periodLabel(period);
 
   // Auto-include approved overtime for the period into each payslip.
+  // paidAt: null excludes OT already credited to a payslip that's since been
+  // marked PAID — belt-and-suspenders alongside the existing "never
+  // recompute a PAID payslip" guard below (see markPaid() for where paidAt
+  // gets stamped).
   const [y, m] = period.split("-").map(Number);
   const from = new Date(Date.UTC(y, m - 1, 1));
   const to = new Date(Date.UTC(y, m, 1));
   const otAgg = await prisma.overtimeRequest.groupBy({
     by: ["employeeId"],
-    where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: from, lt: to } },
+    where: { companyId, deletedAt: null, status: "APPROVED", paidAt: null, date: { gte: from, lt: to } },
     _sum: { estimatedAmount: true },
   });
   const otMap = new Map(otAgg.map((o) => [o.employeeId, o._sum.estimatedAmount ?? 0]));
@@ -347,7 +370,11 @@ export async function generatePayroll(
   const absenceMap =
     attendancePolicy?.attendanceDeductionEnabled && monthlyIds.length > 0
       ? await getAbsenceAndLateByEmployee(companyId, from, to, monthlyIds)
-      : new Map<string, { absentDays: number; lateOccurrences: number }>();
+      : new Map<string, { absentDays: number; pendingReviewDays: number; lateOccurrences: number }>();
+  // Auto-deduct this period's loan installment for anyone with an
+  // outstanding company loan — see company-loan/service.ts's
+  // getOutstandingLoansForPayroll() doc comment.
+  const loanMap = await getOutstandingLoansForPayroll(companyId, employees.map((e) => e.id));
 
   // Existing records for this period — read so a re-generate (e.g. after new
   // OT gets approved) never wipes HR's manual adjustments, and never touches
@@ -374,8 +401,10 @@ export async function generatePayroll(
       // base pay already excludes unworked days/hours by construction.
       unpaidLeaveDays: isMonthly ? unpaidLeaveMap.get(emp.id) ?? 0 : 0,
       absentDays: absenceMap.get(emp.id)?.absentDays ?? 0,
+      pendingReviewDays: absenceMap.get(emp.id)?.pendingReviewDays ?? 0,
       lateOccurrences: absenceMap.get(emp.id)?.lateOccurrences ?? 0,
       lateDeductionPerOccurrence: Number(attendancePolicy?.lateDeductionPerOccurrence ?? 0),
+      loan: sumInstallments(loanMap.get(emp.id)),
       extraEarnings: adj.earnings,
       extraDeductions: adj.deductions,
       taxDeductions: toTaxDeductions(emp),
@@ -626,7 +655,7 @@ export async function markPaid(
 ) {
   const record = await prisma.payrollRecord.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, status: true },
+    select: { id: true, status: true, employeeId: true, period: true },
   });
   if (!record) throw NotFound("ไม่พบสลิปเงินเดือน");
   if (record.status === "PAID") throw BadRequest("รายการนี้จ่ายแล้ว");
@@ -636,6 +665,23 @@ export async function markPaid(
     data: { status: "PAID", paidAt: new Date(), updatedById: session.sub },
     select: recordWithEmployeeSelect,
   });
+
+  // Finalize the two auto-computed lines this payslip pulled in live at
+  // generate time — from here on they're locked in as actually paid, so a
+  // later payroll run for a different period can't pull the same OT/loan
+  // installment in again.
+  const [y, m] = record.period.split("-").map(Number);
+  const from = new Date(Date.UTC(y, m - 1, 1));
+  const to = new Date(Date.UTC(y, m, 1));
+  await prisma.overtimeRequest.updateMany({
+    where: { companyId, employeeId: record.employeeId, status: "APPROVED", paidAt: null, date: { gte: from, lt: to } },
+    data: { paidAt: new Date() },
+  });
+  const loanMap = await getOutstandingLoansForPayroll(companyId, [record.employeeId]);
+  const installments = loanMap.get(record.employeeId);
+  if (installments?.length) {
+    await applyPayrollLoanInstallments(companyId, session, installments, meta);
+  }
 
   await writeAudit({
     companyId,

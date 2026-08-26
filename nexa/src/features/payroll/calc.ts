@@ -49,7 +49,16 @@ export interface PayrollInput {
   // them — detected by the caller from attendance + shift + leave records.
   // Same day-rate deduction as unpaid leave, but shown as its own line so
   // HR can tell "approved unpaid leave" apart from "just didn't show up".
+  // Currently always 0 from every real caller — no code path confirms a
+  // genuine unexcused absence today (see pendingReviewDays below). Kept as
+  // a distinct input so a future "HR confirms this day as absent" review
+  // action has somewhere real to feed into.
   absentDays?: number;
+  // Workdays with no clock-in, no approved leave, AND no confirmed-absent
+  // decision yet — i.e. "we don't know what happened." NOT deducted (amount
+  // stays 0); shown as an informational line so HR sees it needs review
+  // instead of it silently vanishing or silently costing the employee pay.
+  pendingReviewDays?: number;
   // Count of workdays clocked in later than the expected start + grace —
   // deducted at the company's configured flat rate per occurrence.
   lateOccurrences?: number;
@@ -115,6 +124,7 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const unpaidLeaveDeduction = Math.round((salary / 30) * unpaidLeaveDays);
   const absentDays = Math.max(0, input.absentDays ?? 0);
   const absenceDeduction = Math.round((salary / 30) * absentDays);
+  const pendingReviewDays = Math.max(0, input.pendingReviewDays ?? 0);
   const lateOccurrences = Math.max(0, input.lateOccurrences ?? 0);
   const lateDeduction = Math.round(lateOccurrences * (input.lateDeductionPerOccurrence ?? 0));
 
@@ -159,6 +169,9 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   if (advance) deductions.push({ label: "หักเบิกล่วงหน้า", amount: advance });
   if (unpaidLeaveDeduction) deductions.push({ label: "หักลาไม่รับค่าจ้าง", amount: unpaidLeaveDeduction });
   if (absenceDeduction) deductions.push({ label: `หักขาดงาน (${absentDays} วัน)`, amount: absenceDeduction });
+  if (pendingReviewDays) {
+    deductions.push({ label: `รอตรวจสอบเวลาเข้า-ออก (${pendingReviewDays} วัน) — ยังไม่หักเงิน`, amount: 0 });
+  }
   if (lateDeduction) deductions.push({ label: `หักมาสาย (${lateOccurrences} ครั้ง)`, amount: lateDeduction });
   for (const d of input.extraDeductions ?? []) {
     if (d.amount) deductions.push({ label: d.label, amount: Math.round(d.amount) });

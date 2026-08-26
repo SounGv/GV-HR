@@ -1865,6 +1865,13 @@ model OvertimeRequest {
   decidedAt          DateTime?
   decisionNote       String?
 
+  // Set once this request's estimatedAmount has actually been included in a
+  // payroll run that was marked PAID (payroll/service.ts's markPaid) — lets
+  // generatePayroll tell "already paid out" apart from "approved, awaiting
+  // payroll" so re-running/regenerating payroll never double-deducts the
+  // same OT twice.
+  paidAt DateTime?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   createdById String?

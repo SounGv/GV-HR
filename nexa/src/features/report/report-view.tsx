@@ -92,6 +92,11 @@ function reportToPrompt(label: string, result: ReportResult): string {
 export function ReportView() {
   const { can } = useAuth();
   const canExport = can("report:export");
+  // Payroll figures are more sensitive than plain report:read implies — hide
+  // the option entirely rather than let someone pick it and hit a 403 (the
+  // API enforces the same payroll:read gate independently, see
+  // src/app/api/reports/route.ts's TYPE_PERMISSION).
+  const visibleReportTypes = REPORT_TYPES.filter((t) => t !== "payroll" || can("payroll:read"));
   const { data: aiAccess } = useAiAccess();
   const canAi = !!aiAccess?.data.allowed;
 
@@ -197,7 +202,7 @@ export function ReportView() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
-                {REPORT_TYPES.map((t) => (
+                {visibleReportTypes.map((t) => (
                   <SelectItem key={t} value={t}>
                     {REPORT_LABELS[t]}
                   </SelectItem>
