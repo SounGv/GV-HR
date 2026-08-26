@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { EMPLOYMENT_TYPES } from "@/features/employee/schema";
 
 export const REPORT_TYPES = [
   "employees",
@@ -54,6 +55,7 @@ export const reportQuerySchema = z.object({
   from: dateStr.optional(),
   to: dateStr.optional(),
   departmentId: z.string().uuid().optional(),
+  employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
 });
 /**
  * `employeeWhere` is intentionally NOT part of `reportQuerySchema` (never

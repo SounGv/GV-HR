@@ -92,6 +92,7 @@ export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
 export const employeeListQuerySchema = listQuerySchema.extend({
   departmentId: optional(z.string().uuid()),
   status: optional(z.enum(EMPLOYEE_STATUSES)),
+  employmentType: optional(z.enum(EMPLOYMENT_TYPES)),
 });
 export type EmployeeListQuery = z.infer<typeof employeeListQuerySchema>;
 

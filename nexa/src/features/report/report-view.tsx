@@ -39,6 +39,9 @@ import {
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
+import { EMPLOYMENT_TYPES } from "@/features/employee/schema";
+import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
+import type { EmploymentType } from "@/features/employee/types";
 import { sendChat } from "@/features/ai/api";
 import { useAiAccess } from "@/features/ai/hooks";
 import { cn } from "@/lib/utils";
@@ -49,6 +52,7 @@ import { ReportSummaryChart } from "./report-summary-chart";
 import type { ReportResult } from "./types";
 
 const ALL_DEPT = "ALL";
+const ALL_TYPE = "ALL";
 function firstOfMonth(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
@@ -102,6 +106,7 @@ export function ReportView() {
   const [from, setFrom] = useState<string>(firstOfMonth());
   const [to, setTo] = useState<string>(todayStr());
   const [departmentId, setDepartmentId] = useState<string>(ALL_DEPT);
+  const [employmentType, setEmploymentType] = useState<string>(ALL_TYPE);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState("");
@@ -114,6 +119,7 @@ export function ReportView() {
     from,
     to,
     departmentId: departmentId === ALL_DEPT ? undefined : departmentId,
+    employmentType: employmentType === ALL_TYPE ? undefined : employmentType,
   });
   const result = data?.data;
 
@@ -184,7 +190,7 @@ export function ReportView() {
               <SelectTrigger className="w-[200px]">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent alignItemWithTrigger={false}>
                 {REPORT_TYPES.map((t) => (
                   <SelectItem key={t} value={t}>
                     {REPORT_LABELS[t]}
@@ -208,11 +214,27 @@ export function ReportView() {
               <SelectTrigger className="w-[170px]">
                 <SelectValue placeholder="ทุกแผนก" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent alignItemWithTrigger={false}>
                 <SelectItem value={ALL_DEPT}>ทุกแผนก</SelectItem>
                 {departments.map((d) => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">ประเภทการจ้าง</label>
+            <Select value={employmentType} onValueChange={(v) => setEmploymentType(v ?? ALL_TYPE)}>
+              <SelectTrigger className="w-[170px]">
+                <SelectValue placeholder="ทุกประเภท" />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectItem value={ALL_TYPE}>ทุกประเภท</SelectItem>
+                {EMPLOYMENT_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {EMPLOYMENT_LABEL[t as EmploymentType]}
                   </SelectItem>
                 ))}
               </SelectContent>

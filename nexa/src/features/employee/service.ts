@@ -95,6 +95,7 @@ export async function listEmployees(companyId: string, query: EmployeeListQuery,
     ...(scope ?? {}),
     ...(query.status ? { status: query.status } : {}),
     ...(query.departmentId ? { departmentId: query.departmentId } : {}),
+    ...(query.employmentType ? { employmentType: query.employmentType } : {}),
     ...(query.search
       ? {
           OR: [

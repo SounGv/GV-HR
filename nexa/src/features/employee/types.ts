@@ -116,6 +116,7 @@ export interface EmployeeQuery {
   sortDir?: "asc" | "desc";
   departmentId?: string;
   status?: EmployeeStatus;
+  employmentType?: EmploymentType;
 }
 
 export interface OrgOptions {

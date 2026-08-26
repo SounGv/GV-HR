@@ -24,9 +24,9 @@ import { toCsv, downloadCsv } from "@/lib/csv";
 import { fetchEmployees } from "./api";
 import { getEmployeeColumns } from "./employee-columns";
 import { useEmployees, useOrgOptions, useDeleteEmployee } from "./hooks";
-import { EMPLOYEE_STATUSES } from "./schema";
+import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES } from "./schema";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "./labels";
-import type { EmployeeListItem, EmployeeQuery, EmployeeStatus } from "./types";
+import type { EmployeeListItem, EmployeeQuery, EmployeeStatus, EmploymentType } from "./types";
 
 const EXPORT_COLUMNS = [
   { key: "employeeCode", label: "รหัสพนักงาน" },
@@ -71,6 +71,7 @@ export function EmployeeTable() {
   const [search, setSearch] = useState("");
   const [departmentId, setDepartmentId] = useState<string>(ALL);
   const [status, setStatus] = useState<string>(ALL);
+  const [employmentType, setEmploymentType] = useState<string>(ALL);
   const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -90,10 +91,11 @@ export function EmployeeTable() {
       search: search || undefined,
       departmentId: departmentId === ALL ? undefined : departmentId,
       status: status === ALL ? undefined : (status as EmployeeStatus),
+      employmentType: employmentType === ALL ? undefined : (employmentType as EmploymentType),
       sortBy: sorting[0]?.id,
       sortDir: sorting[0] ? ((sorting[0].desc ? "desc" : "asc") as "asc" | "desc") : undefined,
     }),
-    [page, search, departmentId, status, sorting],
+    [page, search, departmentId, status, employmentType, sorting],
   );
 
   const { data, isLoading, isError, refetch, isFetching } = useEmployees(query);
@@ -167,7 +169,7 @@ export function EmployeeTable() {
         <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="ทุกแผนก" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent alignItemWithTrigger={false}>
           <SelectItem value={ALL}>ทุกแผนก</SelectItem>
           {(orgData?.data.departments ?? []).map((d) => (
             <SelectItem key={d.id} value={d.id}>
@@ -187,11 +189,31 @@ export function EmployeeTable() {
         <SelectTrigger className="w-[150px]">
           <SelectValue placeholder="ทุกสถานะ" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent alignItemWithTrigger={false}>
           <SelectItem value={ALL}>ทุกสถานะ</SelectItem>
           {EMPLOYEE_STATUSES.map((s) => (
             <SelectItem key={s} value={s}>
               {STATUS_LABEL[s]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={employmentType}
+        onValueChange={(v) => {
+          setEmploymentType(v ?? ALL);
+          setPage(1);
+        }}
+      >
+        <SelectTrigger className="w-[160px]">
+          <SelectValue placeholder="ทุกประเภทการจ้าง" />
+        </SelectTrigger>
+        <SelectContent alignItemWithTrigger={false}>
+          <SelectItem value={ALL}>ทุกประเภทการจ้าง</SelectItem>
+          {EMPLOYMENT_TYPES.map((t) => (
+            <SelectItem key={t} value={t}>
+              {EMPLOYMENT_LABEL[t]}
             </SelectItem>
           ))}
         </SelectContent>
