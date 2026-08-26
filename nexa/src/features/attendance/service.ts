@@ -5,6 +5,7 @@ import { AppError, BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import { checkGeofence } from "@/lib/geo";
 import { can } from "@/lib/auth/rbac";
 import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
+import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { AttendanceListQuery, ClockInput } from "./schema";
 
@@ -186,7 +187,8 @@ export async function clockIn(
   });
   if (existing?.clockInAt) throw Conflict("คุณได้เช็คอินแล้ววันนี้");
 
-  const status = lateOrPresent(bp.minutesOfDay);
+  const shift = await resolveShiftMinutes(employeeId, workDate);
+  const status = lateOrPresent(bp.minutesOfDay, shift.startMin);
 
   const record = await prisma.attendanceRecord.upsert({
     where: { employeeId_workDate: { employeeId, workDate } },
@@ -258,6 +260,8 @@ export async function clockOut(
   if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
   if (existing.clockOutAt) throw Conflict("คุณได้เช็คเอาท์แล้ววันนี้");
 
+  const shift = await resolveShiftMinutes(employeeId, dateUTC);
+
   let qrVerified = false;
   if (input.qrBranchId) {
     if (input.qrBranchId !== employee.branch?.id) {
@@ -301,7 +305,7 @@ export async function clockOut(
       clockOutDevice: input.device ?? null,
       clockOutViaQr: qrVerified,
       moodOut: input.mood ?? undefined,
-      earlyLeaveOut: isEarlyLeave(bp.minutesOfDay),
+      earlyLeaveOut: isEarlyLeave(bp.minutesOfDay, shift.endMin),
       updatedById: session.sub,
     },
     select: recordSelect,

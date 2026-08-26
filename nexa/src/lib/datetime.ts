@@ -54,12 +54,20 @@ export function bangkokParts(now: Date = new Date()): BangkokParts {
   };
 }
 
-/** PRESENT if clocked in by the shift start (+grace), otherwise LATE. */
-export function lateOrPresent(clockInMinutesOfDay: number): "PRESENT" | "LATE" {
-  return clockInMinutesOfDay > SHIFT_START_MIN + LATE_GRACE_MIN ? "LATE" : "PRESENT";
+/**
+ * PRESENT if clocked in by the shift start (+grace), otherwise LATE.
+ * `shiftStartMin` defaults to the company-wide 09:00 fallback — pass the
+ * employee's real shift start (see lib/attendance-shift.ts) when one exists.
+ */
+export function lateOrPresent(clockInMinutesOfDay: number, shiftStartMin: number = SHIFT_START_MIN): "PRESENT" | "LATE" {
+  return clockInMinutesOfDay > shiftStartMin + LATE_GRACE_MIN ? "LATE" : "PRESENT";
 }
 
-/** True if clocked out before the shift end (-grace). */
-export function isEarlyLeave(clockOutMinutesOfDay: number): boolean {
-  return clockOutMinutesOfDay < SHIFT_END_MIN - EARLY_LEAVE_GRACE_MIN;
+/**
+ * True if clocked out before the shift end (-grace). `shiftEndMin` defaults
+ * to the company-wide 18:00 fallback — pass the employee's real shift end
+ * (see lib/attendance-shift.ts) when one exists.
+ */
+export function isEarlyLeave(clockOutMinutesOfDay: number, shiftEndMin: number = SHIFT_END_MIN): boolean {
+  return clockOutMinutesOfDay < shiftEndMin - EARLY_LEAVE_GRACE_MIN;
 }

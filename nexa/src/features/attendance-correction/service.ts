@@ -4,6 +4,7 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
+import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
   AttendanceCorrectionCreateInput,
@@ -172,6 +173,7 @@ export async function decideAttendanceCorrection(
   }
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
+  const shift = input.action === "approve" ? await resolveShiftMinutes(req.employeeId, req.workDate) : null;
 
   const record = await prisma.$transaction(async (tx) => {
     const rec = await tx.attendanceCorrectionRequest.update({
@@ -198,8 +200,8 @@ export async function decideAttendanceCorrection(
           workDate: req.workDate,
           clockInAt: req.requestedClockIn,
           clockOutAt: req.requestedClockOut,
-          status: clockInMinutes != null ? lateOrPresent(clockInMinutes) : "PRESENT",
-          earlyLeaveOut: clockOutMinutes != null ? isEarlyLeave(clockOutMinutes) : false,
+          status: clockInMinutes != null ? lateOrPresent(clockInMinutes, shift!.startMin) : "PRESENT",
+          earlyLeaveOut: clockOutMinutes != null ? isEarlyLeave(clockOutMinutes, shift!.endMin) : false,
           note: "แก้ไขเวลาโดยการอนุมัติคำขอแก้ไขเวลาเข้า-ออกงาน",
           createdById: session.sub,
           updatedById: session.sub,
@@ -207,8 +209,8 @@ export async function decideAttendanceCorrection(
         update: {
           ...(req.requestedClockIn ? { clockInAt: req.requestedClockIn } : {}),
           ...(req.requestedClockOut ? { clockOutAt: req.requestedClockOut } : {}),
-          ...(clockInMinutes != null ? { status: lateOrPresent(clockInMinutes) } : {}),
-          ...(clockOutMinutes != null ? { earlyLeaveOut: isEarlyLeave(clockOutMinutes) } : {}),
+          ...(clockInMinutes != null ? { status: lateOrPresent(clockInMinutes, shift!.startMin) } : {}),
+          ...(clockOutMinutes != null ? { earlyLeaveOut: isEarlyLeave(clockOutMinutes, shift!.endMin) } : {}),
           updatedById: session.sub,
         },
       });

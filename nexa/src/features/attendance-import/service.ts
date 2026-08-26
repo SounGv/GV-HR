@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { lateOrPresent } from "@/lib/datetime";
+import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { attendanceImportRowSchema, type AttendanceImportRow } from "./schema";
 import type { ImportSummary } from "@/features/employee-import/schema";
@@ -52,6 +53,18 @@ export async function importAttendance(
   });
   const empByCode = new Map(employees.map((e) => [e.employeeCode, e]));
 
+  // Batched, not per-row — the pooled DB connection (connection_limit=1)
+  // can't afford one shift lookup per imported row. Date strings are
+  // "YYYY-MM-DD" (attendanceImportRowSchema), so plain string min/max works.
+  let shiftMap = new Map<string, { startMin: number; endMin: number }>();
+  if (parsedRows.length) {
+    const minDate = parsedRows.reduce((min, r) => (r.date < min ? r.date : min), parsedRows[0].date);
+    const maxDate = parsedRows.reduce((max, r) => (r.date > max ? r.date : max), parsedRows[0].date);
+    const rangeEnd = workDateOf(maxDate);
+    rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 1);
+    shiftMap = await resolveShiftMinutesBatch(companyId, workDateOf(minDate), rangeEnd);
+  }
+
   let created = 0;
   for (const r of parsedRows) {
     const employee = empByCode.get(r.employeeCode);
@@ -73,7 +86,8 @@ export async function importAttendance(
     const clockInAt = bangkokToUtc(r.date, r.clockIn);
     const clockOutAt = r.clockOut ? bangkokToUtc(r.date, r.clockOut) : null;
     const [hh, mm] = r.clockIn.split(":").map(Number);
-    const status = lateOrPresent(hh * 60 + mm);
+    const shift = shiftMinutesFromBatch(shiftMap, employee.id, workDate);
+    const status = lateOrPresent(hh * 60 + mm, shift.startMin);
 
     await prisma.attendanceRecord.create({
       data: {

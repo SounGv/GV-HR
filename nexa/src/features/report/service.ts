@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
-import { bangkokParts, SHIFT_START_MIN } from "@/lib/datetime";
+import { bangkokParts, lateOrPresent } from "@/lib/datetime";
+import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
 
 const GOAL_STATUS_LABEL: Record<string, string> = {
@@ -290,6 +291,10 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         select: { employeeId: true, date: true, hours: true },
       }),
     ]);
+    // Sequential, not folded into the Promise.all above — same pooled-
+    // connection reasoning as elsewhere in this codebase (e.g. the
+    // dashboard): a 4th concurrent query risks P2024 under connection_limit=1.
+    const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
     const branchName = new Map(branches.map((b) => [b.id, b.name]));
     const otByKey = new Map<string, number>();
     for (const o of ots) {
@@ -309,12 +314,13 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       const ms = clockOutAt.getTime() - clockInAt.getTime();
       return ms > 0 ? Math.round((ms / 3_600_000) * 100) / 100 : "-";
     };
-    // Minutes late vs. the standard 09:00 shift start (same cutoff as
-    // lib/datetime.ts's lateOrPresent) — "-" when on time/early so it doesn't
-    // just duplicate the "สถานะ" column with a redundant "0".
-    const lateMinutesOf = (clockInAt: Date | null): number | "-" => {
+    // Minutes late vs. the employee's real shift start when HR scheduled one
+    // (ShiftAssignment), else the company default 09:00 — same cutoff
+    // lib/datetime.ts's lateOrPresent uses. "-" when on time/early so it
+    // doesn't just duplicate the "สถานะ" column with a redundant "0".
+    const lateMinutesOf = (clockInAt: Date | null, shiftStartMin: number): number | "-" => {
       if (!clockInAt) return "-";
-      const late = bangkokParts(clockInAt).minutesOfDay - SHIFT_START_MIN;
+      const late = bangkokParts(clockInAt).minutesOfDay - shiftStartMin;
       return late > 0 ? late : "-";
     };
 
@@ -333,11 +339,25 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
       const otHoursNum = otByKey.get(otKey);
       if (otHoursNum) totalOt += otHoursNum;
-      const lateMinutes = lateMinutesOf(r.clockInAt);
+      const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate);
+      const lateMinutes = lateMinutesOf(r.clockInAt, shift.startMin);
       if (typeof lateMinutes === "number") {
         lateCount++;
         totalLateMinutes += lateMinutes;
       }
+      // Recomputed against the employee's real shift rather than trusting
+      // the stored `status` — that field was set at clock-in time using
+      // whichever cutoff was in effect then, which for anyone HR has since
+      // assigned a real shift to (or backdated a shift assignment for) may
+      // no longer match. Keeps this column consistent with "สาย (นาที)" on
+      // the same row instead of the two silently contradicting each other.
+      // Only PRESENT/LATE are reclassified — ON_LEAVE/ABSENT come from leave
+      // requests / absence derivation, not the clock-in cutoff, and must
+      // never be overwritten by it.
+      const status =
+        r.clockInAt != null && (r.status === "PRESENT" || r.status === "LATE")
+          ? lateOrPresent(bangkokParts(r.clockInAt).minutesOfDay, shift.startMin)
+          : r.status;
       return {
         date: formatDate(r.workDate),
         code: r.employee.employeeCode,
@@ -349,7 +369,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         hours,
         otHours: otHoursNum ? Math.round(otHoursNum * 100) / 100 : "-",
         lateMinutes,
-        status: ATTENDANCE_STATUS_LABEL[r.status] ?? r.status,
+        status: ATTENDANCE_STATUS_LABEL[status] ?? status,
         workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
         location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
         distance: r.clockInDistance != null ? Math.round(r.clockInDistance) : "-",
