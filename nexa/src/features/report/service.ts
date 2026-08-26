@@ -325,20 +325,21 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       return late > 0 ? late : "-";
     };
     // Hours actually worked past the shift end (real shift if assigned, else
-    // the 09:00–18:00 default), regardless of whether an OT request was ever
-    // filed — distinct from "ชั่วโมง OT" (APPROVED requests only, what's
-    // actually paid at the OT multiplier). This is a discovery figure: time
-    // clocked past shift end with no matching approved OT request.
-    const unapprovedOtHoursOf = (clockOutAt: Date | null, shiftEndMin: number): number | "-" => {
-      if (!clockOutAt) return "-";
+    // the 09:00–18:00 default) — most employees (esp. daily-wage warehouse
+    // staff with no app account) never file a formal OvertimeRequest at all,
+    // so an APPROVED-only figure was blank for them every day despite clearly
+    // working late. Used as the OT figure whenever no approved request
+    // exists; the approved amount wins when one does, so a real filed/paid
+    // OT request is never silently overridden by the raw clock-time estimate.
+    const calculatedOtHoursOf = (clockOutAt: Date | null, shiftEndMin: number): number => {
+      if (!clockOutAt) return 0;
       const over = bangkokParts(clockOutAt).minutesOfDay - shiftEndMin;
-      return over > 0 ? Math.round((over / 60) * 100) / 100 : "-";
+      return over > 0 ? Math.round((over / 60) * 100) / 100 : 0;
     };
 
     let totalHours = 0;
     let hoursCount = 0;
     let totalOt = 0;
-    let totalUnapprovedOt = 0;
     let lateCount = 0;
     let totalLateMinutes = 0;
 
@@ -349,11 +350,10 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         hoursCount++;
       }
       const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
-      const otHoursNum = otByKey.get(otKey);
-      if (otHoursNum) totalOt += otHoursNum;
+      const approvedOt = otByKey.get(otKey);
       const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate);
-      const unapprovedOt = unapprovedOtHoursOf(r.clockOutAt, shift.endMin);
-      if (typeof unapprovedOt === "number") totalUnapprovedOt += unapprovedOt;
+      const otHoursNum = approvedOt ?? calculatedOtHoursOf(r.clockOutAt, shift.endMin);
+      if (otHoursNum) totalOt += otHoursNum;
       const lateMinutes = lateMinutesOf(r.clockInAt, shift.startMin);
       if (typeof lateMinutes === "number") {
         lateCount++;
@@ -382,7 +382,6 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         clockOut: fmtTime(r.clockOutAt),
         hours,
         otHours: otHoursNum ? Math.round(otHoursNum * 100) / 100 : "-",
-        unapprovedOt,
         lateMinutes,
         status: ATTENDANCE_STATUS_LABEL[status] ?? status,
         workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
@@ -394,8 +393,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     const avgHours = hoursCount ? totalHours / hoursCount : 0;
     const footnote =
       `รวม ${recs.length} รายการ · ชั่วโมงทำงานรวม ${totalHours.toFixed(2)} ชม. ` +
-      `(เฉลี่ย ${avgHours.toFixed(2)} ชม./วัน) · OT ที่อนุมัติแล้วรวม ${totalOt.toFixed(2)} ชม. · ` +
-      `ทำงานเกินกะที่ยังไม่ขออนุมัติรวม ${totalUnapprovedOt.toFixed(2)} ชม. · ` +
+      `(เฉลี่ย ${avgHours.toFixed(2)} ชม./วัน) · OT รวม ${totalOt.toFixed(2)} ชม. · ` +
       `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)`;
 
     return {
@@ -411,8 +409,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "clockIn", label: "เวลาเข้า" },
         { key: "clockOut", label: "เวลาออก" },
         { key: "hours", label: "ชั่วโมงทำงาน", numeric: true },
-        { key: "otHours", label: "ชั่วโมง OT (อนุมัติแล้ว)", numeric: true },
-        { key: "unapprovedOt", label: "ทำงานเกินกะ (ยังไม่ขออนุมัติ)", numeric: true },
+        { key: "otHours", label: "ชั่วโมง OT", numeric: true },
         { key: "status", label: "สถานะ" },
         { key: "lateMinutes", label: "สาย (นาที)", numeric: true },
         { key: "workMode", label: "รูปแบบงาน" },
