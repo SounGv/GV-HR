@@ -28,7 +28,6 @@ import {
   BarChart3,
   Megaphone,
   Upload,
-  Download,
   MapPinned,
   GitBranch,
   Plug,
@@ -162,7 +161,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ข้อมูลระบบ",
     items: [
       { label: "นำเข้าข้อมูล", href: "/import", icon: Upload, permission: "employee:create", ready: true },
-      { label: "ส่งออกข้อมูล", href: "/reports", icon: Download, permission: "report:read", ready: true },
       { label: "ประวัติการนำเข้า / ส่งออก", href: "/admin?tab=audit", icon: ClipboardList, permission: "admin:read", ready: true },
     ],
   },
