@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, getInitials } from "@/lib/format";
+import { fullName, getInitials, loginIdentifier } from "@/lib/format";
 import { useProfileDrawer } from "./profile-drawer-context";
 
 /** Desktop entry point for the account drawer — same drawer the mobile bottom
@@ -12,7 +12,7 @@ export function UserMenu() {
   const { user } = useAuth();
   const { openDrawer } = useProfileDrawer();
   const emp = user.employee;
-  const name = emp ? fullName(emp.firstName, emp.lastName) : user.email;
+  const name = emp ? fullName(emp.firstName, emp.lastName) : loginIdentifier(user);
   const role = user.roles[0] ?? "ผู้ใช้งาน";
 
   return (

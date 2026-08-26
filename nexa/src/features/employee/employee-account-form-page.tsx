@@ -25,6 +25,8 @@ import { api, ApiError, type Envelope } from "@/lib/api/client";
 import { passwordSchema, generateStrongPassword } from "@/lib/auth/password-policy";
 
 const FORM_ID = "employee-account-form";
+const USERNAME_RE = /^[a-z][a-z0-9_.]{2,31}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function EmployeeAccountFormPage({
   employeeId,
@@ -42,17 +44,30 @@ export function EmployeeAccountFormPage({
   const [showPassword, setShowPassword] = useState(false);
   const backHref = `/employees/${employeeId}`;
 
-  const formSchema = z.object({
-    email: hasAccount
-      ? z.string().optional()
-      : z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง").max(200),
-    password: passwordSchema,
-  });
+  // Single fixed shape regardless of hasAccount (a ternary between two
+  // differently-shaped zod schemas breaks react-hook-form's generic
+  // inference) — the "at least one identifier" rule only applies when
+  // creating a brand-new account, not when just resetting a password.
+  const formSchema = z
+    .object({
+      email: z.string().trim().toLowerCase().max(200),
+      username: z.string().trim().toLowerCase().max(32),
+      password: passwordSchema,
+    })
+    .refine((d) => hasAccount || !!d.email || !!d.username, {
+      message: "กรุณากรอกอีเมลหรือชื่อผู้ใช้อย่างน้อย 1 อย่าง",
+      path: ["email"],
+    })
+    .refine((d) => !d.email || EMAIL_RE.test(d.email), { message: "อีเมลไม่ถูกต้อง", path: ["email"] })
+    .refine((d) => !d.username || USERNAME_RE.test(d.username), {
+      message: "ต้องขึ้นต้นด้วยตัวอักษร ใช้ได้เฉพาะตัวพิมพ์เล็ก ตัวเลข _ . ความยาว 3-32 ตัวอักษร",
+      path: ["username"],
+    });
   type FormSchema = z.infer<typeof formSchema>;
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: defaultEmail ?? "", password: "" },
+    defaultValues: { email: defaultEmail ?? "", username: "", password: "" },
   });
 
   function fillGeneratedPassword() {
@@ -69,7 +84,10 @@ export function EmployeeAccountFormPage({
         });
         toast.success("ตั้งรหัสผ่านใหม่เรียบร้อย — พนักงานต้องเข้าสู่ระบบใหม่ทุกอุปกรณ์");
       } else {
-        await api.post<Envelope<{ email: string }>>(`/api/employees/${employeeId}/account`, values);
+        await api.post<Envelope<{ email: string | null; username: string | null }>>(
+          `/api/employees/${employeeId}/account`,
+          { email: values.email || undefined, username: values.username || undefined, password: values.password },
+        );
         toast.success("สร้างบัญชีเรียบร้อย — พนักงานเข้าใช้งานได้แล้ว");
       }
       router.push(backHref);
@@ -97,7 +115,7 @@ export function EmployeeAccountFormPage({
       description={
         hasAccount
           ? `ตั้งรหัสผ่านใหม่ให้ ${employeeName} — ระบบจะออกจากระบบทุกอุปกรณ์ที่ล็อกอินอยู่ทันที`
-          : `ตั้งอีเมลและรหัสผ่านให้ ${employeeName} เข้าใช้งานแอพ (สิทธิ์เริ่มต้น: พนักงานทั่วไป)`
+          : `ตั้งอีเมลหรือชื่อผู้ใช้ (อย่างน้อย 1 อย่าง) และรหัสผ่านให้ ${employeeName} เข้าใช้งานแอพ (สิทธิ์เริ่มต้น: พนักงานทั่วไป)`
       }
       formId={FORM_ID}
       pending={pending}
@@ -107,19 +125,39 @@ export function EmployeeAccountFormPage({
       <Form {...form}>
         <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="max-w-md space-y-4">
           {!hasAccount && (
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>อีเมล (ใช้เข้าสู่ระบบ)</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="name@company.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>อีเมล (ใช้เข้าสู่ระบบ)</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="name@company.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                หรือ
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ชื่อผู้ใช้ (สำหรับพนักงานที่ไม่มีอีเมล)</FormLabel>
+                    <FormControl>
+                      <Input type="text" placeholder="เช่น somchai.j" autoCapitalize="none" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
           )}
 
           <FormField

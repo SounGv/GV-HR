@@ -146,6 +146,7 @@ export async function listUsers(companyId: string) {
     select: {
       id: true,
       email: true,
+      username: true,
       status: true,
       roles: { select: { role: { select: { id: true, name: true } } } },
       employee: {
@@ -164,6 +165,7 @@ export async function listUsers(companyId: string) {
   return users.map((u) => ({
     id: u.id,
     email: u.email,
+    username: u.username,
     status: u.status,
     employee: u.employee
       ? {
@@ -185,6 +187,7 @@ export async function getUser(companyId: string, id: string) {
     select: {
       id: true,
       email: true,
+      username: true,
       status: true,
       roles: { select: { role: { select: { id: true, name: true } } } },
       employee: {
@@ -203,6 +206,7 @@ export async function getUser(companyId: string, id: string) {
   return {
     id: user.id,
     email: user.email,
+    username: user.username,
     status: user.status,
     employee: user.employee
       ? {

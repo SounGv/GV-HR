@@ -36,7 +36,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { identifier: "", password: "" },
   });
 
   useEffect(() => {
@@ -132,17 +132,17 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="email"
+          name="identifier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>อีเมล</FormLabel>
+              <FormLabel>อีเมล หรือ ชื่อผู้ใช้</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@company.co.th"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="you@company.co.th หรือ ชื่อผู้ใช้"
                     className="h-10 pl-9"
                     {...field}
                   />

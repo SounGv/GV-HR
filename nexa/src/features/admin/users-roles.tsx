@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
-import { fullName } from "@/lib/format";
+import { fullName, loginIdentifier } from "@/lib/format";
 import { useUsers } from "./hooks";
 import type { AiAccessScope } from "./types";
 
@@ -44,9 +44,9 @@ export function UsersRoles() {
             <TableRow key={u.id}>
               <TableCell>
                 <div className="font-medium">
-                  {u.employee ? fullName(u.employee.firstName, u.employee.lastName) : u.email}
+                  {u.employee ? fullName(u.employee.firstName, u.employee.lastName) : loginIdentifier(u)}
                 </div>
-                <div className="text-xs text-muted-foreground">{u.email}</div>
+                <div className="text-xs text-muted-foreground">{u.email ?? `@${u.username}`}</div>
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">

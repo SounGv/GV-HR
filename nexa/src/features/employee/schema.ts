@@ -103,11 +103,34 @@ export const EMPLOYEE_SORTABLE = [
   "status",
 ] as const;
 
-/** HR creates a login account for an employee. */
-export const employeeAccountSchema = z.object({
-  email: z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง").max(200),
-  password: passwordSchema,
-});
+// Username: lowercase letters/numbers/underscore/period, must start with a
+// letter, 3-32 chars — for employees with no company email.
+const USERNAME_RE = /^[a-z][a-z0-9_.]{2,31}$/;
+const emptyToUndefined = (v: unknown) => (v === "" || v == null ? undefined : v);
+
+/** HR creates a login account for an employee — needs at least one of
+ * email/username as the login identifier (some employees have no email). */
+export const employeeAccountSchema = z
+  .object({
+    email: z.preprocess(
+      emptyToUndefined,
+      z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง").max(200).optional(),
+    ),
+    username: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .trim()
+        .toLowerCase()
+        .regex(USERNAME_RE, "ชื่อผู้ใช้ต้องขึ้นต้นด้วยตัวอักษร ใช้ได้เฉพาะตัวพิมพ์เล็ก ตัวเลข _ . ความยาว 3-32 ตัวอักษร")
+        .optional(),
+    ),
+    password: passwordSchema,
+  })
+  .refine((d) => !!d.email || !!d.username, {
+    message: "กรุณากรอกอีเมลหรือชื่อผู้ใช้อย่างน้อย 1 อย่าง",
+    path: ["email"],
+  });
 export type EmployeeAccountInput = z.infer<typeof employeeAccountSchema>;
 
 /** HR resets the password of an employee who already has a login account. */

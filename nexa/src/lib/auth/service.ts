@@ -75,10 +75,17 @@ function buildClaims(user: UserWithRoles): AccessClaims {
     sub: user.id,
     companyId: user.companyId,
     email: user.email,
+    username: user.username,
     roles,
     perms,
     employeeId: user.employee?.id,
   };
+}
+
+/** TOTP's otpauth label is cosmetic only (shown in the authenticator app) — it
+ * doesn't need to match anything stored, so any non-empty identifier works. */
+function totpLabel(user: { email: string | null; username: string | null }): string {
+  return user.email ?? user.username ?? "user";
 }
 
 /** Finishes a login: bumps `lastLoginAt`, issues access + refresh tokens. */
@@ -93,12 +100,13 @@ async function completeLogin(user: UserWithRoles, meta?: AuthMeta): Promise<Auth
 export type LoginOutcome = ({ mfaRequired: false } & AuthResult) | { mfaRequired: true; mfaToken: string };
 
 export async function login(
-  email: string,
+  identifier: string,
   password: string,
   meta?: AuthMeta,
 ): Promise<LoginOutcome> {
+  const normalized = identifier.toLowerCase().trim();
   const user = await prisma.user.findFirst({
-    where: { email: email.toLowerCase().trim(), deletedAt: null },
+    where: { deletedAt: null, OR: [{ email: normalized }, { username: normalized }] },
     include: userWithRolesInclude,
   });
 
@@ -111,7 +119,7 @@ export async function login(
 
   if (!user || !ok) {
     if (user) await registerFailedAttempt(user.id, user.failedLoginAttempts);
-    throw Unauthorized("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+    throw Unauthorized("อีเมล/ชื่อผู้ใช้ หรือรหัสผ่านไม่ถูกต้อง");
   }
   if (user.status === "DISABLED") {
     throw Unauthorized("บัญชีนี้ถูกระงับการใช้งาน");
@@ -144,7 +152,7 @@ export async function verifyMfaAndLogin(
     throw Unauthorized(lockoutMessage(user.lockedUntil));
   }
 
-  if (!verifyTotp(user.twoFactorSecret, user.email, code)) {
+  if (!verifyTotp(user.twoFactorSecret, totpLabel(user), code)) {
     const codeHash = hashRecoveryCode(code);
     const recovery = await prisma.twoFactorRecoveryCode.findFirst({
       where: { userId: user.id, codeHash, usedAt: null },
@@ -162,22 +170,22 @@ export async function verifyMfaAndLogin(
 }
 
 export async function setupTwoFactor(userId: string): Promise<{ secret: string; otpauthUrl: string }> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, username: true } });
   if (!user) throw Unauthorized();
   const secret = generateSecret();
   // Stored immediately but inert — twoFactorEnabled stays false until confirmed,
   // so an abandoned setup never actually gates login.
   await prisma.user.update({ where: { id: userId }, data: { twoFactorSecret: secret } });
-  return { secret, otpauthUrl: buildOtpAuthUrl(secret, user.email) };
+  return { secret, otpauthUrl: buildOtpAuthUrl(secret, totpLabel(user)) };
 }
 
 export async function confirmTwoFactor(userId: string, code: string): Promise<{ recoveryCodes: string[] }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { email: true, twoFactorSecret: true },
+    select: { email: true, username: true, twoFactorSecret: true },
   });
   if (!user?.twoFactorSecret) throw BadRequest("กรุณาเริ่มตั้งค่า 2FA ก่อน");
-  if (!verifyTotp(user.twoFactorSecret, user.email, code)) throw BadRequest("รหัสไม่ถูกต้อง");
+  if (!verifyTotp(user.twoFactorSecret, totpLabel(user), code)) throw BadRequest("รหัสไม่ถูกต้อง");
 
   const recoveryCodes = generateRecoveryCodes();
   await prisma.$transaction([
@@ -193,11 +201,11 @@ export async function confirmTwoFactor(userId: string, code: string): Promise<{ 
 export async function disableTwoFactor(userId: string, code: string): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { email: true, twoFactorEnabled: true, twoFactorSecret: true },
+    select: { email: true, username: true, twoFactorEnabled: true, twoFactorSecret: true },
   });
   if (!user?.twoFactorEnabled || !user.twoFactorSecret) throw BadRequest("ยังไม่ได้เปิดใช้งาน 2FA");
 
-  let valid = verifyTotp(user.twoFactorSecret, user.email, code);
+  let valid = verifyTotp(user.twoFactorSecret, totpLabel(user), code);
   if (!valid) {
     const codeHash = hashRecoveryCode(code);
     const recovery = await prisma.twoFactorRecoveryCode.findFirst({

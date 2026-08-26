@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
-import { fullName } from "@/lib/format";
+import { fullName, loginIdentifier } from "@/lib/format";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ApprovalWorkflow, ApprovalRequest, RequestStep, WorkflowStepDef } from "./types";
 import type {
@@ -35,7 +35,7 @@ async function actorName(companyId: string, session: AccessClaims): Promise<stri
     });
     if (emp) return fullName(emp.firstName, emp.lastName);
   }
-  return session.email;
+  return loginIdentifier(session);
 }
 
 // ─────────── Workflow definitions ───────────

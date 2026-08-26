@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Bell, Globe, Pencil, ShieldCheck, LogOut, User, Wallet, ChevronRight } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, formatCurrency } from "@/lib/format";
+import { fullName, formatCurrency, loginIdentifier } from "@/lib/format";
 import { useMyProfile } from "@/features/profile/hooks";
 import { usePayroll } from "@/features/payroll/hooks";
 import { MobileScreen } from "./mobile-screen";
@@ -29,7 +29,7 @@ export function MobileProfileView() {
     await logout();
   }
 
-  const displayName = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : user.email;
+  const displayName = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : loginIdentifier(user);
   const subtitle = user.employee
     ? `${user.employee.position?.title ?? "พนักงาน"} • ${user.employee.department?.name ?? "—"}`
     : user.roles.join(", ") || "—";
@@ -62,9 +62,15 @@ export function MobileProfileView() {
           <span className="shrink-0 text-muted-foreground">ผู้ติดต่อฉุกเฉิน</span>
           <span className="ml-3 truncate text-right">{emergencyContact ?? "—"}</span>
         </div>
+        {user.email && (
+          <div className="flex justify-between border-b border-border px-3.5 py-3 text-[13px]">
+            <span className="text-muted-foreground">อีเมล</span>
+            <span>{user.email}</span>
+          </div>
+        )}
         <div className="flex justify-between px-3.5 py-3 text-[13px]">
-          <span className="text-muted-foreground">อีเมล</span>
-          <span>{user.email}</span>
+          <span className="text-muted-foreground">ชื่อผู้ใช้</span>
+          <span>{user.username ?? "—"}</span>
         </div>
       </MobileModuleCard>
 

@@ -11,6 +11,12 @@ export function fullName(first?: string | null, last?: string | null): string {
   return [first, last].filter(Boolean).join(" ").trim();
 }
 
+/** Login identifier for display when there's no employee name to show —
+ * accounts can have an email, a username, or (rarely, transiently) neither. */
+export function loginIdentifier(user: { email?: string | null; username?: string | null }): string {
+  return user.email ?? user.username ?? "ผู้ใช้งาน";
+}
+
 export function formatCurrency(value: number | null | undefined, currency = "THB"): string {
   if (value == null) return "-";
   return new Intl.NumberFormat("th-TH", {

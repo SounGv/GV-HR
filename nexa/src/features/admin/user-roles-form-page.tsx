@@ -8,7 +8,7 @@ import { FormPageShell } from "@/components/shared/form-page-shell";
 import type { FormFooterAction } from "@/components/shared/form-footer";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ApiError } from "@/lib/api/client";
-import { fullName } from "@/lib/format";
+import { fullName, loginIdentifier } from "@/lib/format";
 import { useRoles, useSetUserRoles } from "./hooks";
 import type { AdminUser } from "./types";
 
@@ -33,7 +33,7 @@ export function UserRolesFormPage({ user }: { user: AdminUser }) {
   }
 
   const actions: FormFooterAction[] = [{ label: "บันทึก", primary: true }];
-  const name = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : user.email;
+  const name = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : loginIdentifier(user);
 
   return (
     <FormPageShell

@@ -15,6 +15,7 @@ export async function GET() {
       select: {
         id: true,
         email: true,
+        username: true,
         companyId: true,
         company: { select: { id: true, name: true, logoUrl: true } },
         employee: {
@@ -38,6 +39,7 @@ export async function GET() {
       user: {
         id: user.id,
         email: user.email,
+        username: user.username,
         companyId: user.companyId,
         company: user.company,
         roles: session.roles,

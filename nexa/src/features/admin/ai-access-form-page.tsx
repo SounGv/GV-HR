@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/client";
-import { fullName } from "@/lib/format";
+import { fullName, loginIdentifier } from "@/lib/format";
 import { useRevokeAiAccessGrant, useSetAiAccessGrant } from "./hooks";
 import type { AdminUser, AiAccessScope } from "./types";
 
@@ -34,7 +34,7 @@ export function AiAccessFormPage({ user }: { user: AdminUser }) {
   const revokeMut = useRevokeAiAccessGrant();
   const [scope, setScope] = useState<AiAccessScope>(user.aiAccessScope ?? "TEAM");
 
-  const name = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : user.email;
+  const name = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : loginIdentifier(user);
   const hasEmployee = !!user.employee;
 
   async function onSubmit() {

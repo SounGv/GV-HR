@@ -130,7 +130,11 @@ export function AuditLogView() {
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {r.actor ? `${r.actor.name ?? r.actor.email} (${r.actor.email})` : "ระบบ"}
+                    {r.actor
+                      ? r.actor.email
+                        ? `${r.actor.name ?? r.actor.email} (${r.actor.email})`
+                        : (r.actor.name ?? `@${r.actor.username}`)
+                      : "ระบบ"}
                     {r.ip ? ` · ${r.ip}` : ""}
                   </p>
                 </div>

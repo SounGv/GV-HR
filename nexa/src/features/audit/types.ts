@@ -9,7 +9,8 @@ export interface AuditLogItem {
   userAgent: string | null;
   createdAt: string;
   actor: {
-    email: string;
+    email: string | null;
+    username: string | null;
     name: string | null;
   } | null;
 }

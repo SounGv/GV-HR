@@ -34,6 +34,7 @@ export async function listAuditLogs(companyId: string, query: AuditLogQuery) {
         actor: {
           select: {
             email: true,
+            username: true,
             employee: { select: { firstName: true, lastName: true } },
           },
         },
@@ -50,6 +51,7 @@ export async function listAuditLogs(companyId: string, query: AuditLogQuery) {
     actor: r.actor
       ? {
           email: r.actor.email,
+          username: r.actor.username,
           name: r.actor.employee ? fullName(r.actor.employee.firstName, r.actor.employee.lastName) : null,
         }
       : null,

@@ -19,9 +19,10 @@ export async function requestPasswordReset(
   email: string,
   meta?: { ip?: string },
 ): Promise<void> {
+  const normalized = email.toLowerCase().trim();
   const user = await prisma.user.findFirst({
-    where: { email: email.toLowerCase().trim(), deletedAt: null },
-    select: { id: true, email: true },
+    where: { email: normalized, deletedAt: null },
+    select: { id: true },
   });
   if (!user) return;
 
@@ -37,7 +38,7 @@ export async function requestPasswordReset(
 
   const url = `${process.env.APP_URL ?? "http://localhost:3000"}/reset-password?token=${token}`;
   await sendEmail({
-    to: user.email,
+    to: normalized,
     subject: "รีเซ็ตรหัสผ่าน GV One",
     html: `
       <p>คุณได้ขอรีเซ็ตรหัสผ่านบัญชี GV One ของคุณ</p>

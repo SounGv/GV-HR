@@ -2,7 +2,7 @@ import { z } from "zod";
 import { passwordSchema } from "@/lib/auth/password-policy";
 
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง"),
+  identifier: z.string().trim().min(1, "กรุณากรอกอีเมลหรือชื่อผู้ใช้").max(200),
   password: z.string().min(1, "กรุณากรอกรหัสผ่าน"),
 });
 

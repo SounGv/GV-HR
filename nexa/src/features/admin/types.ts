@@ -11,7 +11,8 @@ export type AiAccessScope = "TEAM" | "DEPARTMENT" | "COMPANY";
 
 export interface AdminUser {
   id: string;
-  email: string;
+  email: string | null;
+  username: string | null;
   status: string;
   employee: { id: string; firstName: string; lastName: string; employeeCode: string } | null;
   aiAccessScope: AiAccessScope | null;

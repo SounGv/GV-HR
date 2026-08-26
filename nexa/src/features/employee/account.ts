@@ -28,9 +28,17 @@ export async function createEmployeeAccount(
   if (!emp) throw NotFound("ไม่พบพนักงาน");
   if (emp.userId) throw Conflict("พนักงานคนนี้มีบัญชีเข้าใช้งานแล้ว");
 
-  const email = input.email.toLowerCase().trim();
-  const dupe = await prisma.user.findFirst({ where: { email, deletedAt: null }, select: { id: true } });
-  if (dupe) throw Conflict("อีเมลนี้ถูกใช้งานแล้ว");
+  const email = input.email ? input.email.toLowerCase().trim() : null;
+  const username = input.username ? input.username.toLowerCase().trim() : null;
+
+  if (email) {
+    const dupe = await prisma.user.findFirst({ where: { email, deletedAt: null }, select: { id: true } });
+    if (dupe) throw Conflict("อีเมลนี้ถูกใช้งานแล้ว");
+  }
+  if (username) {
+    const dupe = await prisma.user.findFirst({ where: { username, deletedAt: null }, select: { id: true } });
+    if (dupe) throw Conflict("ชื่อผู้ใช้นี้ถูกใช้งานแล้ว");
+  }
 
   const role = await prisma.role.findFirst({
     where: { companyId, name: "Employee" },
@@ -42,12 +50,12 @@ export async function createEmployeeAccount(
 
   await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
-      data: { companyId, email, passwordHash, status: "ACTIVE" },
+      data: { companyId, email, username, passwordHash, status: "ACTIVE" },
     });
     await tx.userRole.create({ data: { userId: user.id, roleId: role.id } });
     await tx.employee.update({
       where: { id: employeeId },
-      data: { userId: user.id, email, updatedById: session.sub },
+      data: { userId: user.id, ...(email ? { email } : {}), updatedById: session.sub },
     });
   });
 
@@ -57,11 +65,11 @@ export async function createEmployeeAccount(
     action: "employee.create_account",
     entity: "Employee",
     entityId: employeeId,
-    after: { email },
+    after: { email, username },
     ...meta,
   });
 
-  return { email };
+  return { email, username };
 }
 
 /**

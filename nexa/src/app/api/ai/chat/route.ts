@@ -8,6 +8,7 @@ import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError, wi
 import { executeTool, toGeminiTools } from "@/lib/ai/tools";
 import { resolveAiAccess, employeeScopeWhere } from "@/lib/ai/scope";
 import { prisma } from "@/lib/prisma";
+import { loginIdentifier } from "@/lib/format";
 
 export const runtime = "nodejs";
 
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       select: { name: true },
     });
     const today = new Date().toISOString().slice(0, 10);
-    const system = buildSystemPrompt(company?.name ?? "-", session.email, today);
+    const system = buildSystemPrompt(company?.name ?? "-", loginIdentifier(session), today);
     const meta = getRequestMeta(request);
 
     const genAI = getGemini();

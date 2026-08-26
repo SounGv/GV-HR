@@ -12,7 +12,8 @@ import { SignJWT, jwtVerify } from "jose";
 export interface AccessClaims {
   sub: string; // userId
   companyId: string;
-  email: string;
+  email: string | null;
+  username: string | null;
   roles: string[];
   perms: string[];
   employeeId?: string;

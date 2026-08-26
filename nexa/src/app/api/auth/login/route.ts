@@ -10,9 +10,9 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { email, password } = loginSchema.parse(body);
+    const { identifier, password } = loginSchema.parse(body);
 
-    const result = await login(email, password, getRequestMeta(req));
+    const result = await login(identifier, password, getRequestMeta(req));
 
     if (result.mfaRequired) {
       return NextResponse.json({ data: { mfaRequired: true, mfaToken: result.mfaToken } });

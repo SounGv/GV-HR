@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 
 export interface CurrentUser {
   id: string;
-  email: string;
+  email: string | null;
+  username: string | null;
   companyId: string;
   company: { id: string; name: string; logoUrl: string | null } | null;
   roles: string[];
@@ -31,6 +32,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     select: {
       id: true,
       email: true,
+      username: true,
       companyId: true,
       company: { select: { id: true, name: true, logoUrl: true } },
       employee: {
@@ -53,6 +55,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   return {
     id: user.id,
     email: user.email,
+    username: user.username,
     companyId: user.companyId,
     company: user.company,
     roles: session.roles,

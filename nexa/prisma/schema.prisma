@@ -563,7 +563,11 @@ model User {
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  email        String
+  // Login identifier — at least one of the two must be set (enforced by a
+  // CHECK constraint in the migration + application validation), so
+  // employees without a company email can still get an account.
+  email        String?
+  username     String?
   passwordHash String
   status       UserStatus @default(ACTIVE)
 
@@ -597,6 +601,7 @@ model User {
   auditLogs              AuditLog[]
 
   @@unique([companyId, email])
+  @@unique([companyId, username])
   @@index([companyId, deletedAt])
   @@map("users")
 }
