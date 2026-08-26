@@ -51,6 +51,9 @@ export interface NavItem {
   badgeKey?: "pendingApprovals" | "pendingReviews" | "unreadNotifications";
   /** Renders as a sign-out action button instead of a Link. */
   isLogout?: boolean;
+  /** Renders as a button that opens the floating AI chat panel (desktop)
+   * instead of navigating to `href` — see AiPanelProvider/useAiPanel. */
+  opensAiPanel?: boolean;
 }
 
 export interface NavGroup {
@@ -70,7 +73,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", ready: true },
-      { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read", ready: true },
+      { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read", ready: true, opensAiPanel: true },
       {
         label: "แจ้งเตือน",
         href: "/notifications",

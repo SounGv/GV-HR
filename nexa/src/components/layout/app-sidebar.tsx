@@ -18,6 +18,7 @@ import {
 import { NAV_GROUPS, type NavItem } from "@/config/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { useAiAccess } from "@/features/ai/hooks";
+import { useAiPanel } from "@/features/ai/ai-panel-context";
 import { useLeave } from "@/features/leave/hooks";
 import { useOvertime } from "@/features/overtime/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
@@ -29,6 +30,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { can, logout } = useAuth();
   const { data: aiAccess } = useAiAccess();
+  const { toggle: toggleAiPanel } = useAiPanel();
 
   // A grant-only user (see src/lib/ai/scope.ts) has no ai:* key in their JWT
   // claims, so the plain permission filter below would hide "AI Assistant"
@@ -117,6 +119,8 @@ export function AppSidebar() {
                             render={
                               item.isLogout ? (
                                 <button type="button" onClick={() => logout()} />
+                              ) : item.opensAiPanel ? (
+                                <button type="button" onClick={toggleAiPanel} />
                               ) : (
                                 <Link href={href} />
                               )
