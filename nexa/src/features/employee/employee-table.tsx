@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { SortingState } from "@tanstack/react-table";
 import { Plus, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -59,19 +59,24 @@ const ALL = "ALL";
 
 export function EmployeeTable() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { can } = useAuth();
   const canCreate = can("employee:create");
   const canEdit = can("employee:update");
   const canDelete = can("employee:delete");
   const canExport = can("employee:export");
 
-  // Query state
+  // Query state — employmentType can arrive pre-set via ?employmentType=
+  // (e.g. the dashboard's "พนักงานรายวัน" quick-access tile links straight
+  // into a filtered view instead of landing on the unfiltered list).
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [departmentId, setDepartmentId] = useState<string>(ALL);
   const [status, setStatus] = useState<string>(ALL);
-  const [employmentType, setEmploymentType] = useState<string>(ALL);
+  const [employmentType, setEmploymentType] = useState<string>(
+    () => searchParams.get("employmentType") ?? ALL,
+  );
   const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
   const [isExporting, setIsExporting] = useState(false);
 

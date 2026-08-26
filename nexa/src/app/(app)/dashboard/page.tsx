@@ -5,6 +5,7 @@ import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
 import {
   Users,
   UserCheck,
+  UserRound,
   Clock,
   CalendarOff,
   Timer,
@@ -161,6 +162,7 @@ function greeting(): string {
 // (import the Wallet icon from lucide-react again) here when ready.
 const ALL_QUICK_ACCESS: (QuickAccessItem & { permission: string })[] = [
   { label: "พนักงาน", href: "/employees", icon: Users, permission: "employee:read" },
+  { label: "พนักงานรายวัน", href: "/employees?employmentType=DAILY_WORKER", icon: UserRound, permission: "employee:read" },
   { label: "เวลาเข้า-ออกงาน", href: "/attendance", icon: Clock, permission: "attendance:read" },
   { label: "การลา", href: "/leave", icon: CalendarDays, permission: "leave:read" },
   { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read" },

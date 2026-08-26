@@ -13,6 +13,7 @@ import {
   HeartPulse,
   SlidersHorizontal,
   UsersRound,
+  UserRound,
   UserPlus,
   Network,
   Shield,
@@ -96,6 +97,7 @@ export const MOBILE_HR_GROUPS: MobileMenuGroup[] = [
     tone: "primary",
     items: [
       { id: "emplist", label: "รายชื่อพนักงาน", href: "/employees", icon: UsersRound, permission: "employee:read" },
+      { id: "dailyemp", label: "พนักงานรายวัน", href: "/employees?employmentType=DAILY_WORKER", icon: UserRound, permission: "employee:read" },
       { id: "addemp", label: "เพิ่มพนักงาน", href: "/employees/new", icon: UserPlus, permission: "employee:create" },
       { id: "orgchart", label: "โครงสร้างองค์กร", href: "/organization", icon: Network, permission: "employee:read" },
       { id: "access", label: "สิทธิ์การเข้าถึง", href: "/admin", icon: Shield, permission: "admin:read" },
