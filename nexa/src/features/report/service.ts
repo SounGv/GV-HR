@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
-import { STATUS_LABEL } from "@/features/employee/labels";
+import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
 
@@ -264,7 +264,15 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           workMode: true,
           clockInBranchId: true,
           clockInDistance: true,
-          employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+          employee: {
+            select: {
+              employeeCode: true,
+              firstName: true,
+              lastName: true,
+              employmentType: true,
+              department: { select: { name: true } },
+            },
+          },
         },
         orderBy: [{ workDate: "desc" }, { employee: { employeeCode: "asc" } }],
         take: 1000,
@@ -276,6 +284,15 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       d
         ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(d)
         : "-";
+    // Same "clock-out minus clock-in" convention as attendance-history.tsx's
+    // workedHours() — kept a plain rounded number (not "X.X ชม.") here since
+    // the column label already states the unit and this report is also
+    // exported straight to CSV.
+    const hoursWorked = (clockInAt: Date | null, clockOutAt: Date | null): number | "-" => {
+      if (!clockInAt || !clockOutAt) return "-";
+      const ms = clockOutAt.getTime() - clockInAt.getTime();
+      return ms > 0 ? Math.round((ms / 3_600_000) * 100) / 100 : "-";
+    };
     return {
       title,
       period: label,
@@ -283,8 +300,11 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "date", label: "วันที่" },
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
+        { key: "department", label: "แผนก" },
+        { key: "employmentType", label: "ประเภทการจ้าง" },
         { key: "clockIn", label: "เวลาเข้า" },
         { key: "clockOut", label: "เวลาออก" },
+        { key: "hours", label: "ชั่วโมงทำงาน", numeric: true },
         { key: "status", label: "สถานะ" },
         { key: "workMode", label: "รูปแบบงาน" },
         { key: "location", label: "สถานที่" },
@@ -294,8 +314,11 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         date: formatDate(r.workDate),
         code: r.employee.employeeCode,
         name: `${r.employee.firstName} ${r.employee.lastName}`,
+        department: r.employee.department?.name ?? "-",
+        employmentType: EMPLOYMENT_LABEL[r.employee.employmentType] ?? r.employee.employmentType,
         clockIn: fmtTime(r.clockInAt),
         clockOut: fmtTime(r.clockOutAt),
+        hours: hoursWorked(r.clockInAt, r.clockOutAt),
         status: ATTENDANCE_STATUS_LABEL[r.status] ?? r.status,
         workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
         location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
