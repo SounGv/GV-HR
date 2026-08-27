@@ -4,12 +4,9 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import type { MobileMenuGroup, MenuIconTone } from "@/config/mobile-menu";
 
-// Per-category icon-chip colors (2026-08-25 icon/logo spec) — a menu item
-// without an explicit `tone` falls back to the shared green chip.
+// Every item uses the shared green chip except "profile" (neutral grey) —
+// see the MenuIconTone comment in config/mobile-menu.ts.
 const ITEM_TONE_CLASSES: Record<MenuIconTone, string> = {
-  overtime: "bg-tone-overtime-bg text-tone-overtime-fg",
-  calendar: "bg-tone-calendar-bg text-tone-calendar-fg",
-  violet: "bg-tone-violet-bg text-tone-violet-fg",
   profile: "bg-tone-profile-bg text-tone-profile-fg",
 };
 const DEFAULT_TONE_CLASS = "bg-icon-chip-bg text-icon-chip-fg";

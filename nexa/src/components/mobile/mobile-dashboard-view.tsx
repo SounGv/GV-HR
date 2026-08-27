@@ -149,9 +149,9 @@ export function MobileDashboardView({
                       ? `/performance/campaigns/${nextPending.campaignId}/participants/${nextPending.participantId}`
                       : "/performance"
                   }
-                  className="flex items-center gap-3 p-3.5 active:bg-tone-violet-bg/60"
+                  className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60"
                 >
-                  <TodoIcon icon={Star} count={pendingCount} tone="bg-tone-violet-bg text-tone-violet-fg" />
+                  <TodoIcon icon={Star} count={pendingCount} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">มีการประเมินที่ต้องทำ</p>
                     <p className="text-xs text-muted-foreground">{pendingCount} รายการ</p>
@@ -180,18 +180,16 @@ export function MobileDashboardView({
           <h2 className="px-1 text-[13px] font-bold text-foreground">เมนูด่วน</h2>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { href: "/leave/new", label: "ขอลา", icon: FilePlus2, tone: "bg-icon-chip-bg text-icon-chip-fg" },
-              { href: "/overtime/new", label: "ขอ OT", icon: Timer, tone: "bg-tone-overtime-bg text-tone-overtime-fg" },
-              { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays, tone: "bg-tone-calendar-bg text-tone-calendar-fg" },
+              { href: "/leave/new", label: "ขอลา", icon: FilePlus2 },
+              { href: "/overtime/new", label: "ขอ OT", icon: Timer },
+              { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays },
             ].map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-icon-chip-bg/60"
               >
-                <span
-                  className={`flex size-11 items-center justify-center rounded-2xl ${item.tone} shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60`}
-                >
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60">
                   <item.icon className="size-7" strokeWidth={3} />
                 </span>
                 <span className="text-[12px] font-medium text-foreground">{item.label}</span>
@@ -217,7 +215,6 @@ export function MobileDashboardView({
               label="คะแนนการประเมิน"
               value={scoreLoading ? "…" : latestScore != null ? `${latestScore.toFixed(1)} / 5` : "—"}
               disabled={!canViewEvalHistory}
-              tone="bg-tone-violet-bg text-tone-violet-fg"
             />
           </div>
         </section>

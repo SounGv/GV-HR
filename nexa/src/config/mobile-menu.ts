@@ -24,10 +24,13 @@ import {
   Settings2,
 } from "lucide-react";
 
-/** Per-category icon tone (2026-08-25 icon/logo spec) — items without a
- * `tone` fall back to the shared green icon-chip (bg-icon-chip-bg /
- * text-icon-chip-fg), which is itself one of these categories' colors. */
-export type MenuIconTone = "overtime" | "calendar" | "violet" | "profile";
+/** Every menu item uses the shared green icon-chip (bg-icon-chip-bg /
+ * text-icon-chip-fg) — per-category colors (overtime/calendar/violet) were
+ * retired in favor of the monochrome system action-center.tsx and the
+ * dashboard KPI cards already use. "profile" is the one deliberate
+ * exception: account/personal items stay neutral grey everywhere, the same
+ * convention BambooHR/Personio/Deel use for profile avatars and menu rows. */
+export type MenuIconTone = "profile";
 
 export interface MobileMenuItem {
   id: string;
@@ -62,7 +65,7 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
       { id: "checkin", label: "เข้างาน / ออกงาน", href: "/attendance", icon: ScanLine, permission: "attendance:read" },
       { id: "timeedit", label: "แก้เวลาเข้า-ออกงาน", href: "/attendance/corrections/new", icon: Clock3, permission: "attendance:create" },
       { id: "shift", label: "ตารางกะ", href: "/shifts", icon: CalendarClock, permission: "shift:read" },
-      { id: "calendar", label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", tone: "calendar" },
+      { id: "calendar", label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read" },
     ],
   },
   {
@@ -70,9 +73,9 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
     tone: "primary",
     items: [
       { id: "leave", label: "ขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read" },
-      { id: "overtime", label: "ขอ OT", href: "/overtime/new", icon: Timer, permission: "overtime:read", tone: "overtime" },
+      { id: "overtime", label: "ขอ OT", href: "/overtime/new", icon: Timer, permission: "overtime:read" },
       { id: "expense", label: "เบิกค่าใช้จ่าย", href: "/expenses/new", icon: Wallet, permission: "expense:read" },
-      { id: "benefits", label: "สวัสดิการ", href: "/benefits", icon: HeartPulse, permission: "expense:read", tone: "violet" },
+      { id: "benefits", label: "สวัสดิการ", href: "/benefits", icon: HeartPulse, permission: "expense:read" },
     ],
   },
   {
@@ -80,7 +83,7 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
     tone: "primary",
     items: [
       { id: "kpi", label: "KPI ส่วนตัว", href: "/kpi", icon: Target, permission: "kpi:read" },
-      { id: "review", label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read", tone: "violet" },
+      { id: "review", label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read" },
       { id: "meeting", label: "นัดประชุม", href: "/meetings", icon: CalendarPlus, permission: "meeting:read" },
     ],
   },
