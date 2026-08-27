@@ -189,8 +189,8 @@ export function MobileDashboardView({
                 href={item.href}
                 className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-icon-chip-bg/60"
               >
-                <span className="flex size-11 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60">
-                  <item.icon className="size-7" strokeWidth={3} />
+                <span className="flex size-11 items-center justify-center text-icon-chip-fg">
+                  <item.icon className="size-8" strokeWidth={1.75} />
                 </span>
                 <span className="text-[12px] font-medium text-foreground">{item.label}</span>
               </Link>
@@ -226,19 +226,17 @@ export function MobileDashboardView({
 function TodoIcon({
   icon: Icon,
   count,
-  tone = "bg-icon-chip-bg text-icon-chip-fg",
+  tone = "text-icon-chip-fg",
 }: {
   icon: typeof ClipboardCheck;
   count: number;
   tone?: string;
 }) {
   return (
-    <span
-      className={`relative flex size-10 shrink-0 items-center justify-center rounded-2xl ${tone} shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60`}
-    >
-      <Icon className="size-[18px]" strokeWidth={3} />
+    <span className={`relative flex size-10 shrink-0 items-center justify-center ${tone}`}>
+      <Icon className="size-6" strokeWidth={1.75} />
       {count > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">
+        <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">
           {count > 9 ? "9+" : count}
         </span>
       )}
@@ -252,7 +250,7 @@ function SummaryTile({
   label,
   value,
   disabled,
-  tone = "bg-icon-chip-bg text-icon-chip-fg",
+  tone = "text-icon-chip-fg",
 }: {
   href: string;
   icon: typeof ClipboardCheck;
@@ -263,8 +261,8 @@ function SummaryTile({
 }) {
   const inner = (
     <div className="flex h-full flex-col gap-1.5 rounded-2xl bg-card p-3 shadow-sm">
-      <span className={`flex size-7 items-center justify-center rounded-xl ${tone} shadow-sm`}>
-        <Icon className="size-3.5" strokeWidth={3} />
+      <span className={`flex size-7 items-center justify-center ${tone}`}>
+        <Icon className="size-5" strokeWidth={1.75} />
       </span>
       <p className="truncate text-[11px] text-muted-foreground">{label}</p>
       <p className="truncate text-sm font-bold text-foreground">{value}</p>

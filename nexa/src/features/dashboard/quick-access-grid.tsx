@@ -10,9 +10,9 @@ export interface QuickAccessItem {
 
 /** Icon-tile shortcuts to the most frequently used pages — desktop equivalent
  * of the icon-grid quick-menu the mobile app already has, so common actions
- * don't require opening a sidebar submenu first. Every tile uses the same
- * monochrome-green chip as action-center.tsx and the dashboard KPI cards —
- * per-category colors (overtime/calendar/violet) were retired app-wide. */
+ * don't require opening a sidebar submenu first. Icons render bare (no
+ * tinted chip behind them) in the shared brand-green color, matching
+ * mobile-menu-tile-grid.tsx's flatter, single-accent treatment. */
 export function QuickAccessGrid({ items }: { items: QuickAccessItem[] }) {
   if (items.length === 0) return null;
 
@@ -26,8 +26,8 @@ export function QuickAccessGrid({ items }: { items: QuickAccessItem[] }) {
             href={item.href}
             className="flex flex-col items-center gap-2 rounded-xl border border-border p-3 text-center transition hover:border-primary/40 hover:bg-accent/40"
           >
-            <span className="flex size-11 items-center justify-center rounded-xl bg-icon-chip-bg text-icon-chip-fg">
-              <item.icon className="size-7" strokeWidth={3} />
+            <span className="flex size-11 items-center justify-center text-icon-chip-fg">
+              <item.icon className="size-8" strokeWidth={1.75} />
             </span>
             <span className="line-clamp-2 text-xs font-medium leading-tight text-foreground">{item.label}</span>
           </Link>

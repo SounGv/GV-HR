@@ -4,18 +4,18 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import type { MobileMenuGroup, MenuIconTone } from "@/config/mobile-menu";
 
-// Every item uses the shared green chip except "profile" (neutral grey) —
-// see the MenuIconTone comment in config/mobile-menu.ts.
+// Every item uses the shared brand-green icon color except "profile"
+// (neutral grey) — see the MenuIconTone comment in config/mobile-menu.ts.
 const ITEM_TONE_CLASSES: Record<MenuIconTone, string> = {
-  profile: "bg-tone-profile-bg text-tone-profile-fg",
+  profile: "text-tone-profile-fg",
 };
-const DEFAULT_TONE_CLASS = "bg-icon-chip-bg text-icon-chip-fg";
+const DEFAULT_TONE_CLASS = "text-icon-chip-fg";
 
 /**
  * Shared quick-menu tile grid — used by both the Home tab and "บริการ"
  * (/services), so a design change here is a design change everywhere this
- * pattern appears. Icons are filled tinted chips (not bare outline circles)
- * so they read as grounded, tappable buttons instead of floating outlines.
+ * pattern appears. Icons render bare (no tinted chip behind them) — the
+ * flatter, single-accent treatment the reference competitor screenshot used.
  *
  * `hrStartIndex` (from `useMobileMenuGroups`) draws a labeled divider right
  * before the manager/HR sections, so accounts with approval rights see
@@ -49,10 +49,8 @@ export function MobileMenuTileGrid({ groups, hrStartIndex }: { groups: MobileMen
                     href={item.href}
                     className="flex flex-col items-center gap-2 rounded-xl px-0.5 py-1 text-center transition active:scale-95 active:bg-muted"
                   >
-                    <span
-                      className={`flex size-11 items-center justify-center rounded-2xl ${toneClass} shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60`}
-                    >
-                      <item.icon className="size-7" strokeWidth={3} />
+                    <span className={`flex size-11 items-center justify-center ${toneClass}`}>
+                      <item.icon className="size-8" strokeWidth={1.75} />
                     </span>
                     <span className="line-clamp-2 text-[12.5px] font-semibold leading-tight text-foreground">
                       {item.label}
