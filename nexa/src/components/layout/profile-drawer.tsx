@@ -129,12 +129,14 @@ function useSwipeToClose(onClose: () => void) {
 }
 
 /**
- * The account drawer — opened from the mobile bottom nav's "โปรไฟล์" tab,
- * the mobile home header's profile icon, and the desktop topbar's avatar
- * button (all via `useProfileDrawer()`, one shared instance mounted in
- * `AppShell`). Deliberately NOT a navigation hub: it shows who's logged in
- * and a short account-settings list, not the full permission-filtered menu
- * grid (that already lives on Home / "บริการ" / the bottom nav itself).
+ * The account drawer — desktop-only now, opened from the topbar's avatar
+ * button (`UserMenu`, via `useProfileDrawer()`, one shared instance mounted
+ * in `AppShell`). Mobile dropped this in favor of linking "โปรไฟล์" straight
+ * to `/profile`, which already has security, notifications, and logout on
+ * it — the drawer was a redundant extra tap there. Deliberately NOT a
+ * navigation hub: it shows who's logged in and a short account-settings
+ * list, not the full permission-filtered menu grid (that already lives on
+ * Home / "บริการ").
  */
 export function ProfileDrawer() {
   const { open, closeDrawer, setOpen } = useProfileDrawer();

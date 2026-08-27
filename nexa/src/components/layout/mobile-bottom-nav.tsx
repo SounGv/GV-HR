@@ -18,7 +18,6 @@ import { useOvertime } from "@/features/overtime/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
-import { useProfileDrawer } from "./profile-drawer-context";
 
 /**
  * 5-slot flat bottom tab bar for phones — hidden on md+. Three role-variant
@@ -28,16 +27,16 @@ import { useProfileDrawer } from "./profile-drawer-context";
  *   Employee: หน้าหลัก · ปฏิทิน · คำขอ · ประเมิน · โปรไฟล์
  *   Manager:  หน้าหลัก · ทีมของฉัน · อนุมัติ · ประเมิน · โปรไฟล์
  *   HR:       Dashboard · พนักงาน · คำขอ · รายงาน · โปรไฟล์
- * "โปรไฟล์" opens a drawer (see ProfileDrawer) instead of navigating away,
- * so the full categorized quick-menu is always one tap from anywhere.
- * AI Assistant is intentionally never a tab — it's reached from the "ภาพรวม"
- * nav group / floating launcher on desktop, and isn't part of the mobile
- * tab bar for any role per the redesign spec.
+ * "โปรไฟล์" links straight to /profile — the mobile profile page already
+ * has security, notifications, and logout on it (see MobileProfileView), so
+ * routing through the account drawer first was just an extra tap for no
+ * extra reach. AI Assistant is intentionally never a tab — it's reached
+ * from the "ภาพรวม" nav group / floating launcher on desktop, and isn't
+ * part of the mobile tab bar for any role per the redesign spec.
  */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { can } = useAuth();
-  const { open: profileOpen, openDrawer } = useProfileDrawer();
 
   const canApproveLeave = can("leave:approve");
   const canApproveOt = can("overtime:approve");
@@ -60,6 +59,8 @@ export function MobileBottomNav() {
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
+  const profileTab = { href: "/profile", label: "โปรไฟล์", icon: UserRound, show: true, badge: unreadCount };
+
   const tabs = isHrTier
     ? [
         { href: "/dashboard", label: "Dashboard", icon: Home, show: true, badge: 0 },
@@ -72,6 +73,7 @@ export function MobileBottomNav() {
           badge: pendingCount,
         },
         { href: "/reports", label: "รายงาน", icon: BarChart3, show: can("report:read"), badge: 0 },
+        profileTab,
       ]
     : isManagerTier
       ? [
@@ -85,6 +87,7 @@ export function MobileBottomNav() {
             badge: pendingCount,
           },
           { href: "/performance", label: "ประเมิน", icon: Star, show: canReview, badge: pendingReviewCount },
+          profileTab,
         ]
       : [
           { href: "/dashboard", label: "หน้าหลัก", icon: Home, show: true, badge: 0 },
@@ -97,44 +100,25 @@ export function MobileBottomNav() {
             badge: 0,
           },
           { href: "/performance", label: "ประเมิน", icon: Star, show: canReview, badge: pendingReviewCount },
+          profileTab,
         ];
 
   const visibleTabs = tabs.filter((t) => t.show);
 
   return (
-    <>
-      <nav
-        aria-label="เมนูลัด"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+    <nav
+      aria-label="เมนูลัด"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+    >
+      <div
+        className="mx-auto grid h-16 max-w-md items-center px-1"
+        style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }}
       >
-        <div
-          className="mx-auto grid h-16 max-w-md items-center px-1"
-          style={{ gridTemplateColumns: `repeat(${visibleTabs.length + 1}, minmax(0, 1fr))` }}
-        >
-          {visibleTabs.map((t) => (
-            <NavTab key={t.href} href={t.href} label={t.label} icon={t.icon} active={isActive(t.href)} badge={t.badge} />
-          ))}
-          <button
-            type="button"
-            onClick={openDrawer}
-            className={cn(
-              "flex h-full flex-col items-center justify-center gap-0.5 transition active:scale-95",
-              profileOpen ? "font-bold text-[#2F6B24]" : "text-[#374151]",
-            )}
-          >
-            <span className={cn("relative flex items-center justify-center rounded-full px-3 py-1", profileOpen && "bg-[#E5F6B8]")}>
-              <UserRound className="size-6" strokeWidth={2.8} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[9px] font-semibold text-badge-foreground ring-2 ring-card">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </span>
-            <span className="text-[12px] font-semibold whitespace-nowrap">โปรไฟล์</span>
-          </button>
-        </div>
-      </nav>
-    </>
+        {visibleTabs.map((t) => (
+          <NavTab key={t.href} href={t.href} label={t.label} icon={t.icon} active={isActive(t.href)} badge={t.badge} />
+        ))}
+      </div>
+    </nav>
   );
 }
 

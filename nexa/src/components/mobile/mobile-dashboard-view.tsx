@@ -16,7 +16,6 @@ import {
 import { useNotifications } from "@/features/notification/hooks";
 import { useMyPendingResponses, useEmployeeEvaluationHistory } from "@/features/campaign/hooks";
 import { useAuth } from "@/features/auth/auth-context";
-import { useProfileDrawer } from "@/components/layout/profile-drawer-context";
 import type { DashboardActions } from "@/features/dashboard/service";
 import { MobileCheckinCard } from "./mobile-checkin-card";
 
@@ -44,8 +43,8 @@ function greeting(): string {
  * already the Attendance Card's job), and a compact "สรุปของฉัน" stat row.
  * The full categorized quick-menu (services grid) and the rest of the app's
  * functionality (นัดประชุม, AI Assistant, HR menu, etc.) are unchanged and
- * still reachable from the bottom nav's profile drawer / other tabs — none
- * of it lives on this page, so nothing here removes an existing route.
+ * still reachable from "บริการ" / other tabs — none of it lives on this
+ * page, so nothing here removes an existing route.
  */
 export function MobileDashboardView({
   name,
@@ -57,7 +56,6 @@ export function MobileDashboardView({
   actions: DashboardActions;
 }) {
   const { user, can } = useAuth();
-  const { openDrawer } = useProfileDrawer();
   const { data: notifData } = useNotifications();
   const unreadCount = notifData?.data?.unread ?? 0;
   const hrNotifCount = notifData?.data?.items.filter((n) => !n.read && n.category === "hr").length ?? 0;
@@ -105,14 +103,13 @@ export function MobileDashboardView({
               </span>
             )}
           </Link>
-          <button
-            type="button"
-            onClick={openDrawer}
+          <Link
+            href="/profile"
             className="flex size-10 items-center justify-center rounded-full bg-tone-profile-bg text-tone-profile-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
             aria-label="โปรไฟล์"
           >
             <UserRound className="size-[18px]" strokeWidth={3} />
-          </button>
+          </Link>
         </div>
       </div>
 
