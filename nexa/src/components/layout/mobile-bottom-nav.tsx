@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
+  Home,
   CalendarDays,
   ClipboardList,
   ClipboardCheck,
@@ -62,7 +62,7 @@ export function MobileBottomNav() {
 
   const tabs = isHrTier
     ? [
-        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true, badge: 0 },
+        { href: "/dashboard", label: "Dashboard", icon: Home, show: true, badge: 0 },
         { href: "/employees", label: "พนักงาน", icon: UsersRound, show: can("employee:read"), badge: 0 },
         {
           href: "/requests",
@@ -75,7 +75,7 @@ export function MobileBottomNav() {
       ]
     : isManagerTier
       ? [
-          { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard, show: true, badge: 0 },
+          { href: "/dashboard", label: "หน้าหลัก", icon: Home, show: true, badge: 0 },
           { href: "/employees", label: "ทีมของฉัน", icon: UsersRound, show: can("employee:read"), badge: 0 },
           {
             href: "/requests",
@@ -87,7 +87,7 @@ export function MobileBottomNav() {
           { href: "/performance", label: "ประเมิน", icon: Star, show: canReview, badge: pendingReviewCount },
         ]
       : [
-          { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard, show: true, badge: 0 },
+          { href: "/dashboard", label: "หน้าหลัก", icon: Home, show: true, badge: 0 },
           { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays, show: can("calendar:read"), badge: 0 },
           {
             href: "/requests",
@@ -147,7 +147,7 @@ function NavTab({
 }: {
   href: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: typeof Home;
   active: boolean;
   badge: number;
 }) {

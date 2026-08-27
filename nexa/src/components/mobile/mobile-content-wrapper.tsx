@@ -90,7 +90,7 @@ export function MobileContentWrapper({ children }: { children: React.ReactNode }
 
       backHref={meta.backHref}
 
-      contentClassName="mobile-module-body space-y-4 p-4"
+      contentClassName="mobile-module-body space-y-4 p-4 pb-36"
 
     >
 
