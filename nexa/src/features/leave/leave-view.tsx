@@ -37,12 +37,12 @@ function amountLabel(r: LeaveRequest) {
   return r.unit === "HOUR" ? `${r.hours} ชม.` : `${r.days} วัน`;
 }
 
-export function LeaveView() {
+export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
   const { can } = useAuth();
   const canApprove = can("leave:approve");
 
   return (
-    <Tabs defaultValue="me" className="space-y-4">
+    <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">คำขอของฉัน</TabsTrigger>
         {canApprove && <TabsTrigger value="approvals">รออนุมัติ</TabsTrigger>}
