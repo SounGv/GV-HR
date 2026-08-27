@@ -4,7 +4,8 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 
 import { cn } from "@/lib/utils"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+import { ChevronDownIcon, CheckIcon, ChevronUpIcon, SearchIcon } from "lucide-react"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 
 /**
  * Walk the JSX children to collect every <SelectItem>'s value + label so we can
@@ -31,6 +32,63 @@ function deriveItems(
   }
   walk(children)
   return out.length ? out : undefined
+}
+
+/** Plain-text of a node's children — icons/other non-text nodes contribute
+ * nothing, which is exactly what we want for matching a typed search query
+ * against an item's visible label (e.g. "แผนกคลังสินค้า" from
+ * `<SelectItem>{d.name}</SelectItem>`, or "ต้นตระกูล มาลาคำ (D0002)" from a
+ * multi-part employee label). */
+function nodeToText(node: React.ReactNode): string {
+  if (node == null || typeof node === "boolean") return ""
+  if (typeof node === "string" || typeof node === "number") return String(node)
+  if (Array.isArray(node)) return node.map(nodeToText).join(" ")
+  if (React.isValidElement(node)) {
+    return nodeToText((node.props as { children?: React.ReactNode }).children)
+  }
+  return ""
+}
+
+function countSelectItems(nodes: React.ReactNode): number {
+  let n = 0
+  React.Children.forEach(nodes, (child) => {
+    if (!React.isValidElement(child)) return
+    if (child.type === SelectItem) {
+      n += 1
+      return
+    }
+    const props = child.props as { children?: React.ReactNode }
+    if (props.children) n += countSelectItems(props.children)
+  })
+  return n
+}
+
+/** Below this many options, a search box is more clutter than help — a
+ * 3-item gender select doesn't need one, a 100-employee picker does. */
+const SELECT_SEARCH_THRESHOLD = 8
+
+function filterSelectChildren(nodes: React.ReactNode, query: string): React.ReactNode {
+  const q = query.trim().toLowerCase()
+  if (!q) return nodes
+  const filterNode = (node: React.ReactNode): React.ReactNode => {
+    if (!React.isValidElement(node)) return node
+    if (node.type === SelectItem) {
+      const props = node.props as { children?: React.ReactNode }
+      return nodeToText(props.children).toLowerCase().includes(q) ? node : null
+    }
+    const props = node.props as { children?: React.ReactNode }
+    if (props.children) {
+      const kept = React.Children.toArray(props.children)
+        .map(filterNode)
+        .filter((n) => n !== null)
+      if (kept.length === 0) return null
+      return React.cloneElement(node as React.ReactElement<{ children?: React.ReactNode }>, {}, kept)
+    }
+    return node
+  }
+  return React.Children.toArray(nodes)
+    .map(filterNode)
+    .filter((n) => n !== null)
 }
 
 function Select<Value = string, Multiple extends boolean | undefined = false>({
@@ -109,6 +167,14 @@ function SelectContent({
     SelectPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset" | "alignItemWithTrigger"
   >) {
+  const [query, setQuery] = React.useState("")
+  // Recomputed on every render (not memoized) — these walks are cheap
+  // (a handful to a few hundred plain-object nodes) and only run while the
+  // popup is actually open/mounted.
+  const showSearch = countSelectItems(children) > SELECT_SEARCH_THRESHOLD
+  const filteredChildren = showSearch ? filterSelectChildren(children, query) : children
+  const noResults = showSearch && query.trim() && countSelectItems(filteredChildren) === 0
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
@@ -122,12 +188,39 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
-          className={cn("relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+          className={cn("relative isolate z-50 flex max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) flex-col overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
           {...props}
         >
-          <SelectScrollUpButton />
-          <SelectPrimitive.List>{children}</SelectPrimitive.List>
-          <SelectScrollDownButton />
+          {showSearch && (
+            <div className="shrink-0 border-b border-border p-1.5">
+              <InputGroup className="h-8 rounded-md border-input/60">
+                <InputGroupAddon>
+                  <SearchIcon className="size-3.5" />
+                </InputGroupAddon>
+                <InputGroupInput
+                  placeholder="ค้นหา…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    // Let Escape still close the popup; everything else
+                    // (including arrow keys) stays local to the input so
+                    // Base UI's own type-ahead doesn't fight our filtering.
+                    if (e.key !== "Escape") e.stopPropagation()
+                  }}
+                  className="text-sm"
+                />
+              </InputGroup>
+            </div>
+          )}
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+            <SelectScrollUpButton />
+            <SelectPrimitive.List>{filteredChildren}</SelectPrimitive.List>
+            {noResults && (
+              <p className="px-3 py-6 text-center text-sm text-muted-foreground">ไม่พบผลลัพธ์</p>
+            )}
+            <SelectScrollDownButton />
+          </div>
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
     </SelectPrimitive.Portal>
