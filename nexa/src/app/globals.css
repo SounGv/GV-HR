@@ -26,15 +26,8 @@
   --color-badge: var(--badge);
   --color-badge-foreground: var(--badge-foreground);
 
-  /* Per-category menu-icon tones (2026-08-25 icon/logo spec) — ขอลา/คำขอ
-     reuse the green icon-chip pair above (same exact values), these three
-     cover the categories that need a different hue. */
-  --color-tone-overtime-bg: var(--tone-overtime-bg);
-  --color-tone-overtime-fg: var(--tone-overtime-fg);
-  --color-tone-calendar-bg: var(--tone-calendar-bg);
-  --color-tone-calendar-fg: var(--tone-calendar-fg);
-  --color-tone-violet-bg: var(--tone-violet-bg);
-  --color-tone-violet-fg: var(--tone-violet-fg);
+  /* Every icon chip uses the green pair above except account/profile items,
+     which stay neutral grey — see MenuIconTone in config/mobile-menu.ts. */
   --color-tone-profile-bg: var(--tone-profile-bg);
   --color-tone-profile-fg: var(--tone-profile-fg);
   --color-menu-active-bg: var(--menu-active-bg);
@@ -143,18 +136,11 @@
   --chart-4: #4d7c0f;
   --chart-5: #e4573d;
 
-  /* Per-category menu-icon system (2026-08-25 spec) — exact hex values from
-     the reference mockups. ขอลา/คำขอ (the "default" nav icon) uses this
-     green pair; ขอ OT/ปฏิทิน/สวัสดิการ+ประเมิน/โปรไฟล์ get their own tone
-     below. Red is reserved for notification-count badges (--badge). */
+  /* Monochrome icon-chip system — every menu/KPI icon uses this green pair;
+     "profile" is the one deliberate neutral-grey exception (account/personal
+     items). Red is reserved for notification-count badges (--badge). */
   --icon-chip-bg: #edf8e5;
   --icon-chip-fg: #2f6b24;
-  --tone-overtime-bg: #fff4e5;
-  --tone-overtime-fg: #b45309;
-  --tone-calendar-bg: #eaf2ff;
-  --tone-calendar-fg: #2563eb;
-  --tone-violet-bg: #f2efff;
-  --tone-violet-fg: #6d28d9;
   --tone-profile-bg: #f1f3f5;
   --tone-profile-fg: #374151;
   --badge: #d92d20;
@@ -252,12 +238,6 @@
 
   --icon-chip-bg: #2a3018;
   --icon-chip-fg: #bef264;
-  --tone-overtime-bg: #3a2510;
-  --tone-overtime-fg: #fbbf24;
-  --tone-calendar-bg: #172554;
-  --tone-calendar-fg: #60a5fa;
-  --tone-violet-bg: #2e1065;
-  --tone-violet-fg: #c4b5fd;
   --tone-profile-bg: #262b33;
   --tone-profile-fg: #cbd5e1;
   --badge: #ef4444;
