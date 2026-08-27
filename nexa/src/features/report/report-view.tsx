@@ -131,7 +131,6 @@ export function ReportView() {
   useEffect(() => {
     const urlEmployeeId = searchParams.get("employeeId");
     if (urlEmployeeId) setEmployeeId(urlEmployeeId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
   const [branchId, setBranchId] = useState<string>(ALL_BRANCH);
   const [costCenterId, setCostCenterId] = useState<string>(ALL_COST_CENTER);
