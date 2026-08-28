@@ -1,8 +1,9 @@
 import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
+import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { computeLeaveDays, computeLeaveHours, deductsBalance, HOURLY_LEAVE_TYPES, PAID_LEAVE_TYPES } from "./days";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
@@ -140,6 +141,28 @@ export async function createLeave(
     }
   }
 
+  // A full-day request conflicts with anything overlapping that date range
+  // regardless of unit; an hourly request can only be reliably said to
+  // conflict with an existing full-day request covering that date — two
+  // hourly requests on the same day may occupy different time slots we don't
+  // compare here. Without this, the same date range could be approved twice
+  // and LeaveBalance debited twice for the same day(s).
+  const overlap = await prisma.leaveRequest.findFirst({
+    where: {
+      companyId,
+      employeeId,
+      deletedAt: null,
+      status: { in: ["PENDING", "APPROVED"] },
+      startDate: { lte: input.endDate },
+      endDate: { gte: input.startDate },
+      ...(isHourly ? { unit: "DAY" } : {}),
+    },
+    select: { id: true },
+  });
+  if (overlap) {
+    throw BadRequest("คุณมีคำขอลาในช่วงวันที่นี้อยู่แล้ว กรุณาตรวจสอบหรือยกเลิกคำขอเดิมก่อนยื่นใหม่");
+  }
+
   const requester = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
     select: { firstName: true, lastName: true, managerId: true },
@@ -191,6 +214,12 @@ export async function createLeave(
       session.sub,
     );
   }
+
+  await broadcastToLineGroups(
+    companyId,
+    "hr-alerts",
+    `📋 มีคำขอลารออนุมัติ\n${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}`,
+  );
 
   return record;
 }
@@ -306,8 +335,14 @@ export async function decideLeave(
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    const rec = await tx.leaveRequest.update({
-      where: { id: req.id },
+    // Compare-and-swap on status: the PENDING check above and the balance
+    // upsert below are separate round-trips, so two concurrent decide calls
+    // (double-click, retry, or a second approver) can both pass that check
+    // before either commits. Guarding this update on the status already read
+    // means only the first transaction proceeds to the balance increment —
+    // the second sees count 0 and aborts before ever touching LeaveBalance.
+    const { count } = await tx.leaveRequest.updateMany({
+      where: { id: req.id, status: "PENDING" },
       data: {
         status: nextStatus,
         approverEmployeeId: session.employeeId ?? null,
@@ -316,8 +351,9 @@ export async function decideLeave(
         decisionNote: input.note,
         updatedById: session.sub,
       },
-      select: requestSelect,
     });
+    if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+    const rec = await tx.leaveRequest.findFirstOrThrow({ where: { id: req.id }, select: requestSelect });
 
     if (input.action === "approve" && (isHourly || deductsBalance(req.type))) {
       const year = req.startDate.getUTCFullYear();

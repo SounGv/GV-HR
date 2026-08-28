@@ -56,6 +56,19 @@ export async function replyLineMessage(replyToken: string, text: string): Promis
   });
 }
 
+/**
+ * Best-effort push ไปยัง LINE group (ใช้ endpoint เดียวกับ pushLineMessage —
+ * LINE Push API รับ userId/groupId/roomId ผ่าน field `to` เดียวกันทั้งหมด
+ * ไม่มี endpoint แยก). ไม่ throw เหมือนกัน เพื่อไม่ให้ LINE ล่มแล้วบล็อก caller
+ */
+export async function pushLineGroupMessage(groupId: string, text: string): Promise<void> {
+  if (!isLineConfigured()) return;
+  await callLineApi("/v2/bot/message/push", {
+    to: groupId,
+    messages: [{ type: "text", text: text.slice(0, 5000) }],
+  });
+}
+
 /** 6-char, unambiguous alphabet (no 0/O/1/I) — read out loud/typed by hand. */
 export function generateLinkCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

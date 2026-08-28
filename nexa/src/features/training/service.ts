@@ -221,30 +221,37 @@ export async function enrollSelf(
     throw Conflict("คุณลงทะเบียนหลักสูตรนี้แล้ว");
   }
 
-  if (course.capacity != null) {
-    const count = await prisma.trainingEnrollment.count({
-      where: { courseId, status: { not: "CANCELLED" } },
-    });
-    if (count >= course.capacity) throw BadRequest("หลักสูตรเต็มแล้ว");
-  }
-
-  const record = existing
-    ? await prisma.trainingEnrollment.update({
-        where: { id: existing.id },
-        data: { status: "ENROLLED", updatedById: session.sub },
-        select: { id: true },
-      })
-    : await prisma.trainingEnrollment.create({
-        data: {
-          companyId,
-          courseId,
-          employeeId,
-          status: "ENROLLED",
-          createdById: session.sub,
-          updatedById: session.sub,
-        },
-        select: { id: true },
+  // Capacity check + write share one transaction so two concurrent
+  // enrollments can't both pass the count check before either commits —
+  // this app's Prisma pool is connection_limit=1, so a transaction fully
+  // completes before the next queued request's queries even start,
+  // preventing a capped course from being over-filled by a race.
+  const record = await prisma.$transaction(async (tx) => {
+    if (course.capacity != null) {
+      const count = await tx.trainingEnrollment.count({
+        where: { courseId, status: { not: "CANCELLED" } },
       });
+      if (count >= course.capacity) throw BadRequest("หลักสูตรเต็มแล้ว");
+    }
+
+    return existing
+      ? await tx.trainingEnrollment.update({
+          where: { id: existing.id },
+          data: { status: "ENROLLED", updatedById: session.sub },
+          select: { id: true },
+        })
+      : await tx.trainingEnrollment.create({
+          data: {
+            companyId,
+            courseId,
+            employeeId,
+            status: "ENROLLED",
+            createdById: session.sub,
+            updatedById: session.sub,
+          },
+          select: { id: true },
+        });
+  });
 
   await writeAudit({
     companyId,

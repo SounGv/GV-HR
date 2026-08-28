@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 import { loginSchema, type LoginInput } from "./schema";
 import { api, ApiError, type Envelope } from "@/lib/api/client";
+import { MFA_PENDING_COOKIE } from "@/lib/auth/constants";
 import {
   Form,
   FormControl,
@@ -43,6 +44,16 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
     const error = searchParams.get("error");
     if (error && OAUTH_ERROR_MESSAGE[error]) {
       toast.error(OAUTH_ERROR_MESSAGE[error]);
+    }
+
+    if (searchParams.get("mfa") === "google") {
+      const token = readCookie(MFA_PENDING_COOKIE);
+      clearCookie(MFA_PENDING_COOKIE);
+      if (token) {
+        setMfaToken(token);
+      } else {
+        toast.error("เซสชันยืนยันตัวตนหมดอายุ กรุณาเข้าสู่ระบบใหม่");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -204,6 +215,15 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
       </form>
     </Form>
   );
+}
+
+function readCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function clearCookie(name: string): void {
+  document.cookie = `${name}=; path=/; max-age=0`;
 }
 
 function GoogleIcon({ className }: { className?: string }) {

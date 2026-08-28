@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { NotFound } from "@/lib/api/errors";
+import { Forbidden, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { isCompanyWideEmployeeViewer } from "@/features/employee/service";
 import type { EmployeeDocumentCreateInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -14,9 +15,18 @@ const documentSelect = {
   uploadedAt: true,
 } as const;
 
-export async function listEmployeeDocuments(companyId: string, employeeId: string) {
-  const employee = await prisma.employee.findFirst({ where: { id: employeeId, companyId, deletedAt: null }, select: { id: true } });
+export async function listEmployeeDocuments(companyId: string, employeeId: string, session: AccessClaims) {
+  const employee = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId, deletedAt: null },
+    select: { id: true, manager: { select: { id: true } } },
+  });
   if (!employee) throw NotFound("ไม่พบพนักงาน");
+
+  if (!isCompanyWideEmployeeViewer(session)) {
+    const own = employee.id === session.employeeId;
+    const managesTarget = employee.manager?.id === session.employeeId;
+    if (!own && !managesTarget) throw Forbidden("ดูเอกสารได้เฉพาะทีมของคุณ");
+  }
 
   return prisma.employeeDocument.findMany({
     where: { employeeId, companyId },

@@ -10,3 +10,9 @@ export const OAUTH_STATE_COOKIE = "nexa_oauth_state";
 // every mutating-request path (e.g. some cross-site fetches).
 export const CSRF_COOKIE = "nexa_csrf";
 export const CSRF_HEADER = "x-csrf-token";
+// Carries a pending-2FA mfaToken across the Google OAuth redirect back to
+// /login. Not httpOnly: the login page's client JS needs to read it and hand
+// it to /api/auth/mfa/verify, exactly like the password-login flow already
+// does with the mfaToken in its JSON response — it grants nothing on its own
+// without a valid TOTP/recovery code.
+export const MFA_PENDING_COOKIE = "nexa_mfa_pending";

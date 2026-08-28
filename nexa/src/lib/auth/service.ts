@@ -253,7 +253,7 @@ export async function changePassword(
  * verified email (linking the Google identity on first use). Never creates a
  * brand-new account/organization — that still goes through /register.
  */
-export async function loginWithGoogle(profile: GoogleProfile, meta?: AuthMeta): Promise<AuthResult> {
+export async function loginWithGoogle(profile: GoogleProfile, meta?: AuthMeta): Promise<LoginOutcome> {
   if (!profile.email_verified) {
     throw Unauthorized("อีเมล Google ยังไม่ได้ยืนยัน");
   }
@@ -280,12 +280,15 @@ export async function loginWithGoogle(profile: GoogleProfile, meta?: AuthMeta): 
     throw Unauthorized("บัญชีนี้ถูกระงับการใช้งาน");
   }
 
-  await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+  // Same 2FA gate as the password path — a Google-verified email must not be
+  // able to skip a second factor the account owner explicitly turned on.
+  if (user.twoFactorEnabled) {
+    const mfaToken = await signMfaToken(user.id);
+    return { mfaRequired: true, mfaToken };
+  }
 
-  const claims = buildClaims(user);
-  const accessToken = await signAccessToken(claims);
-  const refresh = await issueRefreshToken(user.id, meta);
-  return { claims, accessToken, refreshToken: refresh.token };
+  const result = await completeLogin(user, meta);
+  return { mfaRequired: false, ...result };
 }
 
 export async function refresh(rawRefreshToken: string, meta?: AuthMeta): Promise<AuthResult> {

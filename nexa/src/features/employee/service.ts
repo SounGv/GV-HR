@@ -122,6 +122,20 @@ export async function listEmployees(companyId: string, query: EmployeeListQuery,
   return { items, total };
 }
 
+/** Compensation/financial-identity fields — visible to HR/Finance (company-
+ * wide viewers) and to the employee themselves, but not to a direct manager
+ * who only holds `employee:read`. A line manager needing to *see* a report's
+ * salary/bank/national-ID belongs on an HR/Finance-granted role, not on
+ * every manager by default. */
+const MANAGER_REDACTED_FIELDS = [
+  "nationalId",
+  "baseSalary",
+  "dailyRate",
+  "hourlyRate",
+  "bankName",
+  "bankAccountNo",
+] as const satisfies readonly (keyof EmployeeDetail)[];
+
 export async function getEmployee(companyId: string, id: string, session?: AccessClaims): Promise<EmployeeDetail> {
   const employee = await prisma.employee.findFirst({
     where: { id, companyId, deletedAt: null },
@@ -133,6 +147,9 @@ export async function getEmployee(companyId: string, id: string, session?: Acces
     const own = employee.id === session.employeeId;
     const managesTarget = employee.manager?.id === session.employeeId;
     if (!own && !managesTarget) throw Forbidden("ดูข้อมูลได้เฉพาะทีมของคุณ");
+    if (managesTarget && !own) {
+      for (const field of MANAGER_REDACTED_FIELDS) employee[field] = null;
+    }
   }
 
   return employee;

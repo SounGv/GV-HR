@@ -13,10 +13,12 @@ export async function GET(req: NextRequest) {
     const yearParam = req.nextUrl.searchParams.get("year");
     const year = yearParam ? Number(yearParam) : new Date().getFullYear();
 
-    const [summary, eligibility] = await Promise.all([
-      getMedicalBenefitSummary(session.companyId, session.employeeId, year),
-      getMedicalEligibility(session.companyId, session.employeeId),
-    ]);
+    // Sequential, not Promise.all — this app's Prisma pool is
+    // connection_limit=1, so concurrent queries from one request can silently
+    // drop results (see prior fixes elsewhere in this codebase for the same
+    // constraint).
+    const summary = await getMedicalBenefitSummary(session.companyId, session.employeeId, year);
+    const eligibility = await getMedicalEligibility(session.companyId, session.employeeId);
     return ok({ ...summary, ...eligibility });
   } catch (err) {
     return handleApiError(err);

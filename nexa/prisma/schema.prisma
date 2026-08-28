@@ -388,6 +388,7 @@ model Company {
   positionCompetencyRequirements PositionCompetencyRequirement[]
   employeeCompetencyLevels       EmployeeCompetencyLevel[]
   aiAccessGrants                 AiAccessGrant[]
+  lineGroupTargets               LineGroupTarget[]
 
   @@index([deletedAt])
   @@map("companies")
@@ -2385,4 +2386,25 @@ model ApprovalRequest {
 
   @@index([companyId, status])
   @@map("approval_requests")
+}
+
+// ─────────────────────────── Integrations: LINE ───────────────────────────
+
+// LINE group ที่ลงทะเบียนไว้รับการแจ้งเตือนแบบ broadcast (เช่น กลุ่มหัวหน้างาน/HR)
+// groupId ได้มาจาก webhook event "join" ตอนบอทถูกเชิญเข้ากลุ่ม — ไม่มีทางกรอกเองได้
+// เพราะ LINE ไม่มี UI ให้ดู groupId ตรงๆ ต้องผ่าน event เท่านั้น
+model LineGroupTarget {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  groupId String  @unique // LINE internal group ID จาก event.source.groupId
+  purpose String  @default("hr-alerts") // free-text tag เผื่ออนาคตมีหลายกลุ่มคนละหน้าที่
+  label   String? // ชื่อที่ HR ตั้งเองให้จำง่าย เช่น "กลุ่ม HR & หัวหน้างาน"
+  active  Boolean @default(true) // false = หยุดส่งชั่วคราวโดยไม่ต้องลบ record (เช่น กลุ่มไล่บอทออกแล้วเชิญกลับ)
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, purpose, active])
+  @@map("line_group_targets")
 }

@@ -4,6 +4,7 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { scoreBand } from "@/lib/scoring";
 import { createNotification } from "@/features/notification/service";
+import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { getTemplateSnapshot, cloneTemplate, updateTemplate as updateEvaluationTemplate } from "@/features/evaluation-template/service";
 import type { CampaignTemplateSnapshot } from "@/features/evaluation-template/types";
 import { scoreTemplateAnswersDetailed, scoreCompetenciesDetailed, bandScoreStatus } from "./scoring";
@@ -23,6 +24,15 @@ import type {
 import type { RaterType } from "./types";
 
 type Meta = { ip?: string; userAgent?: string };
+
+/** `endDate` is a date-only value (midnight UTC of the chosen day) — the
+ * deadline covers the whole of that calendar day, so the real cutoff is
+ * midnight the day after. */
+function isPastDeadline(endDate: Date | null): boolean {
+  if (!endDate) return false;
+  const cutoff = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
+  return new Date() >= cutoff;
+}
 
 const competencySelect = {
   competencyId: true,
@@ -405,6 +415,14 @@ export async function updateCampaign(
         session.sub,
       );
     }
+
+    if (pending.length > 0) {
+      await broadcastToLineGroups(
+        companyId,
+        "hr-alerts",
+        `📊 เปิดรอบประเมิน ${cycleLabel} แล้ว\nมีผู้ต้องทำแบบประเมิน ${pending.length} รายการ`,
+      );
+    }
   }
 
   await writeAudit({
@@ -653,6 +671,17 @@ export async function getParticipant(companyId: string, participantId: string, s
     throw Forbidden("ไม่มีสิทธิ์ดูข้อมูลนี้");
   }
 
+  // Confidentiality: a PEER/UPWARD rater invited to score this participant
+  // must only ever see their own submitted response — never the reviewee's
+  // self-assessment, the manager's score, or any other rater's feedback.
+  // The reviewee gets the same restriction on everyone ELSE's response until
+  // HR finalizes the participant, otherwise they'd read their manager's raw
+  // score/comments the instant it's submitted, before results are released.
+  const canSeeAllResponses = hrLevel || managesTarget || (own && !!participant.finalizedAt);
+  const visibleResponses = canSeeAllResponses
+    ? participant.responses
+    : participant.responses.filter((r) => r.raterEmployeeId === session.employeeId);
+
   return {
     id: participant.id,
     overallScore: participant.overallScore,
@@ -675,7 +704,7 @@ export async function getParticipant(companyId: string, participantId: string, s
       competencies: mapCompetencies(participant.campaign.competencies),
       templateSnapshot: participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null,
     },
-    fullResponses: await withRaterEmployees(participant.responses),
+    fullResponses: await withRaterEmployees(visibleResponses),
   };
 }
 
@@ -932,7 +961,7 @@ export async function submitMyResponse(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true, finalizedAt: true, campaign: { select: { status: true, templateSnapshot: true } } },
+    select: { id: true, finalizedAt: true, campaign: { select: { status: true, endDate: true, templateSnapshot: true } } },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
   if (participant.finalizedAt) {
@@ -940,6 +969,15 @@ export async function submitMyResponse(
   }
   if (participant.campaign.status === "CLOSED") {
     throw Forbidden("แคมเปญนี้ปิดแล้ว ไม่สามารถส่งแบบประเมินได้อีก");
+  }
+  // The `status` field only flips to CLOSED via a manual HR action — nothing
+  // auto-closes a campaign when its endDate passes, so that date must be
+  // enforced here too, or every participant can keep submitting/editing
+  // indefinitely past the stated deadline. endDate is a date-only value
+  // (midnight UTC of the chosen day), so the deadline covers the whole of
+  // that calendar day — the cutoff is midnight the day AFTER.
+  if (isPastDeadline(participant.campaign.endDate)) {
+    throw Forbidden("พ้นกำหนดเวลาการประเมินแล้ว ไม่สามารถส่งแบบประเมินได้");
   }
 
   const response = await prisma.evaluationResponse.findFirst({
@@ -1015,11 +1053,14 @@ export async function saveDraftResponse(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { finalizedAt: true, campaign: { select: { templateSnapshot: true, status: true } } },
+    select: { finalizedAt: true, campaign: { select: { templateSnapshot: true, status: true, endDate: true } } },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
   if (participant.finalizedAt) throw Forbidden("การประเมินนี้สรุปผลแล้ว ไม่สามารถแก้ไขคำตอบได้อีก");
   if (participant.campaign.status === "CLOSED") throw Forbidden("แคมเปญนี้ปิดแล้ว ไม่สามารถบันทึกแบบร่างได้");
+  if (isPastDeadline(participant.campaign.endDate)) {
+    throw Forbidden("พ้นกำหนดเวลาการประเมินแล้ว ไม่สามารถบันทึกแบบร่างได้");
+  }
 
   const response = await prisma.evaluationResponse.findFirst({
     where: { participantId, raterEmployeeId: session.employeeId ?? "" },

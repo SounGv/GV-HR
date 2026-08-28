@@ -42,6 +42,41 @@ const recordWithEmployeeSelect = {
 
 type Meta = { ip?: string; userAgent?: string };
 
+/**
+ * Attendance rows are keyed by the calendar date at clock-in (Bangkok time),
+ * but clock-out / break actions can happen after midnight for a shift that
+ * started the day before (e.g. 22:00–06:00). Look for an open session (clocked
+ * in, not yet clocked out) on today's date first, then fall back to
+ * yesterday's — otherwise an overnight shift can never clock out through the
+ * normal flow once the calendar date rolls over.
+ */
+async function findOpenAttendanceRecord(employeeId: string, todayUTC: Date) {
+  const select = {
+    id: true,
+    workDate: true,
+    clockInAt: true,
+    clockOutAt: true,
+    workMode: true,
+    breakStartAt: true,
+    breakEndAt: true,
+  } satisfies Prisma.AttendanceRecordSelect;
+
+  const today = await prisma.attendanceRecord.findUnique({
+    where: { employeeId_workDate: { employeeId, workDate: todayUTC } },
+    select,
+  });
+  if (today?.clockInAt && !today.clockOutAt) return today;
+
+  const yesterdayUTC = new Date(todayUTC.getTime() - 24 * 60 * 60 * 1000);
+  const yesterday = await prisma.attendanceRecord.findUnique({
+    where: { employeeId_workDate: { employeeId, workDate: yesterdayUTC } },
+    select,
+  });
+  if (yesterday?.clockInAt && !yesterday.clockOutAt) return yesterday;
+
+  return today ?? null;
+}
+
 function requireEmployeeId(session: AccessClaims): string {
   if (!session.employeeId) {
     throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน ไม่สามารถลงเวลาได้");
@@ -252,15 +287,11 @@ export async function clockOut(
   const employee = await loadEmployeeWithBranch(companyId, employeeId);
 
   const bp = bangkokParts();
-  const { dateUTC } = bp;
-  const existing = await prisma.attendanceRecord.findUnique({
-    where: { employeeId_workDate: { employeeId, workDate: dateUTC } },
-    select: { id: true, clockInAt: true, clockOutAt: true, workMode: true },
-  });
+  const existing = await findOpenAttendanceRecord(employeeId, bp.dateUTC);
   if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
   if (existing.clockOutAt) throw Conflict("คุณได้เช็คเอาท์แล้ววันนี้");
 
-  const shift = await resolveShiftMinutes(employeeId, dateUTC);
+  const shift = await resolveShiftMinutes(employeeId, existing.workDate);
 
   let qrVerified = false;
   if (input.qrBranchId) {
@@ -327,10 +358,7 @@ export async function clockOut(
 export async function startBreak(companyId: string, session: AccessClaims, meta?: Meta) {
   const employeeId = requireEmployeeId(session);
   const { dateUTC } = bangkokParts();
-  const existing = await prisma.attendanceRecord.findUnique({
-    where: { employeeId_workDate: { employeeId, workDate: dateUTC } },
-    select: { id: true, clockInAt: true, clockOutAt: true, breakStartAt: true, breakEndAt: true },
-  });
+  const existing = await findOpenAttendanceRecord(employeeId, dateUTC);
   if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
   if (existing.clockOutAt) throw BadRequest("เช็คเอาท์แล้ว ไม่สามารถเริ่มพักได้");
   if (existing.breakStartAt && !existing.breakEndAt) throw Conflict("กำลังพักอยู่แล้ว");
@@ -356,10 +384,7 @@ export async function startBreak(companyId: string, session: AccessClaims, meta?
 export async function endBreak(companyId: string, session: AccessClaims, meta?: Meta) {
   const employeeId = requireEmployeeId(session);
   const { dateUTC } = bangkokParts();
-  const existing = await prisma.attendanceRecord.findUnique({
-    where: { employeeId_workDate: { employeeId, workDate: dateUTC } },
-    select: { id: true, breakStartAt: true, breakEndAt: true },
-  });
+  const existing = await findOpenAttendanceRecord(employeeId, dateUTC);
   if (!existing?.breakStartAt || existing.breakEndAt) {
     throw BadRequest("ยังไม่ได้เริ่มพัก");
   }

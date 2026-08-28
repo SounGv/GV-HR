@@ -72,20 +72,20 @@ export async function getMedicalExpenseCap(companyId: string): Promise<number> {
  * — the basis for both the eligibility check below and the balance summary
  * shown on the claim form / mobile card. */
 export async function getMedicalBenefitSummary(companyId: string, employeeId: string, year: number) {
-  const [cap, rows] = await Promise.all([
-    getMedicalExpenseCap(companyId),
-    prisma.expenseClaim.findMany({
-      where: {
-        companyId,
-        employeeId,
-        category: "medical",
-        status: { in: ["PENDING", "APPROVED", "PAID"] },
-        expenseDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
-        deletedAt: null,
-      },
-      select: { amount: true, status: true },
-    }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1 (see medical-summary
+  // route.ts) means concurrent queries here can silently drop one.
+  const cap = await getMedicalExpenseCap(companyId);
+  const rows = await prisma.expenseClaim.findMany({
+    where: {
+      companyId,
+      employeeId,
+      category: "medical",
+      status: { in: ["PENDING", "APPROVED", "PAID"] },
+      expenseDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
+      deletedAt: null,
+    },
+    select: { amount: true, status: true },
+  });
   const approved = rows.filter((r) => r.status === "APPROVED" || r.status === "PAID").reduce((s, r) => s + Number(r.amount), 0);
   const pending = rows.filter((r) => r.status === "PENDING").reduce((s, r) => s + Number(r.amount), 0);
   const remaining = Math.max(0, cap - approved - pending);

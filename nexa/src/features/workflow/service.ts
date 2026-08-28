@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { fullName, loginIdentifier } from "@/lib/format";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ApprovalWorkflow, ApprovalRequest, RequestStep, WorkflowStepDef } from "./types";
@@ -348,14 +348,24 @@ export async function decideRequest(
     nextStatus = "REJECTED";
   }
 
-  const record = await prisma.approvalRequest.update({
-    where: { id: req.id },
+  // Compare-and-swap on status: two concurrent decisions (double-click,
+  // retry, or two approvers for the same step) both read status "PENDING"
+  // before either write lands. Guarding the write on the status they read
+  // means only the first one actually applies — the second sees count 0 and
+  // fails loudly instead of silently overwriting the first decision's steps.
+  const { count } = await prisma.approvalRequest.updateMany({
+    where: { id: req.id, status: "PENDING" },
     data: {
       steps: steps as unknown as Prisma.InputJsonValue,
       currentStep: nextStep,
       status: nextStatus,
       updatedById: session.sub,
     },
+  });
+  if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
+  const record = await prisma.approvalRequest.findFirstOrThrow({
+    where: { id: req.id },
     select: requestSelect,
   });
   await writeAudit({

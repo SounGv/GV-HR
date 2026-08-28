@@ -573,6 +573,10 @@ export async function updatePayrollAdjustments(
     isMonthly && attendancePolicy?.attendanceDeductionEnabled
       ? await getAbsenceAndLateByEmployee(companyId, from, to, [record.employeeId])
       : new Map<string, { absentDays: number; lateOccurrences: number }>();
+  // Same auto-loan-deduction the DRAFT generator applies (generatePayroll,
+  // above) — without this, editing/importing adjustments on top of an
+  // already-generated payslip silently drops the loan installment line.
+  const loanMap = await getOutstandingLoansForPayroll(companyId, [record.employeeId]);
 
   const adjustments: ManualAdjustments = {
     earnings: input.extraEarnings ?? [],
@@ -586,6 +590,7 @@ export async function updatePayrollAdjustments(
     absentDays: absenceMap.get(record.employeeId)?.absentDays ?? 0,
     lateOccurrences: absenceMap.get(record.employeeId)?.lateOccurrences ?? 0,
     lateDeductionPerOccurrence: Number(attendancePolicy?.lateDeductionPerOccurrence ?? 0),
+    loan: sumInstallments(loanMap.get(record.employeeId)),
     extraEarnings: adjustments.earnings,
     extraDeductions: adjustments.deductions,
     taxDeductions: toTaxDeductions(employee),

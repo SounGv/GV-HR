@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { can } from "@/lib/auth/rbac";
 import type { SessionUser } from "@/lib/auth/session";
 import { importRowSchema, type ImportSummary } from "./schema";
 
@@ -14,14 +15,22 @@ export async function importEmployees(
   session: SessionUser,
   meta?: Meta,
 ): Promise<ImportSummary> {
-  const [depts, positions, existing] = await Promise.all([
+  const [depts, positions, allEmployees] = await Promise.all([
     prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { id: true, name: true } }),
     prisma.position.findMany({ where: { companyId, deletedAt: null }, select: { id: true, title: true } }),
-    prisma.employee.findMany({ where: { companyId, deletedAt: null }, select: { id: true, employeeCode: true } }),
+    // Includes soft-deleted rows too — employeeCode uniqueness is enforced
+    // at the DB level across ALL rows regardless of deletedAt (see below).
+    prisma.employee.findMany({ where: { companyId }, select: { id: true, employeeCode: true, deletedAt: true } }),
   ]);
   const deptMap = new Map(depts.map((d) => [norm(d.name), d.id]));
   const posMap = new Map(positions.map((p) => [norm(p.title), p.id]));
-  const codeMap = new Map(existing.map((e) => [e.employeeCode, e.id]));
+  const codeMap = new Map(allEmployees.filter((e) => !e.deletedAt).map((e) => [e.employeeCode, e.id]));
+  // employeeCode is only unique per (companyId, employeeCode) at the DB
+  // level, not scoped by deletedAt — a code that already belongs to a
+  // soft-deleted employee would otherwise pass this map's "not existing"
+  // check, attempt tx.employee.create(), throw P2002 mid-loop, and roll back
+  // every row already applied earlier in the same import batch.
+  const takenBySoftDeleted = new Set(allEmployees.filter((e) => e.deletedAt).map((e) => e.employeeCode));
 
   const errors: ImportSummary["errors"] = [];
   const warnings: string[] = [];
@@ -49,9 +58,23 @@ export async function importEmployees(
 
   let created = 0;
   let updated = 0;
+  // The route only requires `employee:create` — without this, a role granted
+  // just that permission could bulk-overwrite existing employees' salary/
+  // contact data via a CSV row whose employeeCode matches someone already in
+  // the system, despite being correctly blocked from that via a direct
+  // PATCH /api/employees/[id] (which requires `employee:update`).
+  const canUpdate = can(session.perms, "employee:update");
 
   await prisma.$transaction(async (tx) => {
-    for (const { row: r } of valid) {
+    for (const { row: r, index } of valid) {
+      if (codeMap.has(r.employeeCode) && !canUpdate) {
+        errors.push({ row: index, code: r.employeeCode, message: "มีพนักงานรหัสนี้อยู่แล้ว และคุณไม่มีสิทธิ์แก้ไขข้อมูลพนักงาน" });
+        continue;
+      }
+      if (!codeMap.has(r.employeeCode) && takenBySoftDeleted.has(r.employeeCode)) {
+        errors.push({ row: index, code: r.employeeCode, message: "รหัสพนักงานนี้เคยถูกใช้กับพนักงานที่ถูกลบไปแล้ว กรุณาใช้รหัสอื่น" });
+        continue;
+      }
       const departmentId = r.department ? (deptMap.get(norm(r.department)) ?? null) : null;
       const positionId = r.position ? (posMap.get(norm(r.position)) ?? null) : null;
       if (r.department && !departmentId) warnings.push(`${r.employeeCode}: ไม่พบแผนก “${r.department}” (ข้ามการผูกแผนก)`);

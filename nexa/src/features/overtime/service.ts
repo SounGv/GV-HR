@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
+import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { computeHours, estimateAmount, DEFAULT_MULTIPLIER } from "./calc";
 import type { OtCreateInput, OtDecideInput, OtListQuery } from "./schema";
@@ -97,6 +98,12 @@ export async function createOvertime(
       session.sub,
     );
   }
+
+  await broadcastToLineGroups(
+    companyId,
+    "hr-alerts",
+    `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง`,
+  );
 
   return record;
 }
