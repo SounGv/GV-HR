@@ -112,6 +112,46 @@ export function EmployeeForm({
   const firstName = form.watch("firstName");
   const lastName = form.watch("lastName");
   const compensationType = form.watch("compensationType");
+  const branchId = form.watch("branchId");
+  const departmentId = form.watch("departmentId");
+  // Branch → department → position is a real hierarchy (Department.branchId,
+  // Position.departmentId) — narrow each picker by its parent instead of
+  // always offering every department/position company-wide, which let HR
+  // save inconsistent combinations (a department from a different branch,
+  // a position under a different department).
+  const departmentsInBranch = (orgOptions?.departments ?? []).filter(
+    (d) => !branchId || branchId === NONE || d.branchId === branchId,
+  );
+  const positionsInDepartment = (orgOptions?.positions ?? []).filter(
+    (p) => !departmentId || departmentId === NONE || p.departmentId === departmentId,
+  );
+  // If the branch changes out from under an already-picked department (or
+  // the department out from under an already-picked position), that child
+  // selection is now inconsistent — clear it rather than silently keep an
+  // org placement that no longer makes sense together. Guarded to only fire
+  // on an actual branchId *change*, never on mount/data-load — an existing
+  // employee's pre-existing (possibly already-inconsistent) placement must
+  // never get silently wiped just because org options finished loading.
+  const prevBranchId = useRef(branchId);
+  useEffect(() => {
+    if (prevBranchId.current === branchId) return;
+    prevBranchId.current = branchId;
+    const currentDept = form.getValues("departmentId");
+    if (currentDept && currentDept !== NONE && !departmentsInBranch.some((d) => d.id === currentDept)) {
+      form.setValue("departmentId", NONE);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branchId, orgOptions?.departments]);
+  const prevDepartmentId = useRef(departmentId);
+  useEffect(() => {
+    if (prevDepartmentId.current === departmentId) return;
+    prevDepartmentId.current = departmentId;
+    const currentPos = form.getValues("positionId");
+    if (currentPos && currentPos !== NONE && !positionsInDepartment.some((p) => p.id === currentPos)) {
+      form.setValue("positionId", NONE);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [departmentId, orgOptions?.positions]);
 
   // New employee: prefill the suggested next "EMP0001"-style code once it
   // loads — editing an existing employee never overwrites their real code.
@@ -208,9 +248,9 @@ export function EmployeeForm({
               <SelectField form={form} name="branchId" label="สาขา" placeholder="เลือกสาขา" clearable
                 options={(orgOptions?.branches ?? []).map((b) => ({ value: b.id, label: b.name }))} />
               <SelectField form={form} name="departmentId" label="แผนก" placeholder="เลือกแผนก" clearable
-                options={(orgOptions?.departments ?? []).map((d) => ({ value: d.id, label: d.name }))} />
+                options={departmentsInBranch.map((d) => ({ value: d.id, label: d.name }))} />
               <SelectField form={form} name="positionId" label="ตำแหน่ง" placeholder="เลือกตำแหน่ง" clearable
-                options={(orgOptions?.positions ?? []).map((p) => ({ value: p.id, label: p.title }))} />
+                options={positionsInDepartment.map((p) => ({ value: p.id, label: p.title }))} />
               <SelectField form={form} name="managerId" label="หัวหน้างาน" placeholder="เลือกหัวหน้างาน" clearable
                 options={(orgOptions?.managers ?? []).map((m) => ({
                   value: m.id,

@@ -167,24 +167,37 @@ export function ReportView() {
   }
 
   const { data: orgData } = useOrgOptions();
-  const departments = orgData?.data.departments ?? [];
+  // Narrow departments by the selected branch, same reasoning as the
+  // employee picker below — a department's own branchId decides membership.
+  const departments = (orgData?.data.departments ?? []).filter(
+    (d) => branchId === ALL_BRANCH || d.branchId === branchId,
+  );
   const branches = orgData?.data.branches ?? [];
-  // Narrow the picker by whichever of the department/employment-type filters
-  // are already active, so it doesn't keep offering people the chosen
-  // filters have already excluded from the report itself.
+  // Narrow the picker by whichever of the branch/department/employment-type/
+  // cost-center filters are already active, so it doesn't keep offering
+  // people the chosen filters have already excluded from the report itself.
   const employees = (orgData?.data.managers ?? [])
+    .filter((e) => branchId === ALL_BRANCH || e.branchId === branchId)
     .filter((e) => departmentId === ALL_DEPT || e.departmentId === departmentId)
     .filter((e) => employmentType === ALL_TYPE || e.employmentType === employmentType)
+    .filter((e) => costCenterId === ALL_COST_CENTER || e.costCenterId === costCenterId)
     .sort((a, b) => `${a.firstName}${a.lastName}`.localeCompare(`${b.firstName}${b.lastName}`, "th"));
-  // A specific person picked before narrowing by department/employment-type
-  // can fall outside the now-filtered list — reset to "ทุกคน" rather than
-  // leave the Select showing a value that's no longer one of its options.
+  // A department or specific person picked before narrowing by a sibling
+  // filter can fall outside the now-narrowed list — reset both back to
+  // "all" rather than leave a Select showing a value that's no longer one
+  // of its options.
+  useEffect(() => {
+    if (departmentId !== ALL_DEPT && orgData && !departments.some((d) => d.id === departmentId)) {
+      setDepartmentId(ALL_DEPT);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branchId, orgData]);
   useEffect(() => {
     if (employeeId !== ALL_EMPLOYEE && orgData && !employees.some((e) => e.id === employeeId)) {
       setEmployeeId(ALL_EMPLOYEE);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [departmentId, employmentType, orgData]);
+  }, [branchId, departmentId, employmentType, costCenterId, orgData]);
   const { data: costCenterData } = useCostCenters();
   const costCenters = costCenterData?.data ?? [];
 

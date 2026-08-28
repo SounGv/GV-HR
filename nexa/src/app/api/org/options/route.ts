@@ -13,8 +13,12 @@ export async function GET() {
     const where = { companyId, deletedAt: null };
 
     const [departments, positions, branches, managers, nextEmployeeCode] = await Promise.all([
-      prisma.department.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } }),
-      prisma.position.findMany({ where, select: { id: true, title: true }, orderBy: { title: "asc" } }),
+      prisma.department.findMany({ where, select: { id: true, name: true, branchId: true }, orderBy: { name: "asc" } }),
+      prisma.position.findMany({
+        where,
+        select: { id: true, title: true, departmentId: true },
+        orderBy: { title: "asc" },
+      }),
       prisma.branch.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.employee.findMany({
         where,
@@ -26,6 +30,8 @@ export async function GET() {
           managerId: true,
           departmentId: true,
           employmentType: true,
+          branchId: true,
+          costCenterId: true,
         },
         orderBy: { firstName: "asc" },
         take: 500,

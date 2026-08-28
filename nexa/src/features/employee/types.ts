@@ -120,8 +120,8 @@ export interface EmployeeQuery {
 }
 
 export interface OrgOptions {
-  departments: Ref[];
-  positions: { id: string; title: string }[];
+  departments: (Ref & { branchId: string | null })[];
+  positions: { id: string; title: string; departmentId: string | null }[];
   branches: Ref[];
   managers: {
     id: string;
@@ -131,6 +131,8 @@ export interface OrgOptions {
     managerId: string | null;
     departmentId: string | null;
     employmentType: EmploymentType;
+    branchId: string | null;
+    costCenterId: string | null;
   }[];
   nextEmployeeCode: string;
 }
