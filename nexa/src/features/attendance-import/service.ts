@@ -2,16 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { lateOrPresent } from "@/lib/datetime";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
-import { estimateAmount, DEFAULT_MULTIPLIER } from "@/features/overtime/calc";
+import { estimateAmount, DEFAULT_MULTIPLIER, MIN_OT_MINUTES } from "@/features/overtime/calc";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { attendanceImportRowSchema, type AttendanceImportRow } from "./schema";
 import type { ImportSummary } from "@/features/employee-import/schema";
 
 type Meta = { ip?: string; userAgent?: string };
-
-/** Below this, a clock-out a few minutes past shift end is just clock-skew
- * noise, not real overtime worth an approval record. */
-const MIN_OT_MINUTES = 15;
 
 /** Bangkok (UTC+7, no DST) local date+time → the correct UTC instant. */
 function bangkokToUtc(dateStr: string, timeStr: string): Date {

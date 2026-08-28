@@ -1,5 +1,11 @@
 export const DEFAULT_MULTIPLIER = 1.5;
 
+/** Below this, a clock-out a few minutes past shift end is just clock-skew
+ * noise, not real overtime worth an approval record. Shared by the
+ * attendance import's inline OT generation and the standalone attendance→OT
+ * reconciliation pass. */
+export const MIN_OT_MINUTES = 15;
+
 export function parseHM(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return (h || 0) * 60 + (m || 0);
