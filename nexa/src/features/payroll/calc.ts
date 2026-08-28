@@ -138,8 +138,12 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   }
   const gross = earnings.reduce((s, e) => s + e.amount, 0);
 
+  // Daily-wage staff aren't enrolled in Social Security yet — no deduction
+  // for them until that's set up. The 1,650 floor otherwise fires even on a
+  // ฿0 wage (an employee with no attendance this period), producing a
+  // negative payslip for someone who didn't get paid anything.
   const ssBase = Math.min(Math.max(salary, 1650), 15000);
-  const socialSecurity = Math.min(Math.round(ssBase * 0.05), 750);
+  const socialSecurity = input.compensationType === "DAILY" ? 0 : Math.min(Math.round(ssBase * 0.05), 750);
   const providentFund = Math.round(salary * (pfRate / 100));
 
   const annualIncome = gross * 12;
@@ -162,7 +166,8 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   );
   const tax = Math.round(annualIncomeTax(annualTaxable) / 12);
 
-  const deductions: LineItem[] = [{ label: "ประกันสังคม", amount: socialSecurity }];
+  const deductions: LineItem[] = [];
+  if (socialSecurity) deductions.push({ label: "ประกันสังคม", amount: socialSecurity });
   if (tax) deductions.push({ label: "ภาษีหัก ณ ที่จ่าย", amount: tax });
   if (providentFund) deductions.push({ label: "กองทุนสำรองเลี้ยงชีพ", amount: providentFund });
   if (loan) deductions.push({ label: "หักชำระเงินกู้", amount: loan });
