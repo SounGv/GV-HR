@@ -26,6 +26,12 @@ export function computeHours(start: string, end: string): number {
  * regardless of pay type silently priced every daily/hourly-wage
  * employee's OT at ฿0 (their baseSalary is null), which is most of the
  * workforce here.
+ *
+ * OT hours are credited in half-hour blocks, rounded to the nearest 0.5 —
+ * confirmed against HR's own manual payroll sheet (e.g. a 20-minute excess
+ * pays as 0.5h, a 63-minute excess pays as 1.0h, not the exact-minute
+ * fraction). `hours` itself (what's stored/displayed on the request) stays
+ * the real clocked duration; only the money calculation rounds.
  */
 export function estimateAmount(
   compensation: {
@@ -48,5 +54,6 @@ export function estimateAmount(
     if (!compensation.baseSalary) return 0;
     hourly = compensation.baseSalary / 30 / 8;
   }
-  return Math.round(hourly * multiplier * hours);
+  const billedHours = Math.round(hours * 2) / 2;
+  return Math.round(hourly * multiplier * billedHours);
 }
