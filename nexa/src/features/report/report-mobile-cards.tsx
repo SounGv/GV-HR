@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { PhotoCell } from "./report-photo-cell";
 import type { ReportResult } from "./types";
 
 // Naive but low-risk: report status text is always Thai and drawn from a
@@ -31,7 +32,13 @@ const SUBHEADER_KEYS = ["date", "status"];
  * horizontal scrolling on narrow screens. Purely a different rendering of
  * the same result.columns/result.rows the desktop <Table> already uses.
  */
-export function ReportMobileCards({ result }: { result: ReportResult }) {
+export function ReportMobileCards({
+  result,
+  onOpenPhoto,
+}: {
+  result: ReportResult;
+  onOpenPhoto: (url: string) => void;
+}) {
   const headerCols = result.columns.filter((c) => HEADER_KEYS.includes(c.key));
   const subheaderCols = result.columns.filter((c) => SUBHEADER_KEYS.includes(c.key));
   const usedKeys = new Set([...headerCols, ...subheaderCols].map((c) => c.key));
@@ -87,7 +94,7 @@ export function ReportMobileCards({ result }: { result: ReportResult }) {
               <div key={c.key} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
                 <dt className="text-muted-foreground">{c.label}</dt>
                 <dd className={c.numeric ? "text-right font-medium tabular-nums" : "text-right font-medium"}>
-                  {fmtNum(row[c.key])}
+                  {c.photo ? <PhotoCell url={row[c.key]} onOpen={onOpenPhoto} /> : fmtNum(row[c.key])}
                 </dd>
               </div>
             ))}

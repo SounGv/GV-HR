@@ -51,6 +51,7 @@ import { useCostCenters } from "@/features/cost-center/hooks";
 import { useReport } from "./hooks";
 import { ReportSummaryChart } from "./report-summary-chart";
 import { ReportMobileCards } from "./report-mobile-cards";
+import { PhotoCell } from "./report-photo-cell";
 import type { ReportResult } from "./types";
 
 const ALL_DEPT = "ALL";
@@ -73,13 +74,20 @@ function fmtNum(v: string | number) {
   return typeof v === "number" ? v.toLocaleString("th-TH") : v;
 }
 
+/** Photo cells hold a full base64 data URL — useless (and huge) in a CSV/
+ * Excel/PDF export or an AI prompt, so every export path drops them first. */
+function exportableColumns(result: ReportResult) {
+  return result.columns.filter((c) => !c.photo);
+}
+
 /** Render the report as a compact text table the AI can reason over. */
 function reportToPrompt(label: string, result: ReportResult): string {
   const MAX_ROWS = 60;
-  const header = result.columns.map((c) => c.label).join(" | ");
+  const columns = exportableColumns(result);
+  const header = columns.map((c) => c.label).join(" | ");
   const body = result.rows
     .slice(0, MAX_ROWS)
-    .map((row) => result.columns.map((c) => String(row[c.key] ?? "")).join(" | "))
+    .map((row) => columns.map((c) => String(row[c.key] ?? "")).join(" | "))
     .join("\n");
   const omitted =
     result.rows.length > MAX_ROWS ? `\n(แสดง ${MAX_ROWS} จาก ${result.rows.length} แถว)` : "";
@@ -137,6 +145,7 @@ export function ReportView() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState("");
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   // Some report types are period-less ("none") or year-grained ("year")
   // rather than the default day-range — the filter bar below swaps in a
@@ -172,7 +181,7 @@ export function ReportView() {
 
   function exportCsv() {
     if (!result) return;
-    const csv = toCsv(result.columns, result.rows);
+    const csv = toCsv(exportableColumns(result), result.rows);
     const name = `${type}-${from}_${to}`;
     downloadCsv(name, csv);
     toast.success("ดาวน์โหลด CSV แล้ว");
@@ -180,9 +189,10 @@ export function ReportView() {
 
   async function exportExcel() {
     if (!result) return;
+    const columns = exportableColumns(result);
     const XLSX = await import("xlsx");
-    const header = result.columns.map((c) => c.label);
-    const body = result.rows.map((r) => result.columns.map((c) => r[c.key] ?? ""));
+    const header = columns.map((c) => c.label);
+    const body = result.rows.map((r) => columns.map((c) => r[c.key] ?? ""));
     const sheet = XLSX.utils.aoa_to_sheet([header, ...body]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, sheet, REPORT_LABELS[type].slice(0, 31));
@@ -192,18 +202,19 @@ export function ReportView() {
 
   async function exportPdf() {
     if (!result) return;
+    const columns = exportableColumns(result);
     const { jsPDF } = await import("jspdf");
     const autoTable = (await import("jspdf-autotable")).default;
     const { registerThaiFont } = await import("@/lib/pdf-fonts");
-    const doc = new jsPDF({ orientation: result.columns.length > 6 ? "landscape" : "portrait" });
+    const doc = new jsPDF({ orientation: columns.length > 6 ? "landscape" : "portrait" });
     const fontName = await registerThaiFont(doc);
     doc.setFont(fontName);
     doc.setFontSize(12);
     doc.text(`${REPORT_LABELS[type]} (${from} - ${to})`, 14, 14);
     autoTable(doc, {
       startY: 20,
-      head: [result.columns.map((c) => c.label)],
-      body: result.rows.map((r) => result.columns.map((c) => String(r[c.key] ?? ""))),
+      head: [columns.map((c) => c.label)],
+      body: result.rows.map((r) => columns.map((c) => String(r[c.key] ?? ""))),
       styles: { font: fontName, fontSize: 9 },
       headStyles: { font: fontName, fontStyle: "bold", fillColor: [79, 70, 229] },
     });
@@ -434,7 +445,11 @@ export function ReportView() {
                   <TableRow key={i}>
                     {result.columns.map((c) => (
                       <TableCell key={c.key} className={cn(c.numeric && "text-right tabular-nums")}>
-                        {fmtNum(row[c.key])}
+                        {c.photo ? (
+                          <PhotoCell url={row[c.key]} onOpen={setPhotoPreview} />
+                        ) : (
+                          fmtNum(row[c.key])
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -442,7 +457,7 @@ export function ReportView() {
               </TableBody>
             </Table>
           </Card>
-          <ReportMobileCards result={result} />
+          <ReportMobileCards result={result} onOpenPhoto={setPhotoPreview} />
         </>
       )}
 
@@ -472,6 +487,18 @@ export function ReportView() {
             <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-foreground">
               {aiText}
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!photoPreview} onOpenChange={(open) => !open && setPhotoPreview(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>รูปถ่ายลงเวลา</DialogTitle>
+          </DialogHeader>
+          {photoPreview && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photoPreview} alt="รูปถ่ายลงเวลา" className="w-full rounded-lg object-contain" />
           )}
         </DialogContent>
       </Dialog>

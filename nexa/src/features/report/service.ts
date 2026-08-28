@@ -19,6 +19,8 @@ export interface ReportColumn {
   key: string;
   label: string;
   numeric?: boolean;
+  /** Cell value is an image URL (or "-") — rendered as a clickable thumbnail. */
+  photo?: boolean;
 }
 export interface ReportSummaryDatum {
   label: string;
@@ -349,6 +351,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           note: true,
           clockInBranchId: true,
           clockInDistance: true,
+          clockInPhotoUrl: true,
+          clockOutPhotoUrl: true,
           updatedById: true,
           employee: {
             select: {
@@ -486,6 +490,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         editor: r.updatedById ? editorNameById.get(r.updatedById) ?? "-" : "-",
         location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
         distance: r.clockInDistance != null ? Math.round(r.clockInDistance) : "-",
+        clockInPhoto: r.clockInPhotoUrl ?? "-",
+        clockOutPhoto: r.clockOutPhotoUrl ?? "-",
       };
     });
 
@@ -520,6 +526,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "editor", label: "ผู้แก้ไขเวลา" },
         { key: "location", label: "สถานที่" },
         { key: "distance", label: "ระยะห่าง (ม.)", numeric: true },
+        { key: "clockInPhoto", label: "รูปเช็คอิน", photo: true },
+        { key: "clockOutPhoto", label: "รูปเช็คเอาท์", photo: true },
       ],
       rows,
     };

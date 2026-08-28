@@ -2,6 +2,10 @@ export interface ReportColumn {
   key: string;
   label: string;
   numeric?: boolean;
+  /** Cell value is an image URL (or "-") — render as a clickable thumbnail
+   * instead of raw text/link. Currently only the daily attendance report's
+   * clock-in/out photo columns. */
+  photo?: boolean;
 }
 
 export interface ReportSummaryDatum {
