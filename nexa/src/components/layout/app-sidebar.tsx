@@ -24,7 +24,7 @@ import { useOvertime } from "@/features/overtime/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/shared/logo";
+import { Logo, LogoHorizontal } from "@/components/shared/logo";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -155,14 +155,11 @@ export function AppSidebar() {
 
 function NexaHeaderLogo() {
   return (
-    <div className="flex items-center gap-2.5">
-      <Logo size={48} className="size-12" variant="dark" />
-      <div className="leading-tight group-data-[collapsible=icon]:hidden">
-        <div className="text-lg font-semibold tracking-wide text-white">GV ONE</div>
-        <div className="text-[11px] font-medium tracking-[0.16em] text-slate-400">
-          HR AI PLATFORM
-        </div>
-      </div>
+    <div className="flex items-center">
+      {/* Icon-only mark when the sidebar is collapsed to icon width */}
+      <Logo size={40} className="hidden size-10 group-data-[collapsible=icon]:block" variant="dark" />
+      {/* Full horizontal lockup (icon + wordmark + subtitle baked in) when expanded */}
+      <LogoHorizontal height={36} variant="dark" className="group-data-[collapsible=icon]:hidden" />
     </div>
   );
 }

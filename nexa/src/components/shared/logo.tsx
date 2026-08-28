@@ -34,3 +34,33 @@ export function Logo({
     />
   );
 }
+
+/**
+ * Full horizontal lockup — icon + "GV ONE" wordmark + "AI WORKFORCE
+ * PLATFORM" subtitle, all baked into one image (source is 2010×668, ratio
+ * ~3.01:1). Used wherever the full brand mark should read as one unit
+ * (login page, site header) instead of the icon-plus-separately-styled-text
+ * composition. `variant="dark"` recolors the wordmark/subtitle ink to a
+ * light cream for dark surfaces — the icon itself is untouched, same as
+ * `Logo`'s dark variant.
+ */
+export function LogoHorizontal({
+  height = 48,
+  className,
+  variant = "light",
+}: {
+  height?: number;
+  className?: string;
+  variant?: "light" | "dark";
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={variant === "dark" ? "/gv-one-horizontal-logo-dark-bg.png" : "/gv-one-horizontal-logo.png"}
+      alt="GV One — AI Workforce Platform"
+      height={height}
+      width={Math.round(height * (2010 / 668))}
+      className={cn("shrink-0 object-contain", className)}
+    />
+  );
+}
