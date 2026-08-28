@@ -115,14 +115,22 @@ export function ReportView() {
   const canAi = !!aiAccess?.data.allowed;
 
   // Nav/quick-menu links deep-link here via ?view=<ReportType> (e.g.
-  // "รายงานการเข้างาน" → /reports?view=attendance) — read once on mount so
-  // those links actually land on the intended report instead of always
-  // defaulting to "employees".
+  // "รายงานการเข้างาน" → /reports?view=attendance).
   const searchParams = useSearchParams();
   const initialView = searchParams.get("view");
   const [type, setType] = useState<ReportType>(
     initialView && (REPORT_TYPES as readonly string[]).includes(initialView) ? (initialView as ReportType) : "employees",
   );
+  // The sidebar's report submenu items all route to this same /reports page
+  // with a different ?view=, so Next.js doesn't remount this component
+  // between clicks (same route, just a query-string change) — the useState
+  // initializer above only fires once. Re-sync on every searchParams change
+  // so switching submenu items while already here actually switches the
+  // report instead of being a no-op.
+  useEffect(() => {
+    const view = searchParams.get("view");
+    if (view && (REPORT_TYPES as readonly string[]).includes(view)) setType(view as ReportType);
+  }, [searchParams]);
   const [from, setFrom] = useState<string>(firstOfMonth());
   const [to, setTo] = useState<string>(todayStr());
   const [departmentId, setDepartmentId] = useState<string>(ALL_DEPT);
