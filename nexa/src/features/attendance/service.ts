@@ -7,6 +7,7 @@ import { can } from "@/lib/auth/rbac";
 import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AttendanceListQuery, ClockInput } from "./schema";
 
 const recordSelect = {
@@ -90,6 +91,8 @@ async function loadEmployeeWithBranch(companyId: string, employeeId: string) {
     where: { id: employeeId, companyId, deletedAt: null },
     select: {
       id: true,
+      firstName: true,
+      lastName: true,
       branch: { select: { id: true, name: true, lat: true, lng: true, radiusMeters: true } },
     },
   });
@@ -273,6 +276,15 @@ export async function clockIn(
     after: { status, distance },
     ...meta,
   });
+
+  const clockInTimeLabel = `${String(bp.hour).padStart(2, "0")}:${String(bp.minute).padStart(2, "0")}`;
+  await broadcastToLineGroups(
+    companyId,
+    "hr-alerts",
+    `🟢 ${employee.firstName} ${employee.lastName} เช็คอินแล้ว เวลา ${clockInTimeLabel}` +
+      (status === "LATE" ? " (มาสาย)" : "") +
+      (employee.branch?.name ? `\n${employee.branch.name}` : ""),
+  );
 
   return record;
 }
