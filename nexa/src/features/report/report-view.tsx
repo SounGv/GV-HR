@@ -169,9 +169,22 @@ export function ReportView() {
   const { data: orgData } = useOrgOptions();
   const departments = orgData?.data.departments ?? [];
   const branches = orgData?.data.branches ?? [];
-  const employees = [...(orgData?.data.managers ?? [])].sort((a, b) =>
-    `${a.firstName}${a.lastName}`.localeCompare(`${b.firstName}${b.lastName}`, "th"),
-  );
+  // Narrow the picker by whichever of the department/employment-type filters
+  // are already active, so it doesn't keep offering people the chosen
+  // filters have already excluded from the report itself.
+  const employees = (orgData?.data.managers ?? [])
+    .filter((e) => departmentId === ALL_DEPT || e.departmentId === departmentId)
+    .filter((e) => employmentType === ALL_TYPE || e.employmentType === employmentType)
+    .sort((a, b) => `${a.firstName}${a.lastName}`.localeCompare(`${b.firstName}${b.lastName}`, "th"));
+  // A specific person picked before narrowing by department/employment-type
+  // can fall outside the now-filtered list — reset to "ทุกคน" rather than
+  // leave the Select showing a value that's no longer one of its options.
+  useEffect(() => {
+    if (employeeId !== ALL_EMPLOYEE && orgData && !employees.some((e) => e.id === employeeId)) {
+      setEmployeeId(ALL_EMPLOYEE);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [departmentId, employmentType, orgData]);
   const { data: costCenterData } = useCostCenters();
   const costCenters = costCenterData?.data ?? [];
 

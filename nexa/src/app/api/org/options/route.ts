@@ -18,7 +18,15 @@ export async function GET() {
       prisma.branch.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.employee.findMany({
         where,
-        select: { id: true, firstName: true, lastName: true, employeeCode: true, managerId: true, departmentId: true },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          employeeCode: true,
+          managerId: true,
+          departmentId: true,
+          employmentType: true,
+        },
         orderBy: { firstName: "asc" },
         take: 500,
       }),
