@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createRole,
   deleteRole,
+  deleteUser,
   fetchRoles,
   fetchUsers,
   revokeAiAccessGrant,
@@ -70,6 +71,14 @@ export function useRevokeAiAccessGrant() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => revokeAiAccessGrant(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.users }),
+  });
+}
+
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteUser(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.users }),
   });
 }

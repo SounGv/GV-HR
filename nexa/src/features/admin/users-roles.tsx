@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Table,
@@ -12,9 +15,11 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ApiError } from "@/lib/api/client";
 import { fullName, loginIdentifier } from "@/lib/format";
-import { useUsers } from "./hooks";
-import type { AiAccessScope } from "./types";
+import { useDeleteUser, useUsers } from "./hooks";
+import type { AdminUser, AiAccessScope } from "./types";
 
 const AI_SCOPE_LABEL: Record<AiAccessScope, string> = {
   TEAM: "AI: ทีม",
@@ -25,6 +30,19 @@ const AI_SCOPE_LABEL: Record<AiAccessScope, string> = {
 export function UsersRoles() {
   const { data, isLoading, isError, refetch } = useUsers();
   const users = data?.data ?? [];
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const deleteMut = useDeleteUser();
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    try {
+      await deleteMut.mutateAsync(deleteTarget.id);
+      toast.success("ลบบัญชีผู้ใช้เรียบร้อย");
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ลบไม่สำเร็จ");
+    }
+  }
 
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={5} />;
@@ -74,12 +92,35 @@ export function UsersRoles() {
                   <Button variant="outline" size="sm" render={<Link href={`/admin/users/${u.id}/ai-access`} />}>
                     AI Assistant
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteTarget(u)}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="ลบบัญชีผู้ใช้"
+        description={
+          deleteTarget
+            ? `ต้องการลบบัญชี "${deleteTarget.employee ? fullName(deleteTarget.employee.firstName, deleteTarget.employee.lastName) : loginIdentifier(deleteTarget)}" ใช่หรือไม่? ใช้สำหรับล้างบัญชีที่ไม่ได้ใช้แล้ว (เช่น บัญชีทดสอบ) — ถ้าบัญชีนี้ยังผูกกับพนักงานที่ทำงานอยู่ ระบบจะปฏิเสธและให้ไปลบพนักงานคนนั้นก่อน`
+            : undefined
+        }
+        destructive
+        confirmLabel="ลบ"
+        loading={deleteMut.isPending}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

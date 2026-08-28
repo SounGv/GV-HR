@@ -32,3 +32,7 @@ export function setAiAccessGrant(id: string, scope: AiAccessScope) {
 export function revokeAiAccessGrant(id: string) {
   return api.del<Envelope<{ ok: true }>>(`/api/admin/users/${id}/ai-access`);
 }
+
+export function deleteUser(id: string) {
+  return api.del<Envelope<{ ok: true }>>(`/api/admin/users/${id}`);
+}

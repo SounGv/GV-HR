@@ -2,6 +2,7 @@ import { AiAccessScope } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { revokeAllForUser } from "@/lib/auth/token-store";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { RoleCreateInput, RoleUpdateInput } from "./schema";
 
@@ -322,6 +323,47 @@ export async function setUserRoles(
     entity: "User",
     entityId: userId,
     after: { roleIds },
+    ...meta,
+  });
+}
+
+/**
+ * Removes a login account (soft-delete — same convention as Employee, and
+ * the User.deletedAt column this reuses was otherwise unused). Refuses to
+ * touch an account that's still a currently-active employee's login: that
+ * case must go through the employee "delete" flow first (which disables
+ * the account), so an admin never locks someone out by mistake here — this
+ * is strictly for cleaning up orphaned/test logins.
+ */
+export async function deleteUser(
+  companyId: string,
+  session: AccessClaims,
+  userId: string,
+  meta?: Meta,
+) {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, companyId, deletedAt: null },
+    select: { id: true, email: true, username: true, employee: { select: { id: true, deletedAt: true } } },
+  });
+  if (!user) throw NotFound("ไม่พบผู้ใช้");
+  if (userId === session.sub) throw Forbidden("ไม่สามารถลบบัญชีของตัวเองได้");
+  if (user.employee && !user.employee.deletedAt) {
+    throw BadRequest("บัญชีนี้ผูกกับพนักงานที่ยังทำงานอยู่ — ต้องลบพนักงานคนนั้นก่อน");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { deletedAt: new Date(), status: "DISABLED" },
+  });
+  await revokeAllForUser(userId);
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "user.delete",
+    entity: "User",
+    entityId: userId,
+    before: { email: user.email, username: user.username },
     ...meta,
   });
 }
