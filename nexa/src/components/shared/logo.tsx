@@ -3,17 +3,16 @@ import { cn } from "@/lib/utils";
 /**
  * The one shared logo component — every header/sidebar/auth-page logo
  * renders through this instead of an ad-hoc `<img>`, so a future brand
- * asset swap is a one-file change. Source is the real Gadget Villa company
- * logo (supplied by the company, not a recreation) with its background
- * made transparent so it sits directly on any surface.
+ * asset swap is a one-file change. Source is the app icon mark (clock +
+ * checkmark), background-removed to a true transparent PNG so it sits
+ * directly on any surface.
  *
- * The "GADGET VILLA" wordmark under the mark is dark text baked into the
- * artwork — legible on a light surface but not on a dark one, so there are
- * two recolored variants of the same file: `variant="light"` (default,
- * dark wordmark — use on light backgrounds) and `variant="dark"` (wordmark
- * relit to near-white — use on dark backgrounds like the sidebar/auth
- * panel). Only the wordmark pixels differ between the two files; the GV
- * mark itself is identical.
+ * The mark's rim is near-black, which would nearly disappear against the
+ * dark sidebar/auth-panel background (`--sidebar: #15200f`) — so
+ * `variant="dark"` uses a copy with a soft cream glow behind the mark to
+ * keep its edge visible there, while `variant="light"` (default) is the
+ * plain mark for light backgrounds. Same artwork in both; only the glow
+ * differs.
  */
 export function Logo({
   size = 40,

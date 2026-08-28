@@ -26,7 +26,14 @@ export function useCameraStream(active: boolean, facing: CameraFacing) {
     setErrorMessage(null);
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
+        // Without explicit resolution constraints, some browsers/devices
+        // negotiate a low-res stream (e.g. 640x480) by default — the capture
+        // canvas then has nothing sharper to draw from no matter how it's
+        // downscaled, which is what actually caused blurry check-in photos.
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 1280 } },
+          audio: false,
+        });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
