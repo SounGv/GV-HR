@@ -49,10 +49,23 @@ export async function createOvertime(
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true, baseSalary: true, managerId: true },
+    select: {
+      firstName: true,
+      lastName: true,
+      managerId: true,
+      compensationType: true,
+      baseSalary: true,
+      dailyRate: true,
+      hourlyRate: true,
+    },
   });
   const estimated = estimateAmount(
-    employee?.baseSalary ? Number(employee.baseSalary) : null,
+    {
+      compensationType: employee?.compensationType ?? "MONTHLY",
+      baseSalary: employee?.baseSalary ? Number(employee.baseSalary) : null,
+      dailyRate: employee?.dailyRate ? Number(employee.dailyRate) : null,
+      hourlyRate: employee?.hourlyRate ? Number(employee.hourlyRate) : null,
+    },
     hours,
     DEFAULT_MULTIPLIER,
   );

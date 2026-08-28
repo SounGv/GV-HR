@@ -13,15 +13,34 @@ export function computeHours(start: string, end: string): number {
 }
 
 /**
- * Estimated OT pay: hourly wage × multiplier × hours.
- * Hourly wage ≈ monthly salary / 30 days / 8 hours.
+ * Estimated OT pay: hourly wage × multiplier × hours. The hourly wage
+ * depends on how this employee is actually paid (compensationType) — a
+ * MONTHLY salary is amortized over 30 days × 8 hours, a DAILY rate over
+ * 8 hours, and an HOURLY rate is already per-hour. Using baseSalary alone
+ * regardless of pay type silently priced every daily/hourly-wage
+ * employee's OT at ฿0 (their baseSalary is null), which is most of the
+ * workforce here.
  */
 export function estimateAmount(
-  baseSalary: number | null | undefined,
+  compensation: {
+    compensationType: "MONTHLY" | "DAILY" | "HOURLY" | string;
+    baseSalary: number | null | undefined;
+    dailyRate: number | null | undefined;
+    hourlyRate: number | null | undefined;
+  },
   hours: number,
   multiplier: number,
 ): number {
-  if (!baseSalary) return 0;
-  const hourly = baseSalary / 30 / 8;
+  let hourly: number;
+  if (compensation.compensationType === "DAILY") {
+    if (!compensation.dailyRate) return 0;
+    hourly = compensation.dailyRate / 8;
+  } else if (compensation.compensationType === "HOURLY") {
+    if (!compensation.hourlyRate) return 0;
+    hourly = compensation.hourlyRate;
+  } else {
+    if (!compensation.baseSalary) return 0;
+    hourly = compensation.baseSalary / 30 / 8;
+  }
   return Math.round(hourly * multiplier * hours);
 }
