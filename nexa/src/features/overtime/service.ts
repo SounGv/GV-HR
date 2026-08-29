@@ -258,9 +258,13 @@ export async function cancelOvertime(
     throw BadRequest("คำขอนี้ยกเลิกไม่ได้");
   }
 
-  const record = await prisma.overtimeRequest.update({
-    where: { id: req.id },
+  const { count } = await prisma.overtimeRequest.updateMany({
+    where: { id: req.id, status: req.status },
     data: { status: "CANCELLED", updatedById: session.sub },
+  });
+  if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+  const record = await prisma.overtimeRequest.findFirstOrThrow({
+    where: { id: req.id },
     select: requestSelect,
   });
 

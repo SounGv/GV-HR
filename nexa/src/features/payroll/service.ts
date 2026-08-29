@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { sendEmail } from "@/lib/email";
@@ -343,9 +343,21 @@ export async function closePayrollPeriod(
   });
   if (existing) throw BadRequest("งวดนี้ปิดไปแล้ว");
 
-  await prisma.payrollPeriod.create({
-    data: { companyId, period, closedById: session.sub },
-  });
+  // The findUnique check above is a TOCTOU race (two concurrent "close
+  // period" clicks can both see no existing row) — the unique constraint on
+  // (companyId, period) is the real guard and always wins, but a plain
+  // create() would surface that as a raw Prisma P2002 instead of the same
+  // friendly message as the check above.
+  try {
+    await prisma.payrollPeriod.create({
+      data: { companyId, period, closedById: session.sub },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw BadRequest("งวดนี้ปิดไปแล้ว");
+    }
+    throw err;
+  }
 
   await writeAudit({
     companyId,
@@ -766,9 +778,20 @@ export async function markPaid(
     );
   }
 
-  const updated = await prisma.payrollRecord.update({
-    where: { id },
+  // Compare-and-swap on status, BEFORE the loan-installment side effect
+  // below runs: two concurrent "mark paid" clicks (double-click, retry)
+  // could both pass the status check above before either write lands — a
+  // plain update() would let both proceed to applyPayrollLoanInstallments,
+  // deducting the same installment twice. Guarding the write on the status
+  // just read means only the first actually applies.
+  const { count } = await prisma.payrollRecord.updateMany({
+    where: { id, status: { not: "PAID" } },
     data: { status: "PAID", paidAt: new Date(), updatedById: session.sub },
+  });
+  if (count === 0) throw Conflict("รายการนี้ถูกจ่ายไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
+  const updated = await prisma.payrollRecord.findFirstOrThrow({
+    where: { id },
     select: recordWithEmployeeSelect,
   });
 

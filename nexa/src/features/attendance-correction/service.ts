@@ -288,9 +288,13 @@ export async function cancelAttendanceCorrection(
   if (req.employeeId !== employeeId) throw Forbidden("ยกเลิกได้เฉพาะคำขอของตนเอง");
   if (req.status !== "PENDING") throw BadRequest("คำขอนี้ยกเลิกไม่ได้");
 
-  const record = await prisma.attendanceCorrectionRequest.update({
-    where: { id: req.id },
+  const { count } = await prisma.attendanceCorrectionRequest.updateMany({
+    where: { id: req.id, status: "PENDING" },
     data: { status: "CANCELLED", updatedById: session.sub },
+  });
+  if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+  const record = await prisma.attendanceCorrectionRequest.findFirstOrThrow({
+    where: { id: req.id },
     select: requestSelect,
   });
 

@@ -394,10 +394,11 @@ export async function cancelRequest(
   if (req.requesterEmployeeId !== employeeId) throw Forbidden("ยกเลิกได้เฉพาะคำขอของตนเอง");
   if (req.status !== "PENDING") throw BadRequest("ยกเลิกได้เฉพาะคำขอที่รออนุมัติ");
 
-  await prisma.approvalRequest.update({
-    where: { id: req.id },
+  const { count } = await prisma.approvalRequest.updateMany({
+    where: { id: req.id, status: "PENDING" },
     data: { status: "CANCELLED", updatedById: session.sub },
   });
+  if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
   await writeAudit({
     companyId,
     actorUserId: session.sub,

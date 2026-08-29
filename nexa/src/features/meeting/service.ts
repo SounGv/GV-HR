@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { MeetingCreateInput, MeetingListQuery, MeetingRespondInput } from "./schema";
@@ -172,9 +172,13 @@ export async function cancelMeeting(companyId: string, session: AccessClaims, id
   }
   if (meeting.status !== "SCHEDULED") throw BadRequest("การประชุมนี้ถูกยกเลิกไปแล้ว");
 
-  const updated = await prisma.meeting.update({
-    where: { id: meeting.id },
+  const { count } = await prisma.meeting.updateMany({
+    where: { id: meeting.id, status: "SCHEDULED" },
     data: { status: "CANCELLED", updatedById: session.sub },
+  });
+  if (count === 0) throw Conflict("การประชุมนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+  const updated = await prisma.meeting.findFirstOrThrow({
+    where: { id: meeting.id },
     select: meetingSelect,
   });
 

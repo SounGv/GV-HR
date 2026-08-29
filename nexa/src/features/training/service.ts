@@ -273,15 +273,17 @@ export async function cancelEnrollment(
   const employeeId = requireEmployeeId(session);
   const enr = await prisma.trainingEnrollment.findFirst({
     where: { id, companyId },
-    select: { id: true, employeeId: true },
+    select: { id: true, employeeId: true, status: true },
   });
   if (!enr) throw NotFound("ไม่พบการลงทะเบียน");
   if (enr.employeeId !== employeeId) throw Forbidden("ยกเลิกได้เฉพาะการลงทะเบียนของตนเอง");
+  if (enr.status !== "ENROLLED") throw BadRequest("การลงทะเบียนนี้ยกเลิกไม่ได้");
 
-  await prisma.trainingEnrollment.update({
-    where: { id: enr.id },
+  const { count } = await prisma.trainingEnrollment.updateMany({
+    where: { id: enr.id, status: "ENROLLED" },
     data: { status: "CANCELLED", updatedById: session.sub },
   });
+  if (count === 0) throw Conflict("การลงทะเบียนนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
   await writeAudit({
     companyId,
     actorUserId: session.sub,

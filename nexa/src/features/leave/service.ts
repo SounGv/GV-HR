@@ -427,9 +427,13 @@ export async function cancelLeave(
   const isHourly = req.unit === "HOUR";
 
   const updated = await prisma.$transaction(async (tx) => {
-    const rec = await tx.leaveRequest.update({
-      where: { id: req.id },
+    const { count } = await tx.leaveRequest.updateMany({
+      where: { id: req.id, status: req.status },
       data: { status: "CANCELLED", updatedById: session.sub },
+    });
+    if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+    const rec = await tx.leaveRequest.findFirstOrThrow({
+      where: { id: req.id },
       select: requestSelect,
     });
 
