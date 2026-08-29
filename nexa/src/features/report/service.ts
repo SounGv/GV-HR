@@ -485,6 +485,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         lateMinutes,
         earlyMinutes: earlyMinutesOf(r.clockOutAt, shift.endMin),
         status: ATTENDANCE_STATUS_LABEL[status] ?? status,
+        statusKey: status,
         workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
         note: r.note ?? "-",
         editor: r.updatedById ? editorNameById.get(r.updatedById) ?? "-" : "-",

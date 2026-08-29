@@ -37,6 +37,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { AttendanceStatusBadge } from "@/features/attendance/status-badge";
+import type { AttendanceStatus } from "@/features/attendance/types";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { EMPLOYMENT_TYPES } from "@/features/employee/schema";
@@ -72,6 +74,16 @@ function todayStr(): string {
 
 function fmtNum(v: string | number) {
   return typeof v === "number" ? v.toLocaleString("th-TH") : v;
+}
+
+/** Renders the attendance report's "สถานะ" column as a semantic-color badge
+ * instead of raw Thai text — takes the whole row (not just the label) so it
+ * can read the enum key service.ts stashed alongside the label, rather than
+ * reverse-mapping the Thai text back to an enum, which is far more fragile. */
+function ReportStatusCell({ row }: { row: Record<string, string | number> }) {
+  const key = row.statusKey as AttendanceStatus | undefined;
+  if (!key) return <>{row.status}</>;
+  return <AttendanceStatusBadge status={key} />;
 }
 
 /** Photo cells hold a full base64 data URL — useless (and huge) in a CSV/
@@ -467,8 +479,11 @@ export function ReportView() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  {result.columns.map((c) => (
-                    <TableHead key={c.key} className={cn(c.numeric && "text-right")}>
+                  {result.columns.map((c, idx) => (
+                    <TableHead
+                      key={c.key}
+                      className={cn(c.numeric && "text-right", idx === 0 && "sticky left-0 z-10 bg-background")}
+                    >
                       {c.label}
                     </TableHead>
                   ))}
@@ -477,10 +492,18 @@ export function ReportView() {
               <TableBody>
                 {result.rows.map((row, i) => (
                   <TableRow key={i}>
-                    {result.columns.map((c) => (
-                      <TableCell key={c.key} className={cn(c.numeric && "text-right tabular-nums")}>
+                    {result.columns.map((c, idx) => (
+                      <TableCell
+                        key={c.key}
+                        className={cn(
+                          c.numeric && "text-right tabular-nums",
+                          idx === 0 && "sticky left-0 z-10 bg-background group-hover:bg-muted/50",
+                        )}
+                      >
                         {c.photo ? (
                           <PhotoCell url={row[c.key]} onOpen={setPhotoPreview} />
+                        ) : c.key === "status" && type === "attendance_daily" ? (
+                          <ReportStatusCell row={row} />
                         ) : (
                           fmtNum(row[c.key])
                         )}
