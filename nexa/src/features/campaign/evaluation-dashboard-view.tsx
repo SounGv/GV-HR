@@ -39,7 +39,7 @@ const STATUS_LABEL: Record<ScoreStatus, string> = {
 };
 
 const STATUS_COLOR: Record<ScoreStatus, string> = {
-  GOOD: "#84cc16",
+  GOOD: "#22c55e",
   NEEDS_IMPROVEMENT: "#f59e0b",
   WATCH: "#f59e0b",
   URGENT: "#e4573d",
@@ -233,7 +233,7 @@ export function EvaluationDashboardView() {
                     <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={100} />
                     <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} contentStyle={tooltipStyle} formatter={(v) => [`${v}%`, "คะแนนเฉลี่ย"]} />
-                    <Bar dataKey="avgScore" radius={[0, 6, 6, 0]} maxBarSize={20} fill="#84cc16" />
+                    <Bar dataKey="avgScore" radius={[0, 6, 6, 0]} maxBarSize={20} fill="#22c55e" />
                   </BarChart>
                 </ResponsiveContainer>
               )}

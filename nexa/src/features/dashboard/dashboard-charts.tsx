@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+import { useTheme } from "next-themes";
 import {
   Bar,
   BarChart,
@@ -18,29 +20,48 @@ import {
 import type { DeptDatum } from "./group-departments";
 import type { AttendanceTrendPoint } from "./service";
 
-// A wider, distinct categorical palette (not just the 5 --chart-* tokens
-// cycling and repeating every 5 slices — with ~19 departments that made
-// several unrelated departments render in the exact same color). Colors
-// stay in the brand's lime/teal/amber family with a few extra distinct
-// hues mixed in so up to 9 real categories + "other" are all tellable apart.
-const CATEGORY_COLORS = [
-  "#84cc16", // lime (brand primary)
-  "#0e9f8e", // teal
-  "#f59e0b", // amber
-  "#3b82f6", // blue
-  "#e4573d", // red
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#4d7c0f", // olive
+// Validated categorical palette (dataviz skill's reference set, reordered
+// brand-green-first and re-validated — see scripts/validate_palette.js in
+// the skill: both orders clear every adjacent-pair CVD/contrast gate).
+// Capped at 8 slots on purpose — a 9th series is never a generated hue, it
+// folds into "Other" (see group-departments.ts's groupTopDepartments cap).
+const CATEGORY_COLORS_LIGHT = [
+  "#008300", // green (brand primary)
+  "#2a78d6", // blue
+  "#eb6834", // orange
+  "#1baf7a", // aqua
+  "#eda100", // yellow
+  "#e87ba4", // magenta
+  "#4a3aa7", // violet
+  "#e34948", // red
+];
+const CATEGORY_COLORS_DARK = [
+  "#008300", // green — mode-invariant per the reference palette
+  "#3987e5", // blue
+  "#d95926", // orange
+  "#199e70", // aqua
+  "#c98500", // yellow
+  "#d55181", // magenta
+  "#9085e9", // violet
+  "#e66767", // red
 ];
 const OTHER_COLOR = "var(--muted-foreground)";
 
-function colorFor(index: number, isOther: boolean): string {
-  return isOther ? OTHER_COLOR : CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+/** Resolved-theme-aware categorical color list — SSR-safe (defaults to the
+ * light set until mounted, matching ThemeToggle's own hydration guard). */
+function useCategoryColors(): string[] {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  return mounted && resolvedTheme === "dark" ? CATEGORY_COLORS_DARK : CATEGORY_COLORS_LIGHT;
+}
+
+function colorFor(colors: string[], index: number, isOther: boolean): string {
+  return isOther ? OTHER_COLOR : colors[index % colors.length];
 }
 
 export function DepartmentDonut({ data }: { data: DeptDatum[] }) {
+  const colors = useCategoryColors();
   const total = data.reduce((s, d) => s + d.count, 0);
   if (total === 0) {
     return <EmptyChart />;
@@ -62,7 +83,7 @@ export function DepartmentDonut({ data }: { data: DeptDatum[] }) {
           strokeWidth={0}
         >
           {data.map((d, i) => (
-            <Cell key={i} fill={colorFor(i, d.name === "อื่นๆ")} />
+            <Cell key={i} fill={colorFor(colors, i, d.name === "อื่นๆ")} />
           ))}
         </Pie>
       </PieChart>
@@ -76,6 +97,7 @@ function truncate(name: string, max = 14): string {
 }
 
 export function HeadcountBar({ data }: { data: DeptDatum[] }) {
+  const colors = useCategoryColors();
   if (data.length === 0) return <EmptyChart />;
   // Horizontal bars — a vertical bar chart with 15-20 long department names
   // crammed along the X axis collides into an unreadable block. Laid out
@@ -108,7 +130,7 @@ export function HeadcountBar({ data }: { data: DeptDatum[] }) {
         />
         <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
           {data.map((_, i) => (
-            <Cell key={i} fill={colorFor(i, false)} opacity={i < CATEGORY_COLORS.length ? 1 : 0.45} />
+            <Cell key={i} fill={colorFor(colors, i, false)} opacity={i < colors.length ? 1 : 0.45} />
           ))}
         </Bar>
       </BarChart>
@@ -178,6 +200,7 @@ export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] })
 
 /** Small legend for the donut, colored to match. */
 export function DonutLegend({ data }: { data: DeptDatum[] }) {
+  const colors = useCategoryColors();
   const total = data.reduce((s, d) => s + d.count, 0);
   return (
     <ul className="space-y-2">
@@ -186,7 +209,7 @@ export function DonutLegend({ data }: { data: DeptDatum[] }) {
           <span className="flex items-center gap-2">
             <span
               className="size-2.5 rounded-full"
-              style={{ background: colorFor(i, d.name === "อื่นๆ") }}
+              style={{ background: colorFor(colors, i, d.name === "อื่นๆ") }}
             />
             <span className="text-muted-foreground">{d.name}</span>
           </span>
