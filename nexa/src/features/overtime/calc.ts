@@ -6,6 +6,22 @@ export const DEFAULT_MULTIPLIER = 1.5;
  * reconciliation pass. */
 export const MIN_OT_MINUTES = 15;
 
+/**
+ * Minutes elapsed between the Bangkok midnight that begins `workDate` and
+ * `clockOutAt` (a real UTC instant) — correctly handles a clock-out that
+ * lands on the calendar day AFTER workDate (an overnight shift). A plain
+ * "minutes since midnight of clockOutAt's own day" calculation wraps back to
+ * a small number for an after-midnight clock-out (e.g. 00:20 → 20), which
+ * then computes as far *less* than the shift end instead of hours past it,
+ * silently dropping real overtime instead of crediting it.
+ * `workDate` must be UTC midnight of the Bangkok calendar date (see
+ * lib/datetime.ts's bangkokParts.dateUTC) — Bangkok is UTC+7 with no DST.
+ */
+export function minutesSinceWorkDateStart(clockOutAt: Date, workDate: Date): number {
+  const bangkokMidnightUtcMs = workDate.getTime() - 7 * 60 * 60 * 1000;
+  return Math.round((clockOutAt.getTime() - bangkokMidnightUtcMs) / 60000);
+}
+
 export function parseHM(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return (h || 0) * 60 + (m || 0);

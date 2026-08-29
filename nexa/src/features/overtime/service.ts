@@ -1,12 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
-import { computeHours, estimateAmount, DEFAULT_MULTIPLIER, MIN_OT_MINUTES } from "./calc";
+import { computeHours, estimateAmount, minutesSinceWorkDateStart, DEFAULT_MULTIPLIER, MIN_OT_MINUTES } from "./calc";
 import type { OtCreateInput, OtDecideInput, OtListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -34,6 +34,13 @@ function requireEmployeeId(session: AccessClaims): string {
   return session.employeeId;
 }
 
+/**
+ * HR-level approvers may act on ANY request company-wide; a plain Manager
+ * only ever holds `overtime:manage` (own-team only, enforced by the
+ * managesRequester check at each call site) — `overtime:approve` is
+ * deliberately HR-exclusive so this check can't be satisfied by a
+ * team-scoped role.
+ */
 function isHrLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("overtime:approve");
 }
@@ -190,8 +197,14 @@ export async function decideOvertime(
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
 
-  const record = await prisma.overtimeRequest.update({
-    where: { id: req.id },
+  // Compare-and-swap on status: the PENDING check above is a separate
+  // round-trip from this write, so two concurrent decide calls (double-click,
+  // retry, or a second approver) can both pass that check before either
+  // commits. Guarding the update on the status already read means only the
+  // first call actually flips the status — the second sees count 0 and
+  // aborts instead of silently flipping an already-decided request again.
+  const { count } = await prisma.overtimeRequest.updateMany({
+    where: { id: req.id, status: "PENDING" },
     data: {
       status: nextStatus,
       approverEmployeeId: session.employeeId ?? null,
@@ -200,8 +213,9 @@ export async function decideOvertime(
       decisionNote: input.note,
       updatedById: session.sub,
     },
-    select: requestSelect,
   });
+  if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+  const record = await prisma.overtimeRequest.findFirstOrThrow({ where: { id: req.id }, select: requestSelect });
 
   await writeAudit({
     companyId,
@@ -315,11 +329,13 @@ export async function reconcileOvertimeFromAttendance(
     // shortened) shift end doesn't count as OT, per company policy.
     if (r.workDate.getUTCDay() === 6) continue;
 
-    // Bangkok is UTC+7 with no DST — clockOutAt is a real UTC instant, so
-    // converting to "minutes since Bangkok midnight" is a fixed +7h shift.
-    const bkkMinutes = (r.clockOutAt!.getUTCHours() * 60 + r.clockOutAt!.getUTCMinutes() + 7 * 60) % (24 * 60);
+    // Elapsed minutes since the work day's Bangkok midnight — NOT the same
+    // as "minutes since clockOutAt's own midnight", which wraps to a small
+    // number (and silently drops the overtime) for an after-midnight
+    // clock-out on an overnight shift.
+    const elapsedMinutes = minutesSinceWorkDateStart(r.clockOutAt!, r.workDate);
     const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate);
-    const excessMinutes = bkkMinutes - shift.endMin;
+    const excessMinutes = elapsedMinutes - shift.endMin;
     if (excessMinutes < MIN_OT_MINUTES) continue;
 
     const hours = Math.round((excessMinutes / 60) * 100) / 100;
@@ -334,7 +350,10 @@ export async function reconcileOvertimeFromAttendance(
       DEFAULT_MULTIPLIER,
     );
     const shiftEndLabel = `${String(Math.floor(shift.endMin / 60)).padStart(2, "0")}:${String(shift.endMin % 60).padStart(2, "0")}`;
-    const clockOutLabel = `${String(Math.floor(bkkMinutes / 60)).padStart(2, "0")}:${String(bkkMinutes % 60).padStart(2, "0")}`;
+    // Display-only "HH:mm" — wraps past midnight (e.g. 1460 min → "00:20"),
+    // which is fine for a label; the money math above uses elapsedMinutes.
+    const clockOutMinutesOfDay = ((elapsedMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+    const clockOutLabel = `${String(Math.floor(clockOutMinutesOfDay / 60)).padStart(2, "0")}:${String(clockOutMinutesOfDay % 60).padStart(2, "0")}`;
 
     await prisma.overtimeRequest.create({
       data: {
