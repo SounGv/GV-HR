@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="hidden md:block">
               <AppTopbar />
             </div>
-            <main className="flex-1 pb-24 md:space-y-6 md:p-6 md:pb-6">
+            <main className="min-w-0 flex-1 pb-24 md:space-y-6 md:p-6 md:pb-6">
               <Suspense fallback={children}>
                 <MobileContentWrapper>{children}</MobileContentWrapper>
               </Suspense>
