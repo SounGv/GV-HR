@@ -36,10 +36,10 @@ import { cn } from "@/lib/utils";
  */
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const { can } = useAuth();
+  const { can, canAny } = useAuth();
 
-  const canApproveLeave = can("leave:approve");
-  const canApproveOt = can("overtime:approve");
+  const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
+  const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
   const canApprove = canApproveLeave || canApproveOt;
   const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
   const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });

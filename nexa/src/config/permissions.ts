@@ -16,10 +16,26 @@ export type Action = (typeof ACTIONS)[number];
 export const MODULES = [
   { key: "dashboard", label: "แดชบอร์ด", actions: ["read"] },
   { key: "employee", label: "พนักงาน", actions: ["read", "create", "update", "delete", "export"] },
-  { key: "attendance", label: "เวลาเข้า-ออกงาน", actions: ["read", "create", "update", "approve", "export", "offsite"] },
+  {
+    key: "attendance",
+    label: "เวลาเข้า-ออกงาน",
+    // "manage" = a manager approving/viewing their OWN team's requests;
+    // "approve" is deliberately kept HR-exclusive (company-wide, any team)
+    // — see the Manager/HR Manager presets below and each service's
+    // isHrLevel() for the split, same pattern as campaign's manage/approve.
+    actions: ["read", "create", "update", "approve", "manage", "export", "offsite"],
+  },
   { key: "recognition", label: "ให้กำลังใจ", actions: ["read", "create"] },
-  { key: "leave", label: "การลา", actions: ["read", "create", "update", "delete", "approve", "export"] },
-  { key: "overtime", label: "ล่วงเวลา (OT)", actions: ["read", "create", "update", "delete", "approve", "export"] },
+  {
+    key: "leave",
+    label: "การลา",
+    actions: ["read", "create", "update", "delete", "approve", "manage", "export"],
+  },
+  {
+    key: "overtime",
+    label: "ล่วงเวลา (OT)",
+    actions: ["read", "create", "update", "delete", "approve", "manage", "export"],
+  },
   { key: "payroll", label: "เงินเดือน", actions: ["read", "create", "update", "approve", "export"] },
   { key: "recruitment", label: "สรรหาพนักงาน", actions: ["read", "create", "update", "delete"] },
   { key: "training", label: "อบรมและพัฒนา", actions: ["read", "create", "update", "delete"] },
@@ -133,13 +149,13 @@ export const ROLE_PRESETS: RolePreset[] = [
       "dashboard:read",
       "employee:read",
       "attendance:read",
-      "attendance:approve",
+      "attendance:manage",
       "recognition:read",
       "recognition:create",
       "leave:read",
-      "leave:approve",
+      "leave:manage",
       "overtime:read",
-      "overtime:approve",
+      "overtime:manage",
       "performance:read",
       "performance:create",
       "performance:update",

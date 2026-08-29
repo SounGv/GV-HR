@@ -38,8 +38,8 @@ function amountLabel(r: LeaveRequest) {
 }
 
 export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
-  const { can } = useAuth();
-  const canApprove = can("leave:approve");
+  const { canAny } = useAuth();
+  const canApprove = canAny(["leave:approve", "leave:manage"]);
 
   return (
     <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">

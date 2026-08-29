@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
-import { can } from "@/lib/auth/rbac";
+import { canAny } from "@/lib/auth/rbac";
 import { Forbidden } from "@/lib/api/errors";
 import { leaveCreateSchema, leaveListQuerySchema } from "@/features/leave/schema";
 import { createLeave, listLeave } from "@/features/leave/service";
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const query = leaveListQuerySchema.parse(
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );
-    if (query.scope !== "me" && !can(session.perms, "leave:approve")) {
+    if (query.scope !== "me" && !canAny(session.perms, ["leave:approve", "leave:manage"])) {
       throw Forbidden("ไม่มีสิทธิ์ดูคำขอของผู้อื่น");
     }
     const records = await listLeave(session.companyId, session, query);

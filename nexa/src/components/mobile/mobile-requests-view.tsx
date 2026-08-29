@@ -86,10 +86,10 @@ export function MobileRequestsView() {
 }
 
 function RequestsBody() {
-  const { can } = useAuth();
-  const canApproveLeave = can("leave:approve");
-  const canApproveOt = can("overtime:approve");
-  const canApproveCorrection = can("attendance:approve");
+  const { canAny } = useAuth();
+  const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
+  const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
+  const canApproveCorrection = canAny(["attendance:approve", "attendance:manage"]);
   const canApprove = canApproveLeave || canApproveOt || canApproveCorrection;
   const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
   const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
@@ -219,10 +219,10 @@ function MyRequests() {
 }
 
 function Approvals() {
-  const { can } = useAuth();
-  const canApproveLeave = can("leave:approve");
-  const canApproveOt = can("overtime:approve");
-  const canApproveCorrection = can("attendance:approve");
+  const { canAny } = useAuth();
+  const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
+  const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
+  const canApproveCorrection = canAny(["attendance:approve", "attendance:manage"]);
 
   const leaveQ = useLeave("team", "PENDING");
   const otQ = useOvertime("team", "PENDING");

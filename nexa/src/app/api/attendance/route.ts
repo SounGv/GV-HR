@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
-import { can } from "@/lib/auth/rbac";
+import { canAny } from "@/lib/auth/rbac";
 import { Forbidden } from "@/lib/api/errors";
 import { attendanceListQuerySchema } from "@/features/attendance/schema";
 import { listAttendance } from "@/features/attendance/service";
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     );
 
     // Team / company-wide views require approval-level permission.
-    if (query.scope !== "me" && !can(session.perms, "attendance:approve")) {
+    if (query.scope !== "me" && !canAny(session.perms, ["attendance:approve", "attendance:manage"])) {
       throw Forbidden("ไม่มีสิทธิ์ดูข้อมูลของผู้อื่น");
     }
 

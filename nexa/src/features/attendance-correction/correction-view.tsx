@@ -34,8 +34,8 @@ function line(r: AttendanceCorrectionRequest) {
 }
 
 export function CorrectionView() {
-  const { can } = useAuth();
-  const canApprove = can("attendance:approve");
+  const { canAny } = useAuth();
+  const canApprove = canAny(["attendance:approve", "attendance:manage"]);
 
   return (
     <Tabs defaultValue="me" className="space-y-4">

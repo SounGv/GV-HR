@@ -46,7 +46,12 @@ function requireEmployeeId(session: AccessClaims): string {
   return session.employeeId;
 }
 
-/** HR-level approvers (wildcard leave permission) may act on any request. */
+/**
+ * HR-level approvers may act on ANY request company-wide; a plain Manager
+ * only ever holds `leave:manage` (own-team only, enforced by the
+ * managesRequester check at each call site) — `leave:approve` is deliberately
+ * HR-exclusive so this check can't be satisfied by a team-scoped role.
+ */
 function isHrLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("leave:approve");
 }

@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { requirePermission } from "@/lib/auth/guard";
+import { requireAnyPermission } from "@/lib/auth/guard";
 import { decideSchema } from "@/features/leave/schema";
 import { decideLeave } from "@/features/leave/service";
 import { ok, handleApiError } from "@/lib/api/response";
@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requirePermission("leave:approve");
+    const session = await requireAnyPermission(["leave:approve", "leave:manage"]);
     const { id } = await params;
     const input = decideSchema.parse(await req.json().catch(() => ({})));
     const record = await decideLeave(session.companyId, session, id, input, getRequestMeta(req));

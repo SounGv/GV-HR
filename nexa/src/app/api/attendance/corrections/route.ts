@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
-import { can } from "@/lib/auth/rbac";
+import { canAny } from "@/lib/auth/rbac";
 import { Forbidden } from "@/lib/api/errors";
 import {
   attendanceCorrectionCreateSchema,
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const query = attendanceCorrectionListQuerySchema.parse(
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );
-    if (query.scope !== "me" && !can(session.perms, "attendance:approve")) {
+    if (query.scope !== "me" && !canAny(session.perms, ["attendance:approve", "attendance:manage"])) {
       throw Forbidden("ไม่มีสิทธิ์ดูคำขอของผู้อื่น");
     }
     const records = await listAttendanceCorrections(session.companyId, session, query);

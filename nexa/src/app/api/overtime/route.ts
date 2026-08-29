@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
-import { can } from "@/lib/auth/rbac";
+import { canAny } from "@/lib/auth/rbac";
 import { Forbidden } from "@/lib/api/errors";
 import { otCreateSchema, otListQuerySchema } from "@/features/overtime/schema";
 import { createOvertime, listOvertime } from "@/features/overtime/service";
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const query = otListQuerySchema.parse(
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );
-    if (query.scope !== "me" && !can(session.perms, "overtime:approve")) {
+    if (query.scope !== "me" && !canAny(session.perms, ["overtime:approve", "overtime:manage"])) {
       throw Forbidden("ไม่มีสิทธิ์ดูคำขอของผู้อื่น");
     }
     const records = await listOvertime(session.companyId, session, query);

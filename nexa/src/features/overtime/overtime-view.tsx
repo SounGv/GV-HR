@@ -24,8 +24,8 @@ function line(r: OvertimeRequest) {
 }
 
 export function OvertimeView() {
-  const { can } = useAuth();
-  const canApprove = can("overtime:approve");
+  const { canAny } = useAuth();
+  const canApprove = canAny(["overtime:approve", "overtime:manage"]);
 
   return (
     <Tabs defaultValue="me" className="space-y-4">
