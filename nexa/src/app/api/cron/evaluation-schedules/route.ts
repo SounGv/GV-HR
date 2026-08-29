@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { runDueSchedules } from "@/features/evaluation-schedule/generate";
+import { constantTimeEqual } from "@/lib/auth/bearer-token";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   const expected = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
-  if (!expected || auth !== `Bearer ${expected}`) {
+  if (!expected || !auth || !constantTimeEqual(auth, `Bearer ${expected}`)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

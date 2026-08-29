@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 /**
  * LINE Messaging API — real push/reply integration, gated on env config
@@ -71,9 +71,14 @@ export async function pushLineGroupMessage(groupId: string, text: string): Promi
 
 /** 6-char, unambiguous alphabet (no 0/O/1/I) — read out loud/typed by hand. */
 export function generateLinkCode(): string {
+  // CSPRNG, not Math.random() — this code links an arbitrary LINE account to
+  // an employee record, so a predictable/guessable code is a real account-
+  // linking weakness. Same alphabet/approach as auth/totp.ts's recovery
+  // codes (32 chars, divides 256 evenly, so byte % alphabet.length is
+  // unbiased).
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
-  for (let i = 0; i < 6; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (const byte of randomBytes(6)) code += alphabet[byte % alphabet.length];
   return code;
 }
 
