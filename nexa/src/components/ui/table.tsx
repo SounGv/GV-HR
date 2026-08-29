@@ -20,10 +20,19 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
+  // Not sticky: `Table` wraps every table in its own `overflow-x-auto` div,
+  // which becomes this thead's nearest positioned/scrolling ancestor — a
+  // `sticky top-*` here tries to pin against THAT div's (non-scrolling,
+  // content-sized) box instead of the viewport, so instead of staying
+  // pinned while the page scrolls, the header visually detaches and lands
+  // partway down the table wherever the div's layout happens to put it
+  // (confirmed live: reports/employee tables showing the header row
+  // stuck between two data rows instead of above row one). A plain
+  // non-sticky header renders correctly everywhere this component is used.
   return (
     <thead
       data-slot="table-header"
-      className={cn("sticky top-14 z-20 bg-background [&_tr]:border-b sm:top-16", className)}
+      className={cn("bg-background [&_tr]:border-b", className)}
       {...props}
     />
   )
