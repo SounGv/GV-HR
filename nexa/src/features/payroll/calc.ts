@@ -140,14 +140,14 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
 
   // Daily-wage staff aren't enrolled in Social Security yet — no deduction
   // for them until that's set up. The 1,650 floor otherwise fires even on a
-  // ฿0 wage (an employee with no attendance this period), producing a
+  // genuine ฿0 wage (an employee with no attendance this period, whatever
+  // their compensationType — this isn't DAILY-specific), producing a
   // negative payslip for someone who didn't get paid anything.
   const ssBase = Math.min(Math.max(salary, 1650), 15000);
-  const socialSecurity = input.compensationType === "DAILY" ? 0 : Math.min(Math.round(ssBase * 0.05), 750);
+  const socialSecurity =
+    input.compensationType === "DAILY" || salary === 0 ? 0 : Math.min(Math.round(ssBase * 0.05), 750);
   const providentFund = Math.round(salary * (pfRate / 100));
 
-  const annualIncome = gross * 12;
-  const expenseDeduction = Math.min(annualIncome * 0.5, 100_000);
   const personalAllowance = 60_000;
   const ssAnnual = Math.min(socialSecurity * 12, 9_000);
   const pfAnnual = providentFund * 12;
@@ -160,11 +160,31 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const insuranceDeduction = Math.min((td.lifeInsurance ?? 0) + (td.healthInsurance ?? 0), 100_000);
   const personalTaxDeductions = spouseDeduction + childrenDeduction + parentCareDeduction + insuranceDeduction;
 
-  const annualTaxable = Math.max(
-    0,
-    annualIncome - expenseDeduction - personalAllowance - ssAnnual - pfAnnual - personalTaxDeductions,
-  );
-  const tax = Math.round(annualIncomeTax(annualTaxable) / 12);
+  const fixedAnnualDeductions = personalAllowance + ssAnnual + pfAnnual + personalTaxDeductions;
+  function annualTaxOn(annualIncomeAmount: number): number {
+    const expenseDeduction = Math.min(annualIncomeAmount * 0.5, 100_000);
+    const taxable = Math.max(0, annualIncomeAmount - expenseDeduction - fixedAnnualDeductions);
+    return annualIncomeTax(taxable);
+  }
+
+  // Withholding estimate splits recurring pay (salary + allowances — repeats
+  // every period, so it's fair to annualize ×12) from one-off pay (OT,
+  // bonus, otherEarnings, ad-hoc extraEarnings — happened only THIS period).
+  // The old code multiplied the *whole* gross (including one-off amounts)
+  // by 12 before estimating tax — a ฿50,000 December bonus on a ฿20,000
+  // salary annualized to ฿840,000 instead of the correct ~฿290,000, wildly
+  // overtaxing that one payslip. This follows the Revenue Department's
+  // standard method for irregular income instead: tax the recurring income
+  // annualized normally (spread across 12 months), then tax the one-off
+  // amount as a full addition to that annual figure and withhold the entire
+  // *incremental* tax it causes in this period alone (not divided by 12,
+  // since the one-off amount itself isn't recurring).
+  const recurringMonthly = salary + allowances;
+  const oneOffThisPeriod = overtime + bonus + other + (input.extraEarnings ?? []).reduce((s, e) => s + Math.round(e.amount || 0), 0);
+  const annualRecurring = recurringMonthly * 12;
+  const taxOnRecurring = annualTaxOn(annualRecurring);
+  const taxOnRecurringPlusOneOff = annualTaxOn(annualRecurring + oneOffThisPeriod);
+  const tax = Math.round(taxOnRecurring / 12) + Math.round(taxOnRecurringPlusOneOff - taxOnRecurring);
 
   const deductions: LineItem[] = [];
   if (socialSecurity) deductions.push({ label: "ประกันสังคม", amount: socialSecurity });

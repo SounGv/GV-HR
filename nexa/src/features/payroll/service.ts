@@ -7,6 +7,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { sendEmail } from "@/lib/email";
 import { getCompanyProfile } from "@/features/company/service";
 import { computePayroll, periodLabel, type LineItem, type TaxDeductionInputs } from "./calc";
+import { PAID_LEAVE_TYPES } from "@/features/leave/days";
 import { renderPayslipEmailHtml } from "./payslip-email";
 import {
   getOutstandingLoansForPayroll,
@@ -147,6 +148,57 @@ async function getWorkedDaysAndHours(
     const row = map.get(r.employeeId) ?? { days: 0, hours: 0 };
     row.days += 1;
     if (r.clockOutAt) row.hours += (r.clockOutAt.getTime() - r.clockInAt.getTime()) / 3_600_000;
+    map.set(r.employeeId, row);
+  }
+  return map;
+}
+
+/**
+ * Approved PAID-leave credit for DAILY/HOURLY employees (ANNUAL/SICK/PERSONAL
+ * — see leave/days.ts's PAID_LEAVE_TYPES) over [from, to). Base pay for these
+ * two compensation types is literally rate × actual clocked attendance
+ * (getWorkedDaysAndHours), which has no way to know about a day nobody
+ * clocked into because they were on approved leave — without this, an
+ * approved paid-leave day is silently never paid at all. Returns per-employee
+ * { days, hours } credit in the *request's own unit*; the caller converts to
+ * whichever unit that employee is actually paid in.
+ */
+async function getPaidLeaveCreditByEmployee(
+  companyId: string,
+  from: Date,
+  to: Date,
+  employeeIds: string[],
+): Promise<Map<string, { days: number; hours: number }>> {
+  const requests = await prisma.leaveRequest.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      status: "APPROVED",
+      type: { in: [...PAID_LEAVE_TYPES] },
+      employeeId: { in: employeeIds },
+      startDate: { lt: to },
+      endDate: { gte: from },
+    },
+    select: { employeeId: true, startDate: true, endDate: true, days: true, unit: true, hours: true },
+  });
+
+  const map = new Map<string, { days: number; hours: number }>();
+  for (const r of requests) {
+    const row = map.get(r.employeeId) ?? { days: 0, hours: 0 };
+    if (r.unit === "HOUR") {
+      // Hour-unit requests are always within a single day (startDate ===
+      // endDate, per the schema), so no period-boundary clipping is needed.
+      row.hours += r.hours ?? 0;
+    } else {
+      const fullyInside = r.startDate >= from && r.endDate < to;
+      if (fullyInside) {
+        row.days += r.days;
+      } else {
+        const clipStart = r.startDate < from ? from : r.startDate;
+        const clipEndExclusive = r.endDate >= to ? to : new Date(r.endDate.getTime() + DAY_MS);
+        row.days += Math.max(0, Math.round((clipEndExclusive.getTime() - clipStart.getTime()) / DAY_MS));
+      }
+    }
     map.set(r.employeeId, row);
   }
   return map;
@@ -361,6 +413,25 @@ export async function generatePayroll(
   const wagedIds = employees.filter((e) => e.compensationType !== "MONTHLY").map((e) => e.id);
   const workedMap =
     wagedIds.length > 0 ? await getWorkedDaysAndHours(companyId, from, to, wagedIds) : new Map();
+  // Credit approved paid leave into DAILY/HOURLY base pay — see
+  // getPaidLeaveCreditByEmployee's doc comment for why this can't just be
+  // left out. Converted into whichever unit this specific employee is paid
+  // in (a day-unit request becomes ×8 hours for an HOURLY employee, and an
+  // hour-unit request becomes ÷8 days for a DAILY employee).
+  if (wagedIds.length > 0) {
+    const paidLeaveMap = await getPaidLeaveCreditByEmployee(companyId, from, to, wagedIds);
+    for (const emp of employees) {
+      const credit = paidLeaveMap.get(emp.id);
+      if (!credit) continue;
+      const row = workedMap.get(emp.id) ?? { days: 0, hours: 0 };
+      if (emp.compensationType === "DAILY") {
+        row.days += credit.days + credit.hours / 8;
+      } else if (emp.compensationType === "HOURLY") {
+        row.hours += credit.hours + credit.days * 8;
+      }
+      workedMap.set(emp.id, row);
+    }
+  }
 
   const attendancePolicy = await prisma.company.findUnique({
     where: { id: companyId },
@@ -660,10 +731,40 @@ export async function markPaid(
 ) {
   const record = await prisma.payrollRecord.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, status: true, employeeId: true, period: true },
+    select: { id: true, status: true, employeeId: true, period: true, earnings: true, deductions: true },
   });
   if (!record) throw NotFound("ไม่พบสลิปเงินเดือน");
   if (record.status === "PAID") throw BadRequest("รายการนี้จ่ายแล้ว");
+
+  // Drift guard: this payslip's stored OT/loan-installment amounts were
+  // computed whenever generatePayroll last ran — if OT got approved (or a
+  // loan issued) *after* that but *before* this pay click, the amount about
+  // to be stamped paidAt (making it permanently ineligible for any future
+  // payslip) was never actually included in gross/net here. Money would
+  // simply disappear. Refuse and ask HR to regenerate first instead of
+  // silently marking it paid anyway.
+  const [y, m] = record.period.split("-").map(Number);
+  const from = new Date(Date.UTC(y, m - 1, 1));
+  const to = new Date(Date.UTC(y, m, 1));
+  const currentOtAgg = await prisma.overtimeRequest.aggregate({
+    where: { companyId, employeeId: record.employeeId, status: "APPROVED", paidAt: null, date: { gte: from, lt: to } },
+    _sum: { estimatedAmount: true },
+  });
+  const currentOtSum = currentOtAgg._sum.estimatedAmount ?? 0;
+  const loanMap = await getOutstandingLoansForPayroll(companyId, [record.employeeId]);
+  const installments = loanMap.get(record.employeeId);
+  const currentLoanSum = sumInstallments(installments);
+
+  const earnings = (record.earnings as unknown as LineItem[] | null) ?? [];
+  const deductions = (record.deductions as unknown as LineItem[] | null) ?? [];
+  const storedOtSum = earnings.find((e) => e.label === "ค่าล่วงเวลา (OT)")?.amount ?? 0;
+  const storedLoanSum = deductions.find((d) => d.label === "หักชำระเงินกู้")?.amount ?? 0;
+
+  if (currentOtSum !== storedOtSum || currentLoanSum !== storedLoanSum) {
+    throw BadRequest(
+      "ยอด OT หรือเงินกู้ที่ยังไม่จ่ายมีการเปลี่ยนแปลงหลังจากคำนวณสลิปนี้ครั้งล่าสุด กรุณาคำนวณเงินเดือนงวดนี้ใหม่ก่อนกดจ่าย",
+    );
+  }
 
   const updated = await prisma.payrollRecord.update({
     where: { id },
@@ -674,16 +775,12 @@ export async function markPaid(
   // Finalize the two auto-computed lines this payslip pulled in live at
   // generate time — from here on they're locked in as actually paid, so a
   // later payroll run for a different period can't pull the same OT/loan
-  // installment in again.
-  const [y, m] = record.period.split("-").map(Number);
-  const from = new Date(Date.UTC(y, m - 1, 1));
-  const to = new Date(Date.UTC(y, m, 1));
+  // installment in again. Safe now: the drift guard above already proved
+  // these sums match what's actually reflected in the stored payslip.
   await prisma.overtimeRequest.updateMany({
     where: { companyId, employeeId: record.employeeId, status: "APPROVED", paidAt: null, date: { gte: from, lt: to } },
     data: { paidAt: new Date() },
   });
-  const loanMap = await getOutstandingLoansForPayroll(companyId, [record.employeeId]);
-  const installments = loanMap.get(record.employeeId);
   if (installments?.length) {
     await applyPayrollLoanInstallments(companyId, session, installments, meta);
   }
