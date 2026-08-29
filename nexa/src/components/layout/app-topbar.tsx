@@ -8,7 +8,13 @@ import { NotificationBell } from "./notification-bell";
 
 export function AppTopbar() {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card px-3 sm:h-16 sm:bg-background/70 sm:px-5 sm:backdrop-blur-xl">
+    // Opaque, not the semi-transparent bg-background/70 + backdrop-blur-xl this
+    // used to have: that blur is compositing-heavy and, right at the seam with
+    // the sidebar's own `fixed` element, showed up as a torn/diagonal seam
+    // artifact while scrolling (reported live, reproducible on desktop Chrome).
+    // A solid header removes the blur layer entirely, so there's nothing left
+    // to visually tear.
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card px-3 sm:h-16 sm:px-5">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mx-1 h-5" />
 

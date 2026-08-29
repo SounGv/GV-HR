@@ -32,7 +32,11 @@ export function PageHeaderBar({
   return (
     <div
       className={cn(
-        "-mx-4 hidden border-b border-border/70 bg-background/80 px-4 py-3 backdrop-blur-xl md:-mx-6 md:block md:px-6",
+        // Opaque bg-background, not the old bg-background/80 + backdrop-blur-xl:
+        // this bar sticks right at the sidebar's left edge (md:top-16, same
+        // corner as the topbar above it), and that blur showed up as a torn
+        // seam artifact while scrolling — see app-topbar.tsx for the same fix.
+        "-mx-4 hidden border-b border-border/70 bg-background px-4 py-3 md:-mx-6 md:block md:px-6",
         sticky && "md:sticky md:top-16 md:z-20",
         className,
       )}
