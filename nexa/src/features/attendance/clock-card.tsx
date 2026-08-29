@@ -494,7 +494,7 @@ export function ClockCard() {
             ) : (
               <Button
                 size="lg"
-                className="h-14 flex-1 gap-2 rounded-2xl bg-gradient-to-r from-[#BEF264] to-[#84CC16] text-base font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:brightness-105 active:brightness-95"
+                className="h-14 flex-1 gap-2 rounded-2xl bg-gradient-to-r from-[#4ade80] to-[#22c55e] text-base font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:brightness-105 active:brightness-95"
                 disabled={checking}
                 onClick={startClockIn}
               >

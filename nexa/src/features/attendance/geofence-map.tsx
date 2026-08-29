@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css";
 
 const userIcon = L.divIcon({
   className: "",
-  html: `<div style="width:16px;height:16px;border-radius:9999px;background:#84CC16;border:3px solid #10130A;box-shadow:0 0 0 4px rgba(132,204,22,0.35);"></div>`,
+  html: `<div style="width:16px;height:16px;border-radius:9999px;background:#22C55E;border:3px solid #0A0E1A;box-shadow:0 0 0 4px rgba(34,197,94,0.35);"></div>`,
   iconSize: [16, 16],
   iconAnchor: [8, 8],
 });
@@ -51,7 +51,7 @@ export function GeofenceMap({
         <Circle
           center={center}
           radius={radiusMeters}
-          pathOptions={{ color: "#4D7C0F", weight: 2, fillColor: "#84CC16", fillOpacity: 0.15 }}
+          pathOptions={{ color: "#15803D", weight: 2, fillColor: "#22C55E", fillOpacity: 0.15 }}
         />
         <Marker position={[userLat, userLng]} icon={userIcon} />
       </MapContainer>

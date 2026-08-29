@@ -140,10 +140,10 @@ function NavTab({
       href={href}
       className={cn(
         "flex h-full flex-col items-center justify-center gap-0.5 transition active:scale-95",
-        active ? "font-bold text-[#2F6B24]" : "text-[#374151]",
+        active ? "font-bold text-[#15803d]" : "text-[#374151]",
       )}
     >
-      <span className={cn("relative flex items-center justify-center rounded-full px-3 py-1", active && "bg-[#E5F6B8]")}>
+      <span className={cn("relative flex items-center justify-center rounded-full px-3 py-1", active && "bg-[#bbf7d0]")}>
         <Icon className="size-6" strokeWidth={2.8} />
         {badge > 0 && (
           <span className="absolute -top-1 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[9px] font-semibold text-badge-foreground ring-2 ring-card">

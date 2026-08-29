@@ -114,7 +114,7 @@ export function AppSidebar() {
                             className={cn(
                               "h-10 text-[15px] [&_svg]:size-[18px]",
                               active &&
-                                "data-active:bg-[#E5F6B8] data-active:font-bold data-active:text-[#2F6B24] data-active:hover:bg-[#E5F6B8] data-active:hover:text-[#2F6B24]",
+                                "data-active:bg-[#bbf7d0] data-active:font-bold data-active:text-[#15803d] data-active:hover:bg-[#bbf7d0] data-active:hover:text-[#15803d]",
                             )}
                             render={
                               item.isLogout ? (

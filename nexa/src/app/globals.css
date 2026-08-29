@@ -87,10 +87,13 @@
 :root {
   --radius: 0.75rem;
 
-  /* Noto Sans Thai via next/font — single family for body + headings,
-     mobile and desktop alike (design-system spec's primary typeface). */
-  --font-sans: var(--font-noto-sans-thai), "Sarabun", system-ui, sans-serif;
-  --font-heading: var(--font-noto-sans-thai), "Sarabun", system-ui, sans-serif;
+  /* IBM Plex Sans Thai via next/font — body + headings, mobile and desktop
+     alike. Headings put Sora first: it has no Thai cut at all, so Latin/
+     numerals render in Sora and Thai glyphs fall through to Plex Sans Thai
+     automatically, character by character — not a hack, just how font
+     stacks resolve missing glyphs. */
+  --font-sans: var(--font-plex-sans-thai), "Sarabun", system-ui, sans-serif;
+  --font-heading: var(--font-sora), var(--font-plex-sans-thai), "Sarabun", system-ui, sans-serif;
 
   /* Surfaces — plain white page background (2026-08-26 feedback: the
      previous warm off-white read as a yellowish/cream tint and was hard
@@ -102,17 +105,18 @@
   --popover: #ffffff;
   --popover-foreground: #182014;
 
-  /* Brand lime — Gadget Villa, tuned to the Tailwind lime scale (lime-500
-     as primary) so it stays vividly green without reading as neon/harsh at
-     large surface area. Backgrounds always pair with dark text. */
-  --primary: #84cc16;
-  --primary-foreground: #111408;
-  --secondary: #ecfccb;
-  --secondary-foreground: #365314;
+  /* Brand green — Gadget Villa, tuned to the Tailwind green scale (green-500
+     as primary, 2026-08-29 retheme away from the earlier lime). Backgrounds
+     pair with white text — green-500 is darker/more saturated than the old
+     lime-500 and doesn't carry near-black text as legibly. */
+  --primary: #22c55e;
+  --primary-foreground: #ffffff;
+  --secondary: #dcfce7;
+  --secondary-foreground: #14532d;
   --muted: #e9ebdd;
   --muted-foreground: #6b7668;
-  --accent: #ecfccb;
-  --accent-foreground: #365314;
+  --accent: #dcfce7;
+  --accent-foreground: #14532d;
   --destructive: #e4573d;
 
   --success: #0e9f8e;
@@ -128,38 +132,39 @@
 
   --border: #dce6d4;
   --input: #dce6d4;
-  --ring: #4d7c0f;
+  --ring: #15803d;
 
-  --chart-1: #84cc16;
+  --chart-1: #22c55e;
   --chart-2: #0e9f8e;
   --chart-3: #f59e0b;
-  --chart-4: #4d7c0f;
+  --chart-4: #15803d;
   --chart-5: #e4573d;
 
   /* Monochrome icon-chip system — every menu/KPI icon uses this green pair;
      "profile" is the one deliberate neutral-grey exception (account/personal
      items). Red is reserved for notification-count badges (--badge). */
-  --icon-chip-bg: #edf8e5;
-  --icon-chip-fg: #2f6b24;
+  --icon-chip-bg: #e8f9ee;
+  --icon-chip-fg: #15803d;
   --tone-profile-bg: #f1f3f5;
   --tone-profile-fg: #374151;
   --badge: #d92d20;
   --badge-foreground: #ffffff;
 
   /* Selected-menu state (sidebar nav item / bottom-nav tab) */
-  --menu-active-bg: #e5f6b8;
-  --menu-active-fg: #2f6b24;
+  --menu-active-bg: #bbf7d0;
+  --menu-active-fg: #15803d;
   --menu-inactive-fg: #374151;
 
-  /* Sidebar stays carbon black; accent aligns with brand lime */
-  --sidebar: #15200f;
-  --sidebar-foreground: #cdd1bd;
-  --sidebar-primary: #84cc16;
-  --sidebar-primary-foreground: #111408;
-  --sidebar-accent: #1b1f12;
+  /* Sidebar stays a dark navy now (2026-08-29 retheme); accent aligns with
+     the new brand green. */
+  --sidebar: #0f1526;
+  --sidebar-foreground: #c7cde0;
+  --sidebar-primary: #22c55e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #141b30;
   --sidebar-accent-foreground: #f5f6ef;
-  --sidebar-border: #212616;
-  --sidebar-ring: #84cc16;
+  --sidebar-border: #1f2740;
+  --sidebar-ring: #22c55e;
 
   /* Mobile Home redesign tokens — light-mode only (the mobile Home page is
      not tested in dark mode per the spec). */
@@ -196,65 +201,68 @@
   }
 }
 
-/* ───────────────── GV One — Dark theme ───────────────── */
+/* ───────────────── GV One — Dark theme (2026-08-29 navy/green retheme) ─────────────────
+   Background family swapped from olive-black to a navy-tinted dark, and the
+   accent from lime to a true green — brighter than the light theme's primary
+   (#4ade80 vs #22c55e) since dark surfaces need more luminance to read. */
 .dark {
-  --background: #10130a;
-  --foreground: #f5f6ef;
-  --card: #171b0f;
-  --card-foreground: #f5f6ef;
-  --popover: #171b0f;
-  --popover-foreground: #f5f6ef;
+  --background: #0a0e1a;
+  --foreground: #eef0f5;
+  --card: #0f1526;
+  --card-foreground: #eef0f5;
+  --popover: #0f1526;
+  --popover-foreground: #eef0f5;
 
-  --primary: #84cc16;
-  --primary-foreground: #111408;
-  --secondary: #232916;
-  --secondary-foreground: #f5f6ef;
-  --muted: #1e2213;
-  --muted-foreground: #a8ad95;
-  --accent: #2a3018;
-  --accent-foreground: #bef264;
+  --primary: #4ade80;
+  --primary-foreground: #052e16;
+  --secondary: #141b30;
+  --secondary-foreground: #eef0f5;
+  --muted: #131a2c;
+  --muted-foreground: #8b93a6;
+  --accent: #12261c;
+  --accent-foreground: #4ade80;
   --destructive: #e4573d;
 
   --success: #0e9f8e;
   --success-foreground: #ffffff;
   --success-muted: #0d3d38;
   --destructive-muted: #3d1f18;
-  --surface-muted: #1b1f12;
+  --surface-muted: #131a2c;
 
   --warning: #f59e0b;
   --warning-foreground: #1f2937;
   --info: #3b82f6;
   --info-foreground: #ffffff;
 
-  --border: #262b1a;
-  --input: #262b1a;
-  --ring: #84cc16;
+  --border: #1f2740;
+  --input: #1f2740;
+  --ring: #22c55e;
 
-  --chart-1: #84cc16;
+  --chart-1: #22c55e;
   --chart-2: #0e9f8e;
   --chart-3: #fbbf24;
-  --chart-4: #4d7c0f;
+  --chart-4: #15803d;
   --chart-5: #e4573d;
 
-  --icon-chip-bg: #2a3018;
-  --icon-chip-fg: #bef264;
+  --icon-chip-bg: #12261c;
+  --icon-chip-fg: #4ade80;
   --tone-profile-bg: #262b33;
   --tone-profile-fg: #cbd5e1;
   --badge: #ef4444;
   --badge-foreground: #ffffff;
 
-  --menu-active-bg: #33421a;
-  --menu-active-fg: #bef264;
-  --menu-inactive-fg: #cdd1bd;
+  --menu-active-bg: #17351f;
+  --menu-active-fg: #4ade80;
+  --menu-inactive-fg: #c7cde0;
 
-  --sidebar: #15200f;
-  --sidebar-foreground: #cdd1bd;
-  --sidebar-primary: #84cc16;
-  --sidebar-primary-foreground: #111408;
-  --sidebar-accent: #1b1f12;
-  --sidebar-accent-foreground: #f5f6ef;
-  --sidebar-border: #212616;
-  --sidebar-ring: #84cc16;
+  --sidebar: #0a0e1a;
+  --sidebar-foreground: #c7cde0;
+  --sidebar-primary: #22c55e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #141b30;
+  --sidebar-accent-foreground: #eef0f5;
+  --sidebar-border: #1f2740;
+  --sidebar-ring: #22c55e;
 }
 
 @layer base {

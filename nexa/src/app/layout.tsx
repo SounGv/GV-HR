@@ -1,21 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Noto_Sans_Thai } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans_Thai, Sora } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
 
-const mono = JetBrains_Mono({
+const mono = IBM_Plex_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
 /** Design-system spec's primary typeface, used app-wide (mobile and desktop
- * alike) — see `--font-sans`/`--font-noto-sans-thai` in globals.css. */
-const notoSansThai = Noto_Sans_Thai({
-  variable: "--font-noto-sans-thai",
+ * alike) — see `--font-sans`/`--font-plex-sans-thai` in globals.css. */
+const plexSansThai = IBM_Plex_Sans_Thai({
+  variable: "--font-plex-sans-thai",
   subsets: ["thai", "latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+/** Display face for headings only — Latin/numerals render in Sora, Thai
+ * glyphs fall through to plexSansThai via the --font-heading stack (Sora
+ * has no Thai cut at all, so this pairing is required, not cosmetic). */
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -46,7 +57,7 @@ export const viewport: Viewport = {
   // in sync with the actual resolved app theme client-side, which can differ
   // from OS-level prefers-color-scheme (e.g. mobile forced into dark by
   // default). Two media-scoped tags here would fight that override.
-  themeColor: "#84CC16",
+  themeColor: "#22C55E",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -57,7 +68,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th" suppressHydrationWarning>
-      <body className={`${mono.variable} ${notoSansThai.variable} font-sans`}>
+      <body className={`${mono.variable} ${plexSansThai.variable} ${sora.variable} font-sans`}>
         <AppProviders>{children}</AppProviders>
         <PwaRegister />
       </body>
