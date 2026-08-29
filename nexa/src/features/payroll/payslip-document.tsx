@@ -35,6 +35,16 @@ const PAPER_SIZES = [
 ] as const;
 type PaperKey = (typeof PAPER_SIZES)[number]["key"];
 
+// TEMPORARY (2026-08-29): the payroll engine computes OT/pay from raw
+// attendance time, which doesn't yet always match HR's own manual figures —
+// showing a number here that later doesn't match what's actually paid causes
+// real confusion/complaints. Hide the Baht amounts until that's verified to
+// match; flip this back to `false` once it does. Labels/line items still
+// show, so employees can see what's on the slip, just not the (possibly
+// wrong) numbers yet.
+const HIDE_AMOUNTS = true;
+const HIDDEN_AMOUNT = "รอตรวจสอบ";
+
 export interface PayslipCompany {
   name: string;
   legalName: string | null;
@@ -159,12 +169,16 @@ export function PayslipDocument({
               {slip.earnings.map((e, i) => (
                 <tr key={i} className="border-b border-slate-100">
                   <td className="py-1.5">{e.label}</td>
-                  <td className="py-1.5 text-right tabular-nums">{e.amount.toLocaleString("th-TH")}</td>
+                  <td className="py-1.5 text-right tabular-nums">
+                    {HIDE_AMOUNTS ? <span className="text-slate-400 italic">{HIDDEN_AMOUNT}</span> : e.amount.toLocaleString("th-TH")}
+                  </td>
                 </tr>
               ))}
               <tr className="font-semibold">
                 <td className="py-1.5">รวมรายได้</td>
-                <td className="py-1.5 text-right tabular-nums">{slip.gross.toLocaleString("th-TH")}</td>
+                <td className="py-1.5 text-right tabular-nums">
+                  {HIDE_AMOUNTS ? <span className="text-slate-400 italic">{HIDDEN_AMOUNT}</span> : slip.gross.toLocaleString("th-TH")}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -180,16 +194,26 @@ export function PayslipDocument({
               {slip.deductions.map((d, i) => (
                 <tr key={i} className="border-b border-slate-100">
                   <td className="py-1.5">{d.label}</td>
-                  <td className="py-1.5 text-right tabular-nums">{d.amount.toLocaleString("th-TH")}</td>
+                  <td className="py-1.5 text-right tabular-nums">
+                    {HIDE_AMOUNTS ? <span className="text-slate-400 italic">{HIDDEN_AMOUNT}</span> : d.amount.toLocaleString("th-TH")}
+                  </td>
                 </tr>
               ))}
               <tr className="font-semibold">
                 <td className="py-1.5">รวมรายการหัก</td>
-                <td className="py-1.5 text-right tabular-nums">{slip.totalDeductions.toLocaleString("th-TH")}</td>
+                <td className="py-1.5 text-right tabular-nums">
+                  {HIDE_AMOUNTS ? <span className="text-slate-400 italic">{HIDDEN_AMOUNT}</span> : slip.totalDeductions.toLocaleString("th-TH")}
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        {HIDE_AMOUNTS && (
+          <p className={cn("mt-3 rounded-md bg-amber-50 px-3 py-2 text-amber-700", paper.compact ? "text-[10px]" : "text-xs")}>
+            ยอดเงินอยู่ระหว่างตรวจสอบความถูกต้องกับฝ่ายบุคคล จะแสดงผลเมื่อยืนยันยอดแล้ว
+          </p>
+        )}
 
         {slip.note && (
           <p className={cn("mt-3 rounded-md bg-slate-50 px-3 py-2 text-slate-600", paper.compact ? "text-[10px]" : "text-xs")}>
@@ -200,7 +224,9 @@ export function PayslipDocument({
 
         <div className={cn("mt-4 flex items-center justify-between rounded-lg bg-slate-900 text-white print:bg-slate-900", paper.compact ? "px-3 py-2" : "px-5 py-4")}>
           <span className="font-medium">เงินเดือนสุทธิ (Net Pay)</span>
-          <span className="text-xl font-bold tabular-nums">{formatCurrency(slip.net)}</span>
+          <span className="text-xl font-bold tabular-nums">
+            {HIDE_AMOUNTS ? <span className="text-base font-normal text-slate-300 italic">{HIDDEN_AMOUNT}</span> : formatCurrency(slip.net)}
+          </span>
         </div>
 
         <footer className={cn("flex items-end justify-between gap-4", paper.compact ? "mt-3" : "mt-6")}>
