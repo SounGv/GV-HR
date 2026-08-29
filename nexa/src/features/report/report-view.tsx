@@ -479,11 +479,8 @@ export function ReportView() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  {result.columns.map((c, idx) => (
-                    <TableHead
-                      key={c.key}
-                      className={cn(c.numeric && "text-right", idx === 0 && "sticky left-0 z-10 bg-background")}
-                    >
+                  {result.columns.map((c) => (
+                    <TableHead key={c.key} className={cn(c.numeric && "text-right")}>
                       {c.label}
                     </TableHead>
                   ))}
@@ -492,14 +489,8 @@ export function ReportView() {
               <TableBody>
                 {result.rows.map((row, i) => (
                   <TableRow key={i}>
-                    {result.columns.map((c, idx) => (
-                      <TableCell
-                        key={c.key}
-                        className={cn(
-                          c.numeric && "text-right tabular-nums",
-                          idx === 0 && "sticky left-0 z-10 bg-background group-hover:bg-muted/50",
-                        )}
-                      >
+                    {result.columns.map((c) => (
+                      <TableCell key={c.key} className={cn(c.numeric && "text-right tabular-nums")}>
                         {c.photo ? (
                           <PhotoCell url={row[c.key]} onOpen={setPhotoPreview} />
                         ) : c.key === "status" && type === "attendance_daily" ? (
