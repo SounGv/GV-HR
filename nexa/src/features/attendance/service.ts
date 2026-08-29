@@ -171,13 +171,14 @@ function resolveOffsite(
 export async function getToday(companyId: string, session: AccessClaims) {
   const employeeId = requireEmployeeId(session);
   const { dateUTC } = bangkokParts();
-  const [record, employee] = await Promise.all([
-    prisma.attendanceRecord.findFirst({
-      where: { companyId, employeeId, workDate: dateUTC, deletedAt: null },
-      select: recordSelect,
-    }),
-    loadEmployeeWithBranch(companyId, employeeId),
-  ]);
+  // Sequential, not Promise.all — this app's pooled connection runs with
+  // connection_limit=1, so concurrent Prisma calls can throw P2024 instead
+  // of both completing.
+  const record = await prisma.attendanceRecord.findFirst({
+    where: { companyId, employeeId, workDate: dateUTC, deletedAt: null },
+    select: recordSelect,
+  });
+  const employee = await loadEmployeeWithBranch(companyId, employeeId);
   return { record, branch: employee.branch };
 }
 
@@ -219,37 +220,19 @@ export async function clockIn(
   const now = new Date();
   const workDate = bp.dateUTC;
 
-  const existing = await prisma.attendanceRecord.findUnique({
-    where: { employeeId_workDate: { employeeId, workDate } },
-    select: { id: true, clockInAt: true },
-  });
-  if (existing?.clockInAt) throw Conflict("คุณได้เช็คอินแล้ววันนี้");
-
   const shift = await resolveShiftMinutes(employeeId, workDate);
   const status = lateOrPresent(bp.minutesOfDay, shift.startMin);
 
-  const record = await prisma.attendanceRecord.upsert({
-    where: { employeeId_workDate: { employeeId, workDate } },
-    create: {
-      companyId,
-      employeeId,
-      workDate,
-      clockInAt: now,
-      clockInLat: input.lat ?? null,
-      clockInLng: input.lng ?? null,
-      clockInDistance: distance,
-      clockInAccuracy: input.accuracy ?? null,
-      clockInPhotoUrl: input.photo ?? null,
-      clockInDevice: input.device ?? null,
-      clockInBranchId: employee.branch?.id ?? null,
-      clockInViaQr: qrVerified,
-      workMode: resolvedWorkMode,
-      note: offsiteNote,
-      status,
-      createdById: session.sub,
-      updatedById: session.sub,
-    },
-    update: {
+  // Guard against a genuine "already clocked in" duplicate atomically, not
+  // via a separate read-then-write: two near-simultaneous clock-in calls
+  // (e.g. a client retry on a flaky connection) could both pass a plain read
+  // check before either commits, and the loser would silently overwrite the
+  // winner's clockInAt/photo/location instead of being rejected. Update only
+  // matches a row that exists with no clock-in yet (e.g. one an attendance
+  // correction created with just a clock-out) — genuinely not a duplicate.
+  const { count } = await prisma.attendanceRecord.updateMany({
+    where: { employeeId, workDate, clockInAt: null },
+    data: {
       clockInAt: now,
       clockInLat: input.lat ?? null,
       clockInLng: input.lng ?? null,
@@ -264,6 +247,43 @@ export async function clockIn(
       status,
       updatedById: session.sub,
     },
+  });
+  if (count === 0) {
+    // No row with clockInAt: null matched — either no row exists yet (create
+    // it) or one already exists with a real clock-in (the unique constraint
+    // on employeeId_workDate makes create() fail atomically in that case,
+    // so a genuine race here can't let a second create() sneak through).
+    try {
+      await prisma.attendanceRecord.create({
+        data: {
+          companyId,
+          employeeId,
+          workDate,
+          clockInAt: now,
+          clockInLat: input.lat ?? null,
+          clockInLng: input.lng ?? null,
+          clockInDistance: distance,
+          clockInAccuracy: input.accuracy ?? null,
+          clockInPhotoUrl: input.photo ?? null,
+          clockInDevice: input.device ?? null,
+          clockInBranchId: employee.branch?.id ?? null,
+          clockInViaQr: qrVerified,
+          workMode: resolvedWorkMode,
+          note: offsiteNote,
+          status,
+          createdById: session.sub,
+          updatedById: session.sub,
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        throw Conflict("คุณได้เช็คอินแล้ววันนี้");
+      }
+      throw err;
+    }
+  }
+  const record = await prisma.attendanceRecord.findUniqueOrThrow({
+    where: { employeeId_workDate: { employeeId, workDate } },
     select: recordSelect,
   });
 

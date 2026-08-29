@@ -50,51 +50,52 @@ export async function getMonth(
     }
   };
 
-  const [holidays, leaves, courses, events, evaluations] = await Promise.all([
-    prisma.holiday.findMany({
-      where: { companyId, deletedAt: null, date: { gte: start, lt: end } },
-      select: { id: true, name: true, date: true, type: true },
-    }),
-    prisma.leaveRequest.findMany({
-      where: {
-        companyId,
-        deletedAt: null,
-        status: "APPROVED",
-        startDate: { lt: end },
-        endDate: { gte: start },
-      },
-      select: {
-        id: true,
-        type: true,
-        startDate: true,
-        endDate: true,
-        employeeId: true,
-        employee: { select: { firstName: true, lastName: true } },
-      },
-    }),
-    prisma.trainingCourse.findMany({
-      where: { companyId, deletedAt: null, scheduledDate: { gte: start, lt: end } },
-      select: { id: true, title: true, scheduledDate: true },
-    }),
-    prisma.calendarEvent.findMany({
-      where: {
-        companyId,
-        deletedAt: null,
-        startDate: { lt: end },
-        OR: [{ endDate: null, startDate: { gte: start } }, { endDate: { gte: start } }],
-      },
-      select: { id: true, title: true, type: true, startDate: true, endDate: true },
-    }),
-    prisma.evaluationCampaign.findMany({
-      where: {
-        companyId,
-        deletedAt: null,
-        startDate: { lt: end },
-        endDate: { gte: start },
-      },
-      select: { id: true, name: true, startDate: true, endDate: true },
-    }),
-  ]);
+  // Sequential, not Promise.all — this app's pooled connection runs with
+  // connection_limit=1, so concurrent Prisma calls can throw P2024 instead
+  // of all five completing.
+  const holidays = await prisma.holiday.findMany({
+    where: { companyId, deletedAt: null, date: { gte: start, lt: end } },
+    select: { id: true, name: true, date: true, type: true },
+  });
+  const leaves = await prisma.leaveRequest.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      status: "APPROVED",
+      startDate: { lt: end },
+      endDate: { gte: start },
+    },
+    select: {
+      id: true,
+      type: true,
+      startDate: true,
+      endDate: true,
+      employeeId: true,
+      employee: { select: { firstName: true, lastName: true } },
+    },
+  });
+  const courses = await prisma.trainingCourse.findMany({
+    where: { companyId, deletedAt: null, scheduledDate: { gte: start, lt: end } },
+    select: { id: true, title: true, scheduledDate: true },
+  });
+  const events = await prisma.calendarEvent.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      startDate: { lt: end },
+      OR: [{ endDate: null, startDate: { gte: start } }, { endDate: { gte: start } }],
+    },
+    select: { id: true, title: true, type: true, startDate: true, endDate: true },
+  });
+  const evaluations = await prisma.evaluationCampaign.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      startDate: { lt: end },
+      endDate: { gte: start },
+    },
+    select: { id: true, name: true, startDate: true, endDate: true },
+  });
 
   for (const h of holidays) {
     items.push({
