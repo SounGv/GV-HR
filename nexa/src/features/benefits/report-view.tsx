@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Download, FileSpreadsheet, Printer } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
@@ -214,85 +215,78 @@ export function BenefitsReportView() {
 
 function MedicalTable({ rows }: { rows: MedicalReportRow[] }) {
   return (
-    <Card className="overflow-x-auto p-0">
-      <table className="w-full text-[15px]">
-        <thead className="sticky top-0 bg-muted/60 text-left">
-          <tr>
-            <Th>พนักงาน</Th>
-            <Th>แผนก</Th>
-            <Th>วงเงินทั้งหมด</Th>
-            <Th>ครั้งที่เบิก</Th>
-            <Th>อนุมัติสะสม</Th>
-            <Th>รออนุมัติ</Th>
-            <Th>คงเหลือ</Th>
-            <Th>เบิกล่าสุด</Th>
-            <Th>ใบลาป่วยอ้างอิง</Th>
-            <Th>เอกสารแนบ</Th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
+    <Card className="p-0">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>พนักงาน</TableHead>
+            <TableHead>แผนก</TableHead>
+            <TableHead>วงเงินทั้งหมด</TableHead>
+            <TableHead>ครั้งที่เบิก</TableHead>
+            <TableHead>อนุมัติสะสม</TableHead>
+            <TableHead>รออนุมัติ</TableHead>
+            <TableHead>คงเหลือ</TableHead>
+            <TableHead>เบิกล่าสุด</TableHead>
+            <TableHead>ใบลาป่วยอ้างอิง</TableHead>
+            <TableHead>เอกสารแนบ</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((r) => (
-            <tr key={r.employeeId}>
-              <Td>
+            <TableRow key={r.employeeId}>
+              <TableCell>
                 {r.employeeName} <span className="text-muted-foreground">({r.employeeCode})</span>
-              </Td>
-              <Td>{r.department ?? "-"}</Td>
-              <Td>{formatCurrency(r.totalCap)}</Td>
-              <Td>{r.claimCount}</Td>
-              <Td>{formatCurrency(r.approvedTotal)}</Td>
-              <Td>{formatCurrency(r.pendingTotal)}</Td>
-              <Td className="font-semibold text-primary">{formatCurrency(r.remaining)}</Td>
-              <Td>{r.lastClaimDate ? formatDate(r.lastClaimDate) : "-"}</Td>
-              <Td>{r.sickLeaveRefs.length > 0 ? `${r.sickLeaveRefs.length} ใบ` : "-"}</Td>
-              <Td>{r.attachments.length > 0 ? `${r.attachments.length} ไฟล์` : "-"}</Td>
-            </tr>
+              </TableCell>
+              <TableCell>{r.department ?? "-"}</TableCell>
+              <TableCell>{formatCurrency(r.totalCap)}</TableCell>
+              <TableCell>{r.claimCount}</TableCell>
+              <TableCell>{formatCurrency(r.approvedTotal)}</TableCell>
+              <TableCell>{formatCurrency(r.pendingTotal)}</TableCell>
+              <TableCell className="font-semibold text-primary">{formatCurrency(r.remaining)}</TableCell>
+              <TableCell>{r.lastClaimDate ? formatDate(r.lastClaimDate) : "-"}</TableCell>
+              <TableCell>{r.sickLeaveRefs.length > 0 ? `${r.sickLeaveRefs.length} ใบ` : "-"}</TableCell>
+              <TableCell>{r.attachments.length > 0 ? `${r.attachments.length} ไฟล์` : "-"}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </Card>
   );
 }
 
 function LoanTable({ rows }: { rows: LoanReportRow[] }) {
   return (
-    <Card className="overflow-x-auto p-0">
-      <table className="w-full text-[15px]">
-        <thead className="sticky top-0 bg-muted/60 text-left">
-          <tr>
-            <Th>พนักงาน</Th>
-            <Th>แผนก</Th>
-            <Th>เงินเดือน ณ วันที่กู้</Th>
-            <Th>จำนวนเงินกู้</Th>
-            <Th>วันที่กู้</Th>
-            <Th>สถานะ</Th>
-            <Th>ใช้สิทธิ์ปีนี้</Th>
-            <Th>คงค้าง</Th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
+    <Card className="p-0">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>พนักงาน</TableHead>
+            <TableHead>แผนก</TableHead>
+            <TableHead>เงินเดือน ณ วันที่กู้</TableHead>
+            <TableHead>จำนวนเงินกู้</TableHead>
+            <TableHead>วันที่กู้</TableHead>
+            <TableHead>สถานะ</TableHead>
+            <TableHead>ใช้สิทธิ์ปีนี้</TableHead>
+            <TableHead>คงค้าง</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((r) => (
-            <tr key={r.loanId}>
-              <Td>
+            <TableRow key={r.loanId}>
+              <TableCell>
                 {r.employeeName} <span className="text-muted-foreground">({r.employeeCode})</span>
-              </Td>
-              <Td>{r.department ?? "-"}</Td>
-              <Td>{formatCurrency(r.salarySnapshot)}</Td>
-              <Td>{formatCurrency(r.amount)}</Td>
-              <Td>{formatDate(r.loanDate)}</Td>
-              <Td>{EXPENSE_STATUS_LABEL[r.status as ExpenseStatus] ?? r.status}</Td>
-              <Td>{r.usageCountThisYear}</Td>
-              <Td className="font-semibold text-primary">{formatCurrency(r.outstanding)}</Td>
-            </tr>
+              </TableCell>
+              <TableCell>{r.department ?? "-"}</TableCell>
+              <TableCell>{formatCurrency(r.salarySnapshot)}</TableCell>
+              <TableCell>{formatCurrency(r.amount)}</TableCell>
+              <TableCell>{formatDate(r.loanDate)}</TableCell>
+              <TableCell>{EXPENSE_STATUS_LABEL[r.status as ExpenseStatus] ?? r.status}</TableCell>
+              <TableCell>{r.usageCountThisYear}</TableCell>
+              <TableCell className="font-semibold text-primary">{formatCurrency(r.outstanding)}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </Card>
   );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="p-3 font-medium text-muted-foreground">{children}</th>;
-}
-function Td({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <td className={`p-3 text-foreground ${className ?? ""}`}>{children}</td>;
 }

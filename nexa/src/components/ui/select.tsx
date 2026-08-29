@@ -180,6 +180,26 @@ function SelectContent({
   const filteredChildren = showSearch ? filterSelectChildren(children, query) : children
   const noResults = showSearch && query.trim() && countSelectItems(filteredChildren) === 0
 
+  // The popup renders with `keepMounted: true` (Base UI's SelectPositioner
+  // hardcodes this, not something we can turn off), so this component
+  // instance — and `query` with it — never unmounts between opens. Without
+  // this, typing a search, closing, and reopening shows the popup still
+  // filtered down to the old query instead of the full list. There's no
+  // public onOpenChange at this layer to hook (that lives on Select.Root,
+  // a separate component from this one in the compound API), so watch the
+  // popup's own `data-closed` attribute — part of Base UI's public styling
+  // contract, unlike reaching into its internal root context.
+  const popupRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const el = popupRef.current
+    if (!el) return
+    const observer = new MutationObserver(() => {
+      if (el.hasAttribute("data-closed")) setQuery("")
+    })
+    observer.observe(el, { attributes: true, attributeFilter: ["data-closed"] })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
@@ -191,6 +211,7 @@ function SelectContent({
         className="isolate z-50"
       >
         <SelectPrimitive.Popup
+          ref={popupRef}
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn("relative isolate z-50 flex max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) flex-col overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}

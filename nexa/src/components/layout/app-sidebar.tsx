@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
@@ -28,7 +28,7 @@ import { Logo, LogoHorizontal } from "@/components/shared/logo";
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { can, logout } = useAuth();
+  const { can, canAny, logout } = useAuth();
   const { data: aiAccess } = useAiAccess();
   const { toggle: toggleAiPanel } = useAiPanel();
 
@@ -40,8 +40,8 @@ export function AppSidebar() {
 
   // Live sidebar badges — same data sources already powering the mobile
   // bottom nav's badges, just surfaced here too (a first for desktop).
-  const canApproveLeave = can("leave:approve");
-  const canApproveOt = can("overtime:approve");
+  const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
+  const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
   const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
   const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
   const pendingApprovals = (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0);
@@ -70,6 +70,20 @@ export function AppSidebar() {
     return init;
   });
   const toggle = (label: string) => setOpen((s) => ({ ...s, [label]: !s[label] }));
+
+  // The initializer above only runs once on mount — deep-linking into a
+  // different, currently-collapsed group later (e.g. a notification link)
+  // otherwise leaves that group collapsed with no visible active state. Only
+  // expand the group the new route landed in; leave every other group's
+  // manually-set collapse state untouched.
+  useEffect(() => {
+    setOpen((prev) => {
+      const activeGroup = NAV_GROUPS.find((g) => groupHasActive(g.items));
+      if (!activeGroup || prev[activeGroup.label]) return prev;
+      return { ...prev, [activeGroup.label]: true };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   return (
     <Sidebar>
