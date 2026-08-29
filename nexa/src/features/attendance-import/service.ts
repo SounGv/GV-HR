@@ -123,7 +123,9 @@ export async function importAttendance(
     // excess minutes instead: HR uploading this file is already attesting
     // these hours happened, the same trust an import already extends to the
     // attendance records themselves.
-    if (r.clockOut) {
+    // Saturday is a company-wide half day — time worked past the (already
+    // shortened) shift end doesn't count as OT, per company policy.
+    if (r.clockOut && workDate.getUTCDay() !== 6) {
       const [outH, outM] = r.clockOut.split(":").map(Number);
       const excessMinutes = outH * 60 + outM - shift.endMin;
       if (excessMinutes >= MIN_OT_MINUTES) {

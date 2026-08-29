@@ -1,12 +1,21 @@
 import { prisma } from "@/lib/prisma";
-import { SHIFT_START_MIN, SHIFT_END_MIN } from "@/lib/datetime";
+import { SHIFT_START_MIN, SHIFT_END_MIN, SATURDAY_SHIFT_END_MIN } from "@/lib/datetime";
 
 export interface ShiftMinutes {
   startMin: number;
   endMin: number;
 }
 
-const DEFAULT_SHIFT: ShiftMinutes = { startMin: SHIFT_START_MIN, endMin: SHIFT_END_MIN };
+/**
+ * The company default when no ShiftAssignment exists — Saturday is a
+ * company-wide half day (09:00–12:00) for everyone, every other day is
+ * 09:00–18:00. `workDate` is UTC midnight of the Bangkok calendar date (see
+ * lib/datetime.ts's bangkokParts), so getUTCDay() reads the correct weekday.
+ */
+function defaultShiftFor(workDate: Date): ShiftMinutes {
+  const isSaturday = workDate.getUTCDay() === 6;
+  return { startMin: SHIFT_START_MIN, endMin: isSaturday ? SATURDAY_SHIFT_END_MIN : SHIFT_END_MIN };
+}
 
 function parseHHMM(s: string): number {
   const [h, m] = s.split(":").map(Number);
@@ -16,15 +25,15 @@ function parseHHMM(s: string): number {
 /**
  * An employee's real shift for one day, if HR scheduled one via "กะการทำงาน"
  * (ShiftAssignment → ShiftTemplate) — falls back to the company default
- * (09:00–18:00, lib/datetime.ts's SHIFT_START_MIN/SHIFT_END_MIN) when no
- * assignment exists, which is the case for most employees today.
+ * (see defaultShiftFor) when no assignment exists, which is the case for
+ * most employees today.
  */
 export async function resolveShiftMinutes(employeeId: string, workDate: Date): Promise<ShiftMinutes> {
   const assignment = await prisma.shiftAssignment.findUnique({
     where: { employeeId_date: { employeeId, date: workDate } },
     select: { template: { select: { startTime: true, endTime: true } } },
   });
-  if (!assignment) return DEFAULT_SHIFT;
+  if (!assignment) return defaultShiftFor(workDate);
   return { startMin: parseHHMM(assignment.template.startTime), endMin: parseHHMM(assignment.template.endTime) };
 }
 
@@ -57,5 +66,5 @@ export function shiftMinutesFromBatch(
   employeeId: string,
   workDate: Date,
 ): ShiftMinutes {
-  return map.get(`${employeeId}|${workDate.toISOString().slice(0, 10)}`) ?? DEFAULT_SHIFT;
+  return map.get(`${employeeId}|${workDate.toISOString().slice(0, 10)}`) ?? defaultShiftFor(workDate);
 }

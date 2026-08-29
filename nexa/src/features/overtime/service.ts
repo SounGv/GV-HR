@@ -311,6 +311,9 @@ export async function reconcileOvertimeFromAttendance(
   for (const r of records) {
     const key = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
     if (hasOt.has(key)) continue;
+    // Saturday is a company-wide half day — time worked past the (already
+    // shortened) shift end doesn't count as OT, per company policy.
+    if (r.workDate.getUTCDay() === 6) continue;
 
     // Bangkok is UTC+7 with no DST — clockOutAt is a real UTC instant, so
     // converting to "minutes since Bangkok midnight" is a fixed +7h shift.

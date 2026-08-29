@@ -8,6 +8,9 @@
 // A dedicated Shift module can make this per-employee/per-branch later.
 export const SHIFT_START_MIN = 9 * 60;
 export const SHIFT_END_MIN = 18 * 60;
+// Company-wide half day: Saturday's default shift ends at noon instead of
+// 18:00 (same 09:00 start) — see lib/attendance-shift.ts's defaultShiftFor.
+export const SATURDAY_SHIFT_END_MIN = 12 * 60;
 export const LATE_GRACE_MIN = 5;
 export const EARLY_LEAVE_GRACE_MIN = 5;
 
