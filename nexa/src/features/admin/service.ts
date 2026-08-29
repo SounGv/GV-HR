@@ -3,13 +3,31 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { revokeAllForUser } from "@/lib/auth/token-store";
+import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { RoleCreateInput, RoleUpdateInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
 
+/**
+ * A caller can only ever grant permissions they hold themselves — otherwise
+ * anyone holding just `admin:update` could hand a role every permission in
+ * the system (including ones only Super Admin has) and assign it to
+ * themselves. `can()` already understands wildcards (`admin:*`, `*`), so
+ * this check is a straight per-key subset test against the caller's own
+ * `session.perms`.
+ */
+function assertGrantable(session: AccessClaims, keys: string[]) {
+  const notOwned = keys.filter((k) => !can(session.perms, k));
+  if (notOwned.length > 0) {
+    throw Forbidden(`ไม่สามารถมอบสิทธิ์ที่คุณเองไม่มีให้ผู้อื่นได้: ${notOwned.join(", ")}`);
+  }
+}
+
 /** Replace a role's permission set with the given permission keys. */
-async function setRolePermissions(roleId: string, keys: string[]) {
+async function setRolePermissions(session: AccessClaims, roleId: string, keys: string[]) {
+  assertGrantable(session, keys);
+
   const perms = await prisma.permission.findMany({
     where: { key: { in: keys } },
     select: { id: true },
@@ -64,7 +82,7 @@ export async function createRole(
     },
     select: { id: true },
   });
-  await setRolePermissions(role.id, input.permissions);
+  await setRolePermissions(session, role.id, input.permissions);
 
   await writeAudit({
     companyId,
@@ -101,7 +119,7 @@ export async function updateRole(
       updatedById: session.sub,
     },
   });
-  if (input.permissions) await setRolePermissions(id, input.permissions);
+  if (input.permissions) await setRolePermissions(session, id, input.permissions);
 
   await writeAudit({
     companyId,
@@ -303,10 +321,15 @@ export async function setUserRoles(
   if (!user) throw NotFound("ไม่พบผู้ใช้");
 
   if (roleIds.length > 0) {
-    const valid = await prisma.role.count({
+    const roles = await prisma.role.findMany({
       where: { id: { in: roleIds }, OR: [{ companyId }, { companyId: null }], deletedAt: null },
+      select: { permissions: { select: { permission: { select: { key: true } } } } },
     });
-    if (valid !== roleIds.length) throw BadRequest("มีบทบาทที่ไม่ถูกต้อง");
+    if (roles.length !== roleIds.length) throw BadRequest("มีบทบาทที่ไม่ถูกต้อง");
+    // Same reasoning as assertGrantable in setRolePermissions: assigning a
+    // role can't hand the target user permissions the caller doesn't have.
+    const grantedKeys = [...new Set(roles.flatMap((r) => r.permissions.map((p) => p.permission.key)))];
+    assertGrantable(session, grantedKeys);
   }
 
   await prisma.$transaction([

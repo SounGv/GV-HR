@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
-import { BadRequest, Conflict, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { writeAudit } from "@/lib/audit";
 import { revokeAllForUser } from "@/lib/auth/token-store";
+import { can } from "@/lib/auth/rbac";
 import type { SessionUser } from "@/lib/auth/session";
 import type { EmployeeAccountInput, EmployeePasswordResetInput } from "./schema";
 
@@ -76,6 +77,13 @@ export async function createEmployeeAccount(
  * HR resets the password of an employee who already has a login account.
  * Revokes all of that user's existing refresh tokens so they're signed out
  * everywhere and must log in again with the new password.
+ *
+ * Guarded against privilege escalation: `employee:update` is meant for HR
+ * data management, not system administration — without this check, anyone
+ * holding it (e.g. HR Manager, who intentionally has no admin:* permission)
+ * could reset ANY user's password, including Super Admin's, since this
+ * endpoint only needs the target's email/username to reach. The target
+ * user's own effective permissions must be a subset of the caller's.
  */
 export async function resetEmployeeAccountPassword(
   companyId: string,
@@ -86,10 +94,25 @@ export async function resetEmployeeAccountPassword(
 ) {
   const emp = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { id: true, userId: true },
+    select: {
+      id: true,
+      userId: true,
+      user: {
+        select: { roles: { select: { role: { select: { permissions: { select: { permission: { select: { key: true } } } } } } } } },
+      },
+    },
   });
   if (!emp) throw NotFound("ไม่พบพนักงาน");
   if (!emp.userId) throw BadRequest("พนักงานคนนี้ยังไม่มีบัญชีเข้าใช้งาน");
+
+  const targetKeys = new Set<string>();
+  for (const ur of emp.user?.roles ?? []) {
+    for (const rp of ur.role.permissions) targetKeys.add(rp.permission.key);
+  }
+  const notOwned = [...targetKeys].filter((k) => !can(session.perms, k));
+  if (notOwned.length > 0) {
+    throw Forbidden("ไม่สามารถรีเซ็ตรหัสผ่านของผู้ใช้ที่มีสิทธิ์เกินกว่าคุณได้");
+  }
 
   const passwordHash = await hashPassword(input.password);
   await prisma.user.update({ where: { id: emp.userId }, data: { passwordHash, updatedById: session.sub } });
