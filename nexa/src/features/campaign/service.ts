@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { scoreBand } from "@/lib/scoring";
 import { createNotification } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
@@ -1141,8 +1141,13 @@ export async function approveReopen(
   if (response.status !== "SUBMITTED") throw BadRequest("เปิดแก้ไขใหม่ได้เฉพาะแบบประเมินที่ส่งไปแล้ว");
   if (response.participant.finalizedAt) throw BadRequest("ผลการประเมินนี้สรุปผลแล้ว ไม่สามารถเปิดแก้ไขได้");
 
-  await prisma.evaluationResponse.update({
-    where: { id: responseId },
+  // Compare-and-swap on status: two concurrent approvals (double-click,
+  // retry) both read status "SUBMITTED" before either write lands. Guarding
+  // the write on the status they read means only the first actually
+  // applies — the second sees count 0 and fails loudly instead of silently
+  // reopening a response someone else already reopened.
+  const { count } = await prisma.evaluationResponse.updateMany({
+    where: { id: responseId, status: "SUBMITTED" },
     data: {
       status: "PENDING",
       reopenRequested: false,
@@ -1150,6 +1155,7 @@ export async function approveReopen(
       reopenedById: session.sub,
     },
   });
+  if (count === 0) throw Conflict("แบบประเมินนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
 
   await writeAudit({
     companyId,

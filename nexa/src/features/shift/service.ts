@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ShiftAssignment } from "./types";
 import type {
@@ -207,16 +207,15 @@ export async function upsertAssignment(
   input: AssignmentUpsertInput,
   meta?: Meta,
 ) {
-  const [employee, template] = await Promise.all([
-    prisma.employee.findFirst({
-      where: { id: input.employeeId, companyId, deletedAt: null },
-      select: { id: true },
-    }),
-    prisma.shiftTemplate.findFirst({
-      where: { id: input.templateId, companyId, deletedAt: null },
-      select: { id: true },
-    }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1.
+  const employee = await prisma.employee.findFirst({
+    where: { id: input.employeeId, companyId, deletedAt: null },
+    select: { id: true },
+  });
+  const template = await prisma.shiftTemplate.findFirst({
+    where: { id: input.templateId, companyId, deletedAt: null },
+    select: { id: true },
+  });
   if (!employee) throw BadRequest("ไม่พบพนักงาน");
   if (!template) throw BadRequest("ไม่พบกะการทำงาน");
 
@@ -405,6 +404,24 @@ export async function decideSwapRequest(
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
 
   const updated = await prisma.$transaction(async (tx) => {
+    // Compare-and-swap on status FIRST, before any side effect — two
+    // concurrent decisions (double-click, retry) both read status "PENDING"
+    // before either write lands. Guarding this write on the status they read
+    // means only the first actually applies; the second sees count 0 and
+    // fails loudly before ever touching the shift assignment, instead of
+    // both racing to reassign the same slot.
+    const { count } = await tx.shiftSwapRequest.updateMany({
+      where: { id: req.id, status: "PENDING" },
+      data: {
+        status: nextStatus,
+        approverEmployeeId: session.employeeId ?? null,
+        approverUserId: session.sub,
+        decidedAt: new Date(),
+        decisionNote: input.note,
+      },
+    });
+    if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
     if (input.action === "approve") {
       // The target may already have their own assignment that day — the
       // unique (employeeId, date) constraint would reject the reassignment.
@@ -420,15 +437,8 @@ export async function decideSwapRequest(
       });
     }
 
-    return tx.shiftSwapRequest.update({
+    return tx.shiftSwapRequest.findFirstOrThrow({
       where: { id: req.id },
-      data: {
-        status: nextStatus,
-        approverEmployeeId: session.employeeId ?? null,
-        approverUserId: session.sub,
-        decidedAt: new Date(),
-        decisionNote: input.note,
-      },
       select: swapRequestSelect,
     });
   });

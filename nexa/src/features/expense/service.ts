@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { hasCompletedOneYear, hasPassedProbation } from "@/lib/tenure";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ExpenseClaim } from "./types";
@@ -338,8 +338,13 @@ export async function decideExpense(
     throw Forbidden("อนุมัติได้เฉพาะรายการของทีมที่คุณดูแล");
   }
 
-  const record = await prisma.expenseClaim.update({
-    where: { id: claim.id },
+  // Compare-and-swap on status: two concurrent decisions (double-click,
+  // retry) both read status "PENDING" before either write lands. Guarding
+  // the write on the status they read means only the first actually
+  // applies — the second sees count 0 and fails loudly instead of silently
+  // overwriting the first decision.
+  const { count } = await prisma.expenseClaim.updateMany({
+    where: { id: claim.id, status: "PENDING" },
     data: {
       status: input.action === "approve" ? "APPROVED" : "REJECTED",
       approverEmployeeId: session.employeeId ?? null,
@@ -348,6 +353,11 @@ export async function decideExpense(
       decisionNote: input.note,
       updatedById: session.sub,
     },
+  });
+  if (count === 0) throw Conflict("รายการนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
+  const record = await prisma.expenseClaim.findFirstOrThrow({
+    where: { id: claim.id },
     select: claimSelect,
   });
   await writeAudit({

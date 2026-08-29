@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import { hasCompletedOneYear, hasPassedProbation } from "@/lib/tenure";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -236,8 +236,14 @@ export async function decideLoan(
   }
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
-  const record = await prisma.companyLoanRequest.update({
-    where: { id: loan.id },
+
+  // Compare-and-swap on status: two concurrent decisions (double-click,
+  // retry) both read status "PENDING" before either write lands. Guarding
+  // the write on the status they read means only the first actually
+  // applies — the second sees count 0 and fails loudly instead of silently
+  // overwriting the first decision.
+  const { count } = await prisma.companyLoanRequest.updateMany({
+    where: { id: loan.id, status: "PENDING" },
     data: {
       status: nextStatus,
       approverEmployeeId: session.employeeId ?? null,
@@ -246,6 +252,11 @@ export async function decideLoan(
       decisionNote: input.note,
       updatedById: session.sub,
     },
+  });
+  if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
+  const record = await prisma.companyLoanRequest.findFirstOrThrow({
+    where: { id: loan.id },
     select: loanSelect,
   });
 
