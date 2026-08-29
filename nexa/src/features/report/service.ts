@@ -170,6 +170,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
         select: {
           status: true,
+          workDate: true,
           clockInAt: true,
           clockOutAt: true,
           earlyLeaveOut: true,
@@ -237,12 +238,29 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         noClockOut: 0, sick: 0, personal: 0, annual: 0, unpaidOther: 0, attachedLeaves: 0, pendingLeave: 0,
       });
     }
+    // A day covered by approved leave can still carry status:"LATE" on its
+    // AttendanceRecord — e.g. an approved AM half-day leave, then the
+    // employee clocks in "late" for the PM half relative to the full-day
+    // shift start. Payroll's own absence/late derivation already excludes
+    // these (see payroll/service.ts's getAbsenceAndLateByEmployee); this
+    // report read the raw stored field directly and disagreed with payroll,
+    // showing a "late" occurrence payroll never deducted for. Reuse the same
+    // `leaves` rows already loaded above instead of a second query.
+    const leaveRangesByCode = new Map<string, { start: Date; end: Date }[]>();
+    for (const l of leaves) {
+      const list = leaveRangesByCode.get(l.employee.employeeCode) ?? [];
+      list.push({ start: l.startDate, end: l.endDate });
+      leaveRangesByCode.set(l.employee.employeeCode, list);
+    }
+    const isOnLeave = (code: string, workDate: Date) =>
+      (leaveRangesByCode.get(code) ?? []).some((r) => r.start.getTime() <= workDate.getTime() && workDate.getTime() <= r.end.getTime());
+
     const deptLate = new Map<string, number>();
     for (const r of recs) {
       const row = map.get(r.employee.employeeCode);
       if (!row) continue; // e.g. an inactive employee's leftover record
       if (r.clockInAt) row.present += 1;
-      if (r.status === "LATE") row.late += 1;
+      if (r.status === "LATE" && !isOnLeave(r.employee.employeeCode, r.workDate)) row.late += 1;
       if (r.earlyLeaveOut) row.earlyLeave += 1;
       if (r.clockInAt && !r.clockOutAt) row.noClockOut += 1;
       if (r.clockInAt) {
