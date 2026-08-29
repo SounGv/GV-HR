@@ -95,6 +95,19 @@ export async function importAttendance(
 
     const clockInAt = bangkokToUtc(r.date, r.clockIn);
     const clockOutAt = r.clockOut ? bangkokToUtc(r.date, r.clockOut) : null;
+    // The import format has one date shared by clock-in and clock-out, so it
+    // can't represent a real overnight shift (e.g. 22:00 in / 06:00 out next
+    // day) — a clock-out that lands at or before clock-in under that shared
+    // date is ambiguous/bad data, not a legitimate case this importer can
+    // safely interpret. Importing it anyway would silently create a
+    // negative-duration record that then *subtracts* hours from an HOURLY
+    // employee's payroll total instead of adding them.
+    if (clockOutAt && clockOutAt <= clockInAt) {
+      warnings.push(
+        `${r.employeeCode} (${r.date}): เวลาออก (${r.clockOut}) ไม่อยู่หลังเวลาเข้า (${r.clockIn}) — ข้ามแถวนี้ (กะข้ามคืนต้องแยกลงเป็น 2 แถว)`,
+      );
+      continue;
+    }
     const [hh, mm] = r.clockIn.split(":").map(Number);
     const shift = shiftMinutesFromBatch(shiftMap, employee.id, workDate);
     const status = lateOrPresent(hh * 60 + mm, shift.startMin);
