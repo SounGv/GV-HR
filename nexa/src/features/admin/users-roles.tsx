@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -14,7 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ErrorState, TableLoadingState } from "@/components/shared/states";
+import { Input } from "@/components/ui/input";
+import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ApiError } from "@/lib/api/client";
 import { fullName, loginIdentifier } from "@/lib/format";
@@ -29,7 +30,20 @@ const AI_SCOPE_LABEL: Record<AiAccessScope, string> = {
 
 export function UsersRoles() {
   const { data, isLoading, isError, refetch } = useUsers();
-  const users = data?.data ?? [];
+  const allUsers = data?.data ?? [];
+  const [search, setSearch] = useState("");
+  const q = search.trim().toLowerCase();
+  const users = q
+    ? allUsers.filter((u) => {
+        const name = u.employee ? fullName(u.employee.firstName, u.employee.lastName) : loginIdentifier(u);
+        return (
+          name.toLowerCase().includes(q) ||
+          (u.email ?? "").toLowerCase().includes(q) ||
+          (u.username ?? "").toLowerCase().includes(q) ||
+          (u.employee?.employeeCode ?? "").toLowerCase().includes(q)
+        );
+      })
+    : allUsers;
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const deleteMut = useDeleteUser();
 
@@ -48,16 +62,30 @@ export function UsersRoles() {
   if (isLoading) return <TableLoadingState rows={5} />;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>ผู้ใช้</TableHead>
-            <TableHead>บทบาท</TableHead>
-            <TableHead className="text-right">จัดการ</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <div className="space-y-3">
+      <div className="relative max-w-xs">
+        <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="ค้นหาชื่อ, รหัสพนักงาน, อีเมล..."
+          className="pl-8"
+        />
+      </div>
+
+      {users.length === 0 ? (
+        <EmptyState icon={Search} title="ไม่พบผู้ใช้ที่ตรงกับคำค้นหา" description="ลองค้นหาด้วยคำอื่น" />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>ผู้ใช้</TableHead>
+                <TableHead>บทบาท</TableHead>
+                <TableHead className="text-right">จัดการ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
           {users.map((u) => (
             <TableRow key={u.id}>
               <TableCell>
@@ -104,8 +132,10 @@ export function UsersRoles() {
               </TableCell>
             </TableRow>
           ))}
-        </TableBody>
-      </Table>
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <ConfirmDialog
         open={!!deleteTarget}
