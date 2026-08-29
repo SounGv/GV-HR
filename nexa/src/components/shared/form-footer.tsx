@@ -56,7 +56,7 @@ export function FormFooter({
         // form a small row on top; the primary action gets its own full-width
         // row at the very bottom, in the thumb-reachable spot — the same
         // pattern MobilePrimaryButton already uses elsewhere (e.g. leave).
-        "fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 flex flex-col gap-2 border-t border-border bg-card px-4 py-3 md:sticky md:inset-x-auto md:bottom-0 md:flex-row md:flex-wrap md:items-center md:justify-end md:-mx-6 md:bg-background/85 md:py-3 md:pr-24 md:pl-6 md:backdrop-blur-xl",
+        "fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 flex flex-col gap-2 border-t border-border bg-card px-4 py-3 md:sticky md:inset-x-auto md:bottom-0 md:flex-row md:flex-wrap md:items-center md:justify-end md:-mx-6 md:bg-background md:py-3 md:pr-24 md:pl-6",
         className,
       )}
     >
