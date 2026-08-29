@@ -18,8 +18,9 @@ export async function listAuditLogs(companyId: string, query: AuditLogQuery) {
       : {}),
   };
 
-  const [rows, total] = await Promise.all([
-    prisma.auditLog.findMany({
+  // Sequential, not Promise.all — connection_limit=1 (concurrent Prisma
+  // calls can throw P2024 instead of all completing).
+  const rows = await prisma.auditLog.findMany({
       where,
       select: {
         id: true,
@@ -42,9 +43,8 @@ export async function listAuditLogs(companyId: string, query: AuditLogQuery) {
       orderBy: { createdAt: "desc" },
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
-    }),
-    prisma.auditLog.count({ where }),
-  ]);
+    });
+  const total = await prisma.auditLog.count({ where });
 
   const items = rows.map((r) => ({
     ...r,

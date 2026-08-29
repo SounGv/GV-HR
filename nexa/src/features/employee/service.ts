@@ -109,15 +109,14 @@ export async function listEmployees(companyId: string, query: EmployeeListQuery,
       : {}),
   };
 
-  const [items, total] = await Promise.all([
-    prisma.employee.findMany({
-      where,
-      select: listSelect,
-      orderBy: buildOrderBy(query, EMPLOYEE_SORTABLE, "createdAt"),
-      ...toSkipTake(query),
-    }),
-    prisma.employee.count({ where }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1.
+  const items = await prisma.employee.findMany({
+    where,
+    select: listSelect,
+    orderBy: buildOrderBy(query, EMPLOYEE_SORTABLE, "createdAt"),
+    ...toSkipTake(query),
+  });
+  const total = await prisma.employee.count({ where });
 
   return { items, total };
 }

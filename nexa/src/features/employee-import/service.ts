@@ -15,13 +15,12 @@ export async function importEmployees(
   session: SessionUser,
   meta?: Meta,
 ): Promise<ImportSummary> {
-  const [depts, positions, allEmployees] = await Promise.all([
-    prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { id: true, name: true } }),
-    prisma.position.findMany({ where: { companyId, deletedAt: null }, select: { id: true, title: true } }),
-    // Includes soft-deleted rows too — employeeCode uniqueness is enforced
-    // at the DB level across ALL rows regardless of deletedAt (see below).
-    prisma.employee.findMany({ where: { companyId }, select: { id: true, employeeCode: true, deletedAt: true } }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1.
+  const depts = await prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { id: true, name: true } });
+  const positions = await prisma.position.findMany({ where: { companyId, deletedAt: null }, select: { id: true, title: true } });
+  // Includes soft-deleted rows too — employeeCode uniqueness is enforced
+  // at the DB level across ALL rows regardless of deletedAt (see below).
+  const allEmployees = await prisma.employee.findMany({ where: { companyId }, select: { id: true, employeeCode: true, deletedAt: true } });
   const deptMap = new Map(depts.map((d) => [norm(d.name), d.id]));
   const posMap = new Map(positions.map((p) => [norm(p.title), p.id]));
   const codeMap = new Map(allEmployees.filter((e) => !e.deletedAt).map((e) => [e.employeeCode, e.id]));

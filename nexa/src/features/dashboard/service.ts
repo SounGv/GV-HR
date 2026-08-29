@@ -44,68 +44,56 @@ export async function getActionCenter(
     return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   })();
 
-  const [
-    leave,
-    overtime,
-    expense,
-    pendingRequests,
-    myLeave,
-    myOvertime,
-    myExpense,
-    myWorkflow,
-    myLeaveTotal,
-    myOvertimeTotal,
-    myExpenseTotal,
-    myWorkflowTotal,
-    shift,
-  ] = await Promise.all([
-    hasReports
-      ? prisma.leaveRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
-      : Promise.resolve(0),
-    hasReports
-      ? prisma.overtimeRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
-      : Promise.resolve(0),
-    hasReports
-      ? prisma.expenseClaim.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
-      : Promise.resolve(0),
-    prisma.approvalRequest.findMany({
-      where: { companyId, status: "PENDING" },
-      select: { steps: true, currentStep: true, requesterEmployeeId: true },
-      take: 300,
-    }),
-    employeeId
-      ? prisma.leaveRequest.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
-      : Promise.resolve(0),
-    employeeId
-      ? prisma.overtimeRequest.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
-      : Promise.resolve(0),
-    employeeId
-      ? prisma.expenseClaim.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
-      : Promise.resolve(0),
-    employeeId
-      ? prisma.approvalRequest.count({
-          where: { companyId, status: "PENDING", requesterEmployeeId: employeeId },
-        })
-      : Promise.resolve(0),
-    employeeId
-      ? prisma.leaveRequest.count({ where: { companyId, deletedAt: null, employeeId } })
-      : Promise.resolve(0),
-    employeeId
-      ? prisma.overtimeRequest.count({ where: { companyId, deletedAt: null, employeeId } })
-      : Promise.resolve(0),
-    employeeId
-      ? prisma.expenseClaim.count({ where: { companyId, deletedAt: null, employeeId } })
-      : Promise.resolve(0),
-    employeeId
-      ? prisma.approvalRequest.count({ where: { companyId, requesterEmployeeId: employeeId } })
-      : Promise.resolve(0),
-    employeeId
-      ? prisma.shiftAssignment.findUnique({
-          where: { employeeId_date: { employeeId, date: todayUtc } },
-          select: { template: { select: { name: true, startTime: true, endTime: true } } },
-        })
-      : Promise.resolve(null),
-  ]);
+  // Sequential, not Promise.all — this app's pooled connection runs with
+  // connection_limit=1, where concurrent Prisma calls can throw P2024
+  // instead of all completing (same reasoning documented at every other
+  // call site in this codebase).
+  const leave = hasReports
+    ? await prisma.leaveRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
+    : 0;
+  const overtime = hasReports
+    ? await prisma.overtimeRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
+    : 0;
+  const expense = hasReports
+    ? await prisma.expenseClaim.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
+    : 0;
+  const pendingRequests = await prisma.approvalRequest.findMany({
+    where: { companyId, status: "PENDING" },
+    select: { steps: true, currentStep: true, requesterEmployeeId: true },
+    take: 300,
+  });
+  const myLeave = employeeId
+    ? await prisma.leaveRequest.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
+    : 0;
+  const myOvertime = employeeId
+    ? await prisma.overtimeRequest.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
+    : 0;
+  const myExpense = employeeId
+    ? await prisma.expenseClaim.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
+    : 0;
+  const myWorkflow = employeeId
+    ? await prisma.approvalRequest.count({
+        where: { companyId, status: "PENDING", requesterEmployeeId: employeeId },
+      })
+    : 0;
+  const myLeaveTotal = employeeId
+    ? await prisma.leaveRequest.count({ where: { companyId, deletedAt: null, employeeId } })
+    : 0;
+  const myOvertimeTotal = employeeId
+    ? await prisma.overtimeRequest.count({ where: { companyId, deletedAt: null, employeeId } })
+    : 0;
+  const myExpenseTotal = employeeId
+    ? await prisma.expenseClaim.count({ where: { companyId, deletedAt: null, employeeId } })
+    : 0;
+  const myWorkflowTotal = employeeId
+    ? await prisma.approvalRequest.count({ where: { companyId, requesterEmployeeId: employeeId } })
+    : 0;
+  const shift = employeeId
+    ? await prisma.shiftAssignment.findUnique({
+        where: { employeeId_date: { employeeId, date: todayUtc } },
+        select: { template: { select: { name: true, startTime: true, endTime: true } } },
+      })
+    : null;
 
   const roleSet = new Set(roles);
   const workflow = pendingRequests.filter((r) => {
@@ -148,30 +136,30 @@ export async function getMySnapshot(companyId: string, employeeId: string): Prom
   const now = new Date();
   const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
-  const [today, leaveBalances, latestPayslip, recognitionRows] = await Promise.all([
-    prisma.attendanceRecord.findFirst({
-      where: { companyId, employeeId, workDate: todayStart, deletedAt: null },
-      select: { clockInAt: true, clockOutAt: true },
-    }),
-    Promise.all(
-      LEAVE_TYPES_FOR_SUMMARY.map(async (type) => ({
-        type,
-        label: LEAVE_TYPE_LABEL[type],
-        remaining: await getRemainingBalance(companyId, employeeId, type, year),
-      })),
-    ),
-    prisma.payrollRecord.findFirst({
-      where: { companyId, employeeId },
-      orderBy: { period: "desc" },
-      select: { periodLabel: true, net: true },
-    }),
-    prisma.recognition.groupBy({
-      by: ["type"],
-      where: { companyId, employeeId, deletedAt: null },
-      _count: { _all: true },
-      _sum: { points: true },
-    }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
+  const today = await prisma.attendanceRecord.findFirst({
+    where: { companyId, employeeId, workDate: todayStart, deletedAt: null },
+    select: { clockInAt: true, clockOutAt: true },
+  });
+  const leaveBalances: LeaveBalanceSummary[] = [];
+  for (const type of LEAVE_TYPES_FOR_SUMMARY) {
+    leaveBalances.push({
+      type,
+      label: LEAVE_TYPE_LABEL[type],
+      remaining: await getRemainingBalance(companyId, employeeId, type, year),
+    });
+  }
+  const latestPayslip = await prisma.payrollRecord.findFirst({
+    where: { companyId, employeeId },
+    orderBy: { period: "desc" },
+    select: { periodLabel: true, net: true },
+  });
+  const recognitionRows = await prisma.recognition.groupBy({
+    by: ["type"],
+    where: { companyId, employeeId, deletedAt: null },
+    _count: { _all: true },
+    _sum: { points: true },
+  });
 
   const recognition = { star: 0, award: 0, heart: 0, point: 0 };
   for (const row of recognitionRows) {
@@ -233,58 +221,44 @@ export async function getDashboardSummary(
     : null;
   const employeeIdFilter = scopedIds ? { employeeId: { in: scopedIds } } : {};
 
-  const [
-    headcount,
-    active,
-    onLeave,
-    newThisMonth,
-    presentToday,
-    lateToday,
-    onLeaveTodayRows,
-    otTodayAgg,
-    byDeptRaw,
-    byStatusRaw,
-    byTypeRaw,
-    depts,
-  ] = await Promise.all([
-      prisma.employee.count({ where: activeFilter }),
-      prisma.employee.count({ where: { ...activeFilter, status: "ACTIVE" } }),
-      prisma.employee.count({ where: { ...activeFilter, status: "ON_LEAVE" } }),
-      prisma.employee.count({ where: { ...activeFilter, hireDate: { gte: startOfMonth } } }),
-      prisma.attendanceRecord.count({
-        where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, clockInAt: { not: null }, ...employeeIdFilter },
-      }),
-      prisma.attendanceRecord.count({
-        where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, status: "LATE", ...employeeIdFilter },
-      }),
-      prisma.leaveRequest.findMany({
-        where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: todayEnd }, endDate: { gte: todayStart }, ...employeeIdFilter },
-        select: { employeeId: true },
-      }),
-      prisma.overtimeRequest.aggregate({
-        _sum: { hours: true },
-        where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: todayStart, lt: todayEnd }, ...employeeIdFilter },
-      }),
-      prisma.employee.groupBy({
-        by: ["departmentId"],
-        where: activeFilter,
-        _count: { _all: true },
-      }),
-      prisma.employee.groupBy({
-        by: ["status"],
-        where: activeFilter,
-        _count: { _all: true },
-      }),
-      prisma.employee.groupBy({
-        by: ["employmentType"],
-        where: activeFilter,
-        _count: { _all: true },
-      }),
-      prisma.department.findMany({
-        where: { companyId, deletedAt: null },
-        select: { id: true, name: true },
-      }),
-    ]);
+  // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
+  const headcount = await prisma.employee.count({ where: activeFilter });
+  const active = await prisma.employee.count({ where: { ...activeFilter, status: "ACTIVE" } });
+  const onLeave = await prisma.employee.count({ where: { ...activeFilter, status: "ON_LEAVE" } });
+  const newThisMonth = await prisma.employee.count({ where: { ...activeFilter, hireDate: { gte: startOfMonth } } });
+  const presentToday = await prisma.attendanceRecord.count({
+    where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, clockInAt: { not: null }, ...employeeIdFilter },
+  });
+  const lateToday = await prisma.attendanceRecord.count({
+    where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, status: "LATE", ...employeeIdFilter },
+  });
+  const onLeaveTodayRows = await prisma.leaveRequest.findMany({
+    where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: todayEnd }, endDate: { gte: todayStart }, ...employeeIdFilter },
+    select: { employeeId: true },
+  });
+  const otTodayAgg = await prisma.overtimeRequest.aggregate({
+    _sum: { hours: true },
+    where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: todayStart, lt: todayEnd }, ...employeeIdFilter },
+  });
+  const byDeptRaw = await prisma.employee.groupBy({
+    by: ["departmentId"],
+    where: activeFilter,
+    _count: { _all: true },
+  });
+  const byStatusRaw = await prisma.employee.groupBy({
+    by: ["status"],
+    where: activeFilter,
+    _count: { _all: true },
+  });
+  const byTypeRaw = await prisma.employee.groupBy({
+    by: ["employmentType"],
+    where: activeFilter,
+    _count: { _all: true },
+  });
+  const depts = await prisma.department.findMany({
+    where: { companyId, deletedAt: null },
+    select: { id: true, name: true },
+  });
 
   const deptName = new Map(depts.map((d) => [d.id, d.name]));
   const onLeaveToday = new Set(onLeaveTodayRows.map((r) => r.employeeId)).size;
@@ -341,23 +315,22 @@ export async function getAttendanceTrend(companyId: string, days = 14): Promise<
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
   const start = new Date(end.getTime() - days * DAY_MS);
 
-  const [activeCount, records, holidays, leaves, otRows] = await Promise.all([
-    prisma.employee.count({ where: { companyId, deletedAt: null, status: "ACTIVE" } }),
-    prisma.attendanceRecord.findMany({
-      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end } },
-      select: { workDate: true, status: true, clockInAt: true, employeeId: true },
-    }),
-    prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
-    prisma.leaveRequest.findMany({
-      where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start } },
-      select: { startDate: true, endDate: true, employeeId: true },
-    }),
-    prisma.overtimeRequest.groupBy({
-      by: ["date"],
-      where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end } },
-      _sum: { hours: true },
-    }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
+  const activeCount = await prisma.employee.count({ where: { companyId, deletedAt: null, status: "ACTIVE" } });
+  const records = await prisma.attendanceRecord.findMany({
+    where: { companyId, deletedAt: null, workDate: { gte: start, lt: end } },
+    select: { workDate: true, status: true, clockInAt: true, employeeId: true },
+  });
+  const holidays = await prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } });
+  const leaves = await prisma.leaveRequest.findMany({
+    where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start } },
+    select: { startDate: true, endDate: true, employeeId: true },
+  });
+  const otRows = await prisma.overtimeRequest.groupBy({
+    by: ["date"],
+    where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end } },
+    _sum: { hours: true },
+  });
 
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   const holidaySet = new Set(holidays.map((h) => iso(h.date)));
@@ -418,21 +391,20 @@ export async function getDepartmentWatchlist(companyId: string, days = 30): Prom
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
   const start = new Date(end.getTime() - days * DAY_MS);
 
-  const [employees, records, holidays, leaves] = await Promise.all([
-    prisma.employee.findMany({
-      where: { companyId, deletedAt: null, status: "ACTIVE" },
-      select: { id: true, departmentId: true, department: { select: { name: true } } },
-    }),
-    prisma.attendanceRecord.findMany({
-      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end } },
-      select: { workDate: true, status: true, clockInAt: true, employeeId: true },
-    }),
-    prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
-    prisma.leaveRequest.findMany({
-      where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start } },
-      select: { startDate: true, endDate: true, employeeId: true },
-    }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
+  const employees = await prisma.employee.findMany({
+    where: { companyId, deletedAt: null, status: "ACTIVE" },
+    select: { id: true, departmentId: true, department: { select: { name: true } } },
+  });
+  const records = await prisma.attendanceRecord.findMany({
+    where: { companyId, deletedAt: null, workDate: { gte: start, lt: end } },
+    select: { workDate: true, status: true, clockInAt: true, employeeId: true },
+  });
+  const holidays = await prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } });
+  const leaves = await prisma.leaveRequest.findMany({
+    where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start } },
+    select: { startDate: true, endDate: true, employeeId: true },
+  });
 
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   const holidaySet = new Set(holidays.map((h) => iso(h.date)));

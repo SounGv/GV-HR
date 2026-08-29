@@ -75,18 +75,17 @@ export async function getCompetencyUsage(companyId: string, id: string) {
   const existing = await prisma.competency.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
   if (!existing) throw NotFound("ไม่พบหัวข้อประเมิน");
 
-  const [campaigns, templateQuestions] = await Promise.all([
-    prisma.evaluationCampaignCompetency.findMany({
-      where: { competencyId: id, campaign: { companyId, deletedAt: null } },
-      select: { campaign: { select: { id: true, name: true, cycle: true, status: true } } },
-    }),
-    prisma.evaluationTemplateQuestion.findMany({
-      where: { competencyId: id, section: { template: { companyId, deletedAt: null } } },
-      select: {
-        section: { select: { template: { select: { id: true, name: true, status: true, version: true } } } },
-      },
-    }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1.
+  const campaigns = await prisma.evaluationCampaignCompetency.findMany({
+    where: { competencyId: id, campaign: { companyId, deletedAt: null } },
+    select: { campaign: { select: { id: true, name: true, cycle: true, status: true } } },
+  });
+  const templateQuestions = await prisma.evaluationTemplateQuestion.findMany({
+    where: { competencyId: id, section: { template: { companyId, deletedAt: null } } },
+    select: {
+      section: { select: { template: { select: { id: true, name: true, status: true, version: true } } } },
+    },
+  });
 
   return {
     campaigns: campaigns.map((c) => c.campaign),

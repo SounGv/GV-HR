@@ -161,50 +161,49 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // from the active-employee roster (not just employees who have a
     // record), and derive absence the same way the calendar view's
     // getMyDayStatus does, aggregated over the period instead of per day.
-    const [employees, recs, holidays, leaves, pendingLeaves, ots] = await Promise.all([
-      prisma.employee.findMany({
-        where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
-        select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
-      }),
-      prisma.attendanceRecord.findMany({
-        where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
-        select: {
-          status: true,
-          workDate: true,
-          clockInAt: true,
-          clockOutAt: true,
-          earlyLeaveOut: true,
-          workMode: true,
-          employee: { select: { employeeCode: true } },
-        },
-      }),
-      prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
-      prisma.leaveRequest.findMany({
-        where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
-        select: {
-          startDate: true,
-          endDate: true,
-          days: true,
-          type: true,
-          attachmentUrl: true,
-          employee: { select: { employeeCode: true } },
-        },
-      }),
-      // Pending requests are invisible from every other angle of this report
-      // (the "leave" report type only ever queries APPROVED) — surfaced here
-      // as a per-employee count so HR sees what's still awaiting a decision,
-      // not just what's already settled.
-      prisma.leaveRequest.groupBy({
-        by: ["employeeId"],
-        where: { companyId, deletedAt: null, status: "PENDING", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
-        _count: { _all: true },
-      }),
-      prisma.overtimeRequest.groupBy({
-        by: ["employeeId"],
-        where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end } },
-        _sum: { hours: true },
-      }),
-    ]);
+    // Sequential, not Promise.all — connection_limit=1.
+    const employees = await prisma.employee.findMany({
+      where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
+      select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+    });
+    const recs = await prisma.attendanceRecord.findMany({
+      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
+      select: {
+        status: true,
+        workDate: true,
+        clockInAt: true,
+        clockOutAt: true,
+        earlyLeaveOut: true,
+        workMode: true,
+        employee: { select: { employeeCode: true } },
+      },
+    });
+    const holidays = await prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } });
+    const leaves = await prisma.leaveRequest.findMany({
+      where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
+      select: {
+        startDate: true,
+        endDate: true,
+        days: true,
+        type: true,
+        attachmentUrl: true,
+        employee: { select: { employeeCode: true } },
+      },
+    });
+    // Pending requests are invisible from every other angle of this report
+    // (the "leave" report type only ever queries APPROVED) — surfaced here
+    // as a per-employee count so HR sees what's still awaiting a decision,
+    // not just what's already settled.
+    const pendingLeaves = await prisma.leaveRequest.groupBy({
+      by: ["employeeId"],
+      where: { companyId, deletedAt: null, status: "PENDING", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
+      _count: { _all: true },
+    });
+    const ots = await prisma.overtimeRequest.groupBy({
+      by: ["employeeId"],
+      where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end } },
+      _sum: { hours: true },
+    });
 
     const holidayDates = new Set(holidays.map((h) => h.date.toISOString().slice(0, 10)));
     const DAY_MS = 86_400_000;
@@ -354,49 +353,45 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   }
 
   if (query.type === "attendance_daily") {
-    const [recs, branches, ots] = await Promise.all([
-      prisma.attendanceRecord.findMany({
-        where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
-        select: {
-          employeeId: true,
-          workDate: true,
-          clockInAt: true,
-          clockOutAt: true,
-          breakStartAt: true,
-          breakEndAt: true,
-          status: true,
-          workMode: true,
-          note: true,
-          clockInBranchId: true,
-          clockInDistance: true,
-          clockInPhotoUrl: true,
-          clockOutPhotoUrl: true,
-          updatedById: true,
-          employee: {
-            select: {
-              employeeCode: true,
-              firstName: true,
-              lastName: true,
-              employmentType: true,
-              department: { select: { name: true } },
-            },
+    // Sequential, not Promise.all — connection_limit=1.
+    const recs = await prisma.attendanceRecord.findMany({
+      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
+      select: {
+        employeeId: true,
+        workDate: true,
+        clockInAt: true,
+        clockOutAt: true,
+        breakStartAt: true,
+        breakEndAt: true,
+        status: true,
+        workMode: true,
+        note: true,
+        clockInBranchId: true,
+        clockInDistance: true,
+        clockInPhotoUrl: true,
+        clockOutPhotoUrl: true,
+        updatedById: true,
+        employee: {
+          select: {
+            employeeCode: true,
+            firstName: true,
+            lastName: true,
+            employmentType: true,
+            department: { select: { name: true } },
           },
         },
-        orderBy: [{ workDate: "desc" }, { employee: { employeeCode: "asc" } }],
-        take: 1000,
-      }),
-      prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } }),
-      // Same APPROVED-only convention as the standalone "overtime" report
-      // below — joined in here by (employeeId, date) so each attendance row
-      // can show that day's OT alongside its regular hours.
-      prisma.overtimeRequest.findMany({
-        where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end }, ...deptRel },
-        select: { employeeId: true, date: true, hours: true },
-      }),
-    ]);
-    // Sequential, not folded into the Promise.all above — same pooled-
-    // connection reasoning as elsewhere in this codebase (e.g. the
-    // dashboard): a 4th concurrent query risks P2024 under connection_limit=1.
+      },
+      orderBy: [{ workDate: "desc" }, { employee: { employeeCode: "asc" } }],
+      take: 1000,
+    });
+    const branches = await prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } });
+    // Same APPROVED-only convention as the standalone "overtime" report
+    // below — joined in here by (employeeId, date) so each attendance row
+    // can show that day's OT alongside its regular hours.
+    const ots = await prisma.overtimeRequest.findMany({
+      where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end }, ...deptRel },
+      select: { employeeId: true, date: true, hours: true },
+    });
     const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
     const editorNameById = await resolveUserNames(recs.map((r) => r.updatedById));
     const branchName = new Map(branches.map((b) => [b.id, b.name]));
@@ -562,36 +557,35 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // for both, see days.ts), so they're summed straight from approved
     // requests instead — otherwise those two leave types silently vanish
     // from this report despite being real, trackable leave.
-    const [bals, unpaidOther] = await Promise.all([
-      prisma.leaveBalance.findMany({
-        where: { companyId, year, ...deptRel },
-        select: {
-          type: true,
-          usedDays: true,
-          employee: {
-            select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
-          },
+    // Sequential, not Promise.all — connection_limit=1.
+    const bals = await prisma.leaveBalance.findMany({
+      where: { companyId, year, ...deptRel },
+      select: {
+        type: true,
+        usedDays: true,
+        employee: {
+          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
         },
-      }),
-      prisma.leaveRequest.findMany({
-        where: {
-          companyId,
-          deletedAt: null,
-          status: "APPROVED",
-          type: { in: ["UNPAID", "OTHER"] },
-          startDate: { lt: yearEnd },
-          endDate: { gte: yearStart },
-          ...deptRel,
+      },
+    });
+    const unpaidOther = await prisma.leaveRequest.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: "APPROVED",
+        type: { in: ["UNPAID", "OTHER"] },
+        startDate: { lt: yearEnd },
+        endDate: { gte: yearStart },
+        ...deptRel,
+      },
+      select: {
+        type: true,
+        days: true,
+        employee: {
+          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
         },
-        select: {
-          type: true,
-          days: true,
-          employee: {
-            select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
-          },
-        },
-      }),
-    ]);
+      },
+    });
     const map = new Map<
       string,
       { name: string; ANNUAL: number; SICK: number; PERSONAL: number; UNPAID: number; OTHER: number }
@@ -987,48 +981,47 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     }
     const findings: Finding[] = [];
 
-    const [employees, recs, holidays, leaves, pendingOts, correctionReqs, payrolls] = await Promise.all([
-      prisma.employee.findMany({
-        where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
-        select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
-      }),
-      prisma.attendanceRecord.findMany({
-        where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
-        select: {
-          employeeId: true, workDate: true, clockInAt: true, clockOutAt: true, status: true,
-          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
-        },
-      }),
-      prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } }),
-      prisma.leaveRequest.findMany({
-        where: { companyId, deletedAt: null, startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
-        select: {
-          status: true, startDate: true, endDate: true,
-          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
-        },
-      }),
-      prisma.overtimeRequest.findMany({
-        where: { companyId, deletedAt: null, status: "PENDING", date: { gte: start, lt: end }, ...deptRel },
-        select: {
-          date: true, hours: true,
-          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
-        },
-      }),
-      prisma.attendanceCorrectionRequest.findMany({
-        where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
-        select: {
-          workDate: true, status: true, decidedAt: true, createdAt: true,
-          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
-        },
-      }),
-      prisma.payrollRecord.findMany({
-        where: { companyId, deletedAt: null, period: start.toISOString().slice(0, 7), ...deptRel },
-        select: {
-          net: true,
-          employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
-        },
-      }),
-    ]);
+    // Sequential, not Promise.all — connection_limit=1.
+    const employees = await prisma.employee.findMany({
+      where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
+      select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+    });
+    const recs = await prisma.attendanceRecord.findMany({
+      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
+      select: {
+        employeeId: true, workDate: true, clockInAt: true, clockOutAt: true, status: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+      },
+    });
+    const holidays = await prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } });
+    const leaves = await prisma.leaveRequest.findMany({
+      where: { companyId, deletedAt: null, startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
+      select: {
+        status: true, startDate: true, endDate: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+      },
+    });
+    const pendingOts = await prisma.overtimeRequest.findMany({
+      where: { companyId, deletedAt: null, status: "PENDING", date: { gte: start, lt: end }, ...deptRel },
+      select: {
+        date: true, hours: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+      },
+    });
+    const correctionReqs = await prisma.attendanceCorrectionRequest.findMany({
+      where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
+      select: {
+        workDate: true, status: true, decidedAt: true, createdAt: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+      },
+    });
+    const payrolls = await prisma.payrollRecord.findMany({
+      where: { companyId, deletedAt: null, period: start.toISOString().slice(0, 7), ...deptRel },
+      select: {
+        net: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+      },
+    });
     const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
     const deptOf = (e: { department: { name: string | null } | null }) => e.department?.name ?? "-";
     const nameOf = (e: { firstName: string; lastName: string }) => `${e.firstName} ${e.lastName}`;

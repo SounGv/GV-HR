@@ -163,17 +163,16 @@ export interface DepartmentSummaryRow {
 export async function getDepartmentSummary(companyId: string, session: AccessClaims): Promise<DepartmentSummaryRow[]> {
   if (!isHrLevel(session)) throw Forbidden("ดูสรุปผลระดับแผนกได้เฉพาะฝ่ายบุคคล");
 
-  const [employees, reviews] = await Promise.all([
-    prisma.employee.findMany({
-      where: { companyId, deletedAt: null },
-      select: { id: true, department: { select: { name: true } } },
-    }),
-    prisma.performanceReview.findMany({
-      where: { companyId, deletedAt: null },
-      select: { employeeId: true, overallScore: true, band: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1.
+  const employees = await prisma.employee.findMany({
+    where: { companyId, deletedAt: null },
+    select: { id: true, department: { select: { name: true } } },
+  });
+  const reviews = await prisma.performanceReview.findMany({
+    where: { companyId, deletedAt: null },
+    select: { employeeId: true, overallScore: true, band: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
 
   const latestByEmployee = new Map<string, { overallScore: number; band: string }>();
   for (const r of reviews) {
