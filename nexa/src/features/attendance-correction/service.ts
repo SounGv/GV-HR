@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
@@ -34,6 +34,13 @@ function requireEmployeeId(session: AccessClaims): string {
   return session.employeeId;
 }
 
+/**
+ * HR-level approvers may act on ANY request company-wide; a plain Manager
+ * only ever holds `attendance:manage` (own-team only, enforced by the
+ * managesRequester check at each call site) — `attendance:approve` is
+ * deliberately HR-exclusive so this check can't be satisfied by a
+ * team-scoped role.
+ */
 function isHrLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("attendance:approve");
 }
@@ -50,6 +57,21 @@ export async function createAttendanceCorrection(
   meta?: Meta,
 ) {
   const employeeId = requireEmployeeId(session);
+
+  // Unlike leave, there was no guard against multiple PENDING correction
+  // requests for the same day — a second approval for the same date would
+  // silently clobber whatever the first one already wrote to AttendanceRecord
+  // (both key on the same employeeId+workDate unique constraint), leaving
+  // the earlier request shown as APPROVED even though its effect no longer
+  // exists. One pending request per day is enough; a real update just needs
+  // to edit or cancel the existing one first.
+  const existingPending = await prisma.attendanceCorrectionRequest.findFirst({
+    where: { companyId, employeeId, workDate: new Date(input.workDate), status: "PENDING", deletedAt: null },
+    select: { id: true },
+  });
+  if (existingPending) {
+    throw Conflict("คุณมีคำขอแก้ไขเวลาสำหรับวันนี้ที่รออนุมัติอยู่แล้ว กรุณารอผลหรือยกเลิกคำขอเดิมก่อน");
+  }
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
@@ -176,8 +198,15 @@ export async function decideAttendanceCorrection(
   const shift = input.action === "approve" ? await resolveShiftMinutes(req.employeeId, req.workDate) : null;
 
   const record = await prisma.$transaction(async (tx) => {
-    const rec = await tx.attendanceCorrectionRequest.update({
-      where: { id: req.id },
+    // Compare-and-swap on status: the PENDING check above is a separate
+    // round-trip from this write, so two concurrent decide calls (double-
+    // click, retry, or a second approver — e.g. one approving, one rejecting)
+    // can both pass that check before either commits. Without this guard,
+    // both branches could each go on to write their own AttendanceRecord
+    // upsert/skip below, leaving the request's final status inconsistent
+    // with which write actually took effect.
+    const { count } = await tx.attendanceCorrectionRequest.updateMany({
+      where: { id: req.id, status: "PENDING" },
       data: {
         status: nextStatus,
         approverEmployeeId: session.employeeId ?? null,
@@ -186,8 +215,9 @@ export async function decideAttendanceCorrection(
         decisionNote: input.note,
         updatedById: session.sub,
       },
-      select: requestSelect,
     });
+    if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+    const rec = await tx.attendanceCorrectionRequest.findFirstOrThrow({ where: { id: req.id }, select: requestSelect });
 
     if (input.action === "approve") {
       const clockInMinutes = req.requestedClockIn ? bangkokParts(req.requestedClockIn).minutesOfDay : null;
