@@ -38,6 +38,10 @@ const PUBLIC_API = new Set([
   // LINE's servers call this directly (no session cookie) — authenticates
   // itself via the x-line-signature HMAC header, checked inside the handler.
   "/api/integrations/line/webhook",
+  // gv-ops-bot (a separate service) calls this directly (no session cookie) —
+  // authenticates itself via a GV_OPS_BOT_API_KEY bearer token, checked
+  // inside the handler.
+  "/api/integrations/line/roster",
 ]);
 
 const PUBLIC_PAGES = new Set(["/login", "/register", "/offline", "/forgot-password", "/reset-password"]);
