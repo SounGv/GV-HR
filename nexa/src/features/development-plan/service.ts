@@ -132,9 +132,9 @@ export async function suggestGapItems(companyId: string, session: AccessClaims) 
     .map((c) => ({ title: c.name, score: c.score, sourceCycle: latest.cycle }));
 }
 
-async function requireOwnItem(session: AccessClaims, itemId: string) {
+async function requireOwnItem(companyId: string, session: AccessClaims, itemId: string) {
   const item = await prisma.developmentItem.findFirst({
-    where: { id: itemId },
+    where: { id: itemId, plan: { companyId } },
     select: { id: true, plan: { select: { id: true, employeeId: true, employee: { select: { managerId: true } } } } },
   });
   if (!item) throw NotFound("ไม่พบรายการแผนพัฒนา");
@@ -195,7 +195,7 @@ export async function updateItem(
   input: DevelopmentItemUpdateInput,
   meta?: Meta,
 ) {
-  const item = await requireOwnItem(session, itemId);
+  const item = await requireOwnItem(companyId, session, itemId);
 
   await prisma.developmentItem.update({
     where: { id: itemId },
@@ -227,7 +227,7 @@ export async function updateItem(
 }
 
 export async function addProgressNote(companyId: string, session: AccessClaims, itemId: string, note: string, meta?: Meta) {
-  const item = await requireOwnItem(session, itemId);
+  const item = await requireOwnItem(companyId, session, itemId);
   const existing = await prisma.developmentItem.findUnique({ where: { id: itemId }, select: { progressNotes: true } });
   const notes = (existing?.progressNotes as unknown as { at: string; note: string }[] | null) ?? [];
   notes.push({ at: new Date().toISOString(), note });
@@ -251,7 +251,7 @@ export async function addProgressNote(companyId: string, session: AccessClaims, 
 }
 
 export async function deleteItem(companyId: string, session: AccessClaims, itemId: string, meta?: Meta) {
-  const item = await requireOwnItem(session, itemId);
+  const item = await requireOwnItem(companyId, session, itemId);
   await prisma.developmentItem.delete({ where: { id: itemId } });
 
   await writeAudit({
