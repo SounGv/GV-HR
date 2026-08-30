@@ -173,15 +173,10 @@ const ALL_QUICK_ACCESS: (QuickAccessItem & { permission: string })[] = [
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  const [s, actions, mine] = await Promise.all([
-    getDashboardSummary(user!.companyId),
-    getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles),
-    user!.employee ? getMySnapshot(user!.companyId, user!.employee.id) : Promise.resolve(null),
-  ]);
-  // Sequential, not folded into the Promise.all above — the pooled
-  // connection (pgbouncer, connection_limit=1) chokes if too many Prisma
-  // calls race at once; the existing 3-way Promise.all was already right at
-  // the edge, these two heavier day-by-day aggregations tip it over.
+  // Sequential, not Promise.all — connection_limit=1.
+  const s = await getDashboardSummary(user!.companyId);
+  const actions = await getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles);
+  const mine = user!.employee ? await getMySnapshot(user!.companyId, user!.employee.id) : null;
   const attendanceTrend = await getAttendanceTrend(user!.companyId);
   const departmentWatchlist = await getDepartmentWatchlist(user!.companyId);
 

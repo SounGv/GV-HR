@@ -10,10 +10,9 @@ export async function GET() {
     if (!session.employeeId) {
       return ok({ items: [], unread: 0 });
     }
-    const [items, unread] = await Promise.all([
-      listNotifications(session.companyId, session.employeeId),
-      unreadCount(session.companyId, session.employeeId),
-    ]);
+    // Sequential, not Promise.all — connection_limit=1.
+    const items = await listNotifications(session.companyId, session.employeeId);
+    const unread = await unreadCount(session.companyId, session.employeeId);
     return ok({ items, unread });
   } catch (error) {
     return handleApiError(error);

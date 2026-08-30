@@ -115,10 +115,9 @@ async function buildContext(companyId: string, scope: "department" | "company", 
     };
   }
 
-  const [headcount, departments] = await Promise.all([
-    prisma.employee.count({ where: { companyId, deletedAt: null } }),
-    prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { name: true }, take: 30 }),
-  ]);
+  // Sequential, not Promise.all — connection_limit=1.
+  const headcount = await prisma.employee.count({ where: { companyId, deletedAt: null } });
+  const departments = await prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { name: true }, take: 30 });
   return {
     label: "ทั้งบริษัท",
     context: [
