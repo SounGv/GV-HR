@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,12 +25,12 @@ export function Logo({
   variant?: "light" | "dark";
 }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={variant === "dark" ? "/gadgetvilla-logo-dark-bg.png" : "/gadgetvilla-logo.png"}
       alt="Gadget Villa"
       width={size}
       height={size}
+      priority
       className={cn("shrink-0 object-contain", className)}
     />
   );
@@ -54,12 +55,12 @@ export function LogoHorizontal({
   variant?: "light" | "dark";
 }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={variant === "dark" ? "/gv-one-horizontal-logo-dark-bg.png" : "/gv-one-horizontal-logo.png"}
       alt="GV One — AI Workforce Platform"
       height={height}
       width={Math.round(height * (2010 / 668))}
+      priority
       className={cn("shrink-0 object-contain", className)}
     />
   );
