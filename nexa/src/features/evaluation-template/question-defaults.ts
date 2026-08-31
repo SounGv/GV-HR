@@ -1,4 +1,5 @@
 import type { AnswerType, TemplateOption } from "./types";
+import { SCORE_RUBRIC } from "@/features/performance/calc";
 
 /** Sensible starting options per answer type, used both when authoring a
  * fresh question in the builder and when pulling one in from the Question
@@ -8,7 +9,14 @@ import type { AnswerType, TemplateOption } from "./types";
 export function defaultOptionsFor(type: AnswerType): TemplateOption[] | undefined {
   switch (type) {
     case "NUMERIC":
-      return [1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n), score: n }));
+      // label pulls the rubric's word ("ดีเยี่ยม", "ต้องพัฒนา", …) instead of
+      // a raw digit — template-renderer.tsx already shows a separate number
+      // badge alongside this label, so it doesn't need the digit repeated.
+      return [1, 2, 3, 4, 5].map((n) => ({
+        value: String(n),
+        label: SCORE_RUBRIC.find((r) => r.score === n)?.label ?? String(n),
+        score: n,
+      }));
     case "YES_NO":
       return [
         { value: "YES", label: "ใช่", score: 1 },
