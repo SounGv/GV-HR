@@ -60,7 +60,19 @@ export function AppSidebar() {
     return 0;
   };
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  // Two sibling nav items can share a URL prefix without one being a detail
+  // page of the other — e.g. "/attendance" (เข้างาน/ออกงาน) and
+  // "/attendance/corrections" (แก้ไขเวลาเข้า-ออกงาน) are two different
+  // features, but a plain per-item `startsWith` check marks BOTH active
+  // while on /attendance/corrections (it starts with "/attendance/" too),
+  // highlighting two menu items at once. Only the single longest matching
+  // href across the whole nav should win, so a more specific route always
+  // beats a shorter one it happens to start with.
+  const allHrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
+  const bestMatch = allHrefs
+    .filter((href) => !href.includes("?") && (pathname === href || pathname.startsWith(`${href}/`)))
+    .sort((a, b) => b.length - a.length)[0];
+  const isActive = (href: string) => href === bestMatch;
   const groupHasActive = (labels: { href: string }[]) => labels.some((i) => isActive(i.href));
 
   // Collapsible groups: open the group containing the current route by default.
