@@ -24,9 +24,10 @@ export interface CompanyProfile {
   country: string | null;
   attendanceDeductionEnabled: boolean;
   lateDeductionPerOccurrence: string; // Prisma Decimal serializes to string
-  leaveQuotaAnnualDays: number;
-  leaveQuotaSickDays: number;
-  leaveQuotaPersonalDays: number;
+  // null = HR hasn't configured this yet (see leave/service.ts's fallback).
+  leaveQuotaAnnualDays: number | null;
+  leaveQuotaSickDays: number | null;
+  leaveQuotaPersonalDays: number | null;
   leaveQuotaSickHours: number;
   leaveQuotaPersonalHours: number;
   medicalExpenseCapAmount: string; // Prisma Decimal serializes to string

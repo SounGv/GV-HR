@@ -108,7 +108,9 @@ function LeaveBalanceTile({ balances, href }: { balances: LeaveBalanceSummary[];
         <div className="mt-2 grid grid-cols-3 gap-1 text-center">
           {balances.map((b) => (
             <div key={b.type}>
-              <p className="text-base font-semibold tabular-nums text-foreground">{b.remaining}</p>
+              <p className="text-base font-semibold tabular-nums text-foreground">
+                {b.configured ? b.remaining : "-"}
+              </p>
               <p className="truncate text-[10px] text-muted-foreground">{b.label}</p>
             </div>
           ))}

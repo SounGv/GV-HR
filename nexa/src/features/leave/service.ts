@@ -56,6 +56,12 @@ function isHrLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("leave:approve");
 }
 
+// Historical system defaults — used only as a fallback so requesting leave
+// keeps working before HR sets real numbers. Company.leaveQuota{Annual,Sick,
+// Personal}Days are nullable with no @default specifically so "never
+// configured" (null) can't be confused with a deliberate real value.
+const FALLBACK_DAY_QUOTA: Record<string, number> = { ANNUAL: 10, SICK: 30, PERSONAL: 3 };
+
 /** HR-configured default quota (days/year) per paid leave type, for this company. */
 async function getCompanyLeaveQuota(companyId: string): Promise<Record<string, number>> {
   const company = await prisma.company.findFirst({
@@ -63,12 +69,27 @@ async function getCompanyLeaveQuota(companyId: string): Promise<Record<string, n
     select: { leaveQuotaAnnualDays: true, leaveQuotaSickDays: true, leaveQuotaPersonalDays: true },
   });
   return {
-    ANNUAL: company?.leaveQuotaAnnualDays ?? 0,
-    SICK: company?.leaveQuotaSickDays ?? 0,
-    PERSONAL: company?.leaveQuotaPersonalDays ?? 0,
+    ANNUAL: company?.leaveQuotaAnnualDays ?? FALLBACK_DAY_QUOTA.ANNUAL,
+    SICK: company?.leaveQuotaSickDays ?? FALLBACK_DAY_QUOTA.SICK,
+    PERSONAL: company?.leaveQuotaPersonalDays ?? FALLBACK_DAY_QUOTA.PERSONAL,
     UNPAID: 0,
     OTHER: 0,
   };
+}
+
+/** Whether HR has actually set a real day-quota for this company (any of the
+ * three types configured counts as "reviewed") — the UI hides the numbers
+ * while this is false instead of showing an unreviewed fallback as policy. */
+export async function isCompanyLeaveQuotaConfigured(companyId: string): Promise<boolean> {
+  const company = await prisma.company.findFirst({
+    where: { id: companyId, deletedAt: null },
+    select: { leaveQuotaAnnualDays: true, leaveQuotaSickDays: true, leaveQuotaPersonalDays: true },
+  });
+  return (
+    company?.leaveQuotaAnnualDays != null ||
+    company?.leaveQuotaSickDays != null ||
+    company?.leaveQuotaPersonalDays != null
+  );
 }
 
 /** Remaining days for a paid leave type this year — quota if no balance row exists yet. */
@@ -465,7 +486,12 @@ export async function cancelLeave(
  * Balances for all paid leave types this year, in a fixed display order.
  * A type with no LeaveBalance row yet (no leave of that type ever approved
  * this year) is synthesized from the company's default quota so the UI shows
- * the full entitlement from day one instead of an empty state.
+ * the full entitlement from day one instead of an empty state — but if HR
+ * has never actually configured a real quota, that synthesized number is
+ * just the historical system fallback, not a reviewed policy. `daysConfigured`
+ * flags that case so the UI can hide the number instead of showing it as if
+ * it were real; an existing LeaveBalance row is always treated as configured
+ * (it exists because a leave of that type was actually approved before).
  */
 export async function getBalances(companyId: string, session: AccessClaims, year?: number) {
   const employeeId = requireEmployeeId(session);
@@ -477,12 +503,14 @@ export async function getBalances(companyId: string, session: AccessClaims, year
   const byType = new Map(rows.map((r) => [r.type as string, r]));
   const quota = await getCompanyLeaveQuota(companyId);
   const hourQuota = await getCompanyLeaveHourQuota(companyId);
+  const daysConfigured = await isCompanyLeaveQuotaConfigured(companyId);
 
   return PAID_LEAVE_TYPES.map((type) => {
     const existing = byType.get(type);
-    if (existing) return existing;
+    if (existing) return { ...existing, daysConfigured: true };
     return {
       id: `virtual-${type}-${y}`,
+      daysConfigured,
       type: type as LeaveType,
       year: y,
       totalDays: quota[type] ?? 0,

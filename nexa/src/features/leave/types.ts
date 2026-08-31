@@ -38,6 +38,10 @@ export interface LeaveBalance {
   usedDays: number;
   totalHours: number;
   usedHours: number;
+  /** False when totalDays is just the historical system fallback (10/30/3)
+   * because HR hasn't actually configured a real day-quota yet — the UI
+   * should hide the number in that case rather than show it as policy. */
+  daysConfigured: boolean;
 }
 
 export interface LeaveFormValues {

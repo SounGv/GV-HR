@@ -55,16 +55,26 @@ export function BalanceCards() {
                 <Icon className="size-4" />
               </span>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-semibold tracking-tight tabular-nums">{remaining}</span>
-              <span className="text-xs text-muted-foreground">/ {b.totalDays} วัน คงเหลือ</span>
-            </div>
-            <div className="space-y-1">
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <div className={cn("h-full rounded-full transition-all", st.bar)} style={{ width: `${pct}%` }} />
-              </div>
-              <p className="text-[11px] text-muted-foreground">ใช้ไป {b.usedDays} วัน</p>
-            </div>
+            {b.daysConfigured ? (
+              <>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-semibold tracking-tight tabular-nums">{remaining}</span>
+                  <span className="text-xs text-muted-foreground">/ {b.totalDays} วัน คงเหลือ</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className={cn("h-full rounded-full transition-all", st.bar)} style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">ใช้ไป {b.usedDays} วัน</p>
+                </div>
+              </>
+            ) : (
+              // HR hasn't set a real quota for this company yet — showing the
+              // historical system fallback (10/30/3) as if it were policy is
+              // more misleading than showing nothing. Requesting leave still
+              // works normally; only this number is hidden.
+              <p className="text-xs text-muted-foreground">ยังไม่ได้ตั้งค่าโควตา — ติดต่อ HR</p>
+            )}
             {b.totalHours > 0 && (
               <p className="border-t border-border pt-1.5 text-[11px] text-muted-foreground">
                 ลาเป็นชั่วโมง: เหลือ <span className="font-medium text-foreground">{Math.max(0, b.totalHours - b.usedHours)}</span> จาก {b.totalHours} ชม.

@@ -22,7 +22,7 @@ import { MobileCheckinCard } from "./mobile-checkin-card";
 export interface MobileDashboardSnapshot {
   clockInAt: string | null;
   clockOutAt: string | null;
-  leaveBalances: { type: string; label: string; remaining: number }[];
+  leaveBalances: { type: string; label: string; remaining: number; configured: boolean }[];
   latestPayslip: { net: number; periodLabel: string } | null;
   recognition: { star: number; award: number; heart: number; point: number };
 }
@@ -75,7 +75,13 @@ export function MobileDashboardView({
   const today = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric" }).format(new Date());
   const greetName = user.employee ? `คุณ${user.employee.firstName}` : name ?? "";
 
-  const leaveRemaining = mine ? mine.leaveBalances.reduce((sum, b) => sum + b.remaining, 0) : null;
+  // null (→ "—") both when there's no snapshot yet and when HR hasn't
+  // actually configured a real day-quota — summing the historical system
+  // fallback would show a number that isn't real policy.
+  const leaveRemaining =
+    mine && mine.leaveBalances.every((b) => b.configured)
+      ? mine.leaveBalances.reduce((sum, b) => sum + b.remaining, 0)
+      : null;
   const hasTodo = actions.myPending > 0 || pendingCount > 0 || hrNotifCount > 0;
 
   return (

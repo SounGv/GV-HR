@@ -66,10 +66,15 @@ export const companyProfileSchema = z.object({
   attendanceDeductionEnabled: z.preprocess((v) => v === "true" || v === true, z.boolean()).default(false),
   lateDeductionPerOccurrence: z.coerce.number().min(0).default(0),
 
-  // Default annual leave quota (days/year) per paid leave type
-  leaveQuotaAnnualDays: z.coerce.number().int().min(0).max(365).default(10),
-  leaveQuotaSickDays: z.coerce.number().int().min(0).max(365).default(30),
-  leaveQuotaPersonalDays: z.coerce.number().int().min(0).max(365).default(3),
+  // Default annual leave quota (days/year) per paid leave type. Nullable —
+  // an empty field means "HR hasn't set this yet" (leave/service.ts falls
+  // back to the historical 10/30/3 system default for actual leave-request
+  // math, but the UI hides the number until it's a real, deliberate value)
+  // — NOT default(10)/(30)/(3), which would silently re-write the unreviewed
+  // placeholder back in every time this form is saved for an unrelated field.
+  leaveQuotaAnnualDays: z.preprocess(emptyToNull, z.coerce.number().int().min(0).max(365).nullable().optional()),
+  leaveQuotaSickDays: z.preprocess(emptyToNull, z.coerce.number().int().min(0).max(365).nullable().optional()),
+  leaveQuotaPersonalDays: z.preprocess(emptyToNull, z.coerce.number().int().min(0).max(365).nullable().optional()),
 
   // Separate hourly leave quota (hours/year) — 0 = hourly leave not offered
   // for that type. Never converted to/from the day quota above.

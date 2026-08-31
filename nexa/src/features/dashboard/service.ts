@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { RequestStep } from "@/features/workflow/types";
-import { getRemainingBalance } from "@/features/leave/service";
+import { getRemainingBalance, isCompanyLeaveQuotaConfigured } from "@/features/leave/service";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 
 /** The three paid leave types that actually deduct an annual quota (see `deductsBalance`) — UNPAID/OTHER have no meaningful "remaining" to show. */
@@ -115,6 +115,9 @@ export interface LeaveBalanceSummary {
   type: string;
   label: string;
   remaining: number;
+  /** False when `remaining` is just the historical system fallback (10/30/3)
+   * because HR hasn't configured a real day-quota yet — see leave/service.ts. */
+  configured: boolean;
 }
 
 export interface MySnapshot {
@@ -141,12 +144,14 @@ export async function getMySnapshot(companyId: string, employeeId: string): Prom
     where: { companyId, employeeId, workDate: todayStart, deletedAt: null },
     select: { clockInAt: true, clockOutAt: true },
   });
+  const daysConfigured = await isCompanyLeaveQuotaConfigured(companyId);
   const leaveBalances: LeaveBalanceSummary[] = [];
   for (const type of LEAVE_TYPES_FOR_SUMMARY) {
     leaveBalances.push({
       type,
       label: LEAVE_TYPE_LABEL[type],
       remaining: await getRemainingBalance(companyId, employeeId, type, year),
+      configured: daysConfigured,
     });
   }
   const latestPayslip = await prisma.payrollRecord.findFirst({

@@ -312,9 +312,16 @@ model Company {
   // only created the first time a leave of that type is approved for them in
   // a given year (see leave/service.ts), snapshotting whatever this default
   // was at that moment. Changing this only affects rows not yet created.
-  leaveQuotaAnnualDays   Int @default(10)
-  leaveQuotaSickDays     Int @default(30)
-  leaveQuotaPersonalDays Int @default(3)
+  //
+  // Nullable, no @default: null means "HR hasn't actually configured this
+  // yet" — distinct from a real, deliberate value (including a genuine 0).
+  // leave/service.ts still falls back to the historical 10/30/3 system
+  // defaults so requesting leave keeps working before HR sets real numbers;
+  // only the UI treats null specially, hiding the day-count instead of
+  // showing an unreviewed placeholder as if it were the real policy.
+  leaveQuotaAnnualDays   Int?
+  leaveQuotaSickDays     Int?
+  leaveQuotaPersonalDays Int?
   // Separate hour-based quota for the two leave types that support hourly
   // requests — 0 means "not offered", not "unlimited" (see leave/service.ts).
   leaveQuotaSickHours     Int @default(0)
