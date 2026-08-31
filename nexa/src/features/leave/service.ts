@@ -451,7 +451,17 @@ export async function cancelLeave(
   const employeeId = requireEmployeeId(session);
   const req = await prisma.leaveRequest.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeId: true, type: true, days: true, unit: true, hours: true, status: true, startDate: true },
+    select: {
+      id: true,
+      employeeId: true,
+      type: true,
+      days: true,
+      unit: true,
+      hours: true,
+      status: true,
+      startDate: true,
+      employee: { select: { firstName: true, lastName: true, managerId: true } },
+    },
   });
   if (!req) throw NotFound("ไม่พบคำขอลา");
   if (req.employeeId !== employeeId) throw Forbidden("ยกเลิกได้เฉพาะคำขอของตนเอง");
@@ -459,6 +469,7 @@ export async function cancelLeave(
     throw BadRequest("คำขอนี้ยกเลิกไม่ได้");
   }
 
+  const wasApproved = req.status === "APPROVED";
   const isHourly = req.unit === "HOUR";
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -492,6 +503,30 @@ export async function cancelLeave(
     entityId: req.id,
     ...meta,
   });
+
+  const amountLabel = isHourly ? `${req.hours} ชม.` : `${req.days} วัน`;
+  // The manager either still needs to know not to act on a now-cancelled
+  // PENDING request, or (if it was already APPROVED) that the leave they
+  // were expecting no longer happens — silent cancellation otherwise leaves
+  // them to discover it only by re-checking the list themselves.
+  if (req.employee.managerId) {
+    await createNotification(
+      companyId,
+      req.employee.managerId,
+      {
+        title: "คำขอลาถูกยกเลิก",
+        body: `${req.employee.firstName} ${req.employee.lastName} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+        category: "leave",
+        link: `/leave/${req.id}`,
+      },
+      session.sub,
+    );
+  }
+  await broadcastToLineGroups(
+    companyId,
+    "hr-alerts",
+    `↩️ ${req.employee.firstName} ${req.employee.lastName} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+  );
 
   return updated;
 }

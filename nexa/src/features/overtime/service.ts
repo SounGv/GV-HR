@@ -250,7 +250,13 @@ export async function cancelOvertime(
   const employeeId = requireEmployeeId(session);
   const req = await prisma.overtimeRequest.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeId: true, status: true },
+    select: {
+      id: true,
+      employeeId: true,
+      status: true,
+      hours: true,
+      employee: { select: { firstName: true, lastName: true, managerId: true } },
+    },
   });
   if (!req) throw NotFound("ไม่พบคำขอ OT");
   if (req.employeeId !== employeeId) throw Forbidden("ยกเลิกได้เฉพาะคำขอของตนเอง");
@@ -258,6 +264,7 @@ export async function cancelOvertime(
     throw BadRequest("คำขอนี้ยกเลิกไม่ได้");
   }
 
+  const wasApproved = req.status === "APPROVED";
   const { count } = await prisma.overtimeRequest.updateMany({
     where: { id: req.id, status: req.status },
     data: { status: "CANCELLED", updatedById: session.sub },
@@ -276,6 +283,29 @@ export async function cancelOvertime(
     entityId: req.id,
     ...meta,
   });
+
+  // The manager either still needs to know not to act on a now-cancelled
+  // PENDING request, or (if it was already APPROVED) that OT they were
+  // expecting no longer happened — silent cancellation otherwise leaves
+  // them to discover it only by re-checking the list themselves.
+  if (req.employee.managerId) {
+    await createNotification(
+      companyId,
+      req.employee.managerId,
+      {
+        title: "คำขอ OT ถูกยกเลิก",
+        body: `${req.employee.firstName} ${req.employee.lastName} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+        category: "overtime",
+        link: `/overtime/${req.id}`,
+      },
+      session.sub,
+    );
+  }
+  await broadcastToLineGroups(
+    companyId,
+    "hr-alerts",
+    `↩️ ${req.employee.firstName} ${req.employee.lastName} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+  );
 
   return record;
 }
