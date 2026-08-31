@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { RequestStep } from "@/features/workflow/types";
-import { getRemainingBalance, isCompanyLeaveQuotaConfigured } from "@/features/leave/service";
+import { getRemainingBalance, isCompanyLeaveQuotaConfigured, isDailyCompensation } from "@/features/leave/service";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 
 /** The three paid leave types that actually deduct an annual quota (see `deductsBalance`) — UNPAID/OTHER have no meaningful "remaining" to show. */
@@ -144,7 +144,10 @@ export async function getMySnapshot(companyId: string, employeeId: string): Prom
     where: { companyId, employeeId, workDate: todayStart, deletedAt: null },
     select: { clockInAt: true, clockOutAt: true },
   });
-  const daysConfigured = await isCompanyLeaveQuotaConfigured(companyId);
+  // Daily-wage employees show a real, deliberate 0 (not "not configured") —
+  // see leave/service.ts's isDailyCompensation.
+  const isDaily = await isDailyCompensation(employeeId);
+  const daysConfigured = isDaily ? true : await isCompanyLeaveQuotaConfigured(companyId);
   const leaveBalances: LeaveBalanceSummary[] = [];
   for (const type of LEAVE_TYPES_FOR_SUMMARY) {
     leaveBalances.push({

@@ -92,6 +92,18 @@ export async function isCompanyLeaveQuotaConfigured(companyId: string): Promise<
   );
 }
 
+/**
+ * Daily-wage employees don't get a paid-leave day/hour quota yet — still a
+ * trial/provisional tier, same "not yet extended to DAILY" reasoning already
+ * applied to Social Security in payroll/calc.ts. Only affects quota
+ * resolution when no LeaveBalance row exists yet; an existing row (from
+ * before this policy, or a manual HR adjustment) is left alone.
+ */
+export async function isDailyCompensation(employeeId: string): Promise<boolean> {
+  const emp = await prisma.employee.findFirst({ where: { id: employeeId }, select: { compensationType: true } });
+  return emp?.compensationType === "DAILY";
+}
+
 /** Remaining days for a paid leave type this year — quota if no balance row exists yet. */
 export async function getRemainingBalance(
   companyId: string,
@@ -104,6 +116,7 @@ export async function getRemainingBalance(
     select: { totalDays: true, usedDays: true },
   });
   if (balance) return Math.max(0, balance.totalDays - balance.usedDays);
+  if (await isDailyCompensation(employeeId)) return 0;
   const quota = await getCompanyLeaveQuota(companyId);
   return Math.max(0, quota[type] ?? 0);
 }
@@ -133,6 +146,7 @@ export async function getRemainingHourBalance(
     select: { totalHours: true, usedHours: true },
   });
   if (balance) return Math.max(0, balance.totalHours - balance.usedHours);
+  if (await isDailyCompensation(employeeId)) return 0;
   const quota = await getCompanyLeaveHourQuota(companyId);
   return Math.max(0, quota[type] ?? 0);
 }
@@ -501,9 +515,12 @@ export async function getBalances(companyId: string, session: AccessClaims, year
     select: { id: true, type: true, year: true, totalDays: true, usedDays: true, totalHours: true, usedHours: true },
   });
   const byType = new Map(rows.map((r) => [r.type as string, r]));
-  const quota = await getCompanyLeaveQuota(companyId);
-  const hourQuota = await getCompanyLeaveHourQuota(companyId);
-  const daysConfigured = await isCompanyLeaveQuotaConfigured(companyId);
+  const isDaily = await isDailyCompensation(employeeId);
+  // Daily-wage employees show a real, deliberate 0/0 (not "ยังไม่ได้ตั้งค่า")
+  // — this is intentional policy, not an oversight HR needs to fix.
+  const quota = isDaily ? { ANNUAL: 0, SICK: 0, PERSONAL: 0 } : await getCompanyLeaveQuota(companyId);
+  const hourQuota = isDaily ? { SICK: 0, PERSONAL: 0 } : await getCompanyLeaveHourQuota(companyId);
+  const daysConfigured = isDaily ? true : await isCompanyLeaveQuotaConfigured(companyId);
 
   return PAID_LEAVE_TYPES.map((type) => {
     const existing = byType.get(type);
