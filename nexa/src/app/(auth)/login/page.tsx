@@ -4,7 +4,6 @@ import { Inter, Noto_Sans_Thai } from "next/font/google";
 import { BrandLogo } from "@/features/auth/brand-logo";
 import { LoginCard } from "@/features/auth/login-card";
 import { LoginForm } from "@/features/auth/login-form";
-import { LoginHelpText } from "@/features/auth/login-help-text";
 import { isGoogleOAuthEnabled } from "@/lib/auth/google-oauth";
 
 export const metadata: Metadata = { title: { absolute: "เข้าสู่ระบบ · Gadget Villa" } };
@@ -59,8 +58,6 @@ export default function LoginPage() {
           <Suspense fallback={<div className="h-64" />}>
             <LoginForm googleEnabled={isGoogleOAuthEnabled()} />
           </Suspense>
-
-          <LoginHelpText />
         </div>
       </LoginCard>
     </div>
