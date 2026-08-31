@@ -23,12 +23,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/gadgetvilla-logo.png",
-      "sizes": "1254x1254",
-      "type": "image/png",
-      "purpose": "any"
     }
   ],
   "shortcuts": [
