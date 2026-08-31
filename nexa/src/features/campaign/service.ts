@@ -1379,7 +1379,7 @@ export async function finalizeParticipant(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true, overallScore: true },
+    select: { id: true, overallScore: true, employeeId: true, campaignId: true },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
   if (participant.overallScore === null) {
@@ -1392,6 +1392,23 @@ export async function finalizeParticipant(
   });
 
   await maybeCreateImprovementPlan(companyId, participantId, session);
+
+  // Employee-facing link: /performance/campaigns/[id] is the HR-only
+  // manage page (campaign:manage, and [id] there is a campaignId) — the
+  // page an employee can actually open to see/acknowledge their own result
+  // is .../campaigns/[campaignId]/participants/[participantId], gated on
+  // the campaign:read every Employee role already holds.
+  await createNotification(
+    companyId,
+    participant.employeeId,
+    {
+      title: "ผลการประเมินของคุณพร้อมแล้ว",
+      body: "หัวหน้างานสรุปผลการประเมินรอบนี้เรียบร้อยแล้ว กดดูรายละเอียดและรับทราบผลได้เลย",
+      category: "performance",
+      link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
+    },
+    session.sub,
+  );
 
   await writeAudit({
     companyId,
