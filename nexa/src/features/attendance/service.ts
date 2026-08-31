@@ -383,6 +383,15 @@ export async function clockOut(
     ...meta,
   });
 
+  const clockOutTimeLabel = `${String(bp.hour).padStart(2, "0")}:${String(bp.minute).padStart(2, "0")}`;
+  await broadcastToLineGroups(
+    companyId,
+    "hr-alerts",
+    `🔴 ${employee.firstName} ${employee.lastName} เช็คเอาท์แล้ว เวลา ${clockOutTimeLabel}` +
+      (record.earlyLeaveOut ? " (ออกก่อนเวลา)" : "") +
+      (employee.branch?.name ? `\n${employee.branch.name}` : ""),
+  );
+
   return record;
 }
 
