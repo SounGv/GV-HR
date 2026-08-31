@@ -134,6 +134,20 @@
   --input: #dce6d4;
   --ring: #15803d;
 
+  /* Login-page design tokens (2026-08-31 Gadget Villa rebrand of the login
+     screen only) — namespaced so they don't collide with or override the
+     app-wide tokens above, which every other screen still uses unchanged. */
+  --login-brand-green: #267a2b;
+  --login-brand-green-dark: #18551f;
+  --login-brand-lime: #b8e600;
+  --login-brand-lime-light: #eaf7c9;
+  --login-text-primary: #1f2937;
+  --login-text-secondary: #6b7280;
+  --login-background: #fafcf7;
+  --login-surface: #ffffff;
+  --login-border: #d9e2d5;
+  --login-error: #b42318;
+
   --chart-1: #22c55e;
   --chart-2: #0e9f8e;
   --chart-3: #f59e0b;

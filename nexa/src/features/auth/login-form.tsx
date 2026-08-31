@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Mail, Lock, ShieldCheck } from "lucide-react";
+import { Mail, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
-import { loginSchema, type LoginInput } from "./schema";
+import { loginSchema, type LoginInput as LoginInputData } from "./schema";
 import { api, ApiError, type Envelope } from "@/lib/api/client";
 import { MFA_PENDING_COOKIE } from "@/lib/auth/constants";
 import {
@@ -21,6 +21,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { LoginInput } from "./login-input";
+import { PasswordInput } from "./password-input";
+import { LoginButton } from "./login-button";
 
 const OAUTH_ERROR_MESSAGE: Record<string, string> = {
   google_disabled: "ยังไม่ได้เปิดใช้งานเข้าสู่ระบบด้วย Google",
@@ -35,7 +38,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
 
-  const form = useForm<LoginInput>({
+  const form = useForm<LoginInputData>({
     resolver: zodResolver(loginSchema),
     defaultValues: { identifier: "", password: "" },
   });
@@ -64,7 +67,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
     router.refresh();
   }
 
-  async function onSubmit(values: LoginInput) {
+  async function onSubmit(values: LoginInputData) {
     setSubmitting(true);
     try {
       const res = await api.post<Envelope<{ mfaRequired?: boolean; mfaToken?: string }>>(
@@ -107,10 +110,10 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
         }}
         className="space-y-4"
       >
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <ShieldCheck className="size-4 text-primary" /> ยืนยันตัวตนสองขั้นตอน
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--login-text-primary)]">
+          <ShieldCheck className="size-4 text-[var(--login-brand-green)]" /> ยืนยันตัวตนสองขั้นตอน
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-[var(--login-text-secondary)]">
           กรอกรหัส 6 หลักจากแอปยืนยันตัวตน หรือรหัสสำรองของคุณ
         </p>
         <Input
@@ -119,18 +122,18 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           placeholder="123456"
           value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value)}
-          className="h-10 text-center text-lg tracking-widest"
+          className="h-[52px] rounded-[11px] border-[var(--login-border)] !bg-[var(--login-surface)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[var(--login-brand-green)] focus-visible:ring-[var(--login-brand-green)]/15"
         />
-        <Button type="submit" size="lg" className="w-full" disabled={submitting || !mfaCode}>
-          {submitting && <Loader2 className="size-4 animate-spin" />} ยืนยัน
-        </Button>
+        <LoginButton type="submit" loading={submitting} disabled={!mfaCode}>
+          ยืนยัน
+        </LoginButton>
         <button
           type="button"
           onClick={() => {
             setMfaToken(null);
             setMfaCode("");
           }}
-          className="w-full text-center text-xs text-muted-foreground hover:underline"
+          className="w-full text-center text-xs text-[var(--login-text-secondary)] hover:underline"
         >
           กลับไปเข้าสู่ระบบใหม่
         </button>
@@ -146,18 +149,15 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           name="identifier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>อีเมล หรือ ชื่อผู้ใช้</FormLabel>
+              <FormLabel className="font-semibold text-[var(--login-text-primary)]">อีเมล</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    autoComplete="username"
-                    placeholder="you@company.co.th หรือ ชื่อผู้ใช้"
-                    className="h-10 pl-9"
-                    {...field}
-                  />
-                </div>
+                <LoginInput
+                  icon={<Mail className="size-4" />}
+                  type="text"
+                  autoComplete="username"
+                  placeholder="กรอกอีเมลของคุณ"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -169,45 +169,36 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           render={({ field }) => (
             <FormItem>
               <div className="flex items-center justify-between">
-                <FormLabel>รหัสผ่าน</FormLabel>
-                <Link href="/forgot-password" className="text-xs font-medium text-accent-foreground hover:underline">
+                <FormLabel className="font-semibold text-[var(--login-text-primary)]">รหัสผ่าน</FormLabel>
+                <Link href="/forgot-password" className="text-xs font-medium text-[var(--login-brand-green)] hover:underline">
                   ลืมรหัสผ่าน?
                 </Link>
               </div>
               <FormControl>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="••••••••"
-                    className="h-10 pl-9"
-                    {...field}
-                  />
-                </div>
+                <PasswordInput autoComplete="current-password" placeholder="กรอกรหัสผ่านของคุณ" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full bg-primary text-primary-foreground hover:opacity-90"
-          disabled={submitting}
-        >
-          {submitting && <Loader2 className="size-4 animate-spin" />}
+        <LoginButton type="submit" loading={submitting}>
           เข้าสู่ระบบ
-        </Button>
+        </LoginButton>
 
         {googleEnabled && (
           <>
             <div className="relative flex items-center py-1">
-              <div className="flex-1 border-t border-border" />
-              <span className="px-3 text-xs text-muted-foreground">หรือ</span>
-              <div className="flex-1 border-t border-border" />
+              <div className="flex-1 border-t border-[var(--login-border)]" />
+              <span className="px-3 text-xs text-[var(--login-text-secondary)]">หรือ</span>
+              <div className="flex-1 border-t border-[var(--login-border)]" />
             </div>
-            <Button type="button" variant="outline" size="lg" className="w-full" render={<a href="/api/auth/google" />}>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-[52px] w-full rounded-[11px] border-[var(--login-border)] !bg-[var(--login-surface)] !text-[var(--login-text-primary)]"
+              render={<a href="/api/auth/google" />}
+            >
               <GoogleIcon className="size-4" /> เข้าสู่ระบบด้วย Google
             </Button>
           </>
