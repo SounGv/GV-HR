@@ -9,6 +9,7 @@ import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, fullName } from "@/lib/format";
 import { getLeave } from "@/features/leave/service";
+import { LeaveDecideActions } from "@/features/leave/decide-actions";
 import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "@/features/leave/labels";
 
 export const metadata: Metadata = { title: "รายละเอียดคำขอลา" };
@@ -29,6 +30,14 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
     : `${formatDate(request.startDate)} - ${formatDate(request.endDate)}`;
   const amountValue = isHourly ? `${request.hours} ชม.` : `${request.days} วัน`;
 
+  // Mirrors decideLeave's own authorization exactly (isManager || HR-level,
+  // never your own request) — this just decides whether to show the
+  // buttons; the service still re-checks everything server-side on submit.
+  const isManager = request.employee.managerId === session.employeeId;
+  const isHrLevel = session.perms.includes("*") || session.perms.includes("leave:approve");
+  const isOwnRequest = request.employee.id === session.employeeId;
+  const canDecide = request.status === "PENDING" && !isOwnRequest && (isManager || isHrLevel);
+
   return (
     <div className="space-y-6">
       <PageHeaderBar
@@ -38,9 +47,12 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
         description={`${request.employee.employeeCode} · ${LEAVE_TYPE_LABEL[request.type]}`}
         status={<LeaveStatusBadge status={request.status} />}
         actions={
-          <Link href="/leave" className="text-sm text-muted-foreground hover:text-foreground">
-            กลับรายการ
-          </Link>
+          <div className="flex items-center gap-3">
+            <LeaveDecideActions id={request.id} show={canDecide} />
+            <Link href="/leave" className="text-sm text-muted-foreground hover:text-foreground">
+              กลับรายการ
+            </Link>
+          </div>
         }
       />
 

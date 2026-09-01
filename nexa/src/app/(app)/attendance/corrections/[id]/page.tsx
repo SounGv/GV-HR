@@ -9,6 +9,7 @@ import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, fullName } from "@/lib/format";
 import { getAttendanceCorrection } from "@/features/attendance-correction/service";
+import { AttendanceCorrectionDecideActions } from "@/features/attendance-correction/decide-actions";
 import { LeaveStatusBadge } from "@/features/leave/labels";
 
 export const metadata: Metadata = { title: "รายละเอียดคำขอแก้ไขเวลา" };
@@ -31,6 +32,14 @@ export default async function AttendanceCorrectionDetailPage({ params }: { param
 
   const employeeName = fullName(request.employee.firstName, request.employee.lastName);
 
+  // Mirrors decideAttendanceCorrection's own authorization exactly (isManager
+  // || HR-level, never your own request) — this just decides whether to
+  // show the buttons; the service still re-checks everything server-side.
+  const isManager = request.employee.managerId === session.employeeId;
+  const isHrLevel = session.perms.includes("*") || session.perms.includes("attendance:approve");
+  const isOwnRequest = request.employee.id === session.employeeId;
+  const canDecide = request.status === "PENDING" && !isOwnRequest && (isManager || isHrLevel);
+
   return (
     <div className="space-y-6">
       <PageHeaderBar
@@ -40,9 +49,12 @@ export default async function AttendanceCorrectionDetailPage({ params }: { param
         description={`${request.employee.employeeCode} · ${formatDate(request.workDate)}`}
         status={<LeaveStatusBadge status={request.status} />}
         actions={
-          <Link href="/attendance/corrections" className="text-sm text-muted-foreground hover:text-foreground">
-            กลับรายการ
-          </Link>
+          <div className="flex items-center gap-3">
+            <AttendanceCorrectionDecideActions id={request.id} show={canDecide} />
+            <Link href="/attendance/corrections" className="text-sm text-muted-foreground hover:text-foreground">
+              กลับรายการ
+            </Link>
+          </div>
         }
       />
 

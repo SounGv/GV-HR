@@ -9,6 +9,7 @@ import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate, fullName } from "@/lib/format";
 import { getOvertime } from "@/features/overtime/service";
+import { OvertimeDecideActions } from "@/features/overtime/decide-actions";
 import { LeaveStatusBadge } from "@/features/leave/labels";
 
 export const metadata: Metadata = { title: "รายละเอียดคำขอ OT" };
@@ -24,6 +25,14 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
 
   const employeeName = fullName(request.employee.firstName, request.employee.lastName);
 
+  // Mirrors decideOvertime's own authorization exactly (isManager || HR-
+  // level, never your own request) — this just decides whether to show the
+  // buttons; the service still re-checks everything server-side on submit.
+  const isManager = request.employee.managerId === session.employeeId;
+  const isHrLevel = session.perms.includes("*") || session.perms.includes("overtime:approve");
+  const isOwnRequest = request.employee.id === session.employeeId;
+  const canDecide = request.status === "PENDING" && !isOwnRequest && (isManager || isHrLevel);
+
   return (
     <div className="space-y-6">
       <PageHeaderBar
@@ -33,9 +42,12 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
         description={`${request.employee.employeeCode} · ${request.hours} ชั่วโมง`}
         status={<LeaveStatusBadge status={request.status} />}
         actions={
-          <Link href="/overtime" className="text-sm text-muted-foreground hover:text-foreground">
-            กลับรายการ
-          </Link>
+          <div className="flex items-center gap-3">
+            <OvertimeDecideActions id={request.id} show={canDecide} />
+            <Link href="/overtime" className="text-sm text-muted-foreground hover:text-foreground">
+              กลับรายการ
+            </Link>
+          </div>
         }
       />
 
