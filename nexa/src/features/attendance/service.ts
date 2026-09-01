@@ -93,11 +93,16 @@ async function loadEmployeeWithBranch(companyId: string, employeeId: string) {
       id: true,
       firstName: true,
       lastName: true,
+      nickname: true,
       branch: { select: { id: true, name: true, lat: true, lng: true, radiusMeters: true } },
     },
   });
   if (!employee) throw NotFound("ไม่พบข้อมูลพนักงาน");
   return employee;
+}
+
+function displayName(employee: { firstName: string; lastName: string; nickname: string | null }) {
+  return `${employee.firstName} ${employee.lastName}${employee.nickname ? ` (${employee.nickname})` : ""}`;
 }
 
 /**
@@ -301,7 +306,7 @@ export async function clockIn(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `🟢 ${employee.firstName} ${employee.lastName} เช็คอินแล้ว เวลา ${clockInTimeLabel}` +
+    `🟢 ${displayName(employee)} เช็คอินแล้ว เวลา ${clockInTimeLabel}` +
       (status === "LATE" ? " (มาสาย)" : "") +
       (employee.branch?.name ? `\n${employee.branch.name}` : ""),
   );
@@ -387,7 +392,7 @@ export async function clockOut(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `🔴 ${employee.firstName} ${employee.lastName} เช็คเอาท์แล้ว เวลา ${clockOutTimeLabel}` +
+    `🔴 ${displayName(employee)} เช็คเอาท์แล้ว เวลา ${clockOutTimeLabel}` +
       (record.earlyLeaveOut ? " (ออกก่อนเวลา)" : "") +
       (employee.branch?.name ? `\n${employee.branch.name}` : ""),
   );
