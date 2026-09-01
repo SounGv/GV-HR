@@ -59,7 +59,8 @@ export async function createNotification(
       select: { lineUserId: true },
     });
     if (employee?.lineUserId) {
-      await pushLineMessage(employee.lineUserId, `${input.title}\n${input.body}`);
+      const linkLine = input.link ? `\n${(process.env.APP_URL ?? "http://localhost:3000") + input.link}` : "";
+      await pushLineMessage(employee.lineUserId, `${input.title}\n${input.body}${linkLine}`);
     }
   }
 
