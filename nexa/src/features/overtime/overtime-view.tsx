@@ -23,12 +23,12 @@ function line(r: OvertimeRequest) {
   return `${formatDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม. · ≈ ${formatCurrency(r.estimatedAmount)}`;
 }
 
-export function OvertimeView() {
+export function OvertimeView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
   const { canAny } = useAuth();
   const canApprove = canAny(["overtime:approve", "overtime:manage"]);
 
   return (
-    <Tabs defaultValue="me" className="space-y-4">
+    <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">คำขอของฉัน</TabsTrigger>
         {canApprove && <TabsTrigger value="approvals">รออนุมัติ</TabsTrigger>}

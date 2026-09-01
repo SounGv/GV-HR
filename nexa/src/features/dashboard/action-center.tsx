@@ -25,8 +25,8 @@ interface ApprovalTile {
 // approval type, matching the nav/menu icon treatment.
 const ICON_CHIP = "bg-icon-chip-bg text-icon-chip-fg";
 const TILES: ApprovalTile[] = [
-  { key: "leave", label: "การลารออนุมัติ", href: "/leave", icon: CalendarDays, tone: ICON_CHIP },
-  { key: "overtime", label: "OT รออนุมัติ", href: "/overtime", icon: Timer, tone: ICON_CHIP },
+  { key: "leave", label: "การลารออนุมัติ", href: "/leave?view=overview", icon: CalendarDays, tone: ICON_CHIP },
+  { key: "overtime", label: "OT รออนุมัติ", href: "/overtime?view=overview", icon: Timer, tone: ICON_CHIP },
   { key: "expense", label: "เบิกจ่ายรออนุมัติ", href: "/expenses", icon: ReceiptText, tone: ICON_CHIP },
   { key: "workflow", label: "คำขออนุมัติ", href: "/workflows", icon: GitBranch, tone: ICON_CHIP },
 ];

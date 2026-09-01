@@ -8,12 +8,17 @@ import { MobileRequestsView } from "@/components/mobile/mobile-requests-view";
 
 export const metadata: Metadata = { title: "คำขอ" };
 
-export default async function RequestsPage() {
+export default async function RequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   await requirePagePermission("leave:read");
+  const { view } = await searchParams;
 
   return (
     <>
-      <MobileRequestsView />
+      <MobileRequestsView defaultTab={view === "approvals" ? "approvals" : "me"} />
       <div className="hidden space-y-6 md:block">
         <PageHeader title="คำขอ" description="ภาพรวมคำขอลาและ OT — จัดการรายละเอียดที่หน้าการลาและหน้า OT" />
         <div className="grid gap-4 sm:grid-cols-2">

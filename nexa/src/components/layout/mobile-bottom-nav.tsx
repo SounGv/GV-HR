@@ -57,7 +57,10 @@ export function MobileBottomNav() {
   const isHrTier = can("employee:update");
   const isManagerTier = !isHrTier && canApprove;
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    const path = href.split("?")[0];
+    return pathname === path || pathname.startsWith(`${path}/`);
+  };
 
   const profileTab = { href: "/profile", label: "โปรไฟล์", icon: UserRound, show: true, badge: unreadCount };
 
@@ -66,7 +69,7 @@ export function MobileBottomNav() {
         { href: "/dashboard", label: "Dashboard", icon: Home, show: true, badge: 0 },
         { href: "/employees", label: "พนักงาน", icon: UsersRound, show: can("employee:read"), badge: 0 },
         {
-          href: "/requests",
+          href: "/requests?view=approvals",
           label: "คำขอ",
           icon: ClipboardCheck,
           show: can("leave:read") || can("overtime:read"),
@@ -80,7 +83,7 @@ export function MobileBottomNav() {
           { href: "/dashboard", label: "หน้าหลัก", icon: Home, show: true, badge: 0 },
           { href: "/employees", label: "ทีมของฉัน", icon: UsersRound, show: can("employee:read"), badge: 0 },
           {
-            href: "/requests",
+            href: "/requests?view=approvals",
             label: "อนุมัติ",
             icon: ClipboardCheck,
             show: can("leave:read") || can("overtime:read"),

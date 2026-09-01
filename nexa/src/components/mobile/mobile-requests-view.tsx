@@ -77,15 +77,15 @@ function detailHref(item: ReqItem) {
   return `/attendance/corrections/${item.request.id}`;
 }
 
-export function MobileRequestsView() {
+export function MobileRequestsView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
   return (
     <MobileScreen title="คำขอ" contentClassName="p-4">
-      <RequestsBody />
+      <RequestsBody defaultTab={defaultTab} />
     </MobileScreen>
   );
 }
 
-function RequestsBody() {
+function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
   const { canAny } = useAuth();
   const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
   const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
@@ -98,7 +98,7 @@ function RequestsBody() {
     (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0) + (correctionPendingQ.data?.data.length ?? 0);
 
   return (
-    <Tabs defaultValue="me" className="space-y-4">
+    <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">ของฉัน</TabsTrigger>
         {canApprove && (

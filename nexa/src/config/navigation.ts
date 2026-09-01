@@ -103,7 +103,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "คำขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read", ready: true },
       {
         label: "คำขอรออนุมัติ",
-        href: "/requests",
+        href: "/requests?view=approvals",
         icon: ClipboardCheck,
         permission: "leave:read",
         ready: true,
