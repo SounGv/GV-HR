@@ -47,7 +47,10 @@ export async function getActionCenter(
   // Sequential, not Promise.all — this app's pooled connection runs with
   // connection_limit=1, where concurrent Prisma calls can throw P2024
   // instead of all completing (same reasoning documented at every other
-  // call site in this codebase).
+  // call site in this codebase). To keep this page fast anyway, "my
+  // pending" and "my total" for each request type are read off a single
+  // findMany (just the status column) instead of two separate count()
+  // round trips — same data, half the queries, no raw SQL involved.
   const leave = hasReports
     ? await prisma.leaveRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
     : 0;
@@ -62,29 +65,15 @@ export async function getActionCenter(
     select: { steps: true, currentStep: true, requesterEmployeeId: true },
     take: 300,
   });
-  const myLeave = employeeId
-    ? await prisma.leaveRequest.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
-    : 0;
-  const myOvertime = employeeId
-    ? await prisma.overtimeRequest.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
-    : 0;
-  const myExpense = employeeId
-    ? await prisma.expenseClaim.count({ where: { companyId, deletedAt: null, status: "PENDING", employeeId } })
-    : 0;
-  const myWorkflow = employeeId
-    ? await prisma.approvalRequest.count({
-        where: { companyId, status: "PENDING", requesterEmployeeId: employeeId },
-      })
-    : 0;
-  const myLeaveTotal = employeeId
-    ? await prisma.leaveRequest.count({ where: { companyId, deletedAt: null, employeeId } })
-    : 0;
-  const myOvertimeTotal = employeeId
-    ? await prisma.overtimeRequest.count({ where: { companyId, deletedAt: null, employeeId } })
-    : 0;
-  const myExpenseTotal = employeeId
-    ? await prisma.expenseClaim.count({ where: { companyId, deletedAt: null, employeeId } })
-    : 0;
+  const myLeaveRows = employeeId
+    ? await prisma.leaveRequest.findMany({ where: { companyId, deletedAt: null, employeeId }, select: { status: true } })
+    : [];
+  const myOvertimeRows = employeeId
+    ? await prisma.overtimeRequest.findMany({ where: { companyId, deletedAt: null, employeeId }, select: { status: true } })
+    : [];
+  const myExpenseRows = employeeId
+    ? await prisma.expenseClaim.findMany({ where: { companyId, deletedAt: null, employeeId }, select: { status: true } })
+    : [];
   const myWorkflowTotal = employeeId
     ? await prisma.approvalRequest.count({ where: { companyId, requesterEmployeeId: employeeId } })
     : 0;
@@ -94,6 +83,14 @@ export async function getActionCenter(
         select: { template: { select: { name: true, startTime: true, endTime: true } } },
       })
     : null;
+
+  const myLeave = myLeaveRows.filter((r) => r.status === "PENDING").length;
+  const myOvertime = myOvertimeRows.filter((r) => r.status === "PENDING").length;
+  const myExpense = myExpenseRows.filter((r) => r.status === "PENDING").length;
+  // Already have every company-wide pending approval request above (for the
+  // role-step match below) — filtering it for mine avoids a third query that
+  // would just recount a subset of the same rows.
+  const myWorkflow = pendingRequests.filter((r) => r.requesterEmployeeId === employeeId).length;
 
   const roleSet = new Set(roles);
   const workflow = pendingRequests.filter((r) => {
@@ -106,7 +103,7 @@ export async function getActionCenter(
   return {
     approvals: { leave, overtime, expense, workflow },
     myPending: myLeave + myOvertime + myExpense + myWorkflow,
-    myTotal: myLeaveTotal + myOvertimeTotal + myExpenseTotal + myWorkflowTotal,
+    myTotal: myLeaveRows.length + myOvertimeRows.length + myExpenseRows.length + myWorkflowTotal,
     shiftToday: shift?.template ?? null,
   };
 }
