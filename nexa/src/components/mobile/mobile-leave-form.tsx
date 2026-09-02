@@ -110,13 +110,17 @@ export function MobileLeaveForm() {
       : null;
 
   const balanceMap = useMemo(() => {
-    const map = new Map<LeaveType, { remaining: number; total: number; remainingHours: number; totalHours: number }>();
+    const map = new Map<
+      LeaveType,
+      { remaining: number; total: number; remainingHours: number; totalHours: number; configured: boolean }
+    >();
     for (const b of balanceData?.data ?? []) {
       map.set(b.type, {
         remaining: Math.max(0, b.totalDays - b.usedDays),
         total: b.totalDays,
         remainingHours: Math.max(0, b.totalHours - b.usedHours),
         totalHours: b.totalHours,
+        configured: b.daysConfigured,
       });
     }
     return map;
@@ -128,21 +132,25 @@ export function MobileLeaveForm() {
     if (!bal) return null;
     if (isHourly) {
       if (preview > bal.remainingHours) {
-        return (
+        return bal.configured ? (
           <>
             ชั่วโมง{LEAVE_TYPE_LABEL[type]}คงเหลือไม่พอ — คุณมีสิทธิ์คงเหลือ <b>{bal.remainingHours} ชม.</b> แต่ขอลา{" "}
             <b>{preview} ชม.</b> กรุณาเลือกเวลาใหม่
           </>
+        ) : (
+          <>ชั่วโมง{LEAVE_TYPE_LABEL[type]}คงเหลือไม่พอ — กรุณาติดต่อ HR หรือเปลี่ยนเป็นลาไม่รับค่าจ้าง</>
         );
       }
       return null;
     }
     if (preview > bal.remaining) {
-      return (
+      return bal.configured ? (
         <>
           วัน{LEAVE_TYPE_LABEL[type]}คงเหลือไม่พอ — คุณมีสิทธิ์คงเหลือ <b>{bal.remaining} วัน</b> แต่ขอลา{" "}
           <b>{preview} วัน</b> กรุณาเลือกวันใหม่ หรือเปลี่ยนเป็นลาไม่รับค่าจ้าง
         </>
+      ) : (
+        <>วัน{LEAVE_TYPE_LABEL[type]}คงเหลือไม่พอ — กรุณาติดต่อ HR หรือเปลี่ยนเป็นลาไม่รับค่าจ้าง</>
       );
     }
     return null;
@@ -231,9 +239,11 @@ export function MobileLeaveForm() {
               const sub =
                 t === "UNPAID"
                   ? "ไม่จำกัด"
-                  : bal
-                    ? `คงเหลือ ${bal.remaining} วัน`
-                    : "—";
+                  : !bal
+                    ? "—"
+                    : bal.configured
+                      ? `คงเหลือ ${bal.remaining} วัน`
+                      : "ยังไม่ได้ตั้งค่า";
               return (
                 <button
                   key={t}
