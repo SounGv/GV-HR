@@ -123,7 +123,7 @@ export async function createOvertime(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง`,
+    `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง\n${(process.env.APP_URL ?? "http://localhost:3000") + `/overtime/${record.id}`}`,
   );
 
   return record;

@@ -258,7 +258,7 @@ export async function createLeave(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `📋 มีคำขอลารออนุมัติ\n${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}`,
+    `📋 มีคำขอลารออนุมัติ\n${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}\n${(process.env.APP_URL ?? "http://localhost:3000") + `/leave/${record.id}`}`,
   );
 
   return record;

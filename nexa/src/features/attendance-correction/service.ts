@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
+import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -116,6 +117,12 @@ export async function createAttendanceCorrection(
       session.sub,
     );
   }
+
+  await broadcastToLineGroups(
+    companyId,
+    "hr-alerts",
+    `📝 มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}\n${(process.env.APP_URL ?? "http://localhost:3000") + `/attendance/corrections/${record.id}`}`,
+  );
 
   return record;
 }
