@@ -1,6 +1,6 @@
 "use client";
 
-import { Palmtree, Stethoscope, User, CircleDollarSign, CalendarClock, type LucideIcon } from "lucide-react";
+import { Palmtree, Stethoscope, User, CircleDollarSign, CalendarClock, Repeat, type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ const STYLE: Record<LeaveType, { icon: LucideIcon; chip: string; bar: string }> 
   PERSONAL: { icon: User, chip: "bg-info/10 text-info", bar: "bg-info" },
   UNPAID: { icon: CircleDollarSign, chip: "bg-destructive/10 text-destructive", bar: "bg-destructive" },
   OTHER: { icon: CalendarClock, chip: "bg-muted text-muted-foreground", bar: "bg-muted-foreground" },
+  HOLIDAY_SWAP: { icon: Repeat, chip: "bg-muted text-muted-foreground", bar: "bg-muted-foreground" },
 };
 
 export function BalanceCards() {

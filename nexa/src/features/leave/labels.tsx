@@ -7,6 +7,7 @@ export const LEAVE_TYPE_LABEL: Record<LeaveType, string> = {
   PERSONAL: "ลากิจ",
   UNPAID: "ลาไม่รับค่าจ้าง",
   OTHER: "อื่น ๆ",
+  HOLIDAY_SWAP: "ใช้สิทธิ์วันหยุด",
 };
 
 export const LEAVE_STATUS_LABEL: Record<LeaveStatus, string> = {

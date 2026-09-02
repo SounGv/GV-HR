@@ -573,7 +573,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         companyId,
         deletedAt: null,
         status: "APPROVED",
-        type: { in: ["UNPAID", "OTHER"] },
+        type: { in: ["UNPAID", "OTHER", "HOLIDAY_SWAP"] },
         startDate: { lt: yearEnd },
         endDate: { gte: yearStart },
         ...deptRel,
@@ -605,7 +605,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     for (const r of unpaidOther) {
       const code = r.employee.employeeCode;
       const row = rowFor(code, `${r.employee.firstName} ${r.employee.lastName}`);
-      row[r.type as "UNPAID" | "OTHER"] += r.days;
+      // HOLIDAY_SWAP has no dedicated column here — same bucket as OTHER.
+      row[r.type === "UNPAID" ? "UNPAID" : "OTHER"] += r.days;
       bumpDept(deptDays, r.employee.department?.name, r.days);
     }
     return {

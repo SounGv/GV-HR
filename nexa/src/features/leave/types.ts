@@ -1,4 +1,4 @@
-export type LeaveType = "ANNUAL" | "SICK" | "PERSONAL" | "UNPAID" | "OTHER";
+export type LeaveType = "ANNUAL" | "SICK" | "PERSONAL" | "UNPAID" | "OTHER" | "HOLIDAY_SWAP";
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 export type LeaveScope = "me" | "team" | "all";
 export type LeaveUnit = "DAY" | "HOUR";

@@ -57,7 +57,8 @@ const formSchema = z
 
 type FormSchema = z.infer<typeof formSchema>;
 
-const TYPE_ORDER: LeaveType[] = ["SICK", "PERSONAL", "ANNUAL", "UNPAID"];
+const TYPE_ORDER: LeaveType[] = ["SICK", "PERSONAL", "ANNUAL", "UNPAID", "HOLIDAY_SWAP"];
+const UNLIMITED_TYPES: LeaveType[] = ["UNPAID", "HOLIDAY_SWAP"];
 
 function fmtThaiDate(iso: string) {
   if (!iso) return "—";
@@ -127,7 +128,7 @@ export function MobileLeaveForm() {
   }, [balanceData]);
 
   const blockedMessage = useMemo(() => {
-    if (!preview || type === "UNPAID" || type === "OTHER") return null;
+    if (!preview || UNLIMITED_TYPES.includes(type) || type === "OTHER") return null;
     const bal = balanceMap.get(type);
     if (!bal) return null;
     if (isHourly) {
@@ -237,7 +238,7 @@ export function MobileLeaveForm() {
               const selected = type === t;
               const bal = balanceMap.get(t);
               const sub =
-                t === "UNPAID"
+                UNLIMITED_TYPES.includes(t)
                   ? "ไม่จำกัด"
                   : !bal
                     ? "—"

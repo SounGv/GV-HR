@@ -2,7 +2,7 @@ import { z } from "zod";
 import { dataUrlFileOrHttpUrlSchema } from "@/lib/image-schema";
 import { HOURLY_LEAVE_TYPES, computeLeaveHours } from "./days";
 
-export const LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL", "UNPAID", "OTHER"] as const;
+export const LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL", "UNPAID", "OTHER", "HOLIDAY_SWAP"] as const;
 export const LEAVE_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
 export const LEAVE_UNITS = ["DAY", "HOUR"] as const;
 

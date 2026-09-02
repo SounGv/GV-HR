@@ -113,6 +113,9 @@ enum LeaveType {
   PERSONAL
   UNPAID
   OTHER
+  // Compensatory day off for working a designated promo/holiday day — unlimited,
+  // trust-based like UNPAID (no HR-configured quota, no balance deduction).
+  HOLIDAY_SWAP
 }
 
 enum LeaveStatus {
