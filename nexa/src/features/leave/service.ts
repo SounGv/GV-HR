@@ -559,7 +559,12 @@ export async function getBalances(companyId: string, session: AccessClaims, year
 
   return PAID_LEAVE_TYPES.map((type) => {
     const existing = byType.get(type);
-    if (existing) return { ...existing, daysConfigured: true };
+    // A row existing doesn't by itself mean HR reviewed a real quota — an
+    // approved leave upserts one (usedDays > 0, genuinely earned trust), but
+    // so does onboarding/seeding a starter row that nobody ever touches
+    // (usedDays stays 0 forever). Only the company-level signal actually
+    // tells the two apart, so use it for every row, not just synthesized ones.
+    if (existing) return { ...existing, daysConfigured };
     return {
       id: `virtual-${type}-${y}`,
       daysConfigured,
