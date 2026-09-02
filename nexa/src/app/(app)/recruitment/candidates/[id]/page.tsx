@@ -7,6 +7,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { AttachmentLink } from "@/components/shared/attachment-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CandidateStageBadge, CANDIDATE_STAGE_LABEL } from "@/features/recruitment/labels";
@@ -62,14 +63,12 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
             </p>
           </div>
           {candidate.resumeUrl && (
-            <a
-              href={candidate.resumeUrl}
-              target="_blank"
-              rel="noreferrer"
+            <AttachmentLink
+              url={candidate.resumeUrl}
               className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
             >
               <FileText className="size-4" /> ดูเรซูเม่
-            </a>
+            </AttachmentLink>
           )}
           <p className="text-xs text-muted-foreground">สมัครเมื่อ {formatDate(candidate.createdAt)}</p>
         </CardContent>

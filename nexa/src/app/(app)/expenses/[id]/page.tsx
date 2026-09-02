@@ -6,6 +6,7 @@ import { CalendarDays, Coins, FileText, UserRound } from "lucide-react";
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { AttachmentLink } from "@/components/shared/attachment-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate, fullName } from "@/lib/format";
 import { getExpense } from "@/features/expense/service";
@@ -70,14 +71,14 @@ export default async function ExpenseDetailPage({ params }: { params: Promise<{ 
           {claim.receiptUrl && (
             <div className="rounded-lg border border-border bg-muted/40 p-3">
               <p className="mb-2 text-sm font-medium text-foreground">รูปใบเสร็จ</p>
-              <a href={claim.receiptUrl} target="_blank" rel="noreferrer">
+              <AttachmentLink url={claim.receiptUrl}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={claim.receiptUrl}
                   alt="ใบเสร็จ"
                   className="max-h-64 rounded-md border border-border object-contain"
                 />
-              </a>
+              </AttachmentLink>
             </div>
           )}
           {claim.decisionNote && (

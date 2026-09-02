@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScorePicker } from "@/components/shared/score-picker";
 import { FileAttachField } from "@/components/shared/file-attach-field";
+import { AttachmentLink } from "@/components/shared/attachment-link";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 import type { TemplateSection, TemplateVisibleToType } from "@/features/evaluation-template/types";
 import { fullName, getInitials } from "@/lib/format";
@@ -800,15 +801,13 @@ function ResponseCard({
         {response?.status === "SUBMITTED" && response.evidenceUrls && response.evidenceUrls.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2 border-t border-border pt-2">
             {response.evidenceUrls.map((url, i) => (
-              <a
+              <AttachmentLink
                 key={i}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
+                url={url}
                 className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/70"
               >
                 <FileText className="size-3.5" /> หลักฐาน {i + 1}
-              </a>
+              </AttachmentLink>
             ))}
           </div>
         )}

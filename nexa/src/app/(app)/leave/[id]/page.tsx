@@ -6,6 +6,7 @@ import { CalendarDays, Clock3, FileText, UserRound } from "lucide-react";
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { AttachmentLink } from "@/components/shared/attachment-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, fullName } from "@/lib/format";
 import { getLeave } from "@/features/leave/service";
@@ -74,14 +75,12 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
             <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{request.reason || "—"}</p>
           </div>
           {request.attachmentUrl && (
-            <a
-              href={request.attachmentUrl}
-              target="_blank"
-              rel="noreferrer"
+            <AttachmentLink
+              url={request.attachmentUrl}
               className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
             >
               <FileText className="size-4" /> ดูไฟล์แนบ (ใบรับรองแพทย์)
-            </a>
+            </AttachmentLink>
           )}
           {request.decisionNote && (
             <div className="rounded-lg border border-border bg-muted/40 p-3">

@@ -6,6 +6,7 @@ import { CalendarDays, Coins, FileText, Landmark, UserRound } from "lucide-react
 import { toast } from "sonner";
 
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { AttachmentLink } from "@/components/shared/attachment-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,9 +104,9 @@ export function LoanDetailView({ loanId }: { loanId: string }) {
           )}
 
           {loan.attachmentUrl && (
-            <a href={loan.attachmentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+            <AttachmentLink url={loan.attachmentUrl} className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
               <FileText className="size-4" /> ดูเอกสารประกอบ
-            </a>
+            </AttachmentLink>
           )}
 
           {loan.decisionNote && (

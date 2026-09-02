@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileAttachField } from "@/components/shared/file-attach-field";
+import { AttachmentLink } from "@/components/shared/attachment-link";
 import { ApiError } from "@/lib/api/client";
 import { formatDate } from "@/lib/format";
 import { useAddEmployeeDocument, useEmployeeDocuments, useRemoveEmployeeDocument } from "./hooks";
@@ -63,10 +64,8 @@ export function EmployeeDocumentList({ employeeId, canEdit }: { employeeId: stri
           <div className="space-y-2">
             {documents.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5">
-                <a
-                  href={doc.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <AttachmentLink
+                  url={doc.fileUrl}
                   className="flex min-w-0 flex-1 items-center gap-2.5 text-sm hover:text-primary"
                 >
                   <FileText className="size-4 shrink-0 text-muted-foreground" />
@@ -76,7 +75,7 @@ export function EmployeeDocumentList({ employeeId, canEdit }: { employeeId: stri
                       {EMPLOYEE_DOCUMENT_TYPE_LABEL[doc.type]} · {formatDate(doc.uploadedAt)}
                     </span>
                   </span>
-                </a>
+                </AttachmentLink>
                 {canEdit && (
                   <button
                     type="button"
