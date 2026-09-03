@@ -1,11 +1,12 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
+import type Anthropic from "@anthropic-ai/sdk";
 import { requireSession } from "@/lib/auth/guard";
 import { Forbidden } from "@/lib/api/errors";
 import { getRequestMeta } from "@/lib/api/request";
 import { ok, handleApiError } from "@/lib/api/response";
-import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError, withGeminiRetry } from "@/lib/ai/client";
-import { executeTool, toGeminiTools } from "@/lib/ai/tools";
+import { getAnthropic, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
+import { executeTool, NEXA_TOOLS } from "@/lib/ai/tools";
 import { resolveAiAccess, employeeScopeWhere } from "@/lib/ai/scope";
 import { prisma } from "@/lib/prisma";
 import { loginIdentifier } from "@/lib/format";
@@ -25,6 +26,7 @@ const bodySchema = z.object({
 });
 
 const MAX_STEPS = 6;
+const MAX_TOKENS = 2048;
 
 /** Activity surfaced to the UI so the user sees how the AI grounded its answer. */
 type Step = { tool: string; detail: string };
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (!isAiConfigured()) {
       return ok({
         reply:
-          "ขออภัย ระบบ AI Assistant ยังไม่ได้ตั้งค่า API key (GEMINI_API_KEY) จึงยังใช้งานไม่ได้ในขณะนี้ กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดใช้งาน",
+          "ขออภัย ระบบ AI Assistant ยังไม่ได้ตั้งค่า API key (ANTHROPIC_API_KEY) จึงยังใช้งานไม่ได้ในขณะนี้ กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดใช้งาน",
         steps: [] as Step[],
         configured: false,
       });
@@ -71,71 +73,47 @@ export async function POST(request: NextRequest) {
     const system = buildSystemPrompt(company?.name ?? "-", loginIdentifier(session), today);
     const meta = getRequestMeta(request);
 
-    const genAI = getGemini();
-    // All but the last message become chat history; the last is the new turn.
-    const history = input.slice(0, -1).map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
-    const lastMessage = input[input.length - 1].content;
+    const anthropic = getAnthropic();
+    const messages: Anthropic.MessageParam[] = input.map((m) => ({ role: m.role, content: m.content }));
 
-    let lastErr: unknown = null;
-    for (const modelName of getModelCandidates()) {
-      const steps: Step[] = [];
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: system,
-          tools: [{ functionDeclarations: toGeminiTools() }],
-          generationConfig: { maxOutputTokens: 2048, temperature: 0.4 },
+    const steps: Step[] = [];
+    let reply = "";
+    try {
+      for (let i = 0; i < MAX_STEPS; i++) {
+        const response = await anthropic.messages.create({
+          model: AI_MODEL,
+          max_tokens: MAX_TOKENS,
+          system,
+          tools: NEXA_TOOLS,
+          messages,
         });
-        // Manage the contents array ourselves so function results are sent with
-        // role "user" (newer Gemini models reject role "function").
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const contents: any[] = [...history, { role: "user", parts: [{ text: lastMessage }] }];
 
-        let reply = "";
-        for (let i = 0; i < MAX_STEPS; i++) {
-          const result = await withGeminiRetry(() => model.generateContent({ contents }));
-          const calls = result.response.functionCalls();
-          if (!calls || calls.length === 0) {
-            try {
-              reply = result.response.text().trim();
-            } catch {
-              reply = "";
-            }
-            break;
-          }
-          // Record the model's function-call turn, then answer it with a user turn.
-          const modelParts = result.response.candidates?.[0]?.content?.parts ?? [];
-          contents.push({ role: "model", parts: modelParts });
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const respParts: any[] = [];
-          for (const call of calls) {
-            steps.push({ tool: call.name, detail: describeTool(call.name, call.args) });
-            const out = await executeTool(session, call.name, call.args as Record<string, unknown>, meta, scopeWhere);
-            respParts.push({ functionResponse: { name: call.name, response: { result: out } } });
-          }
-          contents.push({ role: "user", parts: respParts });
+        if (response.stop_reason !== "tool_use") {
+          reply = response.content
+            .filter((b): b is Anthropic.TextBlock => b.type === "text")
+            .map((b) => b.text)
+            .join("\n")
+            .trim();
+          break;
         }
 
-        if (!reply) reply = "ขออภัย ยังไม่สามารถประมวลผลคำขอได้ กรุณาปรับคำถามแล้วลองใหม่อีกครั้ง";
-        return ok({ reply, steps, configured: true });
-      } catch (aiErr) {
-        lastErr = aiErr;
-        // Model unavailable / no quota for this key → try the next candidate.
-        if (isModelFallbackError(aiErr)) continue;
-        const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
-        return ok({ reply: `⚠️ เกิดข้อผิดพลาดจาก AI (Gemini):\n${msg.slice(0, 600)}`, steps, configured: true });
+        messages.push({ role: "assistant", content: response.content });
+        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+        for (const block of response.content) {
+          if (block.type !== "tool_use") continue;
+          steps.push({ tool: block.name, detail: describeTool(block.name, block.input) });
+          const out = await executeTool(session, block.name, block.input as Record<string, unknown>, meta, scopeWhere);
+          toolResults.push({ type: "tool_result", tool_use_id: block.id, content: out });
+        }
+        messages.push({ role: "user", content: toolResults });
       }
-    }
 
-    const lastMsg = lastErr instanceof Error ? lastErr.message : String(lastErr);
-    return ok({
-      reply: `⚠️ ไม่พบโมเดล Gemini ที่คีย์นี้ใช้ได้ (ลองหลายรุ่นแล้ว)\n${lastMsg.slice(0, 500)}`,
-      steps: [],
-      configured: true,
-    });
+      if (!reply) reply = "ขออภัย ยังไม่สามารถประมวลผลคำขอได้ กรุณาปรับคำถามแล้วลองใหม่อีกครั้ง";
+      return ok({ reply, steps, configured: true });
+    } catch (aiErr) {
+      const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+      return ok({ reply: `⚠️ เกิดข้อผิดพลาดจาก AI (Claude):\n${msg.slice(0, 600)}`, steps, configured: true });
+    }
   } catch (error) {
     return handleApiError(error);
   }

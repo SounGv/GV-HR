@@ -1,10 +1,10 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
+import type Anthropic from "@anthropic-ai/sdk";
 import { requirePermission } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { BadRequest, NotFound } from "@/lib/api/errors";
-import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError, withGeminiRetry } from "@/lib/ai/client";
-import { jsonSchemaToGemini } from "@/lib/ai/tools";
+import { getAnthropic, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
 import { prisma } from "@/lib/prisma";
 import { fullName } from "@/lib/format";
 
@@ -150,37 +150,18 @@ export async function POST(request: NextRequest) {
       instruction ? `คำสั่งเพิ่มเติมจาก HR: ${instruction}` : "ไม่มีคำสั่งเพิ่มเติม ให้ออกแบบตามมาตรฐานทั่วไปที่เหมาะสม",
     ].join("\n");
 
-    const genAI = getGemini();
-    let text = "";
-    let lastErr: unknown = null;
-    for (const modelName of getModelCandidates()) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: system,
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: jsonSchemaToGemini(OUTPUT_SCHEMA as unknown as Record<string, unknown>),
-            maxOutputTokens: 2048,
-          },
-        });
-        const response = await withGeminiRetry(() => model.generateContent(userPrompt));
-        text = response.response.text();
-        break;
-      } catch (err) {
-        lastErr = err;
-        if (isModelFallbackError(err)) continue;
-        throw err;
-      }
-    }
-    if (!text && lastErr) throw lastErr;
+    const anthropic = getAnthropic();
+    const response = await anthropic.messages.create({
+      model: AI_MODEL,
+      max_tokens: 2048,
+      system,
+      tools: [{ name: "submit_competencies", description: "Submit the designed competencies.", input_schema: OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema }],
+      tool_choice: { type: "tool", name: "submit_competencies" },
+      messages: [{ role: "user", content: userPrompt }],
+    });
 
-    let draft: DesignerDraft | null = null;
-    try {
-      draft = JSON.parse(text) as DesignerDraft;
-    } catch {
-      draft = null;
-    }
+    const toolUse = response.content.find((b) => b.type === "tool_use");
+    const draft = (toolUse?.type === "tool_use" ? (toolUse.input as DesignerDraft) : null);
 
     return ok({ target: { scope, label }, draft, configured: true });
   } catch (error) {

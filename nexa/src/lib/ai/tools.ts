@@ -1,4 +1,3 @@
-import { SchemaType, type FunctionDeclaration } from "@google/generative-ai";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/auth/rbac";
@@ -169,7 +168,7 @@ async function resolveEmployees(
  * Google Programmable Search (Custom Search JSON API) — real external web
  * search, distinct from every other tool here which reads this company's
  * own database. Requires GOOGLE_SEARCH_API_KEY + GOOGLE_SEARCH_CX; without
- * them this degrades gracefully (same pattern as GEMINI_API_KEY/RESEND_API_KEY
+ * them this degrades gracefully (same pattern as ANTHROPIC_API_KEY/RESEND_API_KEY
  * elsewhere) so the assistant can tell the user it isn't configured instead
  * of silently failing or making something up.
  */
@@ -431,44 +430,8 @@ export async function executeTool(
   }
 }
 
-/* ── Convert our JSON-schema tool defs into Gemini function declarations ── */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function toGeminiSchema(s: any): any {
-  if (!s || typeof s !== "object") return undefined;
-  const out: any = {};
-  if (s.type) out.type = s.type as SchemaType; // JSON-schema type strings match SchemaType values
-  if (s.description) out.description = s.description;
-  if (Array.isArray(s.enum)) {
-    // enum on a STRING type; do NOT send `format` — Gemini rejects it on
-    // function-declaration parameters.
-    out.type = SchemaType.STRING;
-    out.enum = s.enum;
-  }
-  if (s.type === "object") {
-    const props = (s.properties ?? {}) as Record<string, unknown>;
-    out.properties = {};
-    for (const [k, v] of Object.entries(props)) out.properties[k] = toGeminiSchema(v);
-    if (Array.isArray(s.required)) out.required = s.required;
-  }
-  if (s.type === "array" && s.items) out.items = toGeminiSchema(s.items);
-  return out;
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
-
-/** JSON schema → Gemini responseSchema (for structured JSON output). */
-export function jsonSchemaToGemini(schema: Record<string, unknown>) {
-  return toGeminiSchema(schema);
-}
-
-/** All NEXA tools as Gemini function declarations. */
-export function toGeminiTools(): FunctionDeclaration[] {
-  return NEXA_TOOLS.map((t) => {
-    const hasProps = Object.keys(t.input_schema.properties ?? {}).length > 0;
-    return {
-      name: t.name,
-      description: t.description,
-      ...(hasProps ? { parameters: toGeminiSchema(t.input_schema) } : {}),
-    } as FunctionDeclaration;
-  });
-}
+/**
+ * NEXA_TOOLS's `input_schema` shape is already Anthropic's native tool format
+ * — no conversion needed. Pass NEXA_TOOLS directly as the `tools` array to
+ * the Messages API.
+ */

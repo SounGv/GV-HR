@@ -1,15 +1,15 @@
 import { ok, handleApiError } from "@/lib/api/response";
-import { isAiConfigured, getModelCandidates } from "@/lib/ai/client";
+import { isAiConfigured, AI_MODEL } from "@/lib/ai/client";
 
 export const runtime = "nodejs";
 
 /**
- * Public, no-auth diagnostic: reports ONLY whether GEMINI_API_KEY is present
- * (a boolean) and which Gemini models the server will try. Never returns the key.
+ * Public, no-auth diagnostic: reports ONLY whether ANTHROPIC_API_KEY is
+ * present (a boolean) and which model the server will use. Never returns the key.
  */
 export async function GET() {
   try {
-    return ok({ configured: isAiConfigured(), models: getModelCandidates() });
+    return ok({ configured: isAiConfigured(), model: AI_MODEL });
   } catch (err) {
     return handleApiError(err);
   }

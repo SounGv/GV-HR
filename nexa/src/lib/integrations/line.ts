@@ -3,7 +3,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 /**
  * LINE Messaging API — real push/reply integration, gated on env config
  * (LINE_CHANNEL_ACCESS_TOKEN + LINE_CHANNEL_SECRET). Same graceful-degradation
- * pattern as email (RESEND_API_KEY) and AI (GEMINI_API_KEY): missing config
+ * pattern as email (RESEND_API_KEY) and AI (ANTHROPIC_API_KEY): missing config
  * means "skip silently, don't crash the caller," not a hard failure.
  */
 

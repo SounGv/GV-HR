@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
+import type Anthropic from "@anthropic-ai/sdk";
 import { requirePermission } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { BadRequest, NotFound } from "@/lib/api/errors";
-import { getGemini, isAiConfigured, getModelCandidates, isModelFallbackError, withGeminiRetry } from "@/lib/ai/client";
-import { jsonSchemaToGemini } from "@/lib/ai/tools";
+import { getAnthropic, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
 import { prisma } from "@/lib/prisma";
 import { aiTemplateDesignerRequestSchema } from "@/features/evaluation-template/schema";
 
@@ -183,37 +183,18 @@ export async function POST(request: NextRequest) {
         ].join("\n");
 
     const outputSchema = isCritique ? CRITIQUE_OUTPUT_SCHEMA : OUTPUT_SCHEMA;
-    const genAI = getGemini();
-    let text = "";
-    let lastErr: unknown = null;
-    for (const modelName of getModelCandidates()) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: system,
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: jsonSchemaToGemini(outputSchema as unknown as Record<string, unknown>),
-            maxOutputTokens: 4096,
-          },
-        });
-        const response = await withGeminiRetry(() => model.generateContent(userPrompt));
-        text = response.response.text();
-        break;
-      } catch (err) {
-        lastErr = err;
-        if (isModelFallbackError(err)) continue;
-        throw err;
-      }
-    }
-    if (!text && lastErr) throw lastErr;
+    const anthropic = getAnthropic();
+    const response = await anthropic.messages.create({
+      model: AI_MODEL,
+      max_tokens: 4096,
+      system,
+      tools: [{ name: "submit_template", description: "Submit the designed evaluation template.", input_schema: outputSchema as unknown as Anthropic.Tool.InputSchema }],
+      tool_choice: { type: "tool", name: "submit_template" },
+      messages: [{ role: "user", content: userPrompt }],
+    });
 
-    let draft: DesignerDraft | CritiqueDraft | null = null;
-    try {
-      draft = JSON.parse(text) as DesignerDraft | CritiqueDraft;
-    } catch {
-      draft = null;
-    }
+    const toolUse = response.content.find((b) => b.type === "tool_use");
+    const draft = (toolUse?.type === "tool_use" ? (toolUse.input as DesignerDraft | CritiqueDraft) : null);
 
     const findings = isCritique && draft ? (draft as CritiqueDraft).findings : null;
 
