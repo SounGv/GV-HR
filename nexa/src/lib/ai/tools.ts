@@ -12,6 +12,24 @@ import { fullName } from "@/lib/format";
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
+/**
+ * Some report rows (e.g. attendance_daily's clockInPhoto/clockOutPhoto) carry
+ * raw base64 data: URLs meant for a human-facing report table, not an LLM —
+ * a single photo can be hundreds of KB of text, and a handful of rows is
+ * enough to blow past the model's context window. Strip any data: URL value
+ * before a row is ever serialized into a tool_result.
+ */
+function stripDataUrls<T extends Record<string, unknown>>(row: T): T {
+  const out = { ...row };
+  for (const key of Object.keys(out)) {
+    const v = out[key];
+    if (typeof v === "string" && v.startsWith("data:")) {
+      (out as Record<string, unknown>)[key] = "[รูปภาพ — ไม่แสดงใน AI]";
+    }
+  }
+  return out;
+}
+
 type Meta = { ip?: string; userAgent?: string };
 
 export interface NexaTool {
@@ -241,7 +259,7 @@ export async function executeTool(
           title: report.title,
           period: report.period,
           totalRows: report.rows.length,
-          rows: report.rows.slice(0, 100),
+          rows: report.rows.slice(0, 100).map((r) => stripDataUrls(r as Record<string, unknown>)),
         });
       }
 
