@@ -37,6 +37,7 @@ import {
   DepartmentDonut,
   DonutLegend,
   HeadcountBar,
+  Sparkline,
 } from "@/features/dashboard/dashboard-charts";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
 import { QuickAccessGrid, type QuickAccessItem } from "@/features/dashboard/quick-access-grid";
@@ -67,6 +68,7 @@ function Kpi({
   icon: Icon,
   tone,
   sub,
+  trend,
 }: {
   label: string;
   value: string | number;
@@ -74,6 +76,7 @@ function Kpi({
   icon: LucideIcon;
   tone: keyof typeof TONES;
   sub?: ReactNode;
+  trend?: { values: number[]; color: string };
 }) {
   return (
     <Card className="gap-0 p-5 transition hover:shadow-md">
@@ -88,6 +91,11 @@ function Kpi({
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
       {sub && <div className="mt-1.5 text-xs text-muted-foreground">{sub}</div>}
+      {trend && trend.values.length >= 2 && (
+        <div className="mt-2">
+          <Sparkline values={trend.values} color={trend.color} label={`แนวโน้ม 14 วันทำการล่าสุด: ${label}`} />
+        </div>
+      )}
     </Card>
   );
 }
@@ -195,15 +203,19 @@ export default async function DashboardPage() {
     <>
       <MobileDashboardView name={name} mine={mine} actions={actions} />
       <div className="hidden space-y-6 md:block">
-      {/* Greeting */}
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-2xl font-bold sm:text-3xl">
-          {greeting()}, {name} 👋
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          ยินดีต้อนรับเข้าสู่ GV One HR AI Platform · {user?.company?.name}
-        </p>
-      </div>
+      {/* Greeting hero — same treatment as the AI briefing card below, so the
+          page opens and closes on the same visual note. */}
+      <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
+        <div className="pointer-events-none absolute -top-16 -left-10 size-72 rounded-full bg-primary/25 blur-[90px]" />
+        <div className="relative flex flex-col gap-1">
+          <h1 className="font-heading text-2xl font-bold sm:text-3xl">
+            {greeting()}, {name} 👋
+          </h1>
+          <p className="text-sm text-slate-300">
+            ยินดีต้อนรับเข้าสู่ GV One HR AI Platform · {user?.company?.name}
+          </p>
+        </div>
+      </Card>
 
       <QuickAccessGrid items={quickAccessItems} />
 
@@ -256,10 +268,35 @@ export default async function DashboardPage() {
           icon={UserCheck}
           tone="success"
           sub={`${s.attendanceRate}% ของพนักงาน`}
+          trend={{ values: attendanceTrend.map((p) => p.present), color: "#0e9f8e" }}
         />
-        <Kpi label="มาสายวันนี้" value={s.lateToday} unit="คน" icon={Clock} tone="warning" sub="ต้องติดตาม" />
-        <Kpi label="ลาวันนี้" value={s.onLeaveToday} unit="คน" icon={CalendarOff} tone="danger" sub="อนุมัติแล้ว" />
-        <Kpi label="OT วันนี้" value={s.otHoursToday} unit="ชม." icon={Timer} tone="info" sub="รวมทั้งองค์กร" />
+        <Kpi
+          label="มาสายวันนี้"
+          value={s.lateToday}
+          unit="คน"
+          icon={Clock}
+          tone="warning"
+          sub="ต้องติดตาม"
+          trend={{ values: attendanceTrend.map((p) => p.late), color: "#f59e0b" }}
+        />
+        <Kpi
+          label="ลาวันนี้"
+          value={s.onLeaveToday}
+          unit="คน"
+          icon={CalendarOff}
+          tone="danger"
+          sub="อนุมัติแล้ว"
+          trend={{ values: attendanceTrend.map((p) => p.leave), color: "#8b5cf6" }}
+        />
+        <Kpi
+          label="OT วันนี้"
+          value={s.otHoursToday}
+          unit="ชม."
+          icon={Timer}
+          tone="info"
+          sub="รวมทั้งองค์กร"
+          trend={{ values: attendanceTrend.map((p) => p.otHours), color: "#3b82f6" }}
+        />
       </section>
 
       {/* Action center */}

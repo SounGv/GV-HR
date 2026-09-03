@@ -198,6 +198,38 @@ export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] })
   );
 }
 
+/**
+ * Stat-tile trend sparkline (dataviz skill: "12-point sparkline in the
+ * de-emphasis hue, current period in the accent"). Decorative glance-level
+ * indicator, not a standalone chart — the full interactive line chart with
+ * the same data already exists below on this page (AttendanceTrendChart),
+ * so this intentionally skips hover/tooltip and axes; a native <title>
+ * keeps the current value reachable without hovering.
+ */
+export function Sparkline({ values, color, label }: { values: number[]; color: string; label: string }) {
+  if (values.length < 2) return null;
+  const w = 100;
+  const h = 28;
+  const pad = 3;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min || 1;
+  const points = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * (w - pad * 2) + pad;
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    return [x, y] as const;
+  });
+  const path = points.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  const [lastX, lastY] = points[points.length - 1];
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-full" role="img" aria-label={label}>
+      <title>{label}</title>
+      <path d={path} fill="none" stroke="var(--muted-foreground)" strokeOpacity={0.4} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lastX} cy={lastY} r={2.5} fill={color} stroke="var(--card)" strokeWidth={2} />
+    </svg>
+  );
+}
+
 /** Small legend for the donut, colored to match. */
 export function DonutLegend({ data }: { data: DeptDatum[] }) {
   const colors = useCategoryColors();
