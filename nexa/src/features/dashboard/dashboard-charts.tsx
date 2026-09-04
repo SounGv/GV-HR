@@ -3,13 +3,13 @@
 import * as React from "react";
 import { useTheme } from "next-themes";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   Legend,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -96,7 +96,7 @@ function truncate(name: string, max = 14): string {
   return name.length > max ? `${name.slice(0, max - 1)}…` : name;
 }
 
-export function HeadcountBar({ data }: { data: DeptDatum[] }) {
+export function HeadcountBar({ data, singleColor }: { data: DeptDatum[]; singleColor?: string }) {
   const colors = useCategoryColors();
   if (data.length === 0) return <EmptyChart />;
   // Horizontal bars — a vertical bar chart with 15-20 long department names
@@ -130,7 +130,11 @@ export function HeadcountBar({ data }: { data: DeptDatum[] }) {
         />
         <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
           {data.map((_, i) => (
-            <Cell key={i} fill={colorFor(colors, i, false)} opacity={i < colors.length ? 1 : 0.45} />
+            <Cell
+              key={i}
+              fill={singleColor ?? colorFor(colors, i, false)}
+              opacity={singleColor || i < colors.length ? 1 : 0.45}
+            />
           ))}
         </Bar>
       </BarChart>
@@ -164,12 +168,23 @@ const TREND_SERIES: { key: keyof AttendanceTrendPoint; label: string; color: str
 
 /** Companywide attendance/leave/OT trend over the last N business days —
  * "จุดสังเกต" for HR: a late/absent spike or a leave cluster reads at a
- * glance instead of needing to compare daily reports by hand. */
+ * glance instead of needing to compare daily reports by hand. Each series
+ * carries a soft gradient wash under its line (dataviz skill: area fill =
+ * series hue as a wash, fading to nothing — never a saturated block), same
+ * per-metric colors as everywhere else this data appears on the dashboard. */
 export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] }) {
   if (data.length === 0) return <EmptyChart />;
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data} margin={{ top: 4, right: 12, bottom: 4, left: 4 }}>
+      <AreaChart data={data} margin={{ top: 4, right: 12, bottom: 4, left: 4 }}>
+        <defs>
+          {TREND_SERIES.map((s) => (
+            <linearGradient key={s.key} id={`trend-fill-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={s.color} stopOpacity={0.28} />
+              <stop offset="95%" stopColor={s.color} stopOpacity={0} />
+            </linearGradient>
+          ))}
+        </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
         <XAxis
           dataKey="label"
@@ -182,18 +197,19 @@ export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] })
         <Tooltip contentStyle={tooltipStyle} labelStyle={{ fontWeight: 600, marginBottom: 4 }} />
         <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
         {TREND_SERIES.map((s) => (
-          <Line
+          <Area
             key={s.key}
             type="monotone"
             dataKey={s.key}
             name={s.label}
             stroke={s.color}
             strokeWidth={2}
+            fill={`url(#trend-fill-${s.key})`}
             dot={{ r: 2.5 }}
             activeDot={{ r: 4 }}
           />
         ))}
-      </LineChart>
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

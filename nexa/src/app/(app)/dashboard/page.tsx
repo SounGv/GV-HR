@@ -18,6 +18,7 @@ import {
   ReceiptText,
   ClipboardCheck,
   Settings,
+  TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -51,12 +52,14 @@ export const metadata: Metadata = { title: "แดชบอร์ด" };
 
 // Monochrome-green icon-chip system (redesign spec) — every KPI card icon
 // uses the same lime chip regardless of metric, matching the nav/menu icon
-// treatment. Kept as a lookup (not a single constant) so callers keep their
-// existing `tone` prop untouched; every key now resolves to the same class.
+// treatment. `warning` is the one deliberate exception: it's reserved for a
+// metric that genuinely needs follow-up (currently just "มาสายวันนี้"), so
+// a real amber status color, not decorative per-metric variety, makes that
+// one card read as a flag instead of blending into the rest of the row.
 const TONES = {
   primary: "bg-icon-chip-bg text-icon-chip-fg",
   success: "bg-icon-chip-bg text-icon-chip-fg",
-  warning: "bg-icon-chip-bg text-icon-chip-fg",
+  warning: "bg-warning/15 text-warning",
   danger: "bg-icon-chip-bg text-icon-chip-fg",
   info: "bg-icon-chip-bg text-icon-chip-fg",
 } as const;
@@ -352,13 +355,20 @@ export default async function DashboardPage() {
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>แผนกที่ควรติดตาม (ขาด/สาย สะสม 30 วัน)</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-md bg-warning/15 text-warning">
+                <TriangleAlert className="size-3.5" />
+              </span>
+              แผนกที่ควรติดตาม (ขาด/สาย สะสม 30 วัน)
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {departmentWatchlist.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">ไม่มีแผนกที่ต้องติดตามในช่วงนี้ 👍</p>
             ) : (
-              <HeadcountBar data={departmentWatchlist} />
+              // Severity ranking, not a category breakdown — one warning hue
+              // for every bar (dataviz skill: status color, not categorical).
+              <HeadcountBar data={departmentWatchlist} singleColor="#f59e0b" />
             )}
           </CardContent>
         </Card>
