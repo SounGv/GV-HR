@@ -205,8 +205,8 @@ export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] })
             stroke={s.color}
             strokeWidth={2}
             fill={`url(#trend-fill-${s.key})`}
-            dot={{ r: 2.5 }}
-            activeDot={{ r: 4 }}
+            dot={{ r: 2.5, fill: s.color, stroke: "var(--card)", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: s.color, stroke: "var(--card)", strokeWidth: 2 }}
           />
         ))}
       </AreaChart>
