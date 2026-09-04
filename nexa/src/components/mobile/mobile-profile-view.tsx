@@ -35,7 +35,7 @@ export function MobileProfileView() {
     : user.roles.join(", ") || "—";
 
   return (
-    <MobileScreen title="โปรไฟล์" backHref="/services" contentClassName="space-y-3.5 p-3.5">
+    <MobileScreen title="โปรไฟล์" backHref="/dashboard" contentClassName="space-y-3.5 p-3.5">
       <MobileModuleCard className="text-center">
         <a
           href="#profile-form"
