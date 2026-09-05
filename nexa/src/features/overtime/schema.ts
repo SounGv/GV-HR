@@ -28,6 +28,18 @@ export const otDecideSchema = z.object({
 });
 export type OtDecideInput = z.infer<typeof otDecideSchema>;
 
+/** Requester editing their own stated reason — only while the request is still PENDING (see updateOvertimeReason). */
+export const otUpdateReasonSchema = z.object({
+  reason: z.string().trim().max(500),
+});
+export type OtUpdateReasonInput = z.infer<typeof otUpdateReasonSchema>;
+
+/** Manager/HR adding or correcting their decision note after the fact — the decide flow itself never captured one in the UI. */
+export const otUpdateNoteSchema = z.object({
+  note: z.string().trim().max(500),
+});
+export type OtUpdateNoteInput = z.infer<typeof otUpdateNoteSchema>;
+
 export const otListQuerySchema = z.object({
   scope: z.enum(["me", "team", "all"]).default("me"),
   status: z.enum(OT_STATUSES).optional(),

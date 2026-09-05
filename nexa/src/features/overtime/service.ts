@@ -7,7 +7,7 @@ import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { computeHours, estimateAmount, minutesSinceWorkDateStart, DEFAULT_MULTIPLIER, MIN_OT_MINUTES } from "./calc";
-import type { OtCreateInput, OtDecideInput, OtListQuery } from "./schema";
+import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -172,6 +172,93 @@ export async function getOvertime(companyId: string, session: AccessClaims, id: 
   if (!own && !managesRequester && !isHrLevel(session)) {
     throw Forbidden("ไม่มีสิทธิ์ดูคำขอ OT นี้");
   }
+  return record;
+}
+
+/**
+ * The requester correcting their own stated reason — locked to PENDING so a
+ * request can't be edited to justify a decision that already happened (the
+ * manager approved/rejected based on the reason as it read at the time).
+ */
+export async function updateOvertimeReason(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  input: OtUpdateReasonInput,
+  meta?: Meta,
+) {
+  const employeeId = requireEmployeeId(session);
+  const req = await prisma.overtimeRequest.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, employeeId: true, status: true },
+  });
+  if (!req) throw NotFound("ไม่พบคำขอ OT");
+  if (req.employeeId !== employeeId) throw Forbidden("แก้ไขได้เฉพาะคำขอของตนเอง");
+  if (req.status !== "PENDING") throw BadRequest("แก้ไขเหตุผลได้เฉพาะคำขอที่ยังรอการอนุมัติ");
+
+  const record = await prisma.overtimeRequest.update({
+    where: { id: req.id },
+    data: { reason: input.reason, updatedById: session.sub },
+    select: requestSelect,
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "overtime.update_reason",
+    entity: "OvertimeRequest",
+    entityId: req.id,
+    after: { reason: input.reason },
+    ...meta,
+  });
+
+  return record;
+}
+
+/**
+ * Manager/HR adding or correcting the decision note — the approve/reject UI
+ * never actually captures one today (see decide-actions.tsx), so this is the
+ * only way a decisionNote gets set at all. Locked to a request that's
+ * already been decided (same isManager || isHrLevel authorization as
+ * decideOvertime, minus the "not your own request" check, which doesn't
+ * apply here — the requester never touches decisionNote either way).
+ */
+export async function updateOvertimeNote(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  input: OtUpdateNoteInput,
+  meta?: Meta,
+) {
+  const req = await prisma.overtimeRequest.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, status: true, employee: { select: { managerId: true } } },
+  });
+  if (!req) throw NotFound("ไม่พบคำขอ OT");
+  if (req.status !== "APPROVED" && req.status !== "REJECTED") {
+    throw BadRequest("แก้ไขหมายเหตุได้เฉพาะคำขอที่ตัดสินใจแล้ว");
+  }
+  const isManager = req.employee.managerId === session.employeeId;
+  if (!isManager && !isHrLevel(session)) {
+    throw Forbidden("แก้ไขหมายเหตุได้เฉพาะหัวหน้าทีมที่ดูแลหรือฝ่ายบุคคล");
+  }
+
+  const record = await prisma.overtimeRequest.update({
+    where: { id: req.id },
+    data: { decisionNote: input.note, updatedById: session.sub },
+    select: requestSelect,
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "overtime.update_note",
+    entity: "OvertimeRequest",
+    entityId: req.id,
+    after: { decisionNote: input.note },
+    ...meta,
+  });
+
   return record;
 }
 

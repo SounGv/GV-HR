@@ -6,6 +6,8 @@ import {
   createOvertime,
   decideOvertime,
   fetchOvertime,
+  updateOvertimeReason,
+  updateOvertimeNote,
 } from "./api";
 import type { OtFormValues, OtScope, OtStatus } from "./types";
 
@@ -44,6 +46,22 @@ export function useCancelOvertime() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => cancelOvertime(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: overtimeKeys.all }),
+  });
+}
+
+export function useUpdateOvertimeReason() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; reason: string }) => updateOvertimeReason(v.id, v.reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: overtimeKeys.all }),
+  });
+}
+
+export function useUpdateOvertimeNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; note: string }) => updateOvertimeNote(v.id, v.note),
     onSuccess: () => qc.invalidateQueries({ queryKey: overtimeKeys.all }),
   });
 }

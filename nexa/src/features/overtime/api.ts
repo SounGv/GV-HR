@@ -18,3 +18,11 @@ export function decideOvertime(id: string, action: "approve" | "reject", note?: 
 export function cancelOvertime(id: string) {
   return api.post<Envelope<OvertimeRequest>>(`/api/overtime/${id}/cancel`);
 }
+
+export function updateOvertimeReason(id: string, reason: string) {
+  return api.patch<Envelope<OvertimeRequest>>(`/api/overtime/${id}`, { reason });
+}
+
+export function updateOvertimeNote(id: string, note: string) {
+  return api.patch<Envelope<OvertimeRequest>>(`/api/overtime/${id}`, { note });
+}

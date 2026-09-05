@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate, fullName } from "@/lib/format";
 import { getOvertime } from "@/features/overtime/service";
 import { OvertimeDecideActions } from "@/features/overtime/decide-actions";
+import { ReasonCard, DecisionNoteCard } from "@/features/overtime/edit-note-actions";
 import { LeaveStatusBadge } from "@/features/leave/labels";
 
 export const metadata: Metadata = { title: "รายละเอียดคำขอ OT" };
@@ -32,6 +33,8 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
   const isHrLevel = session.perms.includes("*") || session.perms.includes("overtime:approve");
   const isOwnRequest = request.employee.id === session.employeeId;
   const canDecide = request.status === "PENDING" && !isOwnRequest && (isManager || isHrLevel);
+  const canEditReason = isOwnRequest && request.status === "PENDING";
+  const canEditNote = (isManager || isHrLevel) && (request.status === "APPROVED" || request.status === "REJECTED");
 
   return (
     <div className="space-y-6">
@@ -65,15 +68,11 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
             <InfoRow label="คูณ" value={`${request.multiplier}x`} />
           </div>
           <div className="rounded-lg border border-border bg-muted/40 p-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <FileText className="size-4" /> เหตุผล
-            </div>
-            <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{request.reason || "—"}</p>
+            <ReasonCard id={request.id} reason={request.reason ?? ""} canEdit={canEditReason} icon={FileText} />
           </div>
-          {request.decisionNote && (
+          {(request.decisionNote || canEditNote) && (
             <div className="rounded-lg border border-border bg-muted/40 p-3">
-              <p className="text-sm font-medium text-foreground">คำสั่งการอนุมัติ</p>
-              <p className="mt-2 text-sm text-muted-foreground">{request.decisionNote}</p>
+              <DecisionNoteCard id={request.id} note={request.decisionNote ?? ""} canEdit={canEditNote} />
             </div>
           )}
           <p className="text-xs text-muted-foreground">สร้างเมื่อ {formatDate(request.createdAt)}</p>
