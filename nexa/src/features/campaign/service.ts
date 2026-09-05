@@ -1068,9 +1068,8 @@ export async function submitMyResponse(
     },
   });
 
-  // Idempotent w.r.t. which rater just submitted — it looks up the campaign's
-  // configured scoring rater type itself (MANAGER if the round collects it,
-  // else SELF) and only computes once that specific response exists.
+  // Recomputes the full weighted blend from every SUBMITTED response
+  // (whichever rater type just submitted) — see computeAndStoreScore.
   await computeAndStoreScore(companyId, participantId);
 
   await writeAudit({

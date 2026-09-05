@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api/client";
+import { EmployeeCheckboxList } from "@/components/shared/employee-checkbox-list";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { useAddParticipants } from "./hooks";
 
@@ -61,28 +62,12 @@ export function AddParticipantsDialog({
             <DialogTitle>เพิ่มผู้เข้าร่วมการประเมิน</DialogTitle>
             <DialogDescription>เลือกพนักงานที่จะเข้าร่วมแคมเปญนี้ — ระบบจะสร้างแบบประเมินตนเองและแบบประเมินโดยหัวหน้างานให้อัตโนมัติ</DialogDescription>
           </DialogHeader>
-          <div className="max-h-72 space-y-1 overflow-y-auto">
-            {candidates.length === 0 ? (
-              <p className="text-sm text-muted-foreground">ไม่มีพนักงานให้เพิ่มแล้ว</p>
-            ) : (
-              candidates.map((e) => (
-                <label
-                  key={e.id}
-                  className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(e.id)}
-                    onChange={() => toggle(e.id)}
-                    className="size-4 accent-primary"
-                  />
-                  <span className="min-w-0 flex-1 truncate">
-                    {e.firstName} {e.lastName} ({e.employeeCode})
-                  </span>
-                </label>
-              ))
-            )}
-          </div>
+          <EmployeeCheckboxList
+            candidates={candidates}
+            selected={selected}
+            onToggle={toggle}
+            emptyText="ไม่มีพนักงานให้เพิ่มแล้ว"
+          />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               ยกเลิก

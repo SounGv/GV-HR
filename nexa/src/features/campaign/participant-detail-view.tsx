@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScorePicker } from "@/components/shared/score-picker";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { AttachmentLink } from "@/components/shared/attachment-link";
+import { EmployeeCheckboxList } from "@/components/shared/employee-checkbox-list";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 import type { TemplateSection, TemplateVisibleToType } from "@/features/evaluation-template/types";
 import { fullName, getInitials } from "@/lib/format";
@@ -272,7 +273,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
                 {participant.scorePercent.toFixed(1)}%
                 {participant.rawScore != null && participant.maxScore != null && (
                   <span className="ml-1.5 text-sm font-normal text-muted-foreground">
-                    ({participant.rawScore.toFixed(1)}/{participant.maxScore.toFixed(1)} คะแนนดิบ · {participant.questionCount} ข้อ · ผู้ประเมิน {participant.evaluatorCount} คน)
+                    (อ้างอิงคำตอบหลัก {participant.rawScore.toFixed(1)}/{participant.maxScore.toFixed(1)} คะแนนดิบ · {participant.questionCount} ข้อ · ผู้ประเมิน {participant.evaluatorCount} คน)
                   </span>
                 )}
               </p>
@@ -658,28 +659,13 @@ function InviteRaterCard({
               ))}
             </div>
           )}
-          <div className="max-h-64 space-y-1 overflow-y-auto">
-            {candidates.length === 0 ? (
-              <p className="text-sm text-muted-foreground">ไม่มีพนักงานให้เลือก</p>
-            ) : (
-              candidates.map((c) => (
-                <label
-                  key={c.id}
-                  className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(c.id)}
-                    onChange={() => toggle(c.id)}
-                    className="size-4 accent-primary"
-                  />
-                  <span className="min-w-0 flex-1 truncate">
-                    {c.firstName} {c.lastName} ({c.employeeCode})
-                  </span>
-                </label>
-              ))
-            )}
-          </div>
+          <EmployeeCheckboxList
+            candidates={candidates}
+            selected={selected}
+            onToggle={toggle}
+            emptyText="ไม่มีพนักงานให้เลือก"
+            className="max-h-64"
+          />
           <Button className="w-full" onClick={submit} disabled={inviteMutation.isPending}>
             {inviteMutation.isPending && <Loader2 className="size-4 animate-spin" />}
             เชิญ{selected.length > 0 ? ` (${selected.length} คน)` : ""}
