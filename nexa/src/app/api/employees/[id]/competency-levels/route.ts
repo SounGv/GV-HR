@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   try {
     const session = await requirePermission("campaign:read");
     const { id } = await params;
-    const rows = await getEmployeeCompetencyGap(session.companyId, id);
+    const rows = await getEmployeeCompetencyGap(session.companyId, session, id);
     return ok(rows);
   } catch (err) {
     return handleApiError(err);

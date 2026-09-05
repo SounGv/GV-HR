@@ -4,6 +4,7 @@ import { can } from "@/lib/auth/rbac";
 import { Forbidden } from "@/lib/api/errors";
 import { reportQuerySchema } from "@/features/report/schema";
 import { getReport } from "@/features/report/service";
+import { teamScopeFilter } from "@/features/employee/service";
 import { ok, handleApiError } from "@/lib/api/response";
 
 export const runtime = "nodejs";
@@ -26,7 +27,14 @@ export async function GET(req: NextRequest) {
     if (requiredPerm && !can(session.perms, requiredPerm)) {
       throw Forbidden("ไม่มีสิทธิ์ดูรายงานนี้");
     }
-    const result = await getReport(session.companyId, query);
+    // Manager holds report:read but must only ever see their own team's data
+    // (same boundary enforced everywhere else in the app) — a non-company-wide
+    // caller gets team-scoped regardless of what departmentId/employeeId they
+    // pass in the query, so they can't widen their own report access by hand.
+    const result = await getReport(session.companyId, {
+      ...query,
+      employeeWhere: teamScopeFilter(session) ?? undefined,
+    });
     return ok(result);
   } catch (err) {
     return handleApiError(err);

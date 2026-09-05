@@ -1,10 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { NotFound } from "@/lib/api/errors";
+import { Forbidden, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { SetPositionRequirementsInput, SetEmployeeLevelsInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
+
+/**
+ * Wildcard grants like "campaign:*" are expanded into concrete permission
+ * keys at seed time, so `session.perms` never literally contains
+ * "campaign:*" — checking the real, HR-exclusive `campaign:approve`
+ * (Manager/Employee don't have it) is what actually works. Same signal
+ * `features/campaign/service.ts` uses for the same reason.
+ */
+function isHrLevel(session: AccessClaims): boolean {
+  return session.perms.includes("*") || session.perms.includes("campaign:approve");
+}
 
 export interface CompetencyRow {
   competencyId: string;
@@ -98,12 +109,22 @@ export async function setPositionRequirements(
   return getPositionRequirements(companyId, positionId);
 }
 
-export async function getEmployeeCompetencyGap(companyId: string, employeeId: string): Promise<EmployeeGapRow[]> {
+export async function getEmployeeCompetencyGap(
+  companyId: string,
+  session: AccessClaims,
+  employeeId: string,
+): Promise<EmployeeGapRow[]> {
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { id: true, positionId: true },
+    select: { id: true, positionId: true, managerId: true },
   });
   if (!employee) throw NotFound("ไม่พบพนักงาน");
+
+  const own = employee.id === session.employeeId;
+  const managesTarget = employee.managerId === session.employeeId;
+  if (!own && !managesTarget && !isHrLevel(session)) {
+    throw Forbidden("ดูผลประเมิน competency ได้เฉพาะของตนเองหรือทีมที่ดูแล");
+  }
 
   const competencies = await listActiveCompetencies(companyId);
   const requirements = employee.positionId
@@ -181,5 +202,5 @@ export async function setEmployeeCompetencyLevels(
     ...meta,
   });
 
-  return getEmployeeCompetencyGap(companyId, employeeId);
+  return getEmployeeCompetencyGap(companyId, session, employeeId);
 }

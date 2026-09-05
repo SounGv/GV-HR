@@ -15,7 +15,7 @@ export default async function EditGoalPage({
   const session = await requirePagePermission("kpi:update");
   const { id } = await params;
 
-  const g = await getGoal(session.companyId, id).catch((e) => {
+  const g = await getGoal(session.companyId, session, id).catch((e) => {
     if (e instanceof AppError && e.status === 404) notFound();
     throw e;
   });

@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const session = await requirePermission("kpi:read");
     const { id } = await params;
-    return ok(await getGoal(session.companyId, id));
+    return ok(await getGoal(session.companyId, session, id));
   } catch (err) {
     return handleApiError(err);
   }

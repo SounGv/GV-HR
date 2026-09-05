@@ -81,7 +81,7 @@ export function isCompanyWideEmployeeViewer(session: AccessClaims): boolean {
   );
 }
 
-function teamScopeFilter(session: AccessClaims): Prisma.EmployeeWhereInput | null {
+export function teamScopeFilter(session: AccessClaims): Prisma.EmployeeWhereInput | null {
   if (isCompanyWideEmployeeViewer(session)) return null;
   const employeeId = session.employeeId ?? "__none__";
   return { OR: [{ id: employeeId }, { managerId: employeeId }] };

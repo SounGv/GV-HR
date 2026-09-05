@@ -91,6 +91,11 @@ export async function listRecognition(
     });
     employeeIds = reports.map((r) => r.id);
     if (employeeIds.length === 0) return [];
+  } else if (query.scope === "all" && !isHrLevel(session)) {
+    // Manager and Employee both hold recognition:read (for "me"/"team"), but
+    // company-wide is HR-only — same boundary the expenses/company-loans list
+    // endpoints already enforce for their own "all" scope.
+    throw Forbidden("ดูรายการทั้งบริษัทได้เฉพาะฝ่ายบุคคล");
   }
 
   return prisma.recognition.findMany({

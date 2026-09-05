@@ -65,9 +65,11 @@ export const reportQuerySchema = z.object({
 });
 /**
  * `employeeWhere` is intentionally NOT part of `reportQuerySchema` (never
- * accepted from a user request body) — it's set only by the AI Assistant's
- * scoped tool caller (`src/lib/ai/scope.ts`) to narrow a report down to a
- * manager's granted team/department, in-process before `getReport` runs.
+ * accepted from a user request body) — it's set in-process before `getReport`
+ * runs, either by `/api/reports` itself (`teamScopeFilter`, restricting a
+ * non-company-wide caller to their own team regardless of query params) or by
+ * the AI Assistant's scoped tool caller (`src/lib/ai/scope.ts`, narrowing to
+ * a manager's granted team/department).
  */
 export type ReportQuery = z.infer<typeof reportQuerySchema> & {
   employeeWhere?: Prisma.EmployeeWhereInput;

@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { canAny } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
   GoalCreateInput,
@@ -42,9 +43,20 @@ const goalSelect = {
     orderBy: { createdAt: "asc" },
   },
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, managerId: true },
   },
 } satisfies Prisma.GoalSelect;
+
+/**
+ * Wildcard grants like "kpi:*" are expanded into concrete permission keys at
+ * seed time, so `session.perms` never literally contains "kpi:*" — the list
+ * endpoint already treats `kpi:create`/`kpi:update` as the "can see beyond my
+ * own goals" signal (see `/api/kpi` GET), so a single-goal read uses the same
+ * signal for consistency.
+ */
+function isHrLevel(session: AccessClaims): boolean {
+  return canAny(session.perms, ["kpi:create", "kpi:update"]);
+}
 
 /** Auto-derive status from progress unless an explicit terminal status is set. */
 export function deriveStatus(
@@ -88,12 +100,18 @@ function withRollup<T extends GoalWithKeyResults>(goal: T) {
   return { ...goal, rollup: rollupKeyResults(goal.keyResults) };
 }
 
-export async function getGoal(companyId: string, id: string) {
+export async function getGoal(companyId: string, session: AccessClaims, id: string) {
   const goal = await prisma.goal.findFirst({
     where: { id, companyId, deletedAt: null },
     select: goalSelect,
   });
   if (!goal) throw NotFound("ไม่พบเป้าหมาย");
+
+  const own = goal.employee.id === session.employeeId;
+  const managesTarget = goal.employee.managerId === session.employeeId;
+  if (!own && !managesTarget && !isHrLevel(session)) {
+    throw Forbidden("ไม่มีสิทธิ์ดูเป้าหมายนี้");
+  }
   return withRollup(goal);
 }
 
