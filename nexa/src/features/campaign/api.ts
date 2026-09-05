@@ -11,6 +11,7 @@ import type {
   DashboardFilters,
   DashboardResult,
   EmployeeEvaluationHistoryItem,
+  EvaluationRaterWeights,
   EvaluationThresholds,
   MyEvaluationAssignment,
   MyPendingResponse,
@@ -106,8 +107,22 @@ export function updateEvaluationThresholds(input: EvaluationThresholds) {
   return api.patch<Envelope<EvaluationThresholds>>("/api/campaigns/settings/thresholds", input);
 }
 
-export function inviteRater(participantId: string, input: { raterType: "PEER" | "UPWARD" | "HR_EXEC"; raterEmployeeId: string }) {
-  return api.post<Envelope<{ id: string }>>(`/api/campaigns/participants/${participantId}/raters`, input);
+export function fetchEvaluationRaterWeights() {
+  return api.get<Envelope<EvaluationRaterWeights>>("/api/campaigns/settings/rater-weights");
+}
+
+export function updateEvaluationRaterWeights(input: EvaluationRaterWeights) {
+  return api.patch<Envelope<EvaluationRaterWeights>>("/api/campaigns/settings/rater-weights", input);
+}
+
+export function inviteRater(
+  participantId: string,
+  input: { raterType: "PEER" | "UPWARD" | "HR_EXEC"; raterEmployeeIds: string[] },
+) {
+  return api.post<Envelope<{ invited: number; skipped: number }>>(
+    `/api/campaigns/participants/${participantId}/raters`,
+    input,
+  );
 }
 
 export function removeRater(responseId: string) {

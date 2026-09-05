@@ -14,6 +14,7 @@ import {
   fetchDashboard,
   fetchDashboardCycles,
   fetchEmployeeEvaluationHistory,
+  fetchEvaluationRaterWeights,
   fetchEvaluationThresholds,
   fetchMyEvaluationAssignments,
   fetchMyPendingResponses,
@@ -26,6 +27,7 @@ import {
   saveDraftResponse,
   submitMyResponse,
   updateCampaign,
+  updateEvaluationRaterWeights,
   updateEvaluationThresholds,
 } from "./api";
 import type {
@@ -33,6 +35,7 @@ import type {
   CampaignFormValues,
   CloneCampaignValues,
   DashboardFilters,
+  EvaluationRaterWeights,
   EvaluationThresholds,
   SaveDraftValues,
   SubmitResponseValues,
@@ -48,6 +51,7 @@ export const campaignKeys = {
   myPending: ["campaigns", "my-pending"] as const,
   myAssignments: ["campaigns", "my-assignments"] as const,
   thresholds: ["campaigns", "thresholds"] as const,
+  raterWeights: ["campaigns", "rater-weights"] as const,
   dashboard: (filters: DashboardFilters) => ["campaigns", "dashboard", filters] as const,
   dashboardCycles: ["campaigns", "dashboard-cycles"] as const,
 };
@@ -195,6 +199,18 @@ export function useEvaluationThresholds() {
   return useQuery({ queryKey: campaignKeys.thresholds, queryFn: fetchEvaluationThresholds });
 }
 
+export function useEvaluationRaterWeights() {
+  return useQuery({ queryKey: campaignKeys.raterWeights, queryFn: fetchEvaluationRaterWeights });
+}
+
+export function useUpdateEvaluationRaterWeights() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EvaluationRaterWeights) => updateEvaluationRaterWeights(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.raterWeights }),
+  });
+}
+
 export function useUpdateEvaluationThresholds() {
   const qc = useQueryClient();
   return useMutation({
@@ -206,7 +222,8 @@ export function useUpdateEvaluationThresholds() {
 export function useInviteRater(participantId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { raterType: "PEER" | "UPWARD" | "HR_EXEC"; raterEmployeeId: string }) => inviteRater(participantId, input),
+    mutationFn: (input: { raterType: "PEER" | "UPWARD" | "HR_EXEC"; raterEmployeeIds: string[] }) =>
+      inviteRater(participantId, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
   });
 }

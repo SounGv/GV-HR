@@ -130,6 +130,8 @@ export interface EvaluationThresholds {
   evalThresholdGoodMin: number;
 }
 
+export type EvaluationRaterWeights = Record<RaterType, number>;
+
 export interface DashboardFilters {
   campaignId?: string;
   departmentId?: string;

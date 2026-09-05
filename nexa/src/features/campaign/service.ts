@@ -734,20 +734,34 @@ async function withRaterEmployees<T extends { raterEmployeeId: string; answers: 
   }));
 }
 
-/**
- * The "official" score comes from the MANAGER response when the campaign
- * collects one — that's unchanged. For a SELF-only round (no MANAGER in
- * `raterTypes`), the self-assessment becomes the official score instead, so
- * one-directional rounds still produce a score/band once their single rater
- * submits.
- */
+// Priority order for which single submitted rater's own breakdown supplies
+// rawScore/maxScore/questionCount/lowestTopics (see computeAndStoreScore) —
+// combining those across multiple raters' distinct answer sets is a much
+// bigger project than blending scorePercent, so they still surface from one
+// "primary" rater, same as the old single-response logic always did.
+const PRIMARY_RATER_PRIORITY: RaterType[] = ["MANAGER", "SELF", "PEER", "UPWARD", "HR_EXEC"];
+
 /**
  * Recomputes and stores the full score breakdown (not just a final percent —
  * raw/max/weighted-percent/question count/evaluator count/lowest topics)
- * plus the HR-configurable band (scoreStatus). Runs every time the scoring
- * rater (re-)submits; does NOT trigger the low-score automation itself —
- * that only fires once at finalize time (see finalizeParticipant), since a
- * score can still change before HR/the manager actually finalizes it.
+ * plus the HR-configurable band (scoreStatus). Runs every time any rater
+ * (re-)submits; does NOT trigger the low-score automation itself — that only
+ * fires once at finalize time (see finalizeParticipant), since a score can
+ * still change before HR/the manager actually finalizes it.
+ *
+ * `scorePercent` (and therefore `scoreStatus`) is a weighted blend across
+ * every rater type that actually has a SUBMITTED response this round, using
+ * HR's configured `evalRaterWeights` (getEvaluationRaterWeights) — a type
+ * with no submission this round, or a configured weight of 0, drops out
+ * entirely rather than counting as a 0, so the remaining types' weights are
+ * implicitly renormalized to 100% of whatever weight has real data behind
+ * it. Two rounds with the same rater types submitted always get the exact
+ * same weights applied, which is what keeps a plain MANAGER(+SELF) round
+ * scoring identically to the old single-response logic this replaces (SELF
+ * defaults to 0 weight, so it drops out and MANAGER alone becomes 100%) —
+ * and if literally every submitted type has 0 configured weight (e.g. a
+ * SELF-only round, where SELF defaults to 0), falls back to a plain average
+ * of whichever types did submit so the round still produces a real score.
  */
 async function computeAndStoreScore(companyId: string, participantId: string) {
   const participant = await prisma.evaluationParticipant.findUnique({
@@ -765,41 +779,74 @@ async function computeAndStoreScore(companyId: string, participantId: string) {
   });
   if (!participant) return;
 
-  const scoringRaterType = participant.campaign.raterTypes.includes("MANAGER") ? "MANAGER" : "SELF";
-  const response = participant.responses.find(
-    (r) => r.raterType === scoringRaterType && r.status === "SUBMITTED",
-  );
-  if (!response) return;
-
   const templateSnapshot = participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null;
-  const breakdown = templateSnapshot
-    ? scoreTemplateAnswersDetailed(templateSnapshot.sections, (response.answers as { questionId: string; value: string }[] | null) ?? [])
-    : scoreCompetenciesDetailed(
-        response.scores as { competencyId: string; score: number }[],
-        new Map(
-          participant.campaign.competencies.map((c) => [c.competencyId, { name: c.competency.name, weight: c.weight, maxScore: c.competency.maxScore }]),
-        ),
-      );
+  const competencyMeta = new Map(
+    participant.campaign.competencies.map((c) => [c.competencyId, { name: c.competency.name, weight: c.weight, maxScore: c.competency.maxScore }]),
+  );
+  const breakdownOf = (r: { scores: unknown; answers: unknown }) =>
+    templateSnapshot
+      ? scoreTemplateAnswersDetailed(templateSnapshot.sections, (r.answers as { questionId: string; value: string }[] | null) ?? [])
+      : scoreCompetenciesDetailed(r.scores as { competencyId: string; score: number }[], competencyMeta);
+
+  // One averaged breakdown per rater type that has SUBMITTED at least one
+  // response — multiple raters of the same type (e.g. 2 peers) are averaged
+  // together first, since the configured weight applies to the TYPE, not to
+  // each individual rater within it.
+  const byType = new Map<RaterType, { breakdown: ReturnType<typeof breakdownOf>; percent: number }[]>();
+  for (const r of participant.responses) {
+    if (r.status !== "SUBMITTED") continue;
+    const breakdown = breakdownOf(r);
+    const list = byType.get(r.raterType) ?? [];
+    list.push({ breakdown, percent: breakdown.scorePercent });
+    byType.set(r.raterType, list);
+  }
+  if (byType.size === 0) return;
+
+  const weights = await getEvaluationRaterWeights(companyId);
+  const typeAvgPercent = new Map<RaterType, number>(
+    [...byType.entries()].map(([type, entries]) => [type, entries.reduce((s, e) => s + e.percent, 0) / entries.length]),
+  );
+
+  let weightedSum = 0;
+  let weightTotal = 0;
+  for (const [type, avgPercent] of typeAvgPercent) {
+    const w = weights[type] ?? 0;
+    if (w <= 0) continue;
+    weightedSum += avgPercent * w;
+    weightTotal += w;
+  }
+  const scorePercent =
+    weightTotal > 0
+      ? Math.round((weightedSum / weightTotal) * 100) / 100
+      : Math.round(
+          ([...typeAvgPercent.values()].reduce((s, p) => s + p, 0) / typeAvgPercent.size) * 100,
+        ) / 100;
+
+  const primaryType = PRIMARY_RATER_PRIORITY.find((t) => byType.has(t)) ?? [...byType.keys()][0];
+  const primary = byType.get(primaryType)![0].breakdown;
 
   const thresholds = await getEvaluationThresholds(companyId);
   const evaluatorCount = participant.responses.filter((r) => r.status === "SUBMITTED").length;
   // Legacy 1-5 band (scoreBand/band) kept alongside the new percent-based
   // scoreStatus — existing UI (9-Box, calibration, evaluation history) still
   // reads overallScore/band and shouldn't have to change to keep working.
-  const legacyOverall = breakdown.maxScore > 0 ? Math.round((breakdown.rawScore / breakdown.maxScore) * 5 * 100) / 100 : 0;
+  // Derived from the primary rater's own raw/max (not the blended
+  // scorePercent above), matching exactly how it was computed before rater
+  // weighting existed.
+  const legacyOverall = primary.maxScore > 0 ? Math.round((primary.rawScore / primary.maxScore) * 5 * 100) / 100 : 0;
 
   await prisma.evaluationParticipant.update({
     where: { id: participantId },
     data: {
       overallScore: legacyOverall,
       band: scoreBand(legacyOverall),
-      rawScore: breakdown.rawScore,
-      maxScore: breakdown.maxScore,
-      scorePercent: breakdown.scorePercent,
-      questionCount: breakdown.questionCount,
+      rawScore: primary.rawScore,
+      maxScore: primary.maxScore,
+      scorePercent,
+      questionCount: primary.questionCount,
       evaluatorCount,
-      lowestTopics: breakdown.lowestTopics as unknown as Prisma.InputJsonValue,
-      scoreStatus: bandScoreStatus(breakdown.scorePercent, thresholds),
+      lowestTopics: primary.lowestTopics as unknown as Prisma.InputJsonValue,
+      scoreStatus: bandScoreStatus(scorePercent, thresholds),
     },
   });
 }
@@ -1170,10 +1217,13 @@ export async function approveReopen(
 }
 
 /**
- * HR or the participant's own manager may invite a specific coworker as a
- * PEER rater, or one of the participant's direct reports as an UPWARD
- * rater — true 360 feedback is opt-in per participant, unlike SELF/MANAGER
- * which auto-seed for every campaign that collects them.
+ * HR or the participant's own manager may invite one or many coworkers at
+ * once as PEER raters, or of the participant's direct reports as UPWARD
+ * raters — true 360 feedback is opt-in per participant, unlike SELF/MANAGER
+ * which auto-seed for every campaign that collects them. Accepting a batch
+ * of ids (instead of one invite call per person) is what actually removes
+ * the "click 50 times to add 50 peer raters" pain — HR picks the whole list
+ * once and this validates/creates all of them together.
  */
 export async function invitePeerRater(
   companyId: string,
@@ -1190,6 +1240,7 @@ export async function invitePeerRater(
       campaignId: true,
       employee: { select: { managerId: true, firstName: true, lastName: true } },
       campaign: { select: { name: true, cycle: true, status: true } },
+      responses: { select: { raterType: true, raterEmployeeId: true } },
     },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
@@ -1199,53 +1250,68 @@ export async function invitePeerRater(
     throw Forbidden("เชิญผู้ประเมินได้เฉพาะทีมที่คุณดูแล");
   }
 
-  const rater = await prisma.employee.findFirst({
-    where: { id: input.raterEmployeeId, companyId, deletedAt: null },
+  // Validate every rater up front — one bad id in the batch aborts the whole
+  // invite instead of leaving a half-created set of responses behind.
+  const raterIds = [...new Set(input.raterEmployeeIds)];
+  const raters = await prisma.employee.findMany({
+    where: { id: { in: raterIds }, companyId, deletedAt: null },
     select: { id: true, managerId: true },
   });
-  if (!rater) throw NotFound("ไม่พบพนักงานที่เลือก");
-  if (input.raterEmployeeId === participant.employeeId) {
-    throw BadRequest("ไม่สามารถเชิญตนเองเป็นผู้ประเมินเพิ่มเติมได้");
-  }
-  if (input.raterType === "UPWARD" && rater.managerId !== participant.employeeId) {
-    throw BadRequest("ผู้ประเมินแบบ Upward ต้องเป็นผู้ใต้บังคับบัญชาของผู้ถูกประเมินเท่านั้น");
+  const raterMap = new Map(raters.map((r) => [r.id, r]));
+  for (const raterId of raterIds) {
+    const rater = raterMap.get(raterId);
+    if (!rater) throw NotFound("ไม่พบพนักงานที่เลือก");
+    if (raterId === participant.employeeId) {
+      throw BadRequest("ไม่สามารถเชิญตนเองเป็นผู้ประเมินเพิ่มเติมได้");
+    }
+    if (input.raterType === "UPWARD" && rater.managerId !== participant.employeeId) {
+      throw BadRequest("ผู้ประเมินแบบ Upward ต้องเป็นผู้ใต้บังคับบัญชาของผู้ถูกประเมินเท่านั้น");
+    }
   }
 
-  const response = await prisma.evaluationResponse.create({
-    data: {
-      participantId,
-      raterType: input.raterType,
-      raterEmployeeId: input.raterEmployeeId,
-      scores: [],
-    },
-    select: { id: true },
-  });
+  // Already invited (as this rater type) ids are skipped rather than
+  // erroring the whole batch — lets HR re-run the same bulk pick without
+  // worrying about who's already on the list.
+  const alreadyInvited = new Set(
+    participant.responses.filter((r) => r.raterType === input.raterType).map((r) => r.raterEmployeeId),
+  );
+  const toInvite = raterIds.filter((id) => !alreadyInvited.has(id));
 
-  if (participant.campaign.status === "ACTIVE") {
-    await createNotification(
+  // Sequential, not Promise.all — connection_limit=1.
+  for (const raterId of toInvite) {
+    await prisma.evaluationResponse.create({
+      data: { participantId, raterType: input.raterType, raterEmployeeId: raterId, scores: [] },
+      select: { id: true },
+    });
+
+    if (participant.campaign.status === "ACTIVE") {
+      await createNotification(
+        companyId,
+        raterId,
+        {
+          title: "คุณได้รับเชิญให้ร่วมประเมิน",
+          body: `ในฐานะ${RATER_LABEL[input.raterType] ?? input.raterType} — ${participant.employee.firstName} ${participant.employee.lastName} · ${participant.campaign.name} · ${participant.campaign.cycle}`,
+          category: "performance",
+          link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
+        },
+        session.sub,
+      );
+    }
+  }
+
+  if (toInvite.length > 0) {
+    await writeAudit({
       companyId,
-      input.raterEmployeeId,
-      {
-        title: "คุณได้รับเชิญให้ร่วมประเมิน",
-        body: `ในฐานะ${RATER_LABEL[input.raterType] ?? input.raterType} — ${participant.employee.firstName} ${participant.employee.lastName} · ${participant.campaign.name} · ${participant.campaign.cycle}`,
-        category: "performance",
-        link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
-      },
-      session.sub,
-    );
+      actorUserId: session.sub,
+      action: "campaign.invite_rater",
+      entity: "EvaluationParticipant",
+      entityId: participantId,
+      after: { raterType: input.raterType, raterEmployeeIds: toInvite },
+      ...meta,
+    });
   }
 
-  await writeAudit({
-    companyId,
-    actorUserId: session.sub,
-    action: "campaign.invite_rater",
-    entity: "EvaluationParticipant",
-    entityId: participantId,
-    after: { raterType: input.raterType, raterEmployeeId: input.raterEmployeeId },
-    ...meta,
-  });
-
-  return { id: response.id };
+  return { invited: toInvite.length, skipped: raterIds.length - toInvite.length };
 }
 
 export async function removeRater(companyId: string, session: AccessClaims, responseId: string, meta?: Meta) {
@@ -1523,6 +1589,58 @@ export async function updateEvaluationThresholds(
     companyId,
     actorUserId: session.sub,
     action: "campaign.update_thresholds",
+    entity: "Company",
+    entityId: companyId,
+    before,
+    after: updated,
+    ...meta,
+  });
+
+  return updated;
+}
+
+/**
+ * Manager-weighted-more-than-peers by default — HR can retune this from
+ * Settings. SELF and HR_EXEC default to 0 so an ordinary MANAGER(+SELF)
+ * round scores exactly like the old single-response logic it replaces
+ * (see computeAndStoreScore): SELF's weight only ever matters once HR
+ * deliberately raises it above 0.
+ */
+export const DEFAULT_RATER_WEIGHTS: Record<RaterType, number> = {
+  MANAGER: 60,
+  SELF: 0,
+  PEER: 25,
+  UPWARD: 15,
+  HR_EXEC: 0,
+};
+
+const raterWeightSelect = { evalRaterWeights: true } satisfies Prisma.CompanySelect;
+
+/** HR-editable score weight (%) per rater type — falls back to
+ * DEFAULT_RATER_WEIGHTS until HR configures one from Settings. */
+export async function getEvaluationRaterWeights(companyId: string): Promise<Record<RaterType, number>> {
+  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: raterWeightSelect });
+  const configured = company.evalRaterWeights as Record<RaterType, number> | null;
+  return configured ?? DEFAULT_RATER_WEIGHTS;
+}
+
+export async function updateEvaluationRaterWeights(
+  companyId: string,
+  input: Record<RaterType, number>,
+  session: AccessClaims,
+  meta?: Meta,
+) {
+  const before = await prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: raterWeightSelect });
+  const updated = await prisma.company.update({
+    where: { id: companyId },
+    data: { evalRaterWeights: input },
+    select: raterWeightSelect,
+  });
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.update_rater_weights",
     entity: "Company",
     entityId: companyId,
     before,

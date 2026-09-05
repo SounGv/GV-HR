@@ -86,6 +86,23 @@ export const evaluationThresholdsSchema = z
   });
 export type EvaluationThresholdsInput = z.infer<typeof evaluationThresholdsSchema>;
 
+const RATER_WEIGHT_KEYS = ["SELF", "MANAGER", "PEER", "UPWARD", "HR_EXEC"] as const;
+
+/** Score weight (%) per rater type — see DEFAULT_RATER_WEIGHTS/computeAndStoreScore in service.ts. */
+export const evaluationRaterWeightsSchema = z
+  .object({
+    SELF: z.coerce.number().min(0).max(100),
+    MANAGER: z.coerce.number().min(0).max(100),
+    PEER: z.coerce.number().min(0).max(100),
+    UPWARD: z.coerce.number().min(0).max(100),
+    HR_EXEC: z.coerce.number().min(0).max(100),
+  })
+  .refine((v) => Math.abs(RATER_WEIGHT_KEYS.reduce((sum, k) => sum + v[k], 0) - 100) < 0.01, {
+    message: "น้ำหนักรวมทุกประเภทต้องเท่ากับ 100",
+    path: ["MANAGER"],
+  });
+export type EvaluationRaterWeightsInput = z.infer<typeof evaluationRaterWeightsSchema>;
+
 export const addParticipantsSchema = z.object({
   employeeIds: z.array(z.string().uuid()).min(1, "กรุณาเลือกพนักงานอย่างน้อย 1 คน"),
 });
@@ -130,7 +147,7 @@ export type RequestReopenInput = z.infer<typeof requestReopenSchema>;
 
 export const inviteRaterSchema = z.object({
   raterType: z.enum(["PEER", "UPWARD", "HR_EXEC"]),
-  raterEmployeeId: z.string().uuid(),
+  raterEmployeeIds: z.array(z.string().uuid()).min(1, "กรุณาเลือกผู้ประเมินอย่างน้อย 1 คน"),
 });
 export type InviteRaterInput = z.infer<typeof inviteRaterSchema>;
 

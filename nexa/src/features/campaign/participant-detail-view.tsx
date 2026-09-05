@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScorePicker } from "@/components/shared/score-picker";
 import { FileAttachField } from "@/components/shared/file-attach-field";
@@ -598,7 +597,7 @@ function InviteRaterCard({
   const invitableTypes = INVITABLE_TYPES.filter((t) => raterTypes.includes(t.value));
   const [open, setOpen] = useState(false);
   const [raterType, setRaterType] = useState<"PEER" | "UPWARD" | "HR_EXEC">(invitableTypes[0]?.value ?? "PEER");
-  const [raterId, setRaterId] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
   const { data: orgData } = useOrgOptions();
   const inviteMutation = useInviteRater(participantId);
 
@@ -607,16 +606,24 @@ function InviteRaterCard({
       ? (orgData?.data.managers ?? []).filter((e) => e.managerId === employeeId)
       : (orgData?.data.managers ?? []).filter((e) => e.id !== employeeId);
 
+  function toggle(id: string) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
   async function submit() {
-    if (!raterId) {
-      toast.error("กรุณาเลือกพนักงาน");
+    if (selected.length === 0) {
+      toast.error("กรุณาเลือกพนักงานอย่างน้อย 1 คน");
       return;
     }
     try {
-      await inviteMutation.mutateAsync({ raterType, raterEmployeeId: raterId });
-      toast.success("เชิญผู้ประเมินแล้ว");
+      const result = await inviteMutation.mutateAsync({ raterType, raterEmployeeIds: selected });
+      toast.success(
+        result.data.skipped > 0
+          ? `เชิญผู้ประเมินแล้ว ${result.data.invited} คน (ข้าม ${result.data.skipped} คนที่เชิญไปแล้ว)`
+          : `เชิญผู้ประเมินแล้ว ${result.data.invited} คน`,
+      );
       setOpen(false);
-      setRaterId("");
+      setSelected([]);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "เชิญไม่สำเร็จ");
     }
@@ -643,7 +650,7 @@ function InviteRaterCard({
                   variant={raterType === t.value ? "default" : "outline"}
                   onClick={() => {
                     setRaterType(t.value);
-                    setRaterId("");
+                    setSelected([]);
                   }}
                 >
                   {t.label}
@@ -651,20 +658,31 @@ function InviteRaterCard({
               ))}
             </div>
           )}
-          <Select value={raterId} onValueChange={(v) => setRaterId(v ?? "")}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="เลือกพนักงาน" />
-            </SelectTrigger>
-            <SelectContent>
-              {candidates.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.firstName} {c.lastName} ({c.employeeCode})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="max-h-64 space-y-1 overflow-y-auto">
+            {candidates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">ไม่มีพนักงานให้เลือก</p>
+            ) : (
+              candidates.map((c) => (
+                <label
+                  key={c.id}
+                  className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(c.id)}
+                    onChange={() => toggle(c.id)}
+                    className="size-4 accent-primary"
+                  />
+                  <span className="min-w-0 flex-1 truncate">
+                    {c.firstName} {c.lastName} ({c.employeeCode})
+                  </span>
+                </label>
+              ))
+            )}
+          </div>
           <Button className="w-full" onClick={submit} disabled={inviteMutation.isPending}>
-            เชิญ
+            {inviteMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+            เชิญ{selected.length > 0 ? ` (${selected.length} คน)` : ""}
           </Button>
         </div>
       </DialogContent>

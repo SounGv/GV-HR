@@ -345,6 +345,19 @@ model Company {
   evalThresholdWatchMax  Float @default(74.99)
   evalThresholdGoodMin   Float @default(83.33)
 
+  // Score weight (0-100, summing to 100) per EvaluationRaterType, e.g.
+  // { "MANAGER": 60, "SELF": 0, "PEER": 25, "UPWARD": 15, "HR_EXEC": 0 } —
+  // HR-editable from Settings, same place as the thresholds above. Null
+  // means "HR hasn't configured this yet"; computeAndStoreScore() falls
+  // back to a built-in default (DEFAULT_RATER_WEIGHTS in campaign/service.ts)
+  // rather than hardcoding it here, so the default can change in code
+  // without a migration. A rater type with no submitted response this round
+  // (or 0 weight) simply drops out — the remaining types' weights are
+  // implicitly renormalized to 100% of whatever weight actually has data
+  // behind it, so e.g. a MANAGER+SELF-only round (SELF weight 0) scores
+  // identically to the old single-response logic it replaces.
+  evalRaterWeights Json?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   createdById String?
