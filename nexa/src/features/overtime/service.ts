@@ -176,9 +176,14 @@ export async function getOvertime(companyId: string, session: AccessClaims, id: 
 }
 
 /**
- * The requester correcting their own stated reason — locked to PENDING so a
- * request can't be edited to justify a decision that already happened (the
- * manager approved/rejected based on the reason as it read at the time).
+ * The requester or their manager/HR correcting the stated reason — no status
+ * restriction, since it's descriptive text only (never touches hours/amount/
+ * status) and the audit log keeps the before/after value either way. Needed
+ * for more than just the requester's own typos: `reconcileOvertimeFromAttendance`
+ * auto-creates and auto-approves records with a generic system-written reason
+ * ("สร้างอัตโนมัติจากการตรวจสอบเวลาเข้า-ออกงานย้อนหลัง...") that nobody typed —
+ * the employee never got a chance to state a real one, so their manager needs
+ * a way to replace it with the actual explanation too.
  */
 export async function updateOvertimeReason(
   companyId: string,
@@ -187,14 +192,17 @@ export async function updateOvertimeReason(
   input: OtUpdateReasonInput,
   meta?: Meta,
 ) {
-  const employeeId = requireEmployeeId(session);
   const req = await prisma.overtimeRequest.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeId: true, status: true },
+    select: { id: true, employeeId: true, reason: true, employee: { select: { managerId: true } } },
   });
   if (!req) throw NotFound("ไม่พบคำขอ OT");
-  if (req.employeeId !== employeeId) throw Forbidden("แก้ไขได้เฉพาะคำขอของตนเอง");
-  if (req.status !== "PENDING") throw BadRequest("แก้ไขเหตุผลได้เฉพาะคำขอที่ยังรอการอนุมัติ");
+
+  const own = req.employeeId === session.employeeId;
+  const managesRequester = req.employee.managerId === session.employeeId;
+  if (!own && !managesRequester && !isHrLevel(session)) {
+    throw Forbidden("แก้ไขเหตุผลได้เฉพาะเจ้าของคำขอหรือหัวหน้าทีมที่ดูแล");
+  }
 
   const record = await prisma.overtimeRequest.update({
     where: { id: req.id },
@@ -208,6 +216,7 @@ export async function updateOvertimeReason(
     action: "overtime.update_reason",
     entity: "OvertimeRequest",
     entityId: req.id,
+    before: { reason: req.reason },
     after: { reason: input.reason },
     ...meta,
   });

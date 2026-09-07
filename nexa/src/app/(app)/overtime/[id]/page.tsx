@@ -33,7 +33,10 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
   const isHrLevel = session.perms.includes("*") || session.perms.includes("overtime:approve");
   const isOwnRequest = request.employee.id === session.employeeId;
   const canDecide = request.status === "PENDING" && !isOwnRequest && (isManager || isHrLevel);
-  const canEditReason = isOwnRequest && request.status === "PENDING";
+  // No status restriction — see updateOvertimeReason's own comment for why
+  // (descriptive text only, and a manager needs to fix the generic
+  // system-written reason on auto-approved reconciliation records too).
+  const canEditReason = isOwnRequest || isManager || isHrLevel;
   const canEditNote = (isManager || isHrLevel) && (request.status === "APPROVED" || request.status === "REJECTED");
 
   return (
