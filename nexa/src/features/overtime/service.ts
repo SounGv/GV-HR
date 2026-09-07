@@ -271,7 +271,22 @@ export async function decideOvertime(
 ) {
   const req = await prisma.overtimeRequest.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeId: true, status: true, hours: true, employee: { select: { managerId: true } } },
+    select: {
+      id: true,
+      employeeId: true,
+      status: true,
+      hours: true,
+      multiplier: true,
+      employee: {
+        select: {
+          managerId: true,
+          compensationType: true,
+          baseSalary: true,
+          dailyRate: true,
+          hourlyRate: true,
+        },
+      },
+    },
   });
   if (!req) throw NotFound("ไม่พบคำขอ OT");
   if (req.status !== "PENDING") throw BadRequest("คำขอนี้ถูกดำเนินการไปแล้ว");
@@ -283,6 +298,27 @@ export async function decideOvertime(
   }
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
+
+  // Re-estimate pay at the moment of approval, not reuse the estimate frozen
+  // when the request was first submitted — payroll sums this record's
+  // estimatedAmount directly (features/payroll/service.ts), so if approval
+  // lands days after submission and the employee's compensation changed in
+  // between (a raise, a corrected rate), the old estimate would silently
+  // carry stale pay into payroll instead of what they're actually owed as of
+  // approval. A rejection never reaches payroll, so it's left untouched.
+  const estimatedAmount =
+    nextStatus === "APPROVED"
+      ? estimateAmount(
+          {
+            compensationType: req.employee.compensationType,
+            baseSalary: req.employee.baseSalary ? Number(req.employee.baseSalary) : null,
+            dailyRate: req.employee.dailyRate ? Number(req.employee.dailyRate) : null,
+            hourlyRate: req.employee.hourlyRate ? Number(req.employee.hourlyRate) : null,
+          },
+          req.hours,
+          req.multiplier,
+        )
+      : undefined;
 
   // Compare-and-swap on status: the PENDING check above is a separate
   // round-trip from this write, so two concurrent decide calls (double-click,
@@ -299,6 +335,7 @@ export async function decideOvertime(
       decidedAt: new Date(),
       decisionNote: input.note,
       updatedById: session.sub,
+      ...(estimatedAmount !== undefined ? { estimatedAmount } : {}),
     },
   });
   if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
