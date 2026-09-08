@@ -165,11 +165,11 @@ export async function createTemplate(
 }
 
 /**
- * Structural edits (sections/questions) are only allowed while the template
- * is still DRAFT — once ACTIVE, campaigns may already be picking it, and
- * every campaign freezes its own `templateSnapshot` at create time anyway,
- * so this is a UX guard against HR confusing themselves mid-cycle, not a
- * data-integrity requirement. name/description/status remain editable always.
+ * Structural edits (sections/questions) are allowed regardless of status —
+ * every campaign freezes its own `templateSnapshot` at create time, so
+ * editing the master template afterward never touches an already-created
+ * campaign's questions. Only future campaigns created from this template
+ * pick up the edit.
  */
 export async function updateTemplate(
   companyId: string,
@@ -180,14 +180,11 @@ export async function updateTemplate(
 ) {
   const existing = await prisma.evaluationTemplate.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, status: true },
+    select: { id: true },
   });
   if (!existing) throw NotFound("ไม่พบแบบประเมิน");
 
   const changingSections = input.sections !== undefined;
-  if (changingSections && existing.status !== "DRAFT") {
-    throw BadRequest("แก้ไขหมวด/คำถามได้เฉพาะแบบประเมินที่ยังเป็นฉบับร่าง");
-  }
 
   // A single nested write (deleteMany + create in the same `update` call)
   // instead of a delete followed by one `create` per section — one round

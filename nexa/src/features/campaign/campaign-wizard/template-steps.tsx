@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AiTemplateDesignerPanel } from "@/features/evaluation-template/ai-template-designer-panel";
-import { SectionListEditor, emptySection } from "@/features/evaluation-template/template-builder-fields";
+import { TopicsAndQuestionsBuilder, emptySection } from "@/features/evaluation-template/template-builder-fields";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 import { useEvaluationTemplates } from "@/features/evaluation-template/hooks";
 import type { SectionFormValues, TemplateSection } from "@/features/evaluation-template/types";
@@ -98,7 +98,7 @@ export function TemplateSelectStep({ draft, onChange }: { draft: TemplateDraft; 
 
 /** Step 5 — build sections/questions, reusing the exact editor from the standalone Template builder. */
 export function QuestionsStep({ draft, onChange }: { draft: TemplateDraft; onChange: (draft: TemplateDraft) => void }) {
-  return <SectionListEditor sections={draft.sections} onChange={(sections) => onChange({ ...draft, sections })} />;
+  return <TopicsAndQuestionsBuilder sections={draft.sections} onChange={(sections) => onChange({ ...draft, sections })} />;
 }
 
 /** Step 6 — AI ช่วยตรวจ/เสนอ: same designer panel the standalone Template builder uses. */

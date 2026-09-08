@@ -14,11 +14,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api/client";
 import { AiTemplateDesignerPanel } from "./ai-template-designer-panel";
-import { SectionListEditor, emptySection } from "./template-builder-fields";
+import { TopicsAndQuestionsBuilder, emptySection } from "./template-builder-fields";
 import { TemplateFormRenderer } from "./template-renderer";
 import { useCreateEvaluationTemplate, useUpdateEvaluationTemplate } from "./hooks";
 import type { SectionFormValues, TemplateDetail, TemplateSection } from "./types";
@@ -55,7 +54,6 @@ function toRendererSections(sections: SectionFormValues[]): TemplateSection[] {
 export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
   const router = useRouter();
   const isEdit = !!template;
-  const locked = isEdit && template.status !== "DRAFT";
 
   const [sections, setSections] = useState<SectionFormValues[]>(
     template
@@ -99,20 +97,6 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
   }
 
   async function onSubmit(values: FormSchema) {
-    if (locked) {
-      // Structural editing is locked, but name/description/status still go
-      // through the normal update path (status changes use a dedicated
-      // control on the detail page, not this form).
-      try {
-        await updateMutation.mutateAsync({ name: values.name, description: values.description });
-        toast.success("บันทึกการแก้ไขเรียบร้อย");
-        router.push(`/performance/templates`);
-      } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ");
-      }
-      return;
-    }
-
     if (sections.length === 0) {
       toast.error("ต้องมีอย่างน้อย 1 หมวด");
       return;
@@ -176,12 +160,6 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
     >
       <Form {...form}>
         <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-4">
-          {locked && (
-            <Card className="border-warning/30 bg-warning/5 p-3 text-sm text-warning">
-              แบบประเมินนี้ไม่ใช่ฉบับร่างแล้ว จึงแก้ไขได้เฉพาะชื่อ/รายละเอียด — แก้ไขหมวดหรือข้อคำถามไม่ได้ เพื่อไม่ให้กระทบแคมเปญที่ใช้แบบประเมินนี้อยู่
-            </Card>
-          )}
-
           <div className="grid grid-cols-1 gap-3">
             <FormField
               control={form.control}
@@ -211,35 +189,23 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
             />
           </div>
 
-          {!locked && (
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium text-foreground">หมวดและข้อย่อย</p>
-              <div className="flex items-center gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowPreview(true)}>
-                  <Eye className="size-4" /> ดูตัวอย่าง
-                </Button>
-                {!showAiDesigner && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowAiDesigner(true)}>
-                    <Sparkles className="size-4" /> ให้ AI ออกแบบให้
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {locked && (
-            <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">หมวดและข้อย่อย</p>
+            <div className="flex items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => setShowPreview(true)}>
                 <Eye className="size-4" /> ดูตัวอย่าง
               </Button>
+              {!showAiDesigner && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowAiDesigner(true)}>
+                  <Sparkles className="size-4" /> ให้ AI ออกแบบให้
+                </Button>
+              )}
             </div>
-          )}
+          </div>
 
-          {aiGenerated && !locked && (
-            <p className="text-xs text-primary">ออกแบบด้วย AI — สามารถแก้ไขหมวด/คำถามได้ตามต้องการก่อนบันทึก</p>
-          )}
+          {aiGenerated && <p className="text-xs text-primary">ออกแบบด้วย AI — สามารถแก้ไขหมวด/คำถามได้ตามต้องการก่อนบันทึก</p>}
 
-          {showAiDesigner && !locked && (
+          {showAiDesigner && (
             <AiTemplateDesignerPanel
               onApply={handleAiApply}
               onClose={() => setShowAiDesigner(false)}
@@ -247,18 +213,7 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
             />
           )}
 
-          {locked ? (
-            <div className="space-y-3">
-              {sections.map((s, i) => (
-                <Card key={i} className="p-4">
-                  <p className="text-sm font-semibold text-foreground">{s.name}</p>
-                  <p className="text-xs text-muted-foreground">{s.questions.length} ข้อย่อย</p>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <SectionListEditor sections={sections} onChange={setSections} />
-          )}
+          <TopicsAndQuestionsBuilder sections={sections} onChange={setSections} />
         </form>
       </Form>
 
