@@ -241,7 +241,7 @@ export async function updateOvertimeNote(
 ) {
   const req = await prisma.overtimeRequest.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, status: true, employee: { select: { managerId: true } } },
+    select: { id: true, status: true, decisionNote: true, employee: { select: { managerId: true } } },
   });
   if (!req) throw NotFound("ไม่พบคำขอ OT");
   if (req.status !== "APPROVED" && req.status !== "REJECTED") {
@@ -260,6 +260,7 @@ export async function updateOvertimeNote(
 
   await writeAudit({
     companyId,
+    before: { decisionNote: req.decisionNote },
     actorUserId: session.sub,
     action: "overtime.update_note",
     entity: "OvertimeRequest",

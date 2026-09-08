@@ -43,7 +43,7 @@ export const otDecideSchema = z.object({
 });
 export type OtDecideInput = z.infer<typeof otDecideSchema>;
 
-/** Requester editing their own stated reason — only while the request is still PENDING (see updateOvertimeReason). */
+/** Requester, their manager, or HR editing the stated reason — no status restriction, see updateOvertimeReason. */
 export const otUpdateReasonSchema = z.object({
   reason: z.string().trim().max(500),
 });

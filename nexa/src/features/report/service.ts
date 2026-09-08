@@ -201,7 +201,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     });
     const ots = await prisma.overtimeRequest.groupBy({
       by: ["employeeId"],
-      where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end } },
+      where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end }, ...deptRel },
       _sum: { hours: true },
     });
 

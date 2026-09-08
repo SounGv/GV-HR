@@ -98,8 +98,10 @@ export const evaluationRaterWeightsSchema = z
     HR_EXEC: z.coerce.number().min(0).max(100),
   })
   .refine((v) => Math.abs(RATER_WEIGHT_KEYS.reduce((sum, k) => sum + v[k], 0) - 100) < 0.01, {
+    // No `path` — this is wrong about the whole object (the sum), not any
+    // one field, so it shouldn't get attributed to MANAGER specifically if
+    // this schema is ever wired to a form that surfaces per-field errors.
     message: "น้ำหนักรวมทุกประเภทต้องเท่ากับ 100",
-    path: ["MANAGER"],
   });
 export type EvaluationRaterWeightsInput = z.infer<typeof evaluationRaterWeightsSchema>;
 

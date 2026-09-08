@@ -800,9 +800,36 @@ async function computeAndStoreScore(companyId: string, participantId: string) {
     list.push({ breakdown, percent: breakdown.scorePercent });
     byType.set(r.raterType, list);
   }
-  if (byType.size === 0) return;
 
-  const weights = await getEvaluationRaterWeights(companyId);
+  // No score of any kind exists until the campaign's designated official
+  // rater (MANAGER if it collects one, else SELF) has actually submitted —
+  // SELF/PEER/UPWARD submitting alone must never populate overallScore.
+  // finalizeParticipant's "ยังไม่มีคะแนนจากหัวหน้างาน" guard, and the
+  // participant list's Finalize-button gating, both key off overallScore
+  // being non-null to mean exactly that; without this gate an employee
+  // submitting their self-assessment first would produce a score HR could
+  // finalize before the manager ever weighed in, permanently locking the
+  // manager out (submitMyResponse rejects any submission once finalized).
+  const scoringRaterType: RaterType = participant.campaign.raterTypes.includes("MANAGER") ? "MANAGER" : "SELF";
+  if (!byType.has(scoringRaterType)) return;
+
+  // One round-trip for both settings instead of two separate findUniqueOrThrow
+  // calls against the same Company row — this runs on every rater submission.
+  const company = await prisma.company.findUniqueOrThrow({
+    where: { id: companyId },
+    select: {
+      evalRaterWeights: true,
+      evalThresholdUrgentMax: true,
+      evalThresholdWatchMax: true,
+      evalThresholdGoodMin: true,
+    },
+  });
+  const weights = (company.evalRaterWeights as Record<RaterType, number> | null) ?? DEFAULT_RATER_WEIGHTS;
+  const thresholds = {
+    evalThresholdUrgentMax: company.evalThresholdUrgentMax,
+    evalThresholdWatchMax: company.evalThresholdWatchMax,
+    evalThresholdGoodMin: company.evalThresholdGoodMin,
+  };
   const typeAvgPercent = new Map<RaterType, number>(
     [...byType.entries()].map(([type, entries]) => [type, entries.reduce((s, e) => s + e.percent, 0) / entries.length]),
   );
@@ -825,7 +852,6 @@ async function computeAndStoreScore(companyId: string, participantId: string) {
   const primaryType = PRIMARY_RATER_PRIORITY.find((t) => byType.has(t)) ?? [...byType.keys()][0];
   const primary = byType.get(primaryType)![0].breakdown;
 
-  const thresholds = await getEvaluationThresholds(companyId);
   const evaluatorCount = participant.responses.filter((r) => r.status === "SUBMITTED").length;
   // Legacy 1-5 band (scoreBand/band) kept alongside the new percent-based
   // scoreStatus — existing UI (9-Box, calibration, evaluation history) still
