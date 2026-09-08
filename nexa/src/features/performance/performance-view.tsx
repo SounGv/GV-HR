@@ -291,8 +291,14 @@ function TeamReviews() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ผลประเมินของทีม</h2>
-        <Button render={<Link href="/performance/new" />}>
-          <Plus className="size-4" /> สร้างการประเมิน
+        {/* Points at the campaign/template system, not the legacy
+         * single-review /performance/new flow — that page always shows every
+         * configured Competency with no way to pick topics per review (the
+         * exact complaint this replaces), and has only ever collected 2 test
+         * records. Not deleted (its data/route still exist), just no longer
+         * the discoverable "create an evaluation" entry point. */}
+        <Button render={<Link href="/performance/campaigns/new" />}>
+          <Plus className="size-4" /> สร้างรอบประเมิน
         </Button>
       </div>
 
