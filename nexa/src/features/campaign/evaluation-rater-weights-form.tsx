@@ -13,7 +13,7 @@ import { useEvaluationRaterWeights, useUpdateEvaluationRaterWeights } from "./ho
 import type { EvaluationRaterWeights, RaterType } from "./types";
 
 const RATER_ORDER: RaterType[] = ["MANAGER", "SELF", "PEER", "UPWARD", "HR_EXEC"];
-const DEFAULT_FORM: EvaluationRaterWeights = { MANAGER: 60, SELF: 0, PEER: 25, UPWARD: 15, HR_EXEC: 0 };
+const DEFAULT_FORM: EvaluationRaterWeights = { MANAGER: 40, SELF: 20, PEER: 30, UPWARD: 10, HR_EXEC: 0 };
 
 /** HR-scoped (campaign:update) — same Settings area as the score-band
  * thresholds. Weight per rater type feeding the blended overallScore/

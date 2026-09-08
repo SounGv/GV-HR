@@ -692,7 +692,7 @@ function ResponseCard({
     id?: string;
     status: string;
     raterType?: string;
-    raterEmployeeId?: string;
+    raterEmployeeId?: string | null;
     reopenRequested?: boolean;
     reopenRequestNote?: string | null;
     scores: { competencyId: string; score: number }[];

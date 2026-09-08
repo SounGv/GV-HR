@@ -72,7 +72,10 @@ export interface ParticipantDetail extends ParticipantSummary {
   fullResponses: {
     id: string;
     raterType: RaterType;
-    raterEmployeeId: string;
+    /** Null for an anonymized PEER/UPWARD response shown to the evaluatee
+     * themselves (see getParticipant's anonymity gate) — never null for any
+     * other viewer or rater type. */
+    raterEmployeeId: string | null;
     status: ResponseStatus;
     scores: { competencyId: string; score: number }[];
     answers: { questionId: string; value: string }[] | null;

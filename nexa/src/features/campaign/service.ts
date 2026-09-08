@@ -678,9 +678,30 @@ export async function getParticipant(companyId: string, participantId: string, s
   // HR finalizes the participant, otherwise they'd read their manager's raw
   // score/comments the instant it's submitted, before results are released.
   const canSeeAllResponses = hrLevel || managesTarget || (own && !!participant.finalizedAt);
-  const visibleResponses = canSeeAllResponses
+  let visibleResponses = canSeeAllResponses
     ? participant.responses
     : participant.responses.filter((r) => r.raterEmployeeId === session.employeeId);
+
+  // Anonymity (evaluatee's own view only — HR/manager always see everyone's
+  // identity for management purposes, and MANAGER's own score is never
+  // anonymous either way since they own the final result). PEER/UPWARD
+  // feedback is hidden entirely for a group with fewer than
+  // ANONYMITY_MIN_RATERS submitted responses — showing even an anonymized
+  // single response would still be trivially attributable — and never
+  // carries individual identity even once that floor is met.
+  const anonymizeTypes: RaterType[] = [];
+  if (own && !hrLevel && !managesTarget) {
+    const submittedCountByType = new Map<RaterType, number>();
+    for (const r of visibleResponses) {
+      if (r.status !== "SUBMITTED") continue;
+      submittedCountByType.set(r.raterType, (submittedCountByType.get(r.raterType) ?? 0) + 1);
+    }
+    const belowThreshold = (["PEER", "UPWARD"] as RaterType[]).filter(
+      (t) => (submittedCountByType.get(t) ?? 0) < ANONYMITY_MIN_RATERS,
+    );
+    visibleResponses = visibleResponses.filter((r) => !belowThreshold.includes(r.raterType));
+    anonymizeTypes.push("PEER", "UPWARD");
+  }
 
   return {
     id: participant.id,
@@ -704,17 +725,26 @@ export async function getParticipant(companyId: string, participantId: string, s
       competencies: mapCompetencies(participant.campaign.competencies),
       templateSnapshot: participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null,
     },
-    fullResponses: await withRaterEmployees(visibleResponses),
+    fullResponses: await withRaterEmployees(visibleResponses, anonymizeTypes),
   };
 }
 
 /** Attaches each response's rater's name/photo — raterEmployeeId has no FK
  * (PEER/UPWARD raters aren't derivable from the org chart at all, so the
- * column is just a plain id), hence the separate lookup instead of a select. */
-async function withRaterEmployees<T extends { raterEmployeeId: string; answers: unknown; evidenceUrls: unknown }>(
+ * column is just a plain id), hence the separate lookup instead of a select.
+ *
+ * `anonymizeTypes` blanks out identity — both the display name/photo AND the
+ * raw `raterEmployeeId` itself — for any response whose raterType is in the
+ * list, per the evaluatee-facing anonymity rule in getParticipant. Nulling
+ * only the display name would still leave the id sitting in the JSON payload
+ * for anyone reading the network response directly to cross-reference
+ * against another employee-listing endpoint they have access to. */
+async function withRaterEmployees<T extends { raterType: RaterType; raterEmployeeId: string; answers: unknown; evidenceUrls: unknown }>(
   responses: T[],
+  anonymizeTypes: RaterType[] = [],
 ): Promise<
-  (Omit<T, "answers" | "evidenceUrls"> & {
+  (Omit<T, "answers" | "evidenceUrls" | "raterEmployeeId"> & {
+    raterEmployeeId: string | null;
     answers: { questionId: string; value: string }[] | null;
     evidenceUrls: string[] | null;
     raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null;
@@ -726,12 +756,16 @@ async function withRaterEmployees<T extends { raterEmployeeId: string; answers: 
     select: { id: true, firstName: true, lastName: true, avatarUrl: true },
   });
   const raterMap = new Map(raters.map((r) => [r.id, r]));
-  return responses.map((r) => ({
-    ...r,
-    answers: r.answers as { questionId: string; value: string }[] | null,
-    evidenceUrls: r.evidenceUrls as string[] | null,
-    raterEmployee: raterMap.get(r.raterEmployeeId) ?? null,
-  }));
+  return responses.map((r) => {
+    const anonymize = anonymizeTypes.includes(r.raterType);
+    return {
+      ...r,
+      raterEmployeeId: anonymize ? null : r.raterEmployeeId,
+      answers: r.answers as { questionId: string; value: string }[] | null,
+      evidenceUrls: r.evidenceUrls as string[] | null,
+      raterEmployee: anonymize ? null : (raterMap.get(r.raterEmployeeId) ?? null),
+    };
+  });
 }
 
 // Priority order for which single submitted rater's own breakdown supplies
@@ -1626,18 +1660,26 @@ export async function updateEvaluationThresholds(
 
 /**
  * Manager-weighted-more-than-peers by default — HR can retune this from
- * Settings. SELF and HR_EXEC default to 0 so an ordinary MANAGER(+SELF)
- * round scores exactly like the old single-response logic it replaces
- * (see computeAndStoreScore): SELF's weight only ever matters once HR
- * deliberately raises it above 0.
+ * Settings. Matches the 360-review design doc's proposed starting split
+ * (section 3): MANAGER 40 / SELF 20 / PEER 30 / UPWARD (subordinate) 10.
+ * HR_EXEC defaults to 0 (not part of that doc's model at all) so it only
+ * ever matters once HR deliberately raises it above 0.
  */
 export const DEFAULT_RATER_WEIGHTS: Record<RaterType, number> = {
-  MANAGER: 60,
-  SELF: 0,
-  PEER: 25,
-  UPWARD: 15,
+  MANAGER: 40,
+  SELF: 20,
+  PEER: 30,
+  UPWARD: 10,
   HR_EXEC: 0,
 };
+
+/**
+ * Minimum number of SUBMITTED responses a PEER/UPWARD group needs before
+ * the evaluatee is shown that group's (always-anonymized) feedback at all —
+ * design doc section 5.5. Below this, even anonymized feedback would be
+ * trivially attributable to whichever one or two people it obviously is.
+ */
+export const ANONYMITY_MIN_RATERS = 3;
 
 const raterWeightSelect = { evalRaterWeights: true } satisfies Prisma.CompanySelect;
 
