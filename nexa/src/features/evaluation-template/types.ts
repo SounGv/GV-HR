@@ -61,6 +61,14 @@ export interface TemplateDetail extends TemplateListItem {
 }
 
 export interface QuestionFormValues {
+  /** Client-only stable identity for this draft question — a real question's
+   * DB id when loaded from an existing template, else a generated string.
+   * Never read by the backend (the Zod schema strips unknown keys); exists
+   * purely so the builder's React key doesn't fall back to array index,
+   * which would let a question's local UI state (e.g. the "รายละเอียดเพิ่มเติม"
+   * expand toggle) reattach to the wrong question after one is removed or
+   * reordered. */
+  uiKey?: string;
   text: string;
   helpText?: string;
   answerType: AnswerType;

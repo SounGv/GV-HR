@@ -24,10 +24,11 @@ export const ANSWER_TYPE_LABEL: Record<AnswerType, string> = {
   FILE_EVIDENCE: "แนบไฟล์หลักฐาน",
 };
 
-const NON_SCORING_TYPES = new Set<AnswerType>(["LONG_TEXT", "SHORT_TEXT", "FILE_EVIDENCE"]);
+export const NON_SCORING_TYPES = new Set<AnswerType>(["LONG_TEXT", "SHORT_TEXT", "FILE_EVIDENCE"]);
 
 export function emptyQuestion(order: number): QuestionFormValues {
   return {
+    uiKey: crypto.randomUUID(),
     text: "",
     helpText: "",
     answerType: "CHOICE",
@@ -373,7 +374,7 @@ function SectionQuestionsPanel({
       >
         {section.questions.map((q, qi) => (
           <DraggableQuestionItem
-            key={qi}
+            key={q.uiKey ?? qi}
             question={q}
             onChange={(question) => updateQuestion(qi, question)}
             onRemove={() => removeQuestion(qi)}
@@ -392,7 +393,10 @@ function SectionQuestionsPanel({
         </Button>
         <BankQuestionPicker
           onAdd={(question) =>
-            onChange({ ...section, questions: [...section.questions, { ...question, order: section.questions.length }] })
+            onChange({
+              ...section,
+              questions: [...section.questions, { ...question, uiKey: crypto.randomUUID(), order: section.questions.length }],
+            })
           }
         />
       </div>
@@ -464,7 +468,14 @@ export function TopicsAndQuestionsBuilder({
   function removeSection(i: number) {
     const next = sections.filter((_, idx) => idx !== i);
     onChange(next);
-    setActiveIndex((prev) => Math.min(prev, Math.max(0, next.length - 1)));
+    // Shift the active tab down with whatever section it was pointing at
+    // (not just clamp the raw index) — removing a section *before* the
+    // active one would otherwise silently switch the active tab to a
+    // different section than the one currently open.
+    setActiveIndex((prev) => {
+      const shifted = i < prev ? prev - 1 : prev;
+      return Math.min(shifted, Math.max(0, next.length - 1));
+    });
   }
 
   const totalWeight = sections

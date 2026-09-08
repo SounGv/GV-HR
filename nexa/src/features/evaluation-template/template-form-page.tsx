@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api/client";
 import { AiTemplateDesignerPanel } from "./ai-template-designer-panel";
-import { TopicsAndQuestionsBuilder, emptySection } from "./template-builder-fields";
+import { TopicsAndQuestionsBuilder, emptySection, NON_SCORING_TYPES } from "./template-builder-fields";
 import { TemplateFormRenderer } from "./template-renderer";
 import { useCreateEvaluationTemplate, useUpdateEvaluationTemplate } from "./hooks";
 import type { SectionFormValues, TemplateDetail, TemplateSection } from "./types";
@@ -61,6 +61,7 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
           name: s.name,
           order: s.order ?? si,
           questions: s.questions.map((q, qi) => ({
+            uiKey: q.id,
             text: q.text,
             helpText: q.helpText ?? "",
             answerType: q.answerType,
@@ -115,7 +116,7 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
           toast.error("กรุณาระบุคำถามให้ครบทุกข้อ");
           return;
         }
-        if (q.answerType !== "LONG_TEXT" && (!q.options || q.options.length < 2 || q.options.some((o) => !o.label.trim()))) {
+        if (!NON_SCORING_TYPES.has(q.answerType) && (!q.options || q.options.length < 2 || q.options.some((o) => !o.label.trim()))) {
           toast.error(`คำถาม "${q.text}" ต้องมีตัวเลือกอย่างน้อย 2 รายการ พร้อมความหมาย`);
           return;
         }

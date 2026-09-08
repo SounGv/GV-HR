@@ -35,6 +35,7 @@ function draftToSections(draft: AiTemplateDraft): SectionFormValues[] {
         options = (q.options ?? []).map((o) => ({ value: o.label, label: o.label, score: o.score }));
       }
       return {
+        uiKey: crypto.randomUUID(),
         text: q.text,
         helpText: q.helpText,
         answerType: q.answerType,
