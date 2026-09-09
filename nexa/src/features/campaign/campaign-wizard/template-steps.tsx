@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AiTemplateDesignerPanel } from "@/features/evaluation-template/ai-template-designer-panel";
-import { TopicsAndQuestionsBuilder, emptySection } from "@/features/evaluation-template/template-builder-fields";
+import { TopicsAndQuestionsBuilder, emptySection, toRendererSections } from "@/features/evaluation-template/template-builder-fields";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 import { useEvaluationTemplates } from "@/features/evaluation-template/hooks";
 import type { SectionFormValues, TemplateSection } from "@/features/evaluation-template/types";
@@ -25,27 +25,6 @@ export interface TemplateDraft {
 
 export function emptyTemplateDraft(): TemplateDraft {
   return { mode: "new", templateId: null, name: "", description: "", sections: [emptySection(0)], aiGenerated: false, aiRationale: "" };
-}
-
-/** Live-preview shape — mirrors the same conversion `TemplateFormPage` uses. */
-export function draftToRendererSections(sections: SectionFormValues[]): TemplateSection[] {
-  return sections.map((s, si) => ({
-    id: `preview-section-${si}`,
-    name: s.name || "(ยังไม่มีชื่อหมวด)",
-    order: si,
-    questions: s.questions.map((q, qi) => ({
-      id: `preview-question-${si}-${qi}`,
-      text: q.text || "(ยังไม่มีคำถาม)",
-      helpText: q.helpText ?? null,
-      answerType: q.answerType,
-      options: q.options ?? null,
-      weight: q.weight,
-      required: q.required,
-      order: qi,
-      visibleTo: q.visibleTo,
-      competencyId: q.competencyId ?? null,
-    })),
-  }));
 }
 
 /** Step 4 — pick an existing ACTIVE template to reuse as-is, or start a new one from scratch. */
@@ -119,7 +98,7 @@ export function AiReviewStep({ draft, onChange }: { draft: TemplateDraft; onChan
 
 /** Step 7 — preview exactly as a rater will see it. */
 export function PreviewStep({ draft, existingSections }: { draft: TemplateDraft; existingSections: TemplateSection[] | null }) {
-  const sections = draft.mode === "existing" ? existingSections ?? [] : draftToRendererSections(draft.sections);
+  const sections = draft.mode === "existing" ? existingSections ?? [] : toRendererSections(draft.sections);
   return (
     <Card className="max-w-2xl space-y-1 p-4">
       <p className="text-lg font-semibold text-foreground">{draft.name || "(ยังไม่มีชื่อ)"}</p>

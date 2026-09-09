@@ -11,8 +11,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { BankQuestionPicker } from "./bank-question-picker";
+import { TemplateFormRenderer } from "./template-renderer";
 import { defaultOptionsFor } from "./question-defaults";
-import type { AnswerType, QuestionFormValues, SectionFormValues, TemplateOption, TemplateVisibleToType } from "./types";
+import type { AnswerType, QuestionFormValues, SectionFormValues, TemplateOption, TemplateSection, TemplateVisibleToType } from "./types";
 
 export const ANSWER_TYPE_LABEL: Record<AnswerType, string> = {
   NUMERIC: "คะแนนตัวเลข",
@@ -43,6 +44,96 @@ export function emptyQuestion(order: number): QuestionFormValues {
 export function emptySection(order: number): SectionFormValues {
   return { name: "", order, questions: [emptyQuestion(0)] };
 }
+
+/** Draft sections -> the shape TemplateFormRenderer expects for a live
+ * preview — shared by the builder's own inline preview panel, the standalone
+ * Template page, and the campaign wizard's preview step, so there's one
+ * conversion instead of three near-identical copies. Placeholder ids are
+ * fine (never sent anywhere) since this only ever feeds a read-only render. */
+export function toRendererSections(sections: SectionFormValues[]): TemplateSection[] {
+  return sections.map((s, si) => ({
+    id: `preview-section-${si}`,
+    name: s.name || "(ยังไม่มีชื่อหมวด)",
+    order: si,
+    questions: s.questions.map((q, qi) => ({
+      id: `preview-question-${si}-${qi}`,
+      text: q.text || "(ยังไม่มีคำถาม)",
+      helpText: q.helpText ?? null,
+      answerType: q.answerType,
+      options: q.options ?? null,
+      weight: q.weight,
+      required: q.required,
+      order: qi,
+      visibleTo: q.visibleTo,
+      competencyId: q.competencyId ?? null,
+    })),
+  }));
+}
+
+/** Quick-start scaffolds for a brand-new (empty) draft — pure local
+ * convenience, not tied to any saved EvaluationTemplate/Competency row.
+ * Only offered while the draft is still essentially blank (see
+ * TopicsAndQuestionsBuilder's `isBlankDraft`), same guard the reference
+ * mockup used, so applying one never silently discards real work. */
+function buildQuickStartSection(name: string, questions: { text: string; weight: number; type: "rating" | "text" }[]): SectionFormValues {
+  return {
+    name,
+    order: 0,
+    questions: questions.map((q, qi) => {
+      const answerType: AnswerType = q.type === "rating" ? "NUMERIC" : "LONG_TEXT";
+      return {
+        uiKey: crypto.randomUUID(),
+        text: q.text,
+        helpText: "",
+        answerType,
+        options: defaultOptionsFor(answerType),
+        weight: q.weight,
+        required: true,
+        order: qi,
+        visibleTo: [],
+      };
+    }),
+  };
+}
+
+const QUICK_START_TEMPLATES: { id: string; name: string; description: string; build: () => SectionFormValues[] }[] = [
+  {
+    id: "360-standard",
+    name: "360 องศามาตรฐาน",
+    description: "4 หมวดหลักที่ใช้ประเมินแบบรอบด้าน",
+    build: () => [
+      buildQuickStartSection("ผลงานและความรับผิดชอบ", [
+        { text: "ส่งมอบงานตรงเวลาตามที่ตกลงไว้", weight: 20, type: "rating" },
+        { text: "รับผิดชอบต่อผลลัพธ์ของงานที่ทำ", weight: 15, type: "rating" },
+      ]),
+      buildQuickStartSection("การทำงานร่วมกับผู้อื่น", [
+        { text: "สื่อสารกับทีมอย่างชัดเจน", weight: 15, type: "rating" },
+        { text: "ช่วยเหลือเพื่อนร่วมทีมเมื่อจำเป็น", weight: 10, type: "rating" },
+      ]),
+      buildQuickStartSection("การแก้ปัญหาและความคิดริเริ่ม", [
+        { text: "เสนอทางแก้เมื่อเจอปัญหาโดยไม่ต้องรอสั่งการ", weight: 20, type: "rating" },
+      ]),
+      buildQuickStartSection("การพัฒนาตนเอง", [
+        { text: "เรียนรู้ทักษะใหม่และนำมาปรับใช้กับงานจริง", weight: 20, type: "rating" },
+      ]),
+    ],
+  },
+  {
+    id: "manager-review",
+    name: "ประเมินหัวหน้างาน",
+    description: "เน้นทักษะการบริหารทีมและการตัดสินใจ",
+    build: () => [
+      buildQuickStartSection("การบริหารทีม", [
+        { text: "มอบหมายงานเหมาะสมกับความสามารถของแต่ละคน", weight: 35, type: "rating" },
+        { text: "ให้ feedback ที่นำไปปรับปรุงได้จริง", weight: 35, type: "rating" },
+      ]),
+      buildQuickStartSection("การตัดสินใจ", [{ text: "ตัดสินใจได้ทันเวลาเมื่อทีมต้องการทิศทาง", weight: 30, type: "rating" }]),
+      buildQuickStartSection("ความคิดเห็นเปิดกว้าง", [
+        { text: "มีอะไรอยากให้หัวหน้าปรับปรุงเพิ่มเติมหรือไม่", weight: 0, type: "text" },
+      ]),
+    ],
+  },
+];
 
 function OptionsEditor({
   answerType,
@@ -404,51 +495,72 @@ function SectionQuestionsPanel({
   );
 }
 
-/** Topics-stage row — just the section name, a live question-count badge,
- * and remove/reorder. Questions themselves are added later in the questions
- * stage, not here — see TopicsAndQuestionsBuilder. */
-function DraggableTopicRow({
+/** One category card — name + reorder/delete in the header, expand to edit
+ * its questions inline (SectionQuestionsPanel) right there instead of a
+ * separate step. A rolled-up weight badge is informational only: our model
+ * weights each QUESTION, not the category, so this is just the sum of the
+ * category's own question weights, not a separately-editable number. */
+function AccordionCategoryCard({
   section,
+  isOpen,
+  onToggle,
   onChange,
   onRemove,
 }: {
   section: SectionFormValues;
+  isOpen: boolean;
+  onToggle: () => void;
   onChange: (section: SectionFormValues) => void;
   onRemove: () => void;
 }) {
   const dragControls = useDragControls();
+  const categoryWeight = section.questions
+    .filter((q) => !NON_SCORING_TYPES.has(q.answerType))
+    .reduce((sum, q) => sum + (q.weight || 0), 0);
+
   return (
     <Reorder.Item value={section} dragListener={false} dragControls={dragControls}>
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
-        <button
-          type="button"
-          className="flex size-7 shrink-0 cursor-grab items-center justify-center text-muted-foreground active:cursor-grabbing"
-          aria-label="ลากเพื่อจัดลำดับหมวด"
-          onPointerDown={(e) => dragControls.start(e)}
-        >
-          <GripVertical className="size-4" />
-        </button>
-        <Input
-          className="flex-1 font-medium"
-          placeholder="ชื่อหมวด เช่น ผลการปฏิบัติงาน"
-          value={section.name}
-          onChange={(e) => onChange({ ...section, name: e.target.value })}
-        />
-        <span className="shrink-0 text-xs text-muted-foreground">{section.questions.length} ข้อ</span>
-        <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={onRemove} aria-label="ลบหมวด">
-          <Trash2 className="size-4 text-destructive" />
-        </Button>
+      <div className="rounded-xl border border-border bg-card">
+        <div className="flex items-center gap-2 p-3">
+          <button
+            type="button"
+            className="flex size-7 shrink-0 cursor-grab items-center justify-center text-muted-foreground active:cursor-grabbing"
+            aria-label="ลากเพื่อจัดลำดับหมวด"
+            onPointerDown={(e) => dragControls.start(e)}
+          >
+            <GripVertical className="size-4" />
+          </button>
+          <Input
+            className="flex-1 font-medium"
+            placeholder="ชื่อหมวด เช่น ผลการปฏิบัติงาน"
+            value={section.name}
+            onChange={(e) => onChange({ ...section, name: e.target.value })}
+          />
+          <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+            {section.questions.length} ข้อ{categoryWeight > 0 ? ` · ${categoryWeight}%` : ""}
+          </span>
+          <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={onToggle} aria-label={isOpen ? "ยุบหมวด" : "ขยายหมวด"}>
+            {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={onRemove} aria-label="ลบหมวด">
+            <Trash2 className="size-4 text-destructive" />
+          </Button>
+        </div>
+        {isOpen && (
+          <div className="border-t border-border p-3 pt-3">
+            <SectionQuestionsPanel section={section} onChange={onChange} />
+          </div>
+        )}
       </div>
     </Reorder.Item>
   );
 }
 
-/** Staged "หมวด/ข้อย่อย" builder — shared by the standalone Template builder
- * page and the campaign wizard's questions step so both stay in sync.
- * Split into two stages (set topic names first, then fill in each topic's
- * questions) instead of one long page mixing both, so HR isn't looking at
- * every question's full field set — text, help text, answer type, weight,
- * required, options, rater-visibility — all at once for every topic simultaneously. */
+/** "หมวด/ข้อย่อย" builder — shared by the standalone Template builder page and
+ * the campaign wizard's questions step so both stay in sync. One page: every
+ * category is a collapsible card (its questions live inline once expanded,
+ * not a separate step) with a live preview alongside showing exactly what a
+ * rater will see, plus quick-start scaffolds for a brand-new draft. */
 export function TopicsAndQuestionsBuilder({
   sections,
   onChange,
@@ -456,8 +568,8 @@ export function TopicsAndQuestionsBuilder({
   sections: SectionFormValues[];
   onChange: (sections: SectionFormValues[]) => void;
 }) {
-  const [stage, setStage] = useState<"topics" | "questions">("topics");
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [openId, setOpenId] = useState(0);
+  const [pendingQuickStart, setPendingQuickStart] = useState<string | null>(null);
 
   function updateSection(i: number, section: SectionFormValues) {
     const next = [...sections];
@@ -466,16 +578,7 @@ export function TopicsAndQuestionsBuilder({
   }
 
   function removeSection(i: number) {
-    const next = sections.filter((_, idx) => idx !== i);
-    onChange(next);
-    // Shift the active tab down with whatever section it was pointing at
-    // (not just clamp the raw index) — removing a section *before* the
-    // active one would otherwise silently switch the active tab to a
-    // different section than the one currently open.
-    setActiveIndex((prev) => {
-      const shifted = i < prev ? prev - 1 : prev;
-      return Math.min(shifted, Math.max(0, next.length - 1));
-    });
+    onChange(sections.filter((_, idx) => idx !== i));
   }
 
   const totalWeight = sections
@@ -484,88 +587,102 @@ export function TopicsAndQuestionsBuilder({
     .reduce((sum, q) => sum + (q.weight || 0), 0);
   const weightOk = totalWeight === 100;
 
-  const allNamed = sections.length > 0 && sections.every((s) => s.name.trim().length > 0);
+  // Quick-start scaffolds only make sense against a still-blank draft — same
+  // guard the reference design used, so picking one never silently discards
+  // real work HR already typed in.
+  const isBlankDraft =
+    sections.length <= 1 &&
+    !(sections[0] && sections[0].name.trim()) &&
+    (!sections[0] || sections[0].questions.every((q) => !q.text.trim()));
 
-  if (stage === "topics") {
-    return (
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          ตั้งชื่อหมวดหัวข้อประเมินก่อน — ยังไม่ต้องใส่คำถามในขั้นนี้ ใส่คำถามได้ในขั้นถัดไป
-        </p>
-        <Reorder.Group axis="y" values={sections} onReorder={onChange} className="space-y-2">
-          {sections.map((s, i) => (
-            <DraggableTopicRow key={i} section={s} onChange={(section) => updateSection(i, section)} onRemove={() => removeSection(i)} />
-          ))}
-        </Reorder.Group>
-        <Button type="button" variant="outline" onClick={() => onChange([...sections, emptySection(sections.length)])}>
-          <Plus className="size-4" /> เพิ่มหมวด
-        </Button>
-
-        <div className="flex items-center justify-between gap-2 pt-2">
-          {!allNamed && sections.length > 0 && (
-            <p className="text-xs text-destructive">กรุณาระบุชื่อหมวดให้ครบทุกหมวดก่อนไปตั้งคำถาม</p>
-          )}
-          <Button
-            type="button"
-            className="ml-auto"
-            disabled={!allNamed}
-            onClick={() => {
-              setActiveIndex(0);
-              setStage("questions");
-            }}
-          >
-            ถัดไป: ตั้งคำถาม →
-          </Button>
-        </div>
-      </div>
-    );
+  function applyQuickStart(templateId: string) {
+    const tpl = QUICK_START_TEMPLATES.find((t) => t.id === templateId);
+    if (!tpl) return;
+    const built = tpl.build();
+    onChange(built);
+    setOpenId(0);
+    setPendingQuickStart(null);
   }
 
-  // stage === "questions"
-  const active: SectionFormValues | undefined = sections[activeIndex];
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setStage("topics")}
-          className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-        >
-          <ChevronRight className="size-3.5 rotate-180" /> กลับไปตั้งหัวข้อ
-        </button>
-        <div
-          className={cn(
-            "rounded-lg border px-2.5 py-1 text-xs font-medium",
-            weightOk ? "border-success/30 bg-success/10 text-success" : "border-destructive/30 bg-destructive/10 text-destructive",
-          )}
-        >
-          น้ำหนักรวม {totalWeight}% {weightOk ? "✓" : "— ต้องเท่ากับ 100%"}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">เริ่มจากแม่แบบ</span>
+        <div className="flex flex-wrap gap-2">
+          {QUICK_START_TEMPLATES.map((tpl) => (
+            <button
+              key={tpl.id}
+              type="button"
+              title={tpl.description}
+              onClick={() => (isBlankDraft ? applyQuickStart(tpl.id) : setPendingQuickStart(tpl.id))}
+              className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground/80 hover:bg-muted"
+            >
+              {tpl.name}
+            </button>
+          ))}
+        </div>
+        {pendingQuickStart && (
+          <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-2 text-sm text-warning">
+            <span>ใช้แม่แบบนี้จะแทนที่หมวดและคำถามที่กรอกไว้อยู่ตอนนี้ทั้งหมด</span>
+            <Button type="button" size="sm" onClick={() => applyQuickStart(pendingQuickStart)}>
+              ยืนยันใช้แม่แบบ
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setPendingQuickStart(null)}>
+              ยกเลิก
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px] lg:items-start">
+        <div className="min-w-0 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-foreground">หมวดหัวข้อประเมิน</span>
+            <span
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-semibold",
+                weightOk ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
+              )}
+            >
+              รวมน้ำหนัก {totalWeight}% {weightOk ? "✓" : "— ต้องเท่ากับ 100%"}
+            </span>
+          </div>
+
+          <Reorder.Group axis="y" values={sections} onReorder={onChange} className="space-y-3">
+            {sections.map((s, i) => (
+              <AccordionCategoryCard
+                key={i}
+                section={s}
+                isOpen={openId === i}
+                onToggle={() => setOpenId((prev) => (prev === i ? -1 : i))}
+                onChange={(section) => updateSection(i, section)}
+                onRemove={() => removeSection(i)}
+              />
+            ))}
+          </Reorder.Group>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              onChange([...sections, emptySection(sections.length)]);
+              setOpenId(sections.length);
+            }}
+          >
+            <Plus className="size-4" /> เพิ่มหมวด
+          </Button>
+        </div>
+
+        <div className="lg:sticky lg:top-4">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ตัวอย่างหน้าจอผู้ประเมิน</span>
+            <div className="mt-3">
+              <TemplateFormRenderer sections={toRendererSections(sections)} mode="preview" />
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        {sections.map((s, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setActiveIndex(i)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition",
-              i === activeIndex
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground hover:bg-muted",
-            )}
-          >
-            {s.name || "(ไม่มีชื่อ)"} · {s.questions.length} ข้อ
-          </button>
-        ))}
-      </div>
-
-      {active ? (
-        <SectionQuestionsPanel section={active} onChange={(section) => updateSection(activeIndex, section)} />
-      ) : (
-        <p className="text-sm text-muted-foreground">ยังไม่มีหมวด — กลับไปตั้งหัวข้อก่อน</p>
-      )}
     </div>
   );
 }

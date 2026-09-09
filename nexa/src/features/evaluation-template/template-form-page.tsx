@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { FormPageShell } from "@/components/shared/form-page-shell";
@@ -14,13 +14,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api/client";
 import { AiTemplateDesignerPanel } from "./ai-template-designer-panel";
 import { TopicsAndQuestionsBuilder, emptySection, NON_SCORING_TYPES } from "./template-builder-fields";
-import { TemplateFormRenderer } from "./template-renderer";
 import { useCreateEvaluationTemplate, useUpdateEvaluationTemplate } from "./hooks";
-import type { SectionFormValues, TemplateDetail, TemplateSection } from "./types";
+import type { SectionFormValues, TemplateDetail } from "./types";
 
 const FORM_ID = "evaluation-template-form";
 const LIST = "/performance/templates";
@@ -30,26 +28,6 @@ const formSchema = z.object({
   description: z.string().trim().max(1000).optional(),
 });
 type FormSchema = z.infer<typeof formSchema>;
-
-function toRendererSections(sections: SectionFormValues[]): TemplateSection[] {
-  return sections.map((s, si) => ({
-    id: `preview-section-${si}`,
-    name: s.name || "(ยังไม่มีชื่อหมวด)",
-    order: si,
-    questions: s.questions.map((q, qi) => ({
-      id: `preview-question-${si}-${qi}`,
-      text: q.text || "(ยังไม่มีคำถาม)",
-      helpText: q.helpText ?? null,
-      answerType: q.answerType,
-      options: q.options ?? null,
-      weight: q.weight,
-      required: q.required,
-      order: qi,
-      visibleTo: q.visibleTo,
-      competencyId: q.competencyId ?? null,
-    })),
-  }));
-}
 
 export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
   const router = useRouter();
@@ -78,7 +56,6 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
   const [aiGenerated, setAiGenerated] = useState(template?.aiGenerated ?? false);
   const [aiRationale, setAiRationale] = useState(template?.aiRationale ?? "");
   const [showAiDesigner, setShowAiDesigner] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
 
   const createMutation = useCreateEvaluationTemplate();
   const updateMutation = useUpdateEvaluationTemplate(template?.id ?? "");
@@ -153,15 +130,15 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
       breadcrumbs={[{ label: "ประเมินผล", href: "/performance" }, { label: "แบบประเมิน", href: LIST }, { label: isEdit ? "แก้ไขแบบประเมิน" : "สร้างแบบประเมิน" }]}
       backHref={isEdit ? LIST : LIST}
       title={isEdit ? "แก้ไขแบบประเมิน" : "สร้างแบบประเมิน"}
-      description="กำหนดหมวดและข้อคำถามของแบบประเมิน — ตรวจสอบด้วยปุ่ม “ดูตัวอย่าง” ก่อนเปิดใช้งานจริง"
+      description="ตั้งหมวดหัวข้อและคำถามในหน้าเดียว พร้อมดูตัวอย่างด้านข้าง"
       formId={FORM_ID}
       pending={pending}
       onCancel={() => router.push(LIST)}
       actions={actions}
     >
       <Form {...form}>
-        <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-4">
-          <div className="grid grid-cols-1 gap-3">
+        <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="max-w-4xl space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="name"
@@ -190,19 +167,13 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-foreground">หมวดและข้อย่อย</p>
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowPreview(true)}>
-                <Eye className="size-4" /> ดูตัวอย่าง
+          {!showAiDesigner && (
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowAiDesigner(true)}>
+                <Sparkles className="size-4" /> ให้ AI ออกแบบให้
               </Button>
-              {!showAiDesigner && (
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowAiDesigner(true)}>
-                  <Sparkles className="size-4" /> ให้ AI ออกแบบให้
-                </Button>
-              )}
             </div>
-          </div>
+          )}
 
           {aiGenerated && <p className="text-xs text-primary">ออกแบบด้วย AI — สามารถแก้ไขหมวด/คำถามได้ตามต้องการก่อนบันทึก</p>}
 
@@ -217,16 +188,6 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
           <TopicsAndQuestionsBuilder sections={sections} onChange={setSections} />
         </form>
       </Form>
-
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{form.watch("name") || "ตัวอย่างแบบประเมิน"}</DialogTitle>
-          </DialogHeader>
-          {form.watch("description") && <p className="text-sm text-muted-foreground">{form.watch("description")}</p>}
-          <TemplateFormRenderer sections={toRendererSections(sections)} mode="preview" />
-        </DialogContent>
-      </Dialog>
     </FormPageShell>
   );
 }
