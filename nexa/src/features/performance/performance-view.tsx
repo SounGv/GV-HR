@@ -35,11 +35,15 @@ import { EvaluationDashboardView } from "@/features/campaign/evaluation-dashboar
 import { useReviews } from "./hooks";
 
 /**
- * Three top-level tabs only — 9-Box/Calibration/Succession/AI/schedules/
- * competencies used to all sit in one flat row, which buried the two things
- * most people actually need (my own results, and HR's campaign setup) among
- * rarely-used analytics tools. Everything HR-only now nests under
- * "จัดการรอบประเมิน" / "วิเคราะห์บุคลากร" instead of competing for top billing.
+ * One flat row of top-level tabs, no tabs-nested-in-tabs — the previous
+ * version buried "งานที่ต้องประเมิน"/"ผลประเมิน"/IDP three levels deep inside
+ * an outer "งานประเมิน" tab that itself sat beside "จัดการรอบประเมิน"/
+ * "วิเคราะห์บุคลากร", so every regular employee had to learn a nested-tabs
+ * pattern just to reach their own task list. Each of those three is now its
+ * own top-level tab instead. HR-only tools stay grouped under "จัดการรอบ
+ * ประเมิน" / "วิเคราะห์บุคลากร" (still internally tabbed — that grouping is
+ * coherent, all analytics, all rarely used by non-HR, and never shown to
+ * anyone without the relevant permission at all).
  */
 export function PerformanceView() {
   const { can } = useAuth();
@@ -51,10 +55,16 @@ export function PerformanceView() {
   const canAnalytics = canHrLevel || canCalibration || canSuccession;
 
   return (
-    <Tabs defaultValue="tasks" className="space-y-4">
+    <Tabs defaultValue="assignments" className="space-y-4">
       <TabsList>
-        <TabsTrigger value="tasks">
-          <ClipboardCheck className="size-3.5" /> งานประเมิน
+        <TabsTrigger value="assignments">
+          <ListChecks className="size-3.5" /> งานที่ต้องประเมิน
+        </TabsTrigger>
+        <TabsTrigger value="results">
+          <ClipboardCheck className="size-3.5" /> ผลประเมิน
+        </TabsTrigger>
+        <TabsTrigger value="idp">
+          <Rocket className="size-3.5" /> แผนพัฒนา (IDP)
         </TabsTrigger>
         {canCampaign && (
           <TabsTrigger value="manage">
@@ -68,8 +78,16 @@ export function PerformanceView() {
         )}
       </TabsList>
 
-      <TabsContent value="tasks">
-        <EvaluationTasksTab canReview={canReview} />
+      <TabsContent value="assignments">
+        <MyAssignments />
+      </TabsContent>
+
+      <TabsContent value="results">
+        <ResultsTab canReview={canReview} />
+      </TabsContent>
+
+      <TabsContent value="idp">
+        <DevelopmentPlanView />
       </TabsContent>
 
       {canCampaign && (
@@ -87,34 +105,22 @@ export function PerformanceView() {
   );
 }
 
-function EvaluationTasksTab({ canReview }: { canReview: boolean }) {
+/** My own results, plus my team's underneath (if I manage anyone) — two
+ * stacked sections on one tab instead of another nested tab row, since
+ * they're both just "results to look at," not separate workflows. */
+function ResultsTab({ canReview }: { canReview: boolean }) {
   return (
-    <Tabs defaultValue="assignments" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="assignments">
-          <ListChecks className="size-3.5" /> งานที่ต้องประเมิน
-        </TabsTrigger>
-        <TabsTrigger value="me">ผลประเมินของฉัน</TabsTrigger>
-        {canReview && <TabsTrigger value="team">ประเมินทีม</TabsTrigger>}
-        <TabsTrigger value="idp">
-          <Rocket className="size-3.5" /> แผนพัฒนา (IDP)
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="assignments">
-        <MyAssignments />
-      </TabsContent>
-      <TabsContent value="me">
+    <div className="space-y-6">
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-foreground">ผลประเมินของฉัน</h2>
         <MyReviews />
-      </TabsContent>
+      </div>
       {canReview && (
-        <TabsContent value="team">
+        <div className="border-t border-border pt-6">
           <TeamReviews />
-        </TabsContent>
+        </div>
       )}
-      <TabsContent value="idp">
-        <DevelopmentPlanView />
-      </TabsContent>
-    </Tabs>
+    </div>
   );
 }
 
