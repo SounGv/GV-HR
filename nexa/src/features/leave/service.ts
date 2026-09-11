@@ -5,6 +5,7 @@ import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { can } from "@/lib/auth/rbac";
 import { computeLeaveDays, computeLeaveHours, deductsBalance, HOURLY_LEAVE_TYPES, PAID_LEAVE_TYPES } from "./days";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 
@@ -54,7 +55,7 @@ function requireEmployeeId(session: AccessClaims): string {
  * HR-exclusive so this check can't be satisfied by a team-scoped role.
  */
 function isHrLevel(session: AccessClaims): boolean {
-  return session.perms.includes("*") || session.perms.includes("leave:approve");
+  return can(session.perms, "leave:approve");
 }
 
 // Historical system defaults — used only as a fallback so requesting leave
@@ -274,7 +275,9 @@ export async function listLeave(
 
   if (query.scope === "me") {
     employeeIds = [requireEmployeeId(session)];
-  } else if (query.scope === "team") {
+  } else if (query.scope === "team" && !isHrLevel(session)) {
+    // HR-level approvers see every pending request company-wide, not just
+    // requests from employees whose managerId literally points at them.
     const reports = await prisma.employee.findMany({
       where: { companyId, managerId: session.employeeId ?? "__none__", deletedAt: null },
       select: { id: true },
@@ -282,7 +285,7 @@ export async function listLeave(
     employeeIds = reports.map((r) => r.id);
     if (employeeIds.length === 0) return [];
   }
-  // scope "all" → company-wide
+  // scope "all", or scope "team" for an HR-level approver → company-wide
 
   return prisma.leaveRequest.findMany({
     where: {

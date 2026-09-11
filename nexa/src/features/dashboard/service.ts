@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { can } from "@/lib/auth/rbac";
 import type { RequestStep } from "@/features/workflow/types";
 import { getRemainingBalance, isCompanyLeaveQuotaConfigured, isDailyCompensation } from "@/features/leave/service";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
@@ -26,6 +27,7 @@ export async function getActionCenter(
   companyId: string,
   employeeId: string | null,
   roles: string[],
+  perms: string[],
 ): Promise<DashboardActions> {
   const reportIds = employeeId
     ? (
@@ -51,12 +53,24 @@ export async function getActionCenter(
   // pending" and "my total" for each request type are read off a single
   // findMany (just the status column) instead of two separate count()
   // round trips — same data, half the queries, no raw SQL involved.
-  const leave = hasReports
-    ? await prisma.leaveRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
-    : 0;
-  const overtime = hasReports
-    ? await prisma.overtimeRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
-    : 0;
+  // HR-level approvers (leave:approve / overtime:approve, incl. via the
+  // "leave:*"/"overtime:*" wildcard) act company-wide, not just on their own
+  // direct reports — same rule listLeave/listOvertime apply for the "team"
+  // scope, so the count here has to match what the Approvals tab actually
+  // shows or the tile silently disappears (data.approvals[key] === 0 hides
+  // it) even though there are real pending requests to act on.
+  const isHrForLeave = can(perms, "leave:approve");
+  const isHrForOvertime = can(perms, "overtime:approve");
+  const leave = isHrForLeave
+    ? await prisma.leaveRequest.count({ where: reportFilter })
+    : hasReports
+      ? await prisma.leaveRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
+      : 0;
+  const overtime = isHrForOvertime
+    ? await prisma.overtimeRequest.count({ where: reportFilter })
+    : hasReports
+      ? await prisma.overtimeRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
+      : 0;
   const expense = hasReports
     ? await prisma.expenseClaim.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
     : 0;

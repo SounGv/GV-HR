@@ -188,7 +188,7 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   // Sequential, not Promise.all — connection_limit=1.
   const s = await getDashboardSummary(user!.companyId);
-  const actions = await getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles);
+  const actions = await getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles, user!.permissions);
   const mine = user!.employee ? await getMySnapshot(user!.companyId, user!.employee.id) : null;
   const attendanceTrend = await getAttendanceTrend(user!.companyId);
   const departmentWatchlist = await getDepartmentWatchlist(user!.companyId);

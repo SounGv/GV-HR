@@ -6,6 +6,7 @@ import { createNotification } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { can } from "@/lib/auth/rbac";
 import { computeHours, estimateAmount, minutesSinceWorkDateStart, DEFAULT_MULTIPLIER, MIN_OT_MINUTES } from "./calc";
 import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
 
@@ -42,7 +43,7 @@ function requireEmployeeId(session: AccessClaims): string {
  * team-scoped role.
  */
 function isHrLevel(session: AccessClaims): boolean {
-  return session.perms.includes("*") || session.perms.includes("overtime:approve");
+  return can(session.perms, "overtime:approve");
 }
 
 export async function createOvertime(
@@ -138,7 +139,9 @@ export async function listOvertime(
 
   if (query.scope === "me") {
     employeeIds = [requireEmployeeId(session)];
-  } else if (query.scope === "team") {
+  } else if (query.scope === "team" && !isHrLevel(session)) {
+    // HR-level approvers see every pending request company-wide, not just
+    // requests from employees whose managerId literally points at them.
     const reports = await prisma.employee.findMany({
       where: { companyId, managerId: session.employeeId ?? "__none__", deletedAt: null },
       select: { id: true },
