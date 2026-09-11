@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { type LucideIcon, Pencil, X, Check } from "lucide-react";
+import { type LucideIcon, FileText, Pencil, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -96,19 +96,17 @@ export function ReasonCard({
   id,
   reason,
   canEdit,
-  icon,
 }: {
   id: string;
   reason: string;
   canEdit: boolean;
-  icon: LucideIcon;
 }) {
   const router = useRouter();
   const mut = useUpdateOvertimeReason();
 
   return (
     <EditableNoteCard
-      icon={icon}
+      icon={FileText}
       label="เหตุผล"
       value={reason}
       placeholder="เหตุผลการขอ OT"

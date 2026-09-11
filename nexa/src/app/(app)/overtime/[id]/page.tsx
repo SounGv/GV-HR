@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock3, Coins, FileText, UserRound } from "lucide-react";
+import { Clock3, Coins, UserRound } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
@@ -71,7 +71,7 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
             <InfoRow label="คูณ" value={`${request.multiplier}x`} />
           </div>
           <div className="rounded-lg border border-border bg-muted/40 p-3">
-            <ReasonCard id={request.id} reason={request.reason ?? ""} canEdit={canEditReason} icon={FileText} />
+            <ReasonCard id={request.id} reason={request.reason ?? ""} canEdit={canEditReason} />
           </div>
           {(request.decisionNote || canEditNote) && (
             <div className="rounded-lg border border-border bg-muted/40 p-3">
