@@ -6,8 +6,9 @@ export function fetchNotifications() {
   return api.get<Envelope<NotificationFeed>>("/api/notifications");
 }
 
-export function markNotificationsRead() {
-  return api.post<Envelope<{ success: true }>>("/api/notifications/read", {});
+/** Omit `id` to mark every unread notification read; pass one to mark just that notification. */
+export function markNotificationsRead(id?: string) {
+  return api.post<Envelope<{ success: true }>>("/api/notifications/read", id ? { id } : {});
 }
 
 export function sendBroadcastNotification(input: SendNotificationInput) {

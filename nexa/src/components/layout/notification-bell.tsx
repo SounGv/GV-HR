@@ -38,7 +38,7 @@ export function NotificationBell() {
               variant="ghost"
               size="sm"
               className="h-7 gap-1 text-xs text-muted-foreground"
-              onClick={() => markRead.mutate()}
+              onClick={() => markRead.mutate(undefined)}
               disabled={markRead.isPending}
             >
               <CheckCheck className="size-3.5" />
@@ -67,16 +67,27 @@ export function NotificationBell() {
                     </div>
                   </div>
                 );
+                // Following the link (or just opening a link-less one) is
+                // itself the acknowledgment — mark it read right then
+                // instead of leaving the badge stuck until "อ่านทั้งหมด".
+                const onOpen = () => {
+                  if (!n.read) markRead.mutate(n.id);
+                };
                 return n.link ? (
                   <Link
                     key={n.id}
                     href={n.link}
+                    onClick={onOpen}
                     className={`block px-3 py-2.5 transition hover:bg-muted/60 ${n.read ? "" : "bg-primary/5"}`}
                   >
                     {body}
                   </Link>
                 ) : (
-                  <li key={n.id} className={`px-3 py-2.5 ${n.read ? "" : "bg-primary/5"}`}>
+                  <li
+                    key={n.id}
+                    onClick={onOpen}
+                    className={`px-3 py-2.5 ${n.read ? "" : "cursor-pointer bg-primary/5"}`}
+                  >
                     {body}
                   </li>
                 );

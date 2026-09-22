@@ -2,7 +2,7 @@ import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import { createNotification } from "@/features/notification/service";
+import { createNotification, markNotificationsByLinkRead } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
@@ -429,6 +429,13 @@ export async function decideLeave(
     after: { status: nextStatus },
     ...meta,
   });
+
+  // Deciding the request is itself the acknowledgment — clears the
+  // approver's "รออนุมัติ" notification even if they approved straight from
+  // a LINE push-notification link, which never touches the in-app bell/list.
+  if (session.employeeId) {
+    await markNotificationsByLinkRead(companyId, session.employeeId, `/leave/${req.id}`);
+  }
 
   const decidedAmountLabel = isHourly ? `${req.hours} ชม.` : `${req.days} วัน`;
   await createNotification(

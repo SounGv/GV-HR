@@ -28,6 +28,35 @@ export async function markAllRead(companyId: string, employeeId: string) {
 }
 
 /**
+ * Marks one notification read — tapping it to follow its link (e.g. an OT
+ * request) is itself the acknowledgment, so the badge shouldn't stay stuck
+ * until the user separately hits "อ่านทั้งหมด". Scoped by companyId+employeeId
+ * so a guessed/foreign id silently updates nothing rather than leaking
+ * whether it exists.
+ */
+export async function markOneRead(companyId: string, employeeId: string, notificationId: string) {
+  await prisma.notification.updateMany({
+    where: { id: notificationId, companyId, employeeId },
+    data: { read: true },
+  });
+}
+
+/**
+ * Marks read any notification pointing at `link` for this employee — used
+ * when they actually decide (approve/reject) the leave/OT request the
+ * notification was about. Deciding it is a stronger acknowledgment than
+ * opening it, and covers approving straight from a LINE push-notification
+ * deep link, which never touches the in-app bell/list at all so a per-click
+ * mark-read there wouldn't fire.
+ */
+export async function markNotificationsByLinkRead(companyId: string, employeeId: string, link: string) {
+  await prisma.notification.updateMany({
+    where: { companyId, employeeId, link, read: false },
+    data: { read: true },
+  });
+}
+
+/**
  * Create an in-app notification for one employee (used by the AI
  * send_notification tool, and every leave/OT decision). Also best-effort
  * pushes the same message via LINE if the employee has linked their account —

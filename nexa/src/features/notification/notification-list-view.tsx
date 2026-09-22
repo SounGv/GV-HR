@@ -25,7 +25,7 @@ export function NotificationListView() {
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => markRead.mutate()}
+            onClick={() => markRead.mutate(undefined)}
             disabled={markRead.isPending}
           >
             <CheckCheck className="size-3.5" />
@@ -62,12 +62,18 @@ export function NotificationListView() {
                 {n.link && <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />}
               </div>
             );
+            // Following the link (or just opening a link-less one) is itself
+            // the acknowledgment — mark it read right then instead of
+            // leaving the badge stuck until "อ่านทั้งหมด".
+            const onOpen = () => {
+              if (!n.read) markRead.mutate(n.id);
+            };
             return n.link ? (
-              <Link key={n.id} href={n.link} className={`block px-4 py-3 transition hover:bg-muted/60 ${n.read ? "" : "bg-primary/5"}`}>
+              <Link key={n.id} href={n.link} onClick={onOpen} className={`block px-4 py-3 transition hover:bg-muted/60 ${n.read ? "" : "bg-primary/5"}`}>
                 {body}
               </Link>
             ) : (
-              <li key={n.id} className={`px-4 py-3 ${n.read ? "" : "bg-primary/5"}`}>
+              <li key={n.id} onClick={onOpen} className={`px-4 py-3 ${n.read ? "" : "cursor-pointer bg-primary/5"}`}>
                 {body}
               </li>
             );
