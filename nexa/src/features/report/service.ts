@@ -471,7 +471,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       }
       const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
       const approvedOt = otByKey.get(otKey);
-      const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate);
+      const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate, r.employee.employmentType);
       const otHoursNum = approvedOt ?? calculatedOtHoursOf(r.clockInAt, r.clockOutAt, shift.endMin);
       if (otHoursNum) totalOt += otHoursNum;
       const lateMinutes = lateMinutesOf(r.clockInAt, shift.startMin);
@@ -1001,7 +1001,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
       select: {
         employeeId: true, workDate: true, clockInAt: true, clockOutAt: true, status: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, employmentType: true, department: { select: { name: true } } } },
       },
     });
     const holidays = await prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } });
@@ -1054,7 +1054,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         });
       }
       if (r.clockInAt && r.status === "LATE") {
-        const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate);
+        const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate, r.employee.employmentType);
         const lateMin = bangkokParts(r.clockInAt).minutesOfDay - shift.startMin;
         if (lateMin > 180) {
           findings.push({

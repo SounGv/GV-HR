@@ -54,6 +54,7 @@ export async function importAttendance(
       id: true,
       employeeCode: true,
       branchId: true,
+      employmentType: true,
       compensationType: true,
       baseSalary: true,
       dailyRate: true,
@@ -109,7 +110,7 @@ export async function importAttendance(
       continue;
     }
     const [hh, mm] = r.clockIn.split(":").map(Number);
-    const shift = shiftMinutesFromBatch(shiftMap, employee.id, workDate);
+    const shift = shiftMinutesFromBatch(shiftMap, employee.id, workDate, employee.employmentType);
     const status = lateOrPresent(hh * 60 + mm, shift.startMin);
 
     await prisma.attendanceRecord.create({
