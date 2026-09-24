@@ -441,9 +441,19 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // working late. Used as the OT figure whenever no approved request
     // exists; the approved amount wins when one does, so a real filed/paid
     // OT request is never silently overridden by the raw clock-time estimate.
-    const calculatedOtHoursOf = (clockOutAt: Date | null, shiftEndMin: number): number => {
-      if (!clockOutAt) return 0;
-      const over = bangkokParts(clockOutAt).minutesOfDay - shiftEndMin;
+    //
+    // Measured from max(clockIn, shiftEnd) to clockOut, not from a fixed
+    // shiftEnd — clocking in AFTER the shift already ended (e.g. arriving at
+    // 14:09 to a 09:00–12:00 Saturday half-day) must not count the whole
+    // session as "OT past shift end" on top of it already being counted as
+    // ชั่วโมงทำงาน; that previously produced OT hours *exceeding total hours
+    // worked* that day, which can never be a correct OT figure.
+    const calculatedOtHoursOf = (clockInAt: Date | null, clockOutAt: Date | null, shiftEndMin: number): number => {
+      if (!clockInAt || !clockOutAt) return 0;
+      const clockInMin = bangkokParts(clockInAt).minutesOfDay;
+      const clockOutMin = bangkokParts(clockOutAt).minutesOfDay;
+      const overlapStart = Math.max(clockInMin, shiftEndMin);
+      const over = clockOutMin - overlapStart;
       return over > 0 ? Math.round((over / 60) * 100) / 100 : 0;
     };
 
@@ -462,7 +472,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
       const approvedOt = otByKey.get(otKey);
       const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate);
-      const otHoursNum = approvedOt ?? calculatedOtHoursOf(r.clockOutAt, shift.endMin);
+      const otHoursNum = approvedOt ?? calculatedOtHoursOf(r.clockInAt, r.clockOutAt, shift.endMin);
       if (otHoursNum) totalOt += otHoursNum;
       const lateMinutes = lateMinutesOf(r.clockInAt, shift.startMin);
       if (typeof lateMinutes === "number") {
