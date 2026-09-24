@@ -385,21 +385,37 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       take: 1000,
     });
     const branches = await prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } });
-    // Same APPROVED-only convention as the standalone "overtime" report
-    // below — joined in here by (employeeId, date) so each attendance row
-    // can show that day's OT alongside its regular hours.
+    // Every status here (not just APPROVED) — "สถานะ OT"/"ผู้อนุมัติ OT" below
+    // need to show a still-pending request too, not just go blank for it.
+    // The `otByKey` hours sum (used for the "ชั่วโมง OT" column and as the
+    // fallback OT estimate) still only counts APPROVED, same as before.
     const ots = await prisma.overtimeRequest.findMany({
-      where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: start, lt: end }, ...deptRel },
-      select: { employeeId: true, date: true, hours: true },
+      where: { companyId, deletedAt: null, date: { gte: start, lt: end }, ...deptRel },
+      select: { employeeId: true, date: true, hours: true, status: true, approverUserId: true },
+      orderBy: { createdAt: "desc" },
     });
     const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
     const editorNameById = await resolveUserNames(recs.map((r) => r.updatedById));
+    const otApproverNameById = await resolveUserNames(ots.map((o) => o.approverUserId));
     const branchName = new Map(branches.map((b) => [b.id, b.name]));
     const otByKey = new Map<string, number>();
+    // One request per (employee, day) is the near-universal case; if more
+    // than one somehow exists (e.g. resubmitted after rejection), the most
+    // recently created one wins for status/approver — `ots` is already
+    // ordered createdAt desc, and a Map only keeps the first value it sees
+    // per key.
+    const otApprovalByKey = new Map<string, { status: string; approverUserId: string | null }>();
     for (const o of ots) {
       const key = `${o.employeeId}|${o.date.toISOString().slice(0, 10)}`;
-      otByKey.set(key, (otByKey.get(key) ?? 0) + o.hours);
+      if (o.status === "APPROVED") otByKey.set(key, (otByKey.get(key) ?? 0) + o.hours);
+      if (!otApprovalByKey.has(key)) otApprovalByKey.set(key, { status: o.status, approverUserId: o.approverUserId });
     }
+    const OT_STATUS_LABEL_SHORT: Record<string, string> = {
+      PENDING: "รออนุมัติ",
+      APPROVED: "อนุมัติแล้ว",
+      REJECTED: "ไม่อนุมัติ",
+      CANCELLED: "ยกเลิก",
+    };
     const fmtTime = (d: Date | null) =>
       d
         ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(d)
@@ -474,6 +490,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate, r.employee.employmentType);
       const otHoursNum = approvedOt ?? calculatedOtHoursOf(r.clockInAt, r.clockOutAt, shift.endMin);
       if (otHoursNum) totalOt += otHoursNum;
+      const otApproval = otApprovalByKey.get(otKey);
       const lateMinutes = lateMinutesOf(r.clockInAt, shift.startMin);
       if (typeof lateMinutes === "number") {
         lateCount++;
@@ -505,6 +522,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         breakMinutes: breakMinutesOf(r.breakStartAt, r.breakEndAt),
         hours,
         otHours: otHoursNum ? Math.round(otHoursNum * 100) / 100 : "-",
+        otStatus: otApproval ? OT_STATUS_LABEL_SHORT[otApproval.status] ?? otApproval.status : "-",
+        otApprover: otApproval?.approverUserId ? otApproverNameById.get(otApproval.approverUserId) ?? "-" : "-",
         lateMinutes,
         earlyMinutes: earlyMinutesOf(r.clockOutAt, shift.endMin),
         status: ATTENDANCE_STATUS_LABEL[status] ?? status,
@@ -538,20 +557,22 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "shiftStart", label: "เวลาเริ่มกะ" },
         { key: "shiftEnd", label: "เวลาเลิกกะ" },
         { key: "clockIn", label: "เวลาเข้า" },
+        { key: "clockInPhoto", label: "รูปเช็คอิน", photo: true },
         { key: "clockOut", label: "เวลาออก" },
+        { key: "clockOutPhoto", label: "รูปเช็คเอาท์", photo: true },
+        { key: "location", label: "สถานที่" },
+        { key: "distance", label: "ระยะห่าง (ม.)", numeric: true },
         { key: "breakMinutes", label: "เวลาพัก (นาที)", numeric: true },
         { key: "hours", label: "ชั่วโมงทำงาน", numeric: true },
         { key: "otHours", label: "ชั่วโมง OT", numeric: true },
+        { key: "otStatus", label: "สถานะ OT" },
+        { key: "otApprover", label: "ผู้อนุมัติ OT" },
         { key: "status", label: "สถานะ" },
         { key: "lateMinutes", label: "สาย (นาที)", numeric: true },
         { key: "earlyMinutes", label: "ออกก่อน (นาที)", numeric: true },
         { key: "workMode", label: "รูปแบบงาน" },
         { key: "note", label: "หมายเหตุ" },
         { key: "editor", label: "ผู้แก้ไขเวลา" },
-        { key: "location", label: "สถานที่" },
-        { key: "distance", label: "ระยะห่าง (ม.)", numeric: true },
-        { key: "clockInPhoto", label: "รูปเช็คอิน", photo: true },
-        { key: "clockOutPhoto", label: "รูปเช็คเอาท์", photo: true },
       ],
       rows,
     };
