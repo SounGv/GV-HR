@@ -392,7 +392,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // fallback OT estimate) still only counts APPROVED, same as before.
     const ots = await prisma.overtimeRequest.findMany({
       where: { companyId, deletedAt: null, date: { gte: start, lt: end }, ...deptRel },
-      select: { employeeId: true, date: true, hours: true, status: true, approverUserId: true },
+      select: { employeeId: true, date: true, hours: true, status: true, approverUserId: true, reason: true },
       orderBy: { createdAt: "desc" },
     });
     const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
@@ -405,11 +405,11 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // recently created one wins for status/approver — `ots` is already
     // ordered createdAt desc, and a Map only keeps the first value it sees
     // per key.
-    const otApprovalByKey = new Map<string, { status: string; approverUserId: string | null }>();
+    const otApprovalByKey = new Map<string, { status: string; approverUserId: string | null; reason: string | null }>();
     for (const o of ots) {
       const key = `${o.employeeId}|${o.date.toISOString().slice(0, 10)}`;
       if (o.status === "APPROVED") otByKey.set(key, (otByKey.get(key) ?? 0) + o.hours);
-      if (!otApprovalByKey.has(key)) otApprovalByKey.set(key, { status: o.status, approverUserId: o.approverUserId });
+      if (!otApprovalByKey.has(key)) otApprovalByKey.set(key, { status: o.status, approverUserId: o.approverUserId, reason: o.reason });
     }
     const OT_STATUS_LABEL_SHORT: Record<string, string> = {
       PENDING: "รออนุมัติ",
@@ -526,6 +526,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         otHours: otHoursNum ? Math.round(otHoursNum * 100) / 100 : "-",
         otStatus: otApproval ? OT_STATUS_LABEL_SHORT[otApproval.status] ?? otApproval.status : "-",
         otApprover: otApproval?.approverUserId ? otApproverNameById.get(otApproval.approverUserId) ?? "-" : "-",
+        otReason: otApproval?.reason ?? "-",
         lateMinutes,
         earlyMinutes: earlyMinutesOf(r.clockOutAt, shift.endMin),
         status: ATTENDANCE_STATUS_LABEL[status] ?? status,
@@ -570,6 +571,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "otHours", label: "ชั่วโมง OT", numeric: true },
         { key: "otStatus", label: "สถานะ OT" },
         { key: "otApprover", label: "ผู้อนุมัติ OT" },
+        { key: "otReason", label: "เหตุผลขอ OT" },
         { key: "status", label: "สถานะ" },
         { key: "lateMinutes", label: "สาย (นาที)", numeric: true },
         { key: "earlyMinutes", label: "ออกก่อน (นาที)", numeric: true },

@@ -86,10 +86,23 @@ function ReportStatusCell({ row }: { row: Record<string, string | number> }) {
   return <AttendanceStatusBadge status={key} />;
 }
 
-/** Photo cells hold a full base64 data URL — useless (and huge) in a CSV/
- * Excel/PDF export or an AI prompt, so every export path drops them first. */
+/** Photo cells hold a full base64 data URL — useless (and huge) as raw text
+ * in a CSV/PDF export or an AI prompt, so those paths drop them. The Excel
+ * export is the exception: it embeds them as real thumbnail images instead
+ * (see exportExcel), since .xlsx is the format HR actually shares/archives
+ * these reports in. */
 function exportableColumns(result: ReportResult) {
   return result.columns.filter((c) => !c.photo);
+}
+
+/** data:image/<ext>;base64,<data> → the pieces exceljs needs, or null if the
+ * cell has no photo ("-") or isn't a data URL for some other reason. */
+function parseImageDataUrl(value: string | number | undefined): { base64: string; extension: "png" | "jpeg" } | null {
+  if (typeof value !== "string") return null;
+  const match = value.match(/^data:image\/(png|jpe?g);base64,(.+)$/i);
+  if (!match) return null;
+  const extension = match[1].toLowerCase().startsWith("png") ? "png" : "jpeg";
+  return { base64: match[2], extension };
 }
 
 /** Render the report as a compact text table the AI can reason over. */
@@ -235,14 +248,43 @@ export function ReportView() {
 
   async function exportExcel() {
     if (!result) return;
-    const columns = exportableColumns(result);
-    const XLSX = await import("xlsx");
-    const header = columns.map((c) => c.label);
-    const body = result.rows.map((r) => columns.map((c) => r[c.key] ?? ""));
-    const sheet = XLSX.utils.aoa_to_sheet([header, ...body]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, REPORT_LABELS[type].slice(0, 31));
-    XLSX.writeFile(workbook, `${type}-${from}_${to}.xlsx`);
+    const columns = result.columns; // photo columns included — embedded as real images below
+    const PHOTO_PX = 70;
+    const ExcelJS = (await import("exceljs")).default;
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet(REPORT_LABELS[type].slice(0, 31));
+    sheet.columns = columns.map((c) => ({ header: c.label, key: c.key, width: c.photo ? 12 : 16 }));
+
+    for (const row of result.rows) {
+      const textValues: Record<string, string | number> = {};
+      for (const c of columns) {
+        if (!c.photo) textValues[c.key] = row[c.key] ?? "";
+      }
+      const excelRow = sheet.addRow(textValues);
+      excelRow.height = PHOTO_PX * 0.75; // px → pt
+
+      columns.forEach((c, colIndex) => {
+        if (!c.photo) return;
+        const image = parseImageDataUrl(row[c.key]);
+        if (!image) return; // "-" (no photo taken) — leave the cell blank
+        const imageId = workbook.addImage(image);
+        sheet.addImage(imageId, {
+          tl: { col: colIndex, row: excelRow.number - 1 },
+          ext: { width: PHOTO_PX, height: PHOTO_PX },
+        });
+      });
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${type}-${from}_${to}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
     toast.success("ดาวน์โหลด Excel แล้ว");
   }
 
