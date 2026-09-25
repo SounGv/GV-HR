@@ -12,7 +12,7 @@ export function LoginButton({
     <Button
       size="lg"
       className={cn(
-        "h-[52px] w-full rounded-[11px] bg-[var(--login-brand-green)] text-base text-white hover:bg-[var(--login-brand-green-dark)]",
+        "h-14 w-full rounded-[14px] bg-[var(--login-brand-green)] text-[17px] font-semibold text-white hover:bg-[var(--login-brand-green-dark)]",
         className,
       )}
       disabled={loading || props.disabled}

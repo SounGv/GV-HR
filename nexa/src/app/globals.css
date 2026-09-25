@@ -95,99 +95,99 @@
   --font-sans: var(--font-plex-sans-thai), "Sarabun", system-ui, sans-serif;
   --font-heading: var(--font-sora), var(--font-plex-sans-thai), "Sarabun", system-ui, sans-serif;
 
-  /* Surfaces — plain white page background (2026-08-26 feedback: the
-     previous warm off-white read as a yellowish/cream tint and was hard
-     to look at — back to true white, both web and mobile). */
-  --background: #ffffff;
-  --foreground: #182014;
+  /* Surfaces — 2026-09-25 "GV lime" retheme: light-gray page canvas with
+     white cards, colors drawn directly from the real Gadget Villa logo
+     (see gv-ui-design skill / the J·K·L·M mockup set this replaces). */
+  --background: #f5f6f7;
+  --foreground: #131516;
   --card: #ffffff;
-  --card-foreground: #182014;
+  --card-foreground: #131516;
   --popover: #ffffff;
-  --popover-foreground: #182014;
+  --popover-foreground: #131516;
 
-  /* Brand green — Gadget Villa, tuned to the Tailwind green scale (green-500
-     as primary, 2026-08-29 retheme away from the earlier lime). Backgrounds
-     pair with white text — green-500 is darker/more saturated than the old
-     lime-500 and doesn't carry near-black text as legibly. */
-  --primary: #22c55e;
+  /* Charcoal is the primary action color (buttons on white) per the
+     palette's own legend; Volt lime is reserved for accents/selected
+     states on dark surfaces (sidebar active item, status dots) — see
+     --sidebar-primary below, not used here. */
+  --primary: #131516;
   --primary-foreground: #ffffff;
-  --secondary: #dcfce7;
-  --secondary-foreground: #14532d;
-  --muted: #e9ebdd;
-  --muted-foreground: #6b7668;
-  --accent: #dcfce7;
-  --accent-foreground: #14532d;
-  --destructive: #e4573d;
+  --secondary: #f4fad2;
+  --secondary-foreground: #4e5c00;
+  --muted: #eceef0;
+  --muted-foreground: #5e6670;
+  --accent: #f4fad2;
+  --accent-foreground: #4e5c00;
+  --destructive: #c62828;
 
-  --success: #0e9f8e;
+  --success: #1a7f4e;
   --success-foreground: #ffffff;
-  --success-muted: #e6f7f4;
-  --destructive-muted: #fdece8;
-  --surface-muted: #edeee2;
+  --success-muted: #e3f4ea;
+  --destructive-muted: #fce8e8;
+  --surface-muted: #eceef0;
 
-  --warning: #f59e0b;
-  --warning-foreground: #1a1b22;
-  --info: #2563eb;
+  --warning: #8a6100;
+  --warning-foreground: #ffffff;
+  --info: #1d5fd1;
   --info-foreground: #ffffff;
 
-  --border: #dce6d4;
-  --input: #dce6d4;
-  --ring: #15803d;
+  --border: #e5e9ed;
+  --input: #e5e9ed;
+  --ring: #131516;
 
-  /* Login-page design tokens (2026-08-31 Gadget Villa rebrand of the login
-     screen only) — namespaced so they don't collide with or override the
-     app-wide tokens above, which every other screen still uses unchanged. */
-  --login-brand-green: #267a2b;
-  --login-brand-green-dark: #18551f;
-  --login-brand-lime: #b8e600;
-  --login-brand-lime-light: #eaf7c9;
-  --login-text-primary: #1f2937;
-  --login-text-secondary: #6b7280;
-  --login-background: #fafcf7;
+  /* Login-page design tokens — namespaced so they don't collide with the
+     app-wide tokens above. Matches the K·GvOneLogin2 mockup: plain white
+     page (no card), charcoal primary button, olive links. */
+  --login-brand-green: #131516;
+  --login-brand-green-dark: #272b30;
+  --login-brand-lime: #cdeb03;
+  --login-brand-lime-light: #f4fad2;
+  --login-link: #4e5c00;
+  --login-link-hover: #3e4a00;
+  --login-text-primary: #131516;
+  --login-text-secondary: #5e6670;
+  --login-background: #ffffff;
   --login-surface: #ffffff;
-  --login-border: #d9e2d5;
-  --login-error: #b42318;
+  --login-border: #d4d9df;
+  --login-error: #c62828;
 
-  --chart-1: #22c55e;
-  --chart-2: #0e9f8e;
-  --chart-3: #f59e0b;
-  --chart-4: #15803d;
-  --chart-5: #e4573d;
+  --chart-1: #cdeb03;
+  --chart-2: #1a7f4e;
+  --chart-3: #8a6100;
+  --chart-4: #4e5c00;
+  --chart-5: #c62828;
 
-  /* Monochrome icon-chip system — every menu/KPI icon uses this green pair;
+  /* Monochrome icon-chip system — every menu/KPI icon uses this pair;
      "profile" is the one deliberate neutral-grey exception (account/personal
      items). Red is reserved for notification-count badges (--badge). */
-  --icon-chip-bg: #e8f9ee;
-  --icon-chip-fg: #15803d;
+  --icon-chip-bg: #f4fad2;
+  --icon-chip-fg: #4e5c00;
   --tone-profile-bg: #f1f3f5;
   --tone-profile-fg: #374151;
   --badge: #d92d20;
   --badge-foreground: #ffffff;
 
   /* Selected-menu state (sidebar nav item / bottom-nav tab) */
-  --menu-active-bg: #bbf7d0;
-  --menu-active-fg: #15803d;
+  --menu-active-bg: #cdeb03;
+  --menu-active-fg: #131516;
   --menu-inactive-fg: #374151;
 
-  /* Sidebar stays a dark navy now (2026-08-29 retheme); accent aligns with
-     the new brand green. */
-  --sidebar: #0f1526;
-  --sidebar-foreground: #c7cde0;
-  --sidebar-primary: #22c55e;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #141b30;
-  --sidebar-accent-foreground: #f5f6ef;
-  --sidebar-border: #1f2740;
-  --sidebar-ring: #22c55e;
+  /* Sidebar — charcoal with a Volt-lime active item, per M·GvOneWebDashboard. */
+  --sidebar: #131516;
+  --sidebar-foreground: #e6e8ea;
+  --sidebar-primary: #cdeb03;
+  --sidebar-primary-foreground: #131516;
+  --sidebar-accent: #272b30;
+  --sidebar-accent-foreground: #e6e8ea;
+  --sidebar-border: #272b30;
+  --sidebar-ring: #cdeb03;
 
-  /* Mobile Home redesign tokens — light-mode only (the mobile Home page is
-     not tested in dark mode per the spec). */
-  --gv-lime: #78c900;
-  --gv-dark-green: #1d5e22;
-  --gv-deep-green: #0f1b0c;
-  --gv-pale-green: #eaf7d6;
+  /* Mobile Home tokens — light-mode only, matches L·GvOneHome2. */
+  --gv-lime: #cdeb03;
+  --gv-dark-green: #131516;
+  --gv-deep-green: #131516;
+  --gv-pale-green: #f4fad2;
   --gv-bg: #ffffff;
-  --gv-border: #d8e4d0;
+  --gv-border: #e5e9ed;
   --gv-notif-red: #e53935;
 }
 
@@ -215,68 +215,69 @@
   }
 }
 
-/* ───────────────── GV One — Dark theme (2026-08-29 navy/green retheme) ─────────────────
-   Background family swapped from olive-black to a navy-tinted dark, and the
-   accent from lime to a true green — brighter than the light theme's primary
-   (#4ade80 vs #22c55e) since dark surfaces need more luminance to read. */
+/* ───────────────── GV One — Dark theme (2026-09-25 "GV lime" retheme) ─────────────────
+   Same charcoal/lime identity as light mode, just inverted: charcoal
+   surfaces, Volt lime as the primary accent (lime reads better than
+   charcoal on a dark background, unlike in light mode where charcoal is
+   the primary button color). */
 .dark {
-  --background: #0a0e1a;
-  --foreground: #eef0f5;
-  --card: #0f1526;
-  --card-foreground: #eef0f5;
-  --popover: #0f1526;
-  --popover-foreground: #eef0f5;
+  --background: #131516;
+  --foreground: #e6e8ea;
+  --card: #1b1e21;
+  --card-foreground: #e6e8ea;
+  --popover: #1b1e21;
+  --popover-foreground: #e6e8ea;
 
-  --primary: #4ade80;
-  --primary-foreground: #052e16;
-  --secondary: #141b30;
-  --secondary-foreground: #eef0f5;
-  --muted: #131a2c;
-  --muted-foreground: #8b93a6;
-  --accent: #12261c;
-  --accent-foreground: #4ade80;
+  --primary: #cdeb03;
+  --primary-foreground: #131516;
+  --secondary: #272b30;
+  --secondary-foreground: #e6e8ea;
+  --muted: #202327;
+  --muted-foreground: #b8bec4;
+  --accent: #2c3010;
+  --accent-foreground: #cdeb03;
   --destructive: #e4573d;
 
-  --success: #0e9f8e;
-  --success-foreground: #ffffff;
-  --success-muted: #0d3d38;
+  --success: #2fa871;
+  --success-foreground: #052e16;
+  --success-muted: #123024;
   --destructive-muted: #3d1f18;
-  --surface-muted: #131a2c;
+  --surface-muted: #202327;
 
-  --warning: #f59e0b;
+  --warning: #f5b700;
   --warning-foreground: #1f2937;
-  --info: #3b82f6;
+  --info: #5b8ef5;
   --info-foreground: #ffffff;
 
-  --border: #1f2740;
-  --input: #1f2740;
-  --ring: #22c55e;
+  --border: #272b30;
+  --input: #272b30;
+  --ring: #cdeb03;
 
-  --chart-1: #22c55e;
-  --chart-2: #0e9f8e;
-  --chart-3: #fbbf24;
-  --chart-4: #15803d;
+  --chart-1: #cdeb03;
+  --chart-2: #2fa871;
+  --chart-3: #f5b700;
+  --chart-4: #8a9a00;
   --chart-5: #e4573d;
 
-  --icon-chip-bg: #12261c;
-  --icon-chip-fg: #4ade80;
+  --icon-chip-bg: #2c3010;
+  --icon-chip-fg: #cdeb03;
   --tone-profile-bg: #262b33;
   --tone-profile-fg: #cbd5e1;
   --badge: #ef4444;
   --badge-foreground: #ffffff;
 
-  --menu-active-bg: #17351f;
-  --menu-active-fg: #4ade80;
+  --menu-active-bg: #cdeb03;
+  --menu-active-fg: #131516;
   --menu-inactive-fg: #c7cde0;
 
-  --sidebar: #0a0e1a;
-  --sidebar-foreground: #c7cde0;
-  --sidebar-primary: #22c55e;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #141b30;
-  --sidebar-accent-foreground: #eef0f5;
-  --sidebar-border: #1f2740;
-  --sidebar-ring: #22c55e;
+  --sidebar: #0e0f10;
+  --sidebar-foreground: #e6e8ea;
+  --sidebar-primary: #cdeb03;
+  --sidebar-primary-foreground: #131516;
+  --sidebar-accent: #272b30;
+  --sidebar-accent-foreground: #e6e8ea;
+  --sidebar-border: #272b30;
+  --sidebar-ring: #cdeb03;
 }
 
 @layer base {

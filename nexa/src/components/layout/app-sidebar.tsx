@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Michroma } from "next/font/google";
 import { ChevronDown } from "lucide-react";
 import {
   Sidebar,
@@ -24,7 +25,9 @@ import { useOvertime } from "@/features/overtime/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
-import { Logo, LogoHorizontal } from "@/components/shared/logo";
+import { Logo } from "@/components/shared/logo";
+
+const michroma = Michroma({ subsets: ["latin"], weight: "400" });
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -140,7 +143,7 @@ export function AppSidebar() {
                             className={cn(
                               "h-10 text-[15px] [&_svg]:size-[18px]",
                               active &&
-                                "data-active:bg-[#bbf7d0] data-active:font-bold data-active:text-[#15803d] data-active:hover:bg-[#bbf7d0] data-active:hover:text-[#15803d]",
+                                "data-active:bg-sidebar-primary data-active:font-bold data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground",
                             )}
                             render={
                               item.isLogout ? (
@@ -181,11 +184,35 @@ export function AppSidebar() {
 
 function NexaHeaderLogo() {
   return (
-    <div className="flex items-center">
+    <div className="flex w-full items-center justify-center">
       {/* Icon-only mark when the sidebar is collapsed to icon width */}
-      <Logo size={40} className="hidden size-10 group-data-[collapsible=icon]:block" variant="dark" />
-      {/* Full horizontal lockup (icon + wordmark + subtitle baked in) when expanded */}
-      <LogoHorizontal height={36} variant="dark" className="group-data-[collapsible=icon]:hidden" />
+      <Logo size={40} className="hidden size-10 group-data-[collapsible=icon]:block" />
+
+      {/* Full gradient lockup box when expanded */}
+      <div
+        className="hidden w-full flex-col items-center gap-2.5 rounded-[18px] border border-[#2E3338] bg-[linear-gradient(180deg,#24282C_0%,#131516_100%)] px-3 pt-[18px] pb-4 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08),0_8px_20px_rgb(0_0_0_/_0.45)] group-data-[collapsible=icon]:hidden md:flex"
+      >
+        <Logo size={150} className="h-[73px] w-[150px] drop-shadow-[0_6px_10px_rgb(0_0_0_/_0.6)] drop-shadow-[0_0_14px_rgb(205_235_3_/_0.22)]" />
+        <div className="h-[2px] w-[176px] rounded-full bg-[linear-gradient(90deg,rgb(205_235_3_/_0)_0%,#CDEB03_50%,rgb(205_235_3_/_0)_100%)]" />
+        <div
+          className={cn(
+            michroma.className,
+            "bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E7EA_45%,#9AA1A8_100%)] bg-clip-text text-[12px] leading-tight tracking-[0.24em] whitespace-nowrap text-transparent",
+          )}
+          style={{ paddingLeft: "0.24em", filter: "drop-shadow(0 1px 0 #5E6670) drop-shadow(0 3px 3px rgb(0 0 0 / 0.7))" }}
+        >
+          GADGET VILLA
+        </div>
+        <div
+          className={cn(
+            michroma.className,
+            "flex items-center gap-1.5 rounded-full bg-[linear-gradient(180deg,#DDF53A_0%,#CDEB03_55%,#A9C400_100%)] py-1 text-[11px] leading-normal tracking-[0.2em] text-[#131516] shadow-[inset_0_1px_0_rgb(255_255_255_/_0.55),0_3px_8px_rgb(205_235_3_/_0.25)]",
+          )}
+          style={{ paddingLeft: "calc(14px + 0.2em)", paddingRight: "14px" }}
+        >
+          ONE HR
+        </div>
+      </div>
     </div>
   );
 }

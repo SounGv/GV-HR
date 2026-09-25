@@ -376,7 +376,7 @@ export function ClockCard() {
 
   return (
     <section className="relative overflow-hidden rounded-3xl bg-sidebar p-6 text-white sm:p-8">
-      <div className="pointer-events-none absolute -top-24 -right-16 size-80 rounded-full bg-primary/25 blur-[100px]" />
+      <div className="pointer-events-none absolute -top-24 -right-16 size-80 rounded-full bg-sidebar-primary/25 blur-[100px]" />
 
       <button
         type="button"
@@ -494,7 +494,7 @@ export function ClockCard() {
             ) : (
               <Button
                 size="lg"
-                className="h-14 flex-1 gap-2 rounded-2xl bg-gradient-to-r from-[#4ade80] to-[#22c55e] text-base font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:brightness-105 active:brightness-95"
+                className="h-14 flex-1 gap-2 rounded-2xl bg-sidebar-primary text-base font-semibold text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/25 hover:brightness-105 active:brightness-95"
                 disabled={checking}
                 onClick={startClockIn}
               >
@@ -532,7 +532,7 @@ export function ClockCard() {
                   onClick={() => setSelectedMood((v) => (v === m.value ? undefined : m.value))}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition active:scale-95 disabled:opacity-40",
-                    selectedMood === m.value ? "bg-primary/20 ring-1 ring-primary/50" : "hover:bg-white/10",
+                    selectedMood === m.value ? "bg-sidebar-primary/20 ring-1 ring-sidebar-primary/50" : "hover:bg-white/10",
                   )}
                 >
                   <span className="text-2xl">{m.emoji}</span>

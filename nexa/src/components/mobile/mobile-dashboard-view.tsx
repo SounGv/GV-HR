@@ -85,10 +85,10 @@ export function MobileDashboardView({
   const hasTodo = actions.myPending > 0 || pendingCount > 0 || hrNotifCount > 0;
 
   return (
-    <div className="min-h-full bg-gv-bg md:hidden">
-      {/* Header — plain background, no dark card here: the Attendance Card
-          below is deliberately the only high-emphasis surface on the page. */}
-      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
+    <div className="min-h-full bg-background md:hidden">
+      {/* Header — plain white background, no dark card here: the Attendance
+          Card below is deliberately the only high-emphasis surface on the page. */}
+      <div className="flex items-start justify-between gap-3 bg-gv-bg px-4 pt-4 pb-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gv-dark-green">GV ONE HR</p>
           <p className="mt-1 truncate text-lg font-semibold text-foreground">

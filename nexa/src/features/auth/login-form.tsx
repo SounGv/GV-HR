@@ -111,7 +111,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
         className="space-y-4"
       >
         <div className="flex items-center gap-2 text-sm font-semibold text-[var(--login-text-primary)]">
-          <ShieldCheck className="size-4 text-[var(--login-brand-green)]" /> ยืนยันตัวตนสองขั้นตอน
+          <ShieldCheck className="size-4 text-[var(--login-link)]" /> ยืนยันตัวตนสองขั้นตอน
         </div>
         <p className="text-xs text-[var(--login-text-secondary)]">
           กรอกรหัส 6 หลักจากแอปยืนยันตัวตน หรือรหัสสำรองของคุณ
@@ -122,7 +122,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           placeholder="123456"
           value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value)}
-          className="h-[52px] rounded-[11px] border-[var(--login-border)] !bg-[var(--login-surface)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[var(--login-brand-green)] focus-visible:ring-[var(--login-brand-green)]/15"
+          className="h-[52px] rounded-[12px] border-[var(--login-border)] !bg-[var(--login-surface)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[var(--login-brand-green)] focus-visible:ring-[var(--login-brand-green)]/15"
         />
         <LoginButton type="submit" loading={submitting} disabled={!mfaCode}>
           ยืนยัน
@@ -155,7 +155,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
                   icon={<Mail className="size-4" />}
                   type="text"
                   autoComplete="username"
-                  placeholder="กรอกอีเมลของคุณ"
+                  placeholder="name@gadgetvilla.co.th"
                   {...field}
                 />
               </FormControl>
@@ -170,7 +170,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel className="font-semibold text-[var(--login-text-primary)]">รหัสผ่าน</FormLabel>
-                <Link href="/forgot-password" className="text-xs font-medium text-[var(--login-brand-green)] hover:underline">
+                <Link href="/forgot-password" className="text-xs font-medium text-[var(--login-link)] hover:text-[var(--login-link-hover)] hover:underline">
                   ลืมรหัสผ่าน?
                 </Link>
               </div>
@@ -196,7 +196,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
               type="button"
               variant="outline"
               size="lg"
-              className="h-[52px] w-full rounded-[11px] border-[var(--login-border)] !bg-[var(--login-surface)] !text-[var(--login-text-primary)]"
+              className="h-[52px] w-full rounded-[12px] border-[var(--login-border)] !bg-[var(--login-surface)] !text-[var(--login-text-primary)]"
               render={<a href="/api/auth/google" />}
             >
               <GoogleIcon className="size-4" /> เข้าสู่ระบบด้วย Google
