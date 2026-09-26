@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, Plus, Scale, Save, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Plus, Scale, Save, CheckCircle2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -23,7 +23,9 @@ import {
   useCreateCalibrationSession,
   useUpdateParticipantCalibration,
   useCompleteCalibrationSession,
+  useNineBoxGrid,
 } from "./hooks";
+import { NineBoxGrid } from "./nine-box-view";
 import type { CalibrationParticipant, PotentialLevel } from "./types";
 
 const POTENTIAL_LABEL: Record<PotentialLevel, string> = { LOW: "ต่ำ", MEDIUM: "ปานกลาง", HIGH: "สูง" };
@@ -205,7 +207,30 @@ function SessionDetail({ id, onBack }: { id: string; onBack: () => void }) {
           ))}
         </div>
       )}
+
+      <CampaignNineBoxPreview campaignId={session.campaign.id} />
     </div>
+  );
+}
+
+/** Mini 9-box scoped to this session's own campaign, embedded right in the
+ * session detail — adjusting `potential` above updates this grid on the
+ * next refetch instead of only being visible on the separate full-page view. */
+function CampaignNineBoxPreview({ campaignId }: { campaignId: string }) {
+  const { data, isLoading } = useNineBoxGrid(campaignId);
+  const grid = data?.data;
+  if (isLoading || !grid) return null;
+  const total = (["LOW", "MEDIUM", "HIGH"] as const).reduce(
+    (sum, p) => sum + (["LOW", "MEDIUM", "HIGH"] as const).reduce((s, perf) => s + grid[p][perf].length, 0),
+    0,
+  );
+  if (total === 0) return null;
+
+  return (
+    <Card className="gap-2 p-4">
+      <p className="text-sm font-medium text-foreground">9-Box ของแคมเปญนี้</p>
+      <NineBoxGrid grid={grid} compact />
+    </Card>
   );
 }
 
@@ -220,9 +245,17 @@ function ParticipantRow({
 }) {
   const [score, setScore] = useState(participant.calibratedScore?.toString() ?? "");
   const [potential, setPotential] = useState<PotentialLevel | "">(participant.potential ?? "");
+  const [note, setNote] = useState(participant.potentialNote ?? "");
   const updateMut = useUpdateParticipantCalibration();
 
+  const scoreNum = score.trim() ? Number(score) : null;
+  const delta = scoreNum != null && participant.overallScore != null ? Math.round((scoreNum - participant.overallScore) * 100) / 100 : null;
+
   async function save() {
+    if (delta && delta !== 0 && !note.trim()) {
+      toast.error("กรุณาระบุเหตุผลที่ปรับคะแนน");
+      return;
+    }
     try {
       await updateMut.mutateAsync({
         sessionId,
@@ -230,6 +263,7 @@ function ParticipantRow({
         input: {
           ...(score.trim() ? { calibratedScore: Number(score) } : {}),
           ...(potential ? { potential } : {}),
+          potentialNote: note.trim() || undefined,
         },
       });
       toast.success("บันทึกแล้ว");
@@ -239,48 +273,65 @@ function ParticipantRow({
   }
 
   return (
-    <Card className="flex flex-row flex-wrap items-center justify-between gap-3 p-3">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">{fullName(participant.employee.firstName, participant.employee.lastName)}</p>
-        <p className="text-xs text-muted-foreground">
-          {participant.employee.employeeCode} · คะแนนเดิม {participant.overallScore ?? "-"}{" "}
-          {participant.band && (
-            <span className={cn("ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium", toneClass(bandTone(participant.band)))}>
-              {participant.band}
+    <Card className="flex flex-col gap-3 p-3">
+      <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">{fullName(participant.employee.firstName, participant.employee.lastName)}</p>
+          <p className="text-xs text-muted-foreground">
+            {participant.employee.employeeCode} · คะแนนเดิม {participant.overallScore ?? "-"}{" "}
+            {participant.band && (
+              <span className={cn("ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium", toneClass(bandTone(participant.band)))}>
+                {participant.band}
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Input
+            type="number"
+            step="0.5"
+            min={1}
+            max={5}
+            className="h-8 w-20"
+            placeholder="คะแนน"
+            value={score}
+            disabled={readOnly}
+            onChange={(e) => setScore(e.target.value)}
+          />
+          {delta != null && delta !== 0 && (
+            <span className={cn("flex items-center gap-0.5 text-xs font-medium tabular-nums", delta > 0 ? "text-success" : "text-destructive")}>
+              {delta > 0 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
+              {Math.abs(delta)}
             </span>
           )}
-        </p>
+          <Select value={potential} onValueChange={(v) => setPotential((v as PotentialLevel) ?? "")} disabled={readOnly}>
+            <SelectTrigger className="h-8 w-28">
+              <SelectValue placeholder="ศักยภาพ" />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(POTENTIAL_LABEL) as PotentialLevel[]).map((k) => (
+                <SelectItem key={k} value={k}>
+                  {POTENTIAL_LABEL[k]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {!readOnly && (
+            <Button variant="outline" size="icon-sm" aria-label="บันทึก" onClick={save} disabled={updateMut.isPending}>
+              <Save className="size-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      {(!readOnly || note) && (
         <Input
-          type="number"
-          step="0.5"
-          min={1}
-          max={5}
-          className="h-8 w-20"
-          placeholder="คะแนน"
-          value={score}
+          className="h-8"
+          placeholder={delta && delta !== 0 ? "เหตุผลที่ปรับคะแนน (จำเป็น)" : "เหตุผลที่ปรับ (ถ้ามี)"}
+          value={note}
           disabled={readOnly}
-          onChange={(e) => setScore(e.target.value)}
+          onChange={(e) => setNote(e.target.value)}
         />
-        <Select value={potential} onValueChange={(v) => setPotential((v as PotentialLevel) ?? "")} disabled={readOnly}>
-          <SelectTrigger className="h-8 w-28">
-            <SelectValue placeholder="ศักยภาพ" />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(POTENTIAL_LABEL) as PotentialLevel[]).map((k) => (
-              <SelectItem key={k} value={k}>
-                {POTENTIAL_LABEL[k]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {!readOnly && (
-          <Button variant="outline" size="icon-sm" aria-label="บันทึก" onClick={save} disabled={updateMut.isPending}>
-            <Save className="size-3.5" />
-          </Button>
-        )}
-      </div>
+      )}
     </Card>
   );
 }

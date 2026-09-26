@@ -184,6 +184,34 @@ export async function getCampaign(companyId: string, id: string, session: Access
     competencies: mapCompetencies(campaign.competencies),
     participants,
     participantCount: campaign.participants.length,
+    readiness: evaluateCampaignReadiness(campaign.raterTypes, campaign.participants),
+  };
+}
+
+export interface CampaignReadiness {
+  participantsOk: boolean;
+  /** Participants missing a MANAGER response despite the campaign requiring
+   * one — happens when `employee.managerId` is null (no org-chart manager to
+   * auto-seed from, see seedParticipants), so it never surfaces anywhere
+   * else until someone notices the score can't compute. */
+  missingManagerRaterFor: { id: string; firstName: string; lastName: string }[];
+  ready: boolean;
+}
+
+function evaluateCampaignReadiness(
+  raterTypes: RaterType[],
+  participants: { employee: { id: string; firstName: string; lastName: string; managerId: string | null }; responses: { raterType: RaterType }[] }[],
+): CampaignReadiness {
+  const participantsOk = participants.length > 0;
+  const missingManagerRaterFor = raterTypes.includes("MANAGER")
+    ? participants
+        .filter((p) => !p.responses.some((r) => r.raterType === "MANAGER"))
+        .map((p) => ({ id: p.employee.id, firstName: p.employee.firstName, lastName: p.employee.lastName }))
+    : [];
+  return {
+    participantsOk,
+    missingManagerRaterFor,
+    ready: participantsOk && missingManagerRaterFor.length === 0,
   };
 }
 
@@ -1541,6 +1569,98 @@ export async function finalizeParticipant(
     action: "campaign.finalize_participant",
     entity: "EvaluationParticipant",
     entityId: participantId,
+    ...meta,
+  });
+
+  return { ok: true as const };
+}
+
+/**
+ * The opposite of finalizeParticipant — HR reviews the computed score in
+ * the participant list and decides it needs another pass. Reuses the same
+ * reopen mechanism a rater's own "request reopen" uses (approveReopen),
+ * just HR-initiated instead of rater-requested, and stores HR's reason in
+ * the same `reopenRequestNote` field. Only valid before finalize (finalize
+ * already locks the result); clears the now-stale computed score so the
+ * participant list never shows a "สรุปผล" button for a result HR just
+ * rejected, until the scoring rater resubmits and computeAndStoreScore
+ * recomputes it.
+ */
+export async function rejectParticipantResult(
+  companyId: string,
+  session: AccessClaims,
+  participantId: string,
+  note: string,
+  meta?: Meta,
+) {
+  if (!isHrLevel(session)) throw Forbidden("ไม่อนุมัติผลได้เฉพาะ HR");
+  if (!note.trim()) throw BadRequest("กรุณาระบุเหตุผลที่ไม่อนุมัติ");
+
+  const participant = await prisma.evaluationParticipant.findFirst({
+    where: { id: participantId, campaign: { companyId, deletedAt: null } },
+    select: {
+      id: true,
+      campaignId: true,
+      finalizedAt: true,
+      campaign: { select: { raterTypes: true } },
+      responses: { select: { id: true, raterType: true, status: true, raterEmployeeId: true } },
+    },
+  });
+  if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
+  if (participant.finalizedAt) throw BadRequest("ผลการประเมินนี้สรุปผลแล้ว ไม่สามารถไม่อนุมัติได้");
+
+  const scoringRaterType: RaterType = participant.campaign.raterTypes.includes("MANAGER") ? "MANAGER" : "SELF";
+  const scoringResponse = participant.responses.find((r) => r.raterType === scoringRaterType && r.status === "SUBMITTED");
+  if (!scoringResponse) throw BadRequest("ยังไม่มีคำตอบที่ส่งจากผู้ประเมินหลัก ไม่มีอะไรให้ไม่อนุมัติ");
+
+  // Compare-and-swap, same as approveReopen — a second concurrent reject/
+  // reopen sees count 0 instead of silently reopening an already-reopened response.
+  const { count } = await prisma.evaluationResponse.updateMany({
+    where: { id: scoringResponse.id, status: "SUBMITTED" },
+    data: {
+      status: "PENDING",
+      reopenRequested: false,
+      reopenRequestNote: note,
+      reopenedAt: new Date(),
+      reopenedById: session.sub,
+    },
+  });
+  if (count === 0) throw Conflict("แบบประเมินนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
+  await prisma.evaluationParticipant.update({
+    where: { id: participantId },
+    data: {
+      overallScore: null,
+      band: null,
+      rawScore: null,
+      maxScore: null,
+      scorePercent: null,
+      questionCount: null,
+      evaluatorCount: null,
+      lowestTopics: Prisma.JsonNull,
+      scoreStatus: null,
+    },
+  });
+
+  await createNotification(
+    companyId,
+    scoringResponse.raterEmployeeId,
+    {
+      title: "ผลการประเมินถูกตีกลับให้แก้ไข",
+      body: note,
+      category: "performance",
+      link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
+    },
+    session.sub,
+  );
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "campaign.reject_participant_result",
+    entity: "EvaluationParticipant",
+    entityId: participantId,
+    after: { note },
     ...meta,
   });
 

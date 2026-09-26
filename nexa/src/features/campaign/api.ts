@@ -62,6 +62,10 @@ export function finalizeParticipant(participantId: string) {
   return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/finalize`);
 }
 
+export function rejectParticipantResult(participantId: string, note: string) {
+  return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/reject`, { note });
+}
+
 export function saveDraftResponse(participantId: string, input: SaveDraftValues) {
   return api.post<Envelope<{ ok: true }>>(`/api/campaigns/participants/${participantId}/draft`, input);
 }

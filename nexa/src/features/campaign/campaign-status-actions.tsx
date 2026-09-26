@@ -22,10 +22,14 @@ export function CampaignStatusActions({
   campaignId,
   status,
   participantCount,
+  readinessBlockers = [],
 }: {
   campaignId: string;
   status: CampaignStatus;
   participantCount: number;
+  /** Reasons the campaign isn't ready to activate yet (see the "ความพร้อม
+   * ของรอบ" card on the same page) — empty means ready. */
+  readinessBlockers?: string[];
 }) {
   const router = useRouter();
   const updateMutation = useUpdateCampaign(campaignId);
@@ -34,6 +38,10 @@ export function CampaignStatusActions({
   async function activate() {
     if (participantCount === 0) {
       toast.error("กรุณาเพิ่มผู้เข้าร่วมก่อนเปิดใช้งานแคมเปญ");
+      return;
+    }
+    if (readinessBlockers.length > 0) {
+      toast.error(`ยังไม่พร้อมเปิดใช้งาน: ${readinessBlockers.join(", ")}`);
       return;
     }
     try {
@@ -57,8 +65,14 @@ export function CampaignStatusActions({
   }
 
   if (status === "DRAFT") {
+    const blocked = readinessBlockers.length > 0;
     return (
-      <Button size="sm" onClick={activate} disabled={updateMutation.isPending}>
+      <Button
+        size="sm"
+        onClick={activate}
+        disabled={updateMutation.isPending || blocked}
+        title={blocked ? `ยังไม่พร้อม: ${readinessBlockers.join(", ")}` : undefined}
+      >
         {updateMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
         เปิดใช้งานแคมเปญ
       </Button>

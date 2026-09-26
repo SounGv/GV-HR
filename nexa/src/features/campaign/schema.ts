@@ -147,6 +147,11 @@ export const requestReopenSchema = z.object({
 });
 export type RequestReopenInput = z.infer<typeof requestReopenSchema>;
 
+export const rejectResultSchema = z.object({
+  note: z.string().trim().min(1, "กรุณาระบุเหตุผลที่ไม่อนุมัติ").max(500),
+});
+export type RejectResultInput = z.infer<typeof rejectResultSchema>;
+
 export const inviteRaterSchema = z.object({
   raterType: z.enum(["PEER", "UPWARD", "HR_EXEC"]),
   raterEmployeeIds: z.array(z.string().uuid()).min(1, "กรุณาเลือกผู้ประเมินอย่างน้อย 1 คน"),

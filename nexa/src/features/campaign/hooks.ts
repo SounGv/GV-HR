@@ -23,6 +23,7 @@ import {
   generateAiDesign,
   inviteRater,
   removeRater,
+  rejectParticipantResult,
   requestReopen,
   saveDraftResponse,
   submitMyResponse,
@@ -141,6 +142,15 @@ export function useFinalizeParticipant() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (participantId: string) => finalizeParticipant(participantId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
+  });
+}
+
+export function useRejectParticipantResult() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ participantId, note }: { participantId: string; note: string }) =>
+      rejectParticipantResult(participantId, note),
     onSuccess: () => qc.invalidateQueries({ queryKey: campaignKeys.all }),
   });
 }

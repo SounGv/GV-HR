@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Sparkles, Target, Info } from "lucide-react";
+import { Pencil, Sparkles, Target, Info, CheckCircle2, AlertTriangle } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
@@ -54,6 +54,13 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
                 campaignId={campaign.id}
                 status={campaign.status}
                 participantCount={campaign.participantCount}
+                readinessBlockers={
+                  !campaign.readiness.participantsOk
+                    ? ["ยังไม่มีผู้เข้าร่วม"]
+                    : campaign.readiness.missingManagerRaterFor.map(
+                        (e) => `${e.firstName} ${e.lastName} ไม่มีหัวหน้างานให้ประเมิน`,
+                      )
+                }
               />
             </>
           ) : undefined
@@ -70,6 +77,27 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
               ? "ยังไม่มีผู้เข้าร่วม — เลื่อนลงไปกด \"เพิ่มผู้เข้าร่วม\" เพื่อเลือกคนที่จะประเมิน"
               : "ผู้ประเมินยังไม่เห็นงานหรือได้รับการแจ้งเตือนใดๆ จนกว่าจะกด \"เปิดใช้งานแคมเปญ\" ที่มุมขวาบน"}
           </p>
+        </Card>
+      )}
+
+      {canManage && campaign.status === "DRAFT" && (
+        <Card className="gap-2 p-4">
+          <CardHeader className="p-0">
+            <CardTitle className="text-sm">ความพร้อมของรอบ</CardTitle>
+          </CardHeader>
+          <div className="space-y-1.5">
+            <ReadinessRow ok={campaign.readiness.participantsOk} label="มีผู้เข้าร่วม" />
+            {campaign.raterTypes.includes("MANAGER") && (
+              <ReadinessRow
+                ok={campaign.readiness.missingManagerRaterFor.length === 0}
+                label={
+                  campaign.readiness.missingManagerRaterFor.length === 0
+                    ? "ผู้เข้าร่วมทุกคนมีหัวหน้างานให้ประเมิน"
+                    : `${campaign.readiness.missingManagerRaterFor.length} คนไม่มีหัวหน้างานให้ประเมิน: ${campaign.readiness.missingManagerRaterFor.map((e) => `${e.firstName} ${e.lastName}`).join(", ")}`
+                }
+              />
+            )}
+          </div>
         </Card>
       )}
 
@@ -134,6 +162,15 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
           }))}
         />
       </div>
+    </div>
+  );
+}
+
+function ReadinessRow({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div className={`flex items-start gap-2 text-sm ${ok ? "text-success" : "text-warning"}`}>
+      {ok ? <CheckCircle2 className="mt-0.5 size-4 shrink-0" /> : <AlertTriangle className="mt-0.5 size-4 shrink-0" />}
+      <span>{label}</span>
     </div>
   );
 }
