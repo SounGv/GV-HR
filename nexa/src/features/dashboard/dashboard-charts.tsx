@@ -260,7 +260,7 @@ export function AttendanceStackedBar({ data }: { data: AttendanceTrendPoint[] })
   const barHeight = 196;
   const totals = data.map((d) => d.present + d.leave + d.absent);
   const maxTotal = Math.max(...totals, 1);
-  const seg = (v: number) => `${Math.max(0, (v / maxTotal) * barHeight)}px`;
+  const seg = (v: number) => Math.max(0, (v / maxTotal) * barHeight);
 
   return (
     <div className="flex items-end gap-2.5 overflow-x-auto">
@@ -269,17 +269,45 @@ export function AttendanceStackedBar({ data }: { data: AttendanceTrendPoint[] })
         const onTime = Math.max(0, d.present - d.late);
         const rate = Math.round((d.present / total) * 100);
         const isToday = i === data.length - 1;
+        // Segment heights in stacking order (bottom to top) — a hairline
+        // gap between each (instead of flush colors) is what actually makes
+        // the composition legible when one segment (usually ขาดงาน) dwarfs
+        // the rest; without it the bar reads as a single solid color block.
+        const segments = [
+          { key: "onTime", height: seg(onTime), color: "#3A3F45", label: `เข้างานตรงเวลา ${onTime} คน` },
+          { key: "late", height: seg(d.late), color: "#FFB900", label: `มาสาย ${d.late} คน` },
+          { key: "leave", height: seg(d.leave), color: "#3B82F6", label: `ลา ${d.leave} คน` },
+          { key: "absent", height: seg(d.absent), color: "#E5484D", label: `ขาดงาน ${d.absent} คน` },
+        ];
         return (
           <div key={d.date} className="flex min-w-[36px] flex-1 flex-col items-center gap-1.5">
             <span className="text-xs font-semibold tabular-nums">{rate}%</span>
             <div
-              className="flex w-full flex-col-reverse overflow-hidden rounded-lg bg-surface-muted"
+              className="relative flex w-full flex-col-reverse overflow-hidden rounded-lg bg-surface-muted"
               style={{ height: barHeight }}
+              title={`${d.label}: ${segments.map((s) => s.label).join(" · ")}`}
             >
-              <div style={{ height: seg(onTime), background: "#3A3F45" }} />
-              <div style={{ height: seg(d.late), background: "#FFB900" }} />
-              <div style={{ height: seg(d.leave), background: "#3B82F6" }} />
-              <div style={{ height: seg(d.absent), background: "#E5484D" }} />
+              {/* 25/50/75% reference lines so proportions read at a glance
+                  even when a single segment fills most of the bar. */}
+              {[0.25, 0.5, 0.75].map((p) => (
+                <div
+                  key={p}
+                  className="pointer-events-none absolute inset-x-0 border-t border-dashed border-white/15"
+                  style={{ bottom: `${p * 100}%` }}
+                />
+              ))}
+              {segments.map((s, si) =>
+                s.height > 0 ? (
+                  <div
+                    key={s.key}
+                    style={{
+                      height: s.height,
+                      background: s.color,
+                      borderTop: si > 0 ? "1.5px solid var(--surface-muted)" : undefined,
+                    }}
+                  />
+                ) : null,
+              )}
             </div>
             <span
               className={cn(

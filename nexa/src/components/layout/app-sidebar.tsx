@@ -212,25 +212,25 @@ function NexaHeaderLogo() {
 
       {/* Full gradient lockup box when expanded */}
       <div
-        className="hidden w-full flex-col items-center gap-2.5 rounded-[18px] border border-[#2E3338] bg-[linear-gradient(180deg,#24282C_0%,#131516_100%)] px-3 pt-[18px] pb-4 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08),0_8px_20px_rgb(0_0_0_/_0.45)] group-data-[collapsible=icon]:hidden md:flex"
+        className="hidden w-full flex-col items-center gap-1.5 rounded-[14px] border border-[#2E3338] bg-[linear-gradient(180deg,#24282C_0%,#131516_100%)] px-3 pt-2.5 pb-2.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08),0_8px_20px_rgb(0_0_0_/_0.45)] group-data-[collapsible=icon]:hidden md:flex"
       >
-        <Logo size={150} className="h-[73px] w-[150px] drop-shadow-[0_6px_10px_rgb(0_0_0_/_0.6)] drop-shadow-[0_0_14px_rgb(205_235_3_/_0.22)]" />
-        <div className="h-[2px] w-[176px] rounded-full bg-[linear-gradient(90deg,rgb(205_235_3_/_0)_0%,#CDEB03_50%,rgb(205_235_3_/_0)_100%)]" />
+        <Logo size={84} className="h-[41px] w-[84px] drop-shadow-[0_4px_8px_rgb(0_0_0_/_0.6)] drop-shadow-[0_0_10px_rgb(205_235_3_/_0.22)]" />
+        <div className="h-[2px] w-[100px] rounded-full bg-[linear-gradient(90deg,rgb(205_235_3_/_0)_0%,#CDEB03_50%,rgb(205_235_3_/_0)_100%)]" />
         <div
           className={cn(
             michroma.className,
-            "bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E7EA_45%,#9AA1A8_100%)] bg-clip-text text-[12px] leading-tight tracking-[0.24em] whitespace-nowrap text-transparent",
+            "bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E7EA_45%,#9AA1A8_100%)] bg-clip-text text-[10px] leading-tight tracking-[0.2em] whitespace-nowrap text-transparent",
           )}
-          style={{ paddingLeft: "0.24em", filter: "drop-shadow(0 1px 0 #5E6670) drop-shadow(0 3px 3px rgb(0 0 0 / 0.7))" }}
+          style={{ paddingLeft: "0.2em", filter: "drop-shadow(0 1px 0 #5E6670) drop-shadow(0 3px 3px rgb(0 0 0 / 0.7))" }}
         >
           GADGET VILLA
         </div>
         <div
           className={cn(
             michroma.className,
-            "flex items-center gap-1.5 rounded-full bg-[linear-gradient(180deg,#DDF53A_0%,#CDEB03_55%,#A9C400_100%)] py-1 text-[11px] leading-normal tracking-[0.2em] text-[#131516] shadow-[inset_0_1px_0_rgb(255_255_255_/_0.55),0_3px_8px_rgb(205_235_3_/_0.25)]",
+            "flex items-center gap-1.5 rounded-full bg-[linear-gradient(180deg,#DDF53A_0%,#CDEB03_55%,#A9C400_100%)] py-0.5 text-[9px] leading-normal tracking-[0.18em] text-[#131516] shadow-[inset_0_1px_0_rgb(255_255_255_/_0.55),0_3px_8px_rgb(205_235_3_/_0.25)]",
           )}
-          style={{ paddingLeft: "calc(14px + 0.2em)", paddingRight: "14px" }}
+          style={{ paddingLeft: "calc(10px + 0.18em)", paddingRight: "10px" }}
         >
           ONE HR
         </div>
