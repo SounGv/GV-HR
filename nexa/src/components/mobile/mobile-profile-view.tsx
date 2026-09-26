@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import { Bell, Globe, Pencil, ShieldCheck, LogOut, User, Wallet, ChevronRight } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { fullName, formatCurrency, loginIdentifier } from "@/lib/format";
@@ -8,6 +9,20 @@ import { useMyProfile } from "@/features/profile/hooks";
 import { usePayroll } from "@/features/payroll/hooks";
 import { MobileScreen } from "./mobile-screen";
 import { MobileModuleCard } from "./mobile-ui";
+
+/** Same colored icon-chip treatment as the desktop sidebar's group headers
+ * (see app-sidebar.tsx's `group.chipColor`) — gives each profile submenu
+ * row its own accent instead of a flat, same-color icon for everything. */
+function MenuIconChip({ color, icon: Icon }: { color: string; icon: LucideIcon }) {
+  return (
+    <span
+      className="flex size-8 shrink-0 items-center justify-center rounded-[8px]"
+      style={{ background: color }}
+    >
+      <Icon className="size-4 text-white" strokeWidth={2.25} />
+    </span>
+  );
+}
 
 export function MobileProfileView() {
   const { user, can, logout } = useAuth();
@@ -78,7 +93,7 @@ export function MobileProfileView() {
         <MobileModuleCard className="overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">
             <span className="flex items-center gap-2.5">
-              <Wallet className="size-[18px]" />
+              <MenuIconChip color="#8B5CF6" icon={Wallet} />
               รายได้และสวัสดิการ{latestPayslip ? ` · ${latestPayslip.periodLabel}` : ""}
             </span>
           </div>
@@ -124,25 +139,25 @@ export function MobileProfileView() {
           href="#profile-form"
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
         >
-          <Pencil className="size-[18px] text-accent-foreground" />
+          <MenuIconChip color="#6366F1" icon={Pencil} />
           แก้ไขโปรไฟล์ / รูปประจำตัว
         </a>
         <a
           href="#security"
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
         >
-          <ShieldCheck className="size-[18px] text-accent-foreground" />
+          <MenuIconChip color="#22A55B" icon={ShieldCheck} />
           ความปลอดภัย (รหัสผ่าน, 2FA)
         </a>
         <Link
           href="/notifications"
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
         >
-          <Bell className="size-[18px] text-accent-foreground" />
+          <MenuIconChip color="#F5A524" icon={Bell} />
           การแจ้งเตือน
         </Link>
         <div className="flex items-center gap-2.5 px-3.5 py-3 text-[13px] text-muted-foreground">
-          <Globe className="size-[18px]" />
+          <MenuIconChip color="#14B8A6" icon={Globe} />
           ภาษา — ไทย
         </div>
       </MobileModuleCard>
