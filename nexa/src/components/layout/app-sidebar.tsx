@@ -102,7 +102,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="h-16 justify-center px-4">
+      <SidebarHeader className="justify-center px-4 py-3 group-data-[collapsible=icon]:h-16">
         <Link href="/dashboard" aria-label="GV One">
           {/* Import kept inline to avoid a client/server import cycle warning */}
           <NexaHeaderLogo />
