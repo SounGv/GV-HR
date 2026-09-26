@@ -57,7 +57,7 @@ export function AuditLogView() {
               resetToFirstPage();
             }}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
               <SelectValue placeholder="ทั้งหมด" />
             </SelectTrigger>
             <SelectContent>

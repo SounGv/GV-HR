@@ -171,7 +171,7 @@ export function EmployeeTable() {
           setPage(1);
         }}
       >
-        <SelectTrigger className="w-[160px]">
+        <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
           <SelectValue placeholder="ทุกแผนก" />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
@@ -191,7 +191,7 @@ export function EmployeeTable() {
           setPage(1);
         }}
       >
-        <SelectTrigger className="w-[150px]">
+        <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
           <SelectValue placeholder="ทุกสถานะ" />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
@@ -211,7 +211,7 @@ export function EmployeeTable() {
           setPage(1);
         }}
       >
-        <SelectTrigger className="w-[160px]">
+        <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
           <SelectValue placeholder="ทุกประเภทการจ้าง" />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>

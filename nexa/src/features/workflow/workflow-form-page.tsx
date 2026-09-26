@@ -132,7 +132,7 @@ export function WorkflowFormPage({ workflow }: { workflow?: ApprovalWorkflow }) 
                 onChange={(e) => setStep(i, { name: e.target.value })}
               />
               <Select value={s.approverRole} onValueChange={(v) => setStep(i, { approverRole: v ?? "" })}>
-                <SelectTrigger className="w-40 shrink-0">
+                <SelectTrigger className="min-w-[140px] w-auto max-w-[220px] shrink-0">
                   <SelectValue placeholder="บทบาท" />
                 </SelectTrigger>
                 <SelectContent>

@@ -70,7 +70,7 @@ export function HolidaysView() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-2">
         <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-          <SelectTrigger className="w-[130px]">
+          <SelectTrigger className="min-w-[120px] w-auto max-w-[320px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

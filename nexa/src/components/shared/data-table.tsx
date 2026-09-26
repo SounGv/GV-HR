@@ -48,6 +48,14 @@ interface DataTableProps<TData, TValue> {
   emptyTitle?: string;
   emptyDescription?: string;
   onRowClick?: (row: TData) => void;
+
+  /** Pins the first N leaf columns to the left edge while the rest of a
+   * wide table scrolls horizontally — an id/name column that scrolls off
+   * to the left means you can no longer tell which row you're looking at.
+   * Offsets are computed from each column's own `size` (react-table's
+   * default is 150 when a column doesn't set one), so give narrow columns
+   * like an id an explicit `size` for the sticky math to line up. */
+  stickyColumns?: number;
 }
 
 export function DataTable<TData, TValue>({
@@ -69,6 +77,7 @@ export function DataTable<TData, TValue>({
   emptyTitle,
   emptyDescription,
   onRowClick,
+  stickyColumns = 0,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -84,6 +93,28 @@ export function DataTable<TData, TValue>({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
+
+  // Cumulative left offset for the Nth sticky column, from the real widths
+  // of the columns before it (react-table defaults an unset `size` to 150).
+  // Header cells also pin `top: 0` here directly rather than relying on the
+  // parent <thead>'s own sticky styling to cascade — it doesn't; every
+  // sticky cell needs its own position/offset.
+  function stickyStyle(columnIndex: number, leafColumns: { getSize: () => number }[], isHeader: boolean) {
+    if (stickyColumns <= 0) return undefined;
+    if (columnIndex >= stickyColumns) {
+      return isHeader ? { position: "sticky" as const, top: 0, zIndex: 20, background: "var(--card)" } : undefined;
+    }
+    let left = 0;
+    for (let i = 0; i < columnIndex; i++) left += leafColumns[i].getSize();
+    return {
+      position: "sticky" as const,
+      left,
+      ...(isHeader ? { top: 0 } : {}),
+      zIndex: isHeader ? 30 : 10,
+      background: "var(--card)",
+      ...(columnIndex === stickyColumns - 1 ? { boxShadow: "2px 0 4px -2px rgb(0 0 0 / 0.15)" } : {}),
+    };
+  }
 
   return (
     <div className="space-y-4">
@@ -116,11 +147,19 @@ export function DataTable<TData, TValue>({
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="hover:bg-transparent">
-                  {hg.headers.map((header) => {
+                  {hg.headers.map((header, i) => {
                     const canSort = header.column.getCanSort();
                     const sorted = header.column.getIsSorted();
                     return (
-                      <TableHead key={header.id} className="whitespace-nowrap">
+                      <TableHead
+                        key={header.id}
+                        className="whitespace-nowrap"
+                        style={stickyStyle(
+                          i,
+                          hg.headers.map((h) => h.column),
+                          true,
+                        )}
+                      >
                         {header.isPlaceholder ? null : canSort ? (
                           <button
                             type="button"
@@ -152,8 +191,15 @@ export function DataTable<TData, TValue>({
                   onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                   className={cn(onRowClick && "cursor-pointer")}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                  {row.getVisibleCells().map((cell, i) => (
+                    <TableCell
+                      key={cell.id}
+                      style={stickyStyle(
+                        i,
+                        row.getVisibleCells().map((c) => c.column),
+                        false,
+                      )}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

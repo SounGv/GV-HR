@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RolesMatrix } from "./roles-matrix";
 import { UsersRoles } from "./users-roles";
@@ -10,14 +10,21 @@ import { AuditLogView } from "@/features/audit/audit-log-view";
 const TABS = ["roles", "users", "audit"] as const;
 
 export function AdminView() {
+  const router = useRouter();
   // Nav links deep-link here via ?tab=<roles|users|audit> (e.g.
-  // "ประวัติการนำเข้า/ส่งออก" → /admin?tab=audit).
+  // "ประวัติการนำเข้า/ส่งออก" → /admin?tab=audit). Controlled (not
+  // defaultValue) so switching tabs updates the URL too — otherwise the
+  // sidebar's matching ?tab= item never re-highlights after the first landing.
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialTab = (TABS as readonly string[]).includes(tabParam ?? "") ? tabParam! : "roles";
 
   return (
-    <Tabs defaultValue={initialTab} className="space-y-4">
+    <Tabs
+      value={initialTab}
+      onValueChange={(v) => router.replace(`/admin?tab=${v}`, { scroll: false })}
+      className="space-y-4"
+    >
       <TabsList>
         <TabsTrigger value="roles">บทบาทและสิทธิ์</TabsTrigger>
         <TabsTrigger value="users">ผู้ใช้และบทบาท</TabsTrigger>

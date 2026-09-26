@@ -220,7 +220,7 @@ function Candidates({ canManage }: { canManage: boolean }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           <Select value={jobFilter} onValueChange={(v) => setJobFilter(v ?? ALL)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
               <SelectValue placeholder="ทุกตำแหน่ง" />
             </SelectTrigger>
             <SelectContent>
@@ -233,7 +233,7 @@ function Candidates({ canManage }: { canManage: boolean }) {
             </SelectContent>
           </Select>
           <Select value={stageFilter} onValueChange={(v) => setStageFilter(v ?? ALL)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
               <SelectValue placeholder="ทุกสถานะ" />
             </SelectTrigger>
             <SelectContent>

@@ -73,6 +73,7 @@ export function DepartmentDonut({ data }: { data: DeptDatum[] }) {
         <Tooltip
           contentStyle={tooltipStyle}
           formatter={(value, name) => [`${value} คน`, name]}
+          isAnimationActive={false}
         />
         <Pie
           data={data}
@@ -82,6 +83,7 @@ export function DepartmentDonut({ data }: { data: DeptDatum[] }) {
           outerRadius={95}
           paddingAngle={2}
           strokeWidth={0}
+          isAnimationActive={false}
         >
           {data.map((d, i) => (
             <Cell key={i} fill={colorFor(colors, i, d.name === "อื่นๆ")} />
@@ -90,11 +92,6 @@ export function DepartmentDonut({ data }: { data: DeptDatum[] }) {
       </PieChart>
     </ResponsiveContainer>
   );
-}
-
-/** Truncate a long department name for axis ticks; full name still shows in the tooltip. */
-function truncate(name: string, max = 14): string {
-  return name.length > max ? `${name.slice(0, max - 1)}…` : name;
 }
 
 export function HeadcountBar({ data, singleColor }: { data: DeptDatum[]; singleColor?: string }) {
@@ -118,18 +115,18 @@ export function HeadcountBar({ data, singleColor }: { data: DeptDatum[]; singleC
         <YAxis
           type="category"
           dataKey="name"
-          tickFormatter={truncate}
           tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
           tickLine={false}
           axisLine={false}
-          width={110}
+          width={180}
         />
         <Tooltip
           cursor={{ fill: "var(--muted)", opacity: 0.4 }}
           contentStyle={tooltipStyle}
           formatter={(value) => [`${value} คน`, "จำนวน"]}
+          isAnimationActive={false}
         />
-        <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
+        <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20} isAnimationActive={false}>
           {data.map((_, i) => (
             <Cell
               key={i}
@@ -192,10 +189,11 @@ export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] })
           tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
           tickLine={false}
           axisLine={false}
-          interval="preserveStartEnd"
+          interval={0}
+          minTickGap={4}
         />
         <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} allowDecimals={false} />
-        <Tooltip contentStyle={tooltipStyle} labelStyle={{ fontWeight: 600, marginBottom: 4 }} />
+        <Tooltip contentStyle={tooltipStyle} labelStyle={{ fontWeight: 600, marginBottom: 4 }} isAnimationActive={false} />
         <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
         {TREND_SERIES.map((s) => (
           <Area
@@ -208,6 +206,7 @@ export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] })
             fill={`url(#trend-fill-${s.key})`}
             dot={{ r: 2.5, fill: s.color, stroke: "var(--card)", strokeWidth: 2 }}
             activeDot={{ r: 4, fill: s.color, stroke: "var(--card)", strokeWidth: 2 }}
+            isAnimationActive={false}
           />
         ))}
       </AreaChart>

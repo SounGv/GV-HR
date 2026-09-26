@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Pencil, Trash2, Building2, Briefcase, CornerDownRight, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +51,7 @@ export function OrganizationView() {
   // Nav links deep-link here via ?tab=<departments|positions|chart> (e.g.
   // "โครงสร้างองค์กร" → /organization?tab=chart) — read once so those links
   // land on the intended tab instead of always defaulting to "departments".
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialTab = (TABS as readonly string[]).includes(tabParam ?? "") ? tabParam! : "departments";
@@ -147,7 +148,11 @@ export function OrganizationView() {
   }
 
   return (
-    <Tabs defaultValue={initialTab} className="space-y-4">
+    <Tabs
+      value={initialTab}
+      onValueChange={(v) => router.replace(`/organization?tab=${v}`, { scroll: false })}
+      className="space-y-4"
+    >
       <TabsList>
         <TabsTrigger value="departments">ฝ่าย / แผนก</TabsTrigger>
         <TabsTrigger value="positions">ตำแหน่ง / ระดับ</TabsTrigger>

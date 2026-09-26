@@ -160,7 +160,7 @@ export function BenefitsReportView() {
             ))}
           </div>
           <Select value={String(year)} onValueChange={(v) => setYear(v ? Number(v) : YEAR_NOW)}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="min-w-[120px] w-auto max-w-[320px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -172,7 +172,7 @@ export function BenefitsReportView() {
             </SelectContent>
           </Select>
           <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL)}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

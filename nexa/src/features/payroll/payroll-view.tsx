@@ -286,7 +286,7 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">ฝ่าย</label>
             <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL_DEPARTMENTS)}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
                 <SelectValue placeholder="ทุกฝ่าย" />
               </SelectTrigger>
               <SelectContent>

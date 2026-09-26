@@ -231,7 +231,7 @@ function ItemCard({ item, onDelete }: { item: DevelopmentItem; onDelete: () => v
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Select value={item.status} onValueChange={changeStatus}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectTrigger className="h-8 min-w-[140px] w-auto max-w-[220px] text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

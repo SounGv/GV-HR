@@ -132,7 +132,7 @@ export function EvaluationDashboardView() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Select value={campaignId} onValueChange={(v) => setCampaignId(v ?? "")}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger className="min-w-[220px] w-auto max-w-[320px]">
               <SelectValue placeholder="เลือกรอบประเมิน" />
             </SelectTrigger>
             <SelectContent>
@@ -144,7 +144,7 @@ export function EvaluationDashboardView() {
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={(v) => setStatus(v ?? ALL)}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -231,9 +231,9 @@ export function EvaluationDashboardView() {
                 <ResponsiveContainer width="100%" height={Math.max(220, result.charts.avgByDepartment.length * 32)}>
                   <BarChart data={result.charts.avgByDepartment} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 4 }}>
                     <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={100} />
-                    <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} contentStyle={tooltipStyle} formatter={(v) => [`${v}%`, "คะแนนเฉลี่ย"]} />
-                    <Bar dataKey="avgScore" radius={[0, 6, 6, 0]} maxBarSize={20} fill="#22c55e" />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={180} />
+                    <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} contentStyle={tooltipStyle} formatter={(v) => [`${v}%`, "คะแนนเฉลี่ย"]} isAnimationActive={false} />
+                    <Bar dataKey="avgScore" radius={[0, 6, 6, 0]} maxBarSize={20} fill="#22c55e" isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -247,9 +247,9 @@ export function EvaluationDashboardView() {
                 <ResponsiveContainer width="100%" height={Math.max(220, result.charts.lowestTopicsOverall.length * 32)}>
                   <BarChart data={result.charts.lowestTopicsOverall} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 4 }}>
                     <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-                    <YAxis type="category" dataKey="label" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={110} />
-                    <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} contentStyle={tooltipStyle} formatter={(v, _n, p) => [`${v}% (พบ ${p.payload.mentions} ครั้ง)`, "คะแนนเฉลี่ย"]} />
-                    <Bar dataKey="avgScorePercent" radius={[0, 6, 6, 0]} maxBarSize={20} fill="#e4573d" />
+                    <YAxis type="category" dataKey="label" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={180} />
+                    <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} contentStyle={tooltipStyle} formatter={(v, _n, p) => [`${v}% (พบ ${p.payload.mentions} ครั้ง)`, "คะแนนเฉลี่ย"]} isAnimationActive={false} />
+                    <Bar dataKey="avgScorePercent" radius={[0, 6, 6, 0]} maxBarSize={20} fill="#e4573d" isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               )}

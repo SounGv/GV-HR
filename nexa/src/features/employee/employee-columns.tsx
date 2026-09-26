@@ -39,8 +39,8 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
                 {getInitials(e.firstName, e.lastName)}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0">
-              <div className="truncate font-medium text-foreground">
+            <div className="min-w-[160px]">
+              <div className="font-medium break-words whitespace-normal text-foreground">
                 {fullName(e.firstName, e.lastName)}
                 {e.nickname && (
                   <span className="ml-1 text-muted-foreground">({e.nickname})</span>
@@ -59,7 +59,7 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
       cell: ({ row }) => {
         const v = row.original.department?.name ?? "-";
         return (
-          <div className="max-w-[180px] truncate text-sm" title={v}>
+          <div className="min-w-[160px] max-w-[220px] text-sm whitespace-normal break-words" title={v}>
             {v}
           </div>
         );
@@ -72,7 +72,7 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
       cell: ({ row }) => {
         const v = row.original.position?.title ?? "-";
         return (
-          <div className="max-w-[180px] truncate text-sm" title={v}>
+          <div className="min-w-[160px] max-w-[220px] text-sm whitespace-normal break-words" title={v}>
             {v}
           </div>
         );

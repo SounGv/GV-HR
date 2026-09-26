@@ -113,7 +113,7 @@ function CandidateRow({
       <div className="flex shrink-0 items-center gap-2">
         {canManage ? (
           <Select value={candidate.readiness} onValueChange={(v) => v && changeReadiness(v as SuccessionReadiness)}>
-            <SelectTrigger className="h-8 w-36">
+            <SelectTrigger className="h-8 min-w-[130px] w-auto max-w-[200px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -322,7 +322,7 @@ export function QuestionEditor({
        * fully-expanded option editors on screen at once. */}
       <div className="flex flex-wrap items-center gap-3">
         <Select value={question.answerType} onValueChange={(v) => setAnswerType(v as AnswerType)}>
-          <SelectTrigger className="h-8 w-40 text-xs">
+          <SelectTrigger className="h-8 min-w-[140px] w-auto max-w-[220px] text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

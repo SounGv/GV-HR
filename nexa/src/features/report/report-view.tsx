@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Download, FileSpreadsheet, Printer, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -141,6 +141,7 @@ export function ReportView() {
 
   // Nav/quick-menu links deep-link here via ?view=<ReportType> (e.g.
   // "รายงานการเข้างาน" → /reports?view=attendance).
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialView = searchParams.get("view");
   const [type, setType] = useState<ReportType>(
@@ -328,12 +329,15 @@ export function ReportView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-2">
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">หัวข้อรายงาน</label>
-            <Select value={type} onValueChange={(v) => setType(v as ReportType)}>
-              <SelectTrigger className="w-[200px]">
+            <Select
+              value={type}
+              onValueChange={(v) => router.replace(`/reports?view=${v}`, { scroll: false })}
+            >
+              <SelectTrigger className="min-w-[260px] w-auto max-w-[320px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
@@ -362,7 +366,7 @@ export function ReportView() {
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">ปี</label>
               <Select value={String(selectedYear)} onValueChange={(v) => setYear(v ? Number(v) : YEAR_NOW)}>
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="min-w-[120px] w-auto max-w-[320px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
@@ -375,86 +379,6 @@ export function ReportView() {
               </Select>
             </div>
           )}
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">แผนก</label>
-            <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL_DEPT)}>
-              <SelectTrigger className="w-[170px]">
-                <SelectValue placeholder="ทุกแผนก" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                <SelectItem value={ALL_DEPT}>ทุกแผนก</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">ประเภทการจ้าง</label>
-            <Select value={employmentType} onValueChange={(v) => setEmploymentType(v ?? ALL_TYPE)}>
-              <SelectTrigger className="w-[170px]">
-                <SelectValue placeholder="ทุกประเภท" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                <SelectItem value={ALL_TYPE}>ทุกประเภท</SelectItem>
-                {EMPLOYMENT_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {EMPLOYMENT_LABEL[t as EmploymentType]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">พนักงาน</label>
-            <Select value={employeeId} onValueChange={(v) => setEmployeeId(v ?? ALL_EMPLOYEE)}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="ทุกคน" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                <SelectItem value={ALL_EMPLOYEE}>ทุกคน</SelectItem>
-                {employees.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.firstName} {e.lastName} ({e.employeeCode})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">สาขา</label>
-            <Select value={branchId} onValueChange={(v) => setBranchId(v ?? ALL_BRANCH)}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="ทุกสาขา" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                <SelectItem value={ALL_BRANCH}>ทุกสาขา</SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">ศูนย์ต้นทุน</label>
-            <Select value={costCenterId} onValueChange={(v) => setCostCenterId(v ?? ALL_COST_CENTER)}>
-              <SelectTrigger className="w-[170px]">
-                <SelectValue placeholder="ทุกศูนย์ต้นทุน" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                <SelectItem value={ALL_COST_CENTER}>ทุกศูนย์ต้นทุน</SelectItem>
-                {costCenters.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <div className="flex items-center gap-2 print:hidden">
@@ -497,6 +421,89 @@ export function ReportView() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">แผนก</label>
+          <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL_DEPT)}>
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
+              <SelectValue placeholder="ทุกแผนก" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectItem value={ALL_DEPT}>ทุกแผนก</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">ประเภทการจ้าง</label>
+          <Select value={employmentType} onValueChange={(v) => setEmploymentType(v ?? ALL_TYPE)}>
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
+              <SelectValue placeholder="ทุกประเภท" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectItem value={ALL_TYPE}>ทุกประเภท</SelectItem>
+              {EMPLOYMENT_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {EMPLOYMENT_LABEL[t as EmploymentType]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">พนักงาน</label>
+          <Select value={employeeId} onValueChange={(v) => setEmployeeId(v ?? ALL_EMPLOYEE)}>
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
+              <SelectValue placeholder="ทุกคน" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectItem value={ALL_EMPLOYEE}>ทุกคน</SelectItem>
+              {employees.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.firstName} {e.lastName} ({e.employeeCode})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">สาขา</label>
+          <Select value={branchId} onValueChange={(v) => setBranchId(v ?? ALL_BRANCH)}>
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
+              <SelectValue placeholder="ทุกสาขา" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectItem value={ALL_BRANCH}>ทุกสาขา</SelectItem>
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  {b.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">ศูนย์ต้นทุน</label>
+          <Select value={costCenterId} onValueChange={(v) => setCostCenterId(v ?? ALL_COST_CENTER)}>
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
+              <SelectValue placeholder="ทุกศูนย์ต้นทุน" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectItem value={ALL_COST_CENTER}>ทุกศูนย์ต้นทุน</SelectItem>
+              {costCenters.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {result && result.summary && result.summary.length > 0 && (
         <ReportSummaryChart data={result.summary} label={result.summaryLabel} unit={result.summaryUnit} />
       )}
@@ -521,18 +528,53 @@ export function ReportView() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  {result.columns.map((c) => (
-                    <TableHead key={c.key} className={cn(c.numeric && "text-right")}>
-                      {c.label}
-                    </TableHead>
-                  ))}
+                  {result.columns.map((c) => {
+                    // Long header sentences ("ไม่ลงเวลาออก (วัน)") wrap to 2
+                    // lines instead of stretching every column that wide —
+                    // the trailing "(unit)" moves to its own smaller, muted
+                    // second line so the label itself stays the prominent part.
+                    const unitMatch = c.label.match(/^(.+)\s\(([^)]+)\)$/);
+                    return (
+                      <TableHead
+                        key={c.key}
+                        className={cn(
+                          "leading-tight whitespace-normal",
+                          c.key !== "code" && c.key !== "name" && "max-w-[120px]",
+                          c.numeric && "text-right",
+                          // "รหัส"/"ชื่อ-สกุล" pin to the left edge on every
+                          // report type — see service.ts, both keys are always
+                          // present and always first/second, in that order —
+                          // so scrolling a wide table right never loses track
+                          // of which row belongs to whom.
+                          c.key === "code" && "sticky left-0 z-20 w-[72px] bg-card",
+                          c.key === "name" && "sticky left-[72px] z-20 min-w-[160px] bg-card shadow-[2px_0_4px_-2px_rgb(0_0_0_/_0.15)]",
+                        )}
+                      >
+                        {unitMatch ? (
+                          <>
+                            {unitMatch[1]}
+                            <span className="block text-[11px] font-normal text-muted-foreground">({unitMatch[2]})</span>
+                          </>
+                        ) : (
+                          c.label
+                        )}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {result.rows.map((row, i) => (
                   <TableRow key={i}>
                     {result.columns.map((c) => (
-                      <TableCell key={c.key} className={cn(c.numeric && "text-right tabular-nums")}>
+                      <TableCell
+                        key={c.key}
+                        className={cn(
+                          c.numeric && "text-right tabular-nums",
+                          c.key === "code" && "sticky left-0 z-10 w-[72px] bg-card",
+                          c.key === "name" && "sticky left-[72px] z-10 min-w-[160px] bg-card shadow-[2px_0_4px_-2px_rgb(0_0_0_/_0.15)]",
+                        )}
+                      >
                         {c.photo ? (
                           <PhotoCell url={row[c.key]} onOpen={setPhotoPreview} />
                         ) : c.key === "status" && type === "attendance_daily" ? (

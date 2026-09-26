@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Michroma } from "next/font/google";
 import { ChevronDown } from "lucide-react";
 import {
@@ -31,6 +31,7 @@ const michroma = Michroma({ subsets: ["latin"], weight: "400" });
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { can, canAny, logout } = useAuth();
   const { data: aiAccess } = useAiAccess();
   const { toggle: toggleAiPanel } = useAiPanel();
@@ -68,13 +69,28 @@ export function AppSidebar() {
   // "/attendance/corrections" (แก้ไขเวลาเข้า-ออกงาน) are two different
   // features, but a plain per-item `startsWith` check marks BOTH active
   // while on /attendance/corrections (it starts with "/attendance/" too),
-  // highlighting two menu items at once. Only the single longest matching
-  // href across the whole nav should win, so a more specific route always
-  // beats a shorter one it happens to start with.
+  // highlighting two menu items at once. Several other items point at a
+  // query-string *view* on a shared page (e.g. "/reports?view=leave" vs
+  // "/reports?view=attendance") — a path-only match can't tell those apart
+  // at all, and previously ignored every href with "?" entirely, so none of
+  // them ever highlighted. Score every href on path length (a longer, more
+  // specific path always outranks a shorter one it starts with) plus one
+  // point per query key that's present with an equal value in the current
+  // URL — a href whose query doesn't match the current one is excluded
+  // outright, so "/reports" bare only wins when no "view" is selected at all.
   const allHrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
   const bestMatch = allHrefs
-    .filter((href) => !href.includes("?") && (pathname === href || pathname.startsWith(`${href}/`)))
-    .sort((a, b) => b.length - a.length)[0];
+    .map((href) => {
+      const url = new URL(href, "http://x");
+      const path = url.pathname;
+      const query = [...url.searchParams.entries()];
+      const pathMatches = pathname === path || pathname.startsWith(`${path}/`);
+      const queryMatches = query.every(([key, value]) => searchParams.get(key) === value);
+      if (!pathMatches || !queryMatches) return null;
+      return { href, score: path.length * 10 + query.length };
+    })
+    .filter((m): m is { href: string; score: number } => m !== null)
+    .sort((a, b) => b.score - a.score)[0]?.href;
   const isActive = (href: string) => href === bestMatch;
   const groupHasActive = (labels: { href: string }[]) => labels.some((i) => isActive(i.href));
 
@@ -98,7 +114,7 @@ export function AppSidebar() {
       return { ...prev, [activeGroup.label]: true };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [pathname, searchParams.toString()]);
 
   return (
     <Sidebar>
