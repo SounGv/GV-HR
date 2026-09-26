@@ -9,9 +9,13 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
+  LabelList,
   Legend,
+  Line,
   Pie,
   PieChart,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -214,112 +218,231 @@ export function AttendanceTrendChart({ data }: { data: AttendanceTrendPoint[] })
   );
 }
 
+/** One line series in AttendanceRateLine, in draw order (Area/bottom-most
+ * first). "ไม่มีบันทึก" (`noRecordPct`) reuses the existing `absent` field —
+ * this app has no separate confirmed-ABSENT status surfaced yet (see the
+ * dashboard-fix-3 doc), so a missing clock-in reads as incomplete data
+ * (grey, dashed, no dot) rather than a red confirmed absence. */
+const RATE_SERIES = [
+  { key: "presentPct", label: "เข้างาน", color: "var(--series-present)", width: 3.5, dash: undefined, dot: true },
+  { key: "latePct", label: "มาสาย", color: "var(--series-late)", width: 2.5, dash: undefined, dot: true },
+  { key: "leavePct", label: "ลา", color: "var(--series-leave)", width: 2.5, dash: undefined, dot: true },
+  { key: "noRecordPct", label: "ไม่มีบันทึก", color: "var(--series-norecord)", width: 2, dash: "6 7", dot: false },
+] as const;
+
+interface RatePoint {
+  label: string;
+  presentPct: number;
+  latePct: number;
+  leavePct: number;
+  noRecordPct: number;
+}
+
+/** Hollow dot (line color ring, card-colored fill) for every point except the
+ * latest business day, which gets a bigger filled dot — draws the eye to
+ * "where we are today" without a separate marker layer. */
+function rateDot(color: string, lastIndex: number) {
+  function RateDot(props: { cx?: number; cy?: number; index?: number }) {
+    const { cx, cy, index } = props;
+    if (cx == null || cy == null || index == null) return <React.Fragment />;
+    const isLast = index === lastIndex;
+    return (
+      <circle
+        key={index}
+        cx={cx}
+        cy={cy}
+        r={isLast ? 5.5 : 3}
+        fill={isLast ? color : "var(--card)"}
+        stroke={color}
+        strokeWidth={2}
+      />
+    );
+  }
+  return RateDot;
+}
+
 /**
- * Stat-tile trend sparkline (dataviz skill: "12-point sparkline in the
- * de-emphasis hue, current period in the accent"). Decorative glance-level
- * indicator, not a standalone chart — the full interactive line chart with
- * the same data already exists below on this page (AttendanceTrendChart),
- * so this intentionally skips hover/tooltip and axes; a native <title>
- * keeps the current value reachable without hovering.
+ * Attendance-rate line chart (dashboard-fix-3): each business day's headcount
+ * as percentages of active headcount, so the shape reads the same regardless
+ * of company size, with a legend that toggles series on/off. Percentages are
+ * derived here from the existing raw counts (`present`/`late`/`leave`/
+ * `absent`) — no service-layer change, no new field.
  */
-export function Sparkline({ values, color, label }: { values: number[]; color: string; label: string }) {
-  if (values.length < 2) return null;
-  const w = 100;
-  const h = 28;
-  const pad = 3;
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-  const points = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * (w - pad * 2) + pad;
-    const y = h - pad - ((v - min) / range) * (h - pad * 2);
-    return [x, y] as const;
+export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
+  const [hidden, setHidden] = React.useState<Record<string, boolean>>({});
+  if (data.length === 0) return <EmptyChart />;
+
+  const points: RatePoint[] = data.map((d) => {
+    const total = d.present + d.leave + d.absent || 1;
+    return {
+      label: d.label,
+      presentPct: (d.present / total) * 100,
+      latePct: (d.late / total) * 100,
+      leavePct: (d.leave / total) * 100,
+      noRecordPct: (d.absent / total) * 100,
+    };
   });
-  const path = points.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
-  const [lastX, lastY] = points[points.length - 1];
+  const lastIndex = points.length - 1;
+  const lastLabel = points[lastIndex].label;
+
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-full" role="img" aria-label={label}>
-      <title>{label}</title>
-      <path d={path} fill="none" stroke="var(--muted-foreground)" strokeOpacity={0.4} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={lastX} cy={lastY} r={2.5} fill={color} stroke="var(--card)" strokeWidth={2} />
-    </svg>
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-3">
+        {RATE_SERIES.map((s) => {
+          const off = hidden[s.key];
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => setHidden((h) => ({ ...h, [s.key]: !h[s.key] }))}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs transition",
+                off ? "text-muted-foreground/50" : "text-muted-foreground hover:bg-muted",
+              )}
+              aria-pressed={!off}
+            >
+              <svg width="14" height="8" viewBox="0 0 14 8" aria-hidden="true">
+                <line
+                  x1="0" y1="4" x2="14" y2="4"
+                  stroke={off ? "var(--chart-muted-bar)" : s.color}
+                  strokeWidth={2}
+                  strokeDasharray={s.dash}
+                />
+                {s.dot && !off && <circle cx="7" cy="4" r="2" fill={s.color} />}
+              </svg>
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+      <ResponsiveContainer width="100%" height={260}>
+        <ComposedChart data={points} margin={{ top: 20, right: 12, bottom: 4, left: -16 }}>
+          <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+          <ReferenceArea x1={lastLabel} x2={lastLabel} fill="var(--series-highlight)" fillOpacity={0.07} />
+          <XAxis
+            dataKey="label"
+            tick={(props) => {
+              const { x, y, payload } = props;
+              const isLast = payload.value === lastLabel;
+              return (
+                <text
+                  x={x}
+                  y={Number(y) + 12}
+                  textAnchor="middle"
+                  fontSize={11}
+                  fontWeight={isLast ? 700 : 400}
+                  fill={isLast ? "var(--series-present)" : "var(--muted-foreground)"}
+                >
+                  {payload.value}
+                </text>
+              );
+            }}
+            tickLine={false}
+            axisLine={false}
+            interval={0}
+          />
+          <YAxis
+            domain={[0, 100]}
+            ticks={[0, 25, 50, 75, 100]}
+            tickFormatter={(v) => `${v}%`}
+            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+            formatter={(value, name) => [`${Math.round(Number(value))}%`, name]}
+            isAnimationActive={false}
+          />
+          {!hidden.presentPct && (
+            <Area
+              dataKey="presentPct"
+              stroke="none"
+              fill="var(--series-present)"
+              fillOpacity={0.08}
+              isAnimationActive={false}
+            />
+          )}
+          {RATE_SERIES.map((s) =>
+            hidden[s.key] ? null : (
+              <Line
+                key={s.key}
+                type="linear"
+                dataKey={s.key}
+                name={s.label}
+                stroke={s.color}
+                strokeWidth={s.width}
+                strokeDasharray={s.dash}
+                dot={s.dot ? rateDot(s.color, lastIndex) : false}
+                isAnimationActive={false}
+              >
+                {s.key === "presentPct" && (
+                  <LabelList
+                    dataKey="presentPct"
+                    position="top"
+                    formatter={(v) => `${Math.round(Number(v))}%`}
+                    style={{ fill: "var(--series-present)", fontSize: 12, fontWeight: 700 }}
+                  />
+                )}
+              </Line>
+            ),
+          )}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
 /**
- * Per-day stacked attendance bar — replaces the line/area trend chart with a
- * composition view: how the day's headcount splits into on-time / late /
- * leave / absent, mutually exclusive (late is a subset of `present` in the
- * underlying data, so it's subtracted out of the bottom segment here to
- * avoid double-counting it in the stack). Fixed brand hex per segment
- * (matches the N mockup's legend swatches exactly), not the theme's
- * light/dark primary — this reads the same in both modes.
+ * Mini bar-per-day indicator for a KPI card (dashboard-fix-3) — replaces the
+ * old Sparkline: bars carry an hover-able exact value, a flat/zero series
+ * says so in words instead of drawing a flat line that reads as "no data
+ * shown" rather than "genuinely zero every day".
  */
-export function AttendanceStackedBar({ data }: { data: AttendanceTrendPoint[] }) {
-  if (data.length === 0) return <EmptyChart />;
-  const barHeight = 196;
-  const totals = data.map((d) => d.present + d.leave + d.absent);
-  const maxTotal = Math.max(...totals, 1);
-  const seg = (v: number) => Math.max(0, (v / maxTotal) * barHeight);
-
+export function KpiMiniBars({
+  data,
+  color,
+  unit = "คน",
+  emptyLabel = "ไม่มีข้อมูลในช่วงนี้",
+}: {
+  data: { label: string; value: number }[];
+  color: string;
+  unit?: string;
+  emptyLabel?: string;
+}) {
+  if (data.length === 0) return null;
+  const allZero = data.every((d) => d.value === 0);
+  if (allZero) {
+    return (
+      <div className="flex h-[34px] items-center justify-center rounded-md bg-surface-muted px-2 text-center text-[10px] leading-tight text-muted-foreground">
+        {emptyLabel}
+      </div>
+    );
+  }
+  const max = Math.max(...data.map((d) => d.value), 1);
   return (
-    <div className="flex items-end gap-2.5 overflow-x-auto">
-      {data.map((d, i) => {
-        const total = d.present + d.leave + d.absent || 1;
-        const onTime = Math.max(0, d.present - d.late);
-        const rate = Math.round((d.present / total) * 100);
-        const isToday = i === data.length - 1;
-        // Segment heights in stacking order (bottom to top) — a hairline
-        // gap between each (instead of flush colors) is what actually makes
-        // the composition legible when one segment (usually ขาดงาน) dwarfs
-        // the rest; without it the bar reads as a single solid color block.
-        const segments = [
-          { key: "onTime", height: seg(onTime), color: "#3A3F45", label: `เข้างานตรงเวลา ${onTime} คน` },
-          { key: "late", height: seg(d.late), color: "#FFB900", label: `มาสาย ${d.late} คน` },
-          { key: "leave", height: seg(d.leave), color: "#3B82F6", label: `ลา ${d.leave} คน` },
-          { key: "absent", height: seg(d.absent), color: "#E5484D", label: `ขาดงาน ${d.absent} คน` },
-        ];
-        return (
-          <div key={d.date} className="flex min-w-[36px] flex-1 flex-col items-center gap-1.5">
-            <span className="text-xs font-semibold tabular-nums">{rate}%</span>
+    <div>
+      <div className="flex items-end gap-[3px]" style={{ height: 34 }}>
+        {data.map((d, i) => {
+          const isToday = i === data.length - 1;
+          return (
             <div
-              className="relative flex w-full flex-col-reverse overflow-hidden rounded-lg bg-surface-muted"
-              style={{ height: barHeight }}
-              title={`${d.label}: ${segments.map((s) => s.label).join(" · ")}`}
-            >
-              {/* 25/50/75% reference lines so proportions read at a glance
-                  even when a single segment fills most of the bar. */}
-              {[0.25, 0.5, 0.75].map((p) => (
-                <div
-                  key={p}
-                  className="pointer-events-none absolute inset-x-0 border-t border-dashed border-white/15"
-                  style={{ bottom: `${p * 100}%` }}
-                />
-              ))}
-              {segments.map((s, si) =>
-                s.height > 0 ? (
-                  <div
-                    key={s.key}
-                    style={{
-                      height: s.height,
-                      background: s.color,
-                      borderTop: si > 0 ? "1.5px solid var(--surface-muted)" : undefined,
-                    }}
-                  />
-                ) : null,
-              )}
-            </div>
-            <span
-              className={cn(
-                "rounded-full px-1.5 text-xs whitespace-nowrap",
-                isToday ? "bg-[#CDEB03] font-bold text-[#131516]" : "text-muted-foreground",
-              )}
-            >
-              {d.label}
-            </span>
-          </div>
-        );
-      })}
+              key={i}
+              title={`${d.label}: ${d.value} ${unit}`}
+              className="min-w-[3px] flex-1 rounded-[2px]"
+              style={{
+                height: Math.max(2, (d.value / max) * 34),
+                background: isToday ? color : "var(--chart-muted-bar)",
+              }}
+            />
+          );
+        })}
+      </div>
+      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+        <span>{data[0].label}</span>
+        <span>วันนี้</span>
+      </div>
     </div>
   );
 }

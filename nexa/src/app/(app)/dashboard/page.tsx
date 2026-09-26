@@ -24,7 +24,7 @@ import {
 import { ActionCenter } from "@/features/dashboard/action-center";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AttendanceStackedBar, Sparkline } from "@/features/dashboard/dashboard-charts";
+import { AttendanceRateLine, KpiMiniBars } from "@/features/dashboard/dashboard-charts";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
 import { fullName, loginIdentifier } from "@/lib/format";
 import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
@@ -47,39 +47,86 @@ const TONES = {
   info: "bg-icon-chip-bg text-icon-chip-fg",
 } as const;
 
+/** Day-over-day change badge (dashboard-fix-3) — colored by what the change
+ * MEANS for that metric, not by raw direction: more people present is good,
+ * more people late is not, so the same "▲" can be green on one card and
+ * amber on another. `goodDirection: "neutral"` (leave/OT — no HR-agreed
+ * "more is better/worse" rule for those) always renders the neutral grey. */
+function TrendBadge({
+  data,
+  goodDirection,
+}: {
+  data: { value: number }[];
+  goodDirection: "up" | "down" | "neutral";
+}) {
+  if (data.length < 2) return null;
+  const today = data[data.length - 1].value;
+  const prev = data[data.length - 2].value;
+  const diff = today - prev;
+  if (diff === 0) {
+    return <span className="text-xs font-medium text-muted-foreground">เท่าเดิม</span>;
+  }
+  const isUp = diff > 0;
+  const isGood = goodDirection === "neutral" ? null : goodDirection === "up" ? isUp : !isUp;
+  return (
+    <span
+      className={cn(
+        "text-xs font-medium",
+        isGood === null ? "text-muted-foreground" : isGood ? "text-success" : "text-warning",
+      )}
+    >
+      {isUp ? "▲" : "▼"} {Math.abs(diff)} จากวันก่อน
+    </span>
+  );
+}
+
 /** KPI card — a small color dot instead of an icon chip (N mockup spec):
- * reads as a quick categorical key at a glance across the whole row. */
+ * reads as a quick categorical key at a glance across the whole row.
+ * `miniBars` (dashboard-fix-3) replaces the old flat-line Sparkline with
+ * per-day bars plus a day-over-day change badge; `footer` is for the one
+ * card (headcount) that shows something else entirely instead. */
 function Kpi({
   label,
   value,
   unit,
   color,
   sub,
-  trend,
+  miniBars,
+  footer,
 }: {
   label: string;
   value: string | number;
   unit?: string;
   color: string;
   sub?: ReactNode;
-  trend?: { values: number[]; color: string };
+  miniBars?: {
+    data: { label: string; value: number }[];
+    unit?: string;
+    emptyLabel?: string;
+    goodDirection: "up" | "down" | "neutral";
+  };
+  footer?: ReactNode;
 }) {
   return (
     <Card className="gap-0 p-5 transition hover:shadow-md">
-      <div className="flex items-center gap-2">
-        <span className="size-2.5 shrink-0 rounded-[3px]" style={{ background: color }} />
-        <span className="text-sm text-muted-foreground">{label}</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="size-2.5 shrink-0 rounded-[3px]" style={{ background: color }} />
+          <span className="text-sm text-muted-foreground">{label}</span>
+        </div>
+        {miniBars && <TrendBadge data={miniBars.data} goodDirection={miniBars.goodDirection} />}
       </div>
       <div className="mt-3 flex items-baseline gap-1.5">
         <span className="text-3xl font-semibold tracking-tight tabular-nums">{value}</span>
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
       {sub && <div className="mt-1.5 text-xs text-muted-foreground">{sub}</div>}
-      {trend && trend.values.length >= 2 && (
+      {miniBars && (
         <div className="mt-2">
-          <Sparkline values={trend.values} color={trend.color} label={`แนวโน้ม 14 วันทำการล่าสุด: ${label}`} />
+          <KpiMiniBars data={miniBars.data} color={color} unit={miniBars.unit} emptyLabel={miniBars.emptyLabel} />
         </div>
       )}
+      {footer && <div className="mt-2">{footer}</div>}
     </Card>
   );
 }
@@ -190,7 +237,14 @@ export default async function DashboardPage() {
         )
       : 0;
   const lateSum = attendanceTrend.reduce((sum, d) => sum + d.late, 0);
+  const leaveSum = attendanceTrend.reduce((sum, d) => sum + d.leave, 0);
   const absentSum = attendanceTrend.reduce((sum, d) => sum + d.absent, 0);
+  // Display-only re-sort (dashboard-fix-3): lateness is the real actionable
+  // signal, a missing clock-in is often just an unlogged record — leaves the
+  // watchlist query/service untouched, just changes the order shown here.
+  const departmentWatchlistRanked = [...departmentWatchlist].sort(
+    (a, b) => b.late - a.late || b.absent - a.absent,
+  );
 
   return (
     <>
@@ -283,73 +337,93 @@ export default async function DashboardPage() {
               "องค์กร"
             )
           }
+          footer={
+            <div className="flex h-[6px] gap-[3px] overflow-hidden rounded-full">
+              {employmentTypes.map((t) => (
+                <div
+                  key={t.type}
+                  style={{ width: `${t.pct}%`, background: t.type === "DAILY_WORKER" ? "#F5A524" : "#131516" }}
+                />
+              ))}
+            </div>
+          }
         />
         <Kpi
           label="เข้างานวันนี้"
           value={s.presentToday}
           unit="คน"
-          color="#1A7F4E"
+          color="var(--series-present)"
           sub={`${s.attendanceRate}% ของพนักงาน`}
-          trend={{ values: attendanceTrend.map((p) => p.present), color: "#0e9f8e" }}
+          miniBars={{
+            data: attendanceTrend.map((p) => ({ label: p.label, value: p.present })),
+            goodDirection: "up",
+          }}
         />
         <Kpi
           label="มาสายวันนี้"
           value={s.lateToday}
           unit="คน"
-          color="#FFB900"
+          color="var(--series-late)"
           sub="ต้องติดตาม"
-          trend={{ values: attendanceTrend.map((p) => p.late), color: "#f59e0b" }}
+          miniBars={{
+            data: attendanceTrend.map((p) => ({ label: p.label, value: p.late })),
+            goodDirection: "down",
+          }}
         />
         <Kpi
           label="ลาวันนี้"
           value={s.onLeaveToday}
           unit="คน"
-          color="#22A55B"
+          color="var(--series-leave)"
           sub="อนุมัติแล้ว"
-          trend={{ values: attendanceTrend.map((p) => p.leave), color: "#8b5cf6" }}
+          miniBars={{
+            data: attendanceTrend.map((p) => ({ label: p.label, value: p.leave })),
+            goodDirection: "neutral",
+          }}
         />
         <Kpi
           label="OT วันนี้"
           value={s.otHoursToday}
           unit="ชม."
-          color="#F5A524"
+          color="var(--series-ot)"
           sub="รวมทั้งองค์กร"
-          trend={{ values: attendanceTrend.map((p) => p.otHours), color: "#3b82f6" }}
+          miniBars={{
+            data: attendanceTrend.map((p) => ({ label: p.label, value: p.otHours })),
+            unit: "ชม.",
+            emptyLabel: "ไม่มี OT ใน 14 วันล่าสุด",
+            goodDirection: "neutral",
+          }}
         />
       </section>
 
-      {/* Attendance composition — per-day stacked bar (on-time/late/leave/
-          absent) plus a rolled-up summary alongside it. */}
+      {/* Attendance rate line (dashboard-fix-3) — % of headcount per business
+          day, plus a rolled-up summary alongside it. */}
       <Card>
-        <CardHeader className="flex-row items-start justify-between">
-          <div className="flex flex-col gap-1">
-            <CardTitle>การเข้างาน 14 วันทำการล่าสุด</CardTitle>
-            <p className="text-xs text-muted-foreground">จำนวนคนต่อวัน แยกตามสถานะ</p>
-          </div>
-          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <LegendDot color="#3A3F45" label="มาทำงาน" />
-            <LegendDot color="#FFB900" label="มาสาย" />
-            <LegendDot color="#3B82F6" label="ลา" />
-            <LegendDot color="#E5484D" label="ขาดงาน" />
-          </div>
+        <CardHeader>
+          <CardTitle>การเข้างาน 14 วันทำการล่าสุด</CardTitle>
+          <p className="text-xs text-muted-foreground">อัตราเข้างาน/มาสาย/ลา ต่อวัน เทียบเป็น %</p>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
             <div className="min-w-0 flex-1">
-              <AttendanceStackedBar data={attendanceTrend} />
+              <AttendanceRateLine data={attendanceTrend} />
             </div>
-            <div className="flex shrink-0 flex-row gap-2.5 lg:w-[200px] lg:flex-col">
-              <div className="flex flex-1 flex-col rounded-2xl bg-sidebar p-3 text-white lg:flex-none">
-                <span className="text-xs text-slate-300">อัตราเข้างานเฉลี่ย</span>
-                <span className="text-2xl font-bold text-[#CDEB03] tabular-nums">{avgAttendanceRate}%</span>
+            <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:w-[220px] lg:grid-cols-1">
+              <div className="flex flex-col rounded-2xl p-3" style={{ background: "var(--series-highlight)" }}>
+                <span className="text-xs text-[#131516]/70">เข้างานเฉลี่ย</span>
+                <span className="text-2xl font-bold text-[#131516] tabular-nums">{avgAttendanceRate}%</span>
               </div>
-              <div className="flex flex-1 flex-col rounded-2xl bg-warning/15 p-3 lg:flex-none">
-                <span className="text-xs text-warning">มาสายรวม</span>
+              <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
+                <span className="text-xs" style={{ color: "var(--series-late)" }}>มาสายรวม</span>
                 <span className="text-xl font-bold tabular-nums">{lateSum} ครั้ง</span>
               </div>
-              <div className="flex flex-1 flex-col rounded-2xl bg-destructive-muted p-3 lg:flex-none">
-                <span className="text-xs text-destructive">ขาดงานรวม</span>
-                <span className="text-xl font-bold tabular-nums">{absentSum} ครั้ง</span>
+              <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
+                <span className="text-xs" style={{ color: "var(--series-leave)" }}>ลารวม</span>
+                <span className="text-xl font-bold tabular-nums">{leaveSum} ครั้ง</span>
+              </div>
+              <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
+                <span className="text-xs text-muted-foreground">ไม่มีบันทึกเวลา (คน-วัน)</span>
+                <span className="text-xl font-bold tabular-nums">{absentSum}</span>
               </div>
             </div>
           </div>
@@ -399,21 +473,22 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground">ขาดงานและมาสายสะสม 30 วัน</p>
           </CardHeader>
           <CardContent>
-            {departmentWatchlist.length === 0 ? (
+            {departmentWatchlistRanked.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">ไม่มีแผนกที่ต้องติดตามในช่วงนี้ 👍</p>
             ) : (
               <div className="flex flex-col gap-1">
-                {departmentWatchlist.map((w) => {
-                  const max = Math.max(...departmentWatchlist.map((r) => r.absent + r.late), 1);
+                {departmentWatchlistRanked.map((w) => {
+                  const max = Math.max(...departmentWatchlistRanked.map((r) => r.absent + r.late), 1);
                   return (
                     <div key={w.name} className="grid grid-cols-[140px_1fr_150px] items-center gap-3 rounded-xl p-2">
                       <span className="truncate text-sm font-medium">{w.name}</span>
                       <div className="flex h-3 overflow-hidden rounded-full bg-surface-muted">
-                        <div style={{ width: `${(w.absent / max) * 100}%`, background: "#E5484D" }} />
-                        <div style={{ width: `${(w.late / max) * 100}%`, background: "#FFB900" }} />
+                        <div style={{ width: `${(w.absent / max) * 100}%`, background: "var(--series-norecord)" }} />
+                        <div style={{ width: `${(w.late / max) * 100}%`, background: "var(--series-late)" }} />
                       </div>
                       <span className="text-right text-xs text-muted-foreground tabular-nums">
-                        ขาด <b className="text-destructive">{w.absent}</b> สาย <b className="text-warning">{w.late}</b>
+                        ไม่มีบันทึก <b className="text-foreground">{w.absent}</b> สาย{" "}
+                        <b style={{ color: "var(--series-late)" }}>{w.late}</b>
                       </span>
                     </div>
                   );
@@ -504,13 +579,5 @@ export default async function DashboardPage() {
       </Card>
       </div>
     </>
-  );
-}
-
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="size-2.5 rounded-[3px]" style={{ background: color }} /> {label}
-    </span>
   );
 }

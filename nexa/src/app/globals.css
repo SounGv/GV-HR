@@ -189,6 +189,22 @@
   --gv-bg: #ffffff;
   --gv-border: #e5e9ed;
   --gv-notif-red: #e53935;
+
+  /* Attendance chart series colors — kept separate from --chart-1..5 (which
+     are Recharts' own default categorical palette) since these are named by
+     meaning (present/late/leave/no-record/OT) and reused across the
+     dashboard's line chart, mini-bars and KPI dots. "No record" is grey/
+     dashed rather than red: a missing clock-in is incomplete data, not a
+     confirmed absence (that's --destructive, used only for ABSENT status
+     elsewhere) — see dashboard-charts.tsx. */
+  --series-present: #131516;
+  --series-late: #f59e0b;
+  --series-leave: #3b82f6;
+  --series-norecord: #8a9199;
+  --series-ot: #a855f7;
+  --series-highlight: #cdeb03;
+  --chart-grid: #eef0f2;
+  --chart-muted-bar: #e5e7ea;
 }
 
 /* Comfortable touch targets on phones — 44px minimum height for the
@@ -278,6 +294,16 @@
   --sidebar-accent-foreground: #e6e8ea;
   --sidebar-border: #272b30;
   --sidebar-ring: #cdeb03;
+
+  /* Same series tokens as :root, re-tuned for contrast on a dark card —
+     lime reads best for "present" here (charcoal would vanish on dark). */
+  --series-present: #cdeb03;
+  --series-late: #f5a524;
+  --series-leave: #60a5fa;
+  --series-norecord: #8a9199;
+  --series-ot: #c084fc;
+  --chart-grid: #272b30;
+  --chart-muted-bar: #34383d;
 }
 
 @layer base {
