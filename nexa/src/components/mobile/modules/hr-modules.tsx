@@ -67,7 +67,7 @@ export function MobileMenuSettingsModule() {
             const on = isVisible(item.id);
             return (
               <div key={item.id} className="flex items-center gap-3 px-3.5 py-3">
-                <Icon className="size-[18px] shrink-0 text-primary" />
+                <Icon size={22} />
                 <span className="flex-1 text-[13px] font-medium text-foreground">{item.label}</span>
                 <MobileToggle checked={on} onChange={() => setItemVisible(item.id, !on)} />
               </div>

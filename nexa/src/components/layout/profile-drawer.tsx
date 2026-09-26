@@ -160,12 +160,14 @@ export function ProfileDrawer() {
   const roleLabel = user.roles[0] ?? "ผู้ใช้งาน";
   const statusLabel = user.employee ? STATUS_LABEL[user.employee.status as EmployeeStatus] ?? user.employee.status : null;
 
+  // Same per-topic chip colors as MenuIconChip in mobile-profile-view.tsx,
+  // so the drawer and the profile page read as one consistent system.
   const items = [
-    { href: "/profile", label: "ข้อมูลส่วนตัว", icon: User, show: true, tone: "bg-tone-profile-bg text-tone-profile-fg" },
-    { href: "/notifications", label: "การแจ้งเตือน", icon: Bell, show: true, badge: unreadCount },
-    { href: "/profile#security", label: "ความปลอดภัย", icon: ShieldCheck, show: true },
-    { href: "/profile#security", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound, show: true },
-    { href: "/help", label: "คู่มือการใช้งาน", icon: Settings2, show: canSeeHelp },
+    { href: "/profile", label: "ข้อมูลส่วนตัว", icon: User, show: true, badge: 0, chipColor: "#6366F1" },
+    { href: "/notifications", label: "การแจ้งเตือน", icon: Bell, show: true, badge: unreadCount, chipColor: "#F5A524" },
+    { href: "/profile#security", label: "ความปลอดภัย", icon: ShieldCheck, show: true, badge: 0, chipColor: "#22A55B" },
+    { href: "/profile#security", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound, show: true, badge: 0, chipColor: "#14B8A6" },
+    { href: "/help", label: "คู่มือการใช้งาน", icon: Settings2, show: canSeeHelp, badge: 0, chipColor: "#64748B" },
   ];
 
   return (
@@ -221,10 +223,11 @@ export function ProfileDrawer() {
                   className="flex min-h-16 items-center gap-3 rounded-xl px-3 py-3 text-[17px] font-semibold text-foreground transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.99] active:bg-muted"
                 >
                   <span
-                    className={`relative flex size-10 shrink-0 items-center justify-center rounded-2xl ${item.tone ?? "bg-icon-chip-bg text-icon-chip-fg"} shadow-sm ring-1 ring-border/60`}
+                    className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-sm"
+                    style={{ background: item.chipColor }}
                   >
-                    <item.icon className="size-[18px]" strokeWidth={3} />
-                    {!!item.badge && item.badge > 0 && (
+                    <item.icon className="size-[18px] text-white" strokeWidth={3} />
+                    {item.badge > 0 && (
                       <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[9px] font-semibold text-badge-foreground ring-2 ring-card">
                         {item.badge > 9 ? "9+" : item.badge}
                       </span>

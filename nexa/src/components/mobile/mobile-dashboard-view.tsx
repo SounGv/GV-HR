@@ -4,8 +4,6 @@ import Link from "next/link";
 import {
   Bell,
   ChevronRight,
-  FilePlus2,
-  Star,
   UserRound,
   CheckCircle2,
 } from "lucide-react";
@@ -102,7 +100,7 @@ export function MobileDashboardView({
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/notifications"
-            className="relative flex size-10 items-center justify-center rounded-full bg-card text-icon-chip-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
+            className="relative flex size-10 items-center justify-center rounded-full bg-card text-warning shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
             aria-label="แจ้งเตือน"
           >
             <Bell className="size-[18px]" strokeWidth={3} />
@@ -140,7 +138,9 @@ export function MobileDashboardView({
             <div className="divide-y divide-gv-border overflow-hidden rounded-2xl bg-card shadow-sm">
               {actions.myPending > 0 && (
                 <Link href="/requests" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
-                  <TodoIcon icon={FilePlus2} count={actions.myPending} />
+                  <TodoIcon count={actions.myPending}>
+                    <ClipboardIcon size={32} />
+                  </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">มีคำขอรออนุมัติ</p>
                     <p className="text-xs text-muted-foreground">{actions.myPending} รายการ</p>
@@ -157,7 +157,9 @@ export function MobileDashboardView({
                   }
                   className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60"
                 >
-                  <TodoIcon icon={Star} count={pendingCount} />
+                  <TodoIcon count={pendingCount}>
+                    <StarIllustrationIcon size={32} />
+                  </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">มีการประเมินที่ต้องทำ</p>
                     <p className="text-xs text-muted-foreground">{pendingCount} รายการ</p>
@@ -167,7 +169,9 @@ export function MobileDashboardView({
               )}
               {hrNotifCount > 0 && (
                 <Link href="/notifications" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
-                  <TodoIcon icon={Bell} count={hrNotifCount} />
+                  <TodoIcon count={hrNotifCount}>
+                    <Bell size={28} className="text-warning" strokeWidth={2} />
+                  </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">แจ้งเตือนจากหัวหน้า/HR</p>
                     <p className="text-xs text-muted-foreground">{hrNotifCount} รายการ</p>
@@ -229,18 +233,13 @@ export function MobileDashboardView({
   );
 }
 
-function TodoIcon({
-  icon: Icon,
-  count,
-  tone = "text-icon-chip-fg",
-}: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  count: number;
-  tone?: string;
-}) {
+/** Each "ต้องทำวันนี้" row gets its own fixed-art icon (menu-icons.md) — a
+ * plain wrapper around whatever's passed in, since the three call sites mix
+ * illustrated icons (fixed size prop) and the one lucide bell (className). */
+function TodoIcon({ count, children }: { count: number; children: React.ReactNode }) {
   return (
-    <span className={`relative flex size-10 shrink-0 items-center justify-center ${tone}`}>
-      <Icon className="size-6" strokeWidth={1.75} />
+    <span className="relative flex size-10 shrink-0 items-center justify-center">
+      {children}
       {count > 0 && (
         <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">
           {count > 9 ? "9+" : count}

@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
  * which pages the middle 3 slots point at) changes per role:
  *   Employee: หน้าหลัก · ปฏิทิน · คำขอ · ประเมิน · โปรไฟล์
  *   Manager:  หน้าหลัก · ทีมของฉัน · อนุมัติ · ประเมิน · โปรไฟล์
- *   HR:       Dashboard · พนักงาน · คำขอ · รายงาน · โปรไฟล์
+ *   HR:       หน้าหลัก · พนักงาน · คำขอ · รายงาน · โปรไฟล์
  * "โปรไฟล์" links straight to /profile — the mobile profile page already
  * has security, notifications, and logout on it (see MobileProfileView), so
  * routing through the account drawer first was just an extra tap for no
@@ -65,7 +65,7 @@ export function MobileBottomNav() {
 
   const tabs = isHrTier
     ? [
-        { href: "/dashboard", label: "Dashboard", icon: HomeIcon, show: true, badge: 0 },
+        { href: "/dashboard", label: "หน้าหลัก", icon: HomeIcon, show: true, badge: 0 },
         { href: "/employees", label: "พนักงาน", icon: PeopleIcon, show: can("employee:read"), badge: 0 },
         {
           href: "/requests?view=approvals",

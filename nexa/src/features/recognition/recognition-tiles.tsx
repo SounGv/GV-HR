@@ -1,16 +1,18 @@
 "use client";
 
-import { Award, Heart, Sparkle, Star } from "lucide-react";
+import { Award, Heart, Sparkle } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
+import { StarIllustrationIcon } from "@/components/shared/illustrated-icons";
 import { useRecognitionSummary } from "./hooks";
 
-// Monochrome-green icon system (redesign spec) — same icon color for every
-// recognition type, matching the nav/menu icon treatment.
+// Star gets the full illustrated icon; Award/Heart/Point each get their own
+// color for now (a matching illustrated icon for those is a follow-up, per
+// gv-hr-menu-icons.md) — no two of the four share the same color anymore.
 const TILES = [
-  { key: "star" as const, label: "Star", icon: Star, tone: "text-icon-chip-fg" },
-  { key: "award" as const, label: "Award", icon: Award, tone: "text-icon-chip-fg" },
-  { key: "heart" as const, label: "Heart", icon: Heart, tone: "text-icon-chip-fg" },
-  { key: "point" as const, label: "Point", icon: Sparkle, tone: "text-icon-chip-fg" },
+  { key: "star" as const, label: "Star", icon: StarIllustrationIcon, color: undefined },
+  { key: "award" as const, label: "Award", icon: Award, color: "#F5A524" },
+  { key: "heart" as const, label: "Heart", icon: Heart, color: "#E5484D" },
+  { key: "point" as const, label: "Point", icon: Sparkle, color: "#6366F1" },
 ];
 
 /** Recognition summary tiles — shows how many Star/Award/Heart/Point the current employee has received. */
@@ -37,7 +39,7 @@ export function RecognitionTiles() {
               <span className="text-lg font-semibold tabular-nums text-foreground">
                 {isLoading ? "…" : (value ?? 0)}
               </span>
-              <Icon className={`size-5 ${t.tone}`} />
+              {t.key === "star" ? <Icon size={22} /> : <Icon className="size-5" style={{ color: t.color }} />}
             </span>
           </div>
         );

@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Stethoscope, Landmark, History, ChevronRight, BarChart3 } from "lucide-react";
+import { ChevronRight, BarChart3 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/auth-context";
 import { useMedicalSummary } from "@/features/expense/hooks";
 import { useLoanEligibility } from "@/features/company-loan/hooks";
+import { BenefitsIcon, ExpenseIcon, LeaveOverviewIcon } from "@/components/shared/menu-icons";
 
 /** The "สวัสดิการ" landing — one shared component for desktop (a grid of
  * cards) and mobile (big stacked cards), matching the spec's mobile mockup
@@ -25,8 +26,8 @@ export function BenefitsHubView() {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Card className="gap-4 p-5">
         <div className="flex items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg">
-            <Stethoscope className="size-6" strokeWidth={2.5} />
+          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-2xl border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
+            <BenefitsIcon size={36} />
           </span>
           <div>
             <p className="text-lg font-semibold text-foreground">ค่ารักษาพยาบาล</p>
@@ -61,8 +62,8 @@ export function BenefitsHubView() {
 
       <Card className="gap-4 p-5">
         <div className="flex items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-icon-chip-bg text-icon-chip-fg">
-            <Landmark className="size-6" strokeWidth={2.5} />
+          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-2xl border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
+            <ExpenseIcon size={36} />
           </span>
           <div>
             <p className="text-lg font-semibold text-foreground">กู้เงินบริษัท</p>
@@ -93,15 +94,15 @@ export function BenefitsHubView() {
 
       <Card className="flex-row items-center gap-3 p-4 sm:col-span-2">
         <Link href="/benefits/history" className="flex flex-1 items-center gap-3 rounded-lg p-1 hover:bg-muted">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-icon-chip-bg text-icon-chip-fg">
-            <History className="size-[18px]" strokeWidth={2.5} />
+          <span className="flex size-10 items-center justify-center">
+            <LeaveOverviewIcon size={28} />
           </span>
           <span className="flex-1 text-base font-semibold text-foreground">ประวัติสวัสดิการของฉัน</span>
           <ChevronRight className="size-4 text-muted-foreground" />
         </Link>
         {canApprove && (
           <Link href="/benefits/report" className="flex flex-1 items-center gap-3 rounded-lg p-1 hover:bg-muted">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-icon-chip-bg text-icon-chip-fg">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-[#EC4899]/15 text-[#EC4899]">
               <BarChart3 className="size-[18px]" strokeWidth={2.5} />
             </span>
             <span className="flex-1 text-base font-semibold text-foreground">รายงานสวัสดิการ (HR/Admin)</span>

@@ -2,16 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
-import {
-  ArrowUpRight,
-  ArrowRight,
-  LogIn,
-  CalendarDays,
-  Star,
-  TriangleAlert,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowUpRight, ArrowRight, TriangleAlert, Sparkles } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   getDashboardSummary,
@@ -30,22 +21,11 @@ import { fullName, loginIdentifier } from "@/lib/format";
 import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import type { EmploymentType } from "@/features/employee/types";
 import { cn } from "@/lib/utils";
-import { PeopleIcon, DailyWorkerIcon } from "@/components/shared/illustrated-icons";
+import { PeopleIcon, DailyWorkerIcon, LeaveIcon, StarIllustrationIcon } from "@/components/shared/illustrated-icons";
+import { CheckInIcon } from "@/components/shared/menu-icons";
+import type { MenuIcon } from "@/config/mobile-menu";
 
 export const metadata: Metadata = { title: "แดชบอร์ด" };
-
-// Monochrome-green icon-chip system (redesign spec) — every non-KPI icon
-// chip uses the same lime chip regardless of metric, matching the nav/menu
-// icon treatment. `warning` is the one deliberate exception: it's reserved
-// for a metric that genuinely needs follow-up, so a real amber status
-// color, not decorative per-metric variety, makes that one read as a flag.
-const TONES = {
-  primary: "bg-icon-chip-bg text-icon-chip-fg",
-  success: "bg-icon-chip-bg text-icon-chip-fg",
-  warning: "bg-warning/15 text-warning",
-  danger: "bg-icon-chip-bg text-icon-chip-fg",
-  info: "bg-icon-chip-bg text-icon-chip-fg",
-} as const;
 
 /** Day-over-day change badge (dashboard-fix-3) — colored by what the change
  * MEANS for that metric, not by raw direction: more people present is good,
@@ -139,9 +119,7 @@ function LeaveBalanceTile({ balances, href }: { balances: LeaveBalanceSummary[];
     <Link href={href}>
       <Card className="gap-0 p-4 transition hover:border-primary/40 hover:shadow-sm">
         <div className="flex items-center gap-2">
-          <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TONES.info)}>
-            <CalendarDays className="size-4" />
-          </span>
+          <LeaveIcon size={32} />
           <span className="truncate text-xs text-muted-foreground">วันลาคงเหลือ</span>
         </div>
         <div className="mt-2 grid grid-cols-3 gap-1 text-center">
@@ -164,23 +142,19 @@ function MyTile({
   value,
   sub,
   icon: Icon,
-  tone,
   href,
 }: {
   label: string;
   value: string;
   sub?: string;
-  icon: LucideIcon;
-  tone: keyof typeof TONES;
+  icon: MenuIcon;
   href: string;
 }) {
   return (
     <Link href={href}>
       <Card className="gap-0 p-4 transition hover:border-primary/40 hover:shadow-sm">
         <div className="flex items-center gap-2">
-          <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TONES[tone])}>
-            <Icon className="size-4" />
-          </span>
+          <Icon size={32} />
           <span className="truncate text-xs text-muted-foreground">{label}</span>
         </div>
         <div className="mt-2 truncate text-lg font-semibold tracking-tight">{value}</div>
@@ -298,8 +272,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-foreground">ของฉันวันนี้</h2>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <MyTile
-              icon={LogIn}
-              tone="success"
+              icon={CheckInIcon}
               label="เวลาเข้างานวันนี้"
               value={fmtClock(mine.clockInAt) ?? "ยังไม่เช็คอิน"}
               sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
@@ -307,8 +280,7 @@ export default async function DashboardPage() {
             />
             <LeaveBalanceTile balances={mine.leaveBalances} href="/leave" />
             <MyTile
-              icon={Star}
-              tone="primary"
+              icon={StarIllustrationIcon}
               label="คะแนนให้กำลังใจ"
               value={`${mine.recognition.star + mine.recognition.award + mine.recognition.heart}`}
               sub={`+${mine.recognition.point} คะแนน`}

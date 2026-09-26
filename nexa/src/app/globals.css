@@ -26,8 +26,9 @@
   --color-badge: var(--badge);
   --color-badge-foreground: var(--badge-foreground);
 
-  /* Every icon chip uses the green pair above except account/profile items,
-     which stay neutral grey — see MenuIconTone in config/mobile-menu.ts. */
+  /* Neutral grey pair still used by a couple of plain account/profile
+     chips — see the per-item chipColor usages in profile-drawer.tsx and
+     mobile-profile-view.tsx for the current (colorful) icon system. */
   --color-tone-profile-bg: var(--tone-profile-bg);
   --color-tone-profile-fg: var(--tone-profile-fg);
   --color-menu-active-bg: var(--menu-active-bg);
@@ -156,9 +157,10 @@
   --chart-4: #4e5c00;
   --chart-5: #c62828;
 
-  /* Monochrome icon-chip system — every menu/KPI icon uses this pair;
-     "profile" is the one deliberate neutral-grey exception (account/personal
-     items). Red is reserved for notification-count badges (--badge). */
+  /* Legacy chip pair — menu icons are fixed full-color illustrated artwork
+     now (gv-hr-menu-icons.md), not a themed chip; kept for the few plain
+     status badges that still reference it. Red is reserved for
+     notification-count badges (--badge). */
   --icon-chip-bg: #f4fad2;
   --icon-chip-fg: #4e5c00;
   --tone-profile-bg: #f1f3f5;
