@@ -27,9 +27,10 @@ export interface IssuedRefresh {
 export async function issueRefreshToken(
   userId: string,
   meta?: { ip?: string; userAgent?: string },
+  remember = true,
 ): Promise<IssuedRefresh> {
   const jti = randomUUID();
-  const token = await signRefreshToken({ sub: userId, jti });
+  const token = await signRefreshToken({ sub: userId, jti, remember });
   await prisma.refreshToken.create({
     data: {
       id: jti,
@@ -47,6 +48,7 @@ export interface RotateResult {
   userId: string;
   token: string;
   jti: string;
+  remember: boolean;
 }
 
 /**
@@ -71,13 +73,15 @@ export async function rotateRefreshToken(
   }
   if (row.expiresAt.getTime() < Date.now()) return null;
 
-  // Revoke the old, issue a fresh one (rotation).
+  // Revoke the old, issue a fresh one (rotation) — carrying the same
+  // "remember me" choice forward, since only the original login request had
+  // the checkbox.
   await prisma.refreshToken.update({
     where: { id: row.id },
     data: { revokedAt: new Date() },
   });
-  const next = await issueRefreshToken(row.userId, meta);
-  return { userId: row.userId, token: next.token, jti: next.jti };
+  const next = await issueRefreshToken(row.userId, meta, claims.remember);
+  return { userId: row.userId, token: next.token, jti: next.jti, remember: claims.remember };
 }
 
 export async function revokeRefreshToken(rawToken: string): Promise<void> {

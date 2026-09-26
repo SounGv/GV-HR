@@ -10,15 +10,15 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { identifier, password } = loginSchema.parse(body);
+    const { identifier, password, rememberMe } = loginSchema.parse(body);
 
-    const result = await login(identifier, password, getRequestMeta(req));
+    const result = await login(identifier, password, getRequestMeta(req), rememberMe);
 
     if (result.mfaRequired) {
       return NextResponse.json({ data: { mfaRequired: true, mfaToken: result.mfaToken } });
     }
 
-    const { claims, accessToken, refreshToken } = result;
+    const { claims, accessToken, refreshToken, remember } = result;
     const res = NextResponse.json({
       data: {
         user: {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         },
       },
     });
-    setSessionCookies(res, accessToken, refreshToken);
+    setSessionCookies(res, accessToken, refreshToken, remember);
     return res;
   } catch (err) {
     return handleApiError(err);

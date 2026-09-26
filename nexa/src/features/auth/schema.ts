@@ -4,6 +4,7 @@ import { passwordSchema } from "@/lib/auth/password-policy";
 export const loginSchema = z.object({
   identifier: z.string().trim().min(1, "กรุณากรอกอีเมลหรือชื่อผู้ใช้").max(200),
   password: z.string().min(1, "กรุณากรอกรหัสผ่าน"),
+  rememberMe: z.boolean(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

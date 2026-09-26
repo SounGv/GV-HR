@@ -23,22 +23,34 @@ const baseCookie = {
 /** Session as seen by the app: the verified access-token claims. */
 export type SessionUser = AccessClaims;
 
-/** Write both auth cookies (+ a fresh CSRF token) onto a NextResponse (used by login / refresh). */
-export function setSessionCookies(res: NextResponse, accessToken: string, refreshToken: string) {
+/**
+ * Write both auth cookies (+ a fresh CSRF token) onto a NextResponse (used by
+ * login / refresh). `persistent` is the login form's "remember me" choice:
+ * false drops `maxAge` on the refresh + CSRF cookies so they're browser-
+ * session cookies (gone once the browser fully closes) instead of surviving
+ * for the full `REFRESH_TTL_SECONDS`. The access-token cookie always keeps
+ * its short maxAge either way — it's already reissued every refresh.
+ */
+export function setSessionCookies(
+  res: NextResponse,
+  accessToken: string,
+  refreshToken: string,
+  persistent = true,
+) {
   res.cookies.set(ACCESS_COOKIE, accessToken, {
     ...baseCookie,
     maxAge: ACCESS_TTL_SECONDS,
   });
   res.cookies.set(REFRESH_COOKIE, refreshToken, {
     ...baseCookie,
-    maxAge: REFRESH_TTL_SECONDS,
+    ...(persistent ? { maxAge: REFRESH_TTL_SECONDS } : {}),
     // Refresh token is only ever sent to the refresh endpoint.
     path: "/api/auth",
   });
   res.cookies.set(CSRF_COOKIE, randomBytes(24).toString("hex"), {
     ...baseCookie,
     httpOnly: false, // client JS must be able to read this one
-    maxAge: REFRESH_TTL_SECONDS,
+    ...(persistent ? { maxAge: REFRESH_TTL_SECONDS } : {}),
   });
 }
 

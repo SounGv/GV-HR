@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const raw = getRefreshTokenFromRequest(req);
     if (!raw) throw Unauthorized("ไม่พบเซสชัน");
 
-    const { claims, accessToken, refreshToken } = await refresh(raw, getRequestMeta(req));
+    const { claims, accessToken, refreshToken, remember } = await refresh(raw, getRequestMeta(req));
 
     const res = NextResponse.json({
       data: {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         },
       },
     });
-    setSessionCookies(res, accessToken, refreshToken);
+    setSessionCookies(res, accessToken, refreshToken, remember);
     return res;
   } catch (err) {
     // On any refresh failure, clear cookies so the client falls back to login.

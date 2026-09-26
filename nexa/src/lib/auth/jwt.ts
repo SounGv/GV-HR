@@ -22,6 +22,11 @@ export interface AccessClaims {
 export interface RefreshClaims {
   sub: string; // userId
   jti: string; // token id (matches RefreshToken row)
+  /** "Remember me" choice made at login, carried through every rotation so a
+   * silent /refresh (which gets no form input of its own) keeps honoring it.
+   * Defaults to true when absent so refresh tokens issued before this field
+   * existed keep behaving as they always did (persistent). */
+  remember: boolean;
 }
 
 function requireSecret(name: string): Uint8Array {
@@ -63,7 +68,7 @@ export async function verifyAccessToken(token: string): Promise<AccessClaims | n
 }
 
 export async function signRefreshToken(claims: RefreshClaims): Promise<string> {
-  return new SignJWT({ jti: claims.jti })
+  return new SignJWT({ jti: claims.jti, remember: claims.remember })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setSubject(claims.sub)
@@ -74,7 +79,11 @@ export async function signRefreshToken(claims: RefreshClaims): Promise<string> {
 export async function verifyRefreshToken(token: string): Promise<RefreshClaims | null> {
   try {
     const { payload } = await jwtVerify(token, refreshSecret());
-    return { sub: payload.sub as string, jti: payload.jti as string };
+    return {
+      sub: payload.sub as string,
+      jti: payload.jti as string,
+      remember: payload.remember !== false,
+    };
   } catch {
     return null;
   }
@@ -85,10 +94,12 @@ const MFA_TTL_SECONDS = 300; // 5 min — just long enough to read a code off an
 /**
  * Short-lived token proving "password already verified, awaiting 2FA code."
  * Signed with the access secret but carries a distinct `purpose` claim so it
- * can never be mistaken for (or reused as) a real access token.
+ * can never be mistaken for (or reused as) a real access token. Carries the
+ * "remember me" checkbox choice from the login form across the 2FA step,
+ * since the code-entry request itself has no form field for it.
  */
-export async function signMfaToken(userId: string): Promise<string> {
-  return new SignJWT({ purpose: "mfa" })
+export async function signMfaToken(userId: string, remember: boolean): Promise<string> {
+  return new SignJWT({ purpose: "mfa", remember })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setSubject(userId)
@@ -96,11 +107,11 @@ export async function signMfaToken(userId: string): Promise<string> {
     .sign(accessSecret());
 }
 
-export async function verifyMfaToken(token: string): Promise<{ sub: string } | null> {
+export async function verifyMfaToken(token: string): Promise<{ sub: string; remember: boolean } | null> {
   try {
     const { payload } = await jwtVerify(token, accessSecret());
     if (payload.purpose !== "mfa" || typeof payload.sub !== "string") return null;
-    return { sub: payload.sub };
+    return { sub: payload.sub, remember: payload.remember !== false };
   } catch {
     return null;
   }

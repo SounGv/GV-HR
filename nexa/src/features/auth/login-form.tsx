@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { LoginInput } from "./login-input";
 import { PasswordInput } from "./password-input";
 import { LoginButton } from "./login-button";
@@ -40,7 +41,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
 
   const form = useForm<LoginInputData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { identifier: "", password: "" },
+    defaultValues: { identifier: "", password: "", rememberMe: true },
   });
 
   useEffect(() => {
@@ -179,6 +180,19 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
               </FormControl>
               <FormMessage />
             </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="rememberMe"
+          render={({ field }) => (
+            <label className="flex items-center gap-2 text-sm text-[var(--login-text-secondary)]">
+              <Checkbox
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+              />
+              จดจำการเข้าสู่ระบบนี้
+            </label>
           )}
         />
         <LoginButton type="submit" loading={submitting}>

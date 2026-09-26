@@ -50,6 +50,8 @@ export interface AuthResult {
   claims: AccessClaims;
   accessToken: string;
   refreshToken: string;
+  /** Whether the session cookies should persist past this browser session — the login form's "remember me" checkbox. */
+  remember: boolean;
 }
 
 /** Prisma include that pulls the roles + permissions needed to build claims. */
@@ -89,12 +91,12 @@ function totpLabel(user: { email: string | null; username: string | null }): str
 }
 
 /** Finishes a login: bumps `lastLoginAt`, issues access + refresh tokens. */
-async function completeLogin(user: UserWithRoles, meta?: AuthMeta): Promise<AuthResult> {
+async function completeLogin(user: UserWithRoles, meta?: AuthMeta, remember = true): Promise<AuthResult> {
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
   const claims = buildClaims(user);
   const accessToken = await signAccessToken(claims);
-  const refresh = await issueRefreshToken(user.id, meta);
-  return { claims, accessToken, refreshToken: refresh.token };
+  const refresh = await issueRefreshToken(user.id, meta, remember);
+  return { claims, accessToken, refreshToken: refresh.token, remember };
 }
 
 export type LoginOutcome = ({ mfaRequired: false } & AuthResult) | { mfaRequired: true; mfaToken: string };
@@ -103,6 +105,7 @@ export async function login(
   identifier: string,
   password: string,
   meta?: AuthMeta,
+  remember = true,
 ): Promise<LoginOutcome> {
   const normalized = identifier.toLowerCase().trim();
   const user = await prisma.user.findFirst({
@@ -127,11 +130,11 @@ export async function login(
   if (user.failedLoginAttempts > 0 || user.lockedUntil) await clearFailedAttempts(user.id);
 
   if (user.twoFactorEnabled) {
-    const mfaToken = await signMfaToken(user.id);
+    const mfaToken = await signMfaToken(user.id, remember);
     return { mfaRequired: true, mfaToken };
   }
 
-  const result = await completeLogin(user, meta);
+  const result = await completeLogin(user, meta, remember);
   return { mfaRequired: false, ...result };
 }
 
@@ -166,7 +169,7 @@ export async function verifyMfaAndLogin(
   }
   if (user.failedLoginAttempts > 0 || user.lockedUntil) await clearFailedAttempts(user.id);
 
-  return completeLogin(user, meta);
+  return completeLogin(user, meta, mfaClaims.remember);
 }
 
 export async function setupTwoFactor(userId: string): Promise<{ secret: string; otpauthUrl: string }> {
@@ -283,7 +286,7 @@ export async function loginWithGoogle(profile: GoogleProfile, meta?: AuthMeta): 
   // Same 2FA gate as the password path — a Google-verified email must not be
   // able to skip a second factor the account owner explicitly turned on.
   if (user.twoFactorEnabled) {
-    const mfaToken = await signMfaToken(user.id);
+    const mfaToken = await signMfaToken(user.id, true);
     return { mfaRequired: true, mfaToken };
   }
 
@@ -302,7 +305,7 @@ export async function refresh(rawRefreshToken: string, meta?: AuthMeta): Promise
 
   const claims = buildClaims(user);
   const accessToken = await signAccessToken(claims);
-  return { claims, accessToken, refreshToken: rotated.token };
+  return { claims, accessToken, refreshToken: rotated.token, remember: rotated.remember };
 }
 
 export async function logout(rawRefreshToken: string | null): Promise<void> {

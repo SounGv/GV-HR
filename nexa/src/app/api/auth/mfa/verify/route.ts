@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { mfaToken, code } = mfaVerifySchema.parse(body);
 
-    const { claims, accessToken, refreshToken } = await verifyMfaAndLogin(
+    const { claims, accessToken, refreshToken, remember } = await verifyMfaAndLogin(
       mfaToken,
       code,
       getRequestMeta(req),
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         },
       },
     });
-    setSessionCookies(res, accessToken, refreshToken);
+    setSessionCookies(res, accessToken, refreshToken, remember);
     return res;
   } catch (err) {
     return handleApiError(err);
