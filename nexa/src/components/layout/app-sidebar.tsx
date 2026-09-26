@@ -118,7 +118,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="justify-center px-4 py-3 group-data-[collapsible=icon]:h-16">
+      <SidebarHeader className="justify-center overflow-hidden px-4 py-3 group-data-[collapsible=icon]:h-16">
         <Link href="/dashboard" aria-label="GV One">
           {/* Import kept inline to avoid a client/server import cycle warning */}
           <NexaHeaderLogo />
@@ -214,7 +214,7 @@ function NexaHeaderLogo() {
       <div
         className="hidden w-full flex-col items-center gap-1.5 rounded-[14px] border border-[#2E3338] bg-[linear-gradient(180deg,#24282C_0%,#131516_100%)] px-3 pt-2.5 pb-2.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08),0_8px_20px_rgb(0_0_0_/_0.45)] group-data-[collapsible=icon]:hidden md:flex"
       >
-        <Logo size={84} className="h-[41px] w-[84px] drop-shadow-[0_4px_8px_rgb(0_0_0_/_0.6)] drop-shadow-[0_0_10px_rgb(205_235_3_/_0.22)]" />
+        <Logo size={84} className="h-[41px] w-[84px]" />
         <div className="h-[2px] w-[100px] rounded-full bg-[linear-gradient(90deg,rgb(205_235_3_/_0)_0%,#CDEB03_50%,rgb(205_235_3_/_0)_100%)]" />
         <div
           className={cn(
