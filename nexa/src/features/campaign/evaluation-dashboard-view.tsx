@@ -201,8 +201,17 @@ export function EvaluationDashboardView() {
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v, n) => [`${v} คน`, n]} />
-                    <Pie data={result.charts.statusDistribution} dataKey="count" nameKey="status" innerRadius={55} outerRadius={85} paddingAngle={2} strokeWidth={0}>
+                    <Tooltip contentStyle={tooltipStyle} formatter={(v, n) => [`${v} คน`, n]} isAnimationActive={false} />
+                    <Pie
+                      data={result.charts.statusDistribution}
+                      dataKey="count"
+                      nameKey="status"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={2}
+                      strokeWidth={0}
+                      isAnimationActive={false}
+                    >
                       {result.charts.statusDistribution.map((d) => (
                         <Cell key={d.status} fill={STATUS_COLOR[d.status]} />
                       ))}
