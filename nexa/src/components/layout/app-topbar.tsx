@@ -14,7 +14,7 @@ export function AppTopbar() {
     // artifact while scrolling (reported live, reproducible on desktop Chrome).
     // A solid header removes the blur layer entirely, so there's nothing left
     // to visually tear.
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card px-3 sm:h-16 sm:px-5">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card px-3 [will-change:transform] sm:h-16 sm:px-5">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mx-1 h-5" />
 

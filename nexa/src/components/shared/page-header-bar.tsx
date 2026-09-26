@@ -37,7 +37,12 @@ export function PageHeaderBar({
         // corner as the topbar above it), and that blur showed up as a torn
         // seam artifact while scrolling — see app-topbar.tsx for the same fix.
         "-mx-4 hidden border-b border-border/70 bg-background px-4 py-3 md:-mx-6 md:block md:px-6",
-        sticky && "md:sticky md:top-16 md:z-20",
+        // Forces this sticky bar onto its own GPU compositing layer — without
+        // it, fast scrolling can leave Chromium's stale paint of whatever was
+        // behind the bar showing through/around it for a frame or two (a
+        // repaint-during-fast-scroll bug on `position: sticky`, reported live
+        // on both this bar and the sidebar's own scroll area).
+        sticky && "md:sticky md:top-16 md:z-20 md:[will-change:transform]",
         className,
       )}
     >
