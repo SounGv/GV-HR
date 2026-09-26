@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
-  CalendarDays,
-  ClipboardList,
-  ClipboardCheck,
-  UsersRound,
-  BarChart3,
-  Star,
-  UserRound,
-} from "lucide-react";
+  HomeIcon,
+  CalendarIcon,
+  ClipboardIcon,
+  PeopleIcon,
+  BarChartIllustrationIcon,
+  StarIllustrationIcon,
+  ProfileIllustrationIcon,
+} from "@/components/shared/illustrated-icons";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLeave } from "@/features/leave/hooks";
 import { useOvertime } from "@/features/overtime/hooks";
@@ -62,47 +61,47 @@ export function MobileBottomNav() {
     return pathname === path || pathname.startsWith(`${path}/`);
   };
 
-  const profileTab = { href: "/profile", label: "โปรไฟล์", icon: UserRound, show: true, badge: unreadCount };
+  const profileTab = { href: "/profile", label: "โปรไฟล์", icon: ProfileIllustrationIcon, show: true, badge: unreadCount };
 
   const tabs = isHrTier
     ? [
-        { href: "/dashboard", label: "Dashboard", icon: Home, show: true, badge: 0 },
-        { href: "/employees", label: "พนักงาน", icon: UsersRound, show: can("employee:read"), badge: 0 },
+        { href: "/dashboard", label: "Dashboard", icon: HomeIcon, show: true, badge: 0 },
+        { href: "/employees", label: "พนักงาน", icon: PeopleIcon, show: can("employee:read"), badge: 0 },
         {
           href: "/requests?view=approvals",
           label: "คำขอ",
-          icon: ClipboardCheck,
+          icon: ClipboardIcon,
           show: can("leave:read") || can("overtime:read"),
           badge: pendingCount,
         },
-        { href: "/reports", label: "รายงาน", icon: BarChart3, show: can("report:read"), badge: 0 },
+        { href: "/reports", label: "รายงาน", icon: BarChartIllustrationIcon, show: can("report:read"), badge: 0 },
         profileTab,
       ]
     : isManagerTier
       ? [
-          { href: "/dashboard", label: "หน้าหลัก", icon: Home, show: true, badge: 0 },
-          { href: "/employees", label: "ทีมของฉัน", icon: UsersRound, show: can("employee:read"), badge: 0 },
+          { href: "/dashboard", label: "หน้าหลัก", icon: HomeIcon, show: true, badge: 0 },
+          { href: "/employees", label: "ทีมของฉัน", icon: PeopleIcon, show: can("employee:read"), badge: 0 },
           {
             href: "/requests?view=approvals",
             label: "อนุมัติ",
-            icon: ClipboardCheck,
+            icon: ClipboardIcon,
             show: can("leave:read") || can("overtime:read"),
             badge: pendingCount,
           },
-          { href: "/performance", label: "ประเมิน", icon: Star, show: canReview, badge: pendingReviewCount },
+          { href: "/performance", label: "ประเมิน", icon: StarIllustrationIcon, show: canReview, badge: pendingReviewCount },
           profileTab,
         ]
       : [
-          { href: "/dashboard", label: "หน้าหลัก", icon: Home, show: true, badge: 0 },
-          { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays, show: can("calendar:read"), badge: 0 },
+          { href: "/dashboard", label: "หน้าหลัก", icon: HomeIcon, show: true, badge: 0 },
+          { href: "/calendar", label: "ปฏิทิน", icon: CalendarIcon, show: can("calendar:read"), badge: 0 },
           {
             href: "/requests",
             label: "คำขอ",
-            icon: ClipboardList,
+            icon: ClipboardIcon,
             show: can("leave:read") || can("overtime:read"),
             badge: 0,
           },
-          { href: "/performance", label: "ประเมิน", icon: Star, show: canReview, badge: pendingReviewCount },
+          { href: "/performance", label: "ประเมิน", icon: StarIllustrationIcon, show: canReview, badge: pendingReviewCount },
           profileTab,
         ];
 
@@ -134,7 +133,7 @@ function NavTab({
 }: {
   href: string;
   label: string;
-  icon: typeof Home;
+  icon: React.ComponentType<{ size?: number }>;
   active: boolean;
   badge: number;
 }) {
@@ -147,7 +146,7 @@ function NavTab({
       )}
     >
       <span className={cn("relative flex items-center justify-center rounded-full px-3 py-1", active && "bg-accent")}>
-        <Icon className="size-6" strokeWidth={2.8} />
+        <Icon size={24} />
         {badge > 0 && (
           <span className="absolute -top-1 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[9px] font-semibold text-badge-foreground ring-2 ring-card">
             {badge > 9 ? "9+" : badge}

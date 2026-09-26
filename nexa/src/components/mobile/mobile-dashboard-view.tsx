@@ -3,13 +3,9 @@
 import Link from "next/link";
 import {
   Bell,
-  CalendarDays,
-  ClipboardList,
-  Star,
-  ClipboardCheck,
   ChevronRight,
   FilePlus2,
-  Timer,
+  Star,
   UserRound,
   CheckCircle2,
 } from "lucide-react";
@@ -18,6 +14,13 @@ import { useMyPendingResponses, useEmployeeEvaluationHistory } from "@/features/
 import { useAuth } from "@/features/auth/auth-context";
 import type { DashboardActions } from "@/features/dashboard/service";
 import { MobileCheckinCard } from "./mobile-checkin-card";
+import {
+  LeaveIcon,
+  OvertimeIcon,
+  CalendarIcon,
+  ClipboardIcon,
+  StarIllustrationIcon,
+} from "@/components/shared/illustrated-icons";
 
 export interface MobileDashboardSnapshot {
   clockInAt: string | null;
@@ -183,17 +186,17 @@ export function MobileDashboardView({
           <h2 className="px-1 text-[13px] font-bold text-foreground">เมนูด่วน</h2>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { href: "/leave/new", label: "ขอลา", icon: FilePlus2 },
-              { href: "/overtime/new", label: "ขอ OT", icon: Timer },
-              { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays },
+              { href: "/leave/new", label: "ขอลา", icon: LeaveIcon },
+              { href: "/overtime/new", label: "ขอ OT", icon: OvertimeIcon },
+              { href: "/calendar", label: "ปฏิทิน", icon: CalendarIcon },
             ].map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-icon-chip-bg/60"
               >
-                <span className="flex size-11 items-center justify-center text-icon-chip-fg">
-                  <item.icon className="size-8" strokeWidth={1.75} />
+                <span className="flex size-11 items-center justify-center">
+                  <item.icon size={32} />
                 </span>
                 <span className="text-[12px] font-medium text-foreground">{item.label}</span>
               </Link>
@@ -207,14 +210,14 @@ export function MobileDashboardView({
           <div className="grid grid-cols-3 gap-2">
             <SummaryTile
               href="/leave"
-              icon={CalendarDays}
+              icon={CalendarIcon}
               label="วันลาคงเหลือ"
               value={leaveRemaining != null ? `${leaveRemaining} วัน` : "—"}
             />
-            <SummaryTile href="/requests" icon={ClipboardList} label="คำขอของฉัน" value={`${actions.myTotal} รายการ`} />
+            <SummaryTile href="/requests" icon={ClipboardIcon} label="คำขอของฉัน" value={`${actions.myTotal} รายการ`} />
             <SummaryTile
               href={user.employee ? `/employees/${user.employee.id}/evaluation-history` : "/performance"}
-              icon={Star}
+              icon={StarIllustrationIcon}
               label="คะแนนการประเมิน"
               value={scoreLoading ? "…" : latestScore != null ? `${latestScore.toFixed(1)} / 5` : "—"}
               disabled={!canViewEvalHistory}
@@ -231,7 +234,7 @@ function TodoIcon({
   count,
   tone = "text-icon-chip-fg",
 }: {
-  icon: typeof ClipboardCheck;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   count: number;
   tone?: string;
 }) {
@@ -256,7 +259,7 @@ function SummaryTile({
   tone = "text-icon-chip-fg",
 }: {
   href: string;
-  icon: typeof ClipboardCheck;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
   value: string;
   disabled?: boolean;
