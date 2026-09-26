@@ -121,13 +121,19 @@ export function AppSidebar() {
                 type="button"
                 onClick={() => toggle(group.label)}
                 aria-expanded={expanded}
-                className="flex w-full items-center justify-between rounded-md px-2 py-2 text-sm font-semibold text-slate-300 transition hover:text-slate-100"
+                className="flex h-[46px] w-full items-center gap-3 rounded-xl px-2.5 text-[15px] font-semibold text-slate-200 transition hover:bg-sidebar-accent hover:text-white"
               >
-                <span className="tracking-wide">{group.label}</span>
-                <ChevronDown className={cn("size-4 transition-transform", expanded && "rotate-180")} />
+                <span
+                  className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px]"
+                  style={{ background: group.chipColor }}
+                >
+                  <group.icon className="size-[18px] text-white" strokeWidth={2.25} />
+                </span>
+                <span className="flex-grow text-left tracking-wide">{group.label}</span>
+                <ChevronDown className={cn("size-4 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")} />
               </button>
               {expanded && (
-                <SidebarGroupContent>
+                <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 border-l-2 border-sidebar-accent pl-3.5">
                   <SidebarMenu>
                     {items.map((item) => {
                       const active = isActive(item.href);
@@ -141,9 +147,10 @@ export function AppSidebar() {
                             isActive={active}
                             tooltip={item.label}
                             className={cn(
-                              "h-10 text-[15px] [&_svg]:size-[18px]",
-                              active &&
-                                "data-active:bg-sidebar-primary data-active:font-bold data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground",
+                              "h-9 text-[14px] [&_svg]:size-4",
+                              active
+                                ? "data-active:bg-sidebar-primary data-active:font-bold data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
+                                : "text-[#E6E8EA] hover:text-white",
                             )}
                             render={
                               item.isLogout ? (
@@ -155,7 +162,6 @@ export function AppSidebar() {
                               )
                             }
                           >
-                            <item.icon strokeWidth={2.8} />
                             <span>{item.label}</span>
                           </SidebarMenuButton>
                           {!item.ready && (

@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import type { DeptDatum } from "./group-departments";
 import type { AttendanceTrendPoint } from "./service";
+import { cn } from "@/lib/utils";
 
 // Validated categorical palette (dataviz skill's reference set, reordered
 // brand-green-first and re-validated — see scripts/validate_palette.js in
@@ -243,6 +244,56 @@ export function Sparkline({ values, color, label }: { values: number[]; color: s
       <path d={path} fill="none" stroke="var(--muted-foreground)" strokeOpacity={0.4} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       <circle cx={lastX} cy={lastY} r={2.5} fill={color} stroke="var(--card)" strokeWidth={2} />
     </svg>
+  );
+}
+
+/**
+ * Per-day stacked attendance bar — replaces the line/area trend chart with a
+ * composition view: how the day's headcount splits into on-time / late /
+ * leave / absent, mutually exclusive (late is a subset of `present` in the
+ * underlying data, so it's subtracted out of the bottom segment here to
+ * avoid double-counting it in the stack). Fixed brand hex per segment
+ * (matches the N mockup's legend swatches exactly), not the theme's
+ * light/dark primary — this reads the same in both modes.
+ */
+export function AttendanceStackedBar({ data }: { data: AttendanceTrendPoint[] }) {
+  if (data.length === 0) return <EmptyChart />;
+  const barHeight = 196;
+  const totals = data.map((d) => d.present + d.leave + d.absent);
+  const maxTotal = Math.max(...totals, 1);
+  const seg = (v: number) => `${Math.max(0, (v / maxTotal) * barHeight)}px`;
+
+  return (
+    <div className="flex items-end gap-2.5 overflow-x-auto">
+      {data.map((d, i) => {
+        const total = d.present + d.leave + d.absent || 1;
+        const onTime = Math.max(0, d.present - d.late);
+        const rate = Math.round((d.present / total) * 100);
+        const isToday = i === data.length - 1;
+        return (
+          <div key={d.date} className="flex min-w-[36px] flex-1 flex-col items-center gap-1.5">
+            <span className="text-xs font-semibold tabular-nums">{rate}%</span>
+            <div
+              className="flex w-full flex-col-reverse overflow-hidden rounded-lg bg-surface-muted"
+              style={{ height: barHeight }}
+            >
+              <div style={{ height: seg(onTime), background: "#3A3F45" }} />
+              <div style={{ height: seg(d.late), background: "#FFB900" }} />
+              <div style={{ height: seg(d.leave), background: "#3B82F6" }} />
+              <div style={{ height: seg(d.absent), background: "#E5484D" }} />
+            </div>
+            <span
+              className={cn(
+                "rounded-full px-1.5 text-xs whitespace-nowrap",
+                isToday ? "bg-[#CDEB03] font-bold text-[#131516]" : "text-muted-foreground",
+              )}
+            >
+              {d.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

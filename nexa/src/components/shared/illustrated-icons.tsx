@@ -103,6 +103,17 @@ export function PeopleIcon(props: IconProps) {
   );
 }
 
+export function DailyWorkerIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <circle cx="17" cy="14" r="7" fill="#FDBA74" />
+      <path d="M9 11a8 8 0 0 1 16 0Z" fill="#F5A524" />
+      <rect x="7" y="10" width="20" height="3" rx="1.5" fill="#C77C0E" />
+      <path d="M3 35c0-8 6-13 14-13s14 5 14 13Z" fill="#F97316" />
+    </Base>
+  );
+}
+
 export function BarChartIllustrationIcon(props: IconProps) {
   return (
     <Base {...props}>

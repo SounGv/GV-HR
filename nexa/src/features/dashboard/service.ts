@@ -394,7 +394,8 @@ export async function getAttendanceTrend(companyId: string, days = 14): Promise<
 
 export interface DepartmentWatchRow {
   name: string;
-  count: number;
+  absent: number;
+  late: number;
 }
 
 /**
@@ -440,7 +441,7 @@ export async function getDepartmentWatchlist(companyId: string, days = 30): Prom
     leavesByEmployee.set(l.employeeId, list);
   }
 
-  const scoreByDept = new Map<string, number>();
+  const scoreByDept = new Map<string, { absent: number; late: number }>();
   for (const emp of employees) {
     const deptName = deptById.get(emp.id) ?? "ไม่ระบุแผนก";
     const myLeaves = leavesByEmployee.get(emp.id) ?? [];
@@ -452,17 +453,19 @@ export async function getDepartmentWatchlist(companyId: string, days = 30): Prom
       const onLeave = myLeaves.some((l) => l.startDate.getTime() <= d.getTime() && l.endDate.getTime() >= d.getTime());
       if (onLeave) continue;
       const rec = recordsByEmployeeDay.get(`${emp.id}|${key}`);
+      const row = scoreByDept.get(deptName) ?? { absent: 0, late: 0 };
       if (!rec?.clockInAt) {
-        scoreByDept.set(deptName, (scoreByDept.get(deptName) ?? 0) + 1); // absent
+        row.absent += 1;
       } else if (rec.status === "LATE") {
-        scoreByDept.set(deptName, (scoreByDept.get(deptName) ?? 0) + 1); // late
+        row.late += 1;
       }
+      scoreByDept.set(deptName, row);
     }
   }
 
   return [...scoreByDept.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .filter((r) => r.count > 0)
-    .sort((a, b) => b.count - a.count)
+    .map(([name, row]) => ({ name, ...row }))
+    .filter((r) => r.absent + r.late > 0)
+    .sort((a, b) => b.absent + b.late - (a.absent + a.late))
     .slice(0, 10);
 }
