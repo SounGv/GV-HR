@@ -26,6 +26,7 @@ export default async function ReportsPage({ searchParams }: Props) {
         breadcrumbs={[{ label: "รายงานและสื่อสาร" }, { label: title }]}
         title={title}
         description="สรุปข้อมูลจากทุกโมดูล พร้อมส่งออกเป็น CSV"
+        sticky={false}
       />
       <ReportView />
     </div>
