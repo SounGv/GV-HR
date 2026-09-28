@@ -203,9 +203,9 @@ export function MobileCheckinFlow({
                   className={cn(
                     "flex size-6 items-center justify-center rounded-full text-[11px] font-semibold transition",
                     i < activeStepIndex
-                      ? "bg-primary text-[#14180c]"
+                      ? "bg-gv-lime text-[#14180c]"
                       : i === activeStepIndex
-                        ? "bg-primary text-[#14180c] ring-4 ring-primary/20"
+                        ? "bg-gv-lime text-[#14180c] ring-4 ring-gv-lime/20"
                         : "bg-white/10 text-white/40",
                   )}
                 >
@@ -343,10 +343,10 @@ function CameraStep({
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pt-10 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
         <div className="mx-auto mb-4 flex max-w-xs items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2 text-xs backdrop-blur">
           <span className="flex items-center gap-1.5 text-slate-200">
-            <MapPinned className={cn("size-3.5 shrink-0", coords ? "text-primary" : "text-warning")} />
+            <MapPinned className={cn("size-3.5 shrink-0", coords ? "text-gv-lime" : "text-warning")} />
             {branchName ?? "ไม่ระบุสาขา"}
           </span>
-          <span className={cn("shrink-0", coords ? "text-primary" : gpsError ? "text-warning" : "text-slate-300")}>
+          <span className={cn("shrink-0", coords ? "text-gv-lime" : gpsError ? "text-warning" : "text-slate-300")}>
             {coords
               ? hasGeofence && distance != null
                 ? `ห่าง ${Math.round(distance).toLocaleString()} ม.`
@@ -367,7 +367,7 @@ function CameraStep({
               className="flex size-11 items-center justify-center rounded-full bg-white/10 text-white"
               aria-label="เปิดแฟลช"
             >
-              {torchOn ? <Zap className="size-5 text-primary" /> : <ZapOff className="size-5" />}
+              {torchOn ? <Zap className="size-5 text-gv-lime" /> : <ZapOff className="size-5" />}
             </button>
           ) : (
             <span className="size-11" />
@@ -415,7 +415,7 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
           <button
             type="button"
             onClick={onConfirm}
-            className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-[#14180c]"
+            className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-[#14180c]"
           >
             <Check className="size-4" /> ใช้รูปนี้
           </button>
@@ -428,7 +428,7 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
 function ProcessingStep({ stage }: { stage: "gps" | "save" }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      <Loader2 className="size-9 animate-spin text-primary" />
+      <Loader2 className="size-9 animate-spin text-gv-lime" />
       <p className="text-sm text-slate-200">{stage === "gps" ? "กำลังตรวจสอบตำแหน่ง…" : "กำลังบันทึกเวลา…"}</p>
     </div>
   );
@@ -468,7 +468,7 @@ function OffsiteStep({
             value={reason}
             onChange={(e) => onReasonChange(e.target.value)}
             placeholder="เช่น ไปพบลูกค้า / ปฏิบัติงานนอกสถานที่"
-            className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white placeholder:text-slate-500 focus:border-primary focus:outline-none"
+            className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white placeholder:text-slate-500 focus:border-gv-lime focus:outline-none"
           />
           <div className="mt-4 flex gap-3">
             <button
@@ -482,7 +482,7 @@ function OffsiteStep({
               type="button"
               onClick={onConfirm}
               disabled={!reason.trim() || pending}
-              className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-[#14180c] disabled:opacity-40"
+              className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-[#14180c] disabled:opacity-40"
             >
               {pending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} ยืนยันเช็คอิน
             </button>
@@ -518,7 +518,7 @@ function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onR
         <button type="button" onClick={onCancel} className="rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white">
           ยกเลิก
         </button>
-        <button type="button" onClick={onRetry} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-[#14180c]">
+        <button type="button" onClick={onRetry} className="rounded-xl bg-gv-lime px-5 py-2.5 text-sm font-semibold text-[#14180c]">
           ลองใหม่
         </button>
       </div>
