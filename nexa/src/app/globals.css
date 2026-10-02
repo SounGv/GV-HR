@@ -357,3 +357,66 @@
     }
   }
 }
+
+/* ── Flip7 one-off theme — dashboard page only ──
+   Explicitly requested as an exception to the GV brand tokens (lime/charcoal)
+   that every other GV product and page uses. Scoped entirely under
+   .theme-flip7 (applied once, on the dashboard's desktop wrapper) so it
+   cannot leak into any other page. Do not reuse these tokens elsewhere —
+   ask before extending this theme past the dashboard. */
+.theme-flip7 {
+  --flip7-teal: #2ba8a2;
+  --flip7-teal-light: #3cc4bd;
+  --flip7-teal-dark: #1e8c86;
+  --flip7-teal-bg: #e8f6f5;
+  --flip7-gold: #ffd23f;
+  --flip7-gold-light: #ffe47a;
+  --flip7-gold-dark: #e6b800;
+  --flip7-coral: #ef6c4a;
+  --flip7-coral-light: #ff8a6a;
+  --flip7-coral-dark: #d45233;
+  --flip7-cream: #fff8e7;
+  --flip7-sky: #5dade2;
+  --radius: 1rem;
+
+  /* Re-tune the dashboard's existing semantic chart tokens to Flip7 hues
+     instead of touching every chart/KPI call site individually. */
+  --series-present: var(--flip7-teal);
+  --series-late: var(--flip7-coral);
+  --series-leave: var(--flip7-sky);
+  --series-ot: var(--flip7-gold-dark);
+  --series-highlight: var(--flip7-gold);
+  --series-norecord: #8a9199;
+
+  background: var(--flip7-teal-bg);
+}
+
+.theme-flip7 [data-slot="card"] {
+  border: 0;
+  border-left: 6px solid var(--flip7-teal-light);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: 0 4px 20px rgb(43 168 162 / 0.1);
+}
+
+.theme-flip7 .flip7-pill-btn {
+  border-radius: 999px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--flip7-gold-light), var(--flip7-gold));
+  color: var(--flip7-teal-dark);
+  box-shadow: 0 4px 20px rgb(255 210 63 / 0.4);
+  transition: transform 0.15s ease;
+}
+.theme-flip7 .flip7-pill-btn:hover {
+  filter: brightness(1.03);
+}
+.theme-flip7 .flip7-pill-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-flip7 h1,
+.theme-flip7 [data-slot="card-title"] {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+

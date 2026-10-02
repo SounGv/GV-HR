@@ -21,7 +21,7 @@ const TILES: ApprovalTile[] = [
     label: "เบิกจ่ายรออนุมัติ",
     href: "/expenses",
     render: () => (
-      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[#14B8A6]">
+      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-teal,#14B8A6)]">
         <ReceiptText className="size-[18px] text-white" />
       </span>
     ),
@@ -31,7 +31,7 @@ const TILES: ApprovalTile[] = [
     label: "คำขออนุมัติ",
     href: "/workflows",
     render: () => (
-      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[#6366F1]">
+      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-coral,#6366F1)]">
         <GitBranch className="size-[18px] text-white" />
       </span>
     ),
@@ -66,11 +66,11 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
   return (
     <section className="space-y-3">
       {!nothingToApprove && (
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-sidebar p-5 text-white">
+        <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-[linear-gradient(135deg,var(--flip7-teal-dark),var(--flip7-teal))] p-5 text-white">
           <div className="flex flex-col">
-            <span className="text-sm text-slate-300">รอคุณอนุมัติ</span>
+            <span className="text-sm text-slate-100">รอคุณอนุมัติ</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-[#CDEB03] tabular-nums">{totalApprovals}</span>
+              <span className="text-4xl font-bold text-[var(--flip7-gold)] tabular-nums">{totalApprovals}</span>
               <span className="text-base">รายการ</span>
             </div>
           </div>
@@ -85,7 +85,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
                 {t.render()}
                 <div className="flex flex-col leading-tight">
                   <span className="text-lg font-bold tabular-nums">{data.approvals[t.key]}</span>
-                  <span className="text-xs text-slate-300">{t.label}</span>
+                  <span className="text-xs text-slate-100">{t.label}</span>
                 </div>
               </Link>
             ))}
@@ -93,7 +93,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
 
           <Link
             href={tiles[0].href}
-            className="flex h-12 items-center rounded-xl bg-[#CDEB03] px-5 text-base font-bold text-[#131516] transition hover:brightness-105"
+            className="flip7-pill-btn flex h-12 items-center px-5 text-base"
           >
             ตรวจอนุมัติ
           </Link>

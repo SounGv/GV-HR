@@ -223,7 +223,7 @@ export default async function DashboardPage() {
   return (
     <>
       <MobileDashboardView name={name} mine={mine} actions={actions} />
-      <div className="hidden space-y-6 md:block">
+      <div className="theme-flip7 hidden space-y-6 md:block">
       {/* Greeting + AI summary — plain text header, one dark AI card right
           under it (redesign spec: N mockup merges what used to be two
           separate dark hero cards bookending the page into this single one). */}
@@ -236,14 +236,14 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <Card className="relative overflow-hidden border-0 bg-sidebar p-5 text-white">
-        <div className="pointer-events-none absolute -top-16 -left-10 size-72 rounded-full bg-[#CDEB03]/20 blur-[90px]" />
+      <Card className="relative overflow-hidden border-0 bg-[linear-gradient(135deg,var(--flip7-teal-dark),var(--flip7-teal))] p-5 text-white">
+        <div className="pointer-events-none absolute -top-16 -left-10 size-72 rounded-full bg-[var(--flip7-gold)]/20 blur-[90px]" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-            <Sparkles className="size-5 text-[#CDEB03]" />
+            <Sparkles className="size-5 text-[var(--flip7-gold)]" />
           </span>
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-xs font-semibold tracking-wide text-[#CDEB03] uppercase">สรุปวันนี้จาก AI</p>
+            <p className="text-xs font-semibold tracking-wide text-[var(--flip7-gold)] uppercase">สรุปวันนี้จาก AI</p>
             <p className="text-sm leading-relaxed text-slate-100">
               วันนี้พนักงานเข้างาน <b className="text-white">{s.presentToday}</b> คน
               ({s.attendanceRate}%) · มาสาย <b className="text-white">{s.lateToday}</b> คน ·
@@ -256,7 +256,7 @@ export default async function DashboardPage() {
           </div>
           <Button
             size="sm"
-            className="shrink-0 bg-[#CDEB03] text-[#131516] hover:brightness-105"
+            className="flip7-pill-btn shrink-0"
             render={<Link href="/ai" />}
           >
             <Sparkles className="size-4" /> ถาม AI Assistant
@@ -299,7 +299,7 @@ export default async function DashboardPage() {
           label="พนักงานทั้งหมด"
           value={s.headcount}
           unit="คน"
-          color="#3B82F6"
+          color="var(--flip7-sky)"
           sub={
             s.newThisMonth > 0 ? (
               <span className="inline-flex items-center gap-0.5 text-success">
@@ -314,7 +314,7 @@ export default async function DashboardPage() {
               {employmentTypes.map((t) => (
                 <div
                   key={t.type}
-                  style={{ width: `${t.pct}%`, background: t.type === "DAILY_WORKER" ? "#F5A524" : "#131516" }}
+                  style={{ width: `${t.pct}%`, background: t.type === "DAILY_WORKER" ? "var(--flip7-gold)" : "var(--flip7-teal)" }}
                 />
               ))}
             </div>
@@ -382,8 +382,8 @@ export default async function DashboardPage() {
             </div>
             <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:w-[220px] lg:grid-cols-1">
               <div className="flex flex-col rounded-2xl p-3" style={{ background: "var(--series-highlight)" }}>
-                <span className="text-xs text-[#131516]/70">เข้างานเฉลี่ย</span>
-                <span className="text-2xl font-bold text-[#131516] tabular-nums">{avgAttendanceRate}%</span>
+                <span className="text-xs text-[var(--flip7-teal-dark)]/70">เข้างานเฉลี่ย</span>
+                <span className="text-2xl font-bold text-[var(--flip7-teal-dark)] tabular-nums">{avgAttendanceRate}%</span>
               </div>
               <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
                 <span className="text-xs" style={{ color: "var(--series-late)" }}>มาสายรวม</span>
@@ -414,7 +414,7 @@ export default async function DashboardPage() {
               {employmentTypes.map((t) => (
                 <div
                   key={t.type}
-                  style={{ width: `${t.pct}%`, background: t.type === "DAILY_WORKER" ? "#F5A524" : "#131516" }}
+                  style={{ width: `${t.pct}%`, background: t.type === "DAILY_WORKER" ? "var(--flip7-gold)" : "var(--flip7-teal)" }}
                 />
               ))}
             </div>
@@ -485,9 +485,9 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="flex flex-col rounded-2xl bg-sidebar p-3 text-white">
-              <span className="text-xs text-slate-300">พนักงานทั้งหมด</span>
-              <span className="text-2xl font-bold text-[#CDEB03] tabular-nums">
+            <div className="flex flex-col rounded-2xl bg-[linear-gradient(135deg,var(--flip7-teal-dark),var(--flip7-teal))] p-3 text-white">
+              <span className="text-xs text-slate-100">พนักงานทั้งหมด</span>
+              <span className="text-2xl font-bold text-[var(--flip7-gold)] tabular-nums">
                 {s.headcount} <span className="text-sm font-medium text-white">คน</span>
               </span>
             </div>
@@ -516,13 +516,13 @@ export default async function DashboardPage() {
                   key={d.name}
                   className={cn(
                     "grid grid-cols-[28px_180px_1fr_76px] items-center gap-3 rounded-xl p-2",
-                    isTop && "bg-[#F4FAD2]",
+                    isTop && "bg-[var(--flip7-gold-light)]/40",
                   )}
                 >
                   <span
                     className={cn(
                       "flex size-[26px] items-center justify-center rounded-lg text-[13px] font-bold tabular-nums",
-                      isTop ? "bg-[#CDEB03] text-[#131516]" : isPodium ? "bg-[#131516] text-white" : "bg-surface-muted text-muted-foreground",
+                      isTop ? "bg-[var(--flip7-gold)] text-[var(--flip7-teal-dark)]" : isPodium ? "bg-[var(--flip7-teal-dark)] text-white" : "bg-surface-muted text-muted-foreground",
                     )}
                   >
                     {i + 1}
@@ -533,7 +533,7 @@ export default async function DashboardPage() {
                       className="h-full rounded-full"
                       style={{
                         width: `${(d.count / max) * 100}%`,
-                        background: isPodium ? "linear-gradient(90deg, #3A3F45 0%, #131516 100%)" : "linear-gradient(90deg, #B8BEC4 0%, #8A9199 100%)",
+                        background: isPodium ? "linear-gradient(90deg, var(--flip7-teal-light) 0%, var(--flip7-teal-dark) 100%)" : "linear-gradient(90deg, #B8BEC4 0%, #8A9199 100%)",
                       }}
                     />
                   </div>
