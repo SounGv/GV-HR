@@ -225,15 +225,6 @@ function NexaHeaderLogo() {
         >
           GADGET VILLA
         </div>
-        <div
-          className={cn(
-            michroma.className,
-            "flex items-center gap-1.5 rounded-full bg-[linear-gradient(180deg,#DDF53A_0%,#CDEB03_55%,#A9C400_100%)] py-0.5 text-[9px] leading-normal tracking-[0.18em] text-[#131516] shadow-[inset_0_1px_0_rgb(255_255_255_/_0.55),0_3px_8px_rgb(205_235_3_/_0.25)]",
-          )}
-          style={{ paddingLeft: "calc(10px + 0.18em)", paddingRight: "10px" }}
-        >
-          ONE HR
-        </div>
       </div>
     </div>
   );
