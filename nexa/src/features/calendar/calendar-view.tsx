@@ -28,6 +28,7 @@ const SOURCE_STYLE: Record<CalendarSource, string> = {
   training: "bg-primary/15 text-primary",
   event: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   evaluation: "bg-lime-600/15 text-lime-700 dark:text-lime-400",
+  meeting: "bg-info/15 text-info",
 };
 const SOURCE_DOT: Record<CalendarSource, string> = {
   holiday: "bg-destructive",
@@ -35,6 +36,7 @@ const SOURCE_DOT: Record<CalendarSource, string> = {
   training: "bg-primary",
   event: "bg-emerald-500",
   evaluation: "bg-lime-600",
+  meeting: "bg-info",
 };
 const SOURCE_LABEL: Record<CalendarSource, string> = {
   holiday: "วันหยุด",
@@ -42,6 +44,7 @@ const SOURCE_LABEL: Record<CalendarSource, string> = {
   training: "อบรม",
   event: "กิจกรรม",
   evaluation: "ประเมินผล",
+  meeting: "นัดประชุม",
 };
 
 /** Small corner badge on each day cell — the viewer's own attendance status. */

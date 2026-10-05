@@ -22,6 +22,7 @@ const SOURCE_DOT: Record<CalendarSource, string> = {
   training: "bg-primary",
   event: "bg-emerald-500",
   evaluation: "bg-lime-600",
+  meeting: "bg-info",
 };
 const SOURCE_LABEL: Record<CalendarSource, string> = {
   holiday: "วันหยุด",
@@ -29,6 +30,7 @@ const SOURCE_LABEL: Record<CalendarSource, string> = {
   training: "อบรม",
   event: "กิจกรรม",
   evaluation: "ประเมินผล",
+  meeting: "นัดประชุม",
 };
 
 const MY_STATUS_BADGE: Record<MyDayStatus, { label: string; className: string }> = {

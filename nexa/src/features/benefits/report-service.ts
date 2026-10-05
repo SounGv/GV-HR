@@ -171,6 +171,8 @@ export async function getLoanBenefitsReport(companyId: string, filters: Benefits
     loanDate: l.createdAt.toISOString(),
     status: l.status,
     usageCountThisYear: usageCount.get(`${l.employeeId}:${l.year}`) ?? 0,
-    outstanding: Number(l.amount) - Number(l.repaidAmount),
+    // Only a loan that was actually paid out can have a balance left to repay —
+    // pending, rejected and cancelled requests used to show their full amount here.
+    outstanding: l.status === "PAID" ? Number(l.amount) - Number(l.repaidAmount) : 0,
   }));
 }

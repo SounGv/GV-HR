@@ -180,10 +180,12 @@ async function assertReceiptNotReused(
  * itself never needs to change for this. */
 export async function resolveSickLeaveReference(companyId: string, employeeId: string, sickLeaveRequestId: string) {
   const leave = await prisma.leaveRequest.findFirst({
-    where: { id: sickLeaveRequestId, companyId, employeeId, type: "SICK", deletedAt: null },
+    // APPROVED only — the picker already lists just approved sick leave, so a
+    // pending or rejected request id (sent straight to the API) must not count as proof.
+    where: { id: sickLeaveRequestId, companyId, employeeId, type: "SICK", status: "APPROVED", deletedAt: null },
     select: { id: true, startDate: true, endDate: true, type: true, attachmentUrl: true },
   });
-  if (!leave) throw BadRequest("ไม่พบใบลาป่วยที่อ้างอิง หรือใบลานี้ไม่ใช่ของคุณ");
+  if (!leave) throw BadRequest("ไม่พบใบลาป่วยที่อนุมัติแล้ว หรือใบลานี้ไม่ใช่ของคุณ");
   return leave;
 }
 

@@ -3,6 +3,7 @@ import { formatDate, loginIdentifier } from "@/lib/format";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
 import { EXPENSE_STATUS_LABEL, EXPENSE_CATEGORY_LABEL } from "@/features/expense/labels";
+import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { bangkokParts, lateOrPresent } from "@/lib/datetime";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
@@ -541,11 +542,111 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       };
     });
 
+    // Approved full-day leave with no punch behind it used to be invisible in
+    // this report (every row comes from an AttendanceRecord), so a person on
+    // leave simply wasn't listed that day. Add one "ลางาน" row per working day
+    // of each approved leave that has no attendance record — working day =
+    // Mon–Fri and not a company holiday, the same definition this report's
+    // monthly summary already uses. Hourly leave is skipped: the person worked
+    // that day, so their real record is already there.
+    const iso10 = (d: Date) => d.toISOString().slice(0, 10);
+    const punched = new Set(recs.map((r) => `${r.employeeId}|${iso10(r.workDate)}`));
+    const leaveHolidays = await prisma.holiday.findMany({
+      where: { companyId, deletedAt: null, date: { gte: start, lt: end } },
+      select: { date: true },
+    });
+    const holidaySet = new Set(leaveHolidays.map((h) => iso10(h.date)));
+    const approvedLeaves = await prisma.leaveRequest.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: "APPROVED",
+        unit: "DAY",
+        startDate: { lt: end },
+        endDate: { gte: start },
+        ...deptRel,
+      },
+      select: {
+        employeeId: true,
+        type: true,
+        startDate: true,
+        endDate: true,
+        halfDay: true,
+        employee: {
+          select: {
+            employeeCode: true,
+            firstName: true,
+            lastName: true,
+            nickname: true,
+            employmentType: true,
+            department: { select: { name: true } },
+          },
+        },
+      },
+    });
+    const DAY_MS = 86_400_000;
+    const blank = "-" as const;
+    const leaveRows: { dateIso: string; code: string; row: (typeof rows)[number] }[] = [];
+    for (const lv of approvedLeaves) {
+      const from = lv.startDate.getTime() < start.getTime() ? start : lv.startDate;
+      const to = lv.endDate.getTime() >= end.getTime() ? new Date(end.getTime() - DAY_MS) : lv.endDate;
+      for (let d = new Date(from); d.getTime() <= to.getTime(); d = new Date(d.getTime() + DAY_MS)) {
+        const dow = d.getUTCDay();
+        const day = iso10(d);
+        if (dow === 0 || dow === 6 || holidaySet.has(day)) continue;
+        if (punched.has(`${lv.employeeId}|${day}`)) continue;
+        const shift = shiftMinutesFromBatch(shiftMap, lv.employeeId, d, lv.employee.employmentType);
+        leaveRows.push({
+          dateIso: day,
+          code: lv.employee.employeeCode,
+          row: {
+            date: formatDate(d),
+            code: lv.employee.employeeCode,
+            name: `${lv.employee.firstName} ${lv.employee.lastName}`,
+            nickname: lv.employee.nickname ?? blank,
+            department: lv.employee.department?.name ?? blank,
+            employmentType: EMPLOYMENT_LABEL[lv.employee.employmentType] ?? lv.employee.employmentType,
+            shiftStart: minutesToHHMM(shift.startMin),
+            shiftEnd: minutesToHHMM(shift.endMin),
+            clockIn: blank,
+            clockOut: blank,
+            breakMinutes: blank,
+            hours: blank,
+            otHours: blank,
+            otStatus: blank,
+            otApprover: blank,
+            otReason: blank,
+            lateMinutes: blank,
+            earlyMinutes: blank,
+            status: ATTENDANCE_STATUS_LABEL.ON_LEAVE ?? "ลางาน",
+            statusKey: "ON_LEAVE",
+            workMode: blank,
+            note: `${LEAVE_TYPE_LABEL[lv.type] ?? lv.type}${lv.halfDay ? " (ครึ่งวัน)" : ""}`,
+            editor: blank,
+            location: blank,
+            distance: blank,
+            clockInPhoto: blank,
+            clockOutPhoto: blank,
+          },
+        });
+      }
+    }
+    if (leaveRows.length > 0) {
+      // Keep the report's existing order: newest date first, then employee code.
+      const keyed = [
+        ...rows.map((row, i) => ({ dateIso: iso10(recs[i].workDate), code: recs[i].employee.employeeCode, row })),
+        ...leaveRows,
+      ].sort((a, b) => (a.dateIso === b.dateIso ? a.code.localeCompare(b.code) : a.dateIso < b.dateIso ? 1 : -1));
+      rows.length = 0;
+      rows.push(...keyed.map((k) => k.row));
+    }
+
     const avgHours = hoursCount ? totalHours / hoursCount : 0;
     const footnote =
-      `รวม ${recs.length} รายการ · ชั่วโมงทำงานรวม ${totalHours.toFixed(2)} ชม. ` +
+      `รวม ${rows.length} รายการ · ชั่วโมงทำงานรวม ${totalHours.toFixed(2)} ชม. ` +
       `(เฉลี่ย ${avgHours.toFixed(2)} ชม./วัน) · OT รวม ${totalOt.toFixed(2)} ชม. · ` +
-      `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)`;
+      `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)` +
+      (leaveRows.length > 0 ? ` · ลางานโดยไม่มีบันทึกเวลา ${leaveRows.length} วัน` : "");
 
     return {
       title,
@@ -935,6 +1036,25 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       },
       orderBy: [{ employee: { employeeCode: "asc" } }, { createdAt: "desc" }],
     });
+    // Results from the campaign-based evaluation (rounds opened under
+    // /performance) used to be missing here — this report only read the older
+    // PerformanceReview table, so a finalized round never showed up. Add every
+    // finalized participant; calibrated score/band win over the raw ones, the
+    // same rule the evaluation-history page applies. Read-only: no scoring
+    // logic is touched, these are the values already stored on the participant.
+    const participants = await prisma.evaluationParticipant.findMany({
+      where: { campaign: { companyId, deletedAt: null }, finalizedAt: { not: null }, ...deptRel },
+      select: {
+        overallScore: true,
+        band: true,
+        calibratedScore: true,
+        calibratedBand: true,
+        scorePercent: true,
+        campaign: { select: { name: true, cycle: true } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      },
+      orderBy: [{ employee: { employeeCode: "asc" } }, { finalizedAt: "desc" }],
+    });
     return {
       title,
       period: null,
@@ -943,15 +1063,30 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "name", label: "ชื่อ-สกุล" },
         { key: "cycle", label: "รอบประเมิน" },
         { key: "score", label: "คะแนนรวม", numeric: true },
+        { key: "percent", label: "คะแนน (%)", numeric: true },
         { key: "band", label: "ระดับ" },
+        { key: "source", label: "ที่มา" },
       ],
-      rows: reviews.map((r) => ({
-        code: r.employee.employeeCode,
-        name: `${r.employee.firstName} ${r.employee.lastName}`,
-        cycle: r.cycle,
-        score: Math.round(r.overallScore * 10) / 10,
-        band: r.band,
-      })),
+      rows: [
+        ...participants.map((p) => ({
+          code: p.employee.employeeCode,
+          name: `${p.employee.firstName} ${p.employee.lastName}`,
+          cycle: `${p.campaign.name} · ${p.campaign.cycle}`,
+          score: (p.calibratedScore ?? p.overallScore) != null ? Math.round(((p.calibratedScore ?? p.overallScore) as number) * 10) / 10 : "-",
+          percent: p.scorePercent != null ? Math.round(p.scorePercent * 10) / 10 : "-",
+          band: p.calibratedBand ?? p.band ?? "-",
+          source: "รอบประเมิน",
+        })),
+        ...reviews.map((r) => ({
+          code: r.employee.employeeCode,
+          name: `${r.employee.firstName} ${r.employee.lastName}`,
+          cycle: r.cycle,
+          score: Math.round(r.overallScore * 10) / 10,
+          percent: "-",
+          band: r.band,
+          source: "แบบประเมินเดิม",
+        })),
+      ],
     };
   }
 

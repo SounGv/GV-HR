@@ -97,6 +97,37 @@ export async function getMonth(
     select: { id: true, name: true, startDate: true, endDate: true },
   });
 
+  // Meetings are personal (unlike holidays/leave): only ones the viewer
+  // organizes or was invited to and hasn't declined. Before this, an invite
+  // you accepted never showed up on the calendar at all.
+  const meetings = employeeId
+    ? await prisma.meeting.findMany({
+        where: {
+          companyId,
+          deletedAt: null,
+          status: "SCHEDULED",
+          startAt: { lt: end },
+          endAt: { gte: start },
+          OR: [
+            { organizerEmployeeId: employeeId },
+            { attendees: { some: { employeeId, status: { not: "DECLINED" } } } },
+          ],
+        },
+        select: { id: true, title: true, startAt: true, endAt: true },
+      })
+    : [];
+  // Meeting times are instants; the calendar is by Bangkok calendar day.
+  const BANGKOK_OFFSET_MS = 7 * 3_600_000;
+  const bangkokDay = (d: Date) => {
+    const t = new Date(d.getTime() + BANGKOK_OFFSET_MS);
+    return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()));
+  };
+  for (const mt of meetings) {
+    pushRange(`m-${mt.id}`, `นัดประชุม: ${mt.title}`, "meeting", "meeting", bangkokDay(mt.startAt), bangkokDay(mt.endAt), {
+      href: `/meetings/${mt.id}`,
+    });
+  }
+
   for (const h of holidays) {
     items.push({
       id: `h-${h.id}`,

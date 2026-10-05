@@ -1,4 +1,4 @@
-export type CalendarSource = "holiday" | "leave" | "training" | "event" | "evaluation";
+export type CalendarSource = "holiday" | "leave" | "training" | "event" | "evaluation" | "meeting";
 export type EventType = "event" | "meeting" | "deadline";
 
 export interface CalendarItem {
