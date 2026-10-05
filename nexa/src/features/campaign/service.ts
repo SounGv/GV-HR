@@ -369,6 +369,35 @@ export async function updateCampaign(
     throw BadRequest("แก้ไขชุดสมรรถนะได้เฉพาะแคมเปญที่ยังเป็นฉบับร่าง");
   }
 
+  // The "ready to open" rule used to live only in the button (see
+  // campaign-status-actions.tsx) — a direct API call could switch an
+  // incomplete round ACTIVE, leaving people with no manager rater and scores
+  // that can never compute. Enforce the same two checks here, on the raters
+  // the round will actually use (the new list when this request changes it).
+  if (input.status === "ACTIVE" && existing.status !== "ACTIVE") {
+    const target = await prisma.evaluationCampaign.findFirst({
+      where: { id, companyId, deletedAt: null },
+      select: {
+        raterTypes: true,
+        participants: {
+          select: {
+            employee: { select: { id: true, firstName: true, lastName: true, managerId: true } },
+            responses: { select: { raterType: true } },
+          },
+        },
+      },
+    });
+    const readiness = evaluateCampaignReadiness(input.raterTypes ?? target?.raterTypes ?? [], target?.participants ?? []);
+    if (!readiness.participantsOk) throw BadRequest("กรุณาเพิ่มผู้เข้าร่วมก่อนเปิดใช้งานแคมเปญ");
+    if (readiness.missingManagerRaterFor.length > 0) {
+      const names = readiness.missingManagerRaterFor
+        .slice(0, 5)
+        .map((e) => `${e.firstName} ${e.lastName}`)
+        .join(", ");
+      throw BadRequest(`ยังไม่พร้อมเปิดใช้งาน: ${readiness.missingManagerRaterFor.length} คนยังไม่มีหัวหน้างานเป็นผู้ประเมิน (${names})`);
+    }
+  }
+
   if (changingCompetencies) {
     const competencyIds = input.competencies!.map((c) => c.competencyId);
     const found = await prisma.competency.count({
@@ -1459,6 +1488,7 @@ async function maybeCreateImprovementPlan(
       scoreStatus: true,
       lowestTopics: true,
       employeeId: true,
+      campaignId: true,
       employee: { select: { firstName: true, lastName: true, managerId: true } },
       campaign: { select: { name: true, cycle: true, followUpDate: true } },
     },
@@ -1518,7 +1548,14 @@ async function maybeCreateImprovementPlan(
     await createNotification(
       companyId,
       employeeId,
-      { title: "มีพนักงานคะแนนประเมินต่ำกว่าเกณฑ์", body: notifyBody, category: "performance", link: `/performance/campaigns/${participantId}` },
+      {
+        title: "มีพนักงานคะแนนประเมินต่ำกว่าเกณฑ์",
+        body: notifyBody,
+        category: "performance",
+        // /performance/campaigns/[id] takes a campaignId, so a participant id
+        // there opened "not found" — the result page is .../participants/[participantId].
+        link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
+      },
       session.sub,
     );
   }

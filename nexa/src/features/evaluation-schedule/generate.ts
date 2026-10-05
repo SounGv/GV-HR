@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { seedParticipants } from "@/features/campaign/service";
+import { createNotification } from "@/features/notification/service";
 import { getTemplateSnapshot } from "@/features/evaluation-template/service";
 
 const DAY_MS = 86_400_000;
@@ -11,6 +12,26 @@ function formatCycleLabel(date: Date, intervalMonths: number): string {
   if (intervalMonths >= 6) return `ครึ่งปี ${date.getMonth() < 6 ? 1 : 2}/${beYear}`;
   if (intervalMonths >= 3) return `ไตรมาส ${Math.floor(date.getMonth() / 3) + 1}/${beYear}`;
   return `เดือน ${date.getMonth() + 1}/${beYear}`;
+}
+
+/** Tells everyone who can manage campaigns that a scheduled round was drafted and needs opening. */
+async function notifyHrDraftCreated(companyId: string, campaignId: string, name: string, participantCount: number) {
+  const managers = await prisma.employee.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      user: { roles: { some: { role: { permissions: { some: { permission: { key: "campaign:manage" } } } } } } },
+    },
+    select: { id: true },
+  });
+  for (const m of managers) {
+    await createNotification(companyId, m.id, {
+      title: "ระบบสร้างรอบประเมินอัตโนมัติ รอเปิดใช้งาน",
+      body: `${name} · ผู้เข้าร่วม ${participantCount} คน — ตรวจความพร้อมแล้วกด “เปิดใช้งานแคมเปญ”`,
+      category: "performance",
+      link: `/performance/campaigns/${campaignId}`,
+    });
+  }
 }
 
 /**
@@ -100,6 +121,16 @@ export async function runDueSchedules() {
         entityId: campaign.id,
         after: { scheduleTemplateId: template.id, participantCount: employees.length },
       });
+
+      // The round is created as DRAFT (someone still has to open it), but
+      // nobody was told it exists — it sat unnoticed until HR happened to
+      // browse the campaign list. A failure here must not mark the template
+      // as failed: the campaign and its next run date are already saved.
+      try {
+        await notifyHrDraftCreated(template.companyId, campaign.id, `${template.name} (อัตโนมัติ)`, employees.length);
+      } catch {
+        // Notification is best-effort.
+      }
 
       created += 1;
     } catch (err) {
