@@ -22,6 +22,7 @@ import { useAiAccess } from "@/features/ai/hooks";
 import { useAiPanel } from "@/features/ai/ai-panel-context";
 import { useLeave } from "@/features/leave/hooks";
 import { useOvertime } from "@/features/overtime/hooks";
+import { useAttendanceCorrections } from "@/features/attendance-correction/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,12 @@ export function AppSidebar() {
   const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
   const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
   const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
-  const pendingApprovals = (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0);
+  const canApproveCorrection = canAny(["attendance:approve", "attendance:manage"]);
+  const correctionPendingQ = useAttendanceCorrections("team", "PENDING", { enabled: canApproveCorrection });
+  const pendingApprovals =
+    (leavePendingQ.data?.data.length ?? 0) +
+    (otPendingQ.data?.data.length ?? 0) +
+    (correctionPendingQ.data?.data.length ?? 0);
 
   const canReview = can("performance:read");
   const pendingReviewsQ = useMyPendingResponses();

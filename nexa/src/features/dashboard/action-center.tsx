@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ReceiptText, GitBranch, CalendarClock, CheckCircle2 } from "lucide-react";
+import { ReceiptText, GitBranch, CalendarClock, CheckCircle2, PencilLine } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { LeaveIcon, OvertimeIcon } from "@/components/shared/illustrated-icons";
@@ -16,6 +16,16 @@ interface ApprovalTile {
 const TILES: ApprovalTile[] = [
   { key: "leave", label: "การลารออนุมัติ", href: "/leave?view=overview", render: () => <LeaveIcon size={34} /> },
   { key: "overtime", label: "OT รออนุมัติ", href: "/overtime?view=overview", render: () => <OvertimeIcon size={34} /> },
+  {
+    key: "correction",
+    label: "แก้ไขเวลารออนุมัติ",
+    href: "/attendance/corrections",
+    render: () => (
+      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-sky,#3B82F6)]">
+        <PencilLine className="size-[18px] text-white" />
+      </span>
+    ),
+  },
   {
     key: "expense",
     label: "เบิกจ่ายรออนุมัติ",

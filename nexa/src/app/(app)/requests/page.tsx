@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarDays, Timer } from "lucide-react";
+import { CalendarDays, PencilLine, Timer } from "lucide-react";
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,7 @@ export default async function RequestsPage({
     <>
       <MobileRequestsView defaultTab={view === "approvals" ? "approvals" : "me"} />
       <div className="hidden space-y-6 md:block">
-        <PageHeader title="คำขอ" description="ภาพรวมคำขอลาและ OT — จัดการรายละเอียดที่หน้าการลาและหน้า OT" />
+        <PageHeader title="คำขอ" description="ภาพรวมคำขอลา OT และแก้ไขเวลา — จัดการรายละเอียดที่หน้าของแต่ละประเภท" />
         <div className="grid gap-4 sm:grid-cols-2">
           <Link href="/leave">
             <Card className="flex-row items-center gap-3 p-5 transition hover:border-primary/40 hover:shadow-sm">
@@ -41,6 +41,17 @@ export default async function RequestsPage({
               <div>
                 <p className="font-medium text-foreground">ล่วงเวลา (OT)</p>
                 <p className="text-sm text-muted-foreground">ยื่นคำขอ OT และอนุมัติคำขอของทีม</p>
+              </div>
+            </Card>
+          </Link>
+          <Link href="/attendance/corrections">
+            <Card className="flex-row items-center gap-3 p-5 transition hover:border-primary/40 hover:shadow-sm">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-info/10 text-info">
+                <PencilLine className="size-5" />
+              </span>
+              <div>
+                <p className="font-medium text-foreground">แก้ไขเวลาเข้า-ออกงาน</p>
+                <p className="text-sm text-muted-foreground">ส่งคำขอแก้ไขเวลา และอนุมัติคำขอของทีม</p>
               </div>
             </Card>
           </Link>

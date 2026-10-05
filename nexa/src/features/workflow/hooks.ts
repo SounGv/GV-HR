@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  fetchApproverRoles,
   fetchWorkflows,
   createWorkflow,
   updateWorkflow,
@@ -21,6 +22,10 @@ export const workflowKeys = {
 
 export function useWorkflows(activeOnly = false) {
   return useQuery({ queryKey: workflowKeys.defs(activeOnly), queryFn: () => fetchWorkflows(activeOnly) });
+}
+
+export function useApproverRoles() {
+  return useQuery({ queryKey: [...workflowKeys.all, "roles"], queryFn: fetchApproverRoles });
 }
 
 export function useRequests(scope: RequestScope) {

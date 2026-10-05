@@ -1,6 +1,8 @@
+import { after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { isLineConfigured, pushLineMessage } from "@/lib/integrations/line";
 import { NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
@@ -29,6 +31,60 @@ async function authorName(companyId: string, session: AccessClaims): Promise<str
     select: { firstName: true, lastName: true },
   });
   return emp ? `${emp.firstName} ${emp.lastName}`.trim() : null;
+}
+
+/**
+ * Tells every current employee about a newly published announcement — before
+ * this, publishing was silent and people only saw it by opening the feed.
+ * In-app rows go in with one createMany (the pooled connection serves one
+ * query at a time, so per-employee inserts would be slow for a whole company);
+ * LINE pushes are one network call per linked employee, so they run after the
+ * response is sent instead of making the publisher wait.
+ */
+async function notifyPublished(
+  companyId: string,
+  announcement: { id: string; title: string; body: string },
+  actorUserId: string,
+) {
+  const recipients = await prisma.employee.findMany({
+    where: { companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } },
+    select: { id: true, lineUserId: true },
+  });
+  if (recipients.length === 0) return;
+
+  const preview = announcement.body.length > 120 ? `${announcement.body.slice(0, 117)}…` : announcement.body;
+  const link = `/announcements/${announcement.id}`;
+  const title = `ประกาศ: ${announcement.title}`;
+
+  await prisma.notification.createMany({
+    data: recipients.map((r) => ({
+      companyId,
+      employeeId: r.id,
+      title,
+      body: preview,
+      category: "announcement",
+      link,
+      createdById: actorUserId,
+    })),
+  });
+
+  if (!isLineConfigured()) return;
+  const lineTargets = recipients.filter((r) => r.lineUserId).map((r) => r.lineUserId as string);
+  if (lineTargets.length === 0) return;
+  const text = `${title}\n${preview}\n${(process.env.APP_URL ?? "http://localhost:3000") + link}`;
+  try {
+    after(async () => {
+      for (const to of lineTargets) {
+        try {
+          await pushLineMessage(to, text);
+        } catch {
+          // A failed LINE push never affects the in-app notification already saved.
+        }
+      }
+    });
+  } catch {
+    // No request scope to defer into (e.g. called from a script) — in-app rows are already saved.
+  }
 }
 
 export async function listAnnouncements(
@@ -94,6 +150,8 @@ export async function createAnnouncement(
     ...meta,
   });
 
+  if (record.status === "PUBLISHED") await notifyPublished(companyId, record, session.sub);
+
   return record;
 }
 
@@ -133,6 +191,9 @@ export async function updateAnnouncement(
     entityId: id,
     ...meta,
   });
+
+  // Only the first publish notifies — later edits to a published announcement stay quiet.
+  if (willPublish) await notifyPublished(companyId, record, session.sub);
 
   return record;
 }

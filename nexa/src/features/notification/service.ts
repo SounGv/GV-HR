@@ -97,6 +97,34 @@ export async function createNotification(
 }
 
 /**
+ * Notifies every employee whose role grants `permissionKey` — the fallback
+ * when a request has no direct manager to send it to (leave/OT/correction
+ * from someone with `managerId = null` used to notify nobody at all, so HR
+ * only saw it by opening the inbox). Sequential on purpose: one pooled connection.
+ */
+export async function notifyPermissionHolders(
+  companyId: string,
+  permissionKey: string,
+  excludeEmployeeId: string | null,
+  input: { title: string; body: string; category?: string; link?: string },
+  createdById?: string | null,
+) {
+  const holders = await prisma.employee.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      ...(excludeEmployeeId ? { id: { not: excludeEmployeeId } } : {}),
+      user: { roles: { some: { role: { permissions: { some: { permission: { key: permissionKey } } } } } } },
+    },
+    select: { id: true },
+  });
+  for (const h of holders) {
+    await createNotification(companyId, h.id, input, createdById);
+  }
+  return holders.length;
+}
+
+/**
  * HR-composed notification to a chosen set of employees — the "select
  * people, they see a bell notification" bulk-notify tool. One at a time
  * (not Promise.all): the pooled connection can only serve one query at a

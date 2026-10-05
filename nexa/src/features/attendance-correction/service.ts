@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import { createNotification } from "@/features/notification/service";
+import { createNotification, notifyPermissionHolders } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
@@ -104,18 +104,17 @@ export async function createAttendanceCorrection(
     ...meta,
   });
 
+  const correctionNotice = {
+    title: "มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ",
+    body: `${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}`,
+    category: "attendance",
+    link: `/attendance/corrections/${record.id}`,
+  };
   if (employee?.managerId) {
-    await createNotification(
-      companyId,
-      employee.managerId,
-      {
-        title: "มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ",
-        body: `${employee.firstName} ${employee.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}`,
-        category: "attendance",
-        link: `/attendance/corrections/${record.id}`,
-      },
-      session.sub,
-    );
+    await createNotification(companyId, employee.managerId, correctionNotice, session.sub);
+  } else {
+    // No direct manager on file — send it to the HR-level approvers instead of nobody.
+    await notifyPermissionHolders(companyId, "attendance:approve", employeeId, correctionNotice, session.sub);
   }
 
   await broadcastToLineGroups(
@@ -136,7 +135,10 @@ export async function listAttendanceCorrections(
 
   if (query.scope === "me") {
     employeeIds = [requireEmployeeId(session)];
-  } else if (query.scope === "team") {
+  } else if (query.scope === "team" && !isHrLevel(session)) {
+    // HR-level approvers see every pending request company-wide (same rule as
+    // leave and OT) — otherwise a request from an employee with no manager, or
+    // one whose manager is away, was invisible to everyone who could decide it.
     const reports = await prisma.employee.findMany({
       where: { companyId, managerId: session.employeeId ?? "__none__", deletedAt: null },
       select: { id: true },

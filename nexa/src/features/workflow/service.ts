@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { fullName, loginIdentifier } from "@/lib/format";
+import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ApprovalWorkflow, ApprovalRequest, RequestStep, WorkflowStepDef } from "./types";
 import type {
@@ -39,6 +40,41 @@ async function actorName(companyId: string, session: AccessClaims): Promise<stri
 }
 
 // ─────────── Workflow definitions ───────────
+
+/**
+ * Tells everyone holding `roleName` that a request is waiting on their step.
+ * The workflow engine used to send nothing at all — approvers only found a
+ * request by opening the inbox tab. Sequential on purpose (one pooled connection).
+ */
+async function notifyRoleHolders(
+  companyId: string,
+  roleName: string,
+  excludeEmployeeId: string | null,
+  input: { title: string; body: string; link: string },
+  createdById: string,
+) {
+  const holders = await prisma.employee.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      ...(excludeEmployeeId ? { id: { not: excludeEmployeeId } } : {}),
+      user: { roles: { some: { role: { name: roleName } } } },
+    },
+    select: { id: true },
+  });
+  for (const h of holders) {
+    await createNotification(companyId, h.id, { ...input, category: "workflow" }, createdById);
+  }
+}
+
+/** Roles available as an approver step — company roles plus the shared system roles (same set the admin matrix lists). */
+export async function listApproverRoles(companyId: string): Promise<{ id: string; name: string }[]> {
+  return prisma.role.findMany({
+    where: { OR: [{ companyId }, { companyId: null }], deletedAt: null },
+    select: { id: true, name: true },
+    orderBy: [{ isSystem: "desc" }, { name: "asc" }],
+  });
+}
 
 export async function listWorkflows(companyId: string, activeOnly = false): Promise<ApprovalWorkflow[]> {
   const rows = await prisma.approvalWorkflow.findMany({
@@ -297,6 +333,17 @@ export async function createRequest(
     after: { title: input.title, workflow: wf.name },
     ...meta,
   });
+  await notifyRoleHolders(
+    companyId,
+    steps[0].approverRole,
+    employeeId,
+    {
+      title: "มีคำขออนุมัติรอคุณ",
+      body: `${input.title} · ${wf.name} · ขั้น ${steps[0].name}`,
+      link: `/workflows/requests/${record.id}`,
+    },
+    session.sub,
+  );
   return record;
 }
 
@@ -376,6 +423,36 @@ export async function decideRequest(
     entityId: req.id,
     ...meta,
   });
+
+  const link = `/workflows/requests/${req.id}`;
+  const moreSteps = input.action === "approve" && nextStatus === "PENDING";
+  if (moreSteps) {
+    // Hand-off: the next step's approvers are now on the hook, the requester just sees progress.
+    const next = steps[nextStep];
+    await notifyRoleHolders(
+      companyId,
+      next.approverRole,
+      req.requesterEmployeeId,
+      { title: "มีคำขออนุมัติรอคุณ", body: `${record.title} · ขั้น ${next.name}`, link },
+      session.sub,
+    );
+  }
+  await createNotification(
+    companyId,
+    req.requesterEmployeeId,
+    {
+      title:
+        input.action === "reject"
+          ? "คำขออนุมัติของคุณไม่ได้รับอนุมัติ"
+          : moreSteps
+            ? "คำขออนุมัติของคุณผ่านอีกหนึ่งขั้น"
+            : "คำขออนุมัติของคุณได้รับอนุมัติแล้ว",
+      body: `${record.title}${input.note ? ` · ${input.note}` : ""}`,
+      category: "workflow",
+      link,
+    },
+    session.sub,
+  );
   return serializeRequest(record);
 }
 

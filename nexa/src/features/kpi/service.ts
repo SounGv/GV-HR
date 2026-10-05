@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { canAny } from "@/lib/auth/rbac";
+import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
   GoalCreateInput,
@@ -174,6 +175,22 @@ export async function createGoal(
     after: { title: input.title, employeeId, parentGoalId: input.parentGoalId },
     ...meta,
   });
+
+  // A goal set for someone else (manager/HR assigning) used to appear silently —
+  // the owner only found it by opening /kpi. Setting your own goal stays quiet.
+  if (employeeId !== session.employeeId) {
+    await createNotification(
+      companyId,
+      employeeId,
+      {
+        title: input.parentGoalId ? "มี Key Result ใหม่ในเป้าหมายของคุณ" : "คุณได้รับเป้าหมาย / KPI ใหม่",
+        body: `${input.title} · รอบ ${input.cycle}`,
+        category: "kpi",
+        link: `/kpi/${record.id}`,
+      },
+      session.sub,
+    );
+  }
 
   return withRollup(record);
 }

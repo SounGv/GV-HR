@@ -19,8 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
-import { useRoles } from "@/features/admin/hooks";
-import { useCreateWorkflow, useUpdateWorkflow } from "./hooks";
+import { useApproverRoles, useCreateWorkflow, useUpdateWorkflow } from "./hooks";
 import type { ApprovalWorkflow, WorkflowStepDef } from "./types";
 
 const FORM_ID = "workflow-form";
@@ -31,7 +30,7 @@ type Step = { name: string; approverRole: string };
 export function WorkflowFormPage({ workflow }: { workflow?: ApprovalWorkflow }) {
   const router = useRouter();
   const isEdit = !!workflow;
-  const { data: rolesData } = useRoles();
+  const { data: rolesData } = useApproverRoles();
   const roles = rolesData?.data ?? [];
   const createMut = useCreateWorkflow();
   const updateMut = useUpdateWorkflow();

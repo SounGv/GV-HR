@@ -2,7 +2,11 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import { createNotification, markNotificationsByLinkRead } from "@/features/notification/service";
+import {
+  createNotification,
+  markNotificationsByLinkRead,
+  notifyPermissionHolders,
+} from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -107,18 +111,17 @@ export async function createOvertime(
     ...meta,
   });
 
+  const otNotice = {
+    title: "มีคำขอ OT รออนุมัติ",
+    body: `${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง`,
+    category: "overtime",
+    link: `/overtime/${record.id}`,
+  };
   if (employee?.managerId) {
-    await createNotification(
-      companyId,
-      employee.managerId,
-      {
-        title: "มีคำขอ OT รออนุมัติ",
-        body: `${employee.firstName} ${employee.lastName} ขอ OT ${hours} ชั่วโมง`,
-        category: "overtime",
-        link: `/overtime/${record.id}`,
-      },
-      session.sub,
-    );
+    await createNotification(companyId, employee.managerId, otNotice, session.sub);
+  } else {
+    // No direct manager on file — send it to the HR-level approvers instead of nobody.
+    await notifyPermissionHolders(companyId, "overtime:approve", session.employeeId ?? null, otNotice, session.sub);
   }
 
   await broadcastToLineGroups(

@@ -11,6 +11,10 @@ export function fetchWorkflows(activeOnly = false) {
   return api.get<Envelope<ApprovalWorkflow[]>>(`/api/workflows${activeOnly ? "?active=1" : ""}`);
 }
 
+export function fetchApproverRoles() {
+  return api.get<Envelope<{ id: string; name: string }[]>>("/api/workflows/roles");
+}
+
 export function createWorkflow(input: WorkflowFormValues) {
   return api.post<Envelope<{ id: string }>>("/api/workflows", input);
 }

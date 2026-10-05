@@ -2,7 +2,11 @@ import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import { createNotification, markNotificationsByLinkRead } from "@/features/notification/service";
+import {
+  createNotification,
+  markNotificationsByLinkRead,
+  notifyPermissionHolders,
+} from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
@@ -243,18 +247,17 @@ export async function createLeave(
   });
 
   const amountLabel = isHourly ? `${hours} ชม. (${input.startTime}–${input.endTime})` : `${days} วัน`;
+  const leaveNotice = {
+    title: "มีคำขอลารออนุมัติ",
+    body: `${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}`,
+    category: "leave",
+    link: `/leave/${record.id}`,
+  };
   if (requester?.managerId) {
-    await createNotification(
-      companyId,
-      requester.managerId,
-      {
-        title: "มีคำขอลารออนุมัติ",
-        body: `${requester.firstName} ${requester.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}`,
-        category: "leave",
-        link: `/leave/${record.id}`,
-      },
-      session.sub,
-    );
+    await createNotification(companyId, requester.managerId, leaveNotice, session.sub);
+  } else {
+    // No direct manager on file — send it to the HR-level approvers instead of nobody.
+    await notifyPermissionHolders(companyId, "leave:approve", employeeId, leaveNotice, session.sub);
   }
 
   await broadcastToLineGroups(

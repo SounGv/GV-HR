@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/features/auth/auth-context";
 import { useLeave } from "@/features/leave/hooks";
 import { useOvertime } from "@/features/overtime/hooks";
+import { useAttendanceCorrections } from "@/features/attendance-correction/hooks";
 import { useMyPendingResponses } from "@/features/campaign/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
@@ -39,10 +40,15 @@ export function MobileBottomNav() {
 
   const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
   const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
-  const canApprove = canApproveLeave || canApproveOt;
+  const canApproveCorrection = canAny(["attendance:approve", "attendance:manage"]);
+  const canApprove = canApproveLeave || canApproveOt || canApproveCorrection;
   const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
   const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
-  const pendingCount = (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0);
+  const correctionPendingQ = useAttendanceCorrections("team", "PENDING", { enabled: canApproveCorrection });
+  const pendingCount =
+    (leavePendingQ.data?.data.length ?? 0) +
+    (otPendingQ.data?.data.length ?? 0) +
+    (correctionPendingQ.data?.data.length ?? 0);
 
   const canReview = can("performance:read");
   const pendingReviewsQ = useMyPendingResponses();

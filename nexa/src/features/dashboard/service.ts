@@ -9,7 +9,7 @@ import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 const LEAVE_TYPES_FOR_SUMMARY = ["ANNUAL", "SICK", "PERSONAL"] as const;
 
 export interface DashboardActions {
-  approvals: { leave: number; overtime: number; expense: number; workflow: number };
+  approvals: { leave: number; overtime: number; correction: number; expense: number; workflow: number };
   myPending: number;
   /** All of my own leave/OT/expense/workflow requests, any status — for a
    * "how many have I filed" glance stat, distinct from myPending's "how many
@@ -71,6 +71,14 @@ export async function getActionCenter(
     : hasReports
       ? await prisma.overtimeRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
       : 0;
+  // Attendance corrections follow the same rule (HR-level = attendance:approve,
+  // listAttendanceCorrections applies it for the "team" scope) — they were the
+  // one approval type missing from this banner and from the sidebar badge.
+  const correction = can(perms, "attendance:approve")
+    ? await prisma.attendanceCorrectionRequest.count({ where: reportFilter })
+    : hasReports
+      ? await prisma.attendanceCorrectionRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
+      : 0;
   const expense = hasReports
     ? await prisma.expenseClaim.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
     : 0;
@@ -115,7 +123,7 @@ export async function getActionCenter(
   }).length;
 
   return {
-    approvals: { leave, overtime, expense, workflow },
+    approvals: { leave, overtime, correction, expense, workflow },
     myPending: myLeave + myOvertime + myExpense + myWorkflow,
     myTotal: myLeaveRows.length + myOvertimeRows.length + myExpenseRows.length + myWorkflowTotal,
     shiftToday: shift?.template ?? null,
