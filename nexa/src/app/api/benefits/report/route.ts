@@ -10,7 +10,9 @@ const querySchema = z.object({
   type: z.enum(["medical", "loan"]),
   year: z.coerce.number().int().optional(),
   employeeId: z.string().optional(),
-  departmentId: z.string().optional(),
+  // Multi-select "แผนก" filter (report-view.tsx's MultiSelectField) — sent as
+  // repeated ?departmentId=a&departmentId=b keys.
+  departmentId: z.array(z.string()).min(1).optional(),
   status: z.string().optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
@@ -19,7 +21,12 @@ const querySchema = z.object({
 export async function GET(req: NextRequest) {
   try {
     const session = await requirePermission("expense:approve");
-    const query = querySchema.parse(Object.fromEntries(req.nextUrl.searchParams.entries()));
+    const params = req.nextUrl.searchParams;
+    const departmentId = params.getAll("departmentId");
+    const query = querySchema.parse({
+      ...Object.fromEntries(params.entries()),
+      departmentId: departmentId.length ? departmentId : undefined,
+    });
     const filters = {
       year: query.year,
       employeeId: query.employeeId,

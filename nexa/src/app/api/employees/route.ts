@@ -11,9 +11,12 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   try {
     const session = await requirePermission("employee:read");
-    const query = employeeListQuerySchema.parse(
-      Object.fromEntries(req.nextUrl.searchParams.entries()),
-    );
+    const params = req.nextUrl.searchParams;
+    const departmentId = params.getAll("departmentId");
+    const query = employeeListQuerySchema.parse({
+      ...Object.fromEntries(params.entries()),
+      departmentId: departmentId.length ? departmentId : undefined,
+    });
     const { items, total } = await listEmployees(session.companyId, query, session);
     return okPaginated(items, buildPageMeta(query, total));
   } catch (err) {

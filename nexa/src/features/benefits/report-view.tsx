@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectField, type MultiSelectOption } from "@/components/shared/multi-select-field";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { api, type Envelope } from "@/lib/api/client";
@@ -18,33 +19,33 @@ import { EXPENSE_STATUS_LABEL } from "@/features/expense/labels";
 import type { ExpenseStatus } from "@/features/expense/types";
 import type { MedicalReportRow, LoanReportRow } from "./report-service";
 
-const ALL = "__all";
 const YEAR_NOW = new Date().getFullYear();
 const YEARS = [YEAR_NOW, YEAR_NOW - 1, YEAR_NOW - 2];
 
-function fetchReport(type: "medical" | "loan", departmentId: string, year: number) {
+function fetchReport(type: "medical" | "loan", departmentIds: string[], year: number) {
   const params = new URLSearchParams({ type, year: String(year) });
-  if (departmentId !== ALL) params.set("departmentId", departmentId);
+  for (const id of departmentIds) params.append("departmentId", id);
   return api.get<Envelope<(MedicalReportRow | LoanReportRow)[]>>(`/api/benefits/report?${params.toString()}`);
 }
 
 export function BenefitsReportView() {
   const [tab, setTab] = useState<"medical" | "loan">("medical");
-  const [departmentId, setDepartmentId] = useState(ALL);
+  const [departmentIds, setDepartmentIds] = useState<string[]>([]);
   const [year, setYear] = useState(YEAR_NOW);
   const { data: orgData } = useOrgOptions();
   const departments = orgData?.data.departments ?? [];
+  const departmentOptions: MultiSelectOption[] = departments.map((d) => ({ value: d.id, label: d.name }));
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["benefits-report", tab, departmentId, year],
-    queryFn: () => fetchReport(tab, departmentId, year),
+    queryKey: ["benefits-report", tab, departmentIds, year],
+    queryFn: () => fetchReport(tab, departmentIds, year),
   });
   const rows = data?.data ?? [];
 
   useEffect(() => {
     refetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, departmentId, year]);
+  }, [tab, departmentIds, year]);
 
   function exportCsv() {
     if (rows.length === 0) return;
@@ -171,19 +172,7 @@ export function BenefitsReportView() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL)}>
-            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>ทุกแผนก</SelectItem>
-              {departments.map((d) => (
-                <SelectItem key={d.id} value={d.id}>
-                  {d.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelectField label="แผนก" placeholder="ทุกแผนก" options={departmentOptions} selected={departmentIds} onChange={setDepartmentIds} />
         </div>
         <div className="flex gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={rows.length === 0}>

@@ -90,7 +90,10 @@ export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
 
 /** List query = base pagination + employee-specific filters. */
 export const employeeListQuerySchema = listQuerySchema.extend({
-  departmentId: optional(z.string().uuid()),
+  // Multi-select "แผนก" filter (MultiSelectField) — repeated ?departmentId=
+  // keys; an empty array is normalized away before this schema sees it, same
+  // as "not provided".
+  departmentId: z.array(z.string().uuid()).min(1).optional(),
   status: optional(z.enum(EMPLOYEE_STATUSES)),
   employmentType: optional(z.enum(EMPLOYMENT_TYPES)),
 });

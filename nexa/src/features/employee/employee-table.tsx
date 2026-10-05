@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MultiSelectField, type MultiSelectOption } from "@/components/shared/multi-select-field";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { toCsv, downloadCsv } from "@/lib/csv";
@@ -72,7 +73,7 @@ export function EmployeeTable() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [departmentId, setDepartmentId] = useState<string>(ALL);
+  const [departmentIds, setDepartmentIds] = useState<string[]>([]);
   const [status, setStatus] = useState<string>(ALL);
   const [employmentType, setEmploymentType] = useState<string>(
     () => searchParams.get("employmentType") ?? ALL,
@@ -94,17 +95,18 @@ export function EmployeeTable() {
       page,
       pageSize: PAGE_SIZE,
       search: search || undefined,
-      departmentId: departmentId === ALL ? undefined : departmentId,
+      departmentId: departmentIds.length ? departmentIds : undefined,
       status: status === ALL ? undefined : (status as EmployeeStatus),
       employmentType: employmentType === ALL ? undefined : (employmentType as EmploymentType),
       sortBy: sorting[0]?.id,
       sortDir: sorting[0] ? ((sorting[0].desc ? "desc" : "asc") as "asc" | "desc") : undefined,
     }),
-    [page, search, departmentId, status, employmentType, sorting],
+    [page, search, departmentIds, status, employmentType, sorting],
   );
 
   const { data, isLoading, isError, refetch, isFetching } = useEmployees(query);
   const { data: orgData } = useOrgOptions();
+  const departmentOptions: MultiSelectOption[] = (orgData?.data.departments ?? []).map((d) => ({ value: d.id, label: d.name }));
   const deleteMutation = useDeleteEmployee();
 
   // Delete confirm
@@ -164,25 +166,16 @@ export function EmployeeTable() {
 
   const filters = (
     <>
-      <Select
-        value={departmentId}
-        onValueChange={(v) => {
-          setDepartmentId(v ?? ALL);
+      <MultiSelectField
+        label="แผนก"
+        placeholder="ทุกแผนก"
+        options={departmentOptions}
+        selected={departmentIds}
+        onChange={(next) => {
+          setDepartmentIds(next);
           setPage(1);
         }}
-      >
-        <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
-          <SelectValue placeholder="ทุกแผนก" />
-        </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false}>
-          <SelectItem value={ALL}>ทุกแผนก</SelectItem>
-          {(orgData?.data.departments ?? []).map((d) => (
-            <SelectItem key={d.id} value={d.id}>
-              {d.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      />
 
       <Select
         value={status}

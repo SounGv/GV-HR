@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectField, type MultiSelectOption } from "@/components/shared/multi-select-field";
 import {
   Table,
   TableBody,
@@ -40,8 +40,6 @@ import { PayslipDialog } from "./payslip-dialog";
 import { PayrollFilingExports } from "./filing-exports";
 import { PayrollStatusBadge } from "./status-badge";
 import type { PayrollRecord } from "./types";
-
-const ALL_DEPARTMENTS = "ALL";
 
 function defaultPeriod() {
   const d = new Date();
@@ -141,11 +139,12 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
   const canSendEmail = can("payroll:export");
   const [period, setPeriod] = useState(defaultPeriod());
   const [search, setSearch] = useState("");
-  const [departmentId, setDepartmentId] = useState(ALL_DEPARTMENTS);
+  const [departmentIds, setDepartmentIds] = useState<string[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { data, isLoading, isError, refetch } = usePayroll("all", period);
   const { data: orgData } = useOrgOptions();
   const departments = orgData?.data.departments ?? [];
+  const departmentOptions: MultiSelectOption[] = departments.map((d) => ({ value: d.id, label: d.name }));
   const generateMut = useGeneratePayroll();
   const payMut = usePayPayroll();
   const sendEmailMut = useSendPayslipEmails();
@@ -159,13 +158,13 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (data?.data ?? []).filter((r) => {
-      if (departmentId !== ALL_DEPARTMENTS && r.employee?.departmentId !== departmentId) return false;
+      if (departmentIds.length > 0 && (!r.employee?.departmentId || !departmentIds.includes(r.employee.departmentId))) return false;
       if (!q) return true;
       const name = r.employee ? fullName(r.employee.firstName, r.employee.lastName).toLowerCase() : "";
       const code = r.employee?.employeeCode?.toLowerCase() ?? "";
       return name.includes(q) || code.includes(q);
     });
-  }, [data, search, departmentId]);
+  }, [data, search, departmentIds]);
 
   const summary = records.reduce(
     (acc, r) => {
@@ -283,22 +282,7 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
               className="w-[180px]"
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">ฝ่าย</label>
-            <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL_DEPARTMENTS)}>
-              <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
-                <SelectValue placeholder="ทุกฝ่าย" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_DEPARTMENTS}>ทุกฝ่าย</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <MultiSelectField label="ฝ่าย" placeholder="ทุกฝ่าย" options={departmentOptions} selected={departmentIds} onChange={setDepartmentIds} />
         </div>
         <div className="flex flex-wrap gap-2">
           <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">

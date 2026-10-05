@@ -5,7 +5,7 @@ import { getMedicalExpenseCap } from "@/features/expense/service";
 export interface BenefitsReportFilters {
   year?: number;
   employeeId?: string;
-  departmentId?: string;
+  departmentId?: string[];
   status?: string;
   startDate?: Date;
   endDate?: Date;
@@ -50,7 +50,7 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
             },
           }
         : {}),
-      ...(filters.departmentId ? { employee: { departmentId: filters.departmentId } } : {}),
+      ...(filters.departmentId ? { employee: { departmentId: { in: filters.departmentId } } } : {}),
     },
     select: {
       employeeId: true,
@@ -133,7 +133,7 @@ export async function getLoanBenefitsReport(companyId: string, filters: Benefits
             },
           }
         : {}),
-      ...(filters.departmentId ? { employee: { departmentId: filters.departmentId } } : {}),
+      ...(filters.departmentId ? { employee: { departmentId: { in: filters.departmentId } } } : {}),
     },
     select: {
       id: true,

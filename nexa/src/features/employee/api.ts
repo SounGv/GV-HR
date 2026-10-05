@@ -10,7 +10,14 @@ import type {
 function toQueryString(q: EmployeeQuery): string {
   const params = new URLSearchParams();
   Object.entries(q).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+    if (v === undefined || v === null || v === "") return;
+    // departmentId is multi-select (string[]) — repeated keys, not a single
+    // comma-joined value, so the API route's `getAll` picks up every id.
+    if (Array.isArray(v)) {
+      for (const item of v) params.append(k, String(item));
+    } else {
+      params.set(k, String(v));
+    }
   });
   const s = params.toString();
   return s ? `?${s}` : "";

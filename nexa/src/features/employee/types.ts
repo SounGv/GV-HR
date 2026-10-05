@@ -114,7 +114,7 @@ export interface EmployeeQuery {
   search?: string;
   sortBy?: string;
   sortDir?: "asc" | "desc";
-  departmentId?: string;
+  departmentId?: string[];
   status?: EmployeeStatus;
   employmentType?: EmploymentType;
 }
