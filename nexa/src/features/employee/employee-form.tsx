@@ -58,6 +58,7 @@ const formSchema = z.object({
   departmentId: z.string().optional(),
   positionId: z.string().optional(),
   managerId: z.string().optional(),
+  costCenterId: z.string().optional(),
   employmentType: z.enum(EMPLOYMENT_TYPES),
   status: z.enum(EMPLOYEE_STATUSES),
   hireDate: z.string().optional(),
@@ -256,6 +257,8 @@ export function EmployeeForm({
                   value: m.id,
                   label: `${m.firstName} ${m.lastName} (${m.employeeCode})`,
                 }))} />
+              <SelectField form={form} name="costCenterId" label="ศูนย์ต้นทุน" placeholder="เลือกศูนย์ต้นทุน" clearable
+                options={(orgOptions?.costCenters ?? []).map((c) => ({ value: c.id, label: c.name }))} />
               <SelectField form={form} name="employmentType" label="ประเภทการจ้าง"
                 options={EMPLOYMENT_TYPES.map((t) => ({ value: t, label: EMPLOYMENT_LABEL[t] }))} />
               <SelectField form={form} name="status" label="สถานะ"

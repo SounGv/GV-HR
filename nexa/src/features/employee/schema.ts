@@ -54,6 +54,7 @@ export const employeeCreateSchema = z.object({
   departmentId: optionalCuidLike,
   positionId: optionalCuidLike,
   managerId: optionalCuidLike,
+  costCenterId: optionalCuidLike,
 
   employmentType: z.enum(EMPLOYMENT_TYPES).default("FULL_TIME"),
   status: z.enum(EMPLOYEE_STATUSES).default("ACTIVE"),

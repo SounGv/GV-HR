@@ -5,7 +5,7 @@ import { suggestNextEmployeeCode } from "@/features/employee/service";
 
 export const runtime = "nodejs";
 
-/** Reference data for employee forms: departments, positions, branches, managers. */
+/** Reference data for employee forms: departments, positions, branches, cost centers, managers. */
 export async function GET() {
   try {
     const session = await requirePermission("employee:read");
@@ -20,6 +20,7 @@ export async function GET() {
       orderBy: { title: "asc" },
     });
     const branches = await prisma.branch.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } });
+    const costCenters = await prisma.costCenter.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } });
     const managers = await prisma.employee.findMany({
       where,
       select: {
@@ -38,7 +39,7 @@ export async function GET() {
     });
     const nextEmployeeCode = await suggestNextEmployeeCode(companyId);
 
-    return ok({ departments, positions, branches, managers, nextEmployeeCode });
+    return ok({ departments, positions, branches, costCenters, managers, nextEmployeeCode });
   } catch (err) {
     return handleApiError(err);
   }

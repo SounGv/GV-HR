@@ -21,8 +21,12 @@ export async function importEmployees(
   // Includes soft-deleted rows too — employeeCode uniqueness is enforced
   // at the DB level across ALL rows regardless of deletedAt (see below).
   const allEmployees = await prisma.employee.findMany({ where: { companyId }, select: { id: true, employeeCode: true, deletedAt: true } });
+  const branches = await prisma.branch.findMany({ where: { companyId, deletedAt: null }, select: { id: true, name: true } });
+  const costCenters = await prisma.costCenter.findMany({ where: { companyId, deletedAt: null }, select: { id: true, name: true } });
   const deptMap = new Map(depts.map((d) => [norm(d.name), d.id]));
   const posMap = new Map(positions.map((p) => [norm(p.title), p.id]));
+  const branchMap = new Map(branches.map((b) => [norm(b.name), b.id]));
+  const costCenterMap = new Map(costCenters.map((c) => [norm(c.name), c.id]));
   const codeMap = new Map(allEmployees.filter((e) => !e.deletedAt).map((e) => [e.employeeCode, e.id]));
   // employeeCode is only unique per (companyId, employeeCode) at the DB
   // level, not scoped by deletedAt — a code that already belongs to a
@@ -64,6 +68,11 @@ export async function importEmployees(
   // PATCH /api/employees/[id] (which requires `employee:update`).
   const canUpdate = can(session.perms, "employee:update");
 
+  // Managers are linked after every row is saved, so a manager listed in the
+  // same file (or created by it) resolves just like one already in the system.
+  const idByCode = new Map(codeMap);
+  const pendingManagers: { code: string; managerCode: string }[] = [];
+
   await prisma.$transaction(async (tx) => {
     for (const { row: r, index } of valid) {
       if (codeMap.has(r.employeeCode) && !canUpdate) {
@@ -74,32 +83,62 @@ export async function importEmployees(
         errors.push({ row: index, code: r.employeeCode, message: "รหัสพนักงานนี้เคยถูกใช้กับพนักงานที่ถูกลบไปแล้ว กรุณาใช้รหัสอื่น" });
         continue;
       }
-      const departmentId = r.department ? (deptMap.get(norm(r.department)) ?? null) : null;
-      const positionId = r.position ? (posMap.get(norm(r.position)) ?? null) : null;
-      if (r.department && !departmentId) warnings.push(`${r.employeeCode}: ไม่พบแผนก “${r.department}” (ข้ามการผูกแผนก)`);
-      if (r.position && !positionId) warnings.push(`${r.employeeCode}: ไม่พบตำแหน่ง “${r.position}” (ข้ามการผูกตำแหน่ง)`);
+      const lookup = (label: string, value: string | null | undefined, map: Map<string, string>) => {
+        if (!value) return undefined;
+        const id = map.get(norm(value));
+        if (!id) warnings.push(`${r.employeeCode}: ไม่พบ${label} “${value}” (ข้ามการผูก${label})`);
+        return id;
+      };
+      const departmentId = lookup("แผนก", r.department, deptMap);
+      const positionId = lookup("ตำแหน่ง", r.position, posMap);
+      const branchId = lookup("สาขา", r.branch, branchMap);
+      const costCenterId = lookup("ศูนย์ต้นทุน", r.costCenter, costCenterMap);
 
-      const common = {
+      // A blank cell (or a name that doesn't match) means "leave this alone" —
+      // it used to overwrite the saved value with null, so re-importing a
+      // partial sheet silently wiped existing departments, positions and contacts.
+      const provided = {
         firstName: r.firstName,
-        lastName: r.lastName ?? "",
-        nickname: r.nickname ?? null,
-        email: r.email ?? null,
-        phone: r.phone ?? null,
-        departmentId,
-        positionId,
+        ...(r.lastName ? { lastName: r.lastName } : {}),
+        ...(r.nickname != null ? { nickname: r.nickname } : {}),
+        ...(r.email != null ? { email: r.email } : {}),
+        ...(r.phone != null ? { phone: r.phone } : {}),
+        ...(departmentId ? { departmentId } : {}),
+        ...(positionId ? { positionId } : {}),
+        ...(branchId ? { branchId } : {}),
+        ...(costCenterId ? { costCenterId } : {}),
+        // hireDate / probationEndDate drive medical-benefit and loan eligibility.
+        ...(r.hireDate ? { hireDate: r.hireDate } : {}),
+        ...(r.probationEndDate ? { probationEndDate: r.probationEndDate } : {}),
         ...(r.baseSalary != null ? { baseSalary: new Prisma.Decimal(r.baseSalary) } : {}),
         updatedById: session.sub,
       };
 
       const existingId = codeMap.get(r.employeeCode);
       if (existingId) {
-        await tx.employee.update({ where: { id: existingId }, data: common });
+        await tx.employee.update({ where: { id: existingId }, data: provided });
         updated++;
       } else {
-        await tx.employee.create({
-          data: { companyId, employeeCode: r.employeeCode, ...common, createdById: session.sub },
+        const createdRow = await tx.employee.create({
+          data: { companyId, employeeCode: r.employeeCode, lastName: "", ...provided, createdById: session.sub },
+          select: { id: true },
         });
+        idByCode.set(r.employeeCode, createdRow.id);
         created++;
+      }
+      if (r.managerCode) pendingManagers.push({ code: r.employeeCode, managerCode: r.managerCode });
+    }
+
+    for (const { code, managerCode } of pendingManagers) {
+      const employeeId = idByCode.get(code);
+      const managerId = idByCode.get(managerCode);
+      if (!employeeId) continue;
+      if (managerCode === code) {
+        warnings.push(`${code}: หัวหน้าเป็นคนเดียวกับพนักงาน (ข้ามการผูกหัวหน้า)`);
+      } else if (!managerId) {
+        warnings.push(`${code}: ไม่พบรหัสหัวหน้า “${managerCode}” (ข้ามการผูกหัวหน้า)`);
+      } else {
+        await tx.employee.update({ where: { id: employeeId }, data: { managerId } });
       }
     }
   });

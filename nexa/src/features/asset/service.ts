@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { NotFound } from "@/lib/api/errors";
+import { BadRequest, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { AssetCreateInput, AssetListQuery, AssetUpdateInput } from "./schema";
 
@@ -50,6 +50,15 @@ export async function listAssets(companyId: string, query: AssetListQuery) {
     select,
     orderBy: { assetCode: "asc" },
     take: 500,
+  });
+}
+
+/** Assets currently assigned to one employee — shown on their profile and checked when they leave. */
+export async function listAssetsHeldBy(companyId: string, employeeId: string) {
+  return prisma.asset.findMany({
+    where: { companyId, deletedAt: null, assignedToEmployeeId: employeeId, status: "ASSIGNED" },
+    select: { id: true, assetCode: true, name: true, category: true, assignedAt: true },
+    orderBy: { assetCode: "asc" },
   });
 }
 
@@ -164,9 +173,13 @@ export async function assignAsset(
   if (employeeId) {
     const emp = await prisma.employee.findFirst({
       where: { id: employeeId, companyId, deletedAt: null },
-      select: { id: true },
+      select: { id: true, status: true },
     });
     if (!emp) throw NotFound("ไม่พบพนักงาน");
+    // Handing equipment to someone who already left means it is never coming back.
+    if (emp.status === "RESIGNED" || emp.status === "TERMINATED") {
+      throw BadRequest("พนักงานคนนี้พ้นสภาพแล้ว เบิกทรัพย์สินให้ไม่ได้");
+    }
   }
 
   const asset = await prisma.asset.update({

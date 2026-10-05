@@ -6,6 +6,7 @@ import { Mail, Phone, MapPin, Pencil, KeyRound, RotateCcw, Sparkle, CheckCircle2
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
 import { getEmployee } from "@/features/employee/service";
+import { listAssetsHeldBy } from "@/features/asset/service";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +44,10 @@ export default async function EmployeeDetailPage({
   const canViewCompetencyGap = canViewEvaluationHistory;
   const canEditCompetencyGap = can(session.perms, "campaign:update") && isHrLevelRecognition;
   const name = fullName(employee.firstName, employee.lastName);
+  // Assets are a company-wide register, so only people who can read it (HR/admin)
+  // see what this employee is holding — a manager with just employee:read does not.
+  const canViewAssets = can(session.perms, "asset:read") && isHrLevelRecognition;
+  const heldAssets = canViewAssets ? await listAssetsHeldBy(session.companyId, employee.id) : [];
 
   return (
     <div className="space-y-6">
@@ -142,6 +147,7 @@ export default async function EmployeeDetailPage({
           <InfoRow label="ประเภทการจ้าง" value={EMPLOYMENT_LABEL[employee.employmentType]} />
           <InfoRow label="สาขา" value={employee.branch?.name ?? null} />
           <InfoRow label="แผนก" value={employee.department?.name ?? null} />
+          <InfoRow label="ศูนย์ต้นทุน" value={employee.costCenter?.name ?? null} />
           <InfoRow label="ตำแหน่ง" value={employee.position?.title ?? null} />
           <InfoRow
             label="หัวหน้างาน"
@@ -175,6 +181,26 @@ export default async function EmployeeDetailPage({
         </InfoCard>
 
         <EmployeeDocumentList employeeId={employee.id} canEdit={canEdit} />
+
+        {canViewAssets && (
+          <InfoCard title="ทรัพย์สินที่ถือครอง">
+            {heldAssets.length === 0 ? (
+              <p className="text-sm text-muted-foreground">ไม่มีทรัพย์สินที่เบิกอยู่</p>
+            ) : (
+              heldAssets.map((a) => (
+                <div key={a.id} className="flex items-start justify-between gap-4 text-sm">
+                  <Link href={`/assets/${a.id}`} className="font-medium text-primary hover:underline">
+                    {a.name}
+                  </Link>
+                  <span className="text-right text-muted-foreground">
+                    {a.assetCode} · {a.category}
+                    {a.assignedAt ? ` · ตั้งแต่ ${formatDate(a.assignedAt)}` : ""}
+                  </span>
+                </div>
+              ))
+            )}
+          </InfoCard>
+        )}
       </div>
 
       {canViewCompetencyGap && (

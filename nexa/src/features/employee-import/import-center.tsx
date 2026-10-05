@@ -20,12 +20,19 @@ const HEADER_ALIASES: Record<string, ImportColumn> = {
   เบอร์โทร: "phone", โทรศัพท์: "phone", โทร: "phone", phone: "phone", tel: "phone",
   แผนก: "department", ฝ่าย: "department", department: "department", dept: "department",
   ตำแหน่ง: "position", position: "position", title: "position",
+  สาขา: "branch", branch: "branch",
+  ศูนย์ต้นทุน: "costCenter", costcenter: "costCenter",
+  รหัสหัวหน้า: "managerCode", หัวหน้า: "managerCode", managercode: "managerCode", manager: "managerCode",
+  วันเริ่มงาน: "hireDate", hiredate: "hireDate", startdate: "hireDate",
+  สิ้นสุดทดลองงาน: "probationEndDate", ครบทดลองงาน: "probationEndDate", probationenddate: "probationEndDate",
   เงินเดือน: "baseSalary", salary: "baseSalary", basesalary: "baseSalary",
 };
 
 const COLUMN_LABEL: Record<ImportColumn, string> = {
   employeeCode: "รหัส", firstName: "ชื่อ", lastName: "นามสกุล", nickname: "ชื่อเล่น",
-  email: "อีเมล", phone: "โทร", department: "แผนก", position: "ตำแหน่ง", baseSalary: "เงินเดือน",
+  email: "อีเมล", phone: "โทร", department: "แผนก", position: "ตำแหน่ง",
+  branch: "สาขา", costCenter: "ศูนย์ต้นทุน", managerCode: "รหัสหัวหน้า",
+  hireDate: "วันเริ่มงาน", probationEndDate: "สิ้นสุดทดลองงาน", baseSalary: "เงินเดือน",
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,8 +76,10 @@ export function ImportCenter() {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
 
   function downloadTemplate() {
-    const headers = "รหัสพนักงาน,ชื่อ,นามสกุล,ชื่อเล่น,อีเมล,เบอร์โทร,แผนก,ตำแหน่ง,เงินเดือน";
-    const sample = "2001,สมชาย,ใจดี,ชาย,somchai@example.com,0812345678,แผนกบัญชี,จนท.ฝ่ายบัญชี,25000";
+    const headers =
+      "รหัสพนักงาน,ชื่อ,นามสกุล,ชื่อเล่น,อีเมล,เบอร์โทร,แผนก,ตำแหน่ง,สาขา,ศูนย์ต้นทุน,รหัสหัวหน้า,วันเริ่มงาน,สิ้นสุดทดลองงาน,เงินเดือน";
+    const sample =
+      "2001,สมชาย,ใจดี,ชาย,somchai@example.com,0812345678,แผนกบัญชี,จนท.ฝ่ายบัญชี,สำนักงานใหญ่,CC บัญชี,1001,2026-10-01,2027-01-28,25000";
     const blob = new Blob(["﻿" + headers + "\n" + sample + "\n"], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -143,8 +152,9 @@ export function ImportCenter() {
           <div>
             <h2 className="font-semibold text-foreground">อัปโหลดไฟล์ CSV</h2>
             <p className="text-xs text-muted-foreground">
-              คอลัมน์: รหัสพนักงาน, ชื่อ, นามสกุล, ชื่อเล่น, อีเมล, เบอร์โทร, แผนก, ตำแหน่ง, เงินเดือน
-              (Excel ให้ Save As CSV UTF-8)
+              คอลัมน์: รหัสพนักงาน, ชื่อ, นามสกุล, ชื่อเล่น, อีเมล, เบอร์โทร, แผนก, ตำแหน่ง, สาขา, ศูนย์ต้นทุน,
+              รหัสหัวหน้า, วันเริ่มงาน, สิ้นสุดทดลองงาน, เงินเดือน (Excel ให้ Save As CSV UTF-8) · วันที่ใช้ YYYY-MM-DD
+              หรือ DD/MM/YYYY (ปี พ.ศ. ได้) · ช่องที่เว้นว่างจะไม่ทับข้อมูลเดิมของพนักงาน
             </p>
           </div>
           <Button variant="outline" onClick={downloadTemplate}>

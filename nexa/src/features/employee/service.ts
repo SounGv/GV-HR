@@ -4,6 +4,8 @@ import { writeAudit } from "@/lib/audit";
 import { Forbidden, NotFound } from "@/lib/api/errors";
 import { buildOrderBy, toSkipTake } from "@/lib/api/pagination";
 import { revokeAllForUser } from "@/lib/auth/token-store";
+import { listAssetsHeldBy } from "@/features/asset/service";
+import { notifyPermissionHolders } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import {
   EMPLOYEE_SORTABLE,
@@ -59,6 +61,7 @@ const detailSelect = {
   createdAt: true,
   updatedAt: true,
   manager: { select: { id: true, firstName: true, lastName: true } },
+  costCenter: { select: { id: true, name: true } },
 } satisfies Prisma.EmployeeSelect;
 
 export type EmployeeListItem = Prisma.EmployeeGetPayload<{ select: typeof listSelect }>;
@@ -258,6 +261,28 @@ export async function updateEmployee(
       await revokeAllForUser(existing.userId);
     } else if (INACTIVE_STATUSES.has(existing.status)) {
       await prisma.user.update({ where: { id: existing.userId }, data: { status: "ACTIVE" } });
+    }
+  }
+
+  // Assets are not reclaimed automatically (HR decides what is returned and
+  // when) — but a leaver still holding equipment used to go unnoticed, since
+  // nothing linked the asset register to employment status. Tell whoever
+  // manages assets so the hand-back doesn't depend on someone remembering.
+  if (input.status && input.status !== existing.status && (input.status === "RESIGNED" || input.status === "TERMINATED")) {
+    const held = await listAssetsHeldBy(companyId, id);
+    if (held.length > 0) {
+      await notifyPermissionHolders(
+        companyId,
+        "asset:update",
+        actor.employeeId ?? null,
+        {
+          title: "พนักงานที่พ้นสภาพยังถือทรัพย์สินอยู่",
+          body: `${updated.firstName} ${updated.lastName} ยังถือ ${held.length} รายการ: ${held.map((a) => a.name).slice(0, 3).join(", ")}${held.length > 3 ? " …" : ""}`,
+          category: "asset",
+          link: `/employees/${id}`,
+        },
+        actor.sub,
+      );
     }
   }
 

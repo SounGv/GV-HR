@@ -64,6 +64,7 @@ export interface EmployeeDetail extends EmployeeListItem {
   createdAt: string;
   updatedAt: string;
   manager: { id: string; firstName: string; lastName: string } | null;
+  costCenter: Ref | null;
 }
 
 /** Flat string-based shape produced by the form; the server re-validates + coerces. */
@@ -85,6 +86,7 @@ export interface EmployeeFormValues {
   departmentId?: string;
   positionId?: string;
   managerId?: string;
+  costCenterId?: string;
   employmentType: EmploymentType;
   status: EmployeeStatus;
   hireDate?: string;
@@ -123,6 +125,7 @@ export interface OrgOptions {
   departments: (Ref & { branchId: string | null })[];
   positions: { id: string; title: string; departmentId: string | null }[];
   branches: Ref[];
+  costCenters: Ref[];
   managers: {
     id: string;
     firstName: string;
