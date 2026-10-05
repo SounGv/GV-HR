@@ -20,9 +20,22 @@ const TYPE_PERMISSION: Partial<Record<string, string>> = {
 export async function GET(req: NextRequest) {
   try {
     const session = await requirePermission("report:read");
-    const query = reportQuerySchema.parse(
-      Object.fromEntries(req.nextUrl.searchParams.entries()),
-    );
+    const params = req.nextUrl.searchParams;
+    // employeeId/branchId/costCenterId are multi-select on the client, sent
+    // as repeated keys (?employeeId=a&employeeId=b) — getAll, not .entries()
+    // (which keeps only the last value for a repeated key), and only set the
+    // field at all when at least one value came through, so the schema's
+    // .optional() still means "no filter" rather than an empty-array filter.
+    const multi = (key: string) => {
+      const values = params.getAll(key);
+      return values.length ? values : undefined;
+    };
+    const query = reportQuerySchema.parse({
+      ...Object.fromEntries(params.entries()),
+      employeeId: multi("employeeId"),
+      branchId: multi("branchId"),
+      costCenterId: multi("costCenterId"),
+    });
     const requiredPerm = TYPE_PERMISSION[query.type];
     if (requiredPerm && !can(session.perms, requiredPerm)) {
       throw Forbidden("ไม่มีสิทธิ์ดูรายงานนี้");

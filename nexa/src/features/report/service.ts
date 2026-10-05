@@ -110,9 +110,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   const employeeFilter = {
     ...(query.departmentId ? { departmentId: query.departmentId } : {}),
     ...(query.employmentType ? { employmentType: query.employmentType } : {}),
-    ...(query.employeeId ? { id: query.employeeId } : {}),
-    ...(query.branchId ? { branchId: query.branchId } : {}),
-    ...(query.costCenterId ? { costCenterId: query.costCenterId } : {}),
+    ...(query.employeeId ? { id: { in: query.employeeId } } : {}),
+    ...(query.branchId ? { branchId: { in: query.branchId } } : {}),
+    ...(query.costCenterId ? { costCenterId: { in: query.costCenterId } } : {}),
     ...(query.employeeWhere ?? {}),
   };
   const deptRel = Object.keys(employeeFilter).length ? { employee: employeeFilter } : {};

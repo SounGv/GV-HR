@@ -59,9 +59,13 @@ export const reportQuerySchema = z.object({
   to: dateStr.optional(),
   departmentId: z.string().uuid().optional(),
   employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
-  employeeId: z.string().uuid().optional(),
-  branchId: z.string().trim().min(1).max(100).optional(),
-  costCenterId: z.string().uuid().optional(),
+  // Multi-select (report-view.tsx's "พนักงาน"/"สาขา"/"ศูนย์ต้นทุน" pickers) —
+  // an empty array is normalized away before this schema ever sees it (same
+  // as "not provided"), so `getReport` only has to handle "absent" vs "one or
+  // more ids", never an explicit empty-array-means-all case.
+  employeeId: z.array(z.string().uuid()).min(1).optional(),
+  branchId: z.array(z.string().trim().min(1).max(100)).min(1).optional(),
+  costCenterId: z.array(z.string().uuid()).min(1).optional(),
 });
 /**
  * `employeeWhere` is intentionally NOT part of `reportQuerySchema` (never
