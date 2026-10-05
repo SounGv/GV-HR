@@ -58,7 +58,6 @@ import { ReportMobileCards } from "./report-mobile-cards";
 import { PhotoCell } from "./report-photo-cell";
 import type { ReportResult } from "./types";
 
-const ALL_DEPT = "ALL";
 const ALL_TYPE = "ALL";
 const YEAR_NOW = new Date().getFullYear();
 const REPORT_YEARS = [YEAR_NOW, YEAR_NOW - 1, YEAR_NOW - 2, YEAR_NOW - 3];
@@ -173,16 +172,6 @@ function downloadWorkbook(workbook: Workbook, fileName: string) {
     a.click();
     URL.revokeObjectURL(url);
   });
-}
-
-interface SharedFilters {
-  from: string;
-  to: string;
-  departmentId?: string;
-  employmentType?: string;
-  employeeIds: string[];
-  branchIds: string[];
-  costCenterIds: string[];
 }
 
 /** One report type's own card: fetches its data, renders its table/empty/
@@ -464,7 +453,7 @@ export function ReportView() {
   }, [searchParams]);
   const [from, setFrom] = useState<string>(firstOfMonth());
   const [to, setTo] = useState<string>(todayStr());
-  const [departmentId, setDepartmentId] = useState<string>(ALL_DEPT);
+  const [departmentIds, setDepartmentIds] = useState<string[]>([]);
   const [employmentType, setEmploymentType] = useState<string>(ALL_TYPE);
   // Same deep-link convention as "view" above — the command palette's
   // employee search links here with ?employeeId= when you're already on
@@ -506,19 +495,20 @@ export function ReportView() {
   // people the chosen filters have already excluded from the report itself.
   const employees = (orgData?.data.managers ?? [])
     .filter((e) => branchIds.length === 0 || (e.branchId != null && branchIds.includes(e.branchId)))
-    .filter((e) => departmentId === ALL_DEPT || e.departmentId === departmentId)
+    .filter((e) => departmentIds.length === 0 || (e.departmentId != null && departmentIds.includes(e.departmentId)))
     .filter((e) => employmentType === ALL_TYPE || e.employmentType === employmentType)
     .filter((e) => costCenterIds.length === 0 || (e.costCenterId != null && costCenterIds.includes(e.costCenterId)))
     .sort((a, b) => `${a.firstName}${a.lastName}`.localeCompare(`${b.firstName}${b.lastName}`, "th"));
-  // A department picked before narrowing by a sibling filter can fall outside
-  // the now-narrowed list — reset back to "all" rather than leave a Select
-  // showing a value that's no longer one of its options. Employees picked
-  // the same way just get dropped from the selection instead (an array can
-  // simply lose one entry without resetting the whole filter to empty).
+  // Departments/employees picked before narrowing by a sibling filter can
+  // fall outside the now-narrowed list — both just lose the no-longer-valid
+  // entries instead of resetting the whole filter to empty.
   useEffect(() => {
-    if (departmentId !== ALL_DEPT && orgData && !departments.some((d) => d.id === departmentId)) {
-      setDepartmentId(ALL_DEPT);
-    }
+    if (!orgData || departmentIds.length === 0) return;
+    const validIds = new Set(departments.map((d) => d.id));
+    setDepartmentIds((prev) => {
+      const next = prev.filter((id) => validIds.has(id));
+      return next.length === prev.length ? prev : next;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchIds, orgData]);
   useEffect(() => {
@@ -529,14 +519,14 @@ export function ReportView() {
       return next.length === prev.length ? prev : next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branchIds, departmentId, employmentType, costCenterIds, orgData]);
+  }, [branchIds, departmentIds, employmentType, costCenterIds, orgData]);
   const { data: costCenterData } = useCostCenters();
   const costCenters = costCenterData?.data ?? [];
 
   const sharedFilters: Omit<ReportParams, "type"> = {
     from,
     to,
-    departmentId: departmentId === ALL_DEPT ? undefined : departmentId,
+    departmentId: departmentIds.length ? departmentIds : undefined,
     employmentType: employmentType === ALL_TYPE ? undefined : employmentType,
     employeeId: employeeIds.length ? employeeIds : undefined,
     branchId: branchIds.length ? branchIds : undefined,
@@ -564,6 +554,7 @@ export function ReportView() {
     value: e.id,
     label: `${e.firstName} ${e.lastName} (${e.employeeCode})`,
   }));
+  const departmentOptions: MultiSelectOption[] = departments.map((d) => ({ value: d.id, label: d.name }));
   const branchOptions: MultiSelectOption[] = branches.map((b) => ({ value: b.id, label: b.name }));
   const costCenterOptions: MultiSelectOption[] = costCenters.map((c) => ({ value: c.id, label: c.name }));
   const reportTypeOptions: MultiSelectOption[] = visibleReportTypes.map((t) => ({ value: t, label: REPORT_LABELS[t] }));
@@ -624,22 +615,7 @@ export function ReportView() {
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">แผนก</label>
-          <Select value={departmentId} onValueChange={(v) => setDepartmentId(v ?? ALL_DEPT)}>
-            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
-              <SelectValue placeholder="ทุกแผนก" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false}>
-              <SelectItem value={ALL_DEPT}>ทุกแผนก</SelectItem>
-              {departments.map((d) => (
-                <SelectItem key={d.id} value={d.id}>
-                  {d.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <MultiSelectField label="แผนก" placeholder="ทุกแผนก" options={departmentOptions} selected={departmentIds} onChange={setDepartmentIds} />
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">ประเภทการจ้าง</label>
           <Select value={employmentType} onValueChange={(v) => setEmploymentType(v ?? ALL_TYPE)}>

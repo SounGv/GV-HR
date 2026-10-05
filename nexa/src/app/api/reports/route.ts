@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
     };
     const query = reportQuerySchema.parse({
       ...Object.fromEntries(params.entries()),
+      departmentId: multi("departmentId"),
       employeeId: multi("employeeId"),
       branchId: multi("branchId"),
       costCenterId: multi("costCenterId"),
