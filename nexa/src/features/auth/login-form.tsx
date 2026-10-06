@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, ShieldCheck } from "lucide-react";
+import { CircleAlert, Mail, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { loginSchema, type LoginInput as LoginInputData } from "./schema";
@@ -38,6 +38,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
   const [submitting, setSubmitting] = useState(false);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
 
   const form = useForm<LoginInputData>({
     resolver: zodResolver(loginSchema),
@@ -69,6 +70,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
   }
 
   async function onSubmit(values: LoginInputData) {
+    setFormError(null);
     setSubmitting(true);
     try {
       const res = await api.post<Envelope<{ mfaRequired?: boolean; mfaToken?: string }>>(
@@ -82,9 +84,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
       }
       goToRedirect();
     } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่";
-      toast.error(message);
+      setFormError(err instanceof ApiError ? err.message : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่");
       setSubmitting(false);
     }
   }
@@ -150,7 +150,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           name="identifier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-semibold text-[var(--login-text-primary)]">อีเมล</FormLabel>
+              <FormLabel className="font-semibold text-[var(--login-text-primary)]">อีเมลหรือชื่อผู้ใช้</FormLabel>
               <FormControl>
                 <LoginInput
                   icon={<Mail className="size-4" />}
@@ -195,6 +195,15 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
             </label>
           )}
         />
+        {formError && (
+          <p
+            role="alert"
+            className="flex items-start gap-2 rounded-[12px] border border-[var(--login-error)] px-3.5 py-3 text-sm font-medium text-[var(--login-error)]"
+          >
+            <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            {formError}
+          </p>
+        )}
         <LoginButton type="submit" loading={submitting}>
           เข้าสู่ระบบ
         </LoginButton>
