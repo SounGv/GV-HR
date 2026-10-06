@@ -16,18 +16,12 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
-import { fullName, getInitials } from "@/lib/format";
 import { useAuth } from "@/features/auth/auth-context";
-import { CampaignView } from "@/features/campaign/campaign-view";
 import { CalibrationView } from "@/features/calibration/calibration-view";
 import { NineBoxView } from "@/features/calibration/nine-box-view";
 import { SuccessionView } from "@/features/succession/succession-view";
 import { DevelopmentPlanView } from "@/features/development-plan/development-plan-view";
-import { useMyEvaluationAssignments } from "@/features/campaign/hooks";
-import { RATER_LABEL } from "@/features/campaign/labels";
 
 import { ReviewCard } from "./review-card";
 import { DepartmentSummaryView } from "./department-summary-view";
@@ -79,7 +73,12 @@ export function PerformanceView() {
       </TabsList>
 
       <TabsContent value="assignments">
-        <MyAssignments />
+        <MovedNotice
+          title="งานที่ต้องประเมิน ย้ายไปที่เมนูใหม่แล้ว"
+          description="รอบประเมินใหม่ส่งข้อความเข้ากล่องข้อความและ LINE แล้วทำแบบประเมินได้จากหน้า “งานประเมินของฉัน”"
+          href="/appraisal/tasks"
+          label="ไปที่งานประเมินของฉัน"
+        />
       </TabsContent>
 
       <TabsContent value="results">
@@ -92,7 +91,12 @@ export function PerformanceView() {
 
       {canCampaign && (
         <TabsContent value="manage">
-          <ManageCampaignsTab />
+          <MovedNotice
+            title="การจัดการรอบประเมิน ย้ายไปที่เมนูใหม่แล้ว"
+            description="สร้างแบบประเมิน สร้างรอบ เลือกคน จับคู่ผู้ประเมิน และดูความคืบหน้า ได้ที่เมนูประเมินใหม่"
+            href="/appraisal"
+            label="ไปที่ภาพรวมการประเมิน"
+          />
         </TabsContent>
       )}
 
@@ -124,69 +128,17 @@ function ResultsTab({ canReview }: { canReview: boolean }) {
   );
 }
 
-function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
-    new Date(iso),
-  );
-}
-
-/** Every evaluation I've been asked to do — pending and already-submitted, active and closed campaigns — so a completed evaluation stays visible with history instead of disappearing from the list. */
-function MyAssignments() {
-  const { data, isLoading, isError, refetch } = useMyEvaluationAssignments();
-  const items = data?.data ?? [];
-
-  if (isError) return <ErrorState onRetry={() => refetch()} />;
-  if (isLoading) return <TableLoadingState rows={3} />;
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={ListChecks}
-        title="ยังไม่มีงานที่ต้องประเมิน"
-        description="เมื่อมีคนให้คุณประเมิน รายการจะแสดงที่นี่ พร้อมประวัติหลังทำเสร็จ"
-      />
-    );
-  }
-
+/** The old round/assignment screens were replaced by the new evaluation menu; this points people there. */
+function MovedNotice({ title, description, href, label }: { title: string; description: string; href: string; label: string }) {
   return (
-    <div className="space-y-2">
-      {items.map((item) => (
-        <Link
-          key={item.responseId}
-          href={`/performance/campaigns/${item.campaignId}/participants/${item.participantId}`}
-          className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-muted/50"
-        >
-          <Avatar className="size-10">
-            {item.employee.avatarUrl && <AvatarImage src={item.employee.avatarUrl} alt={item.employee.firstName} />}
-            <AvatarFallback className="bg-primary/10 text-sm text-primary">
-              {getInitials(item.employee.firstName, item.employee.lastName)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">
-              {fullName(item.employee.firstName, item.employee.lastName)}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {RATER_LABEL[item.raterType] ?? item.raterType} · {item.campaignName} · {item.cycle}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {fmtDate(item.startDate)} – {fmtDate(item.endDate)}
-            </p>
-          </div>
-          <Badge variant={item.status === "SUBMITTED" ? "secondary" : "default"}>
-            {item.status === "SUBMITTED" ? "ทำแล้ว" : "รอทำ"}
-          </Badge>
-        </Link>
-      ))}
+    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+      <h2 className="text-base font-semibold text-foreground">{title}</h2>
+      <p className="text-sm text-muted-foreground">{description}</p>
+      <Button className="h-11 md:h-9" render={<Link href={href} />}>
+        {label}
+      </Button>
     </div>
   );
-}
-
-/** One screen: the campaign list plus a single "+ สร้างรอบประเมิน" entry
- * point into the wizard. Templates/legacy competency library/auto-schedule
- * used to be separate tabs here — they're still reachable, just tucked into
- * CampaignView's "จัดการเพิ่มเติม" menu instead of competing for top billing. */
-function ManageCampaignsTab() {
-  return <CampaignView />;
 }
 
 function AnalyticsTab({
@@ -303,7 +255,7 @@ function TeamReviews() {
          * exact complaint this replaces), and has only ever collected 2 test
          * records. Not deleted (its data/route still exist), just no longer
          * the discoverable "create an evaluation" entry point. */}
-        <Button render={<Link href="/performance/campaigns/new" />}>
+        <Button render={<Link href="/appraisal/rounds" />}>
           <Plus className="size-4" /> สร้างรอบประเมิน
         </Button>
       </div>

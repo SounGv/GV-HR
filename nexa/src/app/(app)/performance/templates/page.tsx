@@ -1,17 +1,6 @@
-import type { Metadata } from "next";
-import { requirePagePermission } from "@/lib/auth/page-guard";
-import { PageHeader } from "@/components/shared/page-header";
-import { TemplateListView } from "@/features/evaluation-template/template-list-view";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "แบบประเมิน" };
-
-export default async function EvaluationTemplatesPage() {
-  await requirePagePermission("campaign:manage");
-
-  return (
-    <div className="space-y-6">
-      <PageHeader title="แบบประเมิน" description="สร้างและจัดการแบบประเมินที่ใช้กับรอบประเมินผล" />
-      <TemplateListView />
-    </div>
-  );
+/** Old screen, replaced by the new evaluation menu. */
+export default function Page() {
+  redirect("/appraisal/forms");
 }

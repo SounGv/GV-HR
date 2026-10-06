@@ -81,7 +81,7 @@ export const MOBILE_EMPLOYEE_GROUPS: MobileMenuGroup[] = [
     items: [
       { id: "kpi", label: "KPI ส่วนตัว", href: "/kpi", icon: KpiIcon, permission: "kpi:read" },
       { id: "appraisal-tasks", label: "งานประเมินของฉัน", href: "/appraisal/tasks", icon: ClipboardIcon, permission: "notification:read" },
-      { id: "appraisal-rounds", label: "รอบประเมิน (ใหม่)", href: "/appraisal/rounds", icon: StarIllustrationIcon, permission: "campaign:manage" },
+      { id: "appraisal-rounds", label: "รอบประเมิน", href: "/appraisal/rounds", icon: StarIllustrationIcon, permission: "campaign:manage" },
       { id: "review", label: "ประเมินผล", href: "/performance", icon: StarIllustrationIcon, permission: "performance:read" },
       { id: "meeting", label: "นัดประชุม", href: "/meetings", icon: MeetingIcon, permission: "meeting:read" },
     ],

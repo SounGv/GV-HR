@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
-import { requirePagePermission } from "@/lib/auth/page-guard";
-import { ScheduleTemplateFormPage } from "@/features/evaluation-schedule/schedule-form-page";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "สร้างรอบประเมินอัตโนมัติ" };
-
-export default async function NewEvaluationSchedulePage() {
-  await requirePagePermission("campaign:create");
-  return <ScheduleTemplateFormPage />;
+/** Old screen, replaced by the new evaluation menu. */
+export default function Page() {
+  redirect("/appraisal/rounds");
 }
