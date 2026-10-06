@@ -64,6 +64,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/performance": { title: "ประเมินผล", backHref: "/services" },
   "/appraisal": { title: "ภาพรวมการประเมิน", backHref: "/services" },
   "/leave/year-setup": { title: "ตั้งสิทธิ์ลาปีใหม่", backHref: "/leave" },
+  "/leave/entitlements": { title: "สิทธิ์ลารายคน", backHref: "/leave" },
   "/appraisal/forms": { title: "แบบประเมิน", backHref: "/services" },
   "/appraisal/settings": { title: "ตั้งค่าการประเมิน", backHref: "/services" },
   "/appraisal/my-results": { title: "ผลประเมินของฉัน", backHref: "/services" },

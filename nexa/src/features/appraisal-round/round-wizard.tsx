@@ -276,13 +276,30 @@ function StepPeople({ round, persist }: { round: RoundDetail; persist: Persist }
                 )}
               </div>
               {list.map((p) => (
-                <label key={p.id} className="flex min-h-11 items-center gap-3 px-3 text-sm md:min-h-9">
-                  <Checkbox checked={selected.has(p.id)} onCheckedChange={(c) => toggle([p.id], c === true)} />
-                  <span className="min-w-0 flex-1 break-words">
-                    {p.name} <span className="text-muted-foreground">{p.code}</span>
-                  </span>
-                  {!p.hasManager && <StatusChip tone="warning" dot={false} label="ไม่มีหัวหน้า" />}
-                </label>
+                <div key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3">
+                  <label className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-sm md:min-h-9">
+                    <Checkbox checked={selected.has(p.id)} onCheckedChange={(c) => toggle([p.id], c === true)} />
+                    <span className="min-w-0 flex-1 break-words">
+                      {p.name} <span className="text-muted-foreground">{p.code}</span>
+                    </span>
+                    {!p.hasManager && <StatusChip tone="warning" dot={false} label="ไม่มีหัวหน้า" />}
+                  </label>
+                  {selected.has(p.id) && formList.length > 1 && (
+                    <Select value={formOf[p.id] ?? "default"} onValueChange={(v) => setDeptForm([p.id], v === "default" || !v ? "" : (v as string))}>
+                      <SelectTrigger className="h-11 w-auto min-w-[150px] text-xs md:h-8" aria-label={`แบบที่ใช้กับ ${p.name}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">แบบหลักของรอบ</SelectItem>
+                        {formList.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               ))}
             </section>
           );
