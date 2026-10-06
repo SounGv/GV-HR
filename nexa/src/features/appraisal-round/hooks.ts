@@ -6,7 +6,18 @@ import {
   closeRound,
   createRound,
   deleteRound,
+  acknowledgeResult,
+  approveResults,
+  calculateRound,
+  createProbationRound,
   fetchCandidates,
+  fetchHrAssignment,
+  fetchMyResults,
+  fetchRoundResults,
+  fetchSettings,
+  publishResults,
+  saveHrAssignment,
+  saveSettings,
   fetchDepartmentProgress,
   fetchParticipantResult,
   fetchRoundMatrix,
@@ -105,4 +116,39 @@ export function useMyPendingAppraisalTasks() {
 export function useCloneRound() {
   const invalidate = useInvalidate();
   return useMutation({ mutationFn: (id: string) => cloneRound(id), onSuccess: invalidate });
+}
+
+export const useSettings = () => useQuery({ queryKey: ["appraisal-settings"], queryFn: fetchSettings });
+export function useSaveSettings() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: saveSettings, onSuccess: () => qc.invalidateQueries({ queryKey: ["appraisal-settings"] }) });
+}
+export const useRoundResults = (id: string, enabled: boolean) =>
+  useQuery({ queryKey: ["appraisal-rounds", "results", id], queryFn: () => fetchRoundResults(id), enabled });
+export function useResultActions(id: string) {
+  const qc = useQueryClient();
+  const done = () => qc.invalidateQueries({ queryKey: appraisalRoundKeys.all });
+  return {
+    calculate: useMutation({ mutationFn: () => calculateRound(id), onSuccess: done }),
+    approve: useMutation({ mutationFn: () => approveResults(id), onSuccess: done }),
+    publish: useMutation({ mutationFn: () => publishResults(id), onSuccess: done }),
+  };
+}
+export const useMyResults = () => useQuery({ queryKey: ["appraisal-my-results"], queryFn: fetchMyResults, retry: false });
+export function useAcknowledge() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (participantId: string) => acknowledgeResult(participantId), onSuccess: () => qc.invalidateQueries({ queryKey: ["appraisal-my-results"] }) });
+}
+export const useHrAssignment = (roundId: string, assignmentId: string) =>
+  useQuery({ queryKey: ["appraisal-rounds", "hr-assignment", roundId, assignmentId], queryFn: () => fetchHrAssignment(roundId, assignmentId) });
+export function useSaveHrAssignment(roundId: string, assignmentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { answers: { questionId: string; value: unknown }[]; submit: boolean }) => saveHrAssignment(roundId, assignmentId, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: appraisalRoundKeys.all }),
+  });
+}
+export function useCreateProbationRound() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: createProbationRound, onSuccess: () => qc.invalidateQueries({ queryKey: appraisalRoundKeys.all }) });
 }

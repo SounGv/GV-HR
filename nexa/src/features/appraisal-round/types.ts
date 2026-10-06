@@ -167,6 +167,13 @@ export interface ParticipantResult {
   roundName: string;
   roundStatus: string;
   groups: { raterType: RaterType; total: number; submitted: number; summary: QuestionSummary[] }[];
+  result: {
+    status: ResultStatus;
+    scorePercent: number | null;
+    overallScore: number | null;
+    grade: string | null;
+    types: { raterType: RaterType; raters: number; percent: number; weightUsed: number }[];
+  };
 }
 
 export interface DepartmentProgress {
@@ -174,4 +181,55 @@ export interface DepartmentProgress {
   submitted: number;
   total: number;
   percent: number;
+}
+
+export type ResultStatus = "NOT_CALCULATED" | "CALCULATED" | "APPROVED" | "PUBLISHED" | "ACKNOWLEDGED";
+
+export const RESULT_STATUS_LABEL: Record<ResultStatus, string> = {
+  NOT_CALCULATED: "ยังไม่คำนวณ",
+  CALCULATED: "คำนวณแล้ว",
+  APPROVED: "อนุมัติแล้ว",
+  PUBLISHED: "ประกาศแล้ว",
+  ACKNOWLEDGED: "รับทราบแล้ว",
+};
+
+export interface SettingsView {
+  configured: boolean;
+  calcMode: "WEIGHTED" | "SIMPLE";
+  bands: { label: string; minPercent: number }[];
+  approvalLevels: number;
+  employeeSees: "NEVER" | "AFTER_PUBLISH";
+  ackRequired: boolean;
+  ackDays: number | null;
+}
+
+export interface ResultRow {
+  participantId: string;
+  name: string;
+  code: string;
+  department: string;
+  status: ResultStatus;
+  scorePercent: number | null;
+  overallScore: number | null;
+  grade: string | null;
+}
+
+export interface MyResult {
+  participantId: string;
+  roundName: string;
+  publishedAt: string | null;
+  status: "PUBLISHED" | "ACKNOWLEDGED";
+  scorePercent: number | null;
+  overallScore: number | null;
+  ratingMax: number;
+  grade: string | null;
+  needsAck: boolean;
+  ackDays: number | null;
+  types: { raterType: RaterType; raters: number; percent: number }[];
+  comments: { raterType: RaterType; texts: string[] }[];
+  hiddenGroups: RaterType[];
+}
+
+export interface HrAssignmentDetail extends TaskDetail {
+  raterName: string;
 }

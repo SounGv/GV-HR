@@ -389,6 +389,7 @@ model Company {
   evaluationTemplates         EvaluationTemplate[]
   appraisalForms              AppraisalForm[]
   appraisalRounds             AppraisalRound[]
+  appraisalSettings           AppraisalSettings?
   successionPlans             SuccessionPlan[]
   announcements               Announcement[]
   overtimeRequests            OvertimeRequest[]
@@ -2587,6 +2588,18 @@ model AppraisalParticipant {
   positionName   String?
   createdAt      DateTime @default(now())
 
+  // Result, worked out from the submitted answers when HR asks for it (see AppraisalSettings).
+  resultStatus   AppraisalResultStatus @default(NOT_CALCULATED)
+  scorePercent   Float? // 0-100, comparable across years even if the scale changes
+  overallScore   Float? // on the form's own scale, e.g. 4.2 of 5
+  grade          String?
+  scoreBreakdown Json? // per rater type and per question, so the number can be explained
+  calculatedAt   DateTime?
+  approvedAt     DateTime?
+  approvedById   String?
+  publishedAt    DateTime?
+  acknowledgedAt DateTime?
+
   assignments AppraisalAssignment[]
 
   @@unique([roundId, employeeId])
@@ -2609,6 +2622,8 @@ model AppraisalAssignment {
   answers     Json? // [{ questionId, value }]
   startedAt   DateTime?
   submittedAt DateTime?
+  // Set when HR submitted on the rater's behalf (the user who did it).
+  submittedByUserId String?
   notifiedAt  DateTime?
   remindedAt  DateTime?
   createdAt   DateTime                  @default(now())
@@ -2616,4 +2631,44 @@ model AppraisalAssignment {
   @@unique([participantId, raterEmployeeId, raterType])
   @@index([raterEmployeeId, status])
   @@map("appraisal_assignments")
+}
+
+// ─────────── Appraisal settings and results (nothing is scored or shown until HR configures this) ───────────
+
+enum AppraisalCalcMode {
+  WEIGHTED // question weights inside each rater type, then the perspective weights
+  SIMPLE // every rating question counts the same
+}
+
+enum AppraisalEmployeeSees {
+  NEVER
+  AFTER_PUBLISH
+}
+
+enum AppraisalResultStatus {
+  NOT_CALCULATED
+  CALCULATED
+  APPROVED
+  PUBLISHED
+  ACKNOWLEDGED
+}
+
+model AppraisalSettings {
+  id        String  @id @default(uuid())
+  companyId String  @unique
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  calcMode AppraisalCalcMode @default(WEIGHTED)
+  // [{ label, minPercent }] sorted any way; null = no grades. Set by HR.
+  bands    Json?
+  // 0 = HR publishes results directly; 1 = someone with approval permission must approve first.
+  approvalLevels Int @default(0)
+  employeeSees   AppraisalEmployeeSees @default(NEVER)
+  ackRequired    Boolean @default(false)
+  ackDays        Int?
+
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@map("appraisal_settings")
 }

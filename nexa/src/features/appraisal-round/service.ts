@@ -6,6 +6,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
 import { isLineConfigured } from "@/lib/integrations/line";
 import { createNotification } from "@/features/notification/service";
+import { loadProbationDue } from "@/features/dashboard-people/service";
 import { formsInUse, pickForm, type RoundSnapshot } from "./form-snapshot";
 import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions, type Answer, type QuestionSummary, type SnapQuestion } from "./answers";
 import {
@@ -554,6 +555,19 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
   return created;
 }
 
+/**
+ * Starts a draft round for the people whose probation ends within the next 30 days (the same list as the dashboard card,
+ * limited to the caller's own team). HR then picks the form, raters and dates in the normal steps.
+ */
+export async function createProbationRound(companyId: string, session: AccessClaims, meta?: Meta) {
+  const due = await loadProbationDue(companyId, session);
+  if (due.people.length === 0) throw BadRequest("ไม่มีพนักงานที่ครบทดลองงานภายใน 30 วัน");
+  const todayText = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok" }).format(new Date());
+  const round = await createRound(companyId, session, `ประเมินทดลองงาน ${todayText}`, meta);
+  await updateRound(companyId, session, round.id, { participantIds: due.people.map((p) => p.employeeId) }, meta);
+  return { id: round.id, participants: due.people.length };
+}
+
 /** Takes a SCHEDULED round back to a draft (nothing has been sent yet), so it can be edited again. */
 export async function unscheduleRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
   const round = await loadDraft(companyId, id);
@@ -618,6 +632,13 @@ export interface ParticipantResult {
   roundName: string;
   roundStatus: string;
   groups: { raterType: string; total: number; submitted: number; summary: QuestionSummary[] }[];
+  result: {
+    status: string;
+    scorePercent: number | null;
+    overallScore: number | null;
+    grade: string | null;
+    types: { raterType: string; raters: number; percent: number; weightUsed: number }[];
+  };
 }
 
 /**
@@ -632,6 +653,11 @@ export async function getParticipantResult(companyId: string, roundId: string, p
       departmentName: true,
       employee: { select: { firstName: true, lastName: true, employeeCode: true } },
       formId: true,
+      resultStatus: true,
+      scorePercent: true,
+      overallScore: true,
+      grade: true,
+      scoreBreakdown: true,
       round: { select: { name: true, status: true, formSnapshot: true } },
       assignments: { select: { raterType: true, status: true, answers: true, submittedAt: true }, orderBy: { submittedAt: "asc" } },
     },
@@ -646,6 +672,13 @@ export async function getParticipantResult(companyId: string, roundId: string, p
     department: p.departmentName ?? "ไม่ระบุแผนก",
     roundName: p.round.name,
     roundStatus: p.round.status,
+    result: {
+      status: p.resultStatus,
+      scorePercent: p.scorePercent,
+      overallScore: p.overallScore,
+      grade: p.grade,
+      types: ((p.scoreBreakdown as unknown as { types?: { raterType: string; raters: number; percent: number; weightUsed: number }[] } | null)?.types ?? []),
+    },
     groups: types.map((t) => {
       const mine = p.assignments.filter((a) => a.raterType === t);
       const done = mine.filter((a) => a.status === "SUBMITTED");

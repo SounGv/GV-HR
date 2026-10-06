@@ -65,6 +65,8 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/appraisal": { title: "ภาพรวมการประเมิน", backHref: "/services" },
   "/leave/year-setup": { title: "ตั้งสิทธิ์ลาปีใหม่", backHref: "/leave" },
   "/appraisal/forms": { title: "แบบประเมิน", backHref: "/services" },
+  "/appraisal/settings": { title: "ตั้งค่าการประเมิน", backHref: "/services" },
+  "/appraisal/my-results": { title: "ผลประเมินของฉัน", backHref: "/services" },
   "/appraisal/rounds": { title: "รอบประเมิน", backHref: "/services" },
   "/appraisal/tasks": { title: "งานประเมินของฉัน", backHref: "/services" },
   "/performance/new": { title: "สร้างรอบประเมิน", backHref: "/performance" },
@@ -90,6 +92,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
 
 const PATTERNS: RoutePattern[] = [
   { pattern: /^\/appraisal\/forms\/[^/]+$/, meta: { title: "แก้ไขแบบประเมิน", backHref: "/appraisal/forms" } },
+  { pattern: /^\/appraisal\/rounds\/[^/]+\/fill\/[^/]+$/, meta: { title: "กรอกแทนผู้ประเมิน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+\/people\/[^/]+$/, meta: { title: "ผลรายคน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+$/, meta: { title: "รอบประเมิน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/tasks\/[^/]+$/, meta: { title: "ทำแบบประเมิน", backHref: "/appraisal/tasks" } },

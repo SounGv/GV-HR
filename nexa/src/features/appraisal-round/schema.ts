@@ -27,3 +27,14 @@ export const answersSchema = z.object({
 });
 
 export type RoundUpdateInput = z.infer<typeof roundUpdateSchema>;
+
+export const settingsSchema = z.object({
+  calcMode: z.enum(["WEIGHTED", "SIMPLE"]),
+  bands: z.array(z.object({ label: z.string().trim().min(1).max(60), minPercent: z.number().min(0).max(100) })).max(10),
+  approvalLevels: z.number().int().min(0).max(1),
+  employeeSees: z.enum(["NEVER", "AFTER_PUBLISH"]),
+  ackRequired: z.boolean(),
+  ackDays: z.number().int().min(1).max(90).nullable(),
+});
+
+export const publishSchema = z.object({ participantIds: z.array(z.string().min(1)).max(2000).optional() });

@@ -3,6 +3,8 @@ import { CalendarClock, ChevronRight, ClipboardCheck, UserCheck } from "lucide-r
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { STATUS_META } from "@/features/attendance-status/status-meta";
+import { ProbationRoundButton } from "@/features/appraisal-round/probation-round-button";
+import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { cn } from "@/lib/utils";
 import {
@@ -94,7 +96,7 @@ export function UpcomingLeavesCard({ data }: { data: UpcomingLeaves }) {
   );
 }
 
-export function ProbationDueCard({ data }: { data: ProbationDue }) {
+export function ProbationDueCard({ data, canCreateRound = false }: { data: ProbationDue; canCreateRound?: boolean }) {
   const missing = data.total - data.known;
   return (
     <Card className="gap-0">
@@ -138,6 +140,7 @@ export function ProbationDueCard({ data }: { data: ProbationDue }) {
           </ul>
         )}
         {data.people.length > SHOWN && <p className="text-sm text-muted-foreground">และอีก {data.people.length - SHOWN} คน</p>}
+        {canCreateRound && data.people.length > 0 && <ProbationRoundButton />}
         {missing > 0 && (
           <p className="rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
             ตรวจได้ {data.known} จาก {data.total} คน อีก {missing} คนยังไม่มีวันเริ่มงานหรือวันสิ้นสุดทดลองงานในระบบ
@@ -236,7 +239,7 @@ export async function UpcomingLeavesSection({ companyId, session }: { companyId:
 
 export async function ProbationDueSection({ companyId, session }: { companyId: string; session: AccessClaims }) {
   try {
-    return <ProbationDueCard data={await loadProbationDue(companyId, session)} />;
+    return <ProbationDueCard data={await loadProbationDue(companyId, session)} canCreateRound={can(session.perms, "campaign:create")} />;
   } catch {
     return <LoadFailed what="รายชื่อคนใกล้ครบทดลองงาน" />;
   }

@@ -151,6 +151,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "ภาพรวมประเมิน", href: "/appraisal", icon: ClipboardCheck, permission: "campaign:manage", ready: true },
       { label: "แบบประเมิน", href: "/appraisal/forms", icon: ClipboardCheck, permission: "campaign:manage", ready: true },
       { label: "รอบประเมิน", href: "/appraisal/rounds", icon: ClipboardList, permission: "campaign:manage", ready: true },
+      { label: "ผลประเมินของฉัน", href: "/appraisal/my-results", icon: ClipboardList, permission: "notification:read", ready: true },
+      { label: "ตั้งค่าการประเมิน", href: "/appraisal/settings", icon: Settings2, permission: "campaign:manage", ready: true },
       { label: "งานประเมินของฉัน", href: "/appraisal/tasks", icon: ClipboardCheck, permission: "notification:read", ready: true, badgeKey: "pendingReviews" },
       { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read", ready: true },
       { label: "นัดประชุม", href: "/meetings", icon: CalendarPlus, permission: "meeting:read", ready: true },

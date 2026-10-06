@@ -17,9 +17,9 @@ import { Input } from "@/components/ui/input";
 import { SCORE_RUBRIC } from "@/features/performance/calc";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
-import { useSaveTask, useTask, useTasks } from "./hooks";
+import { useHrAssignment, useSaveHrAssignment, useSaveTask, useTask, useTasks } from "./hooks";
 import { unansweredRequired, type AnswerValue } from "./answers";
-import { ASSIGNMENT_STATUS_LABEL, RATER_LABEL, type AssignmentStatus, type TaskDetail } from "./types";
+import { ASSIGNMENT_STATUS_LABEL, RATER_LABEL, type AssignmentStatus, type HrAssignmentDetail, type TaskDetail } from "./types";
 
 const TONE: Record<AssignmentStatus, StatusTone> = { PENDING: "warning", IN_PROGRESS: "info", SUBMITTED: "success" };
 const fmtDay = (iso: string | null) =>
@@ -72,18 +72,48 @@ export function TaskPage({ id }: { id: string }) {
   const { data, isLoading, isError, refetch } = useTask(id);
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading || !data) return <TableLoadingState rows={4} />;
-  return <TaskForm key={data.data.id} task={data.data} />;
+  return <RaterTaskForm key={data.data.id} task={data.data} />;
+}
+
+function RaterTaskForm({ task }: { task: TaskDetail }) {
+  const save = useSaveTask(task.id);
+  return <TaskForm task={task} save={save} backHref="/appraisal/tasks" backLabel="งานประเมินของฉัน" />;
+}
+
+/** HR fills in a rater's job for them (e.g. someone who cannot sign in). The audit log records who did it. */
+export function HrFillPage({ roundId, assignmentId }: { roundId: string; assignmentId: string }) {
+  const { data, isLoading, isError, refetch } = useHrAssignment(roundId, assignmentId);
+  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (isLoading || !data) return <TableLoadingState rows={4} />;
+  return <HrFillForm key={data.data.id} roundId={roundId} task={data.data} />;
+}
+
+function HrFillForm({ roundId, task }: { roundId: string; task: HrAssignmentDetail }) {
+  const save = useSaveHrAssignment(roundId, task.id);
+  return <TaskForm task={task} save={save} backHref={`/appraisal/rounds/${roundId}`} backLabel="รอบประเมิน" onBehalfOf={task.raterName} />;
 }
 
 type Values = Record<string, AnswerValue>;
 
-function TaskForm({ task }: { task: TaskDetail }) {
+function TaskForm({
+  task,
+  save,
+  backHref,
+  backLabel,
+  onBehalfOf,
+}: {
+  task: TaskDetail;
+  save: { mutateAsync: (input: { answers: { questionId: string; value: unknown }[]; submit: boolean }) => Promise<unknown>; isPending: boolean };
+  backHref: string;
+  backLabel: string;
+  /** Set when HR is filling in for this rater. */
+  onBehalfOf?: string;
+}) {
   const router = useRouter();
   const locked = task.status === "SUBMITTED" || task.roundStatus !== "OPEN";
   const [values, setValues] = useState<Values>(() => Object.fromEntries(task.answers.map((a) => [a.questionId, a.value])));
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
-  const save = useSaveTask(task.id);
   const dirty = useRef(false);
 
   const list = Object.entries(values).map(([questionId, value]) => ({ questionId, value }));
@@ -116,7 +146,7 @@ function TaskForm({ task }: { task: TaskDetail }) {
     try {
       await save.mutateAsync({ answers: list, submit: true });
       toast.success("ส่งผลประเมินแล้ว");
-      router.push("/appraisal/tasks");
+      router.push(backHref);
     } catch (err) {
       setConfirm(false);
       toast.error(err instanceof ApiError ? err.message : "ส่งไม่สำเร็จ");
@@ -138,13 +168,19 @@ function TaskForm({ task }: { task: TaskDetail }) {
   return (
     <div className="space-y-4 pb-28">
       <PageHeaderBar
-        breadcrumbs={[{ label: "งานประเมินของฉัน", href: "/appraisal/tasks" }, { label: task.personName }]}
-        backHref="/appraisal/tasks"
+        breadcrumbs={[{ label: backLabel, href: backHref }, { label: task.personName }]}
+        backHref={backHref}
         title={`ประเมิน ${task.personName}`}
         description={`${task.roundName} · ในฐานะ${RATER_LABEL[task.raterType]}${task.endIso ? ` · ปิด ${fmtDay(task.endIso)}` : ""}`}
         status={<StatusChip tone={TONE[task.status]} label={ASSIGNMENT_STATUS_LABEL[task.status]} />}
         sticky={false}
       />
+
+      {onBehalfOf && !locked && (
+        <p className="rounded-xl bg-muted px-4 py-3 text-sm">
+          คุณกำลังกรอกแทน <b>{onBehalfOf}</b> ระบบจะบันทึกว่า HR เป็นผู้ส่ง
+        </p>
+      )}
 
       {locked && (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-muted px-4 py-3 text-sm">

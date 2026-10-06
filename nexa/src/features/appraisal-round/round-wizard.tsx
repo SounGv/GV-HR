@@ -29,6 +29,7 @@ import {
   useUnscheduleRound,
 } from "./hooks";
 import { RoundMatrix } from "./round-tracking";
+import { RoundResults } from "./round-results";
 import { PRESETS, perspectiveTotal, RATER_TYPES, type RaterType } from "./rules";
 import { RATER_LABEL, ROUND_STATUS_LABEL, type RoundDetail, type RoundSavePayload, type RoundStatus } from "./types";
 
@@ -638,7 +639,8 @@ function RoundOverview({ round }: { round: RoundDetail }) {
         </Card>
       )}
 
-      {live && <RoundMatrix roundId={round.id} />}
+      {live && <RoundMatrix roundId={round.id} canFill={round.status === "OPEN" && can("campaign:update")} />}
+      {live && <RoundResults roundId={round.id} status={round.status} />}
 
       <ConfirmDialog
         open={confirmClose}

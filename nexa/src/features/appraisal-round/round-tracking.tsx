@@ -9,7 +9,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useParticipantResult, useRoundMatrix } from "./hooks";
-import { ASSIGNMENT_STATUS_LABEL, RATER_LABEL, type AssignmentStatus } from "./types";
+import { ASSIGNMENT_STATUS_LABEL, RATER_LABEL, RESULT_STATUS_LABEL, type AssignmentStatus } from "./types";
 
 const STATUS_ICON = { SUBMITTED: CircleCheck, IN_PROGRESS: PencilLine, PENDING: Clock } as const;
 const STATUS_CLASS: Record<AssignmentStatus, string> = {
@@ -19,7 +19,7 @@ const STATUS_CLASS: Record<AssignmentStatus, string> = {
 };
 
 /** "ตรวจเช็คการประเมิน": each person in the round with the status of every rater, newest gaps first. */
-export function RoundMatrix({ roundId }: { roundId: string }) {
+export function RoundMatrix({ roundId, canFill = false }: { roundId: string; canFill?: boolean }) {
   const { data, isLoading, isError, refetch } = useRoundMatrix(roundId, true);
   const [onlyOpen, setOnlyOpen] = useState(true);
   const rows = data?.data ?? [];
@@ -66,6 +66,11 @@ export function RoundMatrix({ roundId }: { roundId: string }) {
                       <Icon className="size-3.5" aria-hidden="true" />
                       {RATER_LABEL[a.raterType]}
                       {a.raterType === "SELF" ? "" : ` · ${a.raterName}`} · {ASSIGNMENT_STATUS_LABEL[a.status]}
+                      {canFill && a.status !== "SUBMITTED" && (
+                        <Link href={`/appraisal/rounds/${roundId}/fill/${a.id}`} className="ml-1 font-bold underline underline-offset-2">
+                          กรอกแทน
+                        </Link>
+                      )}
                     </li>
                   );
                 })}
@@ -98,6 +103,27 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
         สรุปคำตอบที่ส่งแล้ว แยกตามมุมมองผู้ประเมิน เป็นค่าเฉลี่ยธรรมดา ยังไม่ถ่วงน้ำหนักและยังไม่มีเกรด (รอ HR ยืนยันสูตร)
         ข้อความที่ผู้ประเมินเขียนแสดงโดยไม่ระบุชื่อ
       </p>
+      <Card className="gap-1 p-4" aria-label="คะแนนรวม">
+        {r.result.status === "NOT_CALCULATED" || r.result.scorePercent == null ? (
+          <p className="text-sm text-muted-foreground">ยังไม่ได้คำนวณคะแนน (กดคำนวณผลที่หน้ารอบ)</p>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">คะแนนรวม · {RESULT_STATUS_LABEL[r.result.status]}</p>
+            <p className="text-2xl font-bold tabular-nums">
+              {r.result.scorePercent}% {r.result.grade && <span className="text-base font-semibold">· {r.result.grade}</span>}
+            </p>
+            {r.result.types.length > 0 && (
+              <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground tabular-nums">
+                {r.result.types.map((t) => (
+                  <li key={t.raterType}>
+                    {RATER_LABEL[t.raterType]}: {t.percent}% (น้ำหนักที่ใช้ {t.weightUsed}%, {t.raters} คน)
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </Card>
       {r.groups.length === 0 && <EmptyState icon={ListChecks} title="ยังไม่มีผู้ประเมิน" description="รอบนี้ยังไม่มีงานประเมินของคนนี้" />}
       {r.groups.map((g) => (
         <Card key={g.raterType} className="gap-3 p-4">
