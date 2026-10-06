@@ -20,7 +20,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/client";
-import { computeHours } from "./calc";
+import { computeHours, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER } from "./calc";
+import { cn } from "@/lib/utils";
 import { useCreateOvertime } from "./hooks";
 
 const FORM_ID = "ot-form";
@@ -29,6 +30,7 @@ const LIST = "/overtime";
 const formSchema = z
   .object({
     date: z.string().min(1, "กรุณาเลือกวันที่"),
+    dayType: z.enum(["NORMAL", "DAY_OFF"]),
     startTime: z.string().regex(/^\d{2}:\d{2}$/, "เวลาไม่ถูกต้อง"),
     endTime: z.string().regex(/^\d{2}:\d{2}$/, "เวลาไม่ถูกต้อง"),
     reason: z.string().optional(),
@@ -46,10 +48,11 @@ export function OvertimeFormPage() {
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: { date: "", startTime: "18:00", endTime: "20:00", reason: "" },
+    defaultValues: { date: "", dayType: "NORMAL", startTime: "18:00", endTime: "20:00", reason: "" },
   });
 
-  const [start, end] = form.watch(["startTime", "endTime"]);
+  const [start, end, dayType] = form.watch(["startTime", "endTime", "dayType"]);
+  const rate = dayType === "DAY_OFF" ? DAY_OFF_MULTIPLIER : DEFAULT_MULTIPLIER;
   const hours = start && end && end > start ? computeHours(start, end) : 0;
 
   async function onSubmit(values: FormSchema) {
@@ -98,6 +101,38 @@ export function OvertimeFormPage() {
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="dayType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>ประเภทวันที่ทำงาน</FormLabel>
+                <div role="radiogroup" aria-label="ประเภทวันที่ทำงาน" className="grid gap-2 sm:grid-cols-2">
+                  {(
+                    [
+                      ["NORMAL", "ล่วงเวลาในวันทำงาน", `อัตรา ${DEFAULT_MULTIPLIER} เท่า`],
+                      ["DAY_OFF", "ทำงานในวันหยุด", `อัตรา ${DAY_OFF_MULTIPLIER} เท่า (วันหยุด / เสาร์ที่หยุด / อาทิตย์)`],
+                    ] as const
+                  ).map(([value, title, hint]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={field.value === value}
+                      onClick={() => field.onChange(value)}
+                      className={cn(
+                        "min-h-14 rounded-xl border px-3 py-2 text-left",
+                        field.value === value ? "border-primary bg-accent" : "border-border bg-card",
+                      )}
+                    >
+                      <span className="block text-sm font-semibold">{title}</span>
+                      <span className="block text-sm text-muted-foreground">{hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </FormItem>
+            )}
+          />
           <div className="grid grid-cols-2 gap-3">
             <FormField
               control={form.control}
@@ -140,7 +175,7 @@ export function OvertimeFormPage() {
           />
           {hours > 0 && (
             <p className="text-sm text-muted-foreground">
-              รวม <span className="font-medium text-foreground">{hours}</span> ชั่วโมง (อัตรา 1.5×)
+              รวม <span className="font-medium text-foreground">{hours}</span> ชั่วโมง (อัตรา {rate}×)
             </p>
           )}
         </form>

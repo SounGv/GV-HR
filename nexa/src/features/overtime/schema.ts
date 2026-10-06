@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseHM, MIN_OT_MINUTES } from "./calc";
+import { parseHM, MIN_OT_MINUTES, OT_DAY_TYPES } from "./calc";
 
 export const OT_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
 const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -7,6 +7,8 @@ const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const otCreateSchema = z
   .object({
     date: z.coerce.date({ message: "กรุณาเลือกวันที่" }),
+    // NORMAL = overtime on a working day; DAY_OFF = working on a day off (paid at the double rate).
+    dayType: z.enum(OT_DAY_TYPES).default("NORMAL"),
     startTime: z.string().regex(timeRe, "เวลาไม่ถูกต้อง"),
     endTime: z.string().regex(timeRe, "เวลาไม่ถูกต้อง"),
     reason: z.preprocess(

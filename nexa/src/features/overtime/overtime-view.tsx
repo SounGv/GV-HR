@@ -20,7 +20,7 @@ import { useOvertime, useCancelOvertime, useDecideOvertime } from "./hooks";
 import type { OvertimeRequest } from "./types";
 
 function line(r: OvertimeRequest) {
-  return `${formatDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม.`;
+  return `${formatDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม.${r.multiplier >= 2 ? " · วันหยุด 2 เท่า" : ""}`;
 }
 
 export function OvertimeView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {

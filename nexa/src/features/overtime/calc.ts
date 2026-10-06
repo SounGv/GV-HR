@@ -1,4 +1,12 @@
 export const DEFAULT_MULTIPLIER = 1.5;
+/** Working on a day off (a holiday or an off Saturday) is paid at double rate (the rate HR gave for this). */
+export const DAY_OFF_MULTIPLIER = 2;
+
+export const OT_DAY_TYPES = ["NORMAL", "DAY_OFF"] as const;
+export type OtDayType = (typeof OT_DAY_TYPES)[number];
+
+/** Pay multiplier for the kind of day an OT request is for. */
+export const multiplierFor = (dayType: OtDayType): number => (dayType === "DAY_OFF" ? DAY_OFF_MULTIPLIER : DEFAULT_MULTIPLIER);
 
 /** Below this, a clock-out a few minutes past shift end is just clock-skew
  * noise, not real overtime worth an approval record. Shared by the

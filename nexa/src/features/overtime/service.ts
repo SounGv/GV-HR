@@ -11,7 +11,7 @@ import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { computeHours, estimateAmount, minutesSinceWorkDateStart, DEFAULT_MULTIPLIER, MIN_OT_MINUTES } from "./calc";
+import { computeHours, estimateAmount, minutesSinceWorkDateStart, DEFAULT_MULTIPLIER, MIN_OT_MINUTES, multiplierFor } from "./calc";
 import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -59,6 +59,8 @@ export async function createOvertime(
   const employeeId = requireEmployeeId(session);
   const hours = computeHours(input.startTime, input.endTime);
   if (hours <= 0) throw BadRequest("ช่วงเวลาไม่ถูกต้อง");
+  const multiplier = multiplierFor(input.dayType);
+  const dayOffNote = input.dayType === "DAY_OFF" ? " (ทำงานวันหยุด 2 เท่า)" : "";
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
@@ -80,7 +82,7 @@ export async function createOvertime(
       hourlyRate: employee?.hourlyRate ? Number(employee.hourlyRate) : null,
     },
     hours,
-    DEFAULT_MULTIPLIER,
+    multiplier,
   );
 
   const record = await prisma.overtimeRequest.create({
@@ -91,7 +93,7 @@ export async function createOvertime(
       startTime: input.startTime,
       endTime: input.endTime,
       hours,
-      multiplier: DEFAULT_MULTIPLIER,
+      multiplier,
       estimatedAmount: estimated,
       reason: input.reason,
       status: "PENDING",
@@ -107,13 +109,13 @@ export async function createOvertime(
     action: "overtime.create",
     entity: "OvertimeRequest",
     entityId: record.id,
-    after: { hours, estimated },
+    after: { hours, estimated, multiplier },
     ...meta,
   });
 
   const otNotice = {
     title: "มีคำขอ OT รออนุมัติ",
-    body: `${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง`,
+    body: `${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง${dayOffNote}`,
     category: "overtime",
     link: `/overtime/${record.id}`,
   };
@@ -127,7 +129,7 @@ export async function createOvertime(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง\n${(process.env.APP_URL ?? "http://localhost:3000") + `/overtime/${record.id}`}`,
+    `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง${dayOffNote}\n${(process.env.APP_URL ?? "http://localhost:3000") + `/overtime/${record.id}`}`,
   );
 
   return record;

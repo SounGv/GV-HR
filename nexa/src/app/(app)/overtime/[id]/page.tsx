@@ -67,6 +67,7 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
             <InfoRow icon={Clock3} label="วันที่" value={formatDate(request.date)} />
             <InfoRow label="ช่วงเวลา" value={`${request.startTime} - ${request.endTime}`} />
             <InfoRow label="ชั่วโมง" value={`${request.hours} ชั่วโมง`} />
+            <InfoRow label="อัตรา" value={request.multiplier >= 2 ? `ทำงานในวันหยุด ${request.multiplier} เท่า` : `ล่วงเวลาวันทำงาน ${request.multiplier} เท่า`} />
             <InfoRow label="คูณ" value={`${request.multiplier}x`} />
           </div>
           <div className="rounded-lg border border-border bg-muted/40 p-3">
