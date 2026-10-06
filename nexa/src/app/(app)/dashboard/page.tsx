@@ -28,6 +28,11 @@ import {
 } from "@/features/attendance-status/attendance-today-sections";
 import { DepartmentWatchCard, WatchlistCard } from "@/features/attendance-status/attendance-watch-sections";
 import { DepartmentFilter } from "@/features/attendance-status/department-filter";
+import {
+  EvaluationProgressSection,
+  ProbationDueSection,
+  UpcomingLeavesSection,
+} from "@/features/dashboard-people/people-sections";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -224,6 +229,14 @@ async function AttendanceWatchSection({
   );
 }
 
+function PeopleCardFallback() {
+  return (
+    <Card>
+      <CardContent className="py-4 text-sm text-muted-foreground">กำลังโหลด…</CardContent>
+    </Card>
+  );
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ dept?: string }> }) {
@@ -235,12 +248,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const canSeePay = can(user!.permissions, "payroll:create") || can(user!.permissions, "payroll:approve");
   const mine = user!.employee ? await getMySnapshot(user!.companyId, user!.employee.id, canSeePay) : null;
   const attendanceTrend = await getAttendanceTrend(user!.companyId);
-  const departmentWatchlist = await getDepartmentWatchlist(user!.companyId);
+  const canSeeAttendance = can(user!.permissions, "attendance:approve") || can(user!.permissions, "attendance:manage");
+  // The old per-department watch list is only shown to people who do not get the new attendance section.
+  const departmentWatchlist = canSeeAttendance ? [] : await getDepartmentWatchlist(user!.companyId);
 
   // Attendance overview (who is in, late, absent, on leave) — only for people
   // who can approve or manage attendance, and the server narrows it to their own
   // team unless they are company-wide. Without the permission nothing is read.
-  const canSeeAttendance = can(user!.permissions, "attendance:approve") || can(user!.permissions, "attendance:manage");
   const deptIds = dept && UUID_RE.test(dept) ? [dept] : [];
   const session = {
     sub: user!.id,
@@ -251,6 +265,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     perms: user!.permissions,
     employeeId: user!.employee?.id,
   };
+  // People cards: each is read only for people with the matching permission, and
+  // the data layer narrows them to the caller's own team unless company-wide.
+  const canSeeLeaves = can(user!.permissions, "leave:approve");
+  const canSeeProbation = can(user!.permissions, "employee:update") || can(user!.permissions, "leave:approve");
+  const canSeeEvaluation =
+    can(user!.permissions, "campaign:manage") ||
+    can(user!.permissions, "campaign:update") ||
+    can(user!.permissions, "campaign:approve");
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
   const departmentOptions = canSeeAttendance ? await listDepartmentOptions(user!.companyId) : [];
 
@@ -389,8 +411,28 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </>
       )}
 
+      {(canSeeLeaves || canSeeProbation || canSeeEvaluation) && (
+        <section aria-label="คนและงานที่ต้องติดตาม" className="grid items-start gap-3 lg:grid-cols-3">
+          {canSeeLeaves && (
+            <Suspense fallback={<PeopleCardFallback />}>
+              <UpcomingLeavesSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeProbation && (
+            <Suspense fallback={<PeopleCardFallback />}>
+              <ProbationDueSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeEvaluation && (
+            <Suspense fallback={<PeopleCardFallback />}>
+              <EvaluationProgressSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+        </section>
+      )}
+
       {/* KPI cards (today) */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <section className={cn("grid grid-cols-2 gap-4", attendanceToday ? "lg:grid-cols-2" : "lg:grid-cols-5")}>
         <Kpi
           label="พนักงานทั้งหมด"
           value={s.headcount}
@@ -416,6 +458,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </div>
           }
         />
+        {!attendanceToday && (
+        <>
         <Kpi
           label="เข้างานวันนี้"
           value={s.presentToday}
@@ -449,6 +493,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             goodDirection: "neutral",
           }}
         />
+        </>
+        )}
         <Kpi
           label="OT วันนี้"
           value={s.otHoursToday}
@@ -500,7 +546,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {/* Employment-type breakdown + department watchlist */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <Card className={attendanceToday ? "lg:col-span-3" : "lg:col-span-1"}>
           <CardHeader>
             <CardTitle>ประเภทการจ้าง</CardTitle>
             <p className="text-xs text-muted-foreground">ทั้งหมด {s.headcount} คน</p>
@@ -530,6 +576,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </CardContent>
         </Card>
 
+        {!attendanceToday && (
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -565,6 +612,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             )}
           </CardContent>
         </Card>
+        )}
       </div>
 
       {/* Department ranking — full width, no donut companion (the donut read
