@@ -1,6 +1,8 @@
 import { api, type Envelope } from "@/lib/api/client";
 import type {
   Candidate,
+  MatrixRow,
+  ParticipantResult,
   PublishedForm,
   RoundDetail,
   RoundListItem,
@@ -24,9 +26,14 @@ export const openRound = (id: string) =>
   );
 export const closeRound = (id: string) => api.post<Envelope<{ id: string }>>(`/api/appraisal-rounds/${id}/close`);
 export const remindRound = (id: string) => api.post<Envelope<{ reminded: number }>>(`/api/appraisal-rounds/${id}/remind`);
+export const unscheduleRound = (id: string) => api.post<Envelope<{ id: string }>>(`/api/appraisal-rounds/${id}/unschedule`);
 export const deleteRound = (id: string) => api.del<Envelope<{ ok: true }>>(`/api/appraisal-rounds/${id}`);
 
 export const fetchTasks = () => api.get<Envelope<TaskItem[]>>("/api/appraisal-tasks");
 export const fetchTask = (id: string) => api.get<Envelope<TaskDetail>>(`/api/appraisal-tasks/${id}`);
 export const saveTask = (id: string, input: { answers: { questionId: string; value: unknown }[]; submit: boolean }) =>
   api.put<Envelope<{ id: string; status: string; answered: number }>>(`/api/appraisal-tasks/${id}`, input);
+
+export const fetchRoundMatrix = (id: string) => api.get<Envelope<MatrixRow[]>>(`/api/appraisal-rounds/${id}/matrix`);
+export const fetchParticipantResult = (id: string, participantId: string) =>
+  api.get<Envelope<ParticipantResult>>(`/api/appraisal-rounds/${id}/people/${participantId}`);

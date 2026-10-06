@@ -135,3 +135,31 @@ export interface RoundSavePayload {
   notifyLine?: boolean;
   participantIds?: string[];
 }
+
+export interface MatrixRow {
+  participantId: string;
+  name: string;
+  code: string;
+  department: string;
+  assignments: { id: string; raterType: RaterType; status: AssignmentStatus; raterName: string }[];
+}
+
+export interface QuestionSummary {
+  questionId: string;
+  text: string;
+  answerType: "RATING" | "CHOICE" | "MULTI_CHOICE" | "SHORT_TEXT" | "PARAGRAPH";
+  count: number;
+  average: number | null;
+  options: { label: string; count: number }[];
+  texts: string[];
+}
+
+export interface ParticipantResult {
+  participantId: string;
+  name: string;
+  code: string;
+  department: string;
+  roundName: string;
+  roundStatus: string;
+  groups: { raterType: RaterType; total: number; submitted: number; summary: QuestionSummary[] }[];
+}

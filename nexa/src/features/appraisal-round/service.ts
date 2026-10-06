@@ -6,7 +6,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
 import { isLineConfigured } from "@/lib/integrations/line";
 import { createNotification } from "@/features/notification/service";
-import { cleanAnswers, unansweredRequired, visibleQuestions, type Answer, type SnapQuestion } from "./answers";
+import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions, type Answer, type QuestionSummary, type SnapQuestion } from "./answers";
 import {
   matchRaters,
   planInvitations,
@@ -435,11 +435,109 @@ export async function closeRound(companyId: string, session: AccessClaims, id: s
   return { id };
 }
 
+/** Takes a SCHEDULED round back to a draft (nothing has been sent yet), so it can be edited again. */
+export async function unscheduleRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+  const round = await loadDraft(companyId, id);
+  if (round.status !== "SCHEDULED") throw BadRequest("ยกเลิกการตั้งเวลาได้เฉพาะรอบที่ตั้งเวลาไว้และยังไม่ได้ส่งข้อความ");
+  await prisma.$transaction([
+    prisma.appraisalAssignment.deleteMany({ where: { participant: { roundId: id } } }),
+    prisma.appraisalRound.update({
+      where: { id },
+      data: { status: "DRAFT", openedAt: null, formSnapshot: undefined, updatedById: session.sub },
+    }),
+  ]);
+  await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_round.unschedule", entity: "AppraisalRound", entityId: id, ...meta });
+  return { id };
+}
+
 export async function deleteRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
   const round = await loadDraft(companyId, id);
   if (round.status !== "DRAFT") throw BadRequest("ลบได้เฉพาะรอบที่ยังเป็นฉบับร่าง");
   await prisma.appraisalRound.update({ where: { id }, data: { deletedAt: new Date(), updatedById: session.sub } });
   await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_round.delete", entity: "AppraisalRound", entityId: id, ...meta });
+}
+
+/* ───────────────────────────── Tracking and results ───────────────────────────── */
+
+/** "ตรวจเช็คการประเมิน": every person in the round with the status of each of their raters. */
+export async function getRoundMatrix(companyId: string, id: string) {
+  const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
+  if (!round) throw NotFound("ไม่พบรอบประเมิน");
+  const rows = await prisma.appraisalParticipant.findMany({
+    where: { roundId: id },
+    select: {
+      id: true,
+      departmentName: true,
+      employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      assignments: {
+        select: { id: true, raterType: true, status: true, rater: { select: { firstName: true, lastName: true } } },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+    orderBy: { employee: { employeeCode: "asc" } },
+    take: 2000,
+  });
+  return rows.map((p) => ({
+    participantId: p.id,
+    name: fullName(p.employee),
+    code: p.employee.employeeCode,
+    department: p.departmentName ?? "ไม่ระบุแผนก",
+    assignments: p.assignments.map((a) => ({
+      id: a.id,
+      raterType: a.raterType,
+      status: a.status,
+      raterName: fullName(a.rater),
+    })),
+  }));
+}
+
+export interface ParticipantResult {
+  participantId: string;
+  name: string;
+  code: string;
+  department: string;
+  roundName: string;
+  roundStatus: string;
+  groups: { raterType: string; total: number; submitted: number; summary: QuestionSummary[] }[];
+}
+
+/**
+ * Answers for one person, grouped by rater type. Only submitted answers are summarised, and nobody's
+ * name is attached to what they wrote. Averages are plain means: no weighting, grade or overall score yet.
+ */
+export async function getParticipantResult(companyId: string, roundId: string, participantId: string): Promise<ParticipantResult> {
+  const p = await prisma.appraisalParticipant.findFirst({
+    where: { id: participantId, roundId, round: { companyId, deletedAt: null } },
+    select: {
+      id: true,
+      departmentName: true,
+      employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      round: { select: { name: true, status: true, formSnapshot: true } },
+      assignments: { select: { raterType: true, status: true, answers: true, submittedAt: true }, orderBy: { submittedAt: "asc" } },
+    },
+  });
+  if (!p) throw NotFound("ไม่พบข้อมูล");
+  const snap = p.round.formSnapshot as unknown as { questions: SnapQuestion[] } | null;
+  const questions = snap?.questions ?? [];
+  const types = [...new Set(p.assignments.map((a) => a.raterType))];
+  return {
+    participantId: p.id,
+    name: fullName(p.employee),
+    code: p.employee.employeeCode,
+    department: p.departmentName ?? "ไม่ระบุแผนก",
+    roundName: p.round.name,
+    roundStatus: p.round.status,
+    groups: types.map((t) => {
+      const mine = p.assignments.filter((a) => a.raterType === t);
+      const done = mine.filter((a) => a.status === "SUBMITTED");
+      return {
+        raterType: t,
+        total: mine.length,
+        submitted: done.length,
+        summary: summarizeAnswers(questions, t, done.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : []))),
+      };
+    }),
+  };
 }
 
 /* ───────────────────────────── Rater side ───────────────────────────── */

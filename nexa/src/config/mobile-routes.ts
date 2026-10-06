@@ -88,6 +88,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
 
 const PATTERNS: RoutePattern[] = [
   { pattern: /^\/appraisal\/forms\/[^/]+$/, meta: { title: "แก้ไขแบบประเมิน", backHref: "/appraisal/forms" } },
+  { pattern: /^\/appraisal\/rounds\/[^/]+\/people\/[^/]+$/, meta: { title: "ผลรายคน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+$/, meta: { title: "รอบประเมิน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/tasks\/[^/]+$/, meta: { title: "ทำแบบประเมิน", backHref: "/appraisal/tasks" } },
   { pattern: /^\/employees\/[^/]+\/account$/, meta: { title: "บัญชีผู้ใช้", backHref: "/employees" } },

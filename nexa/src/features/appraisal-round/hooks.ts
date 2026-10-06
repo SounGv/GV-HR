@@ -6,6 +6,8 @@ import {
   createRound,
   deleteRound,
   fetchCandidates,
+  fetchParticipantResult,
+  fetchRoundMatrix,
   fetchPublishedForms,
   fetchRound,
   fetchRoundProgress,
@@ -14,6 +16,7 @@ import {
   fetchTasks,
   openRound,
   remindRound,
+  unscheduleRound,
   saveRound,
   saveTask,
 } from "./api";
@@ -75,4 +78,14 @@ export function useSaveTask(id: string) {
     mutationFn: (input: { answers: { questionId: string; value: unknown }[]; submit: boolean }) => saveTask(id, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: appraisalRoundKeys.tasks }),
   });
+}
+
+export const useRoundMatrix = (id: string, enabled: boolean) =>
+  useQuery({ queryKey: ["appraisal-rounds", "matrix", id], queryFn: () => fetchRoundMatrix(id), enabled });
+export const useParticipantResult = (id: string, participantId: string) =>
+  useQuery({ queryKey: ["appraisal-rounds", "result", id, participantId], queryFn: () => fetchParticipantResult(id, participantId) });
+
+export function useUnscheduleRound(id: string) {
+  const invalidate = useInvalidate();
+  return useMutation({ mutationFn: () => unscheduleRound(id), onSuccess: invalidate });
 }

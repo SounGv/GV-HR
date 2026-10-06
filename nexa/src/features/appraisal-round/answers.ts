@@ -82,3 +82,47 @@ export function unansweredRequired(
     .filter(({ q }) => q.required && !done.has(q.id))
     .map(({ n }) => `ข้อ ${n}`);
 }
+
+export interface QuestionSummary {
+  questionId: string;
+  text: string;
+  answerType: SnapAnswerType;
+  /** How many raters answered this question. */
+  count: number;
+  /** RATING only: plain average of the scores (not weighted, no grade). */
+  average: number | null;
+  /** CHOICE / MULTI_CHOICE: how many raters picked each option. */
+  options: { label: string; count: number }[];
+  /** SHORT_TEXT / PARAGRAPH: the written answers, without who wrote them. */
+  texts: string[];
+}
+
+/**
+ * Summarises one group of raters (e.g. all the peers) per question they were asked.
+ * `sets` holds each rater's saved answers. Averages are plain means: weighting and
+ * grading are left out until HR confirms how they should work.
+ */
+export function summarizeAnswers(
+  questions: readonly SnapQuestion[],
+  raterType: string,
+  sets: readonly (readonly Answer[])[],
+): QuestionSummary[] {
+  return visibleQuestions(questions, raterType).map((q) => {
+    const values = sets.flatMap((set) => set.filter((a) => a.questionId === q.id).map((a) => a.value));
+    const numbers = values.filter((v): v is number => typeof v === "number");
+    const picks = new Map<string, number>();
+    for (const v of values) {
+      for (const p of Array.isArray(v) ? v : typeof v === "string" ? [v] : []) picks.set(p, (picks.get(p) ?? 0) + 1);
+    }
+    const isChoice = q.answerType === "CHOICE" || q.answerType === "MULTI_CHOICE";
+    return {
+      questionId: q.id,
+      text: q.text,
+      answerType: q.answerType,
+      count: values.length,
+      average: q.answerType === "RATING" && numbers.length ? Math.round((numbers.reduce((s, n) => s + n, 0) / numbers.length) * 100) / 100 : null,
+      options: isChoice ? (q.options ?? []).map((o) => ({ label: o.label, count: picks.get(o.value) ?? 0 })) : [],
+      texts: q.answerType === "SHORT_TEXT" || q.answerType === "PARAGRAPH" ? values.filter((v): v is string => typeof v === "string") : [],
+    };
+  });
+}

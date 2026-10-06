@@ -26,7 +26,9 @@ import {
   useRound,
   useRoundProgress,
   useSaveRound,
+  useUnscheduleRound,
 } from "./hooks";
+import { RoundMatrix } from "./round-tracking";
 import { PRESETS, perspectiveTotal, RATER_TYPES, type RaterType } from "./rules";
 import { RATER_LABEL, ROUND_STATUS_LABEL, type RoundDetail, type RoundSavePayload, type RoundStatus } from "./types";
 
@@ -499,6 +501,7 @@ function RoundOverview({ round }: { round: RoundDetail }) {
   const progress = useRoundProgress(round.id, live);
   const remind = useRemindRound(round.id);
   const close = useCloseRound(round.id);
+  const unschedule = useUnscheduleRound(round.id);
   const [confirmClose, setConfirmClose] = useState(false);
   const p = progress.data?.data;
   const pct = p && p.total > 0 ? Math.round((p.submitted / p.total) * 100) : 0;
@@ -509,6 +512,15 @@ function RoundOverview({ round }: { round: RoundDetail }) {
       toast.success(res.data.reminded > 0 ? `เตือน ${res.data.reminded} คนแล้ว` : "ไม่มีใครต้องเตือนในตอนนี้");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "เตือนไม่สำเร็จ");
+    }
+  }
+
+  async function doUnschedule() {
+    try {
+      await unschedule.mutateAsync();
+      toast.success("กลับเป็นฉบับร่างแล้ว แก้ไขได้");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ทำรายการไม่สำเร็จ");
     }
   }
 
@@ -543,7 +555,14 @@ function RoundOverview({ round }: { round: RoundDetail }) {
           </div>
         </dl>
         {round.status === "SCHEDULED" && (
-          <p className="rounded-xl bg-muted px-3 py-2 text-sm">ตั้งเวลาไว้แล้ว ระบบจะส่งข้อความหาผู้ประเมินในวันที่ {fmtDay(round.startIso)}</p>
+          <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted px-3 py-2 text-sm">
+            <p className="min-w-0 flex-1">ตั้งเวลาไว้แล้ว ระบบจะส่งข้อความหาผู้ประเมินในวันที่ {fmtDay(round.startIso)}</p>
+            {can("campaign:update") && (
+              <Button variant="outline" className="h-11 md:h-9" disabled={unschedule.isPending} onClick={doUnschedule}>
+                ยกเลิกการตั้งเวลา (กลับไปแก้ไข)
+              </Button>
+            )}
+          </div>
         )}
       </Card>
 
@@ -574,6 +593,8 @@ function RoundOverview({ round }: { round: RoundDetail }) {
           )}
         </Card>
       )}
+
+      {live && <RoundMatrix roundId={round.id} />}
 
       <ConfirmDialog
         open={confirmClose}

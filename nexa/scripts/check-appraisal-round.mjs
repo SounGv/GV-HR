@@ -12,7 +12,7 @@ import {
   sendMode,
   shouldRemind,
 } from "../src/features/appraisal-round/rules.ts";
-import { cleanAnswers, unansweredRequired, visibleQuestions } from "../src/features/appraisal-round/answers.ts";
+import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions } from "../src/features/appraisal-round/answers.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -145,6 +145,24 @@ check("a question the rater does not see cannot be answered", () => {
 check("required questions block submitting; optional ones do not", () => {
   assert.deepEqual(unansweredRequired(Q, "MANAGER", []), ["ข้อ 1", "ข้อ 2"]);
   assert.deepEqual(unansweredRequired(Q, "SELF", [{ questionId: "r", value: 3 }]), []);
+});
+
+check("a summary averages scores, counts options and lists texts without names", () => {
+  const sets = [
+    [{ questionId: "r", value: 4 }, { questionId: "c", value: "a" }, { questionId: "m", value: ["a", "b"] }, { questionId: "t", value: "ดี" }],
+    [{ questionId: "r", value: 5 }, { questionId: "c", value: "a" }, { questionId: "m", value: ["b"] }],
+  ];
+  const [r, c, m, t] = summarizeAnswers(Q, "MANAGER", sets);
+  assert.equal(r.average, 4.5);
+  assert.equal(r.count, 2);
+  assert.deepEqual(c.options, [{ label: "ก", count: 2 }, { label: "ข", count: 0 }]);
+  assert.deepEqual(m.options, [{ label: "ก", count: 1 }, { label: "ข", count: 2 }]);
+  assert.deepEqual(t.texts, ["ดี"]);
+  assert.equal(t.average, null);
+});
+check("a summary with no answers has no average", () => {
+  const [r] = summarizeAnswers(Q, "SELF", []);
+  assert.deepEqual({ count: r.count, average: r.average }, { count: 0, average: null });
 });
 
 console.log(`\n${n} checks passed`);
