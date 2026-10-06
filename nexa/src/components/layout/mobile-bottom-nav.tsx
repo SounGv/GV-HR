@@ -146,6 +146,7 @@ function NavTab({
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={cn(
         "flex h-full flex-col items-center justify-center gap-0.5 transition active:scale-95",
         active ? "font-bold text-accent-foreground" : "text-muted-foreground",

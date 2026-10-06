@@ -2,13 +2,23 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Check, X, CalendarDays } from "lucide-react";
+import { Plus, Check, X, CalendarDays, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { MobileScreen } from "./mobile-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -194,7 +204,7 @@ function MyRequests() {
                 </div>
               </Link>
               {(item.request.status === "PENDING" || item.request.status === "APPROVED") && (
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setTarget(item)}>
+                <Button variant="ghost" size="sm" className="h-11 min-w-16 text-destructive" onClick={() => setTarget(item)}>
                   ยกเลิก
                 </Button>
               )}
@@ -218,18 +228,79 @@ function MyRequests() {
   );
 }
 
+/** Optional reason for a rejection — the applicant sees it with the decision. */
+function RejectDialog({
+  target,
+  reason,
+  onReasonChange,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  target: ReqItem | null;
+  reason: string;
+  onReasonChange: (v: string) => void;
+  loading: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={!!target} onOpenChange={(o) => !o && !loading && onCancel()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>ปฏิเสธคำขอ{target ? KIND_LABEL[target.kind] : ""}</DialogTitle>
+          <DialogDescription>
+            {target
+              ? `${fullName(target.request.employee.firstName, target.request.employee.lastName)} · ${itemLine(target)}`
+              : ""}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <Label htmlFor="reject-reason">เหตุผล (ไม่บังคับ — พนักงานจะเห็นพร้อมผลการพิจารณา)</Label>
+          <Textarea
+            id="reject-reason"
+            value={reason}
+            onChange={(e) => onReasonChange(e.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder="เช่น ช่วงนั้นมีงานด่วน ขอเลื่อนเป็นสัปดาห์หน้า"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" className="h-11" onClick={onCancel} disabled={loading}>
+            ยกเลิก
+          </Button>
+          <Button variant="destructive" className="h-11" onClick={onConfirm} disabled={loading}>
+            {loading && <Loader2 className="size-4 animate-spin" />}
+            ยืนยันปฏิเสธ
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function Approvals() {
   const { canAny } = useAuth();
   const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
   const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
   const canApproveCorrection = canAny(["attendance:approve", "attendance:manage"]);
 
-  const leaveQ = useLeave("team", "PENDING");
-  const otQ = useOvertime("team", "PENDING");
+  // Only ask each source for what this user may approve — an unconditional
+  // query for a source they lack came back 403, and that error used to blank
+  // out the whole list (including the sources they could see).
+  const leaveQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
+  const otQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
   const correctionQ = useAttendanceCorrections("team", "PENDING", { enabled: canApproveCorrection });
   const decideLeave = useDecideLeave();
   const decideOt = useDecideOvertime();
   const decideCorrection = useDecideAttendanceCorrection();
+  // One card busy at a time, not the whole list: you can read and act on the
+  // other requests while one is being saved, and a double-tap on the same
+  // card cannot send the decision twice.
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<ReqItem | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const items = useMemo<ReqItem[]>(() => {
     const leave: ReqItem[] = canApproveLeave ? (leaveQ.data?.data ?? []).map((r) => ({ kind: "leave", request: r })) : [];
@@ -242,31 +313,76 @@ function Approvals() {
     );
   }, [leaveQ.data, otQ.data, correctionQ.data, canApproveLeave, canApproveOt, canApproveCorrection]);
 
-  async function decide(item: ReqItem, action: "approve" | "reject") {
+  async function decide(item: ReqItem, action: "approve" | "reject", note?: string): Promise<boolean> {
+    const key = `${item.kind}-${item.request.id}`;
+    if (busyKey === key) return false;
+    setBusyKey(key);
     try {
-      if (item.kind === "leave") await decideLeave.mutateAsync({ id: item.request.id, action });
-      else if (item.kind === "ot") await decideOt.mutateAsync({ id: item.request.id, action });
-      else await decideCorrection.mutateAsync({ id: item.request.id, action });
+      const input = { id: item.request.id, action, note: note?.trim() || undefined };
+      if (item.kind === "leave") await decideLeave.mutateAsync(input);
+      else if (item.kind === "ot") await decideOt.mutateAsync(input);
+      else await decideCorrection.mutateAsync(input);
       toast.success(action === "approve" ? "อนุมัติเรียบร้อย" : "ปฏิเสธคำขอเรียบร้อย");
+      return true;
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
+      toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ — ตรวจสัญญาณแล้วลองใหม่");
+      return false;
+    } finally {
+      setBusyKey(null);
     }
   }
 
-  const isLoading = (canApproveLeave && leaveQ.isLoading) || (canApproveOt && otQ.isLoading) || (canApproveCorrection && correctionQ.isLoading);
-  const isError = leaveQ.isError || otQ.isError || correctionQ.isError;
-  const deciding = decideLeave.isPending || decideOt.isPending || decideCorrection.isPending;
+  async function confirmReject() {
+    if (!rejectTarget) return;
+    const ok = await decide(rejectTarget, "reject", rejectReason);
+    if (ok) {
+      setRejectTarget(null);
+      setRejectReason("");
+    }
+  }
 
-  if (isError) return <ErrorState onRetry={() => { leaveQ.refetch(); otQ.refetch(); correctionQ.refetch(); }} />;
+  const enabledQueries = [
+    canApproveLeave ? leaveQ : null,
+    canApproveOt ? otQ : null,
+    canApproveCorrection ? correctionQ : null,
+  ].filter((q): q is NonNullable<typeof q> => q !== null);
+  const isLoading = enabledQueries.some((q) => q.isLoading);
+  const failed = enabledQueries.filter((q) => q.isError);
+  const allFailed = enabledQueries.length > 0 && failed.length === enabledQueries.length;
+  const retryFailed = () => failed.forEach((q) => q.refetch());
+
+  if (allFailed) return <ErrorState onRetry={retryFailed} />;
   if (isLoading) return <TableLoadingState rows={4} />;
-  if (items.length === 0) {
+  if (items.length === 0 && failed.length === 0) {
     return <EmptyState icon={Check} title="ไม่มีคำขอรออนุมัติ" description="คำขอลา, OT และแก้ไขเวลาของทีมที่รอการอนุมัติจะแสดงที่นี่" />;
   }
 
   return (
     <div className="space-y-2">
-      {items.map((item) => (
-        <Card key={`${item.kind}-${item.request.id}`} className="flex-col gap-3 p-4">
+      {failed.length > 0 && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+          <span className="min-w-0">โหลดคำขอบางประเภทไม่สำเร็จ — รายการด้านล่างอาจไม่ครบ</span>
+          <Button variant="outline" size="sm" className="h-10 shrink-0" onClick={retryFailed}>
+            ลองใหม่
+          </Button>
+        </div>
+      )}
+      <RejectDialog
+        target={rejectTarget}
+        reason={rejectReason}
+        onReasonChange={setRejectReason}
+        loading={rejectTarget ? busyKey === `${rejectTarget.kind}-${rejectTarget.request.id}` : false}
+        onCancel={() => {
+          setRejectTarget(null);
+          setRejectReason("");
+        }}
+        onConfirm={confirmReject}
+      />
+      {items.map((item) => {
+        const key = `${item.kind}-${item.request.id}`;
+        const busy = busyKey === key;
+        return (
+        <Card key={key} className="flex-col gap-3 p-4">
           <Link href={detailHref(item)} className="flex min-w-0 flex-1 items-center gap-3">
             <Avatar className="size-9">
               {item.request.employee.avatarUrl && (
@@ -283,16 +399,25 @@ function Approvals() {
               <p className="mt-0.5 text-sm text-muted-foreground">{itemLine(item)}</p>
             </div>
           </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="flex-1" disabled={deciding} onClick={() => decide(item, "reject")}>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="h-11 flex-1"
+              disabled={busy}
+              onClick={() => {
+                setRejectReason("");
+                setRejectTarget(item);
+              }}
+            >
               <X className="size-4" /> ปฏิเสธ
             </Button>
-            <Button size="sm" className="flex-1" disabled={deciding} onClick={() => decide(item, "approve")}>
-              <Check className="size-4" /> อนุมัติ
+            <Button className="h-11 flex-1" disabled={busy} onClick={() => decide(item, "approve")}>
+              {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} อนุมัติ
             </Button>
           </div>
         </Card>
-      ))}
+        );
+      })}
     </div>
   );
 }

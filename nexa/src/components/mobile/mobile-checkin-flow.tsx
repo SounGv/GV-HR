@@ -164,7 +164,19 @@ export function MobileCheckinFlow({
         setOffsiteInfo({ distance: details.distance ?? 0, branchName: details.branchName ?? null, permitted: details.permitted ?? true });
         setStep("offsite");
       } else {
-        setSubmitError(err instanceof ApiError || err instanceof Error ? err.message : "ดำเนินการไม่สำเร็จ กรุณาลองใหม่");
+        // A dropped connection reaches here as a raw TypeError ("Failed to
+        // fetch") — an English browser string that tells a warehouse worker
+        // nothing. Say what happened and that the photo is still there.
+        const offline =
+          (typeof navigator !== "undefined" && navigator.onLine === false) ||
+          (err instanceof TypeError && !(err instanceof ApiError));
+        setSubmitError(
+          offline
+            ? "ไม่มีสัญญาณอินเทอร์เน็ต ยังไม่ได้บันทึกเวลา — รูปที่ถ่ายยังอยู่ กด “ลองใหม่” เมื่อสัญญาณกลับมา"
+            : err instanceof ApiError || err instanceof Error
+              ? err.message
+              : "ดำเนินการไม่สำเร็จ กรุณาลองใหม่",
+        );
         setStep("error");
       }
     } finally {
@@ -188,7 +200,7 @@ export function MobileCheckinFlow({
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-1 text-sm text-slate-300"
+              className="flex min-h-11 min-w-11 items-center gap-1 text-sm text-slate-300"
               aria-label="ยกเลิก"
             >
               <ChevronLeft className="size-4" /> ยกเลิก
@@ -326,10 +338,14 @@ function CameraStep({
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-          <AlertTriangle className="size-8 text-warning" />
+        <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+          <AlertTriangle className="size-8 text-warning" aria-hidden="true" />
           <p className="text-sm text-slate-200">{errorMessage ?? "เปิดกล้องไม่ได้"}</p>
-          <button type="button" onClick={onSkip} className="mt-2 text-xs text-slate-400 underline underline-offset-2">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="mt-2 min-h-11 px-3 text-xs text-slate-300 underline underline-offset-2"
+          >
             ข้ามขั้นตอนถ่ายรูปแล้วลงเวลาต่อ
           </button>
         </div>
@@ -346,7 +362,11 @@ function CameraStep({
             <MapPinned className={cn("size-3.5 shrink-0", coords ? "text-gv-lime" : "text-warning")} />
             {branchName ?? "ไม่ระบุสาขา"}
           </span>
-          <span className={cn("shrink-0", coords ? "text-gv-lime" : gpsError ? "text-warning" : "text-slate-300")}>
+          <span
+            role="status"
+            aria-live="polite"
+            className={cn("shrink-0", coords ? "text-gv-lime" : gpsError ? "text-warning" : "text-slate-300")}
+          >
             {coords
               ? hasGeofence && distance != null
                 ? `ห่าง ${Math.round(distance).toLocaleString()} ม.`
@@ -365,7 +385,8 @@ function CameraStep({
               type="button"
               onClick={onToggleTorch}
               className="flex size-11 items-center justify-center rounded-full bg-white/10 text-white"
-              aria-label="เปิดแฟลช"
+              aria-label="แฟลช"
+              aria-pressed={torchOn}
             >
               {torchOn ? <Zap className="size-5 text-gv-lime" /> : <ZapOff className="size-5" />}
             </button>
@@ -427,8 +448,8 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
 
 function ProcessingStep({ stage }: { stage: "gps" | "save" }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      <Loader2 className="size-9 animate-spin text-gv-lime" />
+    <div role="status" aria-live="polite" className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+      <Loader2 className="size-9 animate-spin text-gv-lime" aria-hidden="true" />
       <p className="text-sm text-slate-200">{stage === "gps" ? "กำลังตรวจสอบตำแหน่ง…" : "กำลังบันทึกเวลา…"}</p>
     </div>
   );
@@ -450,9 +471,9 @@ function OffsiteStep({
   pending: boolean;
 }) {
   return (
-    <div className="flex flex-1 flex-col justify-center px-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+    <div role="alert" className="flex flex-1 flex-col justify-center px-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
       <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-warning/15 text-warning">
-        <AlertTriangle className="size-7" />
+        <AlertTriangle className="size-7" aria-hidden="true" />
       </div>
       <p className="text-center text-base font-semibold">อยู่นอกพื้นที่ทำงาน</p>
       <p className="mt-1 text-center text-sm text-slate-300">
@@ -461,9 +482,13 @@ function OffsiteStep({
 
       {info.permitted ? (
         <>
-          <p className="mt-4 text-xs text-slate-400">หมายเหตุ</p>
+          <label htmlFor="offsite-reason" className="mt-4 text-xs text-slate-300">
+            เหตุผลที่อยู่นอกพื้นที่ (จำเป็น)
+          </label>
           <textarea
+            id="offsite-reason"
             rows={3}
+            maxLength={500}
             autoFocus
             value={reason}
             onChange={(e) => onReasonChange(e.target.value)}
@@ -509,9 +534,9 @@ function OffsiteStep({
 
 function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onRetry: () => void; onCancel: () => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+    <div role="alert" className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="flex size-14 items-center justify-center rounded-full bg-destructive/15 text-destructive">
-        <X className="size-7" />
+        <X className="size-7" aria-hidden="true" />
       </div>
       <p className="text-sm text-slate-200">{message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่"}</p>
       <div className="mt-2 flex gap-3">
@@ -565,7 +590,7 @@ function SuccessStep({
       : "-";
 
   return (
-    <div className="flex flex-1 flex-col bg-[#7ABE36] px-5 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
+    <div role="status" aria-live="polite" className="flex flex-1 flex-col bg-[#7ABE36] px-5 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
       <div className="flex flex-1 flex-col items-center justify-center text-center">
         <div className="flex size-16 items-center justify-center rounded-full bg-white/20">
           <CheckCircle2 className="size-9" />
