@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock3, Coins, UserRound } from "lucide-react";
+import { Clock3, UserRound } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency, formatDate, fullName } from "@/lib/format";
+import { formatDate, fullName } from "@/lib/format";
 import { getOvertime } from "@/features/overtime/service";
 import { OvertimeDecideActions } from "@/features/overtime/decide-actions";
 import { ReasonCard, DecisionNoteCard } from "@/features/overtime/edit-note-actions";
@@ -67,7 +67,6 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
             <InfoRow icon={Clock3} label="วันที่" value={formatDate(request.date)} />
             <InfoRow label="ช่วงเวลา" value={`${request.startTime} - ${request.endTime}`} />
             <InfoRow label="ชั่วโมง" value={`${request.hours} ชั่วโมง`} />
-            <InfoRow icon={Coins} label="ประมาณการ" value={formatCurrency(Number(request.estimatedAmount ?? 0))} />
             <InfoRow label="คูณ" value={`${request.multiplier}x`} />
           </div>
           <div className="rounded-lg border border-border bg-muted/40 p-3">

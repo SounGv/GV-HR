@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, getInitials, formatCurrency } from "@/lib/format";
+import { fullName, getInitials } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "@/features/leave/labels";
 import { useLeave, useCancelLeave, useDecideLeave } from "@/features/leave/hooks";
@@ -65,7 +65,7 @@ function itemLine(item: ReqItem) {
   }
   if (item.kind === "ot") {
     const r = item.request;
-    return `ล่วงเวลา · ${fmtDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม. · ≈ ${formatCurrency(r.estimatedAmount)}`;
+    return `ล่วงเวลา · ${fmtDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม.`;
   }
   const r = item.request;
   return `แก้ไขเวลา · ${fmtDate(r.workDate)} · เข้า ${fmtTime(r.requestedClockIn)} ออก ${fmtTime(r.requestedClockOut)}`;

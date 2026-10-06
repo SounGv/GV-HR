@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, getInitials, formatCurrency, formatDate } from "@/lib/format";
+import { fullName, getInitials, formatDate } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { LeaveStatusBadge } from "@/features/leave/labels";
 
@@ -20,7 +20,7 @@ import { useOvertime, useCancelOvertime, useDecideOvertime } from "./hooks";
 import type { OvertimeRequest } from "./types";
 
 function line(r: OvertimeRequest) {
-  return `${formatDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม. · ≈ ${formatCurrency(r.estimatedAmount)}`;
+  return `${formatDate(r.date)} · ${r.startTime}–${r.endTime} · ${r.hours} ชม.`;
 }
 
 export function OvertimeView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
