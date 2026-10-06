@@ -540,10 +540,10 @@ function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onR
       </div>
       <p className="text-sm text-slate-200">{message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่"}</p>
       <div className="mt-2 flex gap-3">
-        <button type="button" onClick={onCancel} className="rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white">
+        <button type="button" onClick={onCancel} className="rounded-xl bg-white/10 min-h-11 px-5 text-sm font-semibold text-white">
           ยกเลิก
         </button>
-        <button type="button" onClick={onRetry} className="rounded-xl bg-gv-lime px-5 py-2.5 text-sm font-semibold text-gv-dark-green">
+        <button type="button" onClick={onRetry} className="rounded-xl bg-gv-lime min-h-11 px-5 text-sm font-semibold text-gv-dark-green">
           ลองใหม่
         </button>
       </div>

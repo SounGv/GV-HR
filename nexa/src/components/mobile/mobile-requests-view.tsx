@@ -109,7 +109,7 @@ function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
 
   return (
     <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">
-      <TabsList>
+      <TabsList className="group-data-horizontal/tabs:h-[54px]">
         <TabsTrigger value="me">ของฉัน</TabsTrigger>
         {canApprove && (
           <TabsTrigger value="approvals" className="gap-1.5">
@@ -362,7 +362,7 @@ function Approvals() {
       {failed.length > 0 && (
         <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
           <span className="min-w-0">โหลดคำขอบางประเภทไม่สำเร็จ — รายการด้านล่างอาจไม่ครบ</span>
-          <Button variant="outline" size="sm" className="h-10 shrink-0" onClick={retryFailed}>
+          <Button variant="outline" size="sm" className="h-11 shrink-0" onClick={retryFailed}>
             ลองใหม่
           </Button>
         </div>
