@@ -92,7 +92,7 @@ export function MobileCheckinCard() {
           {!hasOut && !isWfh && (
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
                 gpsReady ? "bg-white/10 text-slate-200" : "bg-warning/15 text-warning",
               )}
             >
@@ -110,12 +110,12 @@ export function MobileCheckinCard() {
         <div className="relative mt-4 border-t border-dashed border-white/15 pt-4">
           <div className={cn("grid gap-3", showDistance ? "grid-cols-2" : "grid-cols-1")}>
             <div>
-              <p className="text-[11px] text-slate-400">เวลา ณ ปัจจุบัน</p>
+              <p className="text-xs text-slate-400">เวลา ณ ปัจจุบัน</p>
               <p className="mt-0.5 font-mono text-xl font-semibold tracking-tight tabular-nums">{clockLabel}</p>
             </div>
             {showDistance && (
               <div>
-                <p className="text-[11px] text-slate-400">ระยะห่างจากที่ทำงาน</p>
+                <p className="text-xs text-slate-400">ระยะห่างจากที่ทำงาน</p>
                 <p className="mt-0.5 text-xl font-semibold tabular-nums">
                   {Math.round(distance!).toLocaleString()} <span className="text-xs font-normal text-slate-400">เมตร</span>
                 </p>
@@ -141,7 +141,7 @@ export function MobileCheckinCard() {
             </button>
           )}
           {!hasOut && (
-            <p className="mt-2 flex items-center justify-center gap-1 text-center text-[11px] text-slate-400">
+            <p className="mt-2 flex items-center justify-center gap-1 text-center text-xs text-slate-400">
               {isWfh ? (
                 "ทำงานจากที่บ้าน — ไม่ต้องถ่ายรูป/ตรวจตำแหน่ง"
               ) : (
@@ -156,15 +156,15 @@ export function MobileCheckinCard() {
 
       <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-card p-3.5 text-center shadow-sm">
         <div>
-          <p className="text-[11px] text-muted-foreground">เวลาเข้า</p>
+          <p className="text-xs text-muted-foreground">เวลาเข้า</p>
           <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">{fmtTime(record?.clockInAt)}</p>
         </div>
         <div>
-          <p className="text-[11px] text-muted-foreground">เวลาออก</p>
+          <p className="text-xs text-muted-foreground">เวลาออก</p>
           <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">{fmtTime(record?.clockOutAt)}</p>
         </div>
         <div>
-          <p className="text-[11px] text-muted-foreground">เวลาทำงาน</p>
+          <p className="text-xs text-muted-foreground">เวลาทำงาน</p>
           <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">
             {record?.clockInAt ? fmtWorked(record.clockInAt, record.clockOutAt) : "--"}
           </p>

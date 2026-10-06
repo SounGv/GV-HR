@@ -155,7 +155,7 @@ function NavTab({
       <span className={cn("relative flex items-center justify-center rounded-full px-3 py-1", active && "bg-accent")}>
         <Icon size={24} />
         {badge > 0 && (
-          <span className="absolute -top-1 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[9px] font-semibold text-badge-foreground ring-2 ring-card">
+          <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground ring-2 ring-card">
             {badge > 9 ? "9+" : badge}
           </span>
         )}

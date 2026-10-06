@@ -115,7 +115,7 @@ function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
           <TabsTrigger value="approvals" className="gap-1.5">
             รออนุมัติ
             {pendingCount > 0 && (
-              <span className="flex min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white">
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold text-white">
                 {pendingCount > 9 ? "9+" : pendingCount}
               </span>
             )}

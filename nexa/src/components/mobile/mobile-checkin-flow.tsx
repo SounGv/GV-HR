@@ -213,7 +213,7 @@ export function MobileCheckinFlow({
               <div key={s.key} className="flex items-center gap-2">
                 <span
                   className={cn(
-                    "flex size-6 items-center justify-center rounded-full text-[11px] font-semibold transition",
+                    "flex size-6 items-center justify-center rounded-full text-xs font-semibold transition",
                     i < activeStepIndex
                       ? "bg-gv-lime text-gv-dark-green"
                       : i === activeStepIndex
@@ -617,15 +617,15 @@ function SuccessStep({
         )}
         <div className="grid grid-cols-3 gap-2 border-t border-black/5 pt-3 text-center">
           <div>
-            <p className="text-[11px] text-muted-foreground">เวลาเข้า</p>
+            <p className="text-xs text-muted-foreground">เวลาเข้า</p>
             <p className="mt-0.5 font-mono text-sm font-semibold">{fmtTime(record?.clockInAt)}</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">เวลาออก</p>
+            <p className="text-xs text-muted-foreground">เวลาออก</p>
             <p className="mt-0.5 font-mono text-sm font-semibold">{fmtTime(record?.clockOutAt)}</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">เวลาทำงาน</p>
+            <p className="text-xs text-muted-foreground">เวลาทำงาน</p>
             <p className="mt-0.5 font-mono text-sm font-semibold">{worked}</p>
           </div>
         </div>
