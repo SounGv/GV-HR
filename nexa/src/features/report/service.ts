@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { formatDate, loginIdentifier } from "@/lib/format";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
+import type { EmploymentType } from "@/features/employee/types";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
 import { EXPENSE_STATUS_LABEL, EXPENSE_CATEGORY_LABEL } from "@/features/expense/labels";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { bangkokParts, lateOrPresent } from "@/lib/datetime";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
+import { capRowsByDay, laterDate } from "./daily-cap";
 
 const GOAL_STATUS_LABEL: Record<string, string> = {
   NOT_STARTED: "ยังไม่เริ่ม",
@@ -41,6 +43,8 @@ export interface ReportResult {
   secondarySummaryUnit?: string;
   /** Totals/averages line shown under the table, replacing the generic "รวม N รายการ" when set. */
   footnote?: string;
+  /** Set when the report had more rows than it can return: it is complete only from this day on (YYYY-MM-DD). */
+  truncatedFrom?: string;
 }
 
 /** Rolls a per-department accumulator map into the chart-ready summary array, sorted by value desc. */
@@ -78,6 +82,11 @@ async function resolveUserNames(userIds: (string | null | undefined)[]): Promise
     users.map((u) => [u.id, u.employee ? `${u.employee.firstName} ${u.employee.lastName}` : loginIdentifier(u)]),
   );
 }
+
+/** Daily attendance report limits. Rows are cut by whole days (newest kept) and
+ * the result says from which day it is complete — see `truncatedFrom`. */
+const ATTENDANCE_DAILY_ROW_LIMIT = 3000;
+const ATTENDANCE_DAILY_RECORD_FETCH_LIMIT = 6000;
 
 /** Address of one attendance photo. Photos are base64 text in the database
  * (~85 KB each); returning them inside the report made the response tens of MB.
@@ -364,7 +373,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
 
   if (query.type === "attendance_daily") {
     // Sequential, not Promise.all — connection_limit=1.
-    const recs = await prisma.attendanceRecord.findMany({
+    const iso10 = (d: Date) => d.toISOString().slice(0, 10);
+    const recsFetched = await prisma.attendanceRecord.findMany({
       where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
       select: {
         id: true,
@@ -397,8 +407,15 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         },
       },
       orderBy: [{ workDate: "desc" }, { employee: { employeeCode: "asc" } }],
-      take: 1000,
+      take: ATTENDANCE_DAILY_RECORD_FETCH_LIMIT + 1,
     });
+    // Safety bound on the query itself: past this many records, keep only whole
+    // days (newest first) and remember where coverage starts.
+    const fetchCap = capRowsByDay(
+      recsFetched.map((r) => ({ dateIso: iso10(r.workDate), rec: r })),
+      ATTENDANCE_DAILY_RECORD_FETCH_LIMIT,
+    );
+    const recs = fetchCap.kept.map((x) => x.rec);
     const branches = await prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } });
     // Every status here (not just APPROVED) — "สถานะ OT"/"ผู้อนุมัติ OT" below
     // need to show a still-pending request too, not just go blank for it.
@@ -488,29 +505,19 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       return over > 0 ? Math.round((over / 60) * 100) / 100 : 0;
     };
 
-    let totalHours = 0;
-    let hoursCount = 0;
-    let totalOt = 0;
-    let lateCount = 0;
-    let totalLateMinutes = 0;
+    // Per-record figures for the footnote; summed after the row cap so the
+    // totals describe exactly the rows that are returned.
+    const recStats: { hours: number | "-"; ot: number; late: number | "-" }[] = [];
 
     const rows = recs.map((r) => {
       const hours = hoursWorked(r.clockInAt, r.clockOutAt);
-      if (typeof hours === "number") {
-        totalHours += hours;
-        hoursCount++;
-      }
       const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
       const approvedOt = otByKey.get(otKey);
       const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate, r.employee.employmentType);
       const otHoursNum = approvedOt ?? calculatedOtHoursOf(r.clockInAt, r.clockOutAt, shift.endMin);
-      if (otHoursNum) totalOt += otHoursNum;
       const otApproval = otApprovalByKey.get(otKey);
       const lateMinutes = lateMinutesOf(r.clockInAt, shift.startMin);
-      if (typeof lateMinutes === "number") {
-        lateCount++;
-        totalLateMinutes += lateMinutes;
-      }
+      recStats.push({ hours, ot: otHoursNum || 0, late: lateMinutes });
       // Recomputed against the employee's real shift rather than trusting
       // the stored `status` — that field was set at clock-in time using
       // whichever cutoff was in effect then, which for anyone HR has since
@@ -562,7 +569,6 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // Mon–Fri and not a company holiday, the same definition this report's
     // monthly summary already uses. Hourly leave is skipped: the person worked
     // that day, so their real record is already there.
-    const iso10 = (d: Date) => d.toISOString().slice(0, 10);
     const punched = new Set(recs.map((r) => `${r.employeeId}|${iso10(r.workDate)}`));
     const leaveHolidays = await prisma.holiday.findMany({
       where: { companyId, deletedAt: null, date: { gte: start, lt: end } },
@@ -599,7 +605,57 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     });
     const DAY_MS = 86_400_000;
     const blank = "-" as const;
-    const leaveRows: { dateIso: string; code: string; row: (typeof rows)[number] }[] = [];
+    type DailyRow = (typeof rows)[number];
+    type KeyedRow = { dateIso: string; code: string; row: DailyRow; stat: (typeof recStats)[number] | null };
+    type Person = {
+      employeeCode: string;
+      firstName: string;
+      lastName: string;
+      nickname: string | null;
+      employmentType: EmploymentType;
+      department: { name: string } | null;
+    };
+    /** A row for a working day with no punch behind it (approved leave, or absent). */
+    const noPunchRow = (
+      employeeId: string,
+      person: Person,
+      day: Date,
+      statusKey: "ON_LEAVE" | "ABSENT",
+      note: string,
+    ): DailyRow => {
+      const shift = shiftMinutesFromBatch(shiftMap, employeeId, day, person.employmentType);
+      return {
+        date: formatDate(day),
+        code: person.employeeCode,
+        name: `${person.firstName} ${person.lastName}`,
+        nickname: person.nickname ?? blank,
+        department: person.department?.name ?? blank,
+        employmentType: EMPLOYMENT_LABEL[person.employmentType] ?? person.employmentType,
+        shiftStart: minutesToHHMM(shift.startMin),
+        shiftEnd: minutesToHHMM(shift.endMin),
+        clockIn: blank,
+        clockOut: blank,
+        breakMinutes: blank,
+        hours: blank,
+        otHours: blank,
+        otStatus: blank,
+        otApprover: blank,
+        otReason: blank,
+        lateMinutes: blank,
+        earlyMinutes: blank,
+        status: ATTENDANCE_STATUS_LABEL[statusKey] ?? statusKey,
+        statusKey,
+        workMode: blank,
+        note,
+        editor: blank,
+        location: blank,
+        distance: blank,
+        clockInPhoto: blank,
+        clockOutPhoto: blank,
+      };
+    };
+
+    const leaveRows: KeyedRow[] = [];
     for (const lv of approvedLeaves) {
       const from = lv.startDate.getTime() < start.getTime() ? start : lv.startDate;
       const to = lv.endDate.getTime() >= end.getTime() ? new Date(end.getTime() - DAY_MS) : lv.endDate;
@@ -608,63 +664,136 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         const day = iso10(d);
         if (dow === 0 || dow === 6 || holidaySet.has(day)) continue;
         if (punched.has(`${lv.employeeId}|${day}`)) continue;
-        const shift = shiftMinutesFromBatch(shiftMap, lv.employeeId, d, lv.employee.employmentType);
         leaveRows.push({
           dateIso: day,
           code: lv.employee.employeeCode,
-          row: {
-            date: formatDate(d),
-            code: lv.employee.employeeCode,
-            name: `${lv.employee.firstName} ${lv.employee.lastName}`,
-            nickname: lv.employee.nickname ?? blank,
-            department: lv.employee.department?.name ?? blank,
-            employmentType: EMPLOYMENT_LABEL[lv.employee.employmentType] ?? lv.employee.employmentType,
-            shiftStart: minutesToHHMM(shift.startMin),
-            shiftEnd: minutesToHHMM(shift.endMin),
-            clockIn: blank,
-            clockOut: blank,
-            breakMinutes: blank,
-            hours: blank,
-            otHours: blank,
-            otStatus: blank,
-            otApprover: blank,
-            otReason: blank,
-            lateMinutes: blank,
-            earlyMinutes: blank,
-            status: ATTENDANCE_STATUS_LABEL.ON_LEAVE ?? "ลางาน",
-            statusKey: "ON_LEAVE",
-            workMode: blank,
-            note: `${LEAVE_TYPE_LABEL[lv.type] ?? lv.type}${lv.halfDay ? " (ครึ่งวัน)" : ""}`,
-            editor: blank,
-            location: blank,
-            distance: blank,
-            clockInPhoto: blank,
-            clockOutPhoto: blank,
-          },
+          stat: null,
+          row: noPunchRow(
+            lv.employeeId,
+            lv.employee,
+            d,
+            "ON_LEAVE",
+            `${LEAVE_TYPE_LABEL[lv.type] ?? lv.type}${lv.halfDay ? " (ครึ่งวัน)" : ""}`,
+          ),
         });
       }
     }
-    if (leaveRows.length > 0) {
-      // Keep the report's existing order: newest date first, then employee code.
-      const keyed = [
-        ...rows.map((row, i) => ({ dateIso: iso10(recs[i].workDate), code: recs[i].employee.employeeCode, row })),
-        ...leaveRows,
-      ].sort((a, b) => (a.dateIso === b.dateIso ? a.code.localeCompare(b.code) : a.dateIso < b.dateIso ? 1 : -1));
-      rows.length = 0;
-      rows.push(...keyed.map((k) => k.row));
+
+    // Absent = a working day (Mon–Fri, not a holiday) that has no punch and no
+    // approved full-day leave — the same definition the monthly "attendance"
+    // report and the calendar use. Only days before today (Bangkok) count: a
+    // day still in progress is not absent yet. Only ACTIVE employees inside the
+    // same filters/team scope as the rest of the report, and not before their
+    // hire date. A pending (not yet approved) leave does not excuse the day, but
+    // the note says one is waiting.
+    const todayBangkok = bangkokParts().dateUTC;
+    const lastAbsentDay = new Date(Math.min(end.getTime(), todayBangkok.getTime()));
+    const absentRows: KeyedRow[] = [];
+    if (lastAbsentDay.getTime() > start.getTime()) {
+      const roster = await prisma.employee.findMany({
+        where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
+        select: {
+          id: true,
+          employeeCode: true,
+          firstName: true,
+          lastName: true,
+          nickname: true,
+          employmentType: true,
+          hireDate: true,
+          department: { select: { name: true } },
+        },
+      });
+      const pendingLeaves = await prisma.leaveRequest.findMany({
+        where: {
+          companyId,
+          deletedAt: null,
+          status: "PENDING",
+          startDate: { lt: end },
+          endDate: { gte: start },
+          ...deptRel,
+        },
+        select: { employeeId: true, startDate: true, endDate: true },
+      });
+      const onLeave = new Set(leaveRows.map((l) => `${l.row.code}|${l.dateIso}`));
+      const pendingByEmployee = new Map<string, { start: number; end: number }[]>();
+      for (const pl of pendingLeaves) {
+        const list = pendingByEmployee.get(pl.employeeId) ?? [];
+        list.push({ start: pl.startDate.getTime(), end: pl.endDate.getTime() });
+        pendingByEmployee.set(pl.employeeId, list);
+      }
+      for (let d = new Date(start); d.getTime() < lastAbsentDay.getTime(); d = new Date(d.getTime() + DAY_MS)) {
+        const dow = d.getUTCDay();
+        const day = iso10(d);
+        if (dow === 0 || dow === 6 || holidaySet.has(day)) continue;
+        for (const e of roster) {
+          if (e.hireDate && e.hireDate.getTime() > d.getTime()) continue;
+          if (punched.has(`${e.id}|${day}`) || onLeave.has(`${e.employeeCode}|${day}`)) continue;
+          const hasPending = (pendingByEmployee.get(e.id) ?? []).some((r) => r.start <= d.getTime() && d.getTime() <= r.end);
+          absentRows.push({
+            dateIso: day,
+            code: e.employeeCode,
+            stat: null,
+            row: noPunchRow(
+              e.id,
+              e,
+              d,
+              "ABSENT",
+              hasPending ? "ไม่มีบันทึกเวลา · มีใบลารออนุมัติ" : "ไม่มีบันทึกเวลา และไม่มีใบลาที่อนุมัติ",
+            ),
+          });
+        }
+      }
     }
+
+    // One list, newest date first then employee code (the report's order), cut
+    // by whole days if it is longer than the limit.
+    const merged: KeyedRow[] = [
+      ...rows.map((row, i) => ({ dateIso: iso10(recs[i].workDate), code: recs[i].employee.employeeCode, row, stat: recStats[i] })),
+      ...leaveRows,
+      ...absentRows,
+    ].sort((a, b) => (a.dateIso === b.dateIso ? a.code.localeCompare(b.code) : a.dateIso < b.dateIso ? 1 : -1));
+    const rowCap = capRowsByDay(merged, ATTENDANCE_DAILY_ROW_LIMIT);
+    const truncatedFrom = laterDate(fetchCap.truncatedFrom, rowCap.truncatedFrom);
+    const shown = truncatedFrom ? rowCap.kept.filter((k) => k.dateIso >= truncatedFrom) : rowCap.kept;
+    rows.length = 0;
+    rows.push(...shown.map((k) => k.row));
+
+    let totalHours = 0;
+    let hoursCount = 0;
+    let totalOt = 0;
+    let lateCount = 0;
+    let totalLateMinutes = 0;
+    for (const k of shown) {
+      if (!k.stat) continue;
+      if (typeof k.stat.hours === "number") {
+        totalHours += k.stat.hours;
+        hoursCount++;
+      }
+      totalOt += k.stat.ot;
+      if (typeof k.stat.late === "number") {
+        lateCount++;
+        totalLateMinutes += k.stat.late;
+      }
+    }
+    const leaveShown = shown.filter((k) => k.row.statusKey === "ON_LEAVE" && !k.stat).length;
+    const absentShown = shown.filter((k) => k.row.statusKey === "ABSENT" && !k.stat).length;
 
     const avgHours = hoursCount ? totalHours / hoursCount : 0;
     const footnote =
       `รวม ${rows.length} รายการ · ชั่วโมงทำงานรวม ${totalHours.toFixed(2)} ชม. ` +
       `(เฉลี่ย ${avgHours.toFixed(2)} ชม./วัน) · OT รวม ${totalOt.toFixed(2)} ชม. · ` +
       `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)` +
-      (leaveRows.length > 0 ? ` · ลางานโดยไม่มีบันทึกเวลา ${leaveRows.length} วัน` : "");
+      (leaveShown > 0 ? ` · ลางานโดยไม่มีบันทึกเวลา ${leaveShown} วัน` : "") +
+      (absentShown > 0 ? ` · ขาดงาน (ไม่มีบันทึกเวลาและไม่มีใบลาอนุมัติ) ${absentShown} วัน` : "") +
+      (truncatedFrom
+        ? ` · ข้อมูลเกินที่แสดงได้ จึงแสดงครบตั้งแต่ ${formatDate(new Date(`${truncatedFrom}T00:00:00.000Z`))} เป็นต้นไป (ลดช่วงวันที่หรือเลือกแผนกเพื่อดูส่วนที่ถูกตัด)`
+        : "");
 
     return {
       title,
       period: label,
       footnote,
+      ...(truncatedFrom ? { truncatedFrom } : {}),
       columns: [
         { key: "date", label: "วันที่" },
         { key: "code", label: "รหัส" },

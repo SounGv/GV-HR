@@ -28,4 +28,6 @@ export interface ReportResult {
   secondarySummaryUnit?: string;
   /** Totals/averages line shown under the table, replacing the generic "รวม N รายการ" when set. */
   footnote?: string;
+  /** Set when the report had more rows than it can return: it is complete only from this day on (YYYY-MM-DD). */
+  truncatedFrom?: string;
 }

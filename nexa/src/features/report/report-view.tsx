@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Download, FileSpreadsheet, Printer, Sparkles, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, Printer, Sparkles, Loader2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -362,6 +362,22 @@ function ReportSection({
           )}
         </div>
       </div>
+
+      {result?.truncatedFrom && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-xl border border-status-late-border bg-status-late-bg px-4 py-3 text-sm text-status-late-fg"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <p>
+            มีข้อมูลมากเกินกว่าจะแสดงทั้งหมด รายงานนี้จึงแสดงครบตั้งแต่{" "}
+            {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeZone: "UTC" }).format(
+              new Date(`${result.truncatedFrom}T00:00:00.000Z`),
+            )}{" "}
+            เป็นต้นไป ลดช่วงวันที่ หรือเลือกแผนก/พนักงาน เพื่อดูส่วนที่ถูกตัด
+          </p>
+        </div>
+      )}
 
       {result && result.summary && result.summary.length > 0 && (
         <ReportSummaryChart data={result.summary} label={result.summaryLabel} unit={result.summaryUnit} />
