@@ -339,7 +339,7 @@ function CameraStep({
       )}
       {error && (
         <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-          <AlertTriangle className="size-8 text-warning" aria-hidden="true" />
+          <AlertTriangle className="size-8 text-amber-300" aria-hidden="true" />
           <p className="text-sm text-slate-200">{errorMessage ?? "เปิดกล้องไม่ได้"}</p>
           <button
             type="button"
@@ -359,13 +359,13 @@ function CameraStep({
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pt-10 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
         <div className="mx-auto mb-4 flex max-w-xs items-center justify-between gap-2 rounded-xl bg-black/60 px-3 py-2 text-xs">
           <span className="flex items-center gap-1.5 text-slate-200">
-            <MapPinned className={cn("size-3.5 shrink-0", coords ? "text-gv-lime" : "text-warning")} />
+            <MapPinned className={cn("size-3.5 shrink-0", coords ? "text-gv-lime" : "text-amber-300")} />
             {branchName ?? "ไม่ระบุสาขา"}
           </span>
           <span
             role="status"
             aria-live="polite"
-            className={cn("shrink-0", coords ? "text-gv-lime" : gpsError ? "text-warning" : "text-slate-300")}
+            className={cn("shrink-0", coords ? "text-gv-lime" : gpsError ? "text-amber-300" : "text-slate-300")}
           >
             {coords
               ? hasGeofence && distance != null
@@ -472,7 +472,7 @@ function OffsiteStep({
 }) {
   return (
     <div role="alert" className="flex flex-1 flex-col overflow-y-auto px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] before:flex-1 after:flex-1">
-      <div className="mx-auto mb-4 flex size-14 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+      <div className="mx-auto mb-4 flex size-14 shrink-0 items-center justify-center rounded-full bg-amber-300/15 text-amber-300">
         <AlertTriangle className="size-7" aria-hidden="true" />
       </div>
       <p className="text-center text-base font-semibold">อยู่นอกพื้นที่ทำงาน</p>
@@ -493,7 +493,7 @@ function OffsiteStep({
             value={reason}
             onChange={(e) => onReasonChange(e.target.value)}
             placeholder="เช่น ไปพบลูกค้า / ปฏิบัติงานนอกสถานที่"
-            className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white placeholder:text-slate-500 focus:border-gv-lime focus:outline-none"
+            className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400 focus:border-gv-lime focus:outline-none"
           />
           <div className="mt-4 flex gap-3">
             <button
@@ -515,7 +515,7 @@ function OffsiteStep({
         </>
       ) : (
         <>
-          <p className="mt-4 text-center text-sm font-medium text-warning">คุณไม่มีสิทธิ์เช็คอินนอกพื้นที่บริษัท</p>
+          <p className="mt-4 text-center text-sm font-medium text-amber-300">คุณไม่มีสิทธิ์เช็คอินนอกพื้นที่บริษัท</p>
           <p className="mt-1 text-center text-xs text-slate-400">
             หากจำเป็นต้องทำงานนอกสถานที่เป็นประจำ กรุณาติดต่อ HR เพื่อขอสิทธิ์
           </p>
@@ -535,7 +535,7 @@ function OffsiteStep({
 function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onRetry: () => void; onCancel: () => void }) {
   return (
     <div role="alert" className="flex flex-1 flex-col items-center gap-4 overflow-y-auto px-6 py-6 text-center before:flex-1 after:flex-1">
-      <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+      <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-red-300/15 text-red-300">
         <X className="size-7" aria-hidden="true" />
       </div>
       <p className="text-sm text-slate-200">{message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่"}</p>
