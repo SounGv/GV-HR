@@ -193,7 +193,7 @@ export function MobileCheckinFlow({
   const activeStepIndex = step === "camera" ? 0 : step === "preview" ? 1 : step === "processing" ? (saveStage === "gps" ? 2 : 3) : 3;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gv-dark-green text-white md:hidden">
+    <div className="fixed inset-0 z-50 flex flex-col bg-gv-dark-green pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-white md:hidden">
       {step !== "success" && step !== "offsite" && (
         <div className="shrink-0 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3">
           <div className="flex items-center justify-between">
@@ -208,7 +208,7 @@ export function MobileCheckinFlow({
             <p className="text-sm font-semibold">{title}</p>
             <span className="w-12" />
           </div>
-          <div className="mt-3 flex items-center justify-center gap-2">
+          <div className="mt-3 flex items-center justify-center gap-2 [@media(max-height:480px)]:hidden">
             {STEPS.map((s, i) => (
               <div key={s.key} className="flex items-center gap-2">
                 <span
@@ -352,7 +352,7 @@ function CameraStep({
       )}
       {ready && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="size-64 rounded-[40%] border-2 border-white/70" />
+          <div className="size-[min(16rem,60vw,45dvh)] rounded-[40%] border-2 border-white/70" />
         </div>
       )}
 
@@ -471,8 +471,8 @@ function OffsiteStep({
   pending: boolean;
 }) {
   return (
-    <div role="alert" className="flex flex-1 flex-col justify-center px-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
-      <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-warning/15 text-warning">
+    <div role="alert" className="flex flex-1 flex-col overflow-y-auto px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] before:flex-1 after:flex-1">
+      <div className="mx-auto mb-4 flex size-14 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
         <AlertTriangle className="size-7" aria-hidden="true" />
       </div>
       <p className="text-center text-base font-semibold">อยู่นอกพื้นที่ทำงาน</p>
@@ -534,8 +534,8 @@ function OffsiteStep({
 
 function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onRetry: () => void; onCancel: () => void }) {
   return (
-    <div role="alert" className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      <div className="flex size-14 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+    <div role="alert" className="flex flex-1 flex-col items-center gap-4 overflow-y-auto px-6 py-6 text-center before:flex-1 after:flex-1">
+      <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
         <X className="size-7" aria-hidden="true" />
       </div>
       <p className="text-sm text-slate-200">{message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่"}</p>
@@ -590,9 +590,9 @@ function SuccessStep({
       : "-";
 
   return (
-    <div role="status" aria-live="polite" className="flex flex-1 flex-col bg-gv-dark-green px-5 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="flex size-16 items-center justify-center rounded-full bg-gv-lime text-gv-dark-green">
+    <div role="status" aria-live="polite" className="flex flex-1 flex-col overflow-y-auto bg-gv-dark-green px-5 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
+      <div className="flex flex-1 flex-col items-center justify-center py-4 text-center">
+        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gv-lime text-gv-dark-green">
           <CheckCircle2 className="size-9" />
         </div>
         <p className="mt-4 text-lg font-semibold">{mode === "in" ? "เช็คอินสำเร็จ" : "เช็คเอาท์สำเร็จ"}</p>

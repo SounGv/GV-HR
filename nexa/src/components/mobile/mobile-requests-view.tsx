@@ -173,13 +173,13 @@ function MyRequests() {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <Button className="flex-1" render={<Link href="/leave/new" />}>
+        <Button className="h-11 flex-1" render={<Link href="/leave/new" />}>
           <Plus className="size-4" /> ขอลา
         </Button>
-        <Button className="flex-1" variant="outline" render={<Link href="/overtime/new" />}>
+        <Button className="h-11 flex-1" variant="outline" render={<Link href="/overtime/new" />}>
           <Plus className="size-4" /> ขอ OT
         </Button>
-        <Button className="flex-1" variant="outline" render={<Link href="/attendance/corrections/new" />}>
+        <Button className="h-11 flex-1" variant="outline" render={<Link href="/attendance/corrections/new" />}>
           <Plus className="size-4" /> แก้เวลา
         </Button>
       </div>
@@ -196,7 +196,7 @@ function MyRequests() {
             <Card key={`${item.kind}-${item.request.id}`} className="flex-row items-center justify-between gap-3 p-4">
               <Link href={detailHref(item)} className="min-w-0 flex-1">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-medium text-foreground">{KIND_LABEL[item.kind]}</span>
                     <LeaveStatusBadge status={item.request.status} />
                   </div>
