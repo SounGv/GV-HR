@@ -190,7 +190,11 @@ function StepPeople({ round, persist }: { round: RoundDetail; persist: Persist }
   const { data, isLoading, isError, refetch } = useCandidates();
   const [selected, setSelected] = useState<Set<string>>(() => new Set(round.participantIds));
   const [q, setQ] = useState("");
+  const forms = usePublishedForms();
+  // employeeId -> form id; a person without an entry uses the round's own form.
+  const [formOf, setFormOf] = useState<Record<string, string>>(() => ({ ...round.participantForms }));
   const people = useMemo(() => data?.data ?? [], [data]);
+  const formList = forms.data?.data ?? [];
 
   const groups = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -212,9 +216,22 @@ function StepPeople({ round, persist }: { round: RoundDetail; persist: Persist }
       return next;
     });
 
+  /** Give everyone selected in this department one form ("" = the round's own). */
+  const setDeptForm = (ids: string[], formId: string) =>
+    setFormOf((cur) => {
+      const next = { ...cur };
+      for (const id of ids) {
+        if (!selected.has(id)) continue;
+        if (formId) next[id] = formId;
+        else delete next[id];
+      }
+      return next;
+    });
+
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={4} />;
-  const dirty = selected.size !== round.participantIds.length || round.participantIds.some((id) => !selected.has(id));
+  const formsChanged = [...selected].some((id) => (formOf[id] ?? "") !== (round.participantForms[id] ?? ""));
+  const dirty = selected.size !== round.participantIds.length || round.participantIds.some((id) => !selected.has(id)) || formsChanged;
 
   return (
     <Card className="gap-3 p-4">
@@ -230,12 +247,33 @@ function StepPeople({ round, persist }: { round: RoundDetail; persist: Persist }
         {groups.map(([dept, list]) => {
           const ids = list.map((p) => p.id);
           const all = ids.every((id) => selected.has(id));
+          const chosen = ids.filter((id) => selected.has(id));
+          const forms = new Set(chosen.map((id) => formOf[id] ?? ""));
+          const deptForm = forms.size === 1 ? [...forms][0] : "mixed";
           return (
             <section key={dept} aria-label={dept} className="space-y-1">
-              <label className="flex min-h-11 items-center gap-3 rounded-lg bg-muted px-3 text-sm font-semibold md:min-h-9">
-                <Checkbox checked={all} onCheckedChange={(c) => toggle(ids, c === true)} />
-                {dept} <span className="font-normal text-muted-foreground">({list.length} คน)</span>
-              </label>
+              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted px-3">
+                <label className="flex min-h-11 flex-1 items-center gap-3 text-sm font-semibold md:min-h-9">
+                  <Checkbox checked={all} onCheckedChange={(c) => toggle(ids, c === true)} />
+                  {dept} <span className="font-normal text-muted-foreground">({list.length} คน)</span>
+                </label>
+                {chosen.length > 0 && formList.length > 1 && (
+                  <Select value={deptForm === "" ? "default" : deptForm} onValueChange={(v) => v !== "mixed" && setDeptForm(ids, v === "default" ? "" : (v as string))}>
+                    <SelectTrigger className="h-11 w-auto min-w-[170px] bg-card text-xs md:h-8" aria-label={`แบบที่ใช้กับ ${dept}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deptForm === "mixed" && <SelectItem value="mixed">หลายแบบ</SelectItem>}
+                      <SelectItem value="default">แบบหลักของรอบ</SelectItem>
+                      {formList.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               {list.map((p) => (
                 <label key={p.id} className="flex min-h-11 items-center gap-3 px-3 text-sm md:min-h-9">
                   <Checkbox checked={selected.has(p.id)} onCheckedChange={(c) => toggle([p.id], c === true)} />
@@ -251,7 +289,13 @@ function StepPeople({ round, persist }: { round: RoundDetail; persist: Persist }
         {groups.length === 0 && <p className="text-sm text-muted-foreground">ไม่พบพนักงานที่ตรงกับคำค้น</p>}
       </div>
       <div className="flex justify-end">
-        <Button className="h-11 md:h-9" disabled={!dirty} onClick={() => persist({ participantIds: [...selected] }, "บันทึกรายชื่อแล้ว")}>
+        <Button className="h-11 md:h-9" disabled={!dirty} onClick={() =>
+            persist(
+              { participantIds: [...selected], participantForms: Object.fromEntries([...selected].map((id) => [id, formOf[id] ?? null])) },
+              "บันทึกรายชื่อแล้ว",
+            )
+          }
+        >
           บันทึกรายชื่อ
         </Button>
       </div>
@@ -541,7 +585,7 @@ function RoundOverview({ round }: { round: RoundDetail }) {
         <dl className="grid gap-3 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-muted-foreground">แบบที่ใช้</dt>
-            <dd className="font-medium break-words">{round.formName}</dd>
+            <dd className="font-medium break-words">{round.formsUsed.map((f) => f.name).join(" · ") || round.formName}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">ช่วงรอบ</dt>

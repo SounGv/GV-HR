@@ -64,6 +64,9 @@ export interface RoundDetail {
   status: RoundStatus;
   formId: string;
   formName: string;
+  /** People rated with a form other than the round's own: employeeId -> form id. */
+  participantForms: Record<string, string>;
+  formsUsed: { id: string; name: string }[];
   raterTypes: RaterType[];
   perspectiveWeights: Partial<Record<RaterType, number>>;
   startIso: string | null;
@@ -129,6 +132,8 @@ export interface RoundSavePayload {
   formId?: string;
   raterTypes?: RaterType[];
   perspectiveWeights?: Partial<Record<RaterType, number>>;
+  /** employeeId -> form id (null = the round's own form). */
+  participantForms?: Record<string, string | null>;
   startDate?: string | null;
   endDate?: string | null;
   remind?: boolean;

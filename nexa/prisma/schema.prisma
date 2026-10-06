@@ -2487,6 +2487,7 @@ model AppraisalForm {
 
   questions AppraisalQuestion[]
   rounds    AppraisalRound[]
+  participants AppraisalParticipant[]
 
   @@unique([lineageId, version])
   @@index([companyId, status])
@@ -2576,6 +2577,11 @@ model AppraisalParticipant {
   employeeId String
   employee   Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  // Form this person is rated with. Null = the round's own form, so a round can use
+  // different forms for different departments or positions.
+  formId String?
+  form   AppraisalForm? @relation(fields: [formId], references: [id])
+
   // Taken when the person is added, so reports never need a "re-process" step.
   departmentName String?
   positionName   String?
@@ -2585,6 +2591,7 @@ model AppraisalParticipant {
 
   @@unique([roundId, employeeId])
   @@index([employeeId])
+  @@index([formId])
   @@map("appraisal_participants")
 }
 

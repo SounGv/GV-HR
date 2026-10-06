@@ -12,6 +12,7 @@ import {
   sendMode,
   shouldRemind,
 } from "../src/features/appraisal-round/rules.ts";
+import { formsInUse, pickForm } from "../src/features/appraisal-round/form-snapshot.ts";
 import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions } from "../src/features/appraisal-round/answers.ts";
 
 let n = 0;
@@ -163,6 +164,18 @@ check("a summary averages scores, counts options and lists texts without names",
 check("a summary with no answers has no average", () => {
   const [r] = summarizeAnswers(Q, "SELF", []);
   assert.deepEqual({ count: r.count, average: r.average }, { count: 0, average: null });
+});
+
+const SNAP = { defaultFormId: "f1", forms: { f1: { id: "f1", name: "หลัก", version: 1, ratingMax: 5, questions: [] }, f2: { id: "f2", name: "หัวหน้า", version: 2, ratingMax: 5, questions: [] } } };
+check("a person is rated with their own form, else the round's default", () => {
+  assert.equal(pickForm(SNAP, "f2").name, "หัวหน้า");
+  assert.equal(pickForm(SNAP, null).name, "หลัก");
+  assert.equal(pickForm(SNAP, "gone").name, "หลัก");
+  assert.equal(pickForm(null, null), null);
+});
+check("a round needs the default form plus each different form people were given", () => {
+  assert.deepEqual(formsInUse("f1", [null, "f2", "f2", "f1"]), ["f1", "f2"]);
+  assert.deepEqual(formsInUse("f1", []), ["f1"]);
 });
 
 console.log(`\n${n} checks passed`);

@@ -6,6 +6,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
 import { isLineConfigured } from "@/lib/integrations/line";
 import { createNotification } from "@/features/notification/service";
+import { formsInUse, pickForm, type RoundSnapshot } from "./form-snapshot";
 import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions, type Answer, type QuestionSummary, type SnapQuestion } from "./answers";
 import {
   matchRaters,
@@ -184,6 +185,24 @@ export async function updateRound(companyId: string, session: AccessClaims, id: 
     });
   }
 
+  if (input.participantForms) {
+    const entries = Object.entries(input.participantForms);
+    const wanted = [...new Set(entries.map(([, f]) => f).filter((f): f is string => !!f))];
+    if (wanted.length) {
+      const ok = await prisma.appraisalForm.findMany({
+        where: { id: { in: wanted }, companyId, deletedAt: null, status: "PUBLISHED" },
+        select: { id: true },
+      });
+      if (ok.length !== wanted.length) throw BadRequest("เลือกได้เฉพาะแบบประเมินที่ใช้งานแล้ว");
+    }
+    // One update per form (sequential: connection_limit=1); null puts people back on the round's own form.
+    for (const formId of [...wanted, null]) {
+      const employeeIds = entries.filter(([, f]) => f === formId).map(([e]) => e);
+      if (employeeIds.length === 0) continue;
+      await prisma.appraisalParticipant.updateMany({ where: { roundId: id, employeeId: { in: employeeIds } }, data: { formId } });
+    }
+  }
+
   await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_round.update", entity: "AppraisalRound", entityId: id, ...meta });
   return { id };
 }
@@ -213,10 +232,17 @@ export async function getRound(companyId: string, id: string) {
       notifyLine: true,
       openedAt: true,
       notifiedAt: true,
-      participants: { select: { employeeId: true } },
+      participants: { select: { employeeId: true, formId: true } },
     },
   });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
+
+  const usedIds = formsInUse(round.formId, round.participants.map((p) => p.formId));
+  const usedForms = await prisma.appraisalForm.findMany({
+    where: { id: { in: usedIds }, companyId },
+    select: { id: true, name: true, version: true, status: true },
+  });
+  const allPublished = usedForms.length === usedIds.length && usedForms.every((f) => f.status === "PUBLISHED");
 
   const roster = await loadRoster(companyId);
   const nameOf = new Map(roster.map((e) => [e.id, fullName(e)]));
@@ -236,7 +262,7 @@ export async function getRound(companyId: string, id: string) {
   const startIso = round.startDate ? iso(round.startDate) : null;
   const endIso = round.endDate ? iso(round.endDate) : null;
   const checks = roundChecks({
-    formPublished: round.form.status === "PUBLISHED",
+    formPublished: round.form.status === "PUBLISHED" && allPublished,
     participantCount: participantIds.length,
     raterTypes: types,
     weights,
@@ -254,6 +280,8 @@ export async function getRound(companyId: string, id: string) {
     status: round.status,
     formId: round.formId,
     formName: `${round.form.name} v${round.form.version}`,
+    participantForms: Object.fromEntries(round.participants.filter((p) => p.formId).map((p) => [p.employeeId, p.formId])),
+    formsUsed: usedForms.map((f) => ({ id: f.id, name: `${f.name} v${f.version}` })),
     raterTypes: types,
     perspectiveWeights: weights,
     startIso,
@@ -316,8 +344,9 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
   const failed = detail.checks.filter((c) => !c.ok);
   if (failed.length) throw BadRequest(`ยังเปิดรอบไม่ได้: ${failed.map((c) => c.why).join(" · ")}`);
 
-  const form = await prisma.appraisalForm.findFirst({
-    where: { id: detail.formId, companyId, status: "PUBLISHED", deletedAt: null },
+  const usedIds = formsInUse(detail.formId, Object.values(detail.participantForms));
+  const forms = await prisma.appraisalForm.findMany({
+    where: { id: { in: usedIds }, companyId, status: "PUBLISHED", deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -330,7 +359,12 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
       },
     },
   });
-  if (!form) throw BadRequest("แบบประเมินไม่พร้อมใช้งาน");
+  if (forms.length !== usedIds.length) throw BadRequest("แบบประเมินบางชุดไม่พร้อมใช้งาน");
+  // Frozen copy of every form this round uses, keyed by form id.
+  const snapshot: RoundSnapshot = {
+    defaultFormId: detail.formId,
+    forms: Object.fromEntries(forms.map((f) => [f.id, f as unknown as RoundSnapshot["forms"][string]])),
+  };
 
   const roster = await loadRoster(companyId);
   const people: RosterPerson[] = roster.map((e) => ({ id: e.id, managerId: e.managerId, active: e.status === "ACTIVE" }));
@@ -355,7 +389,7 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
       data: {
         status: mode === "NOW" ? "OPEN" : "SCHEDULED",
         openedAt: new Date(),
-        formSnapshot: form as unknown as Prisma.InputJsonValue,
+        formSnapshot: snapshot as unknown as Prisma.InputJsonValue,
         updatedById: session.sub,
       },
     }),
@@ -450,7 +484,7 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
       remind: true,
       notifyLine: true,
       form: { select: { id: true, lineageId: true, status: true } },
-      participants: { select: { employeeId: true } },
+      participants: { select: { employeeId: true, formId: true } },
     },
   });
   if (!src) throw NotFound("ไม่พบรอบประเมิน");
@@ -468,6 +502,23 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
     where: { id: { in: src.participants.map((p) => p.employeeId) }, companyId, deletedAt: null, status: "ACTIVE" },
     select: { id: true, department: { select: { name: true } }, position: { select: { title: true } } },
   });
+  // A person's own form carries over; if it was replaced by a newer published version, use that one.
+  const ownIds = [...new Set(src.participants.map((p) => p.formId).filter((f): f is string => !!f))];
+  const ownForms = ownIds.length
+    ? await prisma.appraisalForm.findMany({ where: { id: { in: ownIds }, companyId }, select: { id: true, lineageId: true, status: true } })
+    : [];
+  const latestByLineage = new Map(
+    (
+      await prisma.appraisalForm.findMany({
+        where: { companyId, lineageId: { in: ownForms.map((f) => f.lineageId) }, status: "PUBLISHED", deletedAt: null },
+        select: { id: true, lineageId: true, version: true },
+        orderBy: { version: "asc" },
+      })
+    ).map((f) => [f.lineageId, f.id] as const),
+  );
+  const carry = new Map(ownForms.map((f) => [f.id, latestByLineage.get(f.lineageId) ?? null]));
+  const formOf = new Map(src.participants.map((p) => [p.employeeId, p.formId ? (carry.get(p.formId) ?? null) : null]));
+
   const created = await prisma.appraisalRound.create({
     data: {
       companyId,
@@ -482,6 +533,7 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
       participants: {
         create: people.map((p) => ({
           employeeId: p.id,
+          formId: formOf.get(p.id) ?? null,
           departmentName: p.department?.name ?? null,
           positionName: p.position?.title ?? null,
         })),
@@ -579,13 +631,13 @@ export async function getParticipantResult(companyId: string, roundId: string, p
       id: true,
       departmentName: true,
       employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      formId: true,
       round: { select: { name: true, status: true, formSnapshot: true } },
       assignments: { select: { raterType: true, status: true, answers: true, submittedAt: true }, orderBy: { submittedAt: "asc" } },
     },
   });
   if (!p) throw NotFound("ไม่พบข้อมูล");
-  const snap = p.round.formSnapshot as unknown as { questions: SnapQuestion[] } | null;
-  const questions = snap?.questions ?? [];
+  const questions = (pickForm(p.round.formSnapshot as unknown as RoundSnapshot | null, p.formId)?.questions ?? []) as SnapQuestion[];
   const types = [...new Set(p.assignments.map((a) => a.raterType))];
   return {
     participantId: p.id,
@@ -677,6 +729,7 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
       answers: true,
       participant: {
         select: {
+          formId: true,
           employee: { select: { firstName: true, lastName: true, employeeCode: true } },
           round: { select: { id: true, name: true, status: true, endDate: true, formSnapshot: true } },
         },
@@ -684,9 +737,9 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
     },
   });
   if (!a) throw NotFound("ไม่พบงานประเมินนี้");
-  const snap = a.participant.round.formSnapshot as unknown as { ratingMax: number; questions: SnapQuestion[] } | null;
-  if (!snap) throw BadRequest("รอบนี้ยังไม่พร้อม");
-  return { a, snap };
+  const form = pickForm(a.participant.round.formSnapshot as unknown as RoundSnapshot | null, a.participant.formId);
+  if (!form) throw BadRequest("รอบนี้ยังไม่พร้อม");
+  return { a, snap: { ratingMax: form.ratingMax, questions: form.questions as SnapQuestion[] } };
 }
 
 export async function getMyAssignment(companyId: string, session: AccessClaims, id: string) {

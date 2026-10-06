@@ -17,6 +17,8 @@ export const roundUpdateSchema = z.object({
   remind: z.boolean().optional(),
   notifyLine: z.boolean().optional(),
   participantIds: z.array(z.string().min(1)).max(2000).optional(),
+  /** employeeId -> form id (null = the round's own form). Only people already in the round are changed. */
+  participantForms: z.record(z.string().min(1), z.string().min(1).nullable()).optional(),
 });
 
 export const answersSchema = z.object({
