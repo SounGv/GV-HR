@@ -390,6 +390,7 @@ model Company {
   appraisalForms              AppraisalForm[]
   appraisalRounds             AppraisalRound[]
   appraisalSettings           AppraisalSettings?
+  appraisalKpiProfiles        AppraisalKpiProfile[]
   successionPlans             SuccessionPlan[]
   announcements               Announcement[]
   overtimeRequests            OvertimeRequest[]
@@ -2671,4 +2672,27 @@ model AppraisalSettings {
   updatedById String?
 
   @@map("appraisal_settings")
+}
+
+// KPI profile: numbers the system already has (late days, leave, OT, ...) scored with step tables HR writes.
+// Informational on its own; it is not added to an appraisal score unless HR decides to.
+model AppraisalKpiProfile {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name String
+  // [{ metric, weight, steps: [{ limit, points }] }]; weights add up to 100.
+  indicators Json
+  // [{ label, min, tone }], tone is green | yellow | red | black.
+  bands      Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@map("appraisal_kpi_profiles")
 }
