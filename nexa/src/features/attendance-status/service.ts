@@ -238,3 +238,71 @@ export async function loadAttendanceWatch(
 
   return { windowDays: WATCH_WINDOW_DAYS, people, departments, truncatedFrom: report.truncatedFrom ?? null };
 }
+
+export interface EmployeeAttendanceSummary {
+  code: string;
+  name: string;
+  department: string;
+  windowDays: number;
+  present: number;
+  late: number;
+  absent: number;
+  /** Leave counted toward "frequent leave" (personal and unpaid; never sick leave). */
+  leave: number;
+  /** Latest days first. Only status, scan time and minutes late: no photo, no location. */
+  recent: { date: string; statusKey: string; clockIn: string; lateMinutes: number | null }[];
+  truncatedFrom: string | null;
+}
+
+/**
+ * Last WATCH_WINDOW_DAYS days for one person, for the side panel. Same source
+ * and team scope as the watch list; returns null when the person is not
+ * visible to the caller.
+ */
+export async function loadEmployeeAttendanceSummary(
+  companyId: string,
+  session: AccessClaims,
+  code: string,
+): Promise<EmployeeAttendanceSummary | null> {
+  const scope = teamScopeFilter(session);
+  const emp = await prisma.employee.findFirst({
+    where: { companyId, deletedAt: null, employeeCode: code, ...(scope ?? {}) },
+    select: { id: true, firstName: true, lastName: true, department: { select: { name: true } } },
+  });
+  if (!emp) return null;
+  const today = bangkokParts().dateUTC;
+  const report = await getReport(companyId, {
+    type: "attendance_daily",
+    from: new Date(today.getTime() - (WATCH_WINDOW_DAYS - 1) * DAY_MS).toISOString().slice(0, 10),
+    to: today.toISOString().slice(0, 10),
+    employeeId: [emp.id],
+    employeeWhere: scope ?? undefined,
+  });
+  let present = 0;
+  let late = 0;
+  let absent = 0;
+  let leave = 0;
+  for (const row of report.rows) {
+    if (row.statusKey === "PRESENT") present++;
+    else if (row.statusKey === "LATE") late++;
+    else if (row.statusKey === "ABSENT") absent++;
+    else if (row.statusKey === "ON_LEAVE" && COUNTED_LEAVE_NOTES.some((n) => String(row.note).startsWith(n))) leave++;
+  }
+  return {
+    code,
+    name: `${emp.firstName} ${emp.lastName}`,
+    department: emp.department?.name ?? "ไม่มีแผนก",
+    windowDays: WATCH_WINDOW_DAYS,
+    present,
+    late,
+    absent,
+    leave,
+    recent: report.rows.slice(0, 10).map((r) => ({
+      date: String(r.date),
+      statusKey: String(r.statusKey),
+      clockIn: String(r.clockIn),
+      lateMinutes: typeof r.lateMinutes === "number" ? r.lateMinutes : null,
+    })),
+    truncatedFrom: report.truncatedFrom ?? null,
+  };
+}
