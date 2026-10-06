@@ -127,6 +127,51 @@ function reportToPrompt(label: string, result: ReportResult): string {
 
 type Workbook = import("exceljs").Workbook;
 
+type ExcelImage = { base64: string; extension: "png" | "jpeg" };
+
+/** The report now carries photo URLs (not embedded base64). For an Excel
+ * export, fetch each distinct photo once (a few at a time) and turn it into
+ * the base64 that exceljs embeds, so the sheet still contains real images. A
+ * value that is already a data URL is used as is; photos that fail to load are
+ * left blank and counted. */
+async function loadExcelImages(
+  result: ReportResult,
+): Promise<{ images: Map<string, ExcelImage>; failed: number }> {
+  const images = new Map<string, ExcelImage>();
+  const urls = new Set<string>();
+  for (const c of result.columns) {
+    if (!c.photo) continue;
+    for (const row of result.rows) {
+      const v = row[c.key];
+      if (typeof v === "string" && v.startsWith("/api/")) urls.add(v);
+    }
+  }
+  const queue = [...urls];
+  let failed = 0;
+  async function worker() {
+    for (let url = queue.pop(); url !== undefined; url = queue.pop()) {
+      try {
+        const res = await fetch(url, { credentials: "same-origin" });
+        if (!res.ok) throw new Error(String(res.status));
+        const blob = await res.blob();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+        const parsed = parseImageDataUrl(dataUrl);
+        if (parsed) images.set(url, parsed);
+        else failed++;
+      } catch {
+        failed++;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(6, urls.size) }, worker));
+  return { images, failed };
+}
+
 /** Adds one sheet (real photo thumbnails embedded, not just dropped like
  * CSV/PDF) to an in-progress exceljs workbook — shared by both the
  * per-section "Excel" export and the combined "ส่งออกทั้งหมด" multi-sheet
@@ -137,6 +182,8 @@ async function addExcelSheet(workbook: Workbook, label: string, result: ReportRe
   const PHOTO_PX = 70;
   const sheet = workbook.addWorksheet(label.slice(0, 31));
   sheet.columns = columns.map((c) => ({ header: c.label, key: c.key, width: c.photo ? 12 : 16 }));
+  const { images, failed } = await loadExcelImages(result);
+  if (failed > 0) toast.warning(`โหลดรูปไม่สำเร็จ ${failed} รูป ช่องรูปเหล่านั้นจะว่างในไฟล์ Excel`);
 
   for (const row of result.rows) {
     const textValues: Record<string, string | number> = {};
@@ -148,7 +195,8 @@ async function addExcelSheet(workbook: Workbook, label: string, result: ReportRe
 
     columns.forEach((c, colIndex) => {
       if (!c.photo) return;
-      const image = parseImageDataUrl(row[c.key]);
+      const value = row[c.key];
+      const image = typeof value === "string" && images.has(value) ? images.get(value)! : parseImageDataUrl(value);
       if (!image) return; // "-" (no photo taken) — leave the cell blank
       const imageId = workbook.addImage(image);
       sheet.addImage(imageId, {

@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 /** What the enlarged-photo dialog shows next to the picture. */
 export interface PhotoPreview {
   url: string;
@@ -21,7 +25,9 @@ export function PhotoCell({
   title?: string;
   lines?: string[];
 }) {
+  const [failed, setFailed] = useState(false);
   if (typeof url !== "string" || !url || url === "-") return <span className="text-muted-foreground">-</span>;
+  if (failed) return <span className="text-xs text-muted-foreground">โหลดรูปไม่ได้</span>;
   return (
     <button
       type="button"
@@ -30,7 +36,14 @@ export function PhotoCell({
       className="block size-11 overflow-hidden rounded-md border border-border transition hover:opacity-80"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+      <img
+        src={url}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+        className="size-full object-cover"
+      />
     </button>
   );
 }

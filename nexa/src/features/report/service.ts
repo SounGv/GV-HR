@@ -79,6 +79,15 @@ async function resolveUserNames(userIds: (string | null | undefined)[]): Promise
   );
 }
 
+/** Address of one attendance photo. Photos are base64 text in the database
+ * (~85 KB each); returning them inside the report made the response tens of MB.
+ * The row now carries this URL instead and the browser loads each image only
+ * when it scrolls into view. `v` changes whenever the record changes, so the
+ * long browser cache can never show a stale photo. */
+function photoUrlOf(recordId: string, kind: "in" | "out", updatedAt: Date): string {
+  return `/api/attendance/${recordId}/photo?kind=${kind}&v=${updatedAt.getTime()}`;
+}
+
 /** [start, end) date window. Defaults to the current calendar month. */
 function computeRange(q: ReportQuery) {
   const now = new Date();
@@ -358,6 +367,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     const recs = await prisma.attendanceRecord.findMany({
       where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
       select: {
+        id: true,
+        updatedAt: true,
         employeeId: true,
         workDate: true,
         clockInAt: true,
@@ -369,6 +380,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         note: true,
         clockInBranchId: true,
         clockInDistance: true,
+        // Only used to know whether a photo exists — the image itself is
+        // served by /api/attendance/[id]/photo, not embedded in this result.
         clockInPhotoUrl: true,
         clockOutPhotoUrl: true,
         updatedById: true,
@@ -537,8 +550,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         editor: r.updatedById ? editorNameById.get(r.updatedById) ?? "-" : "-",
         location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
         distance: r.clockInDistance != null ? Math.round(r.clockInDistance) : "-",
-        clockInPhoto: r.clockInPhotoUrl ?? "-",
-        clockOutPhoto: r.clockOutPhotoUrl ?? "-",
+        clockInPhoto: r.clockInPhotoUrl ? photoUrlOf(r.id, "in", r.updatedAt) : "-",
+        clockOutPhoto: r.clockOutPhotoUrl ? photoUrlOf(r.id, "out", r.updatedAt) : "-",
       };
     });
 
