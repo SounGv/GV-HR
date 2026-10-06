@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
 
-const THEME_COLOR = { light: "#22C55E", dark: "#0A0E1A" };
+const THEME_COLOR = { light: "#0D9488", dark: "#0A0E1A" };
 
 /**
  * Keeps the browser-chrome `theme-color` meta tag in sync with the resolved

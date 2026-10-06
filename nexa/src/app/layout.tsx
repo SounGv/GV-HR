@@ -58,7 +58,7 @@ export const viewport: Viewport = {
   // in sync with the actual resolved app theme client-side, which can differ
   // from OS-level prefers-color-scheme (e.g. mobile forced into dark by
   // default). Two media-scoped tags here would fight that override.
-  themeColor: "#22C55E",
+  themeColor: "#0D9488",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

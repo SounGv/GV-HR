@@ -112,12 +112,12 @@
      --sidebar-primary below, not used here. */
   --primary: #131516;
   --primary-foreground: #ffffff;
-  --secondary: #f4fad2;
-  --secondary-foreground: #4e5c00;
+  --secondary: #e0f5f2;
+  --secondary-foreground: #0f766e;
   --muted: #eceef0;
   --muted-foreground: #5e6670;
-  --accent: #f4fad2;
-  --accent-foreground: #4e5c00;
+  --accent: #e0f5f2;
+  --accent-foreground: #0f766e;
   --destructive: #c62828;
 
   --success: #1a7f4e;
@@ -140,10 +140,10 @@
      page (no card), charcoal primary button, olive links. */
   --login-brand-green: #131516;
   --login-brand-green-dark: #272b30;
-  --login-brand-lime: #cdeb03;
-  --login-brand-lime-light: #f4fad2;
-  --login-link: #4e5c00;
-  --login-link-hover: #3e4a00;
+  --login-brand-lime: #0d9488;
+  --login-brand-lime-light: #e0f5f2;
+  --login-link: #0f766e;
+  --login-link-hover: #115e59;
   --login-text-primary: #131516;
   --login-text-secondary: #5e6670;
   --login-background: #ffffff;
@@ -151,43 +151,43 @@
   --login-border: #d4d9df;
   --login-error: #c62828;
 
-  --chart-1: #cdeb03;
+  --chart-1: #0d9488;
   --chart-2: #1a7f4e;
   --chart-3: #8a6100;
-  --chart-4: #4e5c00;
+  --chart-4: #0f766e;
   --chart-5: #c62828;
 
   /* Legacy chip pair — menu icons are fixed full-color illustrated artwork
      now (gv-hr-menu-icons.md), not a themed chip; kept for the few plain
      status badges that still reference it. Red is reserved for
      notification-count badges (--badge). */
-  --icon-chip-bg: #f4fad2;
-  --icon-chip-fg: #4e5c00;
+  --icon-chip-bg: #e0f5f2;
+  --icon-chip-fg: #0f766e;
   --tone-profile-bg: #f1f3f5;
   --tone-profile-fg: #374151;
   --badge: #d92d20;
   --badge-foreground: #ffffff;
 
   /* Selected-menu state (sidebar nav item / bottom-nav tab) */
-  --menu-active-bg: #cdeb03;
-  --menu-active-fg: #131516;
+  --menu-active-bg: #ccfbf1;
+  --menu-active-fg: #115e59;
   --menu-inactive-fg: #374151;
 
   /* Sidebar — charcoal with a Volt-lime active item, per M·GvOneWebDashboard. */
   --sidebar: #131516;
   --sidebar-foreground: #e6e8ea;
-  --sidebar-primary: #cdeb03;
+  --sidebar-primary: #14b8a6;
   --sidebar-primary-foreground: #131516;
   --sidebar-accent: #272b30;
   --sidebar-accent-foreground: #e6e8ea;
   --sidebar-border: #272b30;
-  --sidebar-ring: #cdeb03;
+  --sidebar-ring: #14b8a6;
 
   /* Mobile Home tokens — light-mode only, matches L·GvOneHome2. */
-  --gv-lime: #cdeb03;
+  --gv-lime: #14b8a6;
   --gv-dark-green: #131516;
   --gv-deep-green: #131516;
-  --gv-pale-green: #f4fad2;
+  --gv-pale-green: #e0f5f2;
   --gv-bg: #ffffff;
   --gv-border: #e5e9ed;
   --gv-notif-red: #e53935;
@@ -204,7 +204,7 @@
   --series-leave: #3b82f6;
   --series-norecord: #8a9199;
   --series-ot: #a855f7;
-  --series-highlight: #cdeb03;
+  --series-highlight: #0d9488;
   --chart-grid: #eef0f2;
   --chart-muted-bar: #e5e7ea;
 }
@@ -246,14 +246,14 @@
   --popover: #1b1e21;
   --popover-foreground: #e6e8ea;
 
-  --primary: #cdeb03;
+  --primary: #14b8a6;
   --primary-foreground: #131516;
   --secondary: #272b30;
   --secondary-foreground: #e6e8ea;
   --muted: #202327;
   --muted-foreground: #b8bec4;
-  --accent: #2c3010;
-  --accent-foreground: #cdeb03;
+  --accent: #12332f;
+  --accent-foreground: #5eead4;
   --destructive: #e4573d;
 
   --success: #2fa871;
@@ -269,37 +269,37 @@
 
   --border: #272b30;
   --input: #272b30;
-  --ring: #cdeb03;
+  --ring: #14b8a6;
 
-  --chart-1: #cdeb03;
+  --chart-1: #14b8a6;
   --chart-2: #2fa871;
   --chart-3: #f5b700;
-  --chart-4: #8a9a00;
+  --chart-4: #0d9488;
   --chart-5: #e4573d;
 
-  --icon-chip-bg: #2c3010;
-  --icon-chip-fg: #cdeb03;
+  --icon-chip-bg: #12332f;
+  --icon-chip-fg: #5eead4;
   --tone-profile-bg: #262b33;
   --tone-profile-fg: #cbd5e1;
   --badge: #ef4444;
   --badge-foreground: #ffffff;
 
-  --menu-active-bg: #cdeb03;
+  --menu-active-bg: #14b8a6;
   --menu-active-fg: #131516;
   --menu-inactive-fg: #c7cde0;
 
   --sidebar: #0e0f10;
   --sidebar-foreground: #e6e8ea;
-  --sidebar-primary: #cdeb03;
+  --sidebar-primary: #14b8a6;
   --sidebar-primary-foreground: #131516;
   --sidebar-accent: #272b30;
   --sidebar-accent-foreground: #e6e8ea;
   --sidebar-border: #272b30;
-  --sidebar-ring: #cdeb03;
+  --sidebar-ring: #14b8a6;
 
   /* Same series tokens as :root, re-tuned for contrast on a dark card —
      lime reads best for "present" here (charcoal would vanish on dark). */
-  --series-present: #cdeb03;
+  --series-present: #14b8a6;
   --series-late: #f5a524;
   --series-leave: #60a5fa;
   --series-norecord: #8a9199;
@@ -358,53 +358,36 @@
   }
 }
 
-/* ── Flip7 one-off theme — dashboard page only ──
-   Explicitly requested as an exception to the GV brand tokens (lime/charcoal)
-   that every other GV product and page uses. Scoped entirely under
-   .theme-flip7 (applied once, on the dashboard's desktop wrapper) so it
-   cannot leak into any other page. Do not reuse these tokens elsewhere —
-   ask before extending this theme past the dashboard. */
+/* ── Dashboard scope (.theme-flip7) — now the SAME single tone as every page ──
+   The dashboard used to carry its own teal/gold/coral/sky palette. Per the
+   2026-10 "one tone everywhere" decision it now uses the system teal family
+   (#0D9488) only; the old --flip7-* names are kept so the existing call sites
+   keep working, but gold/coral/sky no longer introduce extra hues. Chart
+   series keep the same data colours as every other page (late = amber,
+   leave = blue, OT = purple from :root). */
 .theme-flip7 {
-  --flip7-teal: #2ba8a2;
-  --flip7-teal-light: #3cc4bd;
-  --flip7-teal-dark: #1e8c86;
-  --flip7-teal-bg: #e8f6f5;
-  --flip7-gold: #ffd23f;
-  --flip7-gold-light: #ffe47a;
-  --flip7-gold-dark: #e6b800;
-  --flip7-coral: #ef6c4a;
-  --flip7-coral-light: #ff8a6a;
-  --flip7-coral-dark: #d45233;
-  --flip7-cream: #fff8e7;
-  --flip7-sky: #5dade2;
-  --radius: 1rem;
+  --flip7-teal: #0d9488;
+  --flip7-teal-light: #14b8a6;
+  --flip7-teal-dark: #0f766e;
+  --flip7-teal-bg: var(--background);
+  --flip7-gold: #99f6e4;
+  --flip7-gold-light: #ccfbf1;
+  --flip7-gold-dark: #5eead4;
+  --flip7-coral: #0d9488;
+  --flip7-coral-light: #14b8a6;
+  --flip7-coral-dark: #0f766e;
+  --flip7-cream: #f0fdfa;
+  --flip7-sky: #3b82f6;
 
-  /* Re-tune the dashboard's existing semantic chart tokens to Flip7 hues
-     instead of touching every chart/KPI call site individually. */
   --series-present: var(--flip7-teal);
-  --series-late: var(--flip7-coral);
-  --series-leave: var(--flip7-sky);
-  --series-ot: var(--flip7-gold-dark);
-  --series-highlight: var(--flip7-gold);
-  --series-norecord: #8a9199;
-
-  background: var(--flip7-teal-bg);
-}
-
-.theme-flip7 [data-slot="card"] {
-  border: 0;
-  border-left: 6px solid var(--flip7-teal-light);
-  border-radius: var(--radius-lg);
-  background: #fff;
-  box-shadow: 0 4px 20px rgb(43 168 162 / 0.1);
+  --series-highlight: var(--flip7-teal);
 }
 
 .theme-flip7 .flip7-pill-btn {
   border-radius: 999px;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--flip7-gold-light), var(--flip7-gold));
-  color: var(--flip7-teal-dark);
-  box-shadow: 0 4px 20px rgb(255 210 63 / 0.4);
+  font-weight: 700;
+  background: var(--flip7-gold);
+  color: #134e4a;
   transition: transform 0.15s ease;
 }
 .theme-flip7 .flip7-pill-btn:hover {
@@ -412,12 +395,6 @@
 }
 .theme-flip7 .flip7-pill-btn:active {
   transform: scale(0.95);
-}
-
-.theme-flip7 h1,
-.theme-flip7 [data-slot="card-title"] {
-  font-weight: 800;
-  letter-spacing: 0.02em;
 }
 
 /* Confirmation moment: the check on a finished check-in/out eases in once.

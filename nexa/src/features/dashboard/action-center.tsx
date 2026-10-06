@@ -21,7 +21,7 @@ const TILES: ApprovalTile[] = [
     label: "แก้ไขเวลารออนุมัติ",
     href: "/attendance/corrections",
     render: () => (
-      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-sky,#3B82F6)]">
+      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-teal,#0D9488)]">
         <PencilLine className="size-[18px] text-white" />
       </span>
     ),
@@ -31,7 +31,7 @@ const TILES: ApprovalTile[] = [
     label: "เบิกจ่ายรออนุมัติ",
     href: "/expenses",
     render: () => (
-      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-teal,#14B8A6)]">
+      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-teal,#0D9488)]">
         <ReceiptText className="size-[18px] text-white" />
       </span>
     ),
@@ -41,7 +41,7 @@ const TILES: ApprovalTile[] = [
     label: "คำขออนุมัติ",
     href: "/workflows",
     render: () => (
-      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-coral,#6366F1)]">
+      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-teal,#0D9488)]">
         <GitBranch className="size-[18px] text-white" />
       </span>
     ),

@@ -79,7 +79,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ภาพรวม",
     icon: LayoutDashboard,
-    chipColor: "#CDEB03",
+    chipColor: "#0D9488",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", ready: true },
@@ -101,7 +101,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "เวลาทำงาน",
     icon: Clock,
-    chipColor: "#3B82F6",
+    chipColor: "#0D9488",
     items: [
       { label: "เข้างาน / ออกงาน", href: "/attendance", icon: ScanLine, permission: "attendance:read", ready: true },
       { label: "แก้ไขเวลาเข้า-ออกงาน", href: "/attendance/corrections", icon: PencilLine, permission: "attendance:read", ready: true },
@@ -113,7 +113,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "การลาและคำขอ",
     icon: CalendarCheck,
-    chipColor: "#22A55B",
+    chipColor: "#0D9488",
     items: [
       { label: "คำขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read", ready: true },
       {
@@ -131,7 +131,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "พนักงาน",
     icon: UsersRound,
-    chipColor: "#6366F1",
+    chipColor: "#0D9488",
     items: [
       { label: "รายชื่อพนักงาน", href: "/employees", icon: UsersRound, permission: "employee:read", ready: true },
       { label: "แผนกและตำแหน่ง", href: "/organization?tab=departments", icon: Building2, permission: "employee:read", ready: true },
@@ -144,7 +144,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ประเมินและพัฒนา",
     icon: Sparkles,
-    chipColor: "#F5A524",
+    chipColor: "#0D9488",
     items: [
       { label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true, badgeKey: "pendingReviews" },
       { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read", ready: true },
@@ -159,7 +159,7 @@ export const NAV_GROUPS: NavGroup[] = [
     // permission: "payroll:read", ready: true } here when ready.
     label: "เบิกจ่าย",
     icon: Wallet,
-    chipColor: "#14B8A6",
+    chipColor: "#0D9488",
     items: [
       { label: "เบิกจ่ายทั่วไป", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
       { label: "ค่ารักษาพยาบาล", href: "/benefits/medical", icon: Stethoscope, permission: "expense:read", ready: true },
@@ -171,7 +171,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "รายงานและสื่อสาร",
     icon: BarChart3,
-    chipColor: "#EC4899",
+    chipColor: "#0D9488",
     items: [
       { label: "รายงานการเข้างาน", href: "/reports?view=attendance", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานการลา", href: "/reports?view=leave", icon: BarChart3, permission: "report:read", ready: true },
@@ -183,7 +183,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ข้อมูลระบบ",
     icon: Database,
-    chipColor: "#8B5CF6",
+    chipColor: "#0D9488",
     items: [
       { label: "นำเข้าข้อมูล", href: "/import", icon: Upload, permission: "employee:create", ready: true },
       { label: "ประวัติการนำเข้า / ส่งออก", href: "/admin?tab=audit", icon: ClipboardList, permission: "admin:read", ready: true },
@@ -192,7 +192,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ระบบ",
     icon: Settings,
-    chipColor: "#64748B",
+    chipColor: "#0D9488",
     items: [
       { label: "ข้อมูลบริษัท", href: "/company", icon: Building2, permission: "admin:read", ready: true },
       { label: "ศูนย์ต้นทุน", href: "/cost-centers", icon: Building2, permission: "admin:read", ready: true },
