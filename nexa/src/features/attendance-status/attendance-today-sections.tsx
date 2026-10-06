@@ -19,7 +19,7 @@ const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 
 export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
   const { counts, total, scanned } = data;
   return (
-    <section className="rounded-2xl bg-[linear-gradient(135deg,var(--flip7-teal-dark),var(--flip7-teal))] p-5 text-white">
+    <section className="rounded-2xl bg-[var(--flip7-teal-dark)] p-5 text-white">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <p className="text-sm">การเข้างานวันนี้</p>
