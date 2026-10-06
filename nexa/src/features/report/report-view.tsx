@@ -65,7 +65,8 @@ import {
   type DisplayColumn,
 } from "./attendance-row-style";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { ReportResult } from "./types";
+import { columnLabel, type ReportColumn, type ReportResult } from "./types";
+import { LeaveEmployeeSheet, type LeaveSheetTarget } from "./leave-employee-sheet";
 
 const ALL_TYPE = "ALL";
 const YEAR_NOW = new Date().getFullYear();
@@ -106,7 +107,7 @@ function parseImageDataUrl(value: string | number | undefined): { base64: string
 function reportToPrompt(label: string, result: ReportResult): string {
   const MAX_ROWS = 60;
   const columns = exportableColumns(result);
-  const header = columns.map((c) => c.label).join(" | ");
+  const header = columns.map((c) => columnLabel(c)).join(" | ");
   const body = result.rows
     .slice(0, MAX_ROWS)
     .map((row) => columns.map((c) => String(row[c.key] ?? "")).join(" | "))
@@ -181,7 +182,7 @@ async function addExcelSheet(workbook: Workbook, label: string, result: ReportRe
   const columns = result.columns; // photo columns included — embedded as real images below
   const PHOTO_PX = 70;
   const sheet = workbook.addWorksheet(label.slice(0, 31));
-  sheet.columns = columns.map((c) => ({ header: c.label, key: c.key, width: c.photo ? 12 : 16 }));
+  sheet.columns = columns.map((c) => ({ header: columnLabel(c), key: c.key, width: c.photo ? 12 : 16 }));
   const { images, failed } = await loadExcelImages(result);
   if (failed > 0) toast.warning(`โหลดรูปไม่สำเร็จ ${failed} รูป ช่องรูปเหล่านั้นจะว่างในไฟล์ Excel`);
 
@@ -254,6 +255,8 @@ function ReportSection({
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState("");
+  // Leave report only: whose year to show in the side panel.
+  const [leaveTarget, setLeaveTarget] = useState<LeaveSheetTarget | null>(null);
 
   function exportCsv() {
     if (!result) return;
@@ -284,7 +287,7 @@ function ReportSection({
     doc.text(`${REPORT_LABELS[type]} (${from} - ${to})`, 14, 14);
     autoTable(doc, {
       startY: 20,
-      head: [columns.map((c) => c.label)],
+      head: [columns.map((c) => columnLabel(c))],
       body: result.rows.map((r) => columns.map((c) => String(r[c.key] ?? ""))),
       styles: { font: fontName, fontSize: 9 },
       headStyles: { font: fontName, fontStyle: "bold", fillColor: [79, 70, 229] },
@@ -402,6 +405,24 @@ function ReportSection({
           <Card className="gap-0 overflow-x-auto p-0">
             <Table>
               <TableHeader>
+                {displayColumns.some((c) => c.group) && (
+                  <TableRow className="hover:bg-transparent">
+                    {groupSpans(displayColumns).map((g, gi) => (
+                      <TableHead
+                        key={gi}
+                        colSpan={g.span}
+                        className={cn(
+                          "h-9 text-center leading-tight whitespace-normal",
+                          g.group && "border-x border-border bg-muted/50 font-semibold text-foreground",
+                          g.key === "code" && "sticky left-0 z-20 w-[72px] bg-card",
+                          g.key === "name" && "sticky left-[72px] z-20 min-w-[160px] bg-card",
+                        )}
+                      >
+                        {g.group}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                )}
                 <TableRow className="hover:bg-transparent">
                   {displayColumns.map((c) => {
                     // Long header sentences ("ไม่ลงเวลาออก (วัน)") wrap to 2
@@ -461,6 +482,14 @@ function ReportSection({
                           >
                             {c.photo ? (
                               <PhotoCell url={row[c.key]} onOpen={onOpenPhoto} title={photo?.title} lines={photo?.lines} />
+                            ) : type === "leave" && c.key === "name" ? (
+                              <button
+                                type="button"
+                                onClick={() => setLeaveTarget({ code: String(row.code), name: String(row.name) })}
+                                className="min-h-8 text-left font-medium text-primary underline-offset-2 hover:underline"
+                              >
+                                {row.name}
+                              </button>
                             ) : isDaily && c.key === "status" ? (
                               <ReportStatusBadge statusKey={String(row.statusKey ?? "")} fallback={row.status} />
                             ) : isDaily && c.key === "note" ? (
@@ -479,13 +508,25 @@ function ReportSection({
           </Card>
           )}
           {isMobile && (
-            <ReportMobileCards result={result} onOpenPhoto={onOpenPhoto} columns={displayColumns} isDaily={isDaily} />
+            <ReportMobileCards
+              result={result}
+              onOpenPhoto={onOpenPhoto}
+              columns={displayColumns}
+              isDaily={isDaily}
+              onOpenName={
+                type === "leave" ? (row) => setLeaveTarget({ code: String(row.code), name: String(row.name) }) : undefined
+              }
+            />
           )}
         </>
       )}
 
       {result && result.rows.length > 0 && (
         <p className="text-sm text-muted-foreground">{result.footnote ?? `รวม ${result.rows.length} รายการ`}</p>
+      )}
+
+      {type === "leave" && result?.year != null && (
+        <LeaveEmployeeSheet target={leaveTarget} year={result.year} onClose={() => setLeaveTarget(null)} />
       )}
 
       <Dialog open={aiOpen} onOpenChange={setAiOpen}>
@@ -513,6 +554,17 @@ function ReportSection({
       </Dialog>
     </section>
   );
+}
+
+/** Runs of neighbouring columns with the same `group` become one wide heading cell; the rest stay single empty cells. */
+function groupSpans(columns: ReportColumn[]): { key: string; group: string | undefined; span: number }[] {
+  const out: { key: string; group: string | undefined; span: number }[] = [];
+  for (const c of columns) {
+    const last = out[out.length - 1];
+    if (c.group && last && last.group === c.group) last.span++;
+    else out.push({ key: c.key, group: c.group, span: 1 });
+  }
+  return out;
 }
 
 export function ReportView() {

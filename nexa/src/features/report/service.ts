@@ -22,6 +22,8 @@ export interface ReportColumn {
   key: string;
   label: string;
   numeric?: boolean;
+  /** Heading shared by neighbouring columns (mirrors ./types). */
+  group?: string;
   /** Cell value is an image URL (or "-") — rendered as a clickable thumbnail. */
   photo?: boolean;
 }
@@ -43,6 +45,8 @@ export interface ReportResult {
   secondarySummaryUnit?: string;
   /** Totals/averages line shown under the table, replacing the generic "รวม N รายการ" when set. */
   footnote?: string;
+  /** Calendar year the report covers (leave report only). */
+  year?: number;
   /** Set when the report had more rows than it can return: it is complete only from this day on (YYYY-MM-DD). */
   truncatedFrom?: string;
 }
@@ -872,6 +876,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       where: { companyId, year, ...deptRel },
       select: {
         type: true,
+        totalDays: true,
         usedDays: true,
         employee: {
           select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
@@ -896,44 +901,104 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         },
       },
     });
+    type Quota = { total: number; used: number };
     const map = new Map<
       string,
-      { name: string; ANNUAL: number; SICK: number; PERSONAL: number; UNPAID: number; OTHER: number }
+      { name: string; dept: string; ANNUAL: Quota; SICK: Quota; PERSONAL: Quota; UNPAID: number; OTHER: number; pending: number }
     >();
     const deptDays = new Map<string, number>();
-    const rowFor = (code: string, name: string) => {
-      const row = map.get(code) ?? { name, ANNUAL: 0, SICK: 0, PERSONAL: 0, UNPAID: 0, OTHER: 0 };
+    const rowFor = (code: string, name: string, dept: string) => {
+      const row = map.get(code) ?? {
+        name,
+        dept,
+        ANNUAL: { total: 0, used: 0 },
+        SICK: { total: 0, used: 0 },
+        PERSONAL: { total: 0, used: 0 },
+        UNPAID: 0,
+        OTHER: 0,
+        pending: 0,
+      };
       map.set(code, row);
       return row;
     };
+    const deptName = (e: { department: { name: string } | null }) => e.department?.name ?? "ไม่ระบุแผนก";
     for (const b of bals) {
       const code = b.employee.employeeCode;
-      const row = rowFor(code, `${b.employee.firstName} ${b.employee.lastName}`);
-      if (b.type === "ANNUAL" || b.type === "SICK" || b.type === "PERSONAL") row[b.type] += b.usedDays;
+      const row = rowFor(code, `${b.employee.firstName} ${b.employee.lastName}`, deptName(b.employee));
+      if (b.type === "ANNUAL" || b.type === "SICK" || b.type === "PERSONAL") {
+        row[b.type].total += b.totalDays;
+        row[b.type].used += b.usedDays;
+      }
       bumpDept(deptDays, b.employee.department?.name, b.usedDays);
     }
     for (const r of unpaidOther) {
       const code = r.employee.employeeCode;
-      const row = rowFor(code, `${r.employee.firstName} ${r.employee.lastName}`);
+      const row = rowFor(code, `${r.employee.firstName} ${r.employee.lastName}`, deptName(r.employee));
       // HOLIDAY_SWAP has no dedicated column here — same bucket as OTHER.
       row[r.type === "UNPAID" ? "UNPAID" : "OTHER"] += r.days;
       bumpDept(deptDays, r.employee.department?.name, r.days);
     }
+    // Requests still waiting for approval are not in "used" yet; show them next to it so remaining is not over-promised.
+    const pendingReqs = await prisma.leaveRequest.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: "PENDING",
+        startDate: { lt: yearEnd },
+        endDate: { gte: yearStart },
+        ...deptRel,
+      },
+      select: {
+        days: true,
+        employee: {
+          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        },
+      },
+    });
+    for (const r of pendingReqs) {
+      rowFor(r.employee.employeeCode, `${r.employee.firstName} ${r.employee.lastName}`, deptName(r.employee)).pending += r.days;
+    }
+    // Entitlement / used / remaining for each paid type, like the Favpo sheet HR
+    // knows. Remaining never goes below 0; days are rounded to 1 decimal so
+    // hour-based leave (0.1 day steps) does not show float noise.
+    const r1 = (n: number) => Math.round(n * 10) / 10;
+    const paid = [
+      { key: "sick", type: "SICK" as const, label: "ลาป่วย" },
+      { key: "personal", type: "PERSONAL" as const, label: "ลากิจ" },
+      { key: "annual", type: "ANNUAL" as const, label: "ลาพักร้อน" },
+    ];
     return {
       title,
       period: `ปี ${year}`,
       columns: [
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
-        { key: "annual", label: "ลาพักร้อน (วัน)", numeric: true },
-        { key: "sick", label: "ลาป่วย (วัน)", numeric: true },
-        { key: "personal", label: "ลากิจ (วัน)", numeric: true },
-        { key: "unpaid", label: "ลาไม่รับค่าจ้าง (วัน)", numeric: true },
-        { key: "other", label: "ลาอื่นๆ (วัน)", numeric: true },
+        { key: "dept", label: "แผนก" },
+        ...paid.flatMap((t) => [
+          { key: `${t.key}Total`, group: t.label, label: "สิทธิ์ (วัน)", numeric: true },
+          { key: `${t.key}Used`, group: t.label, label: "ใช้ไปแล้ว (วัน)", numeric: true },
+          { key: `${t.key}Left`, group: t.label, label: "คงเหลือ (วัน)", numeric: true },
+        ]),
+        { key: "unpaid", label: "ลาไม่รับค่าจ้าง ใช้ไป (วัน)", numeric: true },
+        { key: "other", label: "ลาอื่นๆ ใช้ไป (วัน)", numeric: true },
+        { key: "pending", label: "รออนุมัติ (วัน)", numeric: true },
       ],
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
-        code, name: v.name, annual: v.ANNUAL, sick: v.SICK, personal: v.PERSONAL, unpaid: v.UNPAID, other: v.OTHER,
+        code,
+        name: v.name,
+        dept: v.dept,
+        ...Object.fromEntries(
+          paid.flatMap((t) => [
+            [`${t.key}Total`, r1(v[t.type].total)],
+            [`${t.key}Used`, r1(v[t.type].used)],
+            [`${t.key}Left`, r1(Math.max(0, v[t.type].total - v[t.type].used))],
+          ]),
+        ),
+        unpaid: r1(v.UNPAID),
+        other: r1(v.OTHER),
+        pending: r1(v.pending),
       })),
+      year,
       summary: toSummary(deptDays),
       summaryLabel: "วันลารวมตามแผนก",
       summaryUnit: "วัน",

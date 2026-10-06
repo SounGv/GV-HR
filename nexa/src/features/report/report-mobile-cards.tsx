@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { PhotoCell, type PhotoPreview } from "./report-photo-cell";
 import { ReportStatusBadge, dailyCardClass, dailyPhotoPreview, type DisplayColumn } from "./attendance-row-style";
 import { cn } from "@/lib/utils";
-import type { ReportResult } from "./types";
+import { columnLabel, type ReportResult } from "./types";
 
 // Naive but low-risk: report status text is always Thai and drawn from a
 // small, known vocabulary (see ATTENDANCE_STATUS_LABEL/EXPENSE_STATUS_LABEL/
@@ -44,6 +44,7 @@ export function ReportMobileCards({
   onOpenPhoto,
   columns,
   isDaily = false,
+  onOpenName,
 }: {
   result: ReportResult;
   onOpenPhoto: (photo: PhotoPreview) => void;
@@ -51,6 +52,8 @@ export function ReportMobileCards({
   columns?: DisplayColumn[];
   /** Daily attendance report: tint each card by status and read the status from `statusKey`. */
   isDaily?: boolean;
+  /** When set, the name in each card becomes a button (leave report: opens that person's year). */
+  onOpenName?: (row: Record<string, string | number>) => void;
 }) {
   const all: DisplayColumn[] = columns ?? result.columns;
   const headerCols = all.filter((c) => HEADER_KEYS.includes(c.key));
@@ -68,14 +71,25 @@ export function ReportMobileCards({
             <div className={cn("space-y-1 border-b border-border bg-muted/40 px-4 py-3", tone.header)}>
               {headerCols.length > 0 && (
                 <div className="flex items-center justify-between gap-2">
-                  {headerCols.map((c) => (
-                    <span
-                      key={c.key}
-                      className={c.key === "name" ? "font-semibold text-foreground" : "text-sm text-muted-foreground"}
-                    >
-                      {row[c.key]}
-                    </span>
-                  ))}
+                  {headerCols.map((c) =>
+                    c.key === "name" && onOpenName ? (
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => onOpenName(row)}
+                        className="min-h-11 text-left font-semibold text-primary underline-offset-2 hover:underline"
+                      >
+                        {row[c.key]}
+                      </button>
+                    ) : (
+                      <span
+                        key={c.key}
+                        className={c.key === "name" ? "font-semibold text-foreground" : "text-sm text-muted-foreground"}
+                      >
+                        {row[c.key]}
+                      </span>
+                    ),
+                  )}
                 </div>
               )}
               {subheaderCols.length > 0 && (
@@ -111,7 +125,7 @@ export function ReportMobileCards({
           <dl className="divide-y divide-border">
             {bodyCols.map((c) => (
               <div key={c.key} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
-                <dt className="text-muted-foreground">{c.label}</dt>
+                <dt className="text-muted-foreground">{columnLabel(c)}</dt>
                 <dd className={c.numeric ? "text-right font-medium tabular-nums" : "text-right font-medium"}>
                   {c.photo ? (
                     <PhotoCell
