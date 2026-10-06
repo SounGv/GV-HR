@@ -388,6 +388,7 @@ model Company {
   calibrationSessions         CalibrationSession[]
   evaluationTemplates         EvaluationTemplate[]
   appraisalForms              AppraisalForm[]
+  appraisalRounds             AppraisalRound[]
   successionPlans             SuccessionPlan[]
   announcements               Announcement[]
   overtimeRequests            OvertimeRequest[]
@@ -839,6 +840,8 @@ model Employee {
   documents                 EmployeeDocument[]
   competencyLevels          EmployeeCompetencyLevel[]
   aiAccessGrant             AiAccessGrant?
+  appraisalParticipations   AppraisalParticipant[]
+  appraisalAssignments      AppraisalAssignment[] @relation("AppraisalRater")
 
   // Employment
   employmentType   EmploymentType @default(FULL_TIME)
@@ -2483,6 +2486,7 @@ model AppraisalForm {
   deletedAt   DateTime?
 
   questions AppraisalQuestion[]
+  rounds    AppraisalRound[]
 
   @@unique([lineageId, version])
   @@index([companyId, status])
@@ -2507,4 +2511,102 @@ model AppraisalQuestion {
 
   @@index([formId, order])
   @@map("appraisal_questions")
+}
+
+// A round = which form, for whom, rated by whom, and when. Created as a DRAFT through
+// the 5-step wizard; opening it freezes a copy of the form, creates the assignments
+// and notifies every rater (in-app inbox + LINE).
+
+enum AppraisalRoundStatus {
+  DRAFT
+  SCHEDULED // opened by HR but the start date is still in the future
+  OPEN
+  CLOSED
+}
+
+enum AppraisalAssignmentStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+}
+
+model AppraisalRound {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name   String
+  formId String
+  form   AppraisalForm @relation(fields: [formId], references: [id])
+  // Frozen copy of the form (questions, scale) taken when the round opens, so a later
+  // version of the form never changes what this round asked.
+  formSnapshot Json?
+
+  raterTypes AppraisalRaterType[] @default([])
+  // Weight of each perspective, e.g. { "MANAGER": 70, "SELF": 30 }. Placeholder until HR confirms.
+  perspectiveWeights Json?
+
+  startDate DateTime? @db.Date
+  endDate   DateTime? @db.Date
+  remind     Boolean  @default(true)
+  notifyLine Boolean  @default(true)
+
+  status     AppraisalRoundStatus @default(DRAFT)
+  openedAt   DateTime?
+  notifiedAt DateTime? // when the invitations went out
+  closedAt   DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  participants AppraisalParticipant[]
+
+  @@index([companyId, status])
+  @@map("appraisal_rounds")
+}
+
+// One person being evaluated in a round.
+model AppraisalParticipant {
+  id         String         @id @default(uuid())
+  roundId    String
+  round      AppraisalRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // Taken when the person is added, so reports never need a "re-process" step.
+  departmentName String?
+  positionName   String?
+  createdAt      DateTime @default(now())
+
+  assignments AppraisalAssignment[]
+
+  @@unique([roundId, employeeId])
+  @@index([employeeId])
+  @@map("appraisal_participants")
+}
+
+// One rater's job: "rate this person as their manager / peer / ...".
+model AppraisalAssignment {
+  id            String               @id @default(uuid())
+  participantId String
+  participant   AppraisalParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  raterEmployeeId String
+  rater           Employee            @relation("AppraisalRater", fields: [raterEmployeeId], references: [id], onDelete: Cascade)
+  raterType       AppraisalRaterType
+
+  status      AppraisalAssignmentStatus @default(PENDING)
+  answers     Json? // [{ questionId, value }]
+  startedAt   DateTime?
+  submittedAt DateTime?
+  notifiedAt  DateTime?
+  remindedAt  DateTime?
+  createdAt   DateTime                  @default(now())
+
+  @@unique([participantId, raterEmployeeId, raterType])
+  @@index([raterEmployeeId, status])
+  @@map("appraisal_assignments")
 }

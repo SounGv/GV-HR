@@ -66,7 +66,8 @@ export async function markNotificationsByLinkRead(companyId: string, employeeId:
 export async function createNotification(
   companyId: string,
   employeeId: string,
-  input: { title: string; body: string; category?: string; link?: string },
+  /** `line: false` keeps the message in the app only (default: also push to LINE when linked). */
+  input: { title: string; body: string; category?: string; link?: string; line?: boolean },
   createdById?: string | null,
 ) {
   const record = await prisma.notification.create({
@@ -82,7 +83,7 @@ export async function createNotification(
     select: { id: true },
   });
 
-  if (isLineConfigured()) {
+  if (input.line !== false && isLineConfigured()) {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
       select: { lineUserId: true },

@@ -148,6 +148,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true, badgeKey: "pendingReviews" },
       { label: "แบบประเมิน (ใหม่)", href: "/appraisal/forms", icon: ClipboardCheck, permission: "campaign:manage", ready: true },
+      { label: "รอบประเมิน (ใหม่)", href: "/appraisal/rounds", icon: ClipboardList, permission: "campaign:manage", ready: true },
+      { label: "งานประเมินของฉัน", href: "/appraisal/tasks", icon: ClipboardCheck, permission: "notification:read", ready: true },
       { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read", ready: true },
       { label: "นัดประชุม", href: "/meetings", icon: CalendarPlus, permission: "meeting:read", ready: true },
       { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read", ready: true },
