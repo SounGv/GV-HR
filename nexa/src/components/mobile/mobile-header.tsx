@@ -64,7 +64,7 @@ export function MobileHeader({
 
             aria-label="ย้อนกลับ"
 
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
 
           >
 
@@ -82,7 +82,7 @@ export function MobileHeader({
 
             onClick={onBack}
 
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
 
           >
 
