@@ -6,6 +6,7 @@ import {
   createRound,
   deleteRound,
   fetchCandidates,
+  fetchDepartmentProgress,
   fetchParticipantResult,
   fetchRoundMatrix,
   fetchPublishedForms,
@@ -89,3 +90,6 @@ export function useUnscheduleRound(id: string) {
   const invalidate = useInvalidate();
   return useMutation({ mutationFn: () => unscheduleRound(id), onSuccess: invalidate });
 }
+
+export const useDepartmentProgress = (id: string, enabled: boolean) =>
+  useQuery({ queryKey: ["appraisal-rounds", "departments", id], queryFn: () => fetchDepartmentProgress(id), enabled });

@@ -1,6 +1,7 @@
 import { api, type Envelope } from "@/lib/api/client";
 import type {
   Candidate,
+  DepartmentProgress,
   MatrixRow,
   ParticipantResult,
   PublishedForm,
@@ -37,3 +38,5 @@ export const saveTask = (id: string, input: { answers: { questionId: string; val
 export const fetchRoundMatrix = (id: string) => api.get<Envelope<MatrixRow[]>>(`/api/appraisal-rounds/${id}/matrix`);
 export const fetchParticipantResult = (id: string, participantId: string) =>
   api.get<Envelope<ParticipantResult>>(`/api/appraisal-rounds/${id}/people/${participantId}`);
+export const fetchDepartmentProgress = (id: string) =>
+  api.get<Envelope<DepartmentProgress[]>>(`/api/appraisal-rounds/${id}/departments`);

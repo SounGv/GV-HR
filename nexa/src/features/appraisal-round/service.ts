@@ -540,6 +540,27 @@ export async function getParticipantResult(companyId: string, roundId: string, p
   };
 }
 
+/** Submitted / total assignments per department of the people being evaluated, for the overview bars. */
+export async function getRoundDepartmentProgress(companyId: string, id: string) {
+  const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
+  if (!round) throw NotFound("ไม่พบรอบประเมิน");
+  const rows = await prisma.appraisalAssignment.findMany({
+    where: { participant: { roundId: id } },
+    select: { status: true, participant: { select: { departmentName: true } } },
+  });
+  const byDept = new Map<string, { submitted: number; total: number }>();
+  for (const r of rows) {
+    const name = r.participant.departmentName ?? "ไม่ระบุแผนก";
+    const cur = byDept.get(name) ?? { submitted: 0, total: 0 };
+    cur.total++;
+    if (r.status === "SUBMITTED") cur.submitted++;
+    byDept.set(name, cur);
+  }
+  return [...byDept.entries()]
+    .map(([department, v]) => ({ department, ...v, percent: v.total ? Math.round((v.submitted / v.total) * 100) : 0 }))
+    .sort((a, b) => a.percent - b.percent || a.department.localeCompare(b.department, "th"));
+}
+
 /* ───────────────────────────── Rater side ───────────────────────────── */
 
 function requireEmployee(session: AccessClaims): string {

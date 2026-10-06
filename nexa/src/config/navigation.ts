@@ -147,6 +147,7 @@ export const NAV_GROUPS: NavGroup[] = [
     chipColor: "#0D9488",
     items: [
       { label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true, badgeKey: "pendingReviews" },
+      { label: "ภาพรวมประเมิน (ใหม่)", href: "/appraisal", icon: ClipboardCheck, permission: "campaign:manage", ready: true },
       { label: "แบบประเมิน (ใหม่)", href: "/appraisal/forms", icon: ClipboardCheck, permission: "campaign:manage", ready: true },
       { label: "รอบประเมิน (ใหม่)", href: "/appraisal/rounds", icon: ClipboardList, permission: "campaign:manage", ready: true },
       { label: "งานประเมินของฉัน", href: "/appraisal/tasks", icon: ClipboardCheck, permission: "notification:read", ready: true },

@@ -163,3 +163,10 @@ export interface ParticipantResult {
   roundStatus: string;
   groups: { raterType: RaterType; total: number; submitted: number; summary: QuestionSummary[] }[];
 }
+
+export interface DepartmentProgress {
+  department: string;
+  submitted: number;
+  total: number;
+  percent: number;
+}
