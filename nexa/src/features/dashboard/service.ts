@@ -4,6 +4,7 @@ import { can } from "@/lib/auth/rbac";
 import type { RequestStep } from "@/features/workflow/types";
 import { getRemainingBalance, isCompanyLeaveQuotaConfigured, isDailyCompensation } from "@/features/leave/service";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
+import { bangkokParts } from "@/lib/datetime";
 
 /** The three paid leave types that actually deduct an annual quota (see `deductsBalance`) — UNPAID/OTHER have no meaningful "remaining" to show. */
 const LEAVE_TYPES_FOR_SUMMARY = ["ANNUAL", "SICK", "PERSONAL"] as const;
@@ -41,10 +42,9 @@ export async function getActionCenter(
   const hasReports = reportIds.length > 0;
   const reportFilter = { companyId, deletedAt: null, status: "PENDING" as const };
 
-  const todayUtc = (() => {
-    const d = new Date();
-    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  })();
+  // Bangkok calendar day (the server runs in UTC, where "today" is still
+  // yesterday until 07:00 Bangkok time).
+  const todayUtc = bangkokParts().dateUTC;
 
   // Sequential, not Promise.all — this app's pooled connection runs with
   // connection_limit=1, where concurrent Prisma calls can throw P2024
@@ -159,9 +159,9 @@ export async function getMySnapshot(
   /** Pay figures are HR/finance-only — ordinary employees get `latestPayslip: null` and nothing is even queried. */
   includePayslip = false,
 ): Promise<MySnapshot> {
-  const year = new Date().getFullYear();
-  const now = new Date();
-  const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const bkk = bangkokParts();
+  const year = bkk.year;
+  const todayStart = bkk.dateUTC;
 
   // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
   const today = await prisma.attendanceRecord.findFirst({
@@ -237,14 +237,12 @@ export async function getDashboardSummary(
   companyId: string,
   employeeWhere?: Prisma.EmployeeWhereInput,
 ): Promise<DashboardSummary> {
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  const bkk = bangkokParts();
+  const startOfMonth = new Date(Date.UTC(bkk.year, bkk.month - 1, 1));
 
   const activeFilter = { companyId, deletedAt: null, ...(employeeWhere ?? {}) };
 
-  const now = new Date();
-  const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const todayStart = bkk.dateUTC;
   const todayEnd = new Date(todayStart.getTime() + 86_400_000);
 
   // Only resolved when scoped — the unscoped (real dashboard) path never
@@ -345,8 +343,8 @@ const THAI_MONTH_SHORT = [
  */
 export async function getAttendanceTrend(companyId: string, days = 14): Promise<AttendanceTrendPoint[]> {
   const DAY_MS = 86_400_000;
-  const now = new Date();
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const bkk = bangkokParts();
+  const end = new Date(Date.UTC(bkk.year, bkk.month - 1, bkk.day + 1));
   const start = new Date(end.getTime() - days * DAY_MS);
 
   // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
@@ -422,8 +420,8 @@ export interface DepartmentWatchRow {
  */
 export async function getDepartmentWatchlist(companyId: string, days = 30): Promise<DepartmentWatchRow[]> {
   const DAY_MS = 86_400_000;
-  const now = new Date();
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const bkk = bangkokParts();
+  const end = new Date(Date.UTC(bkk.year, bkk.month - 1, bkk.day + 1));
   const start = new Date(end.getTime() - days * DAY_MS);
 
   // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
