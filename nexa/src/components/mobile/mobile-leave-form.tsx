@@ -11,7 +11,7 @@ import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { LEAVE_TYPES, LEAVE_UNITS } from "@/features/leave/schema";
-import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES } from "@/features/leave/days";
+import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "@/features/leave/days";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { useBalances, useCreateLeave } from "@/features/leave/hooks";
 import type { LeaveType } from "@/features/leave/types";
@@ -129,6 +129,10 @@ export function MobileLeaveForm() {
   }, [balanceData]);
 
   const blockedMessage = useMemo(() => {
+    // Monday to Saturday is the working week: a request that only covers a Sunday cannot be sent.
+    if (isHourly ? !!start && isSunday(new Date(start)) : preview === 0) {
+      return <>วันที่เลือกเป็นวันอาทิตย์ ซึ่งไม่ใช่วันทำงาน (นับวันลาจันทร์–เสาร์) กรุณาเลือกวันอื่น</>;
+    }
     if (!preview || UNLIMITED_TYPES.includes(type) || type === "OTHER") return null;
     const bal = balanceMap.get(type);
     if (!bal) return null;
@@ -156,7 +160,7 @@ export function MobileLeaveForm() {
       );
     }
     return null;
-  }, [preview, type, balanceMap, isHourly]);
+  }, [preview, type, balanceMap, isHourly, start]);
 
   async function onSubmit(values: FormSchema) {
     if (blockedMessage) return;
@@ -373,7 +377,7 @@ export function MobileLeaveForm() {
 
           {preview !== null && (
             <p className="mt-3 text-xs text-muted-foreground">
-              รวมทั้งหมด <span className="font-semibold text-foreground">{preview}</span> {isHourly ? "ชั่วโมง" : "วัน"}
+              รวมทั้งหมด <span className="font-semibold text-foreground">{preview}</span> {isHourly ? "ชั่วโมง" : "วัน (นับจันทร์–เสาร์ ไม่นับวันอาทิตย์)"}
             </p>
           )}
         </div>

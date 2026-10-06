@@ -33,7 +33,7 @@ import { ApiError } from "@/lib/api/client";
 import { MobileLeaveForm } from "@/components/mobile/mobile-leave-form";
 import { DesktopOnly } from "@/components/mobile/mobile-screen";
 import { LEAVE_TYPES, LEAVE_UNITS } from "./schema";
-import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES } from "./days";
+import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "./days";
 import { LEAVE_TYPE_LABEL } from "./labels";
 import { useCreateLeave } from "./hooks";
 import { BalanceCards } from "./balance-cards";
@@ -335,10 +335,16 @@ export function LeaveFormPage() {
             )}
           />
 
-          {preview !== null && (
-            <p className="text-sm text-muted-foreground">
-              รวมทั้งหมด <span className="font-medium text-foreground">{preview}</span> {isHourly ? "ชั่วโมง" : "วัน"}
+          {(isHourly ? !!start && isSunday(new Date(start)) : preview === 0) ? (
+            <p role="alert" className="text-sm text-destructive">
+              วันที่เลือกเป็นวันอาทิตย์ ซึ่งไม่ใช่วันทำงาน (นับวันลาจันทร์–เสาร์) กรุณาเลือกวันอื่น
             </p>
+          ) : (
+            preview !== null && (
+              <p className="text-sm text-muted-foreground">
+                รวมทั้งหมด <span className="font-medium text-foreground">{preview}</span> {isHourly ? "ชั่วโมง" : "วัน (นับจันทร์–เสาร์ ไม่นับวันอาทิตย์)"}
+              </p>
+            )
           )}
         </form>
       </Form>

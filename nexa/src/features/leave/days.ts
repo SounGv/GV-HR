@@ -1,15 +1,24 @@
 const MS_PER_DAY = 86_400_000;
 
+/** The working week is Monday to Saturday: Sunday is never a leave day. */
+export const isSunday = (d: Date): boolean => d.getUTCDay() === 0;
+
 /**
- * Inclusive calendar-day count for a leave request. A half-day request always
- * counts as 0.5. (A future Shift/Holiday integration can exclude weekends and
- * public holidays here without changing callers.)
+ * Leave days in a request: every day from start to end, Monday to Saturday (Sundays are skipped).
+ * A half-day request counts 0.5 on a working day. A request that falls only on Sunday counts 0,
+ * which callers must reject. Company holidays are not excluded (not decided yet).
  */
 export function computeLeaveDays(start: Date, end: Date, halfDay: boolean): number {
-  if (halfDay) return 0.5;
+  if (halfDay) return isSunday(start) ? 0 : 0.5;
   const s = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
   const e = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
-  return Math.max(1, Math.floor((e - s) / MS_PER_DAY) + 1);
+  const total = Math.floor((e - s) / MS_PER_DAY) + 1;
+  if (total <= 0) return 0;
+  let count = 0;
+  for (let i = 0; i < Math.min(total, 1100); i++) {
+    if (new Date(s + i * MS_PER_DAY).getUTCDay() !== 0) count++;
+  }
+  return count;
 }
 
 /** Paid leave types deduct from the annual balance; UNPAID/OTHER do not. */

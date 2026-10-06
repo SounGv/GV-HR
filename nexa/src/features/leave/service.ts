@@ -10,7 +10,7 @@ import {
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { computeLeaveDays, computeLeaveHours, deductsBalance, HOURLY_LEAVE_TYPES, PAID_LEAVE_TYPES } from "./days";
+import { computeLeaveDays, computeLeaveHours, deductsBalance, HOURLY_LEAVE_TYPES, isSunday, PAID_LEAVE_TYPES } from "./days";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -167,6 +167,11 @@ export async function createLeave(
   const isHourly = input.unit === "HOUR";
   const days = isHourly ? 0 : computeLeaveDays(input.startDate, input.endDate, input.halfDay);
   const hours = isHourly ? computeLeaveHours(input.startTime!, input.endTime!) : null;
+
+  // The working week is Monday to Saturday, so a request that only covers a Sunday has nothing to take leave for.
+  if (isHourly ? isSunday(input.startDate) : days === 0) {
+    throw BadRequest("วันที่เลือกเป็นวันอาทิตย์ ซึ่งไม่ใช่วันทำงาน (นับวันลาจันทร์–เสาร์) กรุณาเลือกวันอื่น");
+  }
 
   if (isHourly) {
     if (!(HOURLY_LEAVE_TYPES as readonly string[]).includes(input.type)) {
