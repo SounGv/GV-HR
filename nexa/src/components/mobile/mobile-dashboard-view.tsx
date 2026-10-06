@@ -13,6 +13,7 @@ import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { useAuth } from "@/features/auth/auth-context";
 import type { DashboardActions } from "@/features/dashboard/service";
 import { MobileCheckinCard } from "./mobile-checkin-card";
+import { BenefitsIcon, ShiftIcon, TimeEditIcon } from "@/components/shared/menu-icons";
 import {
   LeaveIcon,
   OvertimeIcon,
@@ -20,6 +21,16 @@ import {
   ClipboardIcon,
   StarIllustrationIcon,
 } from "@/components/shared/illustrated-icons";
+
+/** What an employee does most often, two rows of three. Each item only shows if the account may use it. */
+const QUICK_MENU = [
+  { href: "/leave/new", label: "ขอลา", icon: LeaveIcon, permission: "leave:read" },
+  { href: "/overtime/new", label: "ขอ OT", icon: OvertimeIcon, permission: "overtime:read" },
+  { href: "/attendance/corrections/new", label: "แก้เวลาเข้า-ออก", icon: TimeEditIcon, permission: "attendance:create" },
+  { href: "/benefits/medical/new", label: "เบิกค่ารักษา", icon: BenefitsIcon, permission: "expense:read" },
+  { href: "/shifts", label: "ตารางกะ", icon: ShiftIcon, permission: "shift:read" },
+  { href: "/calendar", label: "ปฏิทิน", icon: CalendarIcon, permission: "calendar:read" },
+] as const;
 
 export interface MobileDashboardSnapshot {
   clockInAt: string | null;
@@ -186,11 +197,7 @@ export function MobileDashboardView({
         <section className="space-y-2">
           <h2 className="px-1 text-[13px] font-bold text-foreground">เมนูด่วน</h2>
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { href: "/leave/new", label: "ขอลา", icon: LeaveIcon },
-              { href: "/overtime/new", label: "ขอ OT", icon: OvertimeIcon },
-              { href: "/calendar", label: "ปฏิทิน", icon: CalendarIcon },
-            ].map((item) => (
+            {QUICK_MENU.filter((item) => can(item.permission)).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
