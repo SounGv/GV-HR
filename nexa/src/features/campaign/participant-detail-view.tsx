@@ -349,6 +349,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
                           )}
                         </div>
                         <ScorePicker
+                          label={c.name}
                           value={scores[c.competencyId] ?? 3}
                           onChange={(v) => setScores((prev) => ({ ...prev, [c.competencyId]: v }))}
                         />
@@ -359,19 +360,19 @@ export function ParticipantDetailView({ participantId }: { participantId: string
               </div>
             )}
             <div className="space-y-1.5">
-              <label className="text-base font-medium text-foreground">จุดแข็ง</label>
-              <Textarea rows={2} value={strengths} onChange={(e) => setStrengths(e.target.value)} />
+              <label htmlFor="rater-strengths" className="text-base font-medium text-foreground">จุดแข็ง</label>
+              <Textarea id="rater-strengths" rows={2} value={strengths} onChange={(e) => setStrengths(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-base font-medium text-foreground">สิ่งที่ควรพัฒนา</label>
-              <Textarea rows={2} value={improvements} onChange={(e) => setImprovements(e.target.value)} />
+              <label htmlFor="rater-improvements" className="text-base font-medium text-foreground">สิ่งที่ควรพัฒนา</label>
+              <Textarea id="rater-improvements" rows={2} value={improvements} onChange={(e) => setImprovements(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-base font-medium text-foreground">สรุป</label>
-              <Textarea rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} />
+              <label htmlFor="rater-summary" className="text-base font-medium text-foreground">สรุป</label>
+              <Textarea id="rater-summary" rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-base font-medium text-foreground">แนบหลักฐาน (ไม่บังคับ)</label>
+              <p className="text-base font-medium text-foreground">แนบหลักฐาน (ไม่บังคับ)</p>
               <div className="space-y-2">
                 {evidenceUrls.map((url, i) => (
                   <FileAttachField
@@ -573,8 +574,15 @@ function TemplateProgress({
           {pct}% กรอกไปแล้ว · {answered} จาก {total} หัวข้อ
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={answered}
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-label={`กรอกแล้ว ${answered} จาก ${total} หัวข้อ`}
+      >
+        <div className="h-full rounded-full bg-[#0d9488] transition-all motion-reduce:transition-none" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

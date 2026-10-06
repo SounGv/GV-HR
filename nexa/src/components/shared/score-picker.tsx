@@ -8,12 +8,15 @@ const SCORES = [1, 2, 3, 4, 5];
 export function ScorePicker({
   value,
   onChange,
+  label,
 }: {
   value: number;
   onChange: (score: number) => void;
+  /** Name of what is being scored, so a screen reader can tell the groups apart. */
+  label?: string;
 }) {
   return (
-    <div className="flex items-center gap-2" role="group" aria-label="ให้คะแนน 1 ถึง 5">
+    <div className="flex items-center gap-2" role="group" aria-label={label ? `ให้คะแนน ${label} 1 ถึง 5` : "ให้คะแนน 1 ถึง 5"}>
       {SCORES.map((s) => (
         <button
           key={s}
