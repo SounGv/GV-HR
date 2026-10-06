@@ -435,6 +435,73 @@ export async function closeRound(companyId: string, session: AccessClaims, id: s
   return { id };
 }
 
+/**
+ * "สร้างรอบจากรอบเดิม": a new DRAFT with the same form, people, rater types, weights and options.
+ * Dates are left empty (a new period) and nothing is sent. People who have left since are not copied.
+ * A form that is no longer published is replaced by the newest published version of the same form.
+ */
+export async function cloneRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+  const src = await prisma.appraisalRound.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: {
+      name: true,
+      raterTypes: true,
+      perspectiveWeights: true,
+      remind: true,
+      notifyLine: true,
+      form: { select: { id: true, lineageId: true, status: true } },
+      participants: { select: { employeeId: true } },
+    },
+  });
+  if (!src) throw NotFound("ไม่พบรอบประเมิน");
+
+  const published = src.form.status === "PUBLISHED"
+    ? src.form
+    : await prisma.appraisalForm.findFirst({
+        where: { companyId, lineageId: src.form.lineageId, status: "PUBLISHED", deletedAt: null },
+        select: { id: true, lineageId: true, status: true },
+        orderBy: { version: "desc" },
+      });
+  if (!published) throw BadRequest("แบบประเมินของรอบนี้ไม่ได้ใช้งานแล้ว และยังไม่มีเวอร์ชันใหม่ที่ยืนยันใช้ กรุณาสร้างรอบใหม่แทน");
+
+  const people = await prisma.employee.findMany({
+    where: { id: { in: src.participants.map((p) => p.employeeId) }, companyId, deletedAt: null, status: "ACTIVE" },
+    select: { id: true, department: { select: { name: true } }, position: { select: { title: true } } },
+  });
+  const created = await prisma.appraisalRound.create({
+    data: {
+      companyId,
+      name: `${src.name} (สำเนา)`,
+      formId: published.id,
+      raterTypes: src.raterTypes,
+      perspectiveWeights: (src.perspectiveWeights ?? undefined) as Prisma.InputJsonValue | undefined,
+      remind: src.remind,
+      notifyLine: src.notifyLine,
+      createdById: session.sub,
+      updatedById: session.sub,
+      participants: {
+        create: people.map((p) => ({
+          employeeId: p.id,
+          departmentName: p.department?.name ?? null,
+          positionName: p.position?.title ?? null,
+        })),
+      },
+    },
+    select: { id: true },
+  });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "appraisal_round.clone",
+    entity: "AppraisalRound",
+    entityId: created.id,
+    before: { fromId: id },
+    after: { participants: people.length },
+    ...meta,
+  });
+  return created;
+}
+
 /** Takes a SCHEDULED round back to a draft (nothing has been sent yet), so it can be edited again. */
 export async function unscheduleRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
   const round = await loadDraft(companyId, id);

@@ -8,7 +8,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useNotifications } from "@/features/notification/hooks";
-import { useMyPendingResponses, useEmployeeEvaluationHistory } from "@/features/campaign/hooks";
+import { useEmployeeEvaluationHistory } from "@/features/campaign/hooks";
+import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { useAuth } from "@/features/auth/auth-context";
 import type { DashboardActions } from "@/features/dashboard/service";
 import { MobileCheckinCard } from "./mobile-checkin-card";
@@ -61,8 +62,7 @@ export function MobileDashboardView({
   const unreadCount = notifData?.data?.unread ?? 0;
   const hrNotifCount = notifData?.data?.items.filter((n) => !n.read && n.category === "hr").length ?? 0;
 
-  const { data: pendingData, isLoading: evalLoading } = useMyPendingResponses();
-  const pending = pendingData?.data ?? [];
+  const { items: pending, isLoading: evalLoading } = useMyPendingAppraisalTasks();
   const pendingCount = pending.length;
   const nextPending = pending[0] ?? null;
 
@@ -151,9 +151,7 @@ export function MobileDashboardView({
               {pendingCount > 0 && (
                 <Link
                   href={
-                    pendingCount === 1 && nextPending
-                      ? `/performance/campaigns/${nextPending.campaignId}/participants/${nextPending.participantId}`
-                      : "/performance"
+                    pendingCount === 1 && nextPending ? `/appraisal/tasks/${nextPending.id}` : "/appraisal/tasks"
                   }
                   className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60"
                 >

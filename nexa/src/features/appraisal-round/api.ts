@@ -27,6 +27,7 @@ export const openRound = (id: string) =>
   );
 export const closeRound = (id: string) => api.post<Envelope<{ id: string }>>(`/api/appraisal-rounds/${id}/close`);
 export const remindRound = (id: string) => api.post<Envelope<{ reminded: number }>>(`/api/appraisal-rounds/${id}/remind`);
+export const cloneRound = (id: string) => api.post<Envelope<{ id: string }>>(`/api/appraisal-rounds/${id}/clone`);
 export const unscheduleRound = (id: string) => api.post<Envelope<{ id: string }>>(`/api/appraisal-rounds/${id}/unschedule`);
 export const deleteRound = (id: string) => api.del<Envelope<{ ok: true }>>(`/api/appraisal-rounds/${id}`);
 

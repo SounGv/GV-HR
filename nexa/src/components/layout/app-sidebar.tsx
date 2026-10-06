@@ -23,7 +23,7 @@ import { useAiPanel } from "@/features/ai/ai-panel-context";
 import { useLeave } from "@/features/leave/hooks";
 import { useOvertime } from "@/features/overtime/hooks";
 import { useAttendanceCorrections } from "@/features/attendance-correction/hooks";
-import { useMyPendingResponses } from "@/features/campaign/hooks";
+import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
@@ -56,9 +56,7 @@ export function AppSidebar() {
     (otPendingQ.data?.data.length ?? 0) +
     (correctionPendingQ.data?.data.length ?? 0);
 
-  const canReview = can("performance:read");
-  const pendingReviewsQ = useMyPendingResponses();
-  const pendingReviews = canReview ? (pendingReviewsQ.data?.data.length ?? 0) : 0;
+  const pendingReviews = useMyPendingAppraisalTasks().items.length;
 
   const notificationsQ = useNotifications();
   const unreadNotifications = notificationsQ.data?.data.unread ?? 0;

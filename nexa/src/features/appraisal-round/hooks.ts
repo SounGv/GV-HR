@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  cloneRound,
   closeRound,
   createRound,
   deleteRound,
@@ -93,3 +94,15 @@ export function useUnscheduleRound(id: string) {
 
 export const useDepartmentProgress = (id: string, enabled: boolean) =>
   useQuery({ queryKey: ["appraisal-rounds", "departments", id], queryFn: () => fetchDepartmentProgress(id), enabled });
+
+/** My unfinished evaluation jobs in open rounds (drives the menu badge and the "to do" rows). Accounts with no employee record just get an empty list. */
+export function useMyPendingAppraisalTasks() {
+  const q = useQuery({ queryKey: appraisalRoundKeys.tasks, queryFn: fetchTasks, retry: false, staleTime: 30_000 });
+  const items = (q.data?.data ?? []).filter((t) => t.status !== "SUBMITTED" && t.roundStatus === "OPEN");
+  return { items, isLoading: q.isLoading };
+}
+
+export function useCloneRound() {
+  const invalidate = useInvalidate();
+  return useMutation({ mutationFn: (id: string) => cloneRound(id), onSuccess: invalidate });
+}

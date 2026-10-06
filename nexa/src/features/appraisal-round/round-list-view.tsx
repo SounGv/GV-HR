@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Plus, Trash2 } from "lucide-react";
+import { ClipboardList, Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
-import { useCreateRound, useDeleteRound, useRounds } from "./hooks";
+import { useCloneRound, useCreateRound, useDeleteRound, useRounds } from "./hooks";
 import { ROUND_STATUS_LABEL, type RoundListItem, type RoundStatus } from "./types";
 
 const TONE: Record<RoundStatus, StatusTone> = { DRAFT: "warning", SCHEDULED: "info", OPEN: "success", CLOSED: "neutral" };
@@ -28,6 +28,7 @@ export function RoundListView() {
   const { data, isLoading, isError, refetch } = useRounds();
   const create = useCreateRound();
   const remove = useDeleteRound();
+  const clone = useCloneRound();
   const [target, setTarget] = useState<RoundListItem | null>(null);
   const rounds = data?.data ?? [];
 
@@ -37,6 +38,16 @@ export function RoundListView() {
       router.push(`/appraisal/rounds/${res.data.id}`);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "สร้างรอบไม่สำเร็จ");
+    }
+  }
+
+  async function copyRound(r: RoundListItem) {
+    try {
+      const res = await clone.mutateAsync(r.id);
+      toast.success("สร้างสำเนาเป็นฉบับร่างแล้ว ตั้งวันที่ใหม่ได้เลย");
+      router.push(`/appraisal/rounds/${res.data.id}`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "สร้างสำเนาไม่สำเร็จ");
     }
   }
 
@@ -81,6 +92,11 @@ export function RoundListView() {
               </Link>
               <div className="flex items-center gap-2">
                 <StatusChip tone={TONE[r.status]} label={ROUND_STATUS_LABEL[r.status]} />
+                {can("campaign:create") && (
+                  <Button variant="ghost" size="icon" className="size-11 md:size-9" aria-label={`สร้างรอบใหม่จาก ${r.name}`} disabled={clone.isPending} onClick={() => copyRound(r)}>
+                    <Copy className="size-4" />
+                  </Button>
+                )}
                 {can("campaign:delete") && r.status === "DRAFT" && (
                   <Button variant="ghost" size="icon" className="size-11 md:size-9" aria-label={`ลบฉบับร่าง ${r.name}`} onClick={() => setTarget(r)}>
                     <Trash2 className="size-4" />

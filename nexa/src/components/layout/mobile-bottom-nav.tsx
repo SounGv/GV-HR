@@ -15,7 +15,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useLeave } from "@/features/leave/hooks";
 import { useOvertime } from "@/features/overtime/hooks";
 import { useAttendanceCorrections } from "@/features/attendance-correction/hooks";
-import { useMyPendingResponses } from "@/features/campaign/hooks";
+import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +50,10 @@ export function MobileBottomNav() {
     (otPendingQ.data?.data.length ?? 0) +
     (correctionPendingQ.data?.data.length ?? 0);
 
-  const canReview = can("performance:read");
-  const pendingReviewsQ = useMyPendingResponses();
-  const pendingReviewCount = canReview ? (pendingReviewsQ.data?.data.length ?? 0) : 0;
+  const pendingReviewCount = useMyPendingAppraisalTasks().items.length;
+  const canReview = can("performance:read") || pendingReviewCount > 0;
+  // With work waiting, the tab opens the to-do list directly; otherwise the results hub.
+  const reviewHref = pendingReviewCount > 0 ? "/appraisal/tasks" : "/performance";
 
   const notificationsQ = useNotifications();
   const unreadCount = notificationsQ.data?.data.unread ?? 0;
@@ -94,7 +95,7 @@ export function MobileBottomNav() {
             show: can("leave:read") || can("overtime:read"),
             badge: pendingCount,
           },
-          { href: "/performance", label: "ประเมิน", icon: StarIllustrationIcon, show: canReview, badge: pendingReviewCount },
+          { href: reviewHref, label: "ประเมิน", icon: StarIllustrationIcon, show: canReview, badge: pendingReviewCount },
           profileTab,
         ]
       : [
@@ -107,7 +108,7 @@ export function MobileBottomNav() {
             show: can("leave:read") || can("overtime:read"),
             badge: 0,
           },
-          { href: "/performance", label: "ประเมิน", icon: StarIllustrationIcon, show: canReview, badge: pendingReviewCount },
+          { href: reviewHref, label: "ประเมิน", icon: StarIllustrationIcon, show: canReview, badge: pendingReviewCount },
           profileTab,
         ];
 
