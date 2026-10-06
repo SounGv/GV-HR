@@ -82,7 +82,7 @@ export function MobileCheckinCard() {
   return (
     <>
       <section className="relative overflow-hidden rounded-3xl bg-gv-deep-green p-5 text-white">
-        <div className="pointer-events-none absolute -top-20 -right-14 size-64 rounded-full bg-gv-lime/25 blur-[90px]" />
+        <div className="pointer-events-none absolute -top-20 -right-14 size-64 rounded-full bg-[radial-gradient(closest-side,rgb(205_235_3/0.28),transparent)]" />
 
         <div className="relative flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-xs text-slate-300">

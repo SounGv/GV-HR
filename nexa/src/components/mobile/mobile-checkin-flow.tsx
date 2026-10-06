@@ -357,7 +357,7 @@ function CameraStep({
       )}
 
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pt-10 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
-        <div className="mx-auto mb-4 flex max-w-xs items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2 text-xs backdrop-blur">
+        <div className="mx-auto mb-4 flex max-w-xs items-center justify-between gap-2 rounded-xl bg-black/60 px-3 py-2 text-xs">
           <span className="flex items-center gap-1.5 text-slate-200">
             <MapPinned className={cn("size-3.5 shrink-0", coords ? "text-gv-lime" : "text-warning")} />
             {branchName ?? "ไม่ระบุสาขา"}
