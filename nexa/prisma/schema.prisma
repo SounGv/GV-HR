@@ -387,6 +387,7 @@ model Company {
   evaluationScheduleTemplates EvaluationScheduleTemplate[]
   calibrationSessions         CalibrationSession[]
   evaluationTemplates         EvaluationTemplate[]
+  appraisalForms              AppraisalForm[]
   successionPlans             SuccessionPlan[]
   announcements               Announcement[]
   overtimeRequests            OvertimeRequest[]
@@ -2430,4 +2431,80 @@ model LineGroupTarget {
 
   @@index([companyId, purpose, active])
   @@map("line_group_targets")
+}
+
+// ─────────────────────── Appraisal (new evaluation system) ───────────────────────
+// Replaces the Evaluation* models. Forms are one level deep: a form has questions.
+// A PUBLISHED form is read-only; changing it means creating the next version
+// (same lineageId, version + 1). Rounds, people and answers arrive in later steps.
+
+enum AppraisalFormStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AppraisalAnswerType {
+  RATING // numeric scale 1..AppraisalForm.ratingMax, the only type that scores
+  CHOICE // pick one
+  MULTI_CHOICE // pick several
+  SHORT_TEXT
+  PARAGRAPH
+}
+
+enum AppraisalRaterType {
+  SELF
+  MANAGER
+  PEER
+  SUBORDINATE
+}
+
+model AppraisalForm {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Shared by every version of the same form.
+  lineageId String
+  version   Int    @default(1)
+  name      String
+  description String?
+  status    AppraisalFormStatus @default(DRAFT)
+
+  // Scale for RATING questions. Defaults are placeholders until HR confirms the scale.
+  ratingMax    Int   @default(5)
+  ratingLabels Json? // optional [{ score, label }]; null = the app's default descriptions
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  questions AppraisalQuestion[]
+
+  @@unique([lineageId, version])
+  @@index([companyId, status])
+  @@map("appraisal_forms")
+}
+
+model AppraisalQuestion {
+  id     String        @id @default(uuid())
+  formId String
+  form   AppraisalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  order      Int                 @default(0)
+  text       String
+  helpText   String? // behaviour example / extra explanation
+  answerType AppraisalAnswerType
+  // CHOICE / MULTI_CHOICE: [{ value, label }]. Null for every other type.
+  options    Json?
+  weight     Int                 @default(1) // only used by RATING
+  required   Boolean             @default(true)
+  // Which rater types see this question; empty = everyone.
+  visibleTo  AppraisalRaterType[] @default([])
+
+  @@index([formId, order])
+  @@map("appraisal_questions")
 }

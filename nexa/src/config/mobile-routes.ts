@@ -62,6 +62,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/overtime": { title: "ล่วงเวลา (OT)", backHref: "/requests" },
   "/overtime/new": { title: "ขอ OT", backHref: "/requests" },
   "/performance": { title: "ประเมินผล", backHref: "/services" },
+  "/appraisal/forms": { title: "แบบประเมิน", backHref: "/services" },
   "/performance/new": { title: "สร้างรอบประเมิน", backHref: "/performance" },
   "/performance/competencies": { title: "สมรรถนะ", backHref: "/performance" },
   "/performance/competencies/new": { title: "เพิ่มสมรรถนะ", backHref: "/performance/competencies" },
@@ -84,6 +85,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
 };
 
 const PATTERNS: RoutePattern[] = [
+  { pattern: /^\/appraisal\/forms\/[^/]+$/, meta: { title: "แก้ไขแบบประเมิน", backHref: "/appraisal/forms" } },
   { pattern: /^\/employees\/[^/]+\/account$/, meta: { title: "บัญชีผู้ใช้", backHref: "/employees" } },
   { pattern: /^\/employees\/[^/]+\/edit$/, meta: { title: "แก้ไขพนักงาน", backHref: "/employees" } },
   { pattern: /^\/employees\/[^/]+\/evaluation-history$/, meta: { title: "ประวัติการประเมิน", backHref: "/employees" } },
