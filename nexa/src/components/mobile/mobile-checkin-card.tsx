@@ -126,7 +126,7 @@ export function MobileCheckinCard() {
 
         <div className="relative mt-4 border-t border-dashed border-white/15 pt-4">
           {isLoading ? (
-            <div className="h-13 w-full animate-pulse rounded-2xl bg-white/10" />
+            <div className="h-13 w-full animate-pulse motion-reduce:animate-none rounded-2xl bg-white/10" />
           ) : hasOut ? (
             <div className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-success text-sm font-semibold text-white">
               <CheckCircle2 className="size-4.5" /> ลงเวลาครบแล้ววันนี้

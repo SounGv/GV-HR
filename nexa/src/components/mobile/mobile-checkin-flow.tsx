@@ -334,7 +334,7 @@ function CameraStep({
       />
       {!ready && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-slate-300">
-          <Loader2 className="size-6 animate-spin" /> กำลังเปิดกล้อง…
+          <Loader2 className="size-6 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> กำลังเปิดกล้อง…
         </div>
       )}
       {error && (
@@ -397,7 +397,7 @@ function CameraStep({
             type="button"
             onClick={onCapture}
             disabled={!ready}
-            className="flex size-18 items-center justify-center rounded-full bg-white ring-4 ring-white/30 active:scale-95 disabled:opacity-40"
+            className="flex size-18 items-center justify-center rounded-full bg-white ring-4 ring-white/30 active:scale-95 motion-reduce:active:scale-100 disabled:opacity-40"
             aria-label="ถ่ายรูป"
           >
             <Camera className="size-7 text-gv-dark-green" />
@@ -449,7 +449,7 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
 function ProcessingStep({ stage }: { stage: "gps" | "save" }) {
   return (
     <div role="status" aria-live="polite" className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      <Loader2 className="size-9 animate-spin text-gv-lime" aria-hidden="true" />
+      <Loader2 className="size-9 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite] text-gv-lime" aria-hidden="true" />
       <p className="text-sm text-slate-200">{stage === "gps" ? "กำลังตรวจสอบตำแหน่ง…" : "กำลังบันทึกเวลา…"}</p>
     </div>
   );
@@ -509,7 +509,7 @@ function OffsiteStep({
               disabled={!reason.trim() || pending}
               className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-gv-dark-green disabled:opacity-40"
             >
-              {pending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} ยืนยันเช็คอิน
+              {pending ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check className="size-4" />} ยืนยันเช็คอิน
             </button>
           </div>
         </>
@@ -592,7 +592,7 @@ function SuccessStep({
   return (
     <div role="status" aria-live="polite" className="flex flex-1 flex-col overflow-y-auto bg-gv-dark-green px-5 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
       <div className="flex flex-1 flex-col items-center justify-center py-4 text-center">
-        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gv-lime text-gv-dark-green">
+        <div className="gv-confirm flex size-16 shrink-0 items-center justify-center rounded-full bg-gv-lime text-gv-dark-green">
           <CheckCircle2 className="size-9" />
         </div>
         <p className="mt-4 text-lg font-semibold">{mode === "in" ? "เช็คอินสำเร็จ" : "เช็คเอาท์สำเร็จ"}</p>

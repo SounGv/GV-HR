@@ -271,7 +271,7 @@ function RejectDialog({
             ยกเลิก
           </Button>
           <Button variant="destructive" className="h-11" onClick={onConfirm} disabled={loading}>
-            {loading && <Loader2 className="size-4 animate-spin" />}
+            {loading && <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" />}
             ยืนยันปฏิเสธ
           </Button>
         </DialogFooter>
@@ -412,7 +412,7 @@ function Approvals() {
               <X className="size-4" /> ปฏิเสธ
             </Button>
             <Button className="h-11 flex-1" disabled={busy} onClick={() => decide(item, "approve")}>
-              {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} อนุมัติ
+              {busy ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check className="size-4" />} อนุมัติ
             </Button>
           </div>
         </Card>

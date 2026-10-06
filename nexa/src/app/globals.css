@@ -420,3 +420,24 @@
   letter-spacing: 0.02em;
 }
 
+/* Confirmation moment: the check on a finished check-in/out eases in once.
+   Content is visible by default; reduced motion keeps only a short fade. */
+@keyframes gv-confirm {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes gv-confirm-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.gv-confirm {
+  animation: gv-confirm 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gv-confirm {
+    animation: gv-confirm-fade 200ms ease-out both;
+  }
+  .theme-flip7 .flip7-pill-btn:active {
+    transform: none;
+  }
+}
