@@ -175,7 +175,7 @@ export function OvertimeFormPage() {
           />
           {hours > 0 && (
             <p className="text-sm text-muted-foreground">
-              รวม <span className="font-medium text-foreground">{hours}</span> ชั่วโมง (อัตรา {rate}×)
+              รวม <span className="font-medium text-foreground">{hours}</span> ชั่วโมง (อัตรา {rate}×) · ยอดเงินจะคำนวณให้เมื่อหัวหน้าอนุมัติ
             </p>
           )}
         </form>

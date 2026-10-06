@@ -64,26 +64,10 @@ export async function createOvertime(
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: {
-      firstName: true,
-      lastName: true,
-      managerId: true,
-      compensationType: true,
-      baseSalary: true,
-      dailyRate: true,
-      hourlyRate: true,
-    },
+    select: { firstName: true, lastName: true, managerId: true },
   });
-  const estimated = estimateAmount(
-    {
-      compensationType: employee?.compensationType ?? "MONTHLY",
-      baseSalary: employee?.baseSalary ? Number(employee.baseSalary) : null,
-      dailyRate: employee?.dailyRate ? Number(employee.dailyRate) : null,
-      hourlyRate: employee?.hourlyRate ? Number(employee.hourlyRate) : null,
-    },
-    hours,
-    multiplier,
-  );
+  // The employee chooses the kind of day (normal / day off) when asking. Pay is NOT worked out here:
+  // it is calculated when the request is approved (decideOvertime), from the rate chosen and the pay on record then.
 
   const record = await prisma.overtimeRequest.create({
     data: {
@@ -94,7 +78,7 @@ export async function createOvertime(
       endTime: input.endTime,
       hours,
       multiplier,
-      estimatedAmount: estimated,
+      estimatedAmount: 0,
       reason: input.reason,
       status: "PENDING",
       createdById: session.sub,
@@ -109,7 +93,7 @@ export async function createOvertime(
     action: "overtime.create",
     entity: "OvertimeRequest",
     entityId: record.id,
-    after: { hours, estimated, multiplier },
+    after: { hours, multiplier },
     ...meta,
   });
 
