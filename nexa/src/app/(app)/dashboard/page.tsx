@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
 import { ArrowUpRight, ArrowRight, TriangleAlert, Sparkles } from "lucide-react";
@@ -14,6 +14,21 @@ import {
   type LeaveBalanceSummary,
 } from "@/features/dashboard/service";
 import { ActionCenter } from "@/features/dashboard/action-center";
+import {
+  loadAttendanceWatch,
+  loadTodayAttendance,
+  listDepartmentOptions,
+} from "@/features/attendance-status/service";
+import {
+  AttendanceAttentionCards,
+  AttendanceFollowChips,
+  AttendanceStatusBar,
+  AttendanceStatusTiles,
+  DepartmentBreakdownCard,
+} from "@/features/attendance-status/attendance-today-sections";
+import { DepartmentWatchCard, WatchlistCard } from "@/features/attendance-status/attendance-watch-sections";
+import { DepartmentFilter } from "@/features/attendance-status/department-filter";
+import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AttendanceRateLine, KpiMiniBars } from "@/features/dashboard/dashboard-charts";
@@ -180,8 +195,40 @@ function employmentTypeIcon(type: string) {
   return type === "DAILY_WORKER" ? DailyWorkerIcon : PeopleIcon;
 }
 
-export default async function DashboardPage() {
+async function AttendanceWatchSection({
+  companyId,
+  session,
+  departmentIds,
+}: {
+  companyId: string;
+  session: AccessClaims;
+  departmentIds: string[];
+}) {
+  let watch;
+  try {
+    watch = await loadAttendanceWatch(companyId, session, departmentIds);
+  } catch {
+    return (
+      <Card>
+        <CardContent className="py-4 text-sm text-muted-foreground">
+          โหลดรายชื่อที่ควรติดตามไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      <WatchlistCard data={watch} departmentIds={departmentIds} />
+      {departmentIds.length === 0 && <DepartmentWatchCard data={watch} />}
+    </div>
+  );
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ dept?: string }> }) {
   const user = await getCurrentUser();
+  const { dept } = await searchParams;
   // Sequential, not Promise.all — connection_limit=1.
   const s = await getDashboardSummary(user!.companyId);
   const actions = await getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles, user!.permissions);
@@ -189,6 +236,23 @@ export default async function DashboardPage() {
   const mine = user!.employee ? await getMySnapshot(user!.companyId, user!.employee.id, canSeePay) : null;
   const attendanceTrend = await getAttendanceTrend(user!.companyId);
   const departmentWatchlist = await getDepartmentWatchlist(user!.companyId);
+
+  // Attendance overview (who is in, late, absent, on leave) — only for people
+  // who can approve or manage attendance, and the server narrows it to their own
+  // team unless they are company-wide. Without the permission nothing is read.
+  const canSeeAttendance = can(user!.permissions, "attendance:approve") || can(user!.permissions, "attendance:manage");
+  const deptIds = dept && UUID_RE.test(dept) ? [dept] : [];
+  const session = {
+    sub: user!.id,
+    companyId: user!.companyId,
+    email: user!.email ?? null,
+    username: user!.username ?? null,
+    roles: user!.roles,
+    perms: user!.permissions,
+    employeeId: user!.employee?.id,
+  };
+  const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
+  const departmentOptions = canSeeAttendance ? await listDepartmentOptions(user!.companyId) : [];
 
   const name = user?.employee ? fullName(user.employee.firstName, user.employee.lastName) : loginIdentifier(user ?? {});
   const fmtClock = (iso: string | null) =>
@@ -266,6 +330,15 @@ export default async function DashboardPage() {
         </div>
       </Card>
 
+      {attendanceToday && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <DepartmentFilter departments={departmentOptions} selected={deptIds[0] ?? null} />
+          </div>
+          <AttendanceStatusBar data={attendanceToday} departmentIds={deptIds} />
+        </>
+      )}
+
       {/* My today — personal snapshot, not company aggregates. "เงินเดือนล่าสุด"
           deliberately left out for now — HR wants to focus rollout on
           attendance/leave and the evaluation system first. */}
@@ -293,7 +366,28 @@ export default async function DashboardPage() {
       )}
 
       {/* Action center */}
-      <ActionCenter data={actions} />
+      <ActionCenter
+        data={actions}
+        followUp={attendanceToday ? <AttendanceFollowChips data={attendanceToday} departmentIds={deptIds} /> : undefined}
+      />
+
+      {attendanceToday && (
+        <>
+          <AttendanceStatusTiles data={attendanceToday} departmentIds={deptIds} />
+          <AttendanceAttentionCards data={attendanceToday} departmentIds={deptIds} />
+          {/* The 30-day watch list is the slowest part (it reads a month of attendance), so it streams in after the rest. */}
+          <Suspense
+            fallback={
+              <Card>
+                <CardContent className="py-4 text-sm text-muted-foreground">กำลังคำนวณรายชื่อที่ควรติดตาม…</CardContent>
+              </Card>
+            }
+          >
+            <AttendanceWatchSection companyId={user!.companyId} session={session} departmentIds={deptIds} />
+          </Suspense>
+          <DepartmentBreakdownCard data={attendanceToday} departmentIds={deptIds} />
+        </>
+      )}
 
       {/* KPI cards (today) */}
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">

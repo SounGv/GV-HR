@@ -36,6 +36,10 @@
   --color-status-leave-border: var(--status-leave-border);
   --color-status-leave-fg: var(--status-leave-fg);
   --color-status-leave-dot: var(--status-leave-dot);
+  --color-status-notyet-bg: var(--status-notyet-bg);
+  --color-status-notyet-border: var(--status-notyet-border);
+  --color-status-notyet-fg: var(--status-notyet-fg);
+  --color-status-notyet-dot: var(--status-notyet-dot);
   --color-leave-sick-bg: var(--leave-sick-bg);
   --color-leave-sick-fg: var(--leave-sick-fg);
   --color-surface-muted: var(--surface-muted);
@@ -242,6 +246,10 @@
   --status-leave-border: #bcd0f4;
   --status-leave-fg: #154aa3;
   --status-leave-dot: #3b82f6;
+  --status-notyet-bg: #ffffff;
+  --status-notyet-border: #d4d8dc;
+  --status-notyet-fg: #3a4047;
+  --status-notyet-dot: #9aa1a9;
   --leave-sick-bg: #ffedd5;
   --leave-sick-fg: #9a3412;
 }
@@ -360,6 +368,10 @@
   --status-leave-border: #2a4272;
   --status-leave-fg: #9cc0ff;
   --status-leave-dot: #5b8ef5;
+  --status-notyet-bg: #1b1e21;
+  --status-notyet-border: #34383d;
+  --status-notyet-fg: #b8bec4;
+  --status-notyet-dot: #8a9199;
   --leave-sick-bg: #3a2210;
   --leave-sick-fg: #fdba74;
 }

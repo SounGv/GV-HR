@@ -55,7 +55,7 @@ const TILES: ApprovalTile[] = [
  * plain empty-state card when there's nothing to approve and no personal
  * shift/pending-request info to show either.
  */
-export function ActionCenter({ data }: { data: DashboardActions }) {
+export function ActionCenter({ data, followUp }: { data: DashboardActions; followUp?: React.ReactNode }) {
   const tiles = TILES.filter((t) => data.approvals[t.key] > 0);
   const nothingToApprove = tiles.length === 0;
   const showPersonal = !!data.shiftToday || data.myPending > 0;
@@ -85,7 +85,10 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
             </div>
           </div>
 
-          <div className="flex flex-1 flex-wrap gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+          {/* Attendance follow-up chips (absent / late / leave today) sit in the free space of this strip. */}
+          {followUp}
+          <div className="flex flex-wrap gap-3">
             {tiles.map((t) => (
               <Link
                 key={t.key}
@@ -99,6 +102,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
                 </div>
               </Link>
             ))}
+          </div>
           </div>
 
           <Link
