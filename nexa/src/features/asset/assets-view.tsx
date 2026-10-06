@@ -28,6 +28,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { fullName, formatCurrency } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { AssetAssignDialog } from "./asset-assign-dialog";
 import { AssetStatusBadge, ASSET_STATUS_LABEL } from "./labels";
@@ -39,6 +40,8 @@ const ALL = "ALL";
 
 export function AssetsView() {
   const { can } = useAuth();
+  // Render only the layout that fits the screen.
+  const isMobile = useIsMobile();
   const canManage = can("asset:create");
   const canDelete = can("asset:delete");
 
@@ -85,18 +88,18 @@ export function AssetsView() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 gap-2">
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row">
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="ค้นหาชื่อ, รหัส, S/N…"
-              className="pl-8"
+              className="pl-8 max-sm:h-11"
             />
           </div>
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? ALL)}>
-            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
+            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px] max-sm:h-11 max-sm:w-full" aria-label="สถานะ">
               <SelectValue placeholder="ทุกสถานะ" />
             </SelectTrigger>
             <SelectContent>
@@ -110,7 +113,7 @@ export function AssetsView() {
           </Select>
         </div>
         {canManage && (
-          <Button render={<Link href="/assets/new" />}>
+          <Button render={<Link href="/assets/new" />} className="max-sm:h-11">
             <Plus className="size-4" /> เพิ่มทรัพย์สิน
           </Button>
         )}
@@ -122,6 +125,62 @@ export function AssetsView() {
         <TableLoadingState rows={6} />
       ) : assets.length === 0 ? (
         <EmptyState icon={Boxes} title="ยังไม่มีทรัพย์สิน" description={canManage ? "เริ่มต้นด้วยการเพิ่มทรัพย์สิน" : "ยังไม่มีข้อมูล"} />
+      ) : isMobile ? (
+        <ul className="space-y-3">
+          {assets.map((a) => (
+            <li key={a.id} className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
+              <Link href={`/assets/${a.id}`} className="block">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold break-words text-foreground">{a.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {a.assetCode} · {a.category}
+                      {a.serialNumber ? ` · ${a.serialNumber}` : ""}
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    <AssetStatusBadge status={a.status} />
+                  </div>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <dt className="text-muted-foreground">ผู้ถือครอง</dt>
+                    <dd className="font-medium">
+                      {a.assignedTo ? fullName(a.assignedTo.firstName, a.assignedTo.lastName) : "-"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">ราคา</dt>
+                    <dd className="font-medium tabular-nums">
+                      {a.purchasePrice != null ? formatCurrency(a.purchasePrice) : "-"}
+                    </dd>
+                  </div>
+                </dl>
+              </Link>
+              {canManage && (
+                <div className="mt-3 flex gap-2 border-t border-border pt-3">
+                  {a.status === "ASSIGNED" ? (
+                    <Button variant="outline" className="h-11 flex-1" disabled={assignMut.isPending} onClick={() => returnAsset(a)}>
+                      <Undo2 className="size-4" /> คืน
+                    </Button>
+                  ) : (
+                    <Button variant="outline" className="h-11 flex-1" onClick={() => setAssignTarget(a)}>
+                      <UserPlus className="size-4" /> เบิก
+                    </Button>
+                  )}
+                  <Button variant="outline" className="h-11 flex-1" render={<Link href={`/assets/${a.id}/edit`} />}>
+                    <Pencil className="size-4" /> แก้ไข
+                  </Button>
+                  {canDelete && (
+                    <Button variant="outline" size="icon" className="size-11" aria-label="ลบ" onClick={() => setDeleteTarget(a)}>
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
       ) : (
         <Card className="gap-0 overflow-x-auto p-0">
           <Table>
