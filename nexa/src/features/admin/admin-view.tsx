@@ -25,7 +25,7 @@ export function AdminView() {
       onValueChange={(v) => router.replace(`/admin?tab=${v}`, { scroll: false })}
       className="space-y-4"
     >
-      <TabsList>
+      <TabsList className="max-md:group-data-horizontal/tabs:h-[54px]">
         <TabsTrigger value="roles">บทบาทและสิทธิ์</TabsTrigger>
         <TabsTrigger value="users">ผู้ใช้และบทบาท</TabsTrigger>
         <TabsTrigger value="audit">บันทึกการใช้งาน</TabsTrigger>

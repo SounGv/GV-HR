@@ -19,6 +19,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ApiError } from "@/lib/api/client";
 import { fullName, loginIdentifier } from "@/lib/format";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useDeleteUser, useUsers } from "./hooks";
 import type { AdminUser, AiAccessScope } from "./types";
 
@@ -29,6 +30,7 @@ const AI_SCOPE_LABEL: Record<AiAccessScope, string> = {
 };
 
 export function UsersRoles() {
+  const isMobile = useIsMobile();
   const { data, isLoading, isError, refetch } = useUsers();
   const allUsers = data?.data ?? [];
   const [search, setSearch] = useState("");
@@ -63,18 +65,62 @@ export function UsersRoles() {
 
   return (
     <div className="space-y-3">
-      <div className="relative max-w-xs">
+      <div className="relative max-w-xs max-sm:max-w-none">
         <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="ค้นหาชื่อ, รหัสพนักงาน, อีเมล..."
-          className="pl-8"
+          className="pl-8 max-sm:h-11"
         />
       </div>
 
       {users.length === 0 ? (
         <EmptyState icon={Search} title="ไม่พบผู้ใช้ที่ตรงกับคำค้นหา" description="ลองค้นหาด้วยคำอื่น" />
+      ) : isMobile ? (
+        <ul className="space-y-3">
+          {users.map((u) => (
+            <li key={u.id} className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
+              <p className="text-base font-semibold break-words text-foreground">
+                {u.employee ? fullName(u.employee.firstName, u.employee.lastName) : loginIdentifier(u)}
+              </p>
+              <p className="text-sm break-all text-muted-foreground">{u.email ?? `@${u.username}`}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {u.roleNames.length > 0 ? (
+                  u.roleNames.map((n) => (
+                    <span key={n} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                      {n}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">— ไม่มีบทบาท —</span>
+                )}
+                {u.aiAccessScope && (
+                  <span className="rounded-full bg-info/10 px-2.5 py-1 text-xs text-info">
+                    {AI_SCOPE_LABEL[u.aiAccessScope]}
+                  </span>
+                )}
+              </div>
+              <div className="mt-3 grid grid-cols-[1fr_1fr_auto] gap-2 border-t border-border pt-3">
+                <Button variant="outline" className="h-11" render={<Link href={`/admin/users/${u.id}/roles`} />}>
+                  แก้ไขบทบาท
+                </Button>
+                <Button variant="outline" className="h-11" render={<Link href={`/admin/users/${u.id}/ai-access`} />}>
+                  AI Assistant
+                </Button>
+                <Button
+                  variant="outline"
+                  className="size-11 text-destructive hover:text-destructive"
+                  size="icon"
+                  aria-label="ลบบัญชีผู้ใช้"
+                  onClick={() => setDeleteTarget(u)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <Table>
