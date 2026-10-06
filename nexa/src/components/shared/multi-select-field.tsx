@@ -9,6 +9,7 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { cn } from "@/lib/utils";
 
 export interface MultiSelectOption {
   value: string;
@@ -31,6 +32,7 @@ export function MultiSelectField({
   selected,
   onChange,
   searchThreshold = 8,
+  className,
 }: {
   label: string;
   placeholder: string;
@@ -38,6 +40,8 @@ export function MultiSelectField({
   selected: string[];
   onChange: (next: string[]) => void;
   searchThreshold?: number;
+  /** Extra classes for the whole field (e.g. `w-full` on phones). */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -57,7 +61,7 @@ export function MultiSelectField({
   }
 
   return (
-    <div className="space-y-1">
+    <div className={cn("space-y-1", className)}>
       <label className="text-xs text-muted-foreground">{label}</label>
       <DropdownMenu
         open={open}
@@ -70,7 +74,7 @@ export function MultiSelectField({
           render={
             <button
               type="button"
-              className="flex h-8 w-auto min-w-[160px] max-w-[320px] items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className={cn("flex h-8 w-auto min-w-[160px] max-w-[320px] items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50", className && "h-11 w-full max-w-none min-w-0")}
             />
           }
         >

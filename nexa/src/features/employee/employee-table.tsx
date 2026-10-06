@@ -4,10 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { SortingState } from "@tanstack/react-table";
-import { Plus, Download, Loader2 } from "lucide-react";
+import { Plus, Download, Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/shared/data-table";
+import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { fullName, getInitials } from "@/lib/format";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { EmployeeStatusBadge } from "./status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +66,8 @@ const ALL = "ALL";
 
 export function EmployeeTable() {
   const router = useRouter();
+  // Render only the layout that fits, so avatars are not loaded twice.
+  const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const { can } = useAuth();
   const canCreate = can("employee:create");
@@ -164,76 +172,97 @@ export function EmployeeTable() {
     }
   }
 
+  const statusSelect = (triggerClass: string) => (
+    <Select
+      value={status}
+      onValueChange={(v) => {
+        setStatus(v ?? ALL);
+        setPage(1);
+      }}
+    >
+      <SelectTrigger className={triggerClass} aria-label="สถานะ">
+        <SelectValue placeholder="ทุกสถานะ" />
+      </SelectTrigger>
+      <SelectContent alignItemWithTrigger={false}>
+        <SelectItem value={ALL}>ทุกสถานะ</SelectItem>
+        {EMPLOYEE_STATUSES.map((s) => (
+          <SelectItem key={s} value={s}>
+            {STATUS_LABEL[s]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  const employmentSelect = (triggerClass: string) => (
+    <Select
+      value={employmentType}
+      onValueChange={(v) => {
+        setEmploymentType(v ?? ALL);
+        setPage(1);
+      }}
+    >
+      <SelectTrigger className={triggerClass} aria-label="ประเภทการจ้าง">
+        <SelectValue placeholder="ทุกประเภทการจ้าง" />
+      </SelectTrigger>
+      <SelectContent alignItemWithTrigger={false}>
+        <SelectItem value={ALL}>ทุกประเภทการจ้าง</SelectItem>
+        {EMPLOYMENT_TYPES.map((t) => (
+          <SelectItem key={t} value={t}>
+            {EMPLOYMENT_LABEL[t]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  const departmentFilter = (className?: string) => (
+    <MultiSelectField
+      label="แผนก"
+      placeholder="ทุกแผนก"
+      options={departmentOptions}
+      selected={departmentIds}
+      onChange={(next) => {
+        setDepartmentIds(next);
+        setPage(1);
+      }}
+      className={className}
+    />
+  );
+
+  const exportButton = (className?: string) =>
+    canExport ? (
+      <Button variant="outline" onClick={handleExport} disabled={isExporting} className={className}>
+        {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+        ส่งออก
+      </Button>
+    ) : null;
+
+  const addButton = (className?: string) =>
+    canCreate ? (
+      <Button render={<Link href="/employees/new" />} className={className}>
+        <Plus className="size-4" /> เพิ่มพนักงาน
+      </Button>
+    ) : null;
+
   const filters = (
     <>
-      <MultiSelectField
-        label="แผนก"
-        placeholder="ทุกแผนก"
-        options={departmentOptions}
-        selected={departmentIds}
-        onChange={(next) => {
-          setDepartmentIds(next);
-          setPage(1);
-        }}
-      />
-
-      <Select
-        value={status}
-        onValueChange={(v) => {
-          setStatus(v ?? ALL);
-          setPage(1);
-        }}
-      >
-        <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
-          <SelectValue placeholder="ทุกสถานะ" />
-        </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false}>
-          <SelectItem value={ALL}>ทุกสถานะ</SelectItem>
-          {EMPLOYEE_STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={employmentType}
-        onValueChange={(v) => {
-          setEmploymentType(v ?? ALL);
-          setPage(1);
-        }}
-      >
-        <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
-          <SelectValue placeholder="ทุกประเภทการจ้าง" />
-        </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false}>
-          <SelectItem value={ALL}>ทุกประเภทการจ้าง</SelectItem>
-          {EMPLOYMENT_TYPES.map((t) => (
-            <SelectItem key={t} value={t}>
-              {EMPLOYMENT_LABEL[t]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {canExport && (
-        <Button variant="outline" onClick={handleExport} disabled={isExporting}>
-          {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-          ส่งออก
-        </Button>
-      )}
-
-      {canCreate && (
-        <Button render={<Link href="/employees/new" />}>
-          <Plus className="size-4" /> เพิ่มพนักงาน
-        </Button>
-      )}
+      {departmentFilter()}
+      {statusSelect("min-w-[160px] w-auto max-w-[320px]")}
+      {employmentSelect("min-w-[160px] w-auto max-w-[320px]")}
+      {exportButton()}
+      {addButton()}
     </>
   );
 
+  const total = data?.meta.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const items = data?.data ?? [];
+
   return (
     <>
+      {!isMobile && (
+      <div>
       <DataTable
         columns={columns}
         data={data?.data ?? []}
@@ -256,6 +285,101 @@ export function EmployeeTable() {
           canCreate ? "เริ่มต้นด้วยการเพิ่มพนักงานคนแรก" : "ยังไม่มีข้อมูลพนักงานในระบบ"
         }
       />
+      </div>
+      )}
+
+      {/* Phones: one card per person instead of a wide table. Same query,
+          filters and permissions as the table above. */}
+      {isMobile && (
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="ค้นหาชื่อ, รหัส, อีเมล…"
+            aria-label="ค้นหาพนักงาน"
+            className="h-11 pl-9"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {departmentFilter("col-span-2")}
+          {statusSelect("h-11 w-full")}
+          {employmentSelect("h-11 w-full")}
+        </div>
+
+        {(canCreate || canExport) && (
+          <div className="flex gap-2">
+            {addButton("h-11 flex-1")}
+            {exportButton("h-11")}
+          </div>
+        )}
+
+        {isError ? (
+          <ErrorState onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <TableLoadingState rows={5} />
+        ) : items.length === 0 ? (
+          <EmptyState
+            title="ไม่พบพนักงาน"
+            description={search || departmentIds.length || status !== ALL || employmentType !== ALL ? "ลองล้างคำค้นหรือตัวกรอง" : "ยังไม่มีข้อมูลพนักงานในระบบ"}
+          />
+        ) : (
+          <>
+            <p className="px-1 text-sm text-muted-foreground">
+              พบ {total.toLocaleString("th-TH")} คน · หน้า {page} จาก {totalPages}
+            </p>
+            <ul className="space-y-2">
+              {items.map((e) => (
+                <li key={e.id}>
+                  <Link
+                    href={`/employees/${e.id}`}
+                    className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-sm ring-1 ring-border/60 active:bg-muted"
+                  >
+                    <Avatar className="size-12 shrink-0">
+                      {e.avatarUrl && <AvatarImage src={e.avatarUrl} alt="" />}
+                      <AvatarFallback className="bg-primary/10 text-sm text-primary">
+                        {getInitials(e.firstName, e.lastName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-semibold break-words text-foreground">
+                        {fullName(e.firstName, e.lastName)}
+                        {e.nickname && <span className="font-normal text-muted-foreground"> ({e.nickname})</span>}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {e.employeeCode} · {e.department?.name ?? "ไม่มีแผนก"}
+                      </p>
+                      {e.position?.title && <p className="text-sm text-muted-foreground">{e.position.title}</p>}
+                    </div>
+                    <div className="shrink-0 self-start">
+                      <EmployeeStatusBadge status={e.status} />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            {totalPages > 1 && (
+              <nav aria-label="เปลี่ยนหน้า" className="flex items-center justify-between gap-3 pt-1">
+                <Button variant="outline" className="h-11 flex-1" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                  <ChevronLeft className="size-4" /> ก่อนหน้า
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-11 flex-1"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  ถัดไป <ChevronRight className="size-4" />
+                </Button>
+              </nav>
+            )}
+          </>
+        )}
+      </div>
+      )}
 
       {/* subtle background-refetch hint */}
       {isFetching && !isLoading && (
