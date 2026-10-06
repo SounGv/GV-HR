@@ -138,6 +138,9 @@
   --muted-foreground: #5e6670;
   --accent: #e0f5f2;
   --accent-foreground: #0f766e;
+  /* AI chat: one teal for the header, your bubbles and the send button (white text on it is 5.5:1 in both themes). */
+  --chat-teal: #0f766e;
+  --chat-teal-bright: #14b8a6;
   --destructive: #c62828;
 
   --success: #1a7f4e;

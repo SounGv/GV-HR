@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bot, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 
 import { useAiAccess } from "./hooks";
 import { AiChatView } from "./ai-chat-view";
@@ -22,18 +22,26 @@ export function AiChatPanel() {
   if (!open || pathname === "/ai" || !aiAccess?.data.allowed) return null;
 
   return (
-    <div className="fixed right-6 bottom-6 z-50 hidden h-[32rem] w-96 flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl md:flex">
-      <div className="flex items-center justify-between border-b border-border bg-sidebar px-4 py-3 text-white">
-        <span className="flex items-center gap-2 text-sm font-medium">
-          <Bot className="size-4 text-primary" /> AI Assistant
+    <div
+      role="dialog"
+      aria-label="AI Assistant"
+      className="fixed right-6 bottom-6 z-50 hidden h-[34rem] w-[24rem] flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl md:flex"
+    >
+      <div className="flex items-center gap-3 bg-[var(--chat-teal)] px-4 py-3 text-white">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25" aria-hidden="true">
+          <Sparkles className="size-[18px]" />
         </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm leading-tight font-semibold">AI Assistant</p>
+          <p className="text-xs leading-tight text-white/85">ผู้ช่วยงาน HR ตอบจากข้อมูลจริง</p>
+        </div>
         <button
           type="button"
           onClick={closePanel}
           aria-label="ปิด AI Assistant"
-          className="rounded-lg p-1 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          className="flex size-11 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15 hover:text-white md:size-9"
         >
-          <X className="size-4" />
+          <X className="size-5" />
         </button>
       </div>
       <AiChatView className="h-full flex-1 rounded-none border-0 shadow-none" />
