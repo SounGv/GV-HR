@@ -15,6 +15,7 @@ import { useOrgOptions } from "@/features/employee/hooks";
 import { api, type Envelope } from "@/lib/api/client";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { EXPENSE_STATUS_LABEL } from "@/features/expense/labels";
 import type { ExpenseStatus } from "@/features/expense/types";
 import type { MedicalReportRow, LoanReportRow } from "./report-service";
@@ -29,6 +30,7 @@ function fetchReport(type: "medical" | "loan", departmentIds: string[], year: nu
 }
 
 export function BenefitsReportView() {
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState<"medical" | "loan">("medical");
   const [departmentIds, setDepartmentIds] = useState<string[]>([]);
   const [year, setYear] = useState(YEAR_NOW);
@@ -152,8 +154,8 @@ export function BenefitsReportView() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-1.5">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex gap-1.5 max-sm:[&>button]:h-11 max-sm:[&>button]:flex-1">
             {(["medical", "loan"] as const).map((t) => (
               <Button key={t} size="sm" variant={tab === t ? "default" : "outline"} onClick={() => setTab(t)}>
                 {t === "medical" ? "ค่ารักษาพยาบาล" : "กู้เงินบริษัท"}
@@ -161,7 +163,7 @@ export function BenefitsReportView() {
             ))}
           </div>
           <Select value={String(year)} onValueChange={(v) => setYear(v ? Number(v) : YEAR_NOW)}>
-            <SelectTrigger className="min-w-[120px] w-auto max-w-[320px]">
+            <SelectTrigger className="min-w-[120px] w-auto max-w-[320px] max-sm:h-11 max-sm:w-full" aria-label="ปี">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -172,9 +174,16 @@ export function BenefitsReportView() {
               ))}
             </SelectContent>
           </Select>
-          <MultiSelectField label="แผนก" placeholder="ทุกแผนก" options={departmentOptions} selected={departmentIds} onChange={setDepartmentIds} />
+          <MultiSelectField
+            label="แผนก"
+            placeholder="ทุกแผนก"
+            options={departmentOptions}
+            selected={departmentIds}
+            onChange={setDepartmentIds}
+            className="max-sm:w-full"
+          />
         </div>
-        <div className="flex gap-2 print:hidden">
+        <div className="flex w-full gap-2 print:hidden max-sm:[&>button]:h-11 max-sm:[&>button]:flex-1 sm:w-auto">
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={rows.length === 0}>
             <Download className="size-4" /> CSV
           </Button>
@@ -194,11 +203,71 @@ export function BenefitsReportView() {
       ) : rows.length === 0 ? (
         <EmptyState title="ไม่มีข้อมูล" description="ยังไม่มีรายการในช่วงที่เลือก" />
       ) : tab === "medical" ? (
-        <MedicalTable rows={rows as MedicalReportRow[]} />
+        isMobile ? <MedicalCards rows={rows as MedicalReportRow[]} /> : <MedicalTable rows={rows as MedicalReportRow[]} />
+      ) : isMobile ? (
+        <LoanCards rows={rows as LoanReportRow[]} />
       ) : (
         <LoanTable rows={rows as LoanReportRow[]} />
       )}
     </div>
+  );
+}
+
+/** One label/value pair in a phone card. */
+function Fact({ label, value, strong = false }: { label: string; value: string | number; strong?: boolean }) {
+  return (
+    <div>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className={strong ? "font-semibold text-primary tabular-nums" : "font-medium tabular-nums"}>{value}</dd>
+    </div>
+  );
+}
+
+function MedicalCards({ rows }: { rows: MedicalReportRow[] }) {
+  return (
+    <ul className="space-y-3">
+      {rows.map((r) => (
+        <li key={r.employeeId} className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
+          <p className="text-base font-semibold break-words text-foreground">{r.employeeName}</p>
+          <p className="text-sm text-muted-foreground">
+            {r.employeeCode} · {r.department ?? "ไม่มีแผนก"}
+          </p>
+          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm">
+            <Fact label="คงเหลือ" value={formatCurrency(r.remaining)} strong />
+            <Fact label="วงเงินทั้งหมด" value={formatCurrency(r.totalCap)} />
+            <Fact label="อนุมัติสะสม" value={formatCurrency(r.approvedTotal)} />
+            <Fact label="รออนุมัติ" value={formatCurrency(r.pendingTotal)} />
+            <Fact label="ครั้งที่เบิก" value={r.claimCount} />
+            <Fact label="เบิกล่าสุด" value={r.lastClaimDate ? formatDate(r.lastClaimDate) : "-"} />
+            <Fact label="ใบลาป่วยอ้างอิง" value={r.sickLeaveRefs.length > 0 ? `${r.sickLeaveRefs.length} ใบ` : "-"} />
+            <Fact label="เอกสารแนบ" value={r.attachments.length > 0 ? `${r.attachments.length} ไฟล์` : "-"} />
+          </dl>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function LoanCards({ rows }: { rows: LoanReportRow[] }) {
+  return (
+    <ul className="space-y-3">
+      {rows.map((r) => (
+        <li key={r.loanId} className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
+          <p className="text-base font-semibold break-words text-foreground">{r.employeeName}</p>
+          <p className="text-sm text-muted-foreground">
+            {r.employeeCode} · {r.department ?? "ไม่มีแผนก"}
+          </p>
+          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm">
+            <Fact label="คงค้าง" value={formatCurrency(r.outstanding)} strong />
+            <Fact label="จำนวนเงินกู้" value={formatCurrency(r.amount)} />
+            <Fact label="วันที่กู้" value={formatDate(r.loanDate)} />
+            <Fact label="สถานะ" value={EXPENSE_STATUS_LABEL[r.status as ExpenseStatus] ?? r.status} />
+            <Fact label="เงินเดือน ณ วันที่กู้" value={formatCurrency(r.salarySnapshot)} />
+            <Fact label="ใช้สิทธิ์ปีนี้" value={r.usageCountThisYear} />
+          </dl>
+        </li>
+      ))}
+    </ul>
   );
 }
 
