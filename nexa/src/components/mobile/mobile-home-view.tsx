@@ -14,8 +14,8 @@ export function MobileHomeView({ title = "GV One" }: { title?: string }) {
 
   return (
     <div className="flex min-h-full flex-col bg-background md:hidden">
-      <div className="sticky top-0 z-30 bg-sidebar px-4 py-3">
-        <h1 className="text-lg font-bold text-white">{title}</h1>
+      <div className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">
+        <h1 className="text-lg font-bold text-foreground">{title}</h1>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 pb-2">
