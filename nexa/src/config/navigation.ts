@@ -125,6 +125,7 @@ export const NAV_GROUPS: NavGroup[] = [
         badgeKey: "pendingApprovals",
       },
       { label: "ประวัติการลา", href: "/leave", icon: ClipboardList, permission: "leave:read", ready: true },
+      { label: "ตั้งสิทธิ์ลาปีใหม่", href: "/leave/year-setup", icon: CalendarCheck, permission: "employee:update", ready: true },
       { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read", ready: true },
     ],
   },

@@ -63,6 +63,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/overtime/new": { title: "ขอ OT", backHref: "/requests" },
   "/performance": { title: "ประเมินผล", backHref: "/services" },
   "/appraisal": { title: "ภาพรวมการประเมิน", backHref: "/services" },
+  "/leave/year-setup": { title: "ตั้งสิทธิ์ลาปีใหม่", backHref: "/leave" },
   "/appraisal/forms": { title: "แบบประเมิน", backHref: "/services" },
   "/appraisal/rounds": { title: "รอบประเมิน", backHref: "/services" },
   "/appraisal/tasks": { title: "งานประเมินของฉัน", backHref: "/services" },
