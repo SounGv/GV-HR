@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { requirePagePermission } from "@/lib/auth/page-guard";
+import { requirePageAnyPermission } from "@/lib/auth/page-guard";
 import { PageHeader } from "@/components/shared/page-header";
 import { MobilePayrollView } from "@/components/mobile/mobile-payroll-view";
 import { PayrollView } from "@/features/payroll/payroll-view";
@@ -7,7 +7,10 @@ import { PayrollView } from "@/features/payroll/payroll-view";
 export const metadata: Metadata = { title: "เงินเดือนและสลิป" };
 
 export default async function PayrollPage() {
-  await requirePagePermission("payroll:read");
+  // Payroll figures are for HR/finance only (payroll:create / payroll:approve —
+  // the same rule as canManagePayroll). Ordinary employees hold just payroll:read,
+  // which no longer opens this page.
+  await requirePageAnyPermission(["payroll:create", "payroll:approve"]);
 
   return (
     <>

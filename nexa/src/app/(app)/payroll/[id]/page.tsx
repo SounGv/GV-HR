@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BadgeCheck, CalendarDays, Printer, ReceiptText, UserRound } from "lucide-react";
 
-import { requirePagePermission } from "@/lib/auth/page-guard";
+import { requirePageAnyPermission } from "@/lib/auth/page-guard";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import type { PayrollLineItem } from "@/features/payroll/types";
 export const metadata: Metadata = { title: "รายละเอียดสลิปเงินเดือน" };
 
 export default async function PayrollDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requirePagePermission("payroll:read");
+  const session = await requirePageAnyPermission(["payroll:create", "payroll:approve"]);
   const { id } = await params;
 
   let record;

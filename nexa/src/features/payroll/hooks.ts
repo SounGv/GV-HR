@@ -34,11 +34,12 @@ export function useClosePayrollPeriod() {
   });
 }
 
-export function usePayroll(scope: PayrollScope, period?: string) {
+export function usePayroll(scope: PayrollScope, period?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: payrollKeys.list(scope, period),
     queryFn: () => fetchPayroll(scope, period),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
   });
 }
 

@@ -21,6 +21,23 @@ export async function requirePagePermission(permission: string): Promise<Session
   return session;
 }
 
+/** Like `requirePagePermission`, but passes when the user holds ANY of the given permissions. */
+export async function requirePageAnyPermission(permissions: string[]): Promise<SessionUser> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (!permissions.some((p) => can(session.perms, p))) {
+    writeAudit({
+      companyId: session.companyId,
+      actorUserId: session.sub,
+      action: "permission.denied",
+      entity: "Permission",
+      entityId: permissions.join("|"),
+    }).catch(() => {});
+    redirect("/dashboard");
+  }
+  return session;
+}
+
 /**
  * Same shape as `requirePagePermission`, but for the AI Assistant page:
  * access is role-`ai:read` OR an HR-granted per-employee AiAccessGrant (see

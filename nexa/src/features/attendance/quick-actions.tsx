@@ -16,7 +16,8 @@ const ACTIONS: Action[] = [
   { label: "ขอ OT", href: "/overtime", icon: Timer, permission: "overtime:read" },
   { label: "ขอลา", href: "/leave", icon: CalendarDays, permission: "leave:read" },
   { label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, permission: "expense:read" },
-  { label: "เงินเดือน", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+  // HR/finance only (payroll:approve) — plain payroll:read, the Employee role, no longer opens /payroll.
+  { label: "เงินเดือน", href: "/payroll", icon: Wallet, permission: "payroll:approve" },
 ];
 
 /** Contextual shortcuts under the clock card — makes OT/leave reachable in one tap. */

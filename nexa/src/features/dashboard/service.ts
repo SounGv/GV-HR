@@ -153,7 +153,12 @@ export interface MySnapshot {
  * KPIs above are abstract to an individual contributor; this is the part of
  * the dashboard that's actually about them.
  */
-export async function getMySnapshot(companyId: string, employeeId: string): Promise<MySnapshot> {
+export async function getMySnapshot(
+  companyId: string,
+  employeeId: string,
+  /** Pay figures are HR/finance-only — ordinary employees get `latestPayslip: null` and nothing is even queried. */
+  includePayslip = false,
+): Promise<MySnapshot> {
   const year = new Date().getFullYear();
   const now = new Date();
   const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
@@ -176,11 +181,13 @@ export async function getMySnapshot(companyId: string, employeeId: string): Prom
       configured: daysConfigured,
     });
   }
-  const latestPayslip = await prisma.payrollRecord.findFirst({
-    where: { companyId, employeeId },
-    orderBy: { period: "desc" },
-    select: { periodLabel: true, net: true },
-  });
+  const latestPayslip = includePayslip
+    ? await prisma.payrollRecord.findFirst({
+        where: { companyId, employeeId },
+        orderBy: { period: "desc" },
+        select: { periodLabel: true, net: true },
+      })
+    : null;
   const recognitionRows = await prisma.recognition.groupBy({
     by: ["type"],
     where: { companyId, employeeId, deletedAt: null },

@@ -402,7 +402,7 @@ export async function executeTool(
       }
 
       case "calculate_payroll": {
-        if (!can(session.perms, "payroll:read")) return deny("payroll:read");
+        if (!can(session.perms, "payroll:create") && !can(session.perms, "payroll:approve")) return deny("payroll:approve");
         let base = num(input.baseSalary);
         let who: string | null = null;
         if (input.employee) {

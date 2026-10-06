@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { requirePermission } from "@/lib/auth/guard";
+import { requireAnyPermission, requirePermission } from "@/lib/auth/guard";
 import { Forbidden } from "@/lib/api/errors";
 import { generatePayrollSchema, payrollListQuerySchema } from "@/features/payroll/schema";
 import { generatePayroll, listPayroll, canManagePayroll } from "@/features/payroll/service";
@@ -10,7 +10,8 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await requirePermission("payroll:read");
+    // HR/finance only — plain payroll:read (the Employee role) no longer lists payslips, not even your own.
+    const session = await requireAnyPermission(["payroll:create", "payroll:approve"]);
     const query = payrollListQuerySchema.parse(
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );

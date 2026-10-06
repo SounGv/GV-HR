@@ -28,8 +28,9 @@ export function MobileProfileView() {
   const { user, can, logout } = useAuth();
   const { data: profileData } = useMyProfile();
   const profile = profileData?.data;
-  const canPayroll = can("payroll:read");
-  const { data: payrollData } = usePayroll("me", undefined);
+  // Pay figures are for HR/finance only — an ordinary employee (payroll:read alone) sees no payslip card.
+  const canPayroll = can("payroll:create") || can("payroll:approve");
+  const { data: payrollData } = usePayroll("me", undefined, { enabled: canPayroll });
   const latestPayslip = canPayroll ? payrollData?.data?.[0] : null;
 
   const addressSummary = profile

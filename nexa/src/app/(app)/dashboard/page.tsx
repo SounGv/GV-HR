@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
 import { ArrowUpRight, ArrowRight, TriangleAlert, Sparkles } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { can } from "@/lib/auth/rbac";
 import {
   getDashboardSummary,
   getActionCenter,
@@ -184,7 +185,8 @@ export default async function DashboardPage() {
   // Sequential, not Promise.all — connection_limit=1.
   const s = await getDashboardSummary(user!.companyId);
   const actions = await getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles, user!.permissions);
-  const mine = user!.employee ? await getMySnapshot(user!.companyId, user!.employee.id) : null;
+  const canSeePay = can(user!.permissions, "payroll:create") || can(user!.permissions, "payroll:approve");
+  const mine = user!.employee ? await getMySnapshot(user!.companyId, user!.employee.id, canSeePay) : null;
   const attendanceTrend = await getAttendanceTrend(user!.companyId);
   const departmentWatchlist = await getDepartmentWatchlist(user!.companyId);
 
