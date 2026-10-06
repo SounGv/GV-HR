@@ -193,7 +193,7 @@ export function MobileCheckinFlow({
   const activeStepIndex = step === "camera" ? 0 : step === "preview" ? 1 : step === "processing" ? (saveStage === "gps" ? 2 : 3) : 3;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#0d1108] text-white md:hidden">
+    <div className="fixed inset-0 z-50 flex flex-col bg-gv-dark-green text-white md:hidden">
       {step !== "success" && step !== "offsite" && (
         <div className="shrink-0 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3">
           <div className="flex items-center justify-between">
@@ -215,9 +215,9 @@ export function MobileCheckinFlow({
                   className={cn(
                     "flex size-6 items-center justify-center rounded-full text-[11px] font-semibold transition",
                     i < activeStepIndex
-                      ? "bg-gv-lime text-[#14180c]"
+                      ? "bg-gv-lime text-gv-dark-green"
                       : i === activeStepIndex
-                        ? "bg-gv-lime text-[#14180c] ring-4 ring-gv-lime/20"
+                        ? "bg-gv-lime text-gv-dark-green ring-4 ring-gv-lime/20"
                         : "bg-white/10 text-white/40",
                   )}
                 >
@@ -400,7 +400,7 @@ function CameraStep({
             className="flex size-18 items-center justify-center rounded-full bg-white ring-4 ring-white/30 active:scale-95 disabled:opacity-40"
             aria-label="ถ่ายรูป"
           >
-            <Camera className="size-7 text-[#14180c]" />
+            <Camera className="size-7 text-gv-dark-green" />
           </button>
           <button
             type="button"
@@ -436,7 +436,7 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
           <button
             type="button"
             onClick={onConfirm}
-            className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-[#14180c]"
+            className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-gv-dark-green"
           >
             <Check className="size-4" /> ใช้รูปนี้
           </button>
@@ -507,7 +507,7 @@ function OffsiteStep({
               type="button"
               onClick={onConfirm}
               disabled={!reason.trim() || pending}
-              className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-[#14180c] disabled:opacity-40"
+              className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-gv-dark-green disabled:opacity-40"
             >
               {pending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} ยืนยันเช็คอิน
             </button>
@@ -543,7 +543,7 @@ function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onR
         <button type="button" onClick={onCancel} className="rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white">
           ยกเลิก
         </button>
-        <button type="button" onClick={onRetry} className="rounded-xl bg-gv-lime px-5 py-2.5 text-sm font-semibold text-[#14180c]">
+        <button type="button" onClick={onRetry} className="rounded-xl bg-gv-lime px-5 py-2.5 text-sm font-semibold text-gv-dark-green">
           ลองใหม่
         </button>
       </div>
@@ -590,21 +590,21 @@ function SuccessStep({
       : "-";
 
   return (
-    <div role="status" aria-live="polite" className="flex flex-1 flex-col bg-[#7ABE36] px-5 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
+    <div role="status" aria-live="polite" className="flex flex-1 flex-col bg-gv-dark-green px-5 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="flex size-16 items-center justify-center rounded-full bg-white/20">
+        <div className="flex size-16 items-center justify-center rounded-full bg-gv-lime text-gv-dark-green">
           <CheckCircle2 className="size-9" />
         </div>
         <p className="mt-4 text-lg font-semibold">{mode === "in" ? "เช็คอินสำเร็จ" : "เช็คเอาท์สำเร็จ"}</p>
-        <p className="mt-1 text-sm text-white/85">
+        <p className="mt-1 text-sm text-white/80">
           {fmtTime(time)} น. · {fmtDate()}
         </p>
         {isLate && (
-          <span className="mt-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">มาสาย</span>
+          <span className="mt-2 rounded-full bg-amber-300 px-3 py-1 text-xs font-semibold text-gv-dark-green">มาสาย</span>
         )}
       </div>
 
-      <div className="space-y-3 rounded-2xl bg-white p-4 text-[#14180c]">
+      <div className="space-y-3 rounded-2xl bg-white p-4 text-gv-dark-green">
         <Row label="สถานที่" value={branchName ?? "-"} />
         <Row label="ระยะห่าง" value={distance != null ? `${Math.round(distance).toLocaleString()} เมตร` : "-"} />
         <Row label="พิกัด" value={coords ? `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : "-"} />
@@ -634,7 +634,7 @@ function SuccessStep({
       <button
         type="button"
         onClick={onDone}
-        className="mt-5 flex h-13 w-full items-center justify-center rounded-2xl bg-white text-sm font-semibold text-[#14180c]"
+        className="mt-5 flex h-13 w-full items-center justify-center rounded-2xl bg-gv-lime text-sm font-semibold text-gv-dark-green"
       >
         กลับหน้าหลัก
       </button>
