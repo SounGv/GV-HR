@@ -87,6 +87,11 @@ async function resolveUserNames(userIds: (string | null | undefined)[]): Promise
  * the result says from which day it is complete — see `truncatedFrom`. */
 const ATTENDANCE_DAILY_ROW_LIMIT = 3000;
 const ATTENDANCE_DAILY_RECORD_FETCH_LIMIT = 6000;
+/** Absence is only reported for people who use the clock-in app: someone with no
+ * attendance record at all in the report period or this many days before it is
+ * not counted (most staff have no app clock-in history, so counting them would
+ * list them as absent every day). */
+const ABSENT_ACTIVITY_LOOKBACK_DAYS = 60;
 
 /** Address of one attendance photo. Photos are base64 text in the database
  * (~85 KB each); returning them inside the report made the response tens of MB.
@@ -686,9 +691,16 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // same filters/team scope as the rest of the report, and not before their
     // hire date. A pending (not yet approved) leave does not excuse the day, but
     // the note says one is waiting.
+    //
+    // Only people who actually use the clock-in app are checked: an employee
+    // needs at least one attendance record in the period or the
+    // ABSENT_ACTIVITY_LOOKBACK_DAYS before it, and is only counted from the day
+    // of their first record. Everyone else is left out and counted in the
+    // footnote, so HR sees how many people the report is not covering.
     const todayBangkok = bangkokParts().dateUTC;
     const lastAbsentDay = new Date(Math.min(end.getTime(), todayBangkok.getTime()));
     const absentRows: KeyedRow[] = [];
+    let notCheckedCount = 0;
     if (lastAbsentDay.getTime() > start.getTime()) {
       const roster = await prisma.employee.findMany({
         where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
@@ -703,6 +715,20 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           department: { select: { name: true } },
         },
       });
+      const usage = await prisma.attendanceRecord.groupBy({
+        by: ["employeeId"],
+        where: { companyId, deletedAt: null, workDate: { lt: end }, ...deptRel },
+        _min: { workDate: true },
+        _max: { workDate: true },
+      });
+      const usageStart = start.getTime() - ABSENT_ACTIVITY_LOOKBACK_DAYS * DAY_MS;
+      const firstRecordByEmployee = new Map<string, number>();
+      for (const u of usage) {
+        if (u._min.workDate && u._max.workDate && u._max.workDate.getTime() >= usageStart) {
+          firstRecordByEmployee.set(u.employeeId, u._min.workDate.getTime());
+        }
+      }
+      notCheckedCount = roster.filter((e) => !firstRecordByEmployee.has(e.id)).length;
       const pendingLeaves = await prisma.leaveRequest.findMany({
         where: {
           companyId,
@@ -726,6 +752,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         const day = iso10(d);
         if (dow === 0 || dow === 6 || holidaySet.has(day)) continue;
         for (const e of roster) {
+          const firstRecord = firstRecordByEmployee.get(e.id);
+          if (firstRecord === undefined || firstRecord > d.getTime()) continue;
           if (e.hireDate && e.hireDate.getTime() > d.getTime()) continue;
           if (punched.has(`${e.id}|${day}`) || onLeave.has(`${e.employeeCode}|${day}`)) continue;
           const hasPending = (pendingByEmployee.get(e.id) ?? []).some((r) => r.start <= d.getTime() && d.getTime() <= r.end);
@@ -785,6 +813,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)` +
       (leaveShown > 0 ? ` · ลางานโดยไม่มีบันทึกเวลา ${leaveShown} วัน` : "") +
       (absentShown > 0 ? ` · ขาดงาน (ไม่มีบันทึกเวลาและไม่มีใบลาอนุมัติ) ${absentShown} วัน` : "") +
+      (notCheckedCount > 0
+        ? ` · ไม่ได้ตรวจการขาดงานของ ${notCheckedCount} คน ที่ไม่มีบันทึกเวลาเลยในช่วงนี้และ ${ABSENT_ACTIVITY_LOOKBACK_DAYS} วันก่อนหน้า (ยังไม่ได้ใช้เช็คอินในแอป)`
+        : "") +
       (truncatedFrom
         ? ` · ข้อมูลเกินที่แสดงได้ จึงแสดงครบตั้งแต่ ${formatDate(new Date(`${truncatedFrom}T00:00:00.000Z`))} เป็นต้นไป (ลดช่วงวันที่หรือเลือกแผนกเพื่อดูส่วนที่ถูกตัด)`
         : "");
