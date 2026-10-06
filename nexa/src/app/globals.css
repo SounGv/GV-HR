@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-prompt), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
   --font-mono: var(--font-mono);
-  --font-heading: var(--font-heading);
+  --font-heading: var(--font-prompt), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
 
   /* Semantic status colors (GV One) */
   --color-success: var(--success);
@@ -88,13 +88,11 @@
 :root {
   --radius: 0.75rem;
 
-  /* IBM Plex Sans Thai via next/font — body + headings, mobile and desktop
-     alike. Headings put Sora first: it has no Thai cut at all, so Latin/
-     numerals render in Sora and Thai glyphs fall through to Plex Sans Thai
-     automatically, character by character — not a hack, just how font
-     stacks resolve missing glyphs. */
-  --font-sans: var(--font-plex-sans-thai), "Sarabun", system-ui, sans-serif;
-  --font-heading: var(--font-sora), var(--font-plex-sans-thai), "Sarabun", system-ui, sans-serif;
+  /* Prompt via next/font (see layout.tsx) is the single typeface for body and
+     headings. The stacks live in the @theme block above. Do not redeclare
+     --font-sans / --font-heading on :root: the old declaration there read
+     next/font variables that were only defined on <body>, so it was invalid
+     and the page fell back to the default serif. */
 
   /* Surfaces — 2026-09-25 "GV lime" retheme: light-gray page canvas with
      white cards, colors drawn directly from the real Gadget Villa logo

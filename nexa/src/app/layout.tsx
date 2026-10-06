@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans_Thai, Sora } from "next/font/google";
+import { IBM_Plex_Mono, Prompt } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
@@ -11,22 +11,17 @@ const mono = IBM_Plex_Mono({
   display: "swap",
 });
 
-/** Design-system spec's primary typeface, used app-wide (mobile and desktop
- * alike) — see `--font-sans`/`--font-plex-sans-thai` in globals.css. */
-const plexSansThai = IBM_Plex_Sans_Thai({
-  variable: "--font-plex-sans-thai",
+/** The one app-wide typeface (mobile and desktop alike), for body and
+ * headings. Prompt has Thai and Latin cuts, so numerals match the Thai text.
+ *
+ * The next/font class (which defines `--font-prompt`) must sit on <html>, not
+ * <body>: globals.css reads the variable from `:root`, and a variable that
+ * only exists on a descendant is invalid there, which silently dropped the
+ * whole stack to the browser's serif default. */
+const prompt = Prompt({
+  variable: "--font-prompt",
   subsets: ["thai", "latin"],
   weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-/** Display face for headings only — Latin/numerals render in Sora, Thai
- * glyphs fall through to plexSansThai via the --font-heading stack (Sora
- * has no Thai cut at all, so this pairing is required, not cosmetic). */
-const sora = Sora({
-  variable: "--font-sora",
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -68,8 +63,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="th" suppressHydrationWarning>
-      <body className={`${mono.variable} ${plexSansThai.variable} ${sora.variable} font-sans`}>
+    <html lang="th" suppressHydrationWarning className={`${mono.variable} ${prompt.variable}`}>
+      <body className="font-sans">
         <AppProviders>{children}</AppProviders>
         <PwaRegister />
       </body>
