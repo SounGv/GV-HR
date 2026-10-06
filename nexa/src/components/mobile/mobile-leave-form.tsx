@@ -57,8 +57,8 @@ const formSchema = z
 
 type FormSchema = z.infer<typeof formSchema>;
 
-const TYPE_ORDER: LeaveType[] = ["SICK", "PERSONAL", "ANNUAL", "UNPAID", "HOLIDAY_SWAP"];
-const UNLIMITED_TYPES: LeaveType[] = ["UNPAID", "HOLIDAY_SWAP"];
+const TYPE_ORDER: LeaveType[] = ["SICK", "PERSONAL", "ANNUAL", "UNPAID", "HOLIDAY_SWAP", "OTHER"];
+const UNLIMITED_TYPES: LeaveType[] = ["UNPAID", "HOLIDAY_SWAP", "OTHER"];
 
 function fmtThaiDate(iso: string) {
   if (!iso) return "—";
@@ -75,6 +75,7 @@ export function MobileLeaveForm() {
   const { data: balanceData } = useBalances();
   const [submitted, setSubmitted] = useState(false);
   const [lastRequest, setLastRequest] = useState<FormSchema | null>(null);
+  const [routedTo, setRoutedTo] = useState<string | null>(null);
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -160,7 +161,8 @@ export function MobileLeaveForm() {
   async function onSubmit(values: FormSchema) {
     if (blockedMessage) return;
     try {
-      await createMutation.mutateAsync(values);
+      const res = await createMutation.mutateAsync(values);
+      setRoutedTo(res.data.routedTo ?? null);
       setLastRequest(values);
       setSubmitted(true);
       toast.success("ส่งคำขอลาเรียบร้อย");
@@ -199,6 +201,7 @@ export function MobileLeaveForm() {
               label: wasHourly ? "จำนวนชั่วโมง" : "จำนวนวัน",
               value: wasHourly ? (hours != null ? `${hours} ชม.` : "—") : days != null ? `${days} วัน` : "—",
             },
+            ...(routedTo ? [{ label: "ส่งถึง", value: routedTo }] : []),
             { label: "สถานะ", value: "รออนุมัติ", highlight: true },
           ]}
           action={
@@ -243,7 +246,7 @@ export function MobileLeaveForm() {
                   : !bal
                     ? "—"
                     : bal.configured
-                      ? `คงเหลือ ${bal.remaining} วัน`
+                      ? `คงเหลือ ${bal.remaining} วัน${bal.totalHours > 0 ? ` · ${bal.remainingHours} ชม.` : ""}`
                       : "ยังไม่ได้ตั้งค่า";
               return (
                 <button

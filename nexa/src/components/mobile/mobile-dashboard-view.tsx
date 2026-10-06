@@ -76,13 +76,12 @@ export function MobileDashboardView({
   const today = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric" }).format(new Date());
   const greetName = user.employee ? `คุณ${user.employee.firstName}` : name ?? "";
 
-  // null (→ "—") both when there's no snapshot yet and when HR hasn't
-  // actually configured a real day-quota — summing the historical system
-  // fallback would show a number that isn't real policy.
-  const leaveRemaining =
-    mine && mine.leaveBalances.every((b) => b.configured)
-      ? mine.leaveBalances.reduce((sum, b) => sum + b.remaining, 0)
-      : null;
+  // Sick, personal and annual leave are not interchangeable, so each type is shown on its own
+  // (a single summed number reads as far more than anyone can actually take).
+  const ORDER = ["SICK", "PERSONAL", "ANNUAL"];
+  const leaveByType = mine
+    ? [...mine.leaveBalances].sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type))
+    : [];
   const hasTodo = actions.myPending > 0 || pendingCount > 0 || hrNotifCount > 0;
 
   return (
@@ -209,13 +208,27 @@ export function MobileDashboardView({
         {/* สรุปของฉัน */}
         <section className="space-y-2">
           <h2 className="px-1 text-[13px] font-bold text-foreground">สรุปของฉัน</h2>
-          <div className="grid grid-cols-3 gap-2">
-            <SummaryTile
-              href="/leave"
-              icon={CalendarIcon}
-              label="วันลาคงเหลือ"
-              value={leaveRemaining != null ? `${leaveRemaining} วัน` : "—"}
-            />
+          <Link href="/leave" className="block active:scale-[0.99]">
+            <div className="rounded-2xl bg-card p-3 shadow-sm">
+              <p className="text-[11px] text-muted-foreground">วันลาคงเหลือ</p>
+              {leaveByType.length === 0 ? (
+                <p className="mt-1 text-sm font-bold text-foreground">—</p>
+              ) : (
+                <dl className="mt-1 grid grid-cols-3 gap-2">
+                  {leaveByType.map((b) => (
+                    <div key={b.type} className="min-w-0">
+                      <dt className="truncate text-[11px] text-muted-foreground">{b.label}</dt>
+                      <dd className="text-lg font-bold tabular-nums text-foreground">
+                        {b.configured ? b.remaining : "—"}
+                        {b.configured && <span className="text-[11px] font-medium text-muted-foreground"> วัน</span>}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+          </Link>
+          <div className="grid grid-cols-2 gap-2">
             <SummaryTile href="/requests" icon={ClipboardIcon} label="คำขอของฉัน" value={`${actions.myTotal} รายการ`} />
             <SummaryTile
               href={user.employee ? `/employees/${user.employee.id}/evaluation-history` : "/performance"}

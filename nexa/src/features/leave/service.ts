@@ -253,8 +253,14 @@ export async function createLeave(
     category: "leave",
     link: `/leave/${record.id}`,
   };
+  let routedTo = "HR (ผู้มีสิทธิ์อนุมัติลา)";
   if (requester?.managerId) {
     await createNotification(companyId, requester.managerId, leaveNotice, session.sub);
+    const manager = await prisma.employee.findFirst({
+      where: { id: requester.managerId, companyId, deletedAt: null },
+      select: { firstName: true, lastName: true },
+    });
+    if (manager) routedTo = `${manager.firstName} ${manager.lastName}`.trim();
   } else {
     // No direct manager on file — send it to the HR-level approvers instead of nobody.
     await notifyPermissionHolders(companyId, "leave:approve", employeeId, leaveNotice, session.sub);
@@ -266,7 +272,7 @@ export async function createLeave(
     `📋 มีคำขอลารออนุมัติ\n${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}\n${(process.env.APP_URL ?? "http://localhost:3000") + `/leave/${record.id}`}`,
   );
 
-  return record;
+  return { ...record, routedTo };
 }
 
 export async function listLeave(
@@ -564,6 +570,19 @@ export async function getBalances(companyId: string, session: AccessClaims, year
     select: { id: true, type: true, year: true, totalDays: true, usedDays: true, totalHours: true, usedHours: true },
   });
   const byType = new Map(rows.map((r) => [r.type as string, r]));
+  const pendingRows = await prisma.leaveRequest.findMany({
+    where: {
+      companyId,
+      employeeId,
+      deletedAt: null,
+      status: "PENDING",
+      unit: "DAY",
+      startDate: { lt: new Date(Date.UTC(y + 1, 0, 1)) },
+      endDate: { gte: new Date(Date.UTC(y, 0, 1)) },
+    },
+    select: { type: true, days: true },
+  });
+  const pendingOf = (type: string) => Math.round(pendingRows.filter((r) => r.type === type).reduce((s, r) => s + r.days, 0) * 10) / 10;
   const isDaily = await isDailyCompensation(employeeId);
   // Daily-wage employees show a real, deliberate 0/0 (not "ยังไม่ได้ตั้งค่า")
   // — this is intentional policy, not an oversight HR needs to fix.
@@ -578,10 +597,11 @@ export async function getBalances(companyId: string, session: AccessClaims, year
     // so does onboarding/seeding a starter row that nobody ever touches
     // (usedDays stays 0 forever). Only the company-level signal actually
     // tells the two apart, so use it for every row, not just synthesized ones.
-    if (existing) return { ...existing, daysConfigured };
+    if (existing) return { ...existing, daysConfigured, pendingDays: pendingOf(type) };
     return {
       id: `virtual-${type}-${y}`,
       daysConfigured,
+      pendingDays: pendingOf(type),
       type: type as LeaveType,
       year: y,
       totalDays: quota[type] ?? 0,

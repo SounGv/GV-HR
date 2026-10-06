@@ -104,6 +104,11 @@ export function BalanceCards() {
                     {n.tone === "ok" ? <CircleCheck className="size-3.5" aria-hidden="true" /> : <TriangleAlert className="size-3.5" aria-hidden="true" />}
                     {n.text}
                   </p>
+                  {b.pendingDays > 0 && (
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      รออนุมัติ {b.pendingDays} วัน (ยังไม่หักจากคงเหลือ)
+                    </p>
+                  )}
                 </>
               ) : (
                 // HR hasn't set a real quota for this company yet — showing the

@@ -4,6 +4,8 @@ export type LeaveScope = "me" | "team" | "all";
 export type LeaveUnit = "DAY" | "HOUR";
 
 export interface LeaveRequest {
+  /** Set only on the response to creating a request: who it was sent to for approval. */
+  routedTo?: string;
   id: string;
   type: LeaveType;
   startDate: string;
@@ -42,6 +44,8 @@ export interface LeaveBalance {
    * because HR hasn't actually configured a real day-quota yet — the UI
    * should hide the number in that case rather than show it as policy. */
   daysConfigured: boolean;
+  /** Days in requests still waiting for approval; not yet taken off the remaining balance. */
+  pendingDays: number;
 }
 
 export interface LeaveFormValues {
