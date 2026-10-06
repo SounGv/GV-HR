@@ -20,6 +20,24 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-destructive-muted: var(--destructive-muted);
+  --color-status-normal-bg: var(--status-normal-bg);
+  --color-status-normal-border: var(--status-normal-border);
+  --color-status-normal-fg: var(--status-normal-fg);
+  --color-status-normal-dot: var(--status-normal-dot);
+  --color-status-late-bg: var(--status-late-bg);
+  --color-status-late-border: var(--status-late-border);
+  --color-status-late-fg: var(--status-late-fg);
+  --color-status-late-dot: var(--status-late-dot);
+  --color-status-absent-bg: var(--status-absent-bg);
+  --color-status-absent-border: var(--status-absent-border);
+  --color-status-absent-fg: var(--status-absent-fg);
+  --color-status-absent-dot: var(--status-absent-dot);
+  --color-status-leave-bg: var(--status-leave-bg);
+  --color-status-leave-border: var(--status-leave-border);
+  --color-status-leave-fg: var(--status-leave-fg);
+  --color-status-leave-dot: var(--status-leave-dot);
+  --color-leave-sick-bg: var(--leave-sick-bg);
+  --color-leave-sick-fg: var(--leave-sick-fg);
   --color-surface-muted: var(--surface-muted);
   --color-icon-chip-bg: var(--icon-chip-bg);
   --color-icon-chip-fg: var(--icon-chip-fg);
@@ -205,6 +223,27 @@
   --series-highlight: #0d9488;
   --chart-grid: #eef0f2;
   --chart-muted-bar: #e5e7ea;
+
+  /* Attendance status — one meaning per colour, used the same on every page
+     (daily report rows/cards today). Always paired with an icon and a word. */
+  --status-normal-bg: #e3f4ea;
+  --status-normal-border: #bfe3ce;
+  --status-normal-fg: #0f5a37;
+  --status-normal-dot: #2db36b;
+  --status-late-bg: #fff6db;
+  --status-late-border: #f5dc93;
+  --status-late-fg: #8a6100;
+  --status-late-dot: #ffb900;
+  --status-absent-bg: #fce8e8;
+  --status-absent-border: #f2bdbd;
+  --status-absent-fg: #9b1c1c;
+  --status-absent-dot: #e5484d;
+  --status-leave-bg: #e6eefc;
+  --status-leave-border: #bcd0f4;
+  --status-leave-fg: #154aa3;
+  --status-leave-dot: #3b82f6;
+  --leave-sick-bg: #ffedd5;
+  --leave-sick-fg: #9a3412;
 }
 
 /* Comfortable touch targets on phones — 44px minimum height for the
@@ -304,6 +343,25 @@
   --series-ot: #c084fc;
   --chart-grid: #272b30;
   --chart-muted-bar: #34383d;
+
+  --status-normal-bg: #123024;
+  --status-normal-border: #1f4a35;
+  --status-normal-fg: #7fe0a8;
+  --status-normal-dot: #2fa871;
+  --status-late-bg: #2e2506;
+  --status-late-border: #5a4710;
+  --status-late-fg: #f5c542;
+  --status-late-dot: #f5b700;
+  --status-absent-bg: #3d1f18;
+  --status-absent-border: #6a3328;
+  --status-absent-fg: #ff9a8a;
+  --status-absent-dot: #e4573d;
+  --status-leave-bg: #172640;
+  --status-leave-border: #2a4272;
+  --status-leave-fg: #9cc0ff;
+  --status-leave-dot: #5b8ef5;
+  --leave-sick-bg: #3a2210;
+  --leave-sick-fg: #fdba74;
 }
 
 @layer base {

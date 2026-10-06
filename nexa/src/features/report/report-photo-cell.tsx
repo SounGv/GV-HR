@@ -1,16 +1,36 @@
+/** What the enlarged-photo dialog shows next to the picture. */
+export interface PhotoPreview {
+  url: string;
+  title?: string;
+  lines?: string[];
+}
+
 /** Small clickable thumbnail for a photo-flagged report column — "-" (no
  * photo attached) renders as plain text, same as every other empty cell.
- * Shared by the desktop table and the mobile card list. */
-export function PhotoCell({ url, onOpen }: { url: string | number; onOpen: (url: string) => void }) {
+ * Shared by the desktop table and the mobile card list. 44px so it is a
+ * proper touch target; `loading="lazy"` keeps off-screen thumbnails from being
+ * decoded until they are scrolled near. */
+export function PhotoCell({
+  url,
+  onOpen,
+  title,
+  lines,
+}: {
+  url: string | number;
+  onOpen: (photo: PhotoPreview) => void;
+  title?: string;
+  lines?: string[];
+}) {
   if (typeof url !== "string" || !url || url === "-") return <span className="text-muted-foreground">-</span>;
   return (
     <button
       type="button"
-      onClick={() => onOpen(url)}
-      className="block size-10 overflow-hidden rounded-md border border-border transition hover:opacity-80"
+      onClick={() => onOpen({ url, title, lines })}
+      aria-label={title ? `ดู${title}ขนาดใหญ่` : "ดูรูปถ่ายขนาดใหญ่"}
+      className="block size-11 overflow-hidden rounded-md border border-border transition hover:opacity-80"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="รูปถ่ายลงเวลา" className="size-full object-cover" />
+      <img src={url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
     </button>
   );
 }

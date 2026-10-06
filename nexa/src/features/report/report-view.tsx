@@ -38,8 +38,6 @@ import {
 } from "@/components/ui/table";
 import { MultiSelectField, type MultiSelectOption } from "@/components/shared/multi-select-field";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
-import { AttendanceStatusBadge } from "@/features/attendance/status-badge";
-import type { AttendanceStatus } from "@/features/attendance/types";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { EMPLOYMENT_TYPES } from "@/features/employee/schema";
@@ -55,7 +53,18 @@ import { useReports } from "./hooks";
 import type { ReportParams } from "./api";
 import { ReportSummaryChart } from "./report-summary-chart";
 import { ReportMobileCards } from "./report-mobile-cards";
-import { PhotoCell } from "./report-photo-cell";
+import { PhotoCell, type PhotoPreview } from "./report-photo-cell";
+import {
+  DAILY_EXTRA_COUNT,
+  ReportNoteCell,
+  ReportStatusBadge,
+  buildDailyColumns,
+  dailyPhotoPreview,
+  dailyRowBarClass,
+  dailyRowClass,
+  type DisplayColumn,
+} from "./attendance-row-style";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { ReportResult } from "./types";
 
 const ALL_TYPE = "ALL";
@@ -72,16 +81,6 @@ function todayStr(): string {
 
 function fmtNum(v: string | number) {
   return typeof v === "number" ? v.toLocaleString("th-TH") : v;
-}
-
-/** Renders the attendance report's "สถานะ" column as a semantic-color badge
- * instead of raw Thai text — takes the whole row (not just the label) so it
- * can read the enum key service.ts stashed alongside the label, rather than
- * reverse-mapping the Thai text back to an enum, which is far more fragile. */
-function ReportStatusCell({ row }: { row: Record<string, string | number> }) {
-  const key = row.statusKey as AttendanceStatus | undefined;
-  if (!key) return <>{row.status}</>;
-  return <AttendanceStatusBadge status={key} />;
 }
 
 /** Photo cells hold a full base64 data URL — useless (and huge) as raw text
@@ -200,8 +199,10 @@ function ReportSection({
   to: string;
   canExport: boolean;
   canAi: boolean;
-  onOpenPhoto: (url: string) => void;
+  onOpenPhoto: (photo: PhotoPreview) => void;
 }) {
+  const [showExtraColumns, setShowExtraColumns] = useState(false);
+  const isMobile = useIsMobile();
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState("");
@@ -260,11 +261,31 @@ function ReportSection({
     }
   }
 
+  // Daily attendance report: a focused default set of columns (extras behind a
+  // toggle). Every other report shows its columns as the service sent them.
+  const isDaily = type === "attendance_daily";
+  const displayColumns: DisplayColumn[] = result
+    ? isDaily
+      ? buildDailyColumns(result.columns, showExtraColumns)
+      : result.columns
+    : [];
+
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-heading text-base font-semibold">{REPORT_LABELS[type]}</h2>
-        <div className="flex items-center gap-2 print:hidden">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {isDaily && result && result.rows.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-11 md:h-8"
+              aria-pressed={showExtraColumns}
+              onClick={() => setShowExtraColumns((v) => !v)}
+            >
+              {showExtraColumns ? "ซ่อนคอลัมน์เพิ่ม" : `แสดงคอลัมน์เพิ่ม (${DAILY_EXTRA_COUNT})`}
+            </Button>
+          )}
           {canAi && (
             <Button
               variant="outline"
@@ -313,11 +334,12 @@ function ReportSection({
         <EmptyState icon={FileSpreadsheet} title="ไม่มีข้อมูลสำหรับรายงานนี้" description="ลองเปลี่ยนงวดหรือประเภทรายงาน" />
       ) : (
         <>
-          <Card className="hidden gap-0 overflow-x-auto p-0 md:block print:block">
+          {!isMobile && (
+          <Card className="gap-0 overflow-x-auto p-0">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  {result.columns.map((c) => {
+                  {displayColumns.map((c) => {
                     // Long header sentences ("ไม่ลงเวลาออก (วัน)") wrap to 2
                     // lines instead of stretching every column that wide —
                     // the trailing "(unit)" moves to its own smaller, muted
@@ -353,32 +375,48 @@ function ReportSection({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {result.rows.map((row, i) => (
-                  <TableRow key={i}>
-                    {result.columns.map((c) => (
-                      <TableCell
-                        key={c.key}
-                        className={cn(
-                          c.numeric && "text-right tabular-nums",
-                          c.key === "code" && "sticky left-0 z-10 w-[72px] bg-card",
-                          c.key === "name" && "sticky left-[72px] z-10 min-w-[160px] bg-card shadow-[2px_0_4px_-2px_rgb(0_0_0_/_0.15)]",
-                        )}
-                      >
-                        {c.photo ? (
-                          <PhotoCell url={row[c.key]} onOpen={onOpenPhoto} />
-                        ) : c.key === "status" && type === "attendance_daily" ? (
-                          <ReportStatusCell row={row} />
-                        ) : (
-                          fmtNum(row[c.key])
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                {result.rows.map((row, i) => {
+                  const rowTone = isDaily ? dailyRowClass(row) : undefined;
+                  const rowBar = isDaily ? dailyRowBarClass(row) : undefined;
+                  // Pinned cells need the row's own tint, otherwise they cover it with the card colour.
+                  const pinnedBg = rowTone ? "bg-inherit" : "bg-card";
+                  return (
+                    <TableRow key={i} className={rowTone}>
+                      {displayColumns.map((c, ci) => {
+                        const photo = isDaily && c.photo ? dailyPhotoPreview(row, c.key, "") : null;
+                        return (
+                          <TableCell
+                            key={c.key}
+                            className={cn(
+                              c.numeric && "text-right tabular-nums",
+                              ci === 0 && rowBar,
+                              c.key === "code" && `sticky left-0 z-10 w-[72px] ${pinnedBg}`,
+                              c.key === "name" &&
+                                `sticky left-[72px] z-10 min-w-[160px] ${pinnedBg} shadow-[2px_0_4px_-2px_rgb(0_0_0_/_0.15)]`,
+                            )}
+                          >
+                            {c.photo ? (
+                              <PhotoCell url={row[c.key]} onOpen={onOpenPhoto} title={photo?.title} lines={photo?.lines} />
+                            ) : isDaily && c.key === "status" ? (
+                              <ReportStatusBadge statusKey={String(row.statusKey ?? "")} fallback={row.status} />
+                            ) : isDaily && c.key === "note" ? (
+                              <ReportNoteCell row={row} value={row.note} />
+                            ) : (
+                              fmtNum(c.value ? c.value(row) : row[c.key])
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </Card>
-          <ReportMobileCards result={result} onOpenPhoto={onOpenPhoto} />
+          )}
+          {isMobile && (
+            <ReportMobileCards result={result} onOpenPhoto={onOpenPhoto} columns={displayColumns} isDaily={isDaily} />
+          )}
         </>
       )}
 
@@ -470,7 +508,7 @@ export function ReportView() {
   }, [searchParams]);
   const [branchIds, setBranchIds] = useState<string[]>([]);
   const [costCenterIds, setCostCenterIds] = useState<string[]>([]);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<PhotoPreview | null>(null);
 
   // Every selected report type shares one period control — if they disagree
   // on "month" vs "year" vs "none" this just goes with the first type's kind,
@@ -662,11 +700,24 @@ export function ReportView() {
       <Dialog open={!!photoPreview} onOpenChange={(open) => !open && setPhotoPreview(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>รูปถ่ายลงเวลา</DialogTitle>
+            <DialogTitle>{photoPreview?.title ?? "รูปถ่ายลงเวลา"}</DialogTitle>
+            {photoPreview?.lines && photoPreview.lines.length > 0 && (
+              <DialogDescription>
+                {photoPreview.lines.map((line, i) => (
+                  <span key={i} className="block">
+                    {line}
+                  </span>
+                ))}
+              </DialogDescription>
+            )}
           </DialogHeader>
           {photoPreview && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoPreview} alt="รูปถ่ายลงเวลา" className="w-full rounded-lg object-contain" />
+            <img
+              src={photoPreview.url}
+              alt={photoPreview.title ?? "รูปถ่ายลงเวลา"}
+              className="w-full rounded-lg object-contain"
+            />
           )}
         </DialogContent>
       </Dialog>

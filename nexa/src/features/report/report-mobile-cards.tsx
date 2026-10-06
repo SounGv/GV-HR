@@ -1,5 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { PhotoCell } from "./report-photo-cell";
+import { PhotoCell, type PhotoPreview } from "./report-photo-cell";
+import { ReportStatusBadge, dailyCardClass, dailyPhotoPreview, type DisplayColumn } from "./attendance-row-style";
+import { cn } from "@/lib/utils";
 import type { ReportResult } from "./types";
 
 // Naive but low-risk: report status text is always Thai and drawn from a
@@ -24,6 +26,11 @@ function fmtNum(v: string | number | undefined) {
 // header/subheader — the rest render as label:value rows below. Every
 // report type shares this same generic layout instead of one hand-built
 // card per report type.
+function photoMeta(row: Record<string, string | number>, key: string) {
+  const { title, lines } = dailyPhotoPreview(row, key, "");
+  return { title, lines };
+}
+
 const HEADER_KEYS = ["name", "code"];
 const SUBHEADER_KEYS = ["date", "status"];
 
@@ -35,21 +42,30 @@ const SUBHEADER_KEYS = ["date", "status"];
 export function ReportMobileCards({
   result,
   onOpenPhoto,
+  columns,
+  isDaily = false,
 }: {
   result: ReportResult;
-  onOpenPhoto: (url: string) => void;
+  onOpenPhoto: (photo: PhotoPreview) => void;
+  /** Columns to show (daily report: main set, plus extras when toggled). Defaults to every column. */
+  columns?: DisplayColumn[];
+  /** Daily attendance report: tint each card by status and read the status from `statusKey`. */
+  isDaily?: boolean;
 }) {
-  const headerCols = result.columns.filter((c) => HEADER_KEYS.includes(c.key));
-  const subheaderCols = result.columns.filter((c) => SUBHEADER_KEYS.includes(c.key));
+  const all: DisplayColumn[] = columns ?? result.columns;
+  const headerCols = all.filter((c) => HEADER_KEYS.includes(c.key));
+  const subheaderCols = all.filter((c) => SUBHEADER_KEYS.includes(c.key));
   const usedKeys = new Set([...headerCols, ...subheaderCols].map((c) => c.key));
-  const bodyCols = result.columns.filter((c) => !usedKeys.has(c.key));
+  const bodyCols = all.filter((c) => !usedKeys.has(c.key));
 
   return (
-    <div className="space-y-3 md:hidden print:hidden">
-      {result.rows.map((row, i) => (
-        <Card key={i} className="gap-0 overflow-hidden p-0">
+    <div className="space-y-3 md:hidden">
+      {result.rows.map((row, i) => {
+        const tone = isDaily ? dailyCardClass(row) : {};
+        return (
+        <Card key={i} className={cn("gap-0 overflow-hidden p-0", tone.card)}>
           {(headerCols.length > 0 || subheaderCols.length > 0) && (
-            <div className="space-y-1 border-b border-border bg-muted/40 px-4 py-3">
+            <div className={cn("space-y-1 border-b border-border bg-muted/40 px-4 py-3", tone.header)}>
               {headerCols.length > 0 && (
                 <div className="flex items-center justify-between gap-2">
                   {headerCols.map((c) => (
@@ -71,6 +87,9 @@ export function ReportMobileCards({
                           {row[c.key]}
                         </span>
                       );
+                    }
+                    if (isDaily && row.statusKey) {
+                      return <ReportStatusBadge key={c.key} statusKey={String(row.statusKey)} />;
                     }
                     const tone = statusTone(String(row[c.key] ?? ""));
                     return (
@@ -94,13 +113,22 @@ export function ReportMobileCards({
               <div key={c.key} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
                 <dt className="text-muted-foreground">{c.label}</dt>
                 <dd className={c.numeric ? "text-right font-medium tabular-nums" : "text-right font-medium"}>
-                  {c.photo ? <PhotoCell url={row[c.key]} onOpen={onOpenPhoto} /> : fmtNum(row[c.key])}
+                  {c.photo ? (
+                    <PhotoCell
+                      url={row[c.key]}
+                      onOpen={onOpenPhoto}
+                      {...(isDaily ? photoMeta(row, c.key) : {})}
+                    />
+                  ) : (
+                    fmtNum(c.value ? c.value(row) : row[c.key])
+                  )}
                 </dd>
               </div>
             ))}
           </dl>
         </Card>
-      ))}
+        );
+      })}
     </div>
   );
 }
