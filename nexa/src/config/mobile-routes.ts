@@ -21,6 +21,7 @@ export const MOBILE_CUSTOM_PATHS = new Set([
   "/performance",
 ]);
 
+// Pages that are a tab of the bottom bar (or open from the home quick menu) go back to the home page, not to the services list.
 const EXACT: Record<string, MobileRouteMeta> = {
   "/ai": { title: "AI Assistant", backHref: "/dashboard" },
   "/ai-evaluation": { title: "AI ประเมินผล", backHref: "/ai" },
@@ -35,7 +36,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/admin/roles/new": { title: "สร้างบทบาท", backHref: "/admin" },
   "/branches": { title: "สาขา", backHref: "/company" },
   "/branches/new": { title: "เพิ่มสาขา", backHref: "/branches" },
-  "/calendar": { title: "ปฏิทินองค์กร", backHref: "/services" },
+  "/calendar": { title: "ปฏิทินองค์กร", backHref: "/dashboard" },
   "/calendar/events/new": { title: "สร้างกิจกรรม", backHref: "/calendar" },
   "/coming-soon": { title: "เร็วๆ นี้", backHref: "/services" },
   "/company": { title: "ตั้งค่าองค์กร", backHref: "/services" },
@@ -43,7 +44,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/cost-centers/new": { title: "เพิ่มศูนย์ต้นทุน", backHref: "/cost-centers" },
   "/dashboard/attendance": { title: "การเข้างานวันนี้", backHref: "/dashboard" },
   "/dashboard/attendance/watch": { title: "ควรติดตาม", backHref: "/dashboard/attendance" },
-  "/employees": { title: "รายชื่อพนักงาน", backHref: "/services" },
+  "/employees": { title: "รายชื่อพนักงาน", backHref: "/dashboard" },
   "/employees/new": { title: "เพิ่มพนักงาน", backHref: "/employees" },
   "/employees/import": { title: "นำเข้าพนักงาน", backHref: "/employees" },
   "/expenses": { title: "เบิกค่าใช้จ่าย", backHref: "/services" },
@@ -61,7 +62,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/organization/positions/new": { title: "เพิ่มตำแหน่ง", backHref: "/organization" },
   "/overtime": { title: "ล่วงเวลา (OT)", backHref: "/requests" },
   "/overtime/new": { title: "ขอ OT", backHref: "/requests" },
-  "/performance": { title: "ประเมินผล", backHref: "/services" },
+  "/performance": { title: "ประเมินผล", backHref: "/dashboard" },
   "/appraisal": { title: "ภาพรวมการประเมิน", backHref: "/services" },
   "/leave/year-setup": { title: "ตั้งสิทธิ์ลาปีใหม่", backHref: "/leave" },
   "/leave/entitlements": { title: "สิทธิ์ลารายคน", backHref: "/leave" },
@@ -70,7 +71,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/appraisal/kpi": { title: "KPI Profile", backHref: "/services" },
   "/appraisal/my-results": { title: "ผลประเมินของฉัน", backHref: "/services" },
   "/appraisal/rounds": { title: "รอบประเมิน", backHref: "/services" },
-  "/appraisal/tasks": { title: "งานประเมินของฉัน", backHref: "/services" },
+  "/appraisal/tasks": { title: "งานประเมินของฉัน", backHref: "/dashboard" },
   "/performance/new": { title: "สร้างรอบประเมิน", backHref: "/performance" },
   "/performance/competencies": { title: "สมรรถนะ", backHref: "/performance" },
   "/performance/competencies/new": { title: "เพิ่มสมรรถนะ", backHref: "/performance/competencies" },
