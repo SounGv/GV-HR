@@ -111,7 +111,7 @@ export function OvertimeFormPage() {
                   {(
                     [
                       ["NORMAL", "ล่วงเวลาในวันทำงาน", `อัตรา ${DEFAULT_MULTIPLIER} เท่า`],
-                      ["DAY_OFF", "ทำงานในวันหยุด", `อัตรา ${DAY_OFF_MULTIPLIER} เท่า (วันหยุด / เสาร์ที่หยุด / อาทิตย์)`],
+                      ["DAY_OFF", "ทำงานวันหยุด", `อัตรา ${DAY_OFF_MULTIPLIER} เท่า (วันหยุด / เสาร์ที่หยุด / อาทิตย์)`],
                     ] as const
                   ).map(([value, title, hint]) => (
                     <button
