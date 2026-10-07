@@ -1,7 +1,7 @@
 // Checks the OT pay rate for a normal day and for working on a day off, with made-up pay only.
 // Run: node --experimental-strip-types scripts/check-overtime-rate.mjs
 import assert from "node:assert/strict";
-import { DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER, estimateAmount, multiplierFor } from "../src/features/overtime/calc.ts";
+import { DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER, dayOffReason, estimateAmount, multiplierFor } from "../src/features/overtime/calc.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -27,6 +27,30 @@ check("the half-hour rounding still applies at the day-off rate", () => {
 });
 check("a daily-wage worker is priced from the daily rate over 8 hours", () => {
   assert.equal(estimateAmount({ compensationType: "DAILY", baseSalary: null, dailyRate: 800, hourlyRate: null }, 1, 2), 200);
+});
+
+// 2030-03-04 is a Monday, 2030-03-09 a Saturday, 2030-03-10 a Sunday.
+const holidays = [{ date: "2030-03-06T00:00:00.000Z", name: "วันตัวอย่าง" }];
+check("a Sunday is a day off and says why", () => {
+  assert.equal(dayOffReason("2030-03-10", holidays), "เป็นวันอาทิตย์");
+});
+check("a company holiday is a day off and names the holiday", () => {
+  assert.equal(dayOffReason("2030-03-06", holidays), "เป็นวันหยุด “วันตัวอย่าง”");
+});
+check("a holiday that falls on a Sunday names the holiday", () => {
+  assert.equal(dayOffReason("2030-03-10", [{ date: "2030-03-10", name: "วันตัวอย่าง" }]), "เป็นวันหยุด “วันตัวอย่าง”");
+});
+check("an ordinary weekday and a Saturday are not detected as a day off", () => {
+  assert.equal(dayOffReason("2030-03-04", holidays), null);
+  assert.equal(dayOffReason("2030-03-09", holidays), null);
+});
+check("an empty or half-typed date is not a day off", () => {
+  assert.equal(dayOffReason("", holidays), null);
+  assert.equal(dayOffReason("2030-03", holidays), null);
+});
+check("it works before the holiday list has loaded", () => {
+  assert.equal(dayOffReason("2030-03-10"), "เป็นวันอาทิตย์");
+  assert.equal(dayOffReason("2030-03-04"), null);
 });
 
 console.log(`\n${n} checks passed`);

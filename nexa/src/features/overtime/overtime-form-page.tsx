@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,8 +21,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/client";
-import { computeHours, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER } from "./calc";
+import { computeHours, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER, dayOffReason } from "./calc";
 import { cn } from "@/lib/utils";
+import { useHolidays } from "@/features/holiday/hooks";
 import { useCreateOvertime } from "./hooks";
 
 const FORM_ID = "ot-form";
@@ -51,9 +53,27 @@ export function OvertimeFormPage() {
     defaultValues: { date: "", dayType: "NORMAL", startTime: "18:00", endTime: "20:00", reason: "" },
   });
 
-  const [start, end, dayType] = form.watch(["startTime", "endTime", "dayType"]);
+  const [date, start, end, dayType] = form.watch(["date", "startTime", "endTime", "dayType"]);
   const rate = dayType === "DAY_OFF" ? DAY_OFF_MULTIPLIER : DEFAULT_MULTIPLIER;
   const hours = start && end && end > start ? computeHours(start, end) : 0;
+
+  // The day type follows the date: a Sunday or a company holiday switches to
+  // the day-off rate by itself. The employee can still change it, which is how
+  // an off Saturday is chosen until the system knows who is off which Saturday.
+  const year = Number(date.slice(0, 4));
+  const holidays = useHolidays(year >= 2000 && year <= 2100 ? year : new Date().getFullYear());
+  const autoReason = dayOffReason(date, holidays.data?.data);
+  const [autoSelected, setAutoSelected] = useState(false);
+  useEffect(() => {
+    if (autoReason) {
+      form.setValue("dayType", "DAY_OFF");
+      setAutoSelected(true);
+    } else if (autoSelected) {
+      form.setValue("dayType", "NORMAL");
+      setAutoSelected(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoReason]);
 
   async function onSubmit(values: FormSchema) {
     try {
@@ -106,30 +126,38 @@ export function OvertimeFormPage() {
             name="dayType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>ประเภทวันที่ทำงาน</FormLabel>
-                <div role="radiogroup" aria-label="ประเภทวันที่ทำงาน" className="grid gap-2 sm:grid-cols-2">
+                <FormLabel>ประเภทวัน</FormLabel>
+                <div role="radiogroup" aria-label="ประเภทวัน" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
                   {(
                     [
-                      ["NORMAL", "ล่วงเวลาในวันทำงาน", `อัตรา ${DEFAULT_MULTIPLIER} เท่า`],
-                      ["DAY_OFF", "ทำงานวันหยุด", `อัตรา ${DAY_OFF_MULTIPLIER} เท่า (วันหยุด / เสาร์ที่หยุด / อาทิตย์)`],
+                      ["NORMAL", "วันทำงาน", DEFAULT_MULTIPLIER],
+                      ["DAY_OFF", "วันหยุด", DAY_OFF_MULTIPLIER],
                     ] as const
-                  ).map(([value, title, hint]) => (
+                  ).map(([value, title, times]) => (
                     <button
                       key={value}
                       type="button"
                       role="radio"
                       aria-checked={field.value === value}
-                      onClick={() => field.onChange(value)}
+                      onClick={() => {
+                        field.onChange(value);
+                        setAutoSelected(false);
+                      }}
                       className={cn(
-                        "min-h-14 rounded-xl border px-3 py-2 text-left",
-                        field.value === value ? "border-primary bg-accent" : "border-border bg-card",
+                        "min-h-11 rounded-lg px-3 text-sm font-semibold transition",
+                        field.value === value ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
                       )}
                     >
-                      <span className="block text-sm font-semibold">{title}</span>
-                      <span className="block text-sm text-muted-foreground">{hint}</span>
+                      {title} <span className="tabular-nums">×{times}</span>
                     </button>
                   ))}
                 </div>
+                <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+                  <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                  {autoReason && field.value === "DAY_OFF"
+                    ? `ระบบเลือกให้ เพราะ${autoReason} (เปลี่ยนได้)`
+                    : "เสาร์ที่หยุดหรือวันหยุดพิเศษ ให้เลือก “วันหยุด” เอง"}
+                </p>
               </FormItem>
             )}
           />

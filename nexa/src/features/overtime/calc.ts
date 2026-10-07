@@ -8,6 +8,22 @@ export type OtDayType = (typeof OT_DAY_TYPES)[number];
 /** Pay multiplier for the kind of day an OT request is for. */
 export const multiplierFor = (dayType: OtDayType): number => (dayType === "DAY_OFF" ? DAY_OFF_MULTIPLIER : DEFAULT_MULTIPLIER);
 
+/**
+ * Why a date counts as a day off, or null for an ordinary working day.
+ * A company holiday wins over Sunday so the reason names the holiday. An off
+ * Saturday is not detected here — the system does not know it yet, so the
+ * employee picks the day-off type by hand for that case.
+ *
+ * @param date Calendar date as "YYYY-MM-DD" (the value of a date input).
+ * @param holidays Company holidays; each `date` starts with "YYYY-MM-DD".
+ */
+export function dayOffReason(date: string, holidays: ReadonlyArray<{ date: string; name: string }> = []): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const holiday = holidays.find((h) => h.date.slice(0, 10) === date);
+  if (holiday) return `เป็นวันหยุด “${holiday.name}”`;
+  return new Date(`${date}T00:00:00Z`).getUTCDay() === 0 ? "เป็นวันอาทิตย์" : null;
+}
+
 /** Below this, a clock-out a few minutes past shift end is just clock-skew
  * noise, not real overtime worth an approval record. Shared by the
  * attendance import's inline OT generation and the standalone attendance→OT
