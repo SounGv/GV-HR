@@ -203,7 +203,7 @@ export function MobileCheckinFlow({
   const activeStepIndex = step === "camera" ? 0 : step === "preview" ? 1 : step === "processing" ? (saveStage === "gps" ? 2 : 3) : 3;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gv-dark-green pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-white md:hidden">
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-gv-dark-green pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-white md:hidden">
       {step !== "success" && step !== "offsite" && (
         <div
           className={cn(
@@ -428,12 +428,13 @@ function CameraStep({
 
 function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: () => void; onConfirm: () => void }) {
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="relative flex-1 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* The photo fills only the space left above the buttons; absolute so its own height can never push them off the screen. */}
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="size-full object-contain" />
+        <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="absolute inset-0 size-full object-contain" />
       </div>
-      <div className="px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-center">
+      <div className="shrink-0 px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-center">
         <p className="mb-4 text-xs text-slate-300">ตรวจสอบรูปให้ชัดเจน แล้วกด &quot;ใช้รูปนี้&quot;</p>
         <div className="flex gap-3">
           <button
