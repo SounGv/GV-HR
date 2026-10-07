@@ -16,6 +16,9 @@ interface Coords {
   accuracy?: number;
 }
 
+/** Longest side of the saved photo; sharp enough to read, small enough to keep each photo near 150 KB. */
+const PHOTO_MAX_SIDE = 1280;
+
 const STEPS = [
   { key: "camera", label: "กล้อง" },
   { key: "preview", label: "ยืนยัน" },
@@ -64,8 +67,8 @@ export function MobileCheckinFlow({
     status: string;
   } | null>(null);
 
-  const [facing, setFacing] = useState<CameraFacing>("user");
-  const cam = useCameraStream(step === "camera" && !skipCapture, facing);
+  const [facing, setFacing] = useState<CameraFacing>("environment");
+  const cam = useCameraStream(step === "camera" && !skipCapture, facing, { sharp: true });
   const submittingRef = useRef(false);
 
   const branch = todayData?.data?.branch ?? null;
@@ -110,14 +113,21 @@ export function MobileCheckinFlow({
   function capture() {
     const video = cam.videoRef.current;
     if (!video || !video.videoWidth) return;
-    const side = Math.min(video.videoWidth, video.videoHeight);
+    // Save exactly what the full-screen viewfinder shows: the video fills the
+    // screen with object-cover, so crop the frame to the screen's aspect ratio.
+    const scale = Math.max(video.clientWidth / video.videoWidth, video.clientHeight / video.videoHeight);
+    const cropW = video.clientWidth / scale;
+    const cropH = video.clientHeight / scale;
+    const cropX = (video.videoWidth - cropW) / 2;
+    const cropY = (video.videoHeight - cropH) / 2;
+    const shrink = Math.min(1, PHOTO_MAX_SIDE / Math.max(cropW, cropH));
     const canvas = document.createElement("canvas");
-    canvas.width = 480;
-    canvas.height = 480;
+    canvas.width = Math.round(cropW * shrink);
+    canvas.height = Math.round(cropH * shrink);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(video, (video.videoWidth - side) / 2, (video.videoHeight - side) / 2, side, side, 0, 0, 480, 480);
-    setPhoto(canvas.toDataURL("image/jpeg", 0.85));
+    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+    setPhoto(canvas.toDataURL("image/jpeg", 0.8));
     setStep("preview");
   }
 
@@ -195,7 +205,13 @@ export function MobileCheckinFlow({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gv-dark-green pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-white md:hidden">
       {step !== "success" && step !== "offsite" && (
-        <div className="shrink-0 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3">
+        <div
+          className={cn(
+            "px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3",
+            // On the camera step the live view fills the whole screen and the header floats over it.
+            step === "camera" ? "absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/70 to-transparent pb-6" : "shrink-0",
+          )}
+        >
           <div className="flex items-center justify-between">
             <button
               type="button"
@@ -325,7 +341,7 @@ function CameraStep({
   distance: number | null;
 }) {
   return (
-    <div className="relative flex-1 overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden">
       <video
         ref={videoRef}
         playsInline
@@ -350,12 +366,6 @@ function CameraStep({
           </button>
         </div>
       )}
-      {ready && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="size-[min(16rem,60vw,45dvh)] rounded-[40%] border-2 border-white/70" />
-        </div>
-      )}
-
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pt-10 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
         <div className="mx-auto mb-4 flex max-w-xs items-center justify-between gap-2 rounded-xl bg-black/60 px-3 py-2 text-xs">
           <span className="flex items-center gap-1.5 text-slate-200">
@@ -377,7 +387,7 @@ function CameraStep({
           </span>
         </div>
 
-        <p className="mb-3 text-center text-xs text-slate-300">จัดใบหน้าให้อยู่ในกรอบ แล้วกดถ่ายรูป</p>
+        <p className="mb-3 text-center text-xs text-slate-300">ถือให้นิ่ง แล้วกดถ่ายรูป</p>
 
         <div className="flex items-center justify-center gap-8">
           {torchSupported ? (
@@ -421,7 +431,7 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
     <div className="flex flex-1 flex-col">
       <div className="relative flex-1 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="size-full object-cover" />
+        <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="size-full object-contain" />
       </div>
       <div className="px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-center">
         <p className="mb-4 text-xs text-slate-300">ตรวจสอบรูปให้ชัดเจน แล้วกด &quot;ใช้รูปนี้&quot;</p>
