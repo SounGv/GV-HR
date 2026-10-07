@@ -90,6 +90,8 @@ export function MobileContentWrapper({ children }: { children: React.ReactNode }
 
       backHref={meta.backHref}
 
+      preferHistory={meta.preferHistory}
+
       contentClassName="mobile-module-body space-y-4 p-4 pb-36"
 
     >

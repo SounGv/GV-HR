@@ -1,6 +1,8 @@
 export interface MobileRouteMeta {
   title: string;
   backHref?: string;
+  /** Back goes to the page the user came from (home, notifications, a list); `backHref` is only the fallback. */
+  preferHistory?: boolean;
 }
 
 type RoutePattern = {
@@ -69,7 +71,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/appraisal/forms": { title: "แบบประเมิน", backHref: "/services" },
   "/appraisal/settings": { title: "ตั้งค่าการประเมิน", backHref: "/services" },
   "/appraisal/kpi": { title: "KPI Profile", backHref: "/services" },
-  "/appraisal/my-results": { title: "ผลประเมินของฉัน", backHref: "/services" },
+  "/appraisal/my-results": { title: "ผลประเมินของฉัน", backHref: "/services", preferHistory: true },
   "/appraisal/rounds": { title: "รอบประเมิน", backHref: "/services" },
   "/appraisal/tasks": { title: "งานประเมินของฉัน", backHref: "/dashboard" },
   "/performance/new": { title: "สร้างรอบประเมิน", backHref: "/performance" },
@@ -98,10 +100,11 @@ const PATTERNS: RoutePattern[] = [
   { pattern: /^\/appraisal\/rounds\/[^/]+\/fill\/[^/]+$/, meta: { title: "กรอกแทนผู้ประเมิน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+\/people\/[^/]+$/, meta: { title: "ผลรายคน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+$/, meta: { title: "รอบประเมิน", backHref: "/appraisal/rounds" } },
-  { pattern: /^\/appraisal\/tasks\/[^/]+$/, meta: { title: "ทำแบบประเมิน", backHref: "/appraisal/tasks" } },
+  // Opened from the home card, a notification or the task list — go back to whichever it was.
+  { pattern: /^\/appraisal\/tasks\/[^/]+$/, meta: { title: "ทำแบบประเมิน", backHref: "/appraisal/tasks", preferHistory: true } },
   { pattern: /^\/employees\/[^/]+\/account$/, meta: { title: "บัญชีผู้ใช้", backHref: "/employees" } },
   { pattern: /^\/employees\/[^/]+\/edit$/, meta: { title: "แก้ไขพนักงาน", backHref: "/employees" } },
-  { pattern: /^\/employees\/[^/]+\/evaluation-history$/, meta: { title: "ประวัติการประเมิน", backHref: "/employees" } },
+  { pattern: /^\/employees\/[^/]+\/evaluation-history$/, meta: { title: "ประวัติการประเมิน", backHref: "/employees", preferHistory: true } },
   { pattern: /^\/employees\/[^/]+\/recognize$/, meta: { title: "ให้กำลังใจ", backHref: "/employees" } },
   { pattern: /^\/employees\/[^/]+$/, meta: { title: "โปรไฟล์พนักงาน", backHref: "/employees" } },
   { pattern: /^\/admin\/users\/[^/]+\/roles$/, meta: { title: "กำหนดบทบาท", backHref: "/admin" } },
@@ -117,7 +120,7 @@ const PATTERNS: RoutePattern[] = [
   { pattern: /^\/performance\/[^/]+\/edit$/, meta: { title: "แก้ไขการประเมิน", backHref: "/performance" } },
   { pattern: /^\/performance\/[^/]+$/, meta: { title: "รายละเอียดการประเมิน", backHref: "/performance" } },
   { pattern: /^\/performance\/campaigns\/[^/]+\/edit$/, meta: { title: "แก้ไขแคมเปญ", backHref: "/performance" } },
-  { pattern: /^\/performance\/campaigns\/[^/]+\/participants\/[^/]+$/, meta: { title: "ผู้เข้าร่วมประเมิน", backHref: "/performance" } },
+  { pattern: /^\/performance\/campaigns\/[^/]+\/participants\/[^/]+$/, meta: { title: "ผู้เข้าร่วมประเมิน", backHref: "/performance", preferHistory: true } },
   { pattern: /^\/performance\/campaigns\/[^/]+$/, meta: { title: "แคมเปญประเมิน", backHref: "/performance" } },
   { pattern: /^\/performance\/campaigns\/schedules\/[^/]+\/edit$/, meta: { title: "แก้ไขตารางประเมิน", backHref: "/performance/campaigns/schedules" } },
   { pattern: /^\/performance\/competencies\/categories\/[^/]+\/edit$/, meta: { title: "แก้ไขหมวดสมรรถนะ", backHref: "/performance/competencies" } },

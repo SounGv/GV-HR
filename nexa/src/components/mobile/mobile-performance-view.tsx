@@ -27,7 +27,7 @@ function fmtDate(iso: string) {
  */
 export function MobilePerformanceView() {
   return (
-    <MobileScreen title="ประเมินผล" backHref="/services" contentClassName="space-y-4 p-4">
+    <MobileScreen title="ประเมินผล" backHref="/dashboard" preferHistory contentClassName="space-y-4 p-4">
       <PendingSection />
       <div className="space-y-3">
         <h2 className="text-base font-semibold text-foreground">ผลประเมินของฉัน</h2>

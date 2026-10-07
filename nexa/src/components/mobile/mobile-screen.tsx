@@ -6,6 +6,7 @@ import { MobileHeader } from "./mobile-header";
 export function MobileScreen({
   title,
   backHref,
+  preferHistory,
   onBack,
   headerTrailing,
   footer,
@@ -15,6 +16,7 @@ export function MobileScreen({
 }: {
   title: React.ReactNode;
   backHref?: string;
+  preferHistory?: boolean;
   onBack?: () => void;
   headerTrailing?: React.ReactNode;
   footer?: React.ReactNode;
@@ -24,7 +26,7 @@ export function MobileScreen({
 }) {
   return (
     <div className={cn("flex min-h-full flex-col bg-background md:hidden", className)}>
-      <MobileHeader title={title} backHref={backHref} onBack={onBack} trailing={headerTrailing} />
+      <MobileHeader title={title} backHref={backHref} preferHistory={preferHistory} onBack={onBack} trailing={headerTrailing} />
       <div className={cn("flex-1 overflow-y-auto", contentClassName)}>{children}</div>
       {footer}
     </div>
