@@ -208,8 +208,10 @@ export function MobileCheckinFlow({
         <div
           className={cn(
             "px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3",
-            // On the camera step the live view fills the whole screen and the header floats over it.
-            step === "camera" ? "absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/70 to-transparent pb-6" : "shrink-0",
+            // On the camera and photo-check steps the picture fills the whole screen and the header floats over it.
+            step === "camera" || step === "preview"
+              ? "absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/70 to-transparent pb-6"
+              : "shrink-0",
           )}
         >
           <div className="flex items-center justify-between">
@@ -428,28 +430,27 @@ function CameraStep({
 
 function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: () => void; onConfirm: () => void }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {/* The photo fills only the space left above the buttons; absolute so its own height can never push them off the screen. */}
-      <div className="relative min-h-0 flex-1 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="absolute inset-0 size-full object-contain" />
-      </div>
-      <div className="shrink-0 px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-center">
-        <p className="mb-4 text-xs text-slate-300">ตรวจสอบรูปให้ชัดเจน แล้วกด &quot;ใช้รูปนี้&quot;</p>
+    <div className="absolute inset-0 overflow-hidden">
+      {/* The saved photo has the same shape as the camera view, so it fills the screen edge to edge with nothing cut off. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="absolute inset-0 size-full object-cover" />
+
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-4 pt-14 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+        <p className="mb-3 text-center text-sm text-white/90">ตรวจรูปให้ชัดก่อนยืนยัน</p>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onRetake}
-            className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold text-white"
+            className="flex h-16 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white/20 text-xs font-semibold text-white backdrop-blur active:scale-95 motion-reduce:active:scale-100"
           >
-            <RotateCcw className="size-4" /> ถ่ายใหม่
+            <RotateCcw className="size-5" aria-hidden="true" /> ถ่ายใหม่
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-gv-dark-green"
+            className="flex h-16 flex-[2.2] items-center justify-center gap-2 rounded-2xl bg-gv-lime text-lg font-bold text-gv-dark-green shadow-lg active:scale-95 motion-reduce:active:scale-100"
           >
-            <Check className="size-4" /> ใช้รูปนี้
+            <Check className="size-6" aria-hidden="true" /> ใช้รูปนี้
           </button>
         </div>
       </div>
