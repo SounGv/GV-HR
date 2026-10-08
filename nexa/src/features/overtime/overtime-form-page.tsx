@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Info } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -21,9 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/client";
-import { computeHours, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER, dayOffReason } from "./calc";
+import { computeHours, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER } from "./calc";
 import { cn } from "@/lib/utils";
-import { useHolidays } from "@/features/holiday/hooks";
 import { useCreateOvertime } from "./hooks";
 
 const FORM_ID = "ot-form";
@@ -53,27 +52,9 @@ export function OvertimeFormPage() {
     defaultValues: { date: "", dayType: "NORMAL", startTime: "18:00", endTime: "20:00", reason: "" },
   });
 
-  const [date, start, end, dayType] = form.watch(["date", "startTime", "endTime", "dayType"]);
+  const [start, end, dayType] = form.watch(["startTime", "endTime", "dayType"]);
   const rate = dayType === "DAY_OFF" ? DAY_OFF_MULTIPLIER : DEFAULT_MULTIPLIER;
   const hours = start && end && end > start ? computeHours(start, end) : 0;
-
-  // The day type follows the date: a Sunday or a company holiday switches to
-  // the day-off rate by itself. The employee can still change it, which is how
-  // an off Saturday is chosen until the system knows who is off which Saturday.
-  const year = Number(date.slice(0, 4));
-  const holidays = useHolidays(year >= 2000 && year <= 2100 ? year : new Date().getFullYear());
-  const autoReason = dayOffReason(date, holidays.data?.data);
-  const [autoSelected, setAutoSelected] = useState(false);
-  useEffect(() => {
-    if (autoReason) {
-      form.setValue("dayType", "DAY_OFF");
-      setAutoSelected(true);
-    } else if (autoSelected) {
-      form.setValue("dayType", "NORMAL");
-      setAutoSelected(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoReason]);
 
   async function onSubmit(values: FormSchema) {
     try {
@@ -139,10 +120,7 @@ export function OvertimeFormPage() {
                       type="button"
                       role="radio"
                       aria-checked={field.value === value}
-                      onClick={() => {
-                        field.onChange(value);
-                        setAutoSelected(false);
-                      }}
+                      onClick={() => field.onChange(value)}
                       className={cn(
                         "min-h-11 rounded-lg px-3 text-sm font-semibold transition",
                         field.value === value ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
@@ -154,9 +132,7 @@ export function OvertimeFormPage() {
                 </div>
                 <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
                   <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                  {autoReason && field.value === "DAY_OFF"
-                    ? `ระบบเลือกให้ เพราะ${autoReason} (เปลี่ยนได้)`
-                    : "เสาร์ที่หยุดหรือวันหยุดพิเศษ ให้เลือก “วันหยุด” เอง"}
+                  ทำงานวันอาทิตย์ วันหยุดบริษัท หรือเสาร์ที่หยุด ให้เลือก “วันหยุด”
                 </p>
               </FormItem>
             )}
