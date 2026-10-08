@@ -13,7 +13,7 @@ import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { useAuth } from "@/features/auth/auth-context";
 import type { DashboardActions } from "@/features/dashboard/service";
 import { MobileCheckinCard } from "./mobile-checkin-card";
-import { BenefitsIcon, ShiftIcon, TimeEditIcon } from "@/components/shared/menu-icons";
+import { BenefitsIcon, CheckInIcon, ShiftIcon, TimeEditIcon } from "@/components/shared/menu-icons";
 import {
   LeaveIcon,
   OvertimeIcon,
@@ -22,10 +22,12 @@ import {
   StarIllustrationIcon,
 } from "@/components/shared/illustrated-icons";
 
-/** What an employee does most often, two rows of three. Each item only shows if the account may use it. */
+/** What an employee does most often, rows of three. Each item only shows if the account may use it. */
 const QUICK_MENU = [
   { href: "/leave/new", label: "ขอลา", icon: LeaveIcon, permission: "leave:read" },
   { href: "/overtime/new", label: "ขอ OT", icon: OvertimeIcon, permission: "overtime:read" },
+  // The attendance page lists the last 30 days of scans, with each day's in and out times.
+  { href: "/attendance", label: "ประวัติเข้า-ออกงาน", icon: CheckInIcon, permission: "attendance:read" },
   { href: "/attendance/corrections/new", label: "แก้เวลาเข้า-ออก", icon: TimeEditIcon, permission: "attendance:create" },
   { href: "/benefits/medical/new", label: "เบิกค่ารักษา", icon: BenefitsIcon, permission: "expense:read" },
   { href: "/shifts", label: "ตารางกะ", icon: ShiftIcon, permission: "shift:read" },

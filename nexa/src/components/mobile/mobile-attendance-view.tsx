@@ -8,7 +8,7 @@ import { RecognitionTiles } from "@/features/recognition/recognition-tiles";
 
 export function MobileAttendanceView() {
   return (
-    <MobileScreen title="เวลาเข้า-ออกงาน" contentClassName="space-y-4 p-4">
+    <MobileScreen title="เวลาเข้า-ออกงาน" backHref="/dashboard" preferHistory contentClassName="space-y-4 p-4">
       <MobileCheckinCard />
       <RecognitionTiles />
       <AttendanceQuickActions />
