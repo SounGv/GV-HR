@@ -123,7 +123,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           placeholder="123456"
           value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value)}
-          className="h-[52px] rounded-[12px] border-[var(--login-border)] !bg-[var(--login-surface)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[var(--login-brand-green)] focus-visible:ring-[var(--login-brand-green)]/15"
+          className="h-[54px] rounded-[14px] border-transparent !bg-[var(--login-field-bg)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[var(--login-brand-green)] focus-visible:!bg-[var(--login-surface)] focus-visible:ring-[var(--login-brand-green)]/15"
         />
         <LoginButton type="submit" loading={submitting} disabled={!mfaCode}>
           ยืนยัน
@@ -219,7 +219,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
               type="button"
               variant="outline"
               size="lg"
-              className="h-[52px] w-full rounded-[12px] border-[var(--login-border)] !bg-[var(--login-surface)] !text-[var(--login-text-primary)]"
+              className="h-[54px] w-full rounded-full border-[var(--login-border)] !bg-[var(--login-surface)] !text-[var(--login-text-primary)]"
               render={<a href="/api/auth/google" />}
             >
               <GoogleIcon className="size-4" /> เข้าสู่ระบบด้วย Google

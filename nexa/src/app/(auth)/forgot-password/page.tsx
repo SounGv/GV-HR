@@ -21,13 +21,13 @@ export default function ForgotPasswordPage() {
       >
         <ul className="space-y-3 text-sm text-slate-300">
           <li className="flex items-center gap-3">
-            <Mail className="size-5 text-primary" /> ส่งลิงก์ไปยังอีเมลที่ลงทะเบียนไว้
+            <Mail className="size-5 text-sidebar-primary" /> ส่งลิงก์ไปยังอีเมลที่ลงทะเบียนไว้
           </li>
           <li className="flex items-center gap-3">
-            <KeyRound className="size-5 text-primary" /> ลิงก์ใช้ได้ครั้งเดียว หมดอายุใน 1 ชั่วโมง
+            <KeyRound className="size-5 text-sidebar-primary" /> ลิงก์ใช้ได้ครั้งเดียว หมดอายุใน 1 ชั่วโมง
           </li>
           <li className="flex items-center gap-3">
-            <ShieldCheck className="size-5 text-primary" /> เซสชันเดิมทั้งหมดจะถูกออกจากระบบเพื่อความปลอดภัย
+            <ShieldCheck className="size-5 text-sidebar-primary" /> เซสชันเดิมทั้งหมดจะถูกออกจากระบบเพื่อความปลอดภัย
           </li>
         </ul>
       </AuthBrandPanel>

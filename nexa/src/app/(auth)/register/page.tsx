@@ -23,13 +23,13 @@ export default function RegisterPage() {
       >
         <ul className="space-y-3 text-sm text-slate-300">
           <li className="flex items-center gap-3">
-            <Building2 className="size-5 text-primary" /> สร้างองค์กรใหม่ พร้อมระบบ HR ครบ {MODULES.length}+ โมดูล
+            <Building2 className="size-5 text-sidebar-primary" /> สร้างองค์กรใหม่ พร้อมระบบ HR ครบ {MODULES.length}+ โมดูล
           </li>
           <li className="flex items-center gap-3">
-            <Users className="size-5 text-primary" /> คุณเป็น Super Admin จัดการทุกอย่างได้ทันที
+            <Users className="size-5 text-sidebar-primary" /> คุณเป็น Super Admin จัดการทุกอย่างได้ทันที
           </li>
           <li className="flex items-center gap-3">
-            <ShieldCheck className="size-5 text-primary" /> ข้อมูลแยกเป็นสัดส่วน ปลอดภัยด้วย RBAC
+            <ShieldCheck className="size-5 text-sidebar-primary" /> ข้อมูลแยกเป็นสัดส่วน ปลอดภัยด้วย RBAC
           </li>
         </ul>
       </AuthBrandPanel>

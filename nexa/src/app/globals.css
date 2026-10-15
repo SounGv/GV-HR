@@ -173,6 +173,13 @@
   --login-surface: #ffffff;
   --login-border: #d4d9df;
   --login-error: #c62828;
+  /* Sign-in card: a white card on a flat warm-grey page, filled fields, a soft shadow. */
+  --login-page-bg: #f6f7f3;
+  --login-card-border: #e6e9df;
+  --login-field-bg: #f3f5f1;
+  --login-card-shadow: 0 30px 60px -30px rgba(19, 21, 22, 0.28);
+  --login-button-shadow: 0 12px 26px -14px rgba(19, 21, 22, 0.7);
+  --login-logo-shadow: rgba(19, 21, 22, 0.18);
 
   --chart-1: #0d9488;
   --chart-2: #1a7f4e;
