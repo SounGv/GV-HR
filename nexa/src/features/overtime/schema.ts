@@ -6,9 +6,8 @@ const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export const otCreateSchema = z
   .object({
+    // The kind of day is not asked for: the server sets it from the date (Sunday / company holiday = day off).
     date: z.coerce.date({ message: "กรุณาเลือกวันที่" }),
-    // NORMAL = overtime on a working day; DAY_OFF = working on a day off (paid at the double rate).
-    dayType: z.enum(OT_DAY_TYPES).default("NORMAL"),
     startTime: z.string().regex(timeRe, "เวลาไม่ถูกต้อง"),
     endTime: z.string().regex(timeRe, "เวลาไม่ถูกต้อง"),
     reason: z.preprocess(
@@ -38,6 +37,8 @@ export type OtCreateInput = z.infer<typeof otCreateSchema>;
 
 export const otDecideSchema = z.object({
   action: z.enum(["approve", "reject"]),
+  // The approver may correct the kind of day (e.g. an off Saturday the system cannot know) when approving.
+  dayType: z.enum(OT_DAY_TYPES).optional(),
   note: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
     z.string().trim().max(500).optional(),

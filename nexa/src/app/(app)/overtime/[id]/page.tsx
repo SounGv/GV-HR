@@ -49,7 +49,7 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
         status={<LeaveStatusBadge status={request.status} />}
         actions={
           <div className="flex items-center gap-3">
-            <OvertimeDecideActions id={request.id} show={canDecide} />
+            <OvertimeDecideActions id={request.id} show={canDecide} currentMultiplier={request.multiplier} />
             <Link href="/overtime" className="text-sm text-muted-foreground hover:text-foreground">
               กลับรายการ
             </Link>

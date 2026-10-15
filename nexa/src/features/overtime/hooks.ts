@@ -36,8 +36,8 @@ export function useCreateOvertime() {
 export function useDecideOvertime() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { id: string; action: "approve" | "reject"; note?: string }) =>
-      decideOvertime(v.id, v.action, v.note),
+    mutationFn: (v: { id: string; action: "approve" | "reject"; note?: string; dayType?: "NORMAL" | "DAY_OFF" }) =>
+      decideOvertime(v.id, v.action, v.note, v.dayType),
     onSuccess: () => qc.invalidateQueries({ queryKey: overtimeKeys.all }),
   });
 }

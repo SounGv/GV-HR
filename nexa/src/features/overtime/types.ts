@@ -25,7 +25,6 @@ export interface OvertimeRequest {
 
 export interface OtFormValues {
   date: string;
-  dayType?: "NORMAL" | "DAY_OFF";
   startTime: string;
   endTime: string;
   reason?: string;

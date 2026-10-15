@@ -11,7 +11,7 @@ import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { computeHours, estimateAmount, minutesSinceWorkDateStart, DEFAULT_MULTIPLIER, MIN_OT_MINUTES, multiplierFor } from "./calc";
+import { computeHours, dayOffReason, estimateAmount, minutesSinceWorkDateStart, DEFAULT_MULTIPLIER, MIN_OT_MINUTES, multiplierFor } from "./calc";
 import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -59,15 +59,26 @@ export async function createOvertime(
   const employeeId = requireEmployeeId(session);
   const hours = computeHours(input.startTime, input.endTime);
   if (hours <= 0) throw BadRequest("ช่วงเวลาไม่ถูกต้อง");
-  const multiplier = multiplierFor(input.dayType);
-  const dayOffNote = input.dayType === "DAY_OFF" ? " (ทำงานวันหยุด 2 เท่า)" : "";
+  // The system, not the requester, sets the kind of day from the date: a Sunday or a company
+  // holiday is a day off. An off Saturday cannot be known yet, so the approver corrects it on approval.
+  const holidays = await prisma.holiday.findMany({
+    where: { companyId, date: input.date, deletedAt: null },
+    select: { date: true, name: true },
+  });
+  const isDayOff =
+    dayOffReason(
+      input.date.toISOString().slice(0, 10),
+      holidays.map((h) => ({ date: h.date.toISOString(), name: h.name })),
+    ) !== null;
+  const multiplier = multiplierFor(isDayOff ? "DAY_OFF" : "NORMAL");
+  const dayOffNote = isDayOff ? " (ทำงานวันหยุด 2 เท่า)" : "";
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
     select: { firstName: true, lastName: true, managerId: true },
   });
-  // The employee chooses the kind of day (normal / day off) when asking. Pay is NOT worked out here:
-  // it is calculated when the request is approved (decideOvertime), from the rate chosen and the pay on record then.
+  // Pay is NOT worked out here: it is calculated when the request is approved (decideOvertime),
+  // from the rate then in force and the pay on record at that time.
 
   const record = await prisma.overtimeRequest.create({
     data: {
@@ -301,6 +312,11 @@ export async function decideOvertime(
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
 
+  // The approver may correct the kind of day (an off Saturday, say). Only an approval can change
+  // the rate; a rejection leaves the request exactly as it was sent.
+  const multiplier = nextStatus === "APPROVED" && input.dayType ? multiplierFor(input.dayType) : req.multiplier;
+  const rateChanged = multiplier !== req.multiplier;
+
   // Re-estimate pay at the moment of approval, not reuse the estimate frozen
   // when the request was first submitted — payroll sums this record's
   // estimatedAmount directly (features/payroll/service.ts), so if approval
@@ -318,7 +334,7 @@ export async function decideOvertime(
             hourlyRate: req.employee.hourlyRate ? Number(req.employee.hourlyRate) : null,
           },
           req.hours,
-          req.multiplier,
+          multiplier,
         )
       : undefined;
 
@@ -338,6 +354,7 @@ export async function decideOvertime(
       decisionNote: input.note,
       updatedById: session.sub,
       ...(estimatedAmount !== undefined ? { estimatedAmount } : {}),
+      ...(rateChanged ? { multiplier } : {}),
     },
   });
   if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
@@ -349,6 +366,7 @@ export async function decideOvertime(
     action: `overtime.${input.action}`,
     entity: "OvertimeRequest",
     entityId: req.id,
+    ...(rateChanged ? { before: { multiplier: req.multiplier }, after: { multiplier } } : {}),
     ...meta,
   });
 
@@ -364,7 +382,7 @@ export async function decideOvertime(
     req.employeeId,
     {
       title: nextStatus === "APPROVED" ? "คำขอ OT ได้รับอนุมัติ" : "คำขอ OT ไม่ได้รับอนุมัติ",
-      body: `OT ${req.hours} ชั่วโมง — ${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
+      body: `OT ${req.hours} ชั่วโมง — ${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${rateChanged ? ` (ปรับอัตราเป็น ${multiplier} เท่า)` : ""}${input.note ? `: ${input.note}` : ""}`,
       category: "overtime",
       link: `/overtime/${req.id}`,
     },

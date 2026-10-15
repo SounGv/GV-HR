@@ -21,8 +21,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/client";
-import { computeHours, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER } from "./calc";
+import { computeHours, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER, dayOffReason } from "./calc";
 import { cn } from "@/lib/utils";
+import { useHolidays } from "@/features/holiday/hooks";
 import { useCreateOvertime } from "./hooks";
 
 const FORM_ID = "ot-form";
@@ -31,7 +32,6 @@ const LIST = "/overtime";
 const formSchema = z
   .object({
     date: z.string().min(1, "กรุณาเลือกวันที่"),
-    dayType: z.enum(["NORMAL", "DAY_OFF"]),
     startTime: z.string().regex(/^\d{2}:\d{2}$/, "เวลาไม่ถูกต้อง"),
     endTime: z.string().regex(/^\d{2}:\d{2}$/, "เวลาไม่ถูกต้อง"),
     reason: z.string().optional(),
@@ -49,11 +49,16 @@ export function OvertimeFormPage() {
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: { date: "", dayType: "NORMAL", startTime: "18:00", endTime: "20:00", reason: "" },
+    defaultValues: { date: "", startTime: "18:00", endTime: "20:00", reason: "" },
   });
 
-  const [start, end, dayType] = form.watch(["startTime", "endTime", "dayType"]);
-  const rate = dayType === "DAY_OFF" ? DAY_OFF_MULTIPLIER : DEFAULT_MULTIPLIER;
+  const [date, start, end] = form.watch(["date", "startTime", "endTime"]);
+  // Same rule the server applies when the request is sent (calc.ts dayOffReason). If this account cannot
+  // read the holiday list, only Sundays show here; the server still counts company holidays.
+  const year = Number(date.slice(0, 4));
+  const holidays = useHolidays(year >= 2000 && year <= 2100 ? year : new Date().getFullYear());
+  const dayOffWhy = dayOffReason(date, holidays.data?.data);
+  const rate = dayOffWhy ? DAY_OFF_MULTIPLIER : DEFAULT_MULTIPLIER;
   const hours = start && end && end > start ? computeHours(start, end) : 0;
 
   async function onSubmit(values: FormSchema) {
@@ -102,41 +107,27 @@ export function OvertimeFormPage() {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="dayType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>ประเภทวัน</FormLabel>
-                <div role="radiogroup" aria-label="ประเภทวัน" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
-                  {(
-                    [
-                      ["NORMAL", "วันทำงาน", DEFAULT_MULTIPLIER],
-                      ["DAY_OFF", "วันหยุด", DAY_OFF_MULTIPLIER],
-                    ] as const
-                  ).map(([value, title, times]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      role="radio"
-                      aria-checked={field.value === value}
-                      onClick={() => field.onChange(value)}
-                      className={cn(
-                        "min-h-11 rounded-lg px-3 text-sm font-semibold transition",
-                        field.value === value ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
-                      )}
-                    >
-                      {title} <span className="tabular-nums">×{times}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
-                  <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                  ทำงานวันอาทิตย์ วันหยุดบริษัท หรือเสาร์ที่หยุด ให้เลือก “วันหยุด”
-                </p>
-              </FormItem>
-            )}
-          />
+          {/* The system sets the day type from the date; the requester is told, not asked. */}
+          {date && (
+            <div className="space-y-1.5" aria-live="polite">
+              <p
+                className={cn(
+                  "flex min-h-11 items-center justify-between gap-3 rounded-xl px-4 text-sm font-semibold",
+                  dayOffWhy ? "bg-accent text-foreground" : "bg-muted text-foreground",
+                )}
+              >
+                <span>
+                  {dayOffWhy ? "วันหยุด" : "วันทำงาน"}
+                  {dayOffWhy && <span className="font-normal text-muted-foreground"> · {dayOffWhy}</span>}
+                </span>
+                <span className="tabular-nums">×{rate}</span>
+              </p>
+              <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+                <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                ระบบกำหนดอัตราให้ตามวันที่ เสาร์ที่หยุดให้หัวหน้าปรับเป็นวันหยุดตอนอนุมัติ
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <FormField
               control={form.control}

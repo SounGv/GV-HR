@@ -11,8 +11,8 @@ export function createOvertime(input: OtFormValues) {
   return api.post<Envelope<OvertimeRequest>>("/api/overtime", input);
 }
 
-export function decideOvertime(id: string, action: "approve" | "reject", note?: string) {
-  return api.post<Envelope<OvertimeRequest>>(`/api/overtime/${id}/decide`, { action, note });
+export function decideOvertime(id: string, action: "approve" | "reject", note?: string, dayType?: "NORMAL" | "DAY_OFF") {
+  return api.post<Envelope<OvertimeRequest>>(`/api/overtime/${id}/decide`, { action, note, dayType });
 }
 
 export function cancelOvertime(id: string) {
