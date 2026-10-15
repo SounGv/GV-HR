@@ -66,6 +66,19 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/overtime/new": { title: "ขอ OT", backHref: "/requests" },
   "/performance": { title: "ประเมินผล", backHref: "/dashboard" },
   "/appraisal": { title: "ภาพรวมการประเมิน", backHref: "/services" },
+  "/benefits": { title: "สวัสดิการ", backHref: "/services" },
+  "/benefits/medical": { title: "ค่ารักษาพยาบาล", backHref: "/benefits" },
+  // Opened from the home quick menu as well as from the medical list, so back goes to whichever it was.
+  "/benefits/medical/new": { title: "เบิกค่ารักษา", backHref: "/benefits/medical", preferHistory: true },
+  "/benefits/loans": { title: "กู้เงินบริษัท", backHref: "/benefits" },
+  "/benefits/loans/new": { title: "ขอกู้เงิน", backHref: "/benefits/loans" },
+  "/benefits/history": { title: "ประวัติสวัสดิการ", backHref: "/benefits" },
+  "/benefits/report": { title: "รายงานสวัสดิการ", backHref: "/benefits" },
+  "/help": { title: "ช่วยเหลือ", backHref: "/services" },
+  "/import": { title: "นำเข้าข้อมูล", backHref: "/services" },
+  "/notifications/new": { title: "ส่งการแจ้งเตือน", backHref: "/notifications" },
+  "/performance/competencies/matrix": { title: "เมทริกซ์สมรรถนะ", backHref: "/performance/competencies" },
+  "/performance/settings/thresholds": { title: "เกณฑ์การประเมิน", backHref: "/performance" },
   "/leave/year-setup": { title: "ตั้งสิทธิ์ลาปีใหม่", backHref: "/leave" },
   "/leave/entitlements": { title: "สิทธิ์ลารายคน", backHref: "/leave" },
   "/appraisal/forms": { title: "แบบประเมิน", backHref: "/services" },
@@ -96,6 +109,8 @@ const EXACT: Record<string, MobileRouteMeta> = {
 };
 
 const PATTERNS: RoutePattern[] = [
+  { pattern: /^\/benefits\/loans\/[^/]+$/, meta: { title: "รายละเอียดเงินกู้", backHref: "/benefits/loans" } },
+  { pattern: /^\/admin\/users\/[^/]+\/ai-access$/, meta: { title: "สิทธิ์ AI", backHref: "/admin" } },
   { pattern: /^\/appraisal\/forms\/[^/]+$/, meta: { title: "แก้ไขแบบประเมิน", backHref: "/appraisal/forms" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+\/fill\/[^/]+$/, meta: { title: "กรอกแทนผู้ประเมิน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+\/people\/[^/]+$/, meta: { title: "ผลรายคน", backHref: "/appraisal/rounds" } },
@@ -183,7 +198,7 @@ export function resolveMobileRoute(pathname: string, searchParams?: URLSearchPar
     if (pattern.test(pathname)) return meta;
   }
 
-  const segment = pathname.split("/").filter(Boolean).pop();
-  const fallbackTitle = segment ? decodeURIComponent(segment) : "GV One";
-  return { title: fallbackTitle, backHref: "/services" };
+  // A page with no entry above: a neutral title, never the raw URL segment ("new", "ai-access").
+  // scripts/check-mobile-route-titles.mjs fails the build check when a page ends up here.
+  return { title: "GV One", backHref: "/services" };
 }
