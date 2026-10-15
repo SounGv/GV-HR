@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-prompt), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
+  --font-sans: var(--font-sans-thai), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
   --font-mono: var(--font-mono);
-  --font-heading: var(--font-prompt), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
+  --font-heading: var(--font-sans-thai), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
 
   /* Semantic status colors (GV One) */
   --color-success: var(--success);
@@ -110,7 +110,7 @@
 :root {
   --radius: 0.75rem;
 
-  /* Prompt via next/font (see layout.tsx) is the single typeface for body and
+  /* IBM Plex Sans Thai via next/font (see layout.tsx) is the single typeface for body and
      headings. The stacks live in the @theme block above. Do not redeclare
      --font-sans / --font-heading on :root: the old declaration there read
      next/font variables that were only defined on <body>, so it was invalid
@@ -166,6 +166,8 @@
   --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06), 0 10px 24px -14px rgba(19, 21, 22, 0.2);
   /* Secondary text that must stay easy to read at 14px (inactive tabs): 8.8:1 on white. */
   --muted-strong: #444b54;
+  /* Lines between table rows: visible but quiet (1.4:1). */
+  --row-divider: #d9dde2;
 
   /* Login-page design tokens — namespaced so they don't collide with the
      app-wide tokens above. Matches the K·GvOneLogin2 mockup: plain white
@@ -338,6 +340,7 @@
   --field-shadow: none;
   --card-shadow: none;
   --muted-strong: var(--muted-foreground);
+  --row-divider: var(--border);
   --ring: #14b8a6;
 
   --chart-1: #14b8a6;

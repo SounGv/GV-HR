@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Prompt } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
@@ -12,14 +12,16 @@ const mono = IBM_Plex_Mono({
 });
 
 /** The one app-wide typeface (mobile and desktop alike), for body and
- * headings. Prompt has Thai and Latin cuts, so numerals match the Thai text.
+ * headings. IBM Plex Sans Thai is drawn for data-heavy screens and has Thai and
+ * Latin cuts, so numerals match the Thai text (it replaced Prompt, whose small
+ * sizes looked thin and uneven in tables).
  *
- * The next/font class (which defines `--font-prompt`) must sit on <html>, not
+ * The next/font class (which defines `--font-sans-thai`) must sit on <html>, not
  * <body>: globals.css reads the variable from `:root`, and a variable that
  * only exists on a descendant is invalid there, which silently dropped the
  * whole stack to the browser's serif default. */
-const prompt = Prompt({
-  variable: "--font-prompt",
+const sansThai = IBM_Plex_Sans_Thai({
+  variable: "--font-sans-thai",
   subsets: ["thai", "latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
@@ -63,7 +65,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="th" suppressHydrationWarning className={`${mono.variable} ${prompt.variable}`}>
+    <html lang="th" suppressHydrationWarning className={`${mono.variable} ${sansThai.variable}`}>
       <body className="font-sans">
         <AppProviders>{children}</AppProviders>
         <PwaRegister />
