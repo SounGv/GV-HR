@@ -13,8 +13,11 @@ export interface AttendanceRecord {
   clockOutLng: number | null;
   clockInDistance: number | null;
   clockOutDistance: number | null;
-  clockInPhotoUrl: string | null;
-  clockOutPhotoUrl: string | null;
+  /** Last change to the record; part of the photo URL so a replaced photo is not served from the browser cache. */
+  updatedAt: string;
+  /** Present on list results. The image is loaded from `attendancePhotoUrl`. */
+  hasClockInPhoto?: boolean;
+  hasClockOutPhoto?: boolean;
   clockInViaQr: boolean;
   clockOutViaQr: boolean;
   breakStartAt: string | null;

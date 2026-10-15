@@ -44,6 +44,9 @@ export function useCameraStream(active: boolean, facing: CameraFacing, options?:
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
+        // Stored before any further await so the cleanup below can stop it
+        // if the screen is closed while the steps after this are still pending.
+        streamRef.current = stream;
         if (sharp) {
           // Keep re-focusing while the phone moves instead of locking on the
           // first frame. Best-effort: browsers without focus control ignore it.
@@ -52,12 +55,13 @@ export function useCameraStream(active: boolean, facing: CameraFacing, options?:
           if (caps?.focusMode?.includes("continuous")) {
             await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet] }).catch(() => {});
           }
+          if (cancelled) return;
         }
-        streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play().catch(() => {});
         }
+        if (cancelled) return;
         setReady(true);
       } catch (e) {
         if (cancelled) return;

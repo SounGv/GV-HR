@@ -21,8 +21,11 @@ const recordSelect = {
   clockOutLng: true,
   clockInDistance: true,
   clockOutDistance: true,
-  clockInPhotoUrl: true,
-  clockOutPhotoUrl: true,
+  // The photos themselves are not selected: each is a base64 image of 100 KB or
+  // more, so a list of them is megabytes. A list gets `hasClockInPhoto` /
+  // `hasClockOutPhoto` instead (see withPhotoFlags) and each image is loaded on
+  // its own from /api/attendance/[id]/photo.
+  updatedAt: true,
   clockInViaQr: true,
   clockOutViaQr: true,
   breakStartAt: true,
@@ -453,6 +456,27 @@ export async function endBreak(companyId: string, session: AccessClaims, meta?: 
   return record;
 }
 
+/**
+ * Adds `hasClockInPhoto` / `hasClockOutPhoto` to each record without reading the
+ * photos: the filter only tests the column for NULL, so the image data is never
+ * fetched. Two queries run one after the other (the connection pool holds one).
+ */
+async function withPhotoFlags<T extends { id: string }>(records: T[]) {
+  if (records.length === 0) return [];
+  const ids = records.map((r) => r.id);
+  const withIn = await prisma.attendanceRecord.findMany({
+    where: { id: { in: ids }, clockInPhotoUrl: { not: null } },
+    select: { id: true },
+  });
+  const withOut = await prisma.attendanceRecord.findMany({
+    where: { id: { in: ids }, clockOutPhotoUrl: { not: null } },
+    select: { id: true },
+  });
+  const inIds = new Set(withIn.map((r) => r.id));
+  const outIds = new Set(withOut.map((r) => r.id));
+  return records.map((r) => ({ ...r, hasClockInPhoto: inIds.has(r.id), hasClockOutPhoto: outIds.has(r.id) }));
+}
+
 export async function listAttendance(
   companyId: string,
   session: AccessClaims,
@@ -482,7 +506,7 @@ export async function listAttendance(
 
   const withEmployee = query.scope !== "me";
 
-  return prisma.attendanceRecord.findMany({
+  const records = await prisma.attendanceRecord.findMany({
     where: {
       companyId,
       deletedAt: null,
@@ -493,4 +517,5 @@ export async function listAttendance(
     orderBy: { workDate: "desc" },
     take: 200,
   });
+  return withPhotoFlags(records);
 }

@@ -1,7 +1,8 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/auth/guard";
+import { requireSession } from "@/lib/auth/guard";
+import { can } from "@/lib/auth/rbac";
 import { NotFound } from "@/lib/api/errors";
 import { handleApiError } from "@/lib/api/response";
 import { teamScopeFilter } from "@/features/employee/service";
@@ -27,17 +28,21 @@ const CONTENT_TYPE: Record<string, string> = {
  * thousands of rows without carrying the photos inside its JSON and the
  * browser loads only the thumbnails that scroll into view.
  *
- * Same access rule as the report that lists it: `report:read`, and anyone who
- * is not company-wide sees only their own and their direct reports' records
- * (`teamScopeFilter`). Read-only.
+ * Access: anyone signed in sees their own photos (the attendance history lists
+ * only whether a photo exists and loads each image from here). With
+ * `report:read`, anyone who is not company-wide also sees their direct reports'
+ * records (`teamScopeFilter`), as in the report that lists them. Anyone else's
+ * record answers "not found". Read-only.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requirePermission("report:read");
+    const session = await requireSession();
     const { id } = paramsSchema.parse(await params);
     const { kind } = querySchema.parse(Object.fromEntries(req.nextUrl.searchParams.entries()));
 
-    const scope = teamScopeFilter(session);
+    const scope = can(session.perms, "report:read")
+      ? teamScopeFilter(session)
+      : { id: session.employeeId ?? "__none__" };
     const record = await prisma.attendanceRecord.findFirst({
       where: { id, companyId: session.companyId, deletedAt: null, ...(scope ? { employee: scope } : {}) },
       // Only the requested photo is read; the other column is not selected.

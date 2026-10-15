@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AttendanceStatusBadge, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
+import { attendancePhotoUrl } from "@/features/attendance/photo-url";
 import type { AttendanceRecord } from "@/features/attendance/types";
 
 function fmtDate(iso: string) {
@@ -102,7 +103,7 @@ export function MobileAttendanceDetailDialog({
                 lat={record.clockInLat}
                 lng={record.clockInLng}
                 distance={record.clockInDistance}
-                photoUrl={record.clockInPhotoUrl}
+                photoUrl={record.hasClockInPhoto ? attendancePhotoUrl(record.id, "in", record.updatedAt) : null}
               />
               <Punch
                 label="เช็คเอาท์"
@@ -110,7 +111,7 @@ export function MobileAttendanceDetailDialog({
                 lat={record.clockOutLat}
                 lng={record.clockOutLng}
                 distance={record.clockOutDistance}
-                photoUrl={record.clockOutPhotoUrl}
+                photoUrl={record.hasClockOutPhoto ? attendancePhotoUrl(record.id, "out", record.updatedAt) : null}
               />
             </div>
 
