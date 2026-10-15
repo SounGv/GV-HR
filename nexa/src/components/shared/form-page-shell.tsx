@@ -41,8 +41,8 @@ export function FormPageShell({
         description={description}
         status={status}
       />
-      <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
-        <CardContent className="px-0 pt-0 md:px-6 md:pt-6">{children}</CardContent>
+      <Card className="rounded-2xl md:rounded-xl">
+        <CardContent className="px-4 pt-0 md:px-6 md:pt-6">{children}</CardContent>
       </Card>
       <FormFooter formId={formId} pending={pending} onCancel={onCancel} actions={actions} />
     </div>

@@ -388,7 +388,7 @@ function Preview({ questions, rater, ratingMax }: { questions: QuestionValues[];
           {CHOICE.has(q.answerType) &&
             q.options.map((o) => (
               <div key={o.value} className="flex items-center gap-2 rounded-xl border border-border px-2 py-1.5">
-                <span className={cn("size-4 shrink-0 border border-input", q.answerType === "CHOICE" ? "rounded-full" : "rounded-[4px]")} aria-hidden="true" />
+                <span className={cn("size-4 shrink-0 border border-[color:var(--field-border)]", q.answerType === "CHOICE" ? "rounded-full" : "rounded-[4px]")} aria-hidden="true" />
                 <span>{o.label || "(ว่าง)"}</span>
               </div>
             ))}

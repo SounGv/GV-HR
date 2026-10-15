@@ -61,7 +61,7 @@ export function NotificationBell() {
                     <div className={n.read ? "flex-1 pl-4" : "flex-1"}>
                       <p className="text-sm font-medium">{n.title}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
-                      <p className="mt-1 text-[11px] text-muted-foreground/70">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {formatDate(n.createdAt)}
                       </p>
                     </div>

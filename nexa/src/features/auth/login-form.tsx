@@ -123,7 +123,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           placeholder="123456"
           value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value)}
-          className="h-[54px] rounded-[14px] border-transparent !bg-[var(--login-field-bg)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[var(--login-brand-green)] focus-visible:!bg-[var(--login-surface)] focus-visible:ring-[var(--login-brand-green)]/15"
+          className="h-[54px] rounded-[14px] border-transparent shadow-none !bg-[var(--login-field-bg)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[var(--login-brand-green)] focus-visible:!bg-[var(--login-surface)] focus-visible:ring-[var(--login-brand-green)]/15"
         />
         <LoginButton type="submit" loading={submitting} disabled={!mfaCode}>
           ยืนยัน

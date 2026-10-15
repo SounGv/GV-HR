@@ -249,7 +249,7 @@ function TaskForm({
                       }
                       className={cn("flex min-h-12 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left text-sm", picked ? "border-primary bg-accent" : "border-border bg-card", "disabled:opacity-60")}
                     >
-                      <span className={cn("flex size-5 shrink-0 items-center justify-center border", q.answerType === "CHOICE" ? "rounded-full" : "rounded-[4px]", picked ? "border-primary bg-primary text-primary-foreground" : "border-input")} aria-hidden="true">
+                      <span className={cn("flex size-5 shrink-0 items-center justify-center border", q.answerType === "CHOICE" ? "rounded-full" : "rounded-[4px]", picked ? "border-primary bg-primary text-primary-foreground" : "border-[color:var(--field-border)]")} aria-hidden="true">
                         {picked && <CircleCheck className="size-3.5" />}
                       </span>
                       {o.label}

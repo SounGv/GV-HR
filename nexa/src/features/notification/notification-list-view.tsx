@@ -57,7 +57,7 @@ export function NotificationListView() {
                 <div className={n.read ? "min-w-0 flex-1 pl-4" : "min-w-0 flex-1"}>
                   <p className="text-sm font-medium text-foreground">{n.title}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground/70">{formatDate(n.createdAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatDate(n.createdAt)}</p>
                 </div>
                 {n.link && <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />}
               </div>

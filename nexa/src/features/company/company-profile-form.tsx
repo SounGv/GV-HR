@@ -418,7 +418,7 @@ function NativeSelect({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="h-9 w-full rounded-md border border-border bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+      className="h-9 w-full rounded-md border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
     >
       {options.map((o) => (
         <option key={o.v} value={o.v}>

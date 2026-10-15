@@ -143,7 +143,7 @@
   --chat-teal-bright: #14b8a6;
   --destructive: #c62828;
 
-  --success: #1a7f4e;
+  --success: #17774a;
   --success-foreground: #ffffff;
   --success-muted: #e3f4ea;
   --destructive-muted: #fce8e8;
@@ -157,6 +157,15 @@
   --border: #e5e9ed;
   --input: #e5e9ed;
   --ring: #131516;
+
+  /* Edges that can actually be seen: surfaces differ from the page by tone only (1.08:1), so fields,
+     outline buttons and cards carry a border or shadow of their own. Field border is 3.1:1 on white. */
+  --field-border: #8b939c;
+  --field-bg: #ffffff;
+  --field-shadow: inset 0 1px 2px rgba(19, 21, 22, 0.06);
+  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06), 0 10px 24px -14px rgba(19, 21, 22, 0.2);
+  /* Secondary text that must stay easy to read at 14px (inactive tabs): 8.8:1 on white. */
+  --muted-strong: #444b54;
 
   /* Login-page design tokens — namespaced so they don't collide with the
      app-wide tokens above. Matches the K·GvOneLogin2 mockup: plain white
@@ -324,6 +333,11 @@
 
   --border: #272b30;
   --input: #272b30;
+  --field-border: var(--input);
+  --field-bg: transparent;
+  --field-shadow: none;
+  --card-shadow: none;
+  --muted-strong: var(--muted-foreground);
   --ring: #14b8a6;
 
   --chart-1: #14b8a6;
