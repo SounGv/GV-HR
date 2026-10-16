@@ -1,12 +1,14 @@
 import { getSession } from "./session";
 import { prisma } from "@/lib/prisma";
+import { avatarSrc } from "@/lib/avatar";
 
 export interface CurrentUser {
   id: string;
   email: string | null;
   username: string | null;
   companyId: string;
-  company: { id: string; name: string; logoUrl: string | null } | null;
+  /** No logo here: it is stored as a ~365 KB data URL and would be sent with every page. The payslip loads it itself. */
+  company: { id: string; name: string } | null;
   roles: string[];
   permissions: string[];
   employee: {
@@ -34,7 +36,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       email: true,
       username: true,
       companyId: true,
-      company: { select: { id: true, name: true, logoUrl: true } },
+      company: { select: { id: true, name: true } },
       employee: {
         select: {
           id: true,
@@ -60,6 +62,9 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     company: user.company,
     roles: session.roles,
     permissions: session.perms,
-    employee: user.employee,
+    // The photo goes by its short address: stored inline it would be sent with every page.
+    employee: user.employee
+      ? { ...user.employee, avatarUrl: avatarSrc(user.employee.id, user.employee.avatarUrl) ?? null }
+      : null,
   };
 }

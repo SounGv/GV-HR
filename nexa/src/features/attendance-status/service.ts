@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -237,6 +238,27 @@ export async function loadAttendanceWatch(
     .sort((a, b) => b.perPerson - a.perPerson);
 
   return { windowDays: WATCH_WINDOW_DAYS, people, departments, truncatedFrom: report.truncatedFrom ?? null };
+}
+
+/** How long a user's watch list is reused. It is a 30-day tally, so a few minutes of delay changes nothing HR would act on. */
+const WATCH_CACHE_SECONDS = 300;
+
+/**
+ * `loadAttendanceWatch` remembered for a few minutes, separately for each user
+ * and department filter (it follows that user's team scope, so it is never
+ * shared between people). It rebuilds the whole 30-day daily report, which was
+ * the slowest part of opening the dashboard.
+ */
+export function loadAttendanceWatchCached(
+  companyId: string,
+  session: AccessClaims,
+  departmentIds: string[] = [],
+): Promise<AttendanceWatch> {
+  return unstable_cache(
+    () => loadAttendanceWatch(companyId, session, departmentIds),
+    ["attendance-watch", companyId, session.sub, [...departmentIds].sort().join(",")],
+    { revalidate: WATCH_CACHE_SECONDS },
+  )();
 }
 
 export interface EmployeeAttendanceSummary {

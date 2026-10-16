@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { AppError, type ErrorCode } from "./errors";
+import { slimAvatars } from "@/lib/avatar";
 
 /**
  * Standard success/error envelope so every endpoint responds consistently:
@@ -16,17 +17,19 @@ export interface PageMeta {
   totalPages: number;
 }
 
+// Every success response passes employee photos through slimAvatars: a stored
+// photo is ~200 KB, so lists carry its short address and the browser loads it separately.
 export function ok<T>(data: T, init?: number | ResponseInit) {
   const responseInit = typeof init === "number" ? { status: init } : init;
-  return NextResponse.json({ data }, responseInit);
+  return NextResponse.json({ data: slimAvatars(data) }, responseInit);
 }
 
 export function okPaginated<T>(data: T[], meta: PageMeta) {
-  return NextResponse.json({ data, meta });
+  return NextResponse.json({ data: slimAvatars(data), meta });
 }
 
 export function created<T>(data: T) {
-  return NextResponse.json({ data }, { status: 201 });
+  return NextResponse.json({ data: slimAvatars(data) }, { status: 201 });
 }
 
 export function noContent() {

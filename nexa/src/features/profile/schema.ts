@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DATA_URL_IMAGE_RE } from "@/lib/image-schema";
+import { isAvatarPath } from "@/lib/avatar";
 
 const emptyToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
 const optText = (max = 200) =>
@@ -46,8 +47,9 @@ export const selfProfileSchema = z.object({
       .nullable()
       .optional(),
   ),
+  // A form that loaded the photo from the API holds its short address; sending that back means "unchanged".
   avatarUrl: z.preprocess(
-    emptyToNull,
+    (v) => (isAvatarPath(v) ? undefined : emptyToNull(v)),
     z.string().max(3_000_000).regex(DATA_URL_IMAGE_RE, "ไฟล์ต้องเป็นรูปภาพ").nullable().optional(),
   ),
 

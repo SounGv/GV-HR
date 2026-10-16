@@ -2,6 +2,7 @@ import { z } from "zod";
 import { listQuerySchema } from "@/lib/api/pagination";
 import { passwordSchema } from "@/lib/auth/password-policy";
 import { DATA_URL_IMAGE_RE } from "@/lib/image-schema";
+import { isAvatarPath } from "@/lib/avatar";
 
 export const GENDERS = ["MALE", "FEMALE", "OTHER"] as const;
 export const MARITAL = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as const;
@@ -41,7 +42,11 @@ export const employeeCreateSchema = z.object({
   firstNameEn: optional(z.string().trim().max(120)),
   lastNameEn: optional(z.string().trim().max(120)),
   nickname: optional(z.string().trim().max(60)),
-  avatarUrl: optional(z.string().max(3_000_000).regex(DATA_URL_IMAGE_RE, "ไฟล์ต้องเป็นรูปภาพ")),
+  // A form that loaded the photo from the API holds its short address; sending that back means "unchanged".
+  avatarUrl: z.preprocess(
+    (v) => (isAvatarPath(v) ? undefined : v),
+    optional(z.string().max(3_000_000).regex(DATA_URL_IMAGE_RE, "ไฟล์ต้องเป็นรูปภาพ")),
+  ),
   email: optional(z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง")),
   phone: optional(z.string().trim().max(30)),
 

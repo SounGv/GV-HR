@@ -17,7 +17,7 @@ export async function GET() {
         email: true,
         username: true,
         companyId: true,
-        company: { select: { id: true, name: true, logoUrl: true } },
+        company: { select: { id: true, name: true } },
         employee: {
           select: {
             id: true,

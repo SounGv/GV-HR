@@ -15,7 +15,7 @@ import {
 } from "@/features/dashboard/service";
 import { ActionCenter } from "@/features/dashboard/action-center";
 import {
-  loadAttendanceWatch,
+  loadAttendanceWatchCached,
   loadTodayAttendance,
   listDepartmentOptions,
 } from "@/features/attendance-status/service";
@@ -211,7 +211,7 @@ async function AttendanceWatchSection({
 }) {
   let watch;
   try {
-    watch = await loadAttendanceWatch(companyId, session, departmentIds);
+    watch = await loadAttendanceWatchCached(companyId, session, departmentIds);
   } catch {
     return (
       <Card>
