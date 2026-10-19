@@ -20,12 +20,14 @@ import {
   listDepartmentOptions,
 } from "@/features/attendance-status/service";
 import {
-  AttendanceAttentionCards,
-  AttendanceFollowChips,
-  AttendanceStatusBar,
-  AttendanceStatusTiles,
-  DepartmentBreakdownCard,
-} from "@/features/attendance-status/attendance-today-sections";
+  LiveAttentionCards,
+  LiveDepartmentBreakdown,
+  LiveFollowChips,
+  LiveStamp,
+  LiveStatusBar,
+  LiveStatusTiles,
+  LiveTodayProvider,
+} from "@/features/attendance-status/live-today";
 import { DepartmentWatchCard, WatchlistCard } from "@/features/attendance-status/attendance-watch-sections";
 import { DepartmentFilter } from "@/features/attendance-status/department-filter";
 import {
@@ -311,6 +313,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   return (
     <>
       <MobileDashboardView name={name} mine={mine} actions={actions} />
+      <LiveTodayProvider initial={attendanceToday} departmentIds={deptIds}>
       <div className="theme-flip7 hidden space-y-6 md:block">
       {/* Greeting + AI summary — plain text header, one dark AI card right
           under it (redesign spec: N mockup merges what used to be two
@@ -356,8 +359,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <DepartmentFilter departments={departmentOptions} selected={deptIds[0] ?? null} />
+            <LiveStamp />
           </div>
-          <AttendanceStatusBar data={attendanceToday} departmentIds={deptIds} />
+          <LiveStatusBar />
         </>
       )}
 
@@ -390,13 +394,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {/* Action center */}
       <ActionCenter
         data={actions}
-        followUp={attendanceToday ? <AttendanceFollowChips data={attendanceToday} departmentIds={deptIds} /> : undefined}
+        followUp={attendanceToday ? <LiveFollowChips /> : undefined}
       />
 
       {attendanceToday && (
         <>
-          <AttendanceStatusTiles data={attendanceToday} departmentIds={deptIds} />
-          <AttendanceAttentionCards data={attendanceToday} departmentIds={deptIds} />
+          <LiveStatusTiles />
+          <LiveAttentionCards />
           {/* The 30-day watch list is the slowest part (it reads a month of attendance), so it streams in after the rest. */}
           <Suspense
             fallback={
@@ -407,7 +411,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           >
             <AttendanceWatchSection companyId={user!.companyId} session={session} departmentIds={deptIds} />
           </Suspense>
-          <DepartmentBreakdownCard data={attendanceToday} departmentIds={deptIds} />
+          <LiveDepartmentBreakdown />
         </>
       )}
 
@@ -694,6 +698,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </CardContent>
       </Card>
       </div>
+      </LiveTodayProvider>
     </>
   );
 }
