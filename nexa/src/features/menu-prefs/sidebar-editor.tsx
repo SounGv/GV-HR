@@ -4,7 +4,7 @@ import { Reorder, useDragControls } from "framer-motion";
 import { Eye, EyeOff, GripVertical, Star } from "lucide-react";
 import type { NavGroup, NavItem } from "@/config/navigation";
 import { cn } from "@/lib/utils";
-import { moveId, toggleId, type MenuPrefs } from "./rules";
+import { moveId, moveWithinPinBlock, pinnedFirst, toggleId, type MenuPrefs } from "./rules";
 
 interface SidebarEditorProps {
   /** The groups in the order being edited, holding only items this person may see. */
@@ -29,7 +29,7 @@ export function SidebarEditor({ groups, draft, onChange, onDone, onCancel, onRes
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <p className="px-3 pb-2 text-xs text-slate-400">ลากเพื่อเรียงใหม่ · ตา = ซ่อน · ดาว = ปักไว้บนสุด</p>
+      <p className="px-3 pb-2 text-xs text-slate-400">ลากเพื่อเรียงใหม่ · ตา = ซ่อน · ดาว = ขึ้นก่อนในหมวดของตัวเอง</p>
 
       <Reorder.Group
         axis="y"
@@ -104,7 +104,9 @@ function EditableGroup({
       <Reorder.Group
         axis="y"
         values={hrefs}
-        onReorder={(next: string[]) => onChange({ ...draft, itemOrder: { ...draft.itemOrder, [group.label]: next } })}
+        onReorder={(next: string[]) =>
+          onChange({ ...draft, itemOrder: { ...draft.itemOrder, [group.label]: pinnedFirst(next, draft.pinned) } })
+        }
         className="mb-1 ml-5 space-y-0.5 border-l-2 border-sidebar-accent pl-2"
       >
         {movable.map((item) => (
@@ -115,7 +117,9 @@ function EditableGroup({
             pinned={draft.pinned.includes(item.href)}
             onToggleHidden={() => onChange({ ...draft, hidden: toggleId(draft.hidden, item.href) })}
             onTogglePinned={() => onChange({ ...draft, pinned: toggleId(draft.pinned, item.href) })}
-            onMove={(delta) => onChange({ ...draft, itemOrder: { ...draft.itemOrder, [group.label]: moveId(hrefs, item.href, delta) } })}
+            onMove={(delta) =>
+              onChange({ ...draft, itemOrder: { ...draft.itemOrder, [group.label]: moveWithinPinBlock(hrefs, draft.pinned, item.href, delta) } })
+            }
           />
         ))}
       </Reorder.Group>

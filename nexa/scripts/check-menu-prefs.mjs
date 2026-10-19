@@ -9,7 +9,8 @@ import {
   moveId,
   orderByIds,
   orderMenu,
-  pinnedItems,
+  moveWithinPinBlock,
+  pinnedFirst,
   sanitizeMenuPrefs,
   toggleId,
 } from "../src/features/menu-prefs/rules.ts";
@@ -63,13 +64,40 @@ check("hidden items are reported hidden and the others are not", () => {
   assert.equal(isHidden(prefs, "/a2"), true);
   assert.equal(isHidden(prefs, "/a1"), false);
 });
-check("favourites keep the pin order and skip items the person may not see", () => {
-  const prefs = { ...EMPTY_MENU_PREFS, pinned: ["/b2", "/a1", "/c1"] };
-  const out = pinnedItems(menu, prefs, (item) => item.href !== "/c1");
-  assert.deepEqual(out.map((i) => i.href), ["/b2", "/a1"]);
+check("a starred item goes first inside its own group and the rest keep their order", () => {
+  const out = orderMenu(menu, { ...EMPTY_MENU_PREFS, pinned: ["/a3"] });
+  assert.equal(hrefs(out[0]), "/a3,/a1,/a2");
+  assert.equal(names(out), "ABC");
 });
-check("the sign-out row can never be a favourite", () => {
-  assert.deepEqual(pinnedItems(menu, { ...EMPTY_MENU_PREFS, pinned: ["/logout"] }, () => true), []);
+check("several starred items keep the saved order among themselves", () => {
+  const out = orderMenu(menu, { ...EMPTY_MENU_PREFS, itemOrder: { A: ["/a2", "/a3", "/a1"] }, pinned: ["/a1", "/a3"] });
+  assert.equal(hrefs(out[0]), "/a3,/a1,/a2");
+});
+check("starring in one group moves nothing in another group", () => {
+  const out = orderMenu(menu, { ...EMPTY_MENU_PREFS, pinned: ["/b2"] });
+  assert.equal(hrefs(out[0]), "/a1,/a2,/a3");
+  assert.equal(hrefs(out[1]), "/b2,/b1");
+});
+check("a starred item cannot sit above the sign-out row's place: sign-out stays last", () => {
+  const out = orderMenu(menu, { ...EMPTY_MENU_PREFS, pinned: ["/c1", "/logout"] });
+  assert.equal(hrefs(out[2]), "/c1,/logout");
+});
+check("un-starring puts the item back among the others in the saved order", () => {
+  const prefs = { ...EMPTY_MENU_PREFS, itemOrder: { A: ["/a1", "/a2", "/a3"] } };
+  assert.equal(hrefs(orderMenu(menu, { ...prefs, pinned: ["/a3"] })[0]), "/a3,/a1,/a2");
+  assert.equal(hrefs(orderMenu(menu, prefs)[0]), "/a1,/a2,/a3");
+});
+check("pinnedFirst moves starred ids to the front without reordering inside either side", () => {
+  assert.deepEqual(pinnedFirst(["a", "b", "c", "d"], ["d", "b"]), ["b", "d", "a", "c"]);
+  assert.deepEqual(pinnedFirst(["a", "b"], []), ["a", "b"]);
+});
+check("a move never lifts a row over the star line", () => {
+  const ids = ["s1", "s2", "n1", "n2"];
+  const pinned = ["s1", "s2"];
+  assert.deepEqual(moveWithinPinBlock(ids, pinned, "s2", -1), ["s2", "s1", "n1", "n2"]);
+  assert.deepEqual(moveWithinPinBlock(ids, pinned, "s2", 1), ids);
+  assert.deepEqual(moveWithinPinBlock(ids, pinned, "n1", -1), ids);
+  assert.deepEqual(moveWithinPinBlock(ids, pinned, "n1", 1), ["s1", "s2", "n2", "n1"]);
 });
 check("moving up or down shifts one place and stops at the ends", () => {
   assert.deepEqual(moveId(["a", "b", "c"], "b", -1), ["b", "a", "c"]);

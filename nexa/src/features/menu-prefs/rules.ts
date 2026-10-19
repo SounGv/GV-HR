@@ -4,7 +4,8 @@
  * Groups are identified by their label and items by their href, the same keys
  * the sidebar already uses. A saved list only has to name what the person
  * moved: anything it does not mention keeps its default place, so a menu item
- * added later simply appears at the end of its group. Hiding an item never
+ * added later simply appears at the end of its group. A pinned item (star) goes
+ * first inside its own group, ahead of the items that are not pinned. Hiding an item never
  * removes anyone's permission to open the page; it only takes it off this
  * person's sidebar.
  */
@@ -16,7 +17,7 @@ export interface MenuPrefs {
   itemOrder: Record<string, string[]>;
   /** Item hrefs taken off the sidebar. */
   hidden: string[];
-  /** Item hrefs shown again at the top as favourites, in this order. */
+  /** Item hrefs the person starred: each is listed first inside its own group. */
   pinned: string[];
 }
 
@@ -62,8 +63,21 @@ export function orderByIds<T>(defaults: T[], idOf: (entry: T) => string, saved: 
 }
 
 /**
- * The groups and their items in this person's order. Hidden items are kept
- * (the editor shows them faded); the sidebar filters them with `isHidden`.
+ * Moves every pinned id to the front, keeping the relative order inside the
+ * pinned ones and inside the others.
+ *
+ * @param ids The ids of one group, already in the person's order.
+ * @param pinned The starred ids.
+ */
+export function pinnedFirst(ids: string[], pinned: string[]): string[] {
+  const starred = new Set(pinned);
+  return [...ids.filter((id) => starred.has(id)), ...ids.filter((id) => !starred.has(id))];
+}
+
+/**
+ * The groups and their items in this person's order. Starred items come first
+ * inside their own group. Hidden items are kept (the editor shows them faded);
+ * the sidebar filters them with `isHidden`.
  *
  * @param groups The default menu.
  * @param prefs The person's saved layout.
@@ -73,7 +87,8 @@ export function orderMenu<I extends ItemLike, G extends GroupLike<I>>(groups: G[
   return orderByIds(groups, (g) => g.label, prefs.groupOrder).map((group) => {
     const movable = group.items.filter((i) => !i.isLogout);
     const fixedLast = group.items.filter((i) => i.isLogout);
-    const ordered = orderByIds(movable, (i) => i.href, prefs.itemOrder[group.label]);
+    const inOrder = orderByIds(movable, (i) => i.href, prefs.itemOrder[group.label]);
+    const ordered = orderByIds(inOrder, (i) => i.href, pinnedFirst(inOrder.map((i) => i.href), prefs.pinned));
     return { ...group, items: [...ordered, ...fixedLast] };
   });
 }
@@ -81,25 +96,6 @@ export function orderMenu<I extends ItemLike, G extends GroupLike<I>>(groups: G[
 /** True when the person took this item off their sidebar. */
 export function isHidden(prefs: MenuPrefs, href: string): boolean {
   return prefs.hidden.includes(href);
-}
-
-/**
- * The favourites, in the order they were pinned, skipping any item that no
- * longer exists, is the sign-out row, or is not in `visible`.
- *
- * @param groups The default menu.
- * @param prefs The person's saved layout.
- * @param visible Decides whether this person may see an item (permissions).
- */
-export function pinnedItems<I extends ItemLike>(groups: GroupLike<I>[], prefs: MenuPrefs, visible: (item: I) => boolean): I[] {
-  const all = new Map<string, I>();
-  for (const group of groups) for (const item of group.items) if (!item.isLogout) all.set(item.href, item);
-  const out: I[] = [];
-  for (const href of prefs.pinned) {
-    const item = all.get(href);
-    if (item && visible(item)) out.push(item);
-  }
-  return out;
 }
 
 /** Moves one id a step up (-1) or down (+1) in a list; a move past either end changes nothing. */
@@ -121,6 +117,23 @@ export function isDefaultMenuPrefs(prefs: MenuPrefs): boolean {
     prefs.pinned.length === 0 &&
     Object.values(prefs.itemOrder).every((ids) => ids.length === 0)
   );
+}
+
+/**
+ * Moves one id a step inside its own block: starred ids stay ahead of the
+ * others, so a move never lifts a row over the star line.
+ *
+ * @param ids The ids of one group in their current order (starred first).
+ * @param pinned The starred ids.
+ * @param id The row being moved.
+ * @param delta -1 for up, +1 for down.
+ */
+export function moveWithinPinBlock(ids: string[], pinned: string[], id: string, delta: -1 | 1): string[] {
+  const isStarred = pinned.includes(id);
+  const block = ids.filter((x) => pinned.includes(x) === isStarred);
+  const moved = moveId(block, id, delta);
+  const others = ids.filter((x) => pinned.includes(x) !== isStarred);
+  return isStarred ? [...moved, ...others] : [...others, ...moved];
 }
 
 /** Adds the id when it is not in the list, removes it when it is. */

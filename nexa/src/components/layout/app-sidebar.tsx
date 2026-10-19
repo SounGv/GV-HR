@@ -30,7 +30,7 @@ import { useNotifications } from "@/features/notification/hooks";
 import { ApiError } from "@/lib/api/client";
 import { useMenuPrefs } from "@/features/menu-prefs/hooks";
 import { SidebarEditor } from "@/features/menu-prefs/sidebar-editor";
-import { EMPTY_MENU_PREFS, isDefaultMenuPrefs, isHidden, orderMenu, pinnedItems, type MenuPrefs } from "@/features/menu-prefs/rules";
+import { EMPTY_MENU_PREFS, isDefaultMenuPrefs, isHidden, orderMenu, type MenuPrefs } from "@/features/menu-prefs/rules";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
 
@@ -135,7 +135,6 @@ export function AppSidebar() {
     (g) => g.items.length > 0,
   );
   const ordered = orderMenu(visibleGroups, editing ? draft : prefs);
-  const favourites = pinnedItems(NAV_GROUPS, prefs, (i) => canSee(i.permission));
 
   function startEditing() {
     setDraft(prefs);
@@ -211,17 +210,6 @@ export function AppSidebar() {
           />
         ) : (
           <>
-            {favourites.length > 0 && (
-              <SidebarGroup className="py-0.5">
-                <p className="px-2.5 pb-1 text-[11px] font-bold tracking-[0.08em] text-slate-400 group-data-[collapsible=icon]:hidden">
-                  เมนูโปรด
-                </p>
-                <SidebarGroupContent>
-                  <SidebarMenu>{favourites.map(renderItem)}</SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            )}
-
             {ordered.map((group) => {
               const items = group.items.filter((item) => !isHidden(prefs, item.href));
               if (items.length === 0) return null;
