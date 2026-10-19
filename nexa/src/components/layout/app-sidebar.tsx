@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Michroma } from "next/font/google";
-import { ChevronDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -25,6 +27,10 @@ import { useOvertime } from "@/features/overtime/hooks";
 import { useAttendanceCorrections } from "@/features/attendance-correction/hooks";
 import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { useNotifications } from "@/features/notification/hooks";
+import { ApiError } from "@/lib/api/client";
+import { useMenuPrefs } from "@/features/menu-prefs/hooks";
+import { SidebarEditor } from "@/features/menu-prefs/sidebar-editor";
+import { EMPTY_MENU_PREFS, isDefaultMenuPrefs, isHidden, orderMenu, pinnedItems, type MenuPrefs } from "@/features/menu-prefs/rules";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
 
@@ -120,6 +126,69 @@ export function AppSidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams.toString()]);
 
+  // This person's own layout (saved on their account): order, hidden and pinned items.
+  const { prefs, save, reset } = useMenuPrefs();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<MenuPrefs>(EMPTY_MENU_PREFS);
+
+  const visibleGroups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => canSee(i.permission)) })).filter(
+    (g) => g.items.length > 0,
+  );
+  const ordered = orderMenu(visibleGroups, editing ? draft : prefs);
+  const favourites = pinnedItems(NAV_GROUPS, prefs, (i) => canSee(i.permission));
+
+  function startEditing() {
+    setDraft(prefs);
+    setEditing(true);
+  }
+
+  async function finishEditing() {
+    try {
+      // A layout that changes nothing is stored as "no layout" (the default menu).
+      if (isDefaultMenuPrefs(draft)) await reset.mutateAsync();
+      else await save.mutateAsync(draft);
+      setEditing(false);
+      toast.success("บันทึกเมนูของคุณแล้ว");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "บันทึกเมนูไม่สำเร็จ");
+    }
+  }
+
+  const renderItem = (item: NavItem) => {
+    const active = isActive(item.href);
+    const href = item.ready ? item.href : `/coming-soon?title=${encodeURIComponent(item.label)}`;
+    const badge = item.badgeKey ? badgeValue(item.badgeKey) : 0;
+    return (
+      <SidebarMenuItem key={item.href}>
+        <SidebarMenuButton
+          isActive={active}
+          tooltip={item.label}
+          className={cn(
+            "h-9 text-[14px] [&_svg]:size-4",
+            active
+              ? "data-active:bg-sidebar-primary data-active:font-bold data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
+              : "text-[#E6E8EA] hover:text-white",
+          )}
+          render={
+            item.isLogout ? (
+              <button type="button" onClick={() => logout()} />
+            ) : item.opensAiPanel ? (
+              <button type="button" onClick={toggleAiPanel} />
+            ) : (
+              <Link href={href} />
+            )
+          }
+        >
+          <span>{item.label}</span>
+        </SidebarMenuButton>
+        {!item.ready && <SidebarMenuBadge className="text-[10px] text-slate-400">เร็วๆ นี้</SidebarMenuBadge>}
+        {item.ready && badge > 0 && (
+          <SidebarMenuBadge className="bg-badge text-badge-foreground">{badge > 9 ? "9+" : badge}</SidebarMenuBadge>
+        )}
+      </SidebarMenuItem>
+    );
+  };
+
   return (
     <Sidebar>
       <SidebarHeader className="justify-center overflow-hidden px-4 py-3 group-data-[collapsible=icon]:h-16">
@@ -130,80 +199,75 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-0.5">
-        {NAV_GROUPS.map((group) => {
-          const items = group.items.filter((item) => canSee(item.permission));
-          if (items.length === 0) return null;
-
-          const expanded = open[group.label] ?? false;
-          return (
-            <SidebarGroup key={group.label} className="py-0.5">
-              <button
-                type="button"
-                onClick={() => toggle(group.label)}
-                aria-expanded={expanded}
-                className="flex h-[46px] w-full items-center gap-3 rounded-xl px-2.5 text-[15px] font-semibold text-slate-200 transition hover:bg-sidebar-accent hover:text-white"
-              >
-                <span
-                  className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px]"
-                  style={{ background: group.chipColor }}
-                >
-                  <group.icon className="size-[18px] text-white" strokeWidth={2.25} />
-                </span>
-                <span className="flex-grow text-left tracking-wide">{group.label}</span>
-                <ChevronDown className={cn("size-4 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")} />
-              </button>
-              {expanded && (
-                <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 border-l-2 border-sidebar-accent pl-3.5">
-                  <SidebarMenu>
-                    {items.map((item) => {
-                      const active = isActive(item.href);
-                      const href = item.ready
-                        ? item.href
-                        : `/coming-soon?title=${encodeURIComponent(item.label)}`;
-                      const badge = item.badgeKey ? badgeValue(item.badgeKey) : 0;
-                      return (
-                        <SidebarMenuItem key={item.href}>
-                          <SidebarMenuButton
-                            isActive={active}
-                            tooltip={item.label}
-                            className={cn(
-                              "h-9 text-[14px] [&_svg]:size-4",
-                              active
-                                ? "data-active:bg-sidebar-primary data-active:font-bold data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
-                                : "text-[#E6E8EA] hover:text-white",
-                            )}
-                            render={
-                              item.isLogout ? (
-                                <button type="button" onClick={() => logout()} />
-                              ) : item.opensAiPanel ? (
-                                <button type="button" onClick={toggleAiPanel} />
-                              ) : (
-                                <Link href={href} />
-                              )
-                            }
-                          >
-                            <span>{item.label}</span>
-                          </SidebarMenuButton>
-                          {!item.ready && (
-                            <SidebarMenuBadge className="text-[10px] text-slate-400">
-                              เร็วๆ นี้
-                            </SidebarMenuBadge>
-                          )}
-                          {item.ready && badge > 0 && (
-                            <SidebarMenuBadge className="bg-badge text-badge-foreground">
-                              {badge > 9 ? "9+" : badge}
-                            </SidebarMenuBadge>
-                          )}
-                        </SidebarMenuItem>
-                      );
-                    })}
-                  </SidebarMenu>
+        {editing ? (
+          <SidebarEditor
+            groups={ordered}
+            draft={draft}
+            onChange={setDraft}
+            onDone={finishEditing}
+            onCancel={() => setEditing(false)}
+            onReset={() => setDraft({ ...EMPTY_MENU_PREFS, itemOrder: {} })}
+            saving={save.isPending || reset.isPending}
+          />
+        ) : (
+          <>
+            {favourites.length > 0 && (
+              <SidebarGroup className="py-0.5">
+                <p className="px-2.5 pb-1 text-[11px] font-bold tracking-[0.08em] text-slate-400 group-data-[collapsible=icon]:hidden">
+                  เมนูโปรด
+                </p>
+                <SidebarGroupContent>
+                  <SidebarMenu>{favourites.map(renderItem)}</SidebarMenu>
                 </SidebarGroupContent>
-              )}
-            </SidebarGroup>
-          );
-        })}
+              </SidebarGroup>
+            )}
+
+            {ordered.map((group) => {
+              const items = group.items.filter((item) => !isHidden(prefs, item.href));
+              if (items.length === 0) return null;
+
+              const expanded = open[group.label] ?? false;
+              return (
+                <SidebarGroup key={group.label} className="py-0.5">
+                  <button
+                    type="button"
+                    onClick={() => toggle(group.label)}
+                    aria-expanded={expanded}
+                    className="flex h-[46px] w-full items-center gap-3 rounded-xl px-2.5 text-[15px] font-semibold text-slate-200 transition hover:bg-sidebar-accent hover:text-white"
+                  >
+                    <span
+                      className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px]"
+                      style={{ background: group.chipColor }}
+                    >
+                      <group.icon className="size-[18px] text-white" strokeWidth={2.25} />
+                    </span>
+                    <span className="flex-grow text-left tracking-wide">{group.label}</span>
+                    <ChevronDown className={cn("size-4 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")} />
+                  </button>
+                  {expanded && (
+                    <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 border-l-2 border-sidebar-accent pl-3.5">
+                      <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+                    </SidebarGroupContent>
+                  )}
+                </SidebarGroup>
+              );
+            })}
+          </>
+        )}
       </SidebarContent>
+
+      {!editing && (
+        <SidebarFooter className="group-data-[collapsible=icon]:hidden">
+          <button
+            type="button"
+            onClick={startEditing}
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-slate-600 text-[13px] font-semibold text-slate-100 transition hover:bg-sidebar-accent"
+          >
+            <ArrowUpDown className="size-4" />
+            จัดเรียงเมนู
+          </button>
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }

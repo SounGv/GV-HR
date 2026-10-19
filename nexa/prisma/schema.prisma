@@ -609,6 +609,11 @@ model User {
 
   lastLoginAt DateTime?
 
+  // This person's own sidebar layout (group order, item order, hidden and pinned
+  // items), saved from the web sidebar's edit mode. Null = the default menu.
+  // See features/menu-prefs/rules.ts for the shape.
+  menuPrefs Json?
+
   // Brute-force protection for login + MFA verify (shared budget — either
   // wrong password or wrong TOTP/recovery code counts against the same
   // limit, since a valid password is a prerequisite to even reach MFA).
