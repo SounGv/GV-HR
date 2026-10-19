@@ -20,6 +20,21 @@ interface SidebarEditorProps {
 const HANDLE_HINT = "ลากเพื่อย้าย หรือกดลูกศรขึ้น/ลงบนแป้นพิมพ์";
 
 /**
+ * Lets a mouse press anywhere on a row start the drag, so people can grab the
+ * name and not only the small grip. The eye and star buttons keep working as
+ * plain clicks. Touch still starts only from the grip, so the list can scroll.
+ */
+function dragFromRow(controls: ReturnType<typeof useDragControls>) {
+  return (e: React.PointerEvent<HTMLElement>) => {
+    if (e.pointerType !== "mouse") return;
+    const target = e.target as HTMLElement;
+    // The grip starts its own drag; the eye and star are plain buttons.
+    if (target.closest("[data-handle]") || target.closest("button")) return;
+    controls.start(e);
+  };
+}
+
+/**
  * The sidebar while the person is arranging it: every group and item can be
  * dragged (or moved with the arrow keys on its handle), hidden with the eye and
  * pinned with the star. Nothing is saved until "เสร็จ".
@@ -93,7 +108,7 @@ function EditableGroup({
 
   return (
     <Reorder.Item value={group.label} dragListener={false} dragControls={controls} className="rounded-xl bg-sidebar select-none">
-      <div className="flex h-10 items-center gap-2 rounded-xl px-1.5 text-[14px] font-semibold text-slate-100">
+      <div onPointerDown={dragFromRow(controls)} className="flex h-10 cursor-grab items-center gap-2 rounded-xl px-1.5 text-[14px] font-semibold text-slate-100 active:cursor-grabbing">
         <Handle label={`ย้ายกลุ่ม ${group.label}`} controls={controls} onMove={onMoveGroup} />
         <span className="flex size-6 shrink-0 items-center justify-center rounded-[7px]" style={{ background: group.chipColor }}>
           <group.icon className="size-3.5 text-white" strokeWidth={2.25} />
@@ -145,7 +160,7 @@ function EditableItem({
   const controls = useDragControls();
   return (
     <Reorder.Item value={item.href} dragListener={false} dragControls={controls} className="rounded-lg bg-sidebar select-none">
-      <div className="flex h-9 items-center gap-1.5 px-1 text-[13px] text-[#E6E8EA]">
+      <div onPointerDown={dragFromRow(controls)} className="flex h-9 cursor-grab items-center gap-1.5 px-1 text-[13px] text-[#E6E8EA] active:cursor-grabbing">
         <Handle label={`ย้าย ${item.label}`} controls={controls} onMove={onMove} />
         <span className={cn("flex-grow truncate", hidden && "text-slate-500 line-through")}>{item.label}</span>
         <button
@@ -187,6 +202,7 @@ function Handle({
   return (
     <button
       type="button"
+      data-handle
       aria-label={label}
       title={HANDLE_HINT}
       onPointerDown={(e) => controls.start(e)}

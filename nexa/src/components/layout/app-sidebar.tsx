@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Michroma } from "next/font/google";
-import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Star } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sidebar,
@@ -178,7 +178,13 @@ export function AppSidebar() {
             )
           }
         >
-          <span>{item.label}</span>
+          <span className="flex items-center gap-1.5">
+            {prefs.pinned.includes(item.href) && (
+              // A starred item sits first in its group; the small star says why.
+              <Star className={cn("size-3! shrink-0", !active && "text-sidebar-primary")} fill="currentColor" aria-label="ปักหมุดไว้" />
+            )}
+            {item.label}
+          </span>
         </SidebarMenuButton>
         {!item.ready && <SidebarMenuBadge className="text-[10px] text-slate-400">เร็วๆ นี้</SidebarMenuBadge>}
         {item.ready && badge > 0 && (
