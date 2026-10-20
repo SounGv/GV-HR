@@ -112,17 +112,13 @@ export function AppSidebar() {
   });
   const toggle = (label: string) => setOpen((s) => ({ ...s, [label]: !s[label] }));
 
-  // The initializer above only runs once on mount — deep-linking into a
-  // different, currently-collapsed group later (e.g. a notification link)
-  // otherwise leaves that group collapsed with no visible active state. Only
-  // expand the group the new route landed in; leave every other group's
-  // manually-set collapse state untouched.
+  // Going to another page leaves only the group that page belongs to open, so
+  // groups opened earlier fold away by themselves. Groups opened by hand stay
+  // open until the next page change. A page outside every group changes nothing.
   useEffect(() => {
-    setOpen((prev) => {
-      const activeGroup = NAV_GROUPS.find((g) => groupHasActive(g.items));
-      if (!activeGroup || prev[activeGroup.label]) return prev;
-      return { ...prev, [activeGroup.label]: true };
-    });
+    const activeGroup = NAV_GROUPS.find((g) => groupHasActive(g.items));
+    if (!activeGroup) return;
+    setOpen({ [activeGroup.label]: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams.toString()]);
 
