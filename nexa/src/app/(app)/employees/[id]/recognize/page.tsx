@@ -4,7 +4,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { getEmployee } from "@/features/employee/service";
 import { AppError } from "@/lib/api/errors";
 import { RecognitionFormPage } from "@/features/recognition/recognition-form-page";
-import { fullName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 
 export const metadata: Metadata = { title: "ให้กำลังใจ" };
 
@@ -18,6 +18,6 @@ export default async function RecognizeEmployeePage({ params }: { params: Promis
   });
 
   return (
-    <RecognitionFormPage employeeId={employee.id} employeeName={fullName(employee.firstName, employee.lastName)} />
+    <RecognitionFormPage employeeId={employee.id} employeeName={displayName(employee)} />
   );
 }

@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, getInitials } from "@/lib/format";
+import { getInitials, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "@/features/leave/labels";
 import { useLeave, useCancelLeave, useDecideLeave } from "@/features/leave/hooks";
@@ -251,7 +251,7 @@ function RejectDialog({
           <DialogTitle>ปฏิเสธคำขอ{target ? KIND_LABEL[target.kind] : ""}</DialogTitle>
           <DialogDescription>
             {target
-              ? `${fullName(target.request.employee.firstName, target.request.employee.lastName)} · ${itemLine(target)}`
+              ? `${displayName(target.request.employee)} · ${itemLine(target)}`
               : ""}
           </DialogDescription>
         </DialogHeader>
@@ -394,7 +394,7 @@ function Approvals() {
             </Avatar>
             <div className="min-w-0">
               <p className="truncate font-medium text-foreground">
-                {fullName(item.request.employee.firstName, item.request.employee.lastName)}
+                {displayName(item.request.employee)}
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">{itemLine(item)}</p>
             </div>

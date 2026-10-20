@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -43,7 +44,7 @@ const requestSelect = {
   decisionNote: true,
   createdAt: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
   },
 } satisfies Prisma.LeaveRequestSelect;
 
@@ -216,7 +217,7 @@ export async function createLeave(
 
   const requester = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true, managerId: true },
+    select: { firstName: true, lastName: true, nickname: true, managerId: true },
   });
 
   const record = await prisma.leaveRequest.create({
@@ -263,9 +264,9 @@ export async function createLeave(
     await createNotification(companyId, requester.managerId, leaveNotice, session.sub);
     const manager = await prisma.employee.findFirst({
       where: { id: requester.managerId, companyId, deletedAt: null },
-      select: { firstName: true, lastName: true },
+      select: { firstName: true, lastName: true, nickname: true },
     });
-    if (manager) routedTo = `${manager.firstName} ${manager.lastName}`.trim();
+    if (manager) routedTo = displayName(manager);
   } else {
     // No direct manager on file — send it to the HR-level approvers instead of nobody.
     await notifyPermissionHolders(companyId, "leave:approve", employeeId, leaveNotice, session.sub);
@@ -485,7 +486,7 @@ export async function cancelLeave(
       hours: true,
       status: true,
       startDate: true,
-      employee: { select: { firstName: true, lastName: true, managerId: true } },
+      employee: { select: { firstName: true, lastName: true, nickname: true, managerId: true } },
     },
   });
   if (!req) throw NotFound("ไม่พบคำขอลา");

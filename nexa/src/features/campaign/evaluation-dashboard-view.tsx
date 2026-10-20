@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { toCsv, downloadCsv } from "@/lib/csv";
-import { formatDate } from "@/lib/format";
+import { formatDate, displayName } from "@/lib/format";
 import { useDashboard, useDashboardCycles } from "./hooks";
 import type { DashboardFilters, ScoreStatus } from "./types";
 
@@ -94,7 +94,7 @@ export function EvaluationDashboardView() {
     ];
     const rows = result.table.map((r) => ({
       employeeCode: r.employeeCode,
-      name: `${r.firstName} ${r.lastName}`,
+      name: displayName(r),
       department: r.department ?? "-",
       position: r.position ?? "-",
       scorePercent: r.scorePercent?.toFixed(1) ?? "-",
@@ -112,7 +112,7 @@ export function EvaluationDashboardView() {
     const header = ["รหัสพนักงาน", "ชื่อ", "แผนก", "ตำแหน่ง", "คะแนน (%)", "สถานะ", "หัวข้อคะแนนต่ำสุด", "วันติดตาม"];
     const body = result.table.map((r) => [
       r.employeeCode,
-      `${r.firstName} ${r.lastName}`,
+      displayName(r),
       r.department ?? "-",
       r.position ?? "-",
       r.scorePercent?.toFixed(1) ?? "-",

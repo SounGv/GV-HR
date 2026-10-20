@@ -9,7 +9,7 @@ import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate, fullName } from "@/lib/format";
+import { formatDate, displayName } from "@/lib/format";
 import { getReview } from "@/features/performance/service";
 import { bandTone } from "@/features/performance/calc";
 
@@ -25,7 +25,7 @@ export default async function PerformanceDetailPage({ params }: { params: Promis
   });
   const canEdit = can(session.perms, "performance:update");
 
-  const employeeName = fullName(review.employee.firstName, review.employee.lastName);
+  const employeeName = displayName(review.employee);
   const tone = bandTone(review.band);
 
   return (

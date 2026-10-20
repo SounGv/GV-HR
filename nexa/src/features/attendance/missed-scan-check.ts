@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
@@ -57,7 +58,7 @@ export async function checkMissedScans(): Promise<{ checked: number; flagged: nu
         status: "ACTIVE",
         OR: [{ hireDate: null }, { hireDate: { lte: yesterday } }],
       },
-      select: { id: true, firstName: true, lastName: true, managerId: true },
+      select: { id: true, firstName: true, lastName: true, nickname: true, managerId: true },
     });
     if (employees.length === 0) continue;
     checked += employees.length;
@@ -93,7 +94,7 @@ export async function checkMissedScans(): Promise<{ checked: number; flagged: nu
     for (const e of employees) {
       if (onLeave.has(e.id)) continue;
       const rec = recordByEmployee.get(e.id);
-      const name = `${e.firstName} ${e.lastName}`;
+      const name = displayName(e);
       if (rec?.clockInAt && !rec.clockOutAt) {
         results.push({ employeeId: e.id, name, managerId: e.managerId, issue: "no_clock_out" });
       } else if (!rec && recentlyActive.has(e.id)) {

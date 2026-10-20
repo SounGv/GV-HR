@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -28,9 +29,9 @@ async function authorName(companyId: string, session: AccessClaims): Promise<str
   if (!session.employeeId) return null;
   const emp = await prisma.employee.findFirst({
     where: { id: session.employeeId, companyId },
-    select: { firstName: true, lastName: true },
+    select: { firstName: true, lastName: true, nickname: true },
   });
-  return emp ? `${emp.firstName} ${emp.lastName}`.trim() : null;
+  return emp ? displayName(emp) : null;
 }
 
 /**

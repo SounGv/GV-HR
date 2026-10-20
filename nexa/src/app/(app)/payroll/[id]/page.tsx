@@ -7,7 +7,7 @@ import { requirePageAnyPermission } from "@/lib/auth/page-guard";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, fullName } from "@/lib/format";
+import { formatCurrency, displayName } from "@/lib/format";
 import { getPayslip } from "@/features/payroll/service";
 import { PayrollStatusBadge } from "@/features/payroll/status-badge";
 import type { PayrollLineItem } from "@/features/payroll/types";
@@ -25,7 +25,7 @@ export default async function PayrollDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  const employeeName = fullName(record.employee.firstName, record.employee.lastName);
+  const employeeName = displayName(record.employee);
   const earnings = record.earnings as unknown as PayrollLineItem[];
   const deductions = record.deductions as unknown as PayrollLineItem[];
 

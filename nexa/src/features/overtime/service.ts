@@ -30,7 +30,7 @@ const requestSelect = {
   decisionNote: true,
   createdAt: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
   },
 } satisfies Prisma.OvertimeRequestSelect;
 
@@ -75,7 +75,7 @@ export async function createOvertime(
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true, managerId: true },
+    select: { firstName: true, lastName: true, nickname: true, managerId: true },
   });
   // Pay is NOT worked out here: it is calculated when the request is approved (decideOvertime),
   // from the rate then in force and the pay on record at that time.
@@ -406,7 +406,7 @@ export async function cancelOvertime(
       employeeId: true,
       status: true,
       hours: true,
-      employee: { select: { firstName: true, lastName: true, managerId: true } },
+      employee: { select: { firstName: true, lastName: true, nickname: true, managerId: true } },
     },
   });
   if (!req) throw NotFound("ไม่พบคำขอ OT");

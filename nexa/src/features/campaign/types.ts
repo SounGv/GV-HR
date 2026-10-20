@@ -49,6 +49,7 @@ export interface ParticipantSummary {
     employeeCode: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
     avatarUrl: string | null;
     managerId: string | null;
   };
@@ -86,7 +87,7 @@ export interface ParticipantDetail extends ParticipantSummary {
     submittedAt: string | null;
     reopenRequested: boolean;
     reopenRequestNote: string | null;
-    raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null;
+    raterEmployee: { firstName: string; lastName: string; nickname: string | null; avatarUrl: string | null } | null;
   }[];
 }
 
@@ -176,6 +177,7 @@ export interface DashboardResult {
     employeeCode: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
     department: string | null;
     position: string | null;
     scorePercent: number | null;
@@ -242,7 +244,7 @@ export interface MyPendingResponse {
   cycle: string;
   startDate: string;
   endDate: string;
-  employee: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
+  employee: { id: string; firstName: string; lastName: string; nickname: string | null; avatarUrl: string | null };
   /** Total scoreable questions/competencies for this campaign's form. */
   totalQuestions: number;
 }

@@ -8,7 +8,7 @@ import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { AttachmentLink } from "@/components/shared/attachment-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency, formatDate, fullName } from "@/lib/format";
+import { formatCurrency, formatDate, displayName } from "@/lib/format";
 import { getExpense } from "@/features/expense/service";
 import { EXPENSE_CATEGORY_LABEL, ExpenseStatusBadge } from "@/features/expense/labels";
 
@@ -23,7 +23,7 @@ export default async function ExpenseDetailPage({ params }: { params: Promise<{ 
     throw e;
   });
 
-  const employeeName = fullName(claim.employee.firstName, claim.employee.lastName);
+  const employeeName = displayName(claim.employee);
 
   return (
     <div className="space-y-6">

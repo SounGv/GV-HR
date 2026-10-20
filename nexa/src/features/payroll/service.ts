@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -72,6 +73,7 @@ const recordWithEmployeeSelect = {
       employeeCode: true,
       firstName: true,
       lastName: true,
+      nickname: true,
       avatarUrl: true,
       email: true,
       departmentId: true,
@@ -720,7 +722,7 @@ export async function verifyPayslip(id: string) {
       paidAt: true,
       createdAt: true,
       company: { select: { name: true, legalName: true } },
-      employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true } },
     },
   });
   if (!rec) return null;
@@ -728,7 +730,7 @@ export async function verifyPayslip(id: string) {
     valid: true,
     company: rec.company.legalName ?? rec.company.name,
     employeeCode: rec.employee.employeeCode,
-    name: `${rec.employee.firstName} ${rec.employee.lastName}`.trim(),
+    name: displayName(rec.employee),
     period: rec.periodLabel,
     status: rec.status,
     issuedAt: (rec.paidAt ?? rec.createdAt).toISOString(),
@@ -845,7 +847,7 @@ export async function sendPayslipEmails(
   const skipped: { employeeId: string; name: string; reason: string }[] = [];
 
   for (const record of records) {
-    const name = `${record.employee.firstName} ${record.employee.lastName}`.trim();
+    const name = displayName(record.employee);
     if (!record.employee.email) {
       skipped.push({ employeeId: record.employee.id, name, reason: "ไม่มีอีเมล" });
       continue;

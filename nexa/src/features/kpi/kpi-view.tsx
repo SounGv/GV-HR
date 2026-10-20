@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, getInitials, formatDate } from "@/lib/format";
+import { getInitials, formatDate, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 import { GoalStatusBadge, GOAL_TYPE_LABEL } from "./labels";
@@ -126,7 +126,7 @@ export function KpiView() {
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-sm text-muted-foreground">
-                          {fullName(g.employee.firstName, g.employee.lastName)}
+                          {displayName(g.employee)}
                         </span>
                       </div>
                     )}

@@ -5,7 +5,7 @@ import { getEmployee } from "@/features/employee/service";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { EvaluationHistoryView } from "@/features/campaign/evaluation-history-view";
-import { fullName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 
 export const metadata: Metadata = { title: "ประวัติการประเมิน" };
 
@@ -17,7 +17,7 @@ export default async function EmployeeEvaluationHistoryPage({ params }: { params
     if (e instanceof AppError && (e.status === 404 || e.status === 403)) notFound();
     throw e;
   });
-  const name = fullName(employee.firstName, employee.lastName);
+  const name = displayName(employee);
 
   return (
     <div className="space-y-6">

@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -60,7 +61,7 @@ const detailSelect = {
   postalCode: true,
   createdAt: true,
   updatedAt: true,
-  manager: { select: { id: true, firstName: true, lastName: true } },
+  manager: { select: { id: true, firstName: true, lastName: true, nickname: true } },
   costCenter: { select: { id: true, name: true } },
 } satisfies Prisma.EmployeeSelect;
 
@@ -225,7 +226,7 @@ export async function createEmployee(
     action: "employee.create",
     entity: "Employee",
     entityId: created.id,
-    after: { employeeCode: created.employeeCode, name: `${created.firstName} ${created.lastName}` },
+    after: { employeeCode: created.employeeCode, name: displayName(created) },
     ...meta,
   });
 

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { fullName, getInitials } from "@/lib/format";
+import { getInitials, displayName } from "@/lib/format";
 import { bandTone } from "./calc";
 import type { PerformanceReview } from "./types";
 
@@ -44,7 +44,7 @@ export function ReviewCard({
               </Avatar>
               <div>
                 <p className="font-medium text-foreground">
-                  {fullName(review.employee.firstName, review.employee.lastName)}
+                  {displayName(review.employee)}
                 </p>
                 <p className="text-xs text-muted-foreground">รอบ {review.cycle}</p>
               </div>

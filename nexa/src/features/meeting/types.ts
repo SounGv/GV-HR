@@ -12,6 +12,7 @@ export interface MeetingAttendee {
     employeeCode: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
     avatarUrl: string | null;
   };
 }
@@ -27,6 +28,7 @@ export interface MeetingListItem {
     id: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
   };
   attendees: MeetingAttendee[];
   /** Present only when the viewer themselves is an attendee. */

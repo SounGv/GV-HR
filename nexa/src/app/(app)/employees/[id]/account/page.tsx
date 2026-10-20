@@ -4,7 +4,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { getEmployee } from "@/features/employee/service";
 import { AppError } from "@/lib/api/errors";
 import { EmployeeAccountFormPage } from "@/features/employee/employee-account-form-page";
-import { fullName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 
 export const metadata: Metadata = { title: "บัญชีเข้าใช้งาน" };
 
@@ -20,7 +20,7 @@ export default async function EmployeeAccountPage({ params }: { params: Promise<
   return (
     <EmployeeAccountFormPage
       employeeId={employee.id}
-      employeeName={fullName(employee.firstName, employee.lastName)}
+      employeeName={displayName(employee)}
       hasAccount={!!employee.userId}
       defaultEmail={employee.email}
     />

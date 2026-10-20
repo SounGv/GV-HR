@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { LoanStatusBadge } from "./labels";
 import { useLoan, useRepayLoan } from "./hooks";
@@ -28,7 +28,7 @@ export function LoanDetailView({ loanId }: { loanId: string }) {
   if (isLoading) return <p className="text-sm text-muted-foreground">กำลังโหลด…</p>;
   if (isError || !data?.data) return <p className="text-sm text-destructive">ไม่พบข้อมูล</p>;
   const loan = data.data;
-  const employeeName = fullName(loan.employee.firstName, loan.employee.lastName);
+  const employeeName = displayName(loan.employee);
   const outstanding = loan.amount - loan.repaidAmount;
 
   async function submitRepay() {

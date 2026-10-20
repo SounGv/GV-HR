@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -236,14 +237,14 @@ export async function getRoundResults(companyId: string, roundId: string) {
       scorePercent: true,
       overallScore: true,
       grade: true,
-      employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
     },
     orderBy: { employee: { employeeCode: "asc" } },
     take: 2000,
   });
   return rows.map((r) => ({
     participantId: r.id,
-    name: `${r.employee.firstName} ${r.employee.lastName}`.trim(),
+    name: displayName(r.employee),
     code: r.employee.employeeCode,
     department: r.departmentName ?? "ไม่ระบุแผนก",
     status: r.resultStatus,
@@ -354,11 +355,11 @@ async function loadForHr(companyId: string, roundId: string, assignmentId: strin
       raterType: true,
       status: true,
       answers: true,
-      rater: { select: { firstName: true, lastName: true } },
+      rater: { select: { firstName: true, lastName: true, nickname: true } },
       participant: {
         select: {
           formId: true,
-          employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
           round: { select: { name: true, status: true, endDate: true, formSnapshot: true } },
         },
       },
@@ -376,7 +377,7 @@ export async function getAssignmentForHr(companyId: string, roundId: string, ass
     id: a.id,
     raterType: a.raterType,
     status: a.status,
-    personName: `${a.participant.employee.firstName} ${a.participant.employee.lastName}`.trim(),
+    personName: displayName(a.participant.employee),
     personCode: a.participant.employee.employeeCode,
     roundName: a.participant.round.name,
     roundStatus: a.participant.round.status,
@@ -384,7 +385,7 @@ export async function getAssignmentForHr(companyId: string, roundId: string, ass
     ratingMax: form.ratingMax,
     questions: visibleQuestions(form.questions as SnapQuestion[], a.raterType),
     answers: (Array.isArray(a.answers) ? a.answers : []) as unknown as Answer[],
-    raterName: `${a.rater.firstName} ${a.rater.lastName}`.trim(),
+    raterName: displayName(a.rater),
   };
 }
 

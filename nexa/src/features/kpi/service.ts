@@ -44,7 +44,7 @@ const goalSelect = {
     orderBy: { createdAt: "asc" },
   },
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, managerId: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true, managerId: true },
   },
 } satisfies Prisma.GoalSelect;
 

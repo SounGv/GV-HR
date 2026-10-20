@@ -11,7 +11,7 @@ export interface Asset {
   purchaseDate: string | null;
   purchasePrice: number | null;
   note: string | null;
-  assignedTo: { id: string; firstName: string; lastName: string; employeeCode: string } | null;
+  assignedTo: { id: string; firstName: string; lastName: string; nickname: string | null; employeeCode: string } | null;
 }
 
 export interface AssetFormValues {

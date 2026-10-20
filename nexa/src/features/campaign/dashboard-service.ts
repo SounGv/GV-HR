@@ -55,6 +55,7 @@ export async function getEvaluationDashboard(companyId: string, _session: Access
           employeeCode: true,
           firstName: true,
           lastName: true,
+          nickname: true,
           department: { select: { id: true, name: true } },
           position: { select: { id: true, title: true } },
         },

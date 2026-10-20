@@ -173,6 +173,7 @@ export async function listUsers(companyId: string) {
           id: true,
           firstName: true,
           lastName: true,
+          nickname: true,
           employeeCode: true,
           aiAccessGrant: { select: { scope: true } },
         },
@@ -191,6 +192,7 @@ export async function listUsers(companyId: string) {
           id: u.employee.id,
           firstName: u.employee.firstName,
           lastName: u.employee.lastName,
+          nickname: u.employee.nickname,
           employeeCode: u.employee.employeeCode,
         }
       : null,
@@ -214,6 +216,7 @@ export async function getUser(companyId: string, id: string) {
           id: true,
           firstName: true,
           lastName: true,
+          nickname: true,
           employeeCode: true,
           aiAccessGrant: { select: { scope: true } },
         },
@@ -232,6 +235,7 @@ export async function getUser(companyId: string, id: string) {
           id: user.employee.id,
           firstName: user.employee.firstName,
           lastName: user.employee.lastName,
+          nickname: user.employee.nickname,
           employeeCode: user.employee.employeeCode,
         }
       : null,

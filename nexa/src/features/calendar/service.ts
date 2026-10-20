@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { NotFound } from "@/lib/api/errors";
-import { fullName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { CalendarItem, CalendarMonth, MyDayStatus } from "./types";
 import type { EventCreateInput, EventUpdateInput } from "./schema";
@@ -71,7 +71,7 @@ export async function getMonth(
       startDate: true,
       endDate: true,
       employeeId: true,
-      employee: { select: { firstName: true, lastName: true } },
+      employee: { select: { firstName: true, lastName: true, nickname: true } },
     },
   });
   const courses = await prisma.trainingCourse.findMany({
@@ -140,7 +140,7 @@ export async function getMonth(
   for (const l of leaves) {
     pushRange(
       `l-${l.id}`,
-      `ลา — ${fullName(l.employee.firstName, l.employee.lastName)}`,
+      `ลา — ${displayName(l.employee)}`,
       "leave",
       l.type,
       l.startDate,

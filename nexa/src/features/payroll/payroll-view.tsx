@@ -24,7 +24,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions, useUpdateEmployee } from "@/features/employee/hooks";
-import { fullName, formatCurrency } from "@/lib/format";
+import { formatCurrency, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 import {
@@ -160,7 +160,7 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
     return (data?.data ?? []).filter((r) => {
       if (departmentIds.length > 0 && (!r.employee?.departmentId || !departmentIds.includes(r.employee.departmentId))) return false;
       if (!q) return true;
-      const name = r.employee ? fullName(r.employee.firstName, r.employee.lastName).toLowerCase() : "";
+      const name = r.employee ? displayName(r.employee).toLowerCase() : "";
       const code = r.employee?.employeeCode?.toLowerCase() ?? "";
       return name.includes(q) || code.includes(q);
     });
@@ -366,7 +366,7 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
                   <TableCell>
                     <Link href={`/payroll/${r.id}`} className="block">
                       <div className="font-medium">
-                        {r.employee ? fullName(r.employee.firstName, r.employee.lastName) : "-"}
+                        {r.employee ? displayName(r.employee) : "-"}
                       </div>
                       <div className="text-xs text-muted-foreground">{r.employee?.employeeCode}</div>
                     </Link>

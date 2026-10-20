@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, NotFound } from "@/lib/api/errors";
@@ -39,6 +40,7 @@ export async function listEntitlements(companyId: string, year: number, search?:
       employeeCode: true,
       firstName: true,
       lastName: true,
+      nickname: true,
       department: { select: { name: true } },
       leaveBalances: { where: { year, type: { in: [...PAID_TYPES] } }, select: { type: true, totalDays: true, usedDays: true } },
     },
@@ -51,7 +53,7 @@ export async function listEntitlements(companyId: string, year: number, search?:
     return {
       employeeId: e.id,
       code: e.employeeCode,
-      name: `${e.firstName} ${e.lastName}`.trim(),
+      name: displayName(e),
       department: e.department?.name ?? "ไม่ระบุแผนก",
       types,
     };

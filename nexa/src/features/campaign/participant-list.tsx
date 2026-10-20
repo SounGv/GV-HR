@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { fullName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/features/auth/auth-context";
 import { useFinalizeParticipant, useRejectParticipantResult } from "./hooks";
@@ -71,7 +71,7 @@ export function ParticipantList({
         return (
           <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <Link href={`/performance/campaigns/${campaignId}/participants/${p.id}`} className="min-w-0 flex-1">
-              <div className="font-medium text-foreground">{fullName(p.employee.firstName, p.employee.lastName)}</div>
+              <div className="font-medium text-foreground">{displayName(p.employee)}</div>
               <div className="mt-0.5 flex items-center gap-3">
                 {raterTypes.includes("SELF") && (
                   <RaterStatus label="ตนเอง" status={selfDone ? "SUBMITTED" : "PENDING"} />

@@ -26,7 +26,7 @@ const requestSelect = {
   decisionNote: true,
   createdAt: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
   },
 } satisfies Prisma.AttendanceCorrectionRequestSelect;
 
@@ -76,7 +76,7 @@ export async function createAttendanceCorrection(
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true, managerId: true },
+    select: { firstName: true, lastName: true, nickname: true, managerId: true },
   });
 
   const record = await prisma.attendanceCorrectionRequest.create({

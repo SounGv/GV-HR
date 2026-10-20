@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ApiError } from "@/lib/api/client";
-import { fullName, loginIdentifier } from "@/lib/format";
+import { loginIdentifier, displayName } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDeleteUser, useUsers } from "./hooks";
 import type { AdminUser, AiAccessScope } from "./types";
@@ -37,7 +37,7 @@ export function UsersRoles() {
   const q = search.trim().toLowerCase();
   const users = q
     ? allUsers.filter((u) => {
-        const name = u.employee ? fullName(u.employee.firstName, u.employee.lastName) : loginIdentifier(u);
+        const name = u.employee ? displayName(u.employee) : loginIdentifier(u);
         return (
           name.toLowerCase().includes(q) ||
           (u.email ?? "").toLowerCase().includes(q) ||
@@ -82,7 +82,7 @@ export function UsersRoles() {
           {users.map((u) => (
             <li key={u.id} className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
               <p className="text-base font-semibold break-words text-foreground">
-                {u.employee ? fullName(u.employee.firstName, u.employee.lastName) : loginIdentifier(u)}
+                {u.employee ? displayName(u.employee) : loginIdentifier(u)}
               </p>
               <p className="text-sm break-all text-muted-foreground">{u.email ?? `@${u.username}`}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -136,7 +136,7 @@ export function UsersRoles() {
             <TableRow key={u.id}>
               <TableCell>
                 <div className="font-medium">
-                  {u.employee ? fullName(u.employee.firstName, u.employee.lastName) : loginIdentifier(u)}
+                  {u.employee ? displayName(u.employee) : loginIdentifier(u)}
                 </div>
                 <div className="text-xs text-muted-foreground">{u.email ?? `@${u.username}`}</div>
               </TableCell>
@@ -189,7 +189,7 @@ export function UsersRoles() {
         title="ลบบัญชีผู้ใช้"
         description={
           deleteTarget
-            ? `ต้องการลบบัญชี "${deleteTarget.employee ? fullName(deleteTarget.employee.firstName, deleteTarget.employee.lastName) : loginIdentifier(deleteTarget)}" ใช่หรือไม่? ใช้สำหรับล้างบัญชีที่ไม่ได้ใช้แล้ว (เช่น บัญชีทดสอบ) — ถ้าบัญชีนี้ยังผูกกับพนักงานที่ทำงานอยู่ ระบบจะปฏิเสธและให้ไปลบพนักงานคนนั้นก่อน`
+            ? `ต้องการลบบัญชี "${deleteTarget.employee ? displayName(deleteTarget.employee) : loginIdentifier(deleteTarget)}" ใช่หรือไม่? ใช้สำหรับล้างบัญชีที่ไม่ได้ใช้แล้ว (เช่น บัญชีทดสอบ) — ถ้าบัญชีนี้ยังผูกกับพนักงานที่ทำงานอยู่ ระบบจะปฏิเสธและให้ไปลบพนักงานคนนั้นก่อน`
             : undefined
         }
         destructive

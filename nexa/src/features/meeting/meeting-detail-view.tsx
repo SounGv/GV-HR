@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { useAuth } from "@/features/auth/auth-context";
-import { formatDateTime, fullName, getInitials } from "@/lib/format";
+import { formatDateTime, getInitials, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 import { useCancelMeeting, useMeeting, useRespondToMeeting } from "./hooks";
@@ -124,7 +124,7 @@ export function MeetingDetailView({ id }: { id: string }) {
                     {getInitials(a.employee.firstName, a.employee.lastName)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate">{fullName(a.employee.firstName, a.employee.lastName)}</span>
+                <span className="truncate">{displayName(a.employee)}</span>
               </span>
               <ResponseStatusBadge status={a.status} />
             </div>

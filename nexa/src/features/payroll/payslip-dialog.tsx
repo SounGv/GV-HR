@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
-import { formatCurrency, fullName } from "@/lib/format";
+import { formatCurrency, displayName } from "@/lib/format";
 import { useEmployeeEvaluationHistory } from "@/features/campaign/hooks";
 import { PayrollStatusBadge } from "./status-badge";
 import { useUpdatePayrollAdjustments } from "./hooks";
@@ -62,7 +62,7 @@ export function PayslipDialog({
   if (!record) return null;
   const view = saved ?? record;
   const name = view.employee
-    ? fullName(view.employee.firstName, view.employee.lastName)
+    ? displayName(view.employee)
     : undefined;
   const canEditThis = canEdit && view.status === "DRAFT";
 

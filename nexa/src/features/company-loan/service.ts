@@ -27,7 +27,7 @@ const loanSelect = {
   paidAt: true,
   createdAt: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
   },
 } satisfies Prisma.CompanyLoanRequestSelect;
 
@@ -123,7 +123,7 @@ export async function createLoan(companyId: string, session: AccessClaims, input
 
   const requester = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true, managerId: true },
+    select: { firstName: true, lastName: true, nickname: true, managerId: true },
   });
 
   const record = await prisma.companyLoanRequest.create({

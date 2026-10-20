@@ -1,5 +1,6 @@
 "use client";
 
+import { displayName } from "@/lib/format";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -75,7 +76,7 @@ export function EmployeeFormPage({
   const breadcrumbs: Crumb[] = [
     { label: "พนักงาน", href: LIST },
     ...(isEdit && employee
-      ? [{ label: `${employee.firstName} ${employee.lastName}`, href: detailHref }]
+      ? [{ label: displayName(employee), href: detailHref }]
       : []),
     { label: isEdit ? "แก้ไข" : "เพิ่มใหม่" },
   ];

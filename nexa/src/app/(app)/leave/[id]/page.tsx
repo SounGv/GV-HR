@@ -8,7 +8,7 @@ import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { AttachmentLink } from "@/components/shared/attachment-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate, fullName } from "@/lib/format";
+import { formatDate, displayName } from "@/lib/format";
 import { getLeave } from "@/features/leave/service";
 import { LeaveDecideActions } from "@/features/leave/decide-actions";
 import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "@/features/leave/labels";
@@ -24,7 +24,7 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
     throw e;
   });
 
-  const employeeName = fullName(request.employee.firstName, request.employee.lastName);
+  const employeeName = displayName(request.employee);
   const isHourly = request.unit === "HOUR";
   const rangeValue = isHourly
     ? `${formatDate(request.startDate)} (${request.startTime}–${request.endTime})`

@@ -6,7 +6,7 @@ import { Check, ClipboardCheck, ChevronRight, Clock, ListChecks } from "lucide-r
 import { MobileScreen } from "./mobile-screen";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { fullName, getInitials } from "@/lib/format";
+import { getInitials, displayName } from "@/lib/format";
 import { useReviews } from "@/features/performance/hooks";
 import { ReviewCard } from "@/features/performance/review-card";
 import { useMyEvaluationAssignments } from "@/features/campaign/hooks";
@@ -148,7 +148,7 @@ function AssignmentRow({ item, days }: { item: MyAssignment; days: number }) {
       </Avatar>
       <div className="min-w-0 flex-1">
         <p className="truncate text-base font-semibold text-foreground">
-          {fullName(item.employee.firstName, item.employee.lastName)}
+          {displayName(item.employee)}
         </p>
         <p className="truncate text-sm text-muted-foreground">
           {RATER_LABEL[item.raterType] ?? item.raterType} · {item.campaignName}

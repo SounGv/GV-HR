@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getMedicalExpenseCap } from "@/features/expense/service";
@@ -60,7 +61,7 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
       receiptUrl: true,
       sickLeaveRequestId: true,
       employee: {
-        select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
       },
     },
     orderBy: { expenseDate: "desc" },
@@ -73,7 +74,7 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
       row = {
         employeeId: c.employeeId,
         employeeCode: c.employee.employeeCode,
-        employeeName: `${c.employee.firstName} ${c.employee.lastName}`,
+        employeeName: displayName(c.employee),
         department: c.employee.department?.name ?? null,
         totalCap: cap,
         claimCount: 0,
@@ -145,7 +146,7 @@ export async function getLoanBenefitsReport(companyId: string, filters: Benefits
       status: true,
       repaidAmount: true,
       employee: {
-        select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -164,7 +165,7 @@ export async function getLoanBenefitsReport(companyId: string, filters: Benefits
     loanId: l.id,
     employeeId: l.employeeId,
     employeeCode: l.employee.employeeCode,
-    employeeName: `${l.employee.firstName} ${l.employee.lastName}`,
+    employeeName: displayName(l.employee),
     department: l.employee.department?.name ?? null,
     salarySnapshot: Number(l.salarySnapshot),
     amount: Number(l.amount),

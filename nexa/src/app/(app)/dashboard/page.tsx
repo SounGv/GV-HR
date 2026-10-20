@@ -40,7 +40,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AttendanceRateLine, KpiMiniBars } from "@/features/dashboard/dashboard-charts";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
-import { fullName, loginIdentifier } from "@/lib/format";
+import { loginIdentifier, displayName } from "@/lib/format";
 import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import type { EmploymentType } from "@/features/employee/types";
 import { cn } from "@/lib/utils";
@@ -278,7 +278,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
   const departmentOptions = canSeeAttendance ? await listDepartmentOptions(user!.companyId) : [];
 
-  const name = user?.employee ? fullName(user.employee.firstName, user.employee.lastName) : loginIdentifier(user ?? {});
+  const name = user?.employee ? displayName(user.employee) : loginIdentifier(user ?? {});
   const fmtClock = (iso: string | null) =>
     iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
   const departmentRanked = groupTopDepartments(s.byDepartment);

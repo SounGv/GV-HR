@@ -28,6 +28,7 @@ export interface LeaveRequest {
     employeeCode: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
     avatarUrl: string | null;
   };
 }

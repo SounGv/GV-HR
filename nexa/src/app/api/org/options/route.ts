@@ -27,6 +27,7 @@ export async function GET() {
         id: true,
         firstName: true,
         lastName: true,
+        nickname: true,
         employeeCode: true,
         managerId: true,
         departmentId: true,

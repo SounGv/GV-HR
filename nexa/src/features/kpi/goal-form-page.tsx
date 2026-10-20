@@ -56,7 +56,7 @@ interface ParentGoal {
   id: string;
   title: string;
   cycle: string;
-  employee: { id: string; employeeCode: string; firstName: string; lastName: string };
+  employee: { id: string; employeeCode: string; firstName: string; lastName: string; nickname: string | null };
 }
 
 export function GoalFormPage({ goal, parentGoal }: { goal?: Goal; parentGoal?: ParentGoal }) {

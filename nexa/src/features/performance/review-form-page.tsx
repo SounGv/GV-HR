@@ -55,7 +55,7 @@ type FormSchema = z.infer<typeof formSchema>;
 
 export type ReviewInit = {
   id: string;
-  employee: { id: string; firstName: string; lastName: string; employeeCode: string };
+  employee: { id: string; firstName: string; lastName: string; nickname: string | null; employeeCode: string };
   cycle: string;
   competencies: { name: string; score: number }[];
   strengths: string | null;

@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
@@ -20,7 +21,7 @@ import {
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 /** Stored dates can carry a time of day; compare them as Bangkok calendar days. */
 const bangkokDay = (d: Date) => bangkokParts(d).dateUTC;
-const fullName = (e: { firstName: string; lastName: string }) => `${e.firstName} ${e.lastName}`.trim();
+const fullName = (e: { firstName: string; lastName: string; nickname: string | null }) => displayName(e);
 
 export interface LeavePerson {
   requestId: string;
@@ -67,7 +68,7 @@ export async function loadUpcomingLeaves(companyId: string, session: AccessClaim
       unit: true,
       hours: true,
       employee: {
-        select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+        select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
       },
     },
     orderBy: [{ startDate: "asc" }, { createdAt: "asc" }],
@@ -146,6 +147,7 @@ export async function loadProbationDue(companyId: string, session: AccessClaims)
       employeeCode: true,
       firstName: true,
       lastName: true,
+      nickname: true,
       hireDate: true,
       probationEndDate: true,
       department: { select: { name: true } },

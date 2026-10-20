@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -62,7 +63,7 @@ const participantSelect = {
   evaluatorCount: true,
   lowestTopics: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, managerId: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true, managerId: true },
   },
   responses: { select: { raterType: true, status: true, submittedAt: true, raterEmployeeId: true, reopenRequested: true, dueDate: true } },
 } satisfies Prisma.EvaluationParticipantSelect;
@@ -194,19 +195,19 @@ export interface CampaignReadiness {
    * one — happens when `employee.managerId` is null (no org-chart manager to
    * auto-seed from, see seedParticipants), so it never surfaces anywhere
    * else until someone notices the score can't compute. */
-  missingManagerRaterFor: { id: string; firstName: string; lastName: string }[];
+  missingManagerRaterFor: { id: string; firstName: string; lastName: string; nickname: string | null }[];
   ready: boolean;
 }
 
 function evaluateCampaignReadiness(
   raterTypes: RaterType[],
-  participants: { employee: { id: string; firstName: string; lastName: string; managerId: string | null }; responses: { raterType: RaterType }[] }[],
+  participants: { employee: { id: string; firstName: string; lastName: string; nickname: string | null; managerId: string | null }; responses: { raterType: RaterType }[] }[],
 ): CampaignReadiness {
   const participantsOk = participants.length > 0;
   const missingManagerRaterFor = raterTypes.includes("MANAGER")
     ? participants
         .filter((p) => !p.responses.some((r) => r.raterType === "MANAGER"))
-        .map((p) => ({ id: p.employee.id, firstName: p.employee.firstName, lastName: p.employee.lastName }))
+        .map((p) => ({ id: p.employee.id, firstName: p.employee.firstName, lastName: p.employee.lastName, nickname: p.employee.nickname }))
     : [];
   return {
     participantsOk,
@@ -381,7 +382,7 @@ export async function updateCampaign(
         raterTypes: true,
         participants: {
           select: {
-            employee: { select: { id: true, firstName: true, lastName: true, managerId: true } },
+            employee: { select: { id: true, firstName: true, lastName: true, nickname: true, managerId: true } },
             responses: { select: { raterType: true } },
           },
         },
@@ -392,7 +393,7 @@ export async function updateCampaign(
     if (readiness.missingManagerRaterFor.length > 0) {
       const names = readiness.missingManagerRaterFor
         .slice(0, 5)
-        .map((e) => `${e.firstName} ${e.lastName}`)
+        .map((e) => displayName(e))
         .join(", ");
       throw BadRequest(`ยังไม่พร้อมเปิดใช้งาน: ${readiness.missingManagerRaterFor.length} คนยังไม่มีหัวหน้างานเป็นผู้ประเมิน (${names})`);
     }
@@ -443,7 +444,7 @@ export async function updateCampaign(
       select: {
         raterType: true,
         raterEmployeeId: true,
-        participant: { select: { id: true, employee: { select: { firstName: true, lastName: true } } } },
+        participant: { select: { id: true, employee: { select: { firstName: true, lastName: true, nickname: true } } } },
       },
     });
     const cycleLabel = `${campaign!.name} · ${campaign!.cycle}`;
@@ -619,7 +620,7 @@ export async function addParticipants(
 
   const employees = await prisma.employee.findMany({
     where: { id: { in: input.employeeIds }, companyId, deletedAt: null },
-    select: { id: true, managerId: true, firstName: true, lastName: true },
+    select: { id: true, managerId: true, firstName: true, lastName: true, nickname: true },
   });
   if (employees.length === 0) throw BadRequest("ไม่พบพนักงานที่เลือก");
 
@@ -804,13 +805,13 @@ async function withRaterEmployees<T extends { raterType: RaterType; raterEmploye
     raterEmployeeId: string | null;
     answers: { questionId: string; value: string }[] | null;
     evidenceUrls: string[] | null;
-    raterEmployee: { firstName: string; lastName: string; avatarUrl: string | null } | null;
+    raterEmployee: { firstName: string; lastName: string; nickname: string | null; avatarUrl: string | null } | null;
   })[]
 > {
   const raterIds = [...new Set(responses.map((r) => r.raterEmployeeId))];
   const raters = await prisma.employee.findMany({
     where: { id: { in: raterIds } },
-    select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
   });
   const raterMap = new Map(raters.map((r) => [r.id, r]));
   return responses.map((r) => {
@@ -991,7 +992,7 @@ export async function getMyPendingResponses(companyId: string, session: AccessCl
       participant: {
         select: {
           id: true,
-          employee: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          employee: { select: { id: true, firstName: true, lastName: true, nickname: true, avatarUrl: true } },
           campaign: {
             select: {
               id: true,
@@ -1060,7 +1061,7 @@ export async function getMyEvaluationAssignments(companyId: string, session: Acc
       participant: {
         select: {
           id: true,
-          employee: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          employee: { select: { id: true, firstName: true, lastName: true, nickname: true, avatarUrl: true } },
           campaign: {
             select: {
               id: true,
@@ -1354,7 +1355,7 @@ export async function invitePeerRater(
       id: true,
       employeeId: true,
       campaignId: true,
-      employee: { select: { managerId: true, firstName: true, lastName: true } },
+      employee: { select: { managerId: true, firstName: true, lastName: true, nickname: true } },
       campaign: { select: { name: true, cycle: true, status: true } },
       responses: { select: { raterType: true, raterEmployeeId: true } },
     },
@@ -1489,7 +1490,7 @@ async function maybeCreateImprovementPlan(
       lowestTopics: true,
       employeeId: true,
       campaignId: true,
-      employee: { select: { firstName: true, lastName: true, managerId: true } },
+      employee: { select: { firstName: true, lastName: true, nickname: true, managerId: true } },
       campaign: { select: { name: true, cycle: true, followUpDate: true } },
     },
   });
@@ -1530,7 +1531,7 @@ async function maybeCreateImprovementPlan(
     after: { employeeId: participant.employeeId, cycle, reason: "URGENT score" },
   });
 
-  const employeeName = `${participant.employee.firstName} ${participant.employee.lastName}`;
+  const employeeName = displayName(participant.employee);
   const notifyBody = `${employeeName} มีคะแนนประเมิน ${participant.campaign.name} · ${cycle} อยู่ในเกณฑ์ต้องแก้ไขเร่งด่วน ระบบสร้างแผนพัฒนาให้อัตโนมัติแล้ว`;
   const recipients = new Set<string>();
   if (participant.employee.managerId) recipients.add(participant.employee.managerId);

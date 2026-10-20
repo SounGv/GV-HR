@@ -7,7 +7,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate, fullName } from "@/lib/format";
+import { formatDate, displayName } from "@/lib/format";
 import { getOvertime } from "@/features/overtime/service";
 import { OvertimeDecideActions } from "@/features/overtime/decide-actions";
 import { ReasonCard, DecisionNoteCard } from "@/features/overtime/edit-note-actions";
@@ -24,7 +24,7 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
     throw e;
   });
 
-  const employeeName = fullName(request.employee.firstName, request.employee.lastName);
+  const employeeName = displayName(request.employee);
 
   // Mirrors decideOvertime's own authorization exactly (isManager || HR-
   // level, never your own request) — this just decides whether to show the

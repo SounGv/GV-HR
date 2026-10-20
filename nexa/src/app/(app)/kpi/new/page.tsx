@@ -22,7 +22,7 @@ export default async function NewGoalPage({
       id: true,
       title: true,
       cycle: true,
-      employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true } },
+      employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true } },
     },
   });
   if (!parent) notFound();

@@ -28,6 +28,7 @@ export default async function EditReviewPage({
           id: review.employee.id,
           firstName: review.employee.firstName,
           lastName: review.employee.lastName,
+          nickname: review.employee.nickname,
           employeeCode: review.employee.employeeCode,
         },
         cycle: review.cycle,

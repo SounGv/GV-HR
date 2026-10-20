@@ -14,7 +14,7 @@ const select = {
   createdAt: true,
   givenByEmployeeId: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
   },
 } as const;
 

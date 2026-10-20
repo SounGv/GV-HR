@@ -25,6 +25,7 @@ export interface CalibrationParticipant {
     employeeCode: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
     avatarUrl: string | null;
     managerId: string | null;
   };
@@ -52,6 +53,7 @@ export interface NineBoxEmployee {
   employeeCode: string;
   firstName: string;
   lastName: string;
+  nickname: string | null;
   avatarUrl: string | null;
 }
 

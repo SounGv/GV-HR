@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -24,7 +25,7 @@ import type { RoundUpdateInput } from "./schema";
 type Meta = { ip?: string; userAgent?: string };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
-const fullName = (e: { firstName: string; lastName: string }) => `${e.firstName} ${e.lastName}`.trim();
+const fullName = (e: { firstName: string; lastName: string; nickname: string | null }) => displayName(e);
 const fmtDay = (isoDay: string) =>
   new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
     new Date(`${isoDay}T00:00:00Z`),
@@ -89,6 +90,7 @@ export async function listCandidates(companyId: string) {
       employeeCode: true,
       firstName: true,
       lastName: true,
+      nickname: true,
       managerId: true,
       department: { select: { id: true, name: true } },
     },
@@ -211,7 +213,7 @@ export async function updateRound(companyId: string, session: AccessClaims, id: 
 async function loadRoster(companyId: string) {
   return prisma.employee.findMany({
     where: { companyId, deletedAt: null },
-    select: { id: true, managerId: true, status: true, firstName: true, lastName: true, userId: true, lineUserId: true },
+    select: { id: true, managerId: true, status: true, firstName: true, lastName: true, nickname: true, userId: true, lineUserId: true },
   });
 }
 
@@ -601,9 +603,9 @@ export async function getRoundMatrix(companyId: string, id: string) {
     select: {
       id: true,
       departmentName: true,
-      employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
       assignments: {
-        select: { id: true, raterType: true, status: true, rater: { select: { firstName: true, lastName: true } } },
+        select: { id: true, raterType: true, status: true, rater: { select: { firstName: true, lastName: true, nickname: true } } },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -651,7 +653,7 @@ export async function getParticipantResult(companyId: string, roundId: string, p
     select: {
       id: true,
       departmentName: true,
-      employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
       formId: true,
       resultStatus: true,
       scorePercent: true,
@@ -730,7 +732,7 @@ export async function listMyAssignments(companyId: string, session: AccessClaims
       status: true,
       participant: {
         select: {
-          employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
           round: { select: { id: true, name: true, status: true, endDate: true } },
         },
       },
@@ -763,7 +765,7 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
       participant: {
         select: {
           formId: true,
-          employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
           round: { select: { id: true, name: true, status: true, endDate: true, formSnapshot: true } },
         },
       },

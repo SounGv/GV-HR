@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -14,7 +15,7 @@ const attendeeSelect = {
   respondedAt: true,
   note: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
   },
 } satisfies Prisma.MeetingAttendeeSelect;
 
@@ -27,7 +28,7 @@ const meetingSelect = {
   endAt: true,
   status: true,
   createdAt: true,
-  organizer: { select: { id: true, firstName: true, lastName: true } },
+  organizer: { select: { id: true, firstName: true, lastName: true, nickname: true } },
   attendees: { select: attendeeSelect },
 } satisfies Prisma.MeetingSelect;
 
@@ -62,13 +63,13 @@ export async function createMeeting(
 
   const attendees = await prisma.employee.findMany({
     where: { id: { in: attendeeIds }, companyId, deletedAt: null },
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, nickname: true },
   });
   if (attendees.length !== attendeeIds.length) throw BadRequest("พบผู้เข้าร่วมที่ไม่ถูกต้อง");
 
   const organizer = await prisma.employee.findFirst({
     where: { id: organizerEmployeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true },
+    select: { firstName: true, lastName: true, nickname: true },
   });
 
   const meeting = await prisma.meeting.create({
@@ -249,14 +250,14 @@ export async function respondToMeeting(
 
   const responder = await prisma.employee.findFirst({
     where: { id: employeeId },
-    select: { firstName: true, lastName: true },
+    select: { firstName: true, lastName: true, nickname: true },
   });
   await createNotification(
     companyId,
     meeting.organizerEmployeeId,
     {
       title: nextStatus === "ACCEPTED" ? "ผู้เข้าร่วมตอบรับการประชุม" : "ผู้เข้าร่วมปฏิเสธการประชุม",
-      body: `${responder ? `${responder.firstName} ${responder.lastName}` : "พนักงาน"} — ${meeting.title}`,
+      body: `${responder ? displayName(responder) : "พนักงาน"} — ${meeting.title}`,
       category: "meeting",
       link: `/meetings/${meeting.id}`,
     },

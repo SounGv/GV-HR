@@ -14,7 +14,7 @@ export interface AdminUser {
   email: string | null;
   username: string | null;
   status: string;
-  employee: { id: string; firstName: string; lastName: string; employeeCode: string } | null;
+  employee: { id: string; firstName: string; lastName: string; nickname: string | null; employeeCode: string } | null;
   aiAccessScope: AiAccessScope | null;
   roleIds: string[];
   roleNames: string[];

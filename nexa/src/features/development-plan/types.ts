@@ -37,6 +37,7 @@ export interface DevelopmentPlan {
     employeeCode: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
     avatarUrl: string | null;
     managerId: string | null;
   };

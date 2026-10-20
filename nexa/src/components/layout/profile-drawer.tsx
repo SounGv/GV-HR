@@ -15,7 +15,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/features/auth/auth-context";
 import { useNotifications } from "@/features/notification/hooks";
-import { fullName, loginIdentifier } from "@/lib/format";
+import { loginIdentifier, displayName } from "@/lib/format";
 import { STATUS_LABEL } from "@/features/employee/labels";
 import type { EmployeeStatus } from "@/features/employee/types";
 import { useProfileDrawer } from "./profile-drawer-context";
@@ -156,7 +156,7 @@ export function ProfileDrawer() {
     closeDrawer();
   }
 
-  const displayName = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : loginIdentifier(user);
+  const nameLabel = user.employee ? displayName(user.employee) : loginIdentifier(user);
   const roleLabel = user.roles[0] ?? "ผู้ใช้งาน";
   const statusLabel = user.employee ? STATUS_LABEL[user.employee.status as EmployeeStatus] ?? user.employee.status : null;
 
@@ -186,13 +186,13 @@ export function ProfileDrawer() {
               <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tone-profile-bg text-tone-profile-fg ring-2 ring-card">
                 {user.employee?.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.employee.avatarUrl} alt={displayName} className="size-full object-cover" />
+                  <img src={user.employee.avatarUrl} alt={nameLabel} className="size-full object-cover" />
                 ) : (
                   <UserRound className="size-7" strokeWidth={3} />
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-lg font-bold text-foreground">{displayName}</p>
+                <p className="truncate text-lg font-bold text-foreground">{nameLabel}</p>
                 <p className="truncate text-sm text-muted-foreground">
                   {user.employee?.position?.title ?? "—"}
                   {user.employee?.department?.name ? ` · ${user.employee.department.name}` : ""}

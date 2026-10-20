@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Bell, Globe, Pencil, ShieldCheck, LogOut, User, Wallet, ChevronRight } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, formatCurrency, loginIdentifier } from "@/lib/format";
+import { formatCurrency, loginIdentifier, displayName } from "@/lib/format";
 import { useMyProfile } from "@/features/profile/hooks";
 import { usePayroll } from "@/features/payroll/hooks";
 import { MobileScreen } from "./mobile-screen";
@@ -45,7 +45,7 @@ export function MobileProfileView() {
     await logout();
   }
 
-  const displayName = user.employee ? fullName(user.employee.firstName, user.employee.lastName) : loginIdentifier(user);
+  const nameLabel = user.employee ? displayName(user.employee) : loginIdentifier(user);
   const subtitle = user.employee
     ? `${user.employee.position?.title ?? "พนักงาน"} • ${user.employee.department?.name ?? "—"}`
     : user.roles.join(", ") || "—";
@@ -60,12 +60,12 @@ export function MobileProfileView() {
         >
           {user.employee?.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.employee.avatarUrl} alt={displayName} className="size-full object-cover" />
+            <img src={user.employee.avatarUrl} alt={nameLabel} className="size-full object-cover" />
           ) : (
             <User className="size-7 text-primary-foreground" />
           )}
         </a>
-        <p className="text-[15px] font-bold text-foreground">{displayName}</p>
+        <p className="text-[15px] font-bold text-foreground">{nameLabel}</p>
         <p className="text-xs text-muted-foreground">{subtitle}</p>
       </MobileModuleCard>
 

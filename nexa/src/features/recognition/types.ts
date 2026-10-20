@@ -13,6 +13,7 @@ export interface Recognition {
     employeeCode: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
     avatarUrl: string | null;
   };
 }

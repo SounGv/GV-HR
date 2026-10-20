@@ -16,7 +16,7 @@ import { EmployeeStatusBadge } from "@/features/employee/status-badge";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
 import { EmployeeDocumentList } from "@/features/employee-document/employee-document-list";
 import { EmployeeCompetencyGapView } from "@/features/competency-matrix/employee-gap-view";
-import { fullName, getInitials, formatDate, formatCurrency } from "@/lib/format";
+import { getInitials, formatDate, formatCurrency, displayName } from "@/lib/format";
 
 export const metadata: Metadata = { title: "รายละเอียดพนักงาน" };
 
@@ -43,7 +43,7 @@ export default async function EmployeeDetailPage({
     (isHrLevelRecognition || employee.manager?.id === session.employeeId || employee.id === session.employeeId);
   const canViewCompetencyGap = canViewEvaluationHistory;
   const canEditCompetencyGap = can(session.perms, "campaign:update") && isHrLevelRecognition;
-  const name = fullName(employee.firstName, employee.lastName);
+  const name = displayName(employee);
   // Assets are a company-wide register, so only people who can read it (HR/admin)
   // see what this employee is holding — a manager with just employee:read does not.
   const canViewAssets = can(session.perms, "asset:read") && isHrLevelRecognition;
@@ -153,7 +153,7 @@ export default async function EmployeeDetailPage({
             label="หัวหน้างาน"
             value={
               employee.manager
-                ? fullName(employee.manager.firstName, employee.manager.lastName)
+                ? displayName(employee.manager)
                 : null
             }
           />

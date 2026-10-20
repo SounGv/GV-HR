@@ -19,7 +19,7 @@ const select = {
   purchasePrice: true,
   note: true,
   assignedTo: {
-    select: { id: true, firstName: true, lastName: true, employeeCode: true },
+    select: { id: true, firstName: true, lastName: true, nickname: true, employeeCode: true },
   },
 } satisfies Prisma.AssetSelect;
 

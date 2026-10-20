@@ -26,7 +26,7 @@ import {
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, formatCurrency } from "@/lib/format";
+import { formatCurrency, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -146,7 +146,7 @@ export function AssetsView() {
                   <div>
                     <dt className="text-muted-foreground">ผู้ถือครอง</dt>
                     <dd className="font-medium">
-                      {a.assignedTo ? fullName(a.assignedTo.firstName, a.assignedTo.lastName) : "-"}
+                      {a.assignedTo ? displayName(a.assignedTo) : "-"}
                     </dd>
                   </div>
                   <div>
@@ -211,7 +211,7 @@ export function AssetsView() {
                     <AssetStatusBadge status={a.status} />
                   </TableCell>
                   <TableCell className="text-sm">
-                    {a.assignedTo ? fullName(a.assignedTo.firstName, a.assignedTo.lastName) : "-"}
+                    {a.assignedTo ? displayName(a.assignedTo) : "-"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {a.purchasePrice != null ? formatCurrency(a.purchasePrice) : "-"}

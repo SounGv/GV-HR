@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { formatDate, loginIdentifier } from "@/lib/format";
+import { formatDate, loginIdentifier, displayName, fullName } from "@/lib/format";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import type { EmploymentType } from "@/features/employee/types";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
@@ -80,10 +80,10 @@ async function resolveUserNames(userIds: (string | null | undefined)[]): Promise
   if (ids.length === 0) return new Map();
   const users = await prisma.user.findMany({
     where: { id: { in: ids } },
-    select: { id: true, email: true, username: true, employee: { select: { firstName: true, lastName: true } } },
+    select: { id: true, email: true, username: true, employee: { select: { firstName: true, lastName: true, nickname: true } } },
   });
   return new Map(
-    users.map((u) => [u.id, u.employee ? `${u.employee.firstName} ${u.employee.lastName}` : loginIdentifier(u)]),
+    users.map((u) => [u.id, u.employee ? displayName(u.employee) : loginIdentifier(u)]),
   );
 }
 
@@ -152,6 +152,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         employeeCode: true,
         firstName: true,
         lastName: true,
+        nickname: true,
         status: true,
         hireDate: true,
         department: { select: { name: true } },
@@ -172,7 +173,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       ],
       rows: emps.map((e) => ({
         code: e.employeeCode,
-        name: `${e.firstName} ${e.lastName}`,
+        name: displayName(e),
         department: e.department?.name ?? "-",
         position: e.position?.title ?? "-",
         status: STATUS_LABEL[e.status],
@@ -192,7 +193,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // Sequential, not Promise.all — connection_limit=1.
     const employees = await prisma.employee.findMany({
       where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
-      select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+      select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
     });
     const recs = await prisma.attendanceRecord.findMany({
       where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
@@ -260,7 +261,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     >();
     for (const e of employees) {
       map.set(e.employeeCode, {
-        name: `${e.firstName} ${e.lastName}`,
+        name: displayName(e),
         present: 0, late: 0, hours: 0, leave: 0, earlyLeave: 0, onsite: 0, wfh: 0, outside: 0, otHours: 0,
         noClockOut: 0, sick: 0, personal: 0, annual: 0, unpaidOther: 0, attachedLeaves: 0, pendingLeave: 0,
       });
@@ -543,7 +544,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       return {
         date: formatDate(r.workDate),
         code: r.employee.employeeCode,
-        name: `${r.employee.firstName} ${r.employee.lastName}`,
+        name: fullName(r.employee.firstName, r.employee.lastName),
         nickname: r.employee.nickname ?? "-",
         department: r.employee.department?.name ?? "-",
         employmentType: EMPLOYMENT_LABEL[r.employee.employmentType] ?? r.employee.employmentType,
@@ -636,7 +637,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       return {
         date: formatDate(day),
         code: person.employeeCode,
-        name: `${person.firstName} ${person.lastName}`,
+        name: fullName(person.firstName, person.lastName),
         nickname: person.nickname ?? blank,
         department: person.department?.name ?? blank,
         employmentType: EMPLOYMENT_LABEL[person.employmentType] ?? person.employmentType,
@@ -879,7 +880,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         totalDays: true,
         usedDays: true,
         employee: {
-          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+          select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
         },
       },
     });
@@ -897,7 +898,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         type: true,
         days: true,
         employee: {
-          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+          select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
         },
       },
     });
@@ -924,7 +925,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     const deptName = (e: { department: { name: string } | null }) => e.department?.name ?? "ไม่ระบุแผนก";
     for (const b of bals) {
       const code = b.employee.employeeCode;
-      const row = rowFor(code, `${b.employee.firstName} ${b.employee.lastName}`, deptName(b.employee));
+      const row = rowFor(code, displayName(b.employee), deptName(b.employee));
       if (b.type === "ANNUAL" || b.type === "SICK" || b.type === "PERSONAL") {
         row[b.type].total += b.totalDays;
         row[b.type].used += b.usedDays;
@@ -933,7 +934,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     }
     for (const r of unpaidOther) {
       const code = r.employee.employeeCode;
-      const row = rowFor(code, `${r.employee.firstName} ${r.employee.lastName}`, deptName(r.employee));
+      const row = rowFor(code, displayName(r.employee), deptName(r.employee));
       // HOLIDAY_SWAP has no dedicated column here — same bucket as OTHER.
       row[r.type === "UNPAID" ? "UNPAID" : "OTHER"] += r.days;
       bumpDept(deptDays, r.employee.department?.name, r.days);
@@ -951,12 +952,12 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       select: {
         days: true,
         employee: {
-          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+          select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
         },
       },
     });
     for (const r of pendingReqs) {
-      rowFor(r.employee.employeeCode, `${r.employee.firstName} ${r.employee.lastName}`, deptName(r.employee)).pending += r.days;
+      rowFor(r.employee.employeeCode, displayName(r.employee), deptName(r.employee)).pending += r.days;
     }
     // Entitlement / used / remaining for each paid type, like the Favpo sheet HR
     // knows. Remaining never goes below 0; days are rounded to 1 decimal so
@@ -1024,7 +1025,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         paidAt: true,
         approverUserId: true,
         employee: {
-          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+          select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
         },
       },
       orderBy: [{ date: "desc" }, { employee: { employeeCode: "asc" } }],
@@ -1067,7 +1068,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       rows: ots.map((o) => ({
         date: formatDate(o.date),
         code: o.employee.employeeCode,
-        name: `${o.employee.firstName} ${o.employee.lastName}`,
+        name: displayName(o.employee),
         department: o.employee.department?.name ?? "-",
         startTime: o.startTime,
         endTime: o.endTime,
@@ -1096,7 +1097,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         earnings: true,
         deductions: true,
         employee: {
-          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+          select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
         },
       },
       orderBy: { employee: { employeeCode: "asc" } },
@@ -1173,7 +1174,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           .reduce((s, l) => s + l.amount, 0);
         return {
           code: p.employee.employeeCode,
-          name: `${p.employee.firstName} ${p.employee.lastName}`,
+          name: displayName(p.employee),
           gross: p.gross,
           otAmount: lineAmount(earningLines, "ค่าล่วงเวลา (OT)"),
           allowances: lineAmount(earningLines, "ค่าตำแหน่ง/เบี้ยเลี้ยง"),
@@ -1218,7 +1219,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         approverUserId: true,
         paidAt: true,
         employee: {
-          select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+          select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
         },
       },
       orderBy: [{ expenseDate: "desc" }, { employee: { employeeCode: "asc" } }],
@@ -1246,7 +1247,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       rows: claims.map((c) => ({
         date: formatDate(c.expenseDate),
         code: c.employee.employeeCode,
-        name: `${c.employee.firstName} ${c.employee.lastName}`,
+        name: displayName(c.employee),
         department: c.employee.department?.name ?? "-",
         category: EXPENSE_CATEGORY_LABEL[c.category as keyof typeof EXPENSE_CATEGORY_LABEL] ?? c.category,
         amount: Math.round(Number(c.amount) * 100) / 100,
@@ -1270,7 +1271,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         cycle: true,
         overallScore: true,
         band: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true } },
       },
       orderBy: [{ employee: { employeeCode: "asc" } }, { createdAt: "desc" }],
     });
@@ -1289,7 +1290,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         calibratedBand: true,
         scorePercent: true,
         campaign: { select: { name: true, cycle: true } },
-        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true } },
       },
       orderBy: [{ employee: { employeeCode: "asc" } }, { finalizedAt: "desc" }],
     });
@@ -1308,7 +1309,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       rows: [
         ...participants.map((p) => ({
           code: p.employee.employeeCode,
-          name: `${p.employee.firstName} ${p.employee.lastName}`,
+          name: displayName(p.employee),
           cycle: `${p.campaign.name} · ${p.campaign.cycle}`,
           score: (p.calibratedScore ?? p.overallScore) != null ? Math.round(((p.calibratedScore ?? p.overallScore) as number) * 10) / 10 : "-",
           percent: p.scorePercent != null ? Math.round(p.scorePercent * 10) / 10 : "-",
@@ -1317,7 +1318,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         })),
         ...reviews.map((r) => ({
           code: r.employee.employeeCode,
-          name: `${r.employee.firstName} ${r.employee.lastName}`,
+          name: displayName(r.employee),
           cycle: r.cycle,
           score: Math.round(r.overallScore * 10) / 10,
           percent: "-",
@@ -1336,7 +1337,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         targetValue: true,
         currentValue: true,
         status: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -1345,7 +1346,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       const code = g.employee.employeeCode;
       if (map.has(code)) continue; // most recent goal per employee only
       map.set(code, {
-        name: `${g.employee.firstName} ${g.employee.lastName}`,
+        name: displayName(g.employee),
         cycle: g.cycle,
         target: g.targetValue,
         actual: g.currentValue,
@@ -1394,13 +1395,13 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // Sequential, not Promise.all — connection_limit=1.
     const employees = await prisma.employee.findMany({
       where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
-      select: { id: true, employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } },
+      select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
     });
     const recs = await prisma.attendanceRecord.findMany({
       where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
       select: {
         employeeId: true, workDate: true, clockInAt: true, clockOutAt: true, status: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true, employmentType: true, department: { select: { name: true } } } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true, employmentType: true, department: { select: { name: true } } } },
       },
     });
     const holidays = await prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } });
@@ -1408,33 +1409,33 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       where: { companyId, deletedAt: null, startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
       select: {
         status: true, startDate: true, endDate: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } } },
       },
     });
     const pendingOts = await prisma.overtimeRequest.findMany({
       where: { companyId, deletedAt: null, status: "PENDING", date: { gte: start, lt: end }, ...deptRel },
       select: {
         date: true, hours: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } } },
       },
     });
     const correctionReqs = await prisma.attendanceCorrectionRequest.findMany({
       where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
       select: {
         workDate: true, status: true, decidedAt: true, createdAt: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } } },
       },
     });
     const payrolls = await prisma.payrollRecord.findMany({
       where: { companyId, deletedAt: null, period: start.toISOString().slice(0, 7), ...deptRel },
       select: {
         net: true,
-        employee: { select: { employeeCode: true, firstName: true, lastName: true, department: { select: { name: true } } } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } } },
       },
     });
     const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
     const deptOf = (e: { department: { name: string | null } | null }) => e.department?.name ?? "-";
-    const nameOf = (e: { firstName: string; lastName: string }) => `${e.firstName} ${e.lastName}`;
+    const nameOf = (e: { firstName: string; lastName: string; nickname: string | null }) => displayName(e);
 
     // No clock-out, and it isn't still today's in-progress shift.
     const todayIso = new Date().toISOString().slice(0, 10);
@@ -1541,7 +1542,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         const pendingOrRejected = (otherLeavesByEmp.get(e.employeeCode) ?? []).find((l) => l.startDate.getTime() <= d.getTime() && d.getTime() <= l.endDate.getTime());
         if (pendingOrRejected) {
           findings.push({
-            date: formatDate(d), code: e.employeeCode, name: `${e.firstName} ${e.lastName}`, department: e.department?.name ?? "-",
+            date: formatDate(d), code: e.employeeCode, name: displayName(e), department: e.department?.name ?? "-",
             issueType: "ขาดงานแต่มีเอกสารลา",
             detail: `ไม่มีข้อมูลลงเวลา แต่มีใบลาสถานะ "${pendingOrRejected.status === "PENDING" ? "รออนุมัติ" : "ไม่อนุมัติ"}" ครอบคลุมวันนี้ — ตรวจสอบว่าควรอนุมัติหรือไม่`,
           });
@@ -1586,14 +1587,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     where: { companyId, status: { not: "CANCELLED" }, ...deptRel },
     select: {
       status: true,
-      employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true } },
       course: { select: { hours: true } },
     },
   });
   const tmap = new Map<string, { name: string; enrolled: number; completed: number; hours: number }>();
   for (const e of enrollments) {
     const code = e.employee.employeeCode;
-    const row = tmap.get(code) ?? { name: `${e.employee.firstName} ${e.employee.lastName}`, enrolled: 0, completed: 0, hours: 0 };
+    const row = tmap.get(code) ?? { name: displayName(e.employee), enrolled: 0, completed: 0, hours: 0 };
     row.enrolled += 1;
     if (e.status === "COMPLETED") {
       row.completed += 1;

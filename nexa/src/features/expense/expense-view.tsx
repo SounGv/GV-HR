@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName, getInitials, formatCurrency, formatDate } from "@/lib/format";
+import { getInitials, formatCurrency, formatDate, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 import { ExpenseStatusBadge, EXPENSE_CATEGORY_LABEL } from "./labels";
@@ -172,7 +172,7 @@ function Approvals() {
             </Avatar>
             <div className="min-w-0">
               <p className="truncate font-medium text-foreground">
-                {r.title} — {fullName(r.employee.firstName, r.employee.lastName)}
+                {r.title} — {displayName(r.employee)}
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {line(r)}
@@ -233,7 +233,7 @@ function ToPay() {
             </Avatar>
             <div className="min-w-0">
               <p className="truncate font-medium text-foreground">
-                {r.title} — {fullName(r.employee.firstName, r.employee.lastName)}
+                {r.title} — {displayName(r.employee)}
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
             </div>

@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
@@ -94,6 +95,7 @@ export async function loadTodayAttendance(
       employeeCode: true,
       firstName: true,
       lastName: true,
+      nickname: true,
       employmentType: true,
       departmentId: true,
       department: { select: { name: true } },
@@ -150,7 +152,7 @@ export async function loadTodayAttendance(
     return {
       employeeId: e.id,
       code: e.employeeCode,
-      name: `${e.firstName} ${e.lastName}`,
+      name: displayName(e),
       department: e.department?.name ?? "ไม่มีแผนก",
       departmentId: e.departmentId,
       status,
@@ -289,7 +291,7 @@ export async function loadEmployeeAttendanceSummary(
   const scope = teamScopeFilter(session);
   const emp = await prisma.employee.findFirst({
     where: { companyId, deletedAt: null, employeeCode: code, ...(scope ?? {}) },
-    select: { id: true, firstName: true, lastName: true, department: { select: { name: true } } },
+    select: { id: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
   });
   if (!emp) return null;
   const today = bangkokParts().dateUTC;
@@ -312,7 +314,7 @@ export async function loadEmployeeAttendanceSummary(
   }
   return {
     code,
-    name: `${emp.firstName} ${emp.lastName}`,
+    name: displayName(emp),
     department: emp.department?.name ?? "ไม่มีแผนก",
     windowDays: WATCH_WINDOW_DAYS,
     present,

@@ -13,7 +13,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { useAuth } from "@/features/auth/auth-context";
 import { useCampaigns } from "@/features/campaign/hooks";
 import { ApiError } from "@/lib/api/client";
-import { fullName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 import { bandTone } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 
@@ -276,7 +276,7 @@ function ParticipantRow({
     <Card className="flex flex-col gap-3 p-3">
       <div className="flex flex-row flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{fullName(participant.employee.firstName, participant.employee.lastName)}</p>
+          <p className="text-sm font-medium text-foreground">{displayName(participant.employee)}</p>
           <p className="text-xs text-muted-foreground">
             {participant.employee.employeeCode} · คะแนนเดิม {participant.overallScore ?? "-"}{" "}
             {participant.band && (

@@ -16,7 +16,7 @@ import { AttachmentLink } from "@/components/shared/attachment-link";
 import { EmployeeCheckboxList } from "@/components/shared/employee-checkbox-list";
 import { TemplateFormRenderer } from "@/features/evaluation-template/template-renderer";
 import type { TemplateSection, TemplateVisibleToType } from "@/features/evaluation-template/types";
-import { fullName, getInitials } from "@/lib/format";
+import { getInitials, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
@@ -59,7 +59,7 @@ const SCORE_STATUS_MESSAGE: Record<ScoreStatus, string> = {
 
 /** Compact text summary of every submitted response, for the AI to reason over. */
 function participantToPrompt(participant: ParticipantDetail): string {
-  const name = fullName(participant.employee.firstName, participant.employee.lastName);
+  const name = displayName(participant.employee);
   const competencyName = (id: string) => participant.campaign.competencies.find((c) => c.competencyId === id)?.name ?? id;
 
   const sections = participant.fullResponses
@@ -245,7 +245,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
             <ChevronLeft className="size-4" /> กลับไปแคมเปญ
           </Link>
           <h1 className="text-xl font-semibold text-foreground">
-            {fullName(participant.employee.firstName, participant.employee.lastName)}
+            {displayName(participant.employee)}
           </h1>
           <p className="text-sm text-muted-foreground">
             {participant.campaign.name} · {participant.campaign.cycle}
@@ -522,7 +522,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
               <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
                 <Sparkles className="size-4 text-primary" />
               </span>
-              AI วิเคราะห์ผลประเมิน · {fullName(participant.employee.firstName, participant.employee.lastName)}
+              AI วิเคราะห์ผลประเมิน · {displayName(participant.employee)}
             </DialogTitle>
             <DialogDescription>วิเคราะห์โดย AI Assistant จากคะแนน/ความเห็นที่ส่งเข้ามาแล้วเท่านั้น</DialogDescription>
           </DialogHeader>
@@ -710,7 +710,7 @@ function ResponseCard({
     summary: string | null;
     evidenceUrls?: string[] | null;
     submittedAt: string | null;
-    raterEmployee?: { firstName: string; lastName: string; avatarUrl: string | null } | null;
+    raterEmployee?: { firstName: string; lastName: string; nickname: string | null; avatarUrl: string | null } | null;
   };
   competencies: CampaignCompetency[];
   templateSections?: TemplateSection[];
@@ -721,7 +721,7 @@ function ResponseCard({
   onApproveReopen?: (responseId: string) => void;
 }) {
   const removeMutation = useRemoveRater();
-  const raterName = response?.raterEmployee ? fullName(response.raterEmployee.firstName, response.raterEmployee.lastName) : null;
+  const raterName = response?.raterEmployee ? displayName(response.raterEmployee) : null;
   const isMyResponse = !!response?.raterEmployeeId && response.raterEmployeeId === myEmployeeId;
 
   async function remove() {

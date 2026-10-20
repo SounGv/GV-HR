@@ -14,7 +14,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
-import { fullName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { useAddCandidate, usePlan, useRemoveCandidate, useUpdateCandidate } from "./hooks";
@@ -49,7 +49,7 @@ export function PlanDetailView({ planId }: { planId: string }) {
       <Card className="gap-1 p-4">
         <p className="font-medium text-foreground">{plan.position.title}</p>
         <p className="text-xs text-muted-foreground">
-          ผู้ดำรงตำแหน่ง: {plan.incumbentEmployee ? fullName(plan.incumbentEmployee.firstName, plan.incumbentEmployee.lastName) : "ว่าง"}
+          ผู้ดำรงตำแหน่ง: {plan.incumbentEmployee ? displayName(plan.incumbentEmployee) : "ว่าง"}
         </p>
         {plan.notes && <p className="mt-1 text-sm text-muted-foreground">{plan.notes}</p>}
       </Card>
@@ -76,7 +76,7 @@ function CandidateRow({
   candidate,
   canManage,
 }: {
-  candidate: { id: string; readiness: SuccessionReadiness; note: string | null; employee: { id: string; employeeCode: string; firstName: string; lastName: string } };
+  candidate: { id: string; readiness: SuccessionReadiness; note: string | null; employee: { id: string; employeeCode: string; firstName: string; lastName: string; nickname: string | null } };
   canManage: boolean;
 }) {
   const updateMutation = useUpdateCandidate();
@@ -104,7 +104,7 @@ function CandidateRow({
   return (
     <Card className="flex flex-row flex-wrap items-center justify-between gap-3 p-3">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">{fullName(candidate.employee.firstName, candidate.employee.lastName)}</p>
+        <p className="text-sm font-medium text-foreground">{displayName(candidate.employee)}</p>
         <p className="text-xs text-muted-foreground">
           {candidate.employee.employeeCode}
           {candidate.note && <> · {candidate.note}</>}

@@ -28,7 +28,7 @@ const sessionParticipantSelect = {
   potential: true,
   potentialNote: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true, managerId: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true, managerId: true },
   },
 } satisfies Prisma.EvaluationParticipantSelect;
 
@@ -263,7 +263,7 @@ export async function getNineBoxGrid(companyId: string, session: AccessClaims, q
       band: true,
       calibratedBand: true,
       potential: true,
-      employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true } },
+      employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true } },
       campaign: { select: { startDate: true } },
     },
     orderBy: { campaign: { startDate: "desc" } },

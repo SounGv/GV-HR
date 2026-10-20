@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import { fullName, loginIdentifier } from "@/lib/format";
+import { loginIdentifier, displayName } from "@/lib/format";
 import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ApprovalWorkflow, ApprovalRequest, RequestStep, WorkflowStepDef } from "./types";
@@ -32,9 +32,9 @@ async function actorName(companyId: string, session: AccessClaims): Promise<stri
   if (session.employeeId) {
     const emp = await prisma.employee.findFirst({
       where: { id: session.employeeId, companyId },
-      select: { firstName: true, lastName: true },
+      select: { firstName: true, lastName: true, nickname: true },
     });
-    if (emp) return fullName(emp.firstName, emp.lastName);
+    if (emp) return displayName(emp);
   }
   return loginIdentifier(session);
 }

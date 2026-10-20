@@ -20,7 +20,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
-import { formatDate, fullName, getInitials } from "@/lib/format";
+import { formatDate, getInitials, displayName } from "@/lib/format";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ApiError } from "@/lib/api/client";
 
@@ -416,7 +416,7 @@ function TeamPlanRow({ plan }: { plan: DevelopmentPlan }) {
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <p className="truncate font-medium text-foreground">{fullName(plan.employee.firstName, plan.employee.lastName)}</p>
+          <p className="truncate font-medium text-foreground">{displayName(plan.employee)}</p>
           <p className="text-xs text-muted-foreground">
             {plan.items.length} รายการ · สำเร็จแล้ว {done}/{plan.items.length}
           </p>

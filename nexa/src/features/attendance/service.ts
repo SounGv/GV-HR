@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -40,7 +41,7 @@ const recordSelect = {
 const recordWithEmployeeSelect = {
   ...recordSelect,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
   },
 } satisfies Prisma.AttendanceRecordSelect;
 
@@ -102,10 +103,6 @@ async function loadEmployeeWithBranch(companyId: string, employeeId: string) {
   });
   if (!employee) throw NotFound("ไม่พบข้อมูลพนักงาน");
   return employee;
-}
-
-function displayName(employee: { firstName: string; lastName: string; nickname: string | null }) {
-  return `${employee.firstName} ${employee.lastName}${employee.nickname ? ` (${employee.nickname})` : ""}`;
 }
 
 /**

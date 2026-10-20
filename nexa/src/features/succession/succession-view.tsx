@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
-import { fullName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 import { usePlans } from "./hooks";
 
 export function SuccessionView() {
@@ -41,7 +41,7 @@ export function SuccessionView() {
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">{p.position.title}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    ผู้ดำรงตำแหน่ง: {p.incumbentEmployee ? fullName(p.incumbentEmployee.firstName, p.incumbentEmployee.lastName) : "ว่าง"}
+                    ผู้ดำรงตำแหน่ง: {p.incumbentEmployee ? displayName(p.incumbentEmployee) : "ว่าง"}
                   </p>
                 </div>
                 <p className="text-sm text-muted-foreground">ผู้สืบทอด {p.candidateCount} คน</p>

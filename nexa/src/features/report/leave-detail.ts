@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { teamScopeFilter } from "@/features/employee/service";
@@ -61,7 +62,7 @@ export async function loadEmployeeLeaveYear(
   const scope = teamScopeFilter(session);
   const emp = await prisma.employee.findFirst({
     where: { companyId, deletedAt: null, employeeCode: code, ...(scope ?? {}) },
-    select: { id: true, firstName: true, lastName: true, department: { select: { name: true } } },
+    select: { id: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
   });
   if (!emp) return null;
 
@@ -114,7 +115,7 @@ export async function loadEmployeeLeaveYear(
 
   return {
     code,
-    name: `${emp.firstName} ${emp.lastName}`.trim(),
+    name: displayName(emp),
     department: emp.department?.name ?? "ไม่ระบุแผนก",
     year,
     types,

@@ -27,6 +27,7 @@ const reviewSelect = {
       employeeCode: true,
       firstName: true,
       lastName: true,
+      nickname: true,
       avatarUrl: true,
       managerId: true,
     },

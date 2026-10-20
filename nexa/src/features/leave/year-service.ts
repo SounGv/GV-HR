@@ -1,3 +1,4 @@
+import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest } from "@/lib/api/errors";
@@ -40,7 +41,7 @@ async function plan(companyId: string, fromYear: number, toYear: number, carryAn
       totalDays: true,
       usedDays: true,
       totalHours: true,
-      employee: { select: { employeeCode: true, firstName: true, lastName: true, status: true, deletedAt: true } },
+      employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true, status: true, deletedAt: true } },
     },
   });
   const existing = new Set(
@@ -73,7 +74,7 @@ async function plan(companyId: string, fromYear: number, toYear: number, carryAn
         const p = prev.find((x) => x.type === nb.type)!;
         sample.push({
           code: p.employee.employeeCode,
-          name: `${p.employee.firstName} ${p.employee.lastName}`.trim(),
+          name: displayName(p.employee),
           type: nb.type,
           fromTotal: p.totalDays,
           fromUsed: p.usedDays,

@@ -12,6 +12,7 @@ const employeeRefSelect = {
   employeeCode: true,
   firstName: true,
   lastName: true,
+  nickname: true,
   avatarUrl: true,
 } satisfies Prisma.EmployeeSelect;
 
