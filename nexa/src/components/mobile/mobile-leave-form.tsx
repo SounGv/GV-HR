@@ -10,8 +10,10 @@ import { toast } from "sonner";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { FileAttachField } from "@/components/shared/file-attach-field";
+import { TimeSelect } from "@/components/shared/time-select";
 import { LEAVE_TYPES, LEAVE_UNITS } from "@/features/leave/schema";
 import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "@/features/leave/days";
+import { remainingLeaveHours } from "@/features/leave/hour-pool";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { useBalances, useCreateLeave } from "@/features/leave/hooks";
 import type { LeaveType } from "@/features/leave/types";
@@ -120,7 +122,7 @@ export function MobileLeaveForm() {
       map.set(b.type, {
         remaining: Math.max(0, b.totalDays - b.usedDays),
         total: b.totalDays,
-        remainingHours: Math.max(0, b.totalHours - b.usedHours),
+        remainingHours: remainingLeaveHours(b),
         totalHours: b.totalHours,
         configured: b.daysConfigured,
       });
@@ -161,6 +163,12 @@ export function MobileLeaveForm() {
     }
     return null;
   }, [preview, type, balanceMap, isHourly, start]);
+
+  /** Tells the person what is missing instead of the button silently doing nothing. */
+  function onInvalid(errors: Partial<Record<keyof FormSchema, { message?: string }>>) {
+    const first = Object.values(errors).find((e) => e?.message);
+    toast.error(first?.message ?? "กรุณากรอกข้อมูลให้ครบ");
+  }
 
   async function onSubmit(values: FormSchema) {
     if (blockedMessage) return;
@@ -237,7 +245,7 @@ export function MobileLeaveForm() {
     >
       {blockedMessage && <MobileAlertBanner tone="danger">{blockedMessage}</MobileAlertBanner>}
 
-      <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="space-y-3.5">
+      <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-3.5">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="mb-2.5 text-[13px] font-semibold text-foreground">ประเภทการลา</p>
           <div className="grid grid-cols-2 gap-2">
@@ -315,16 +323,14 @@ export function MobileLeaveForm() {
               <div className="grid grid-cols-2 gap-2">
                 <label className="rounded-[10px] border border-border px-3 py-2.5">
                   <span className="block text-[10px] text-muted-foreground">เวลาเริ่ม</span>
-                  <input
-                    type="time"
+                  <TimeSelect
                     className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
                     {...form.register("startTime")}
                   />
                 </label>
                 <label className="rounded-[10px] border border-border px-3 py-2.5">
                   <span className="block text-[10px] text-muted-foreground">เวลาสิ้นสุด</span>
-                  <input
-                    type="time"
+                  <TimeSelect
                     className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
                     {...form.register("endTime")}
                   />
@@ -340,13 +346,22 @@ export function MobileLeaveForm() {
                   <input
                     type="date"
                     className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
-                    {...form.register("startDate")}
+                    {...form.register("startDate", {
+                      // A half day is a single day, and an empty end date just follows the start.
+                      onChange: (e) => {
+                        const next = e.target.value as string;
+                        const currentEnd = form.getValues("endDate");
+                        if (form.getValues("halfDay") || !currentEnd || currentEnd < next) form.setValue("endDate", next);
+                      },
+                    })}
                   />
                 </label>
-                <label className="rounded-[10px] border border-border px-3 py-2.5">
+                <label className={cn("rounded-[10px] border border-border px-3 py-2.5", half && "opacity-60")}>
                   <span className="block text-[10px] text-muted-foreground">ถึงวันที่</span>
                   <input
                     type="date"
+                    readOnly={half}
+                    aria-readonly={half}
                     className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
                     {...form.register("endDate")}
                   />
@@ -355,7 +370,15 @@ export function MobileLeaveForm() {
 
               <label className="mt-3 flex items-center justify-between rounded-[10px] border border-border px-3 py-2.5">
                 <span className="text-[13px] font-medium text-foreground">ลาครึ่งวัน</span>
-                <input type="checkbox" className="size-4 accent-primary" {...form.register("halfDay")} />
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  {...form.register("halfDay", {
+                    onChange: (e) => {
+                      if (e.target.checked) form.setValue("endDate", form.getValues("startDate"));
+                    },
+                  })}
+                />
               </label>
             </>
           )}

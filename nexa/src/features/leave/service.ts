@@ -1,3 +1,4 @@
+import { hourlyUsage, remainingLeaveHours } from "./hour-pool";
 import { displayName } from "@/lib/format";
 import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -140,8 +141,8 @@ async function getCompanyLeaveHourQuota(companyId: string): Promise<Record<strin
   };
 }
 
-/** Remaining hours for a leave type this year — a separate pool from
- * `getRemainingBalance`'s days, never converted to/from it. */
+/** Remaining hours for a leave type this year: the type's own hour quota when
+ * HR set one, otherwise the remaining days × 8 (see hour-pool.ts). */
 export async function getRemainingHourBalance(
   companyId: string,
   employeeId: string,
@@ -150,12 +151,13 @@ export async function getRemainingHourBalance(
 ): Promise<number> {
   const balance = await prisma.leaveBalance.findUnique({
     where: { employeeId_year_type: { employeeId, year, type: type as never } },
-    select: { totalHours: true, usedHours: true },
+    select: { totalDays: true, usedDays: true, totalHours: true, usedHours: true },
   });
-  if (balance) return Math.max(0, balance.totalHours - balance.usedHours);
+  if (balance) return remainingLeaveHours(balance);
   if (await isDailyCompensation(employeeId)) return 0;
-  const quota = await getCompanyLeaveHourQuota(companyId);
-  return Math.max(0, quota[type] ?? 0);
+  const hourQuota = await getCompanyLeaveHourQuota(companyId);
+  const dayQuota = await getCompanyLeaveQuota(companyId);
+  return remainingLeaveHours({ totalDays: dayQuota[type] ?? 0, usedDays: 0, totalHours: hourQuota[type] ?? 0, usedHours: 0 });
 }
 
 export async function createLeave(
@@ -369,6 +371,8 @@ export async function decideLeave(
 
   let quotaDaysForNewBalance = 0;
   let quotaHoursForNewBalance = 0;
+  // The hour quota of the balance this hourly request comes out of: 0 means it uses the day balance.
+  let hourPoolTotal = 0;
   if (input.action === "approve") {
     if (isHourly) {
       const remaining = await getRemainingHourBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
@@ -381,6 +385,11 @@ export async function decideLeave(
       quotaHoursForNewBalance = hourQuota[req.type] ?? 0;
       const dayQuota = await getCompanyLeaveQuota(companyId);
       quotaDaysForNewBalance = dayQuota[req.type] ?? 0;
+      const existing = await prisma.leaveBalance.findUnique({
+        where: { employeeId_year_type: { employeeId: req.employeeId, year: req.startDate.getUTCFullYear(), type: req.type } },
+        select: { totalHours: true },
+      });
+      hourPoolTotal = existing ? existing.totalHours : quotaHoursForNewBalance;
     } else if (deductsBalance(req.type)) {
       const remaining = await getRemainingBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
       if (req.days > remaining) {
@@ -416,18 +425,21 @@ export async function decideLeave(
 
     if (input.action === "approve" && (isHourly || deductsBalance(req.type))) {
       const year = req.startDate.getUTCFullYear();
+      const hourly = hourlyUsage(isHourly ? req.hours ?? 0 : 0, hourPoolTotal);
       await tx.leaveBalance.upsert({
         where: { employeeId_year_type: { employeeId: req.employeeId, year, type: req.type } },
-        update: isHourly ? { usedHours: { increment: req.hours ?? 0 } } : { usedDays: { increment: req.days } },
+        update: isHourly
+          ? { usedHours: { increment: hourly.usedHours }, usedDays: { increment: hourly.usedDays } }
+          : { usedDays: { increment: req.days } },
         create: {
           companyId,
           employeeId: req.employeeId,
           year,
           type: req.type,
           totalDays: quotaDaysForNewBalance,
-          usedDays: isHourly ? 0 : req.days,
+          usedDays: isHourly ? hourly.usedDays : req.days,
           totalHours: quotaHoursForNewBalance,
-          usedHours: isHourly ? req.hours ?? 0 : 0,
+          usedHours: isHourly ? hourly.usedHours : 0,
         },
       });
     }
@@ -512,10 +524,25 @@ export async function cancelLeave(
     // Restore balance if a previously-approved paid leave is cancelled.
     if (req.status === "APPROVED" && (isHourly || deductsBalance(req.type))) {
       const year = req.startDate.getUTCFullYear();
-      await tx.leaveBalance.updateMany({
-        where: { employeeId: req.employeeId, year, type: req.type },
-        data: isHourly ? { usedHours: { decrement: req.hours ?? 0 } } : { usedDays: { decrement: req.days } },
-      });
+      if (isHourly) {
+        // Give back to the same balance the approval took it from (hours, or days at 8 hours a day).
+        const bal = await tx.leaveBalance.findUnique({
+          where: { employeeId_year_type: { employeeId: req.employeeId, year, type: req.type } },
+          select: { totalHours: true },
+        });
+        if (bal) {
+          const back = hourlyUsage(req.hours ?? 0, bal.totalHours);
+          await tx.leaveBalance.update({
+            where: { employeeId_year_type: { employeeId: req.employeeId, year, type: req.type } },
+            data: { usedHours: { decrement: back.usedHours }, usedDays: { decrement: back.usedDays } },
+          });
+        }
+      } else {
+        await tx.leaveBalance.updateMany({
+          where: { employeeId: req.employeeId, year, type: req.type },
+          data: { usedDays: { decrement: req.days } },
+        });
+      }
     }
 
     return rec;

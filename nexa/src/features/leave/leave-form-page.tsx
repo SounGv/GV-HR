@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { TimeSelect } from "@/components/shared/time-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { FileAttachField } from "@/components/shared/file-attach-field";
@@ -237,7 +238,7 @@ export function LeaveFormPage() {
                     <FormItem>
                       <FormLabel>เวลาเริ่ม</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <TimeSelect className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -250,7 +251,7 @@ export function LeaveFormPage() {
                     <FormItem>
                       <FormLabel>เวลาสิ้นสุด</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <TimeSelect className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -268,7 +269,17 @@ export function LeaveFormPage() {
                     <FormItem>
                       <FormLabel>วันเริ่ม</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input
+                          type="date"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // A half day is a single day, and an empty or earlier end date follows the start.
+                            const next = e.target.value;
+                            const currentEnd = form.getValues("endDate");
+                            if (form.getValues("halfDay") || !currentEnd || currentEnd < next) form.setValue("endDate", next);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -281,7 +292,7 @@ export function LeaveFormPage() {
                     <FormItem>
                       <FormLabel>วันสิ้นสุด</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" readOnly={form.watch("halfDay")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -299,7 +310,13 @@ export function LeaveFormPage() {
                       <FormDescription>นับเป็น 0.5 วัน (เฉพาะวันเดียว)</FormDescription>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={(on) => {
+                          field.onChange(on);
+                          if (on) form.setValue("endDate", form.getValues("startDate"), { shouldValidate: true });
+                        }}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
