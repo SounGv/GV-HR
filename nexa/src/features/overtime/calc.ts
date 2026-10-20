@@ -52,6 +52,26 @@ export function parseHM(t: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
+const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+
+/**
+ * On a normal working day, overtime is time outside the shift: before it
+ * starts or after it ends. A request that overlaps the shift is really a
+ * worked day (or a missed scan), already paid as normal time.
+ *
+ * @param start OT start, "HH:mm".
+ * @param end OT end, "HH:mm".
+ * @param shift The day's shift in minutes since midnight.
+ * @returns A message saying what is allowed, or null when the request is fine.
+ *   An overnight shift (end at or before start) is not checked.
+ */
+export function shiftOverlapMessage(start: string, end: string, shift: { startMin: number; endMin: number }): string | null {
+  if (shift.endMin <= shift.startMin) return null;
+  const overlaps = parseHM(start) < shift.endMin && parseHM(end) > shift.startMin;
+  if (!overlaps) return null;
+  return `วันทำงานปกติขอ OT ได้หลังเลิกงาน ${hhmm(shift.endMin)} น. (หรือก่อนเข้างาน ${hhmm(shift.startMin)} น.) — ถ้าทำงานแต่ลืมสแกน ให้ขอแก้ไขเวลาเข้า-ออกงานแทน`;
+}
+
 /** OT hours between two "HH:mm" times (0 if end <= start). 2 dp. */
 export function computeHours(start: string, end: string): number {
   const diff = parseHM(end) - parseHM(start);

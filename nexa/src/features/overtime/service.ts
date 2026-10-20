@@ -11,7 +11,8 @@ import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { computeHours, dayOffReason, estimateAmount, minutesSinceWorkDateStart, DEFAULT_MULTIPLIER, MIN_OT_MINUTES, multiplierFor } from "./calc";
+import { computeHours, dayOffReason, estimateAmount, minutesSinceWorkDateStart, shiftOverlapMessage, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER, MIN_OT_MINUTES, multiplierFor } from "./calc";
+import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -71,6 +72,10 @@ export async function createOvertime(
       holidays.map((h) => ({ date: h.date.toISOString(), name: h.name })),
     ) !== null;
   const multiplier = multiplierFor(isDayOff ? "DAY_OFF" : "NORMAL");
+  if (!isDayOff) {
+    const overlap = shiftOverlapMessage(input.startTime, input.endTime, await resolveShiftMinutes(employeeId, input.date));
+    if (overlap) throw BadRequest(overlap);
+  }
   const dayOffNote = isDayOff ? " (ทำงานวันหยุด 2 เท่า)" : "";
 
   const employee = await prisma.employee.findFirst({
@@ -288,6 +293,9 @@ export async function decideOvertime(
       id: true,
       employeeId: true,
       status: true,
+      date: true,
+      startTime: true,
+      endTime: true,
       hours: true,
       multiplier: true,
       employee: {
@@ -316,6 +324,11 @@ export async function decideOvertime(
   // the rate; a rejection leaves the request exactly as it was sent.
   const multiplier = nextStatus === "APPROVED" && input.dayType ? multiplierFor(input.dayType) : req.multiplier;
   const rateChanged = multiplier !== req.multiplier;
+  // Approving OT on a normal day that overlaps the shift would pay normal hours twice.
+  if (nextStatus === "APPROVED" && multiplier < DAY_OFF_MULTIPLIER) {
+    const overlap = shiftOverlapMessage(req.startTime, req.endTime, await resolveShiftMinutes(req.employeeId, req.date));
+    if (overlap) throw BadRequest(`อนุมัติไม่ได้ — ${overlap}`);
+  }
 
   // Re-estimate pay at the moment of approval, not reuse the estimate frozen
   // when the request was first submitted — payroll sums this record's
