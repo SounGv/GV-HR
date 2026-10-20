@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyLineSignature, replyLineMessage } from "@/lib/integrations/line";
+import { verifyLineSignature, replyLineMessage, isLinkCodeText, shouldRegisterHrGroups } from "@/lib/integrations/line";
 
 export const runtime = "nodejs";
 
@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
       const lineUserId = event.source?.userId;
       const replyToken = event.replyToken;
       const code = event.message.text?.trim().toUpperCase();
-      if (!lineUserId || !code) continue;
+      // The bot is shared with gv-ops-bot: only a message shaped like a link code is for us, anything else is not answered.
+      if (!lineUserId || !code || !isLinkCodeText(code)) continue;
 
       const employee = await prisma.employee.findFirst({
         where: { lineLinkCode: code, lineLinkCodeExpiresAt: { gt: new Date() }, deletedAt: null },
@@ -76,6 +77,8 @@ export async function POST(request: NextRequest) {
     // ถ้าต้องรองรับ multi-tenant จริงในอนาคตต้องออกแบบวิธีระบุ company ใหม่
     // (เช่น ให้ HR ยืนยันจากหน้า Settings แทน auto-save)
     if (event.type === "join" && event.source?.type === "group") {
+      // Off unless the bot is used for HR alone (see shouldRegisterHrGroups): a shared bot is invited to other services' groups.
+      if (!shouldRegisterHrGroups()) continue;
       const groupId = event.source.groupId;
       if (groupId) {
         const company = await prisma.company.findFirst({ select: { id: true } });

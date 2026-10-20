@@ -83,3 +83,29 @@ export function generateLinkCode(): string {
 }
 
 export const LINE_LINK_CODE_TTL_MS = 15 * 60 * 1000;
+
+/** What a link code looks like: 6 characters from the alphabet above. */
+const LINK_CODE_RE = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
+
+/**
+ * True when a chat message is shaped like an account-link code.
+ *
+ * The bot is shared with other services (gv-ops-bot), so the HR webhook may
+ * only react to messages meant for it; anything else, such as a normal chat or
+ * a broadcast reply, must be left alone and get no answer from here.
+ *
+ * @param text Message text as received from LINE.
+ */
+export function isLinkCodeText(text: string | undefined | null): boolean {
+  return LINK_CODE_RE.test((text ?? "").trim().toUpperCase());
+}
+
+/**
+ * Whether the bot may register a group as an HR-alert target when it is
+ * invited. Off by default: a bot shared with another service gets invited to
+ * that service's groups, and HR alerts must never land there. Set
+ * LINE_REGISTER_HR_GROUPS=true only for a bot used for HR alone.
+ */
+export function shouldRegisterHrGroups(): boolean {
+  return process.env.LINE_REGISTER_HR_GROUPS === "true";
+}
