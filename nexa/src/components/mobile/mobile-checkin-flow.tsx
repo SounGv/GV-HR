@@ -92,6 +92,12 @@ export function MobileCheckinFlow({
     };
   }, [skipCapture]);
 
+  // Working from home has no photo or location step: record the time as soon as the wizard opens.
+  useEffect(() => {
+    if (skipCapture) void submit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skipCapture]);
+
   useEffect(() => {
     const track = cam.streamRef.current?.getVideoTracks()[0];
     const caps = track?.getCapabilities?.() as (MediaTrackCapabilities & { torch?: boolean }) | undefined;
@@ -285,11 +291,12 @@ export function MobileCheckinFlow({
           onCancel={onClose}
           onConfirm={confirmOffsite}
           pending={clockIn.isPending || clockOut.isPending}
+          actionLabel={title}
         />
       )}
 
       {step === "error" && (
-        <ErrorStep message={submitError} onRetry={() => setStep(skipCapture ? "processing" : photo ? "preview" : "camera")} onCancel={onClose} />
+        <ErrorStep message={submitError} onRetry={() => (skipCapture ? void submit() : setStep(photo ? "preview" : "camera"))} onCancel={onClose} />
       )}
 
       {step === "success" && (
@@ -474,8 +481,11 @@ function OffsiteStep({
   onCancel,
   onConfirm,
   pending,
+  actionLabel,
 }: {
   info: { distance: number; branchName: string | null; permitted: boolean };
+  /** "เช็คอิน" or "เช็คเอาท์", for the confirm button. */
+  actionLabel: string;
   reason: string;
   onReasonChange: (v: string) => void;
   onCancel: () => void;
@@ -521,13 +531,13 @@ function OffsiteStep({
               disabled={!reason.trim() || pending}
               className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-gv-dark-green disabled:opacity-40"
             >
-              {pending ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check className="size-4" />} ยืนยันเช็คอิน
+              {pending ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check className="size-4" />} ยืนยัน{actionLabel}
             </button>
           </div>
         </>
       ) : (
         <>
-          <p className="mt-4 text-center text-sm font-medium text-amber-300">คุณไม่มีสิทธิ์เช็คอินนอกพื้นที่บริษัท</p>
+          <p className="mt-4 text-center text-sm font-medium text-amber-300">คุณไม่มีสิทธิ์{actionLabel}นอกพื้นที่บริษัท</p>
           <p className="mt-1 text-center text-xs text-slate-400">
             หากจำเป็นต้องทำงานนอกสถานที่เป็นประจำ กรุณาติดต่อ HR เพื่อขอสิทธิ์
           </p>

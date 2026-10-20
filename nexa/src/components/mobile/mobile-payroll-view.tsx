@@ -5,7 +5,7 @@ import { MobileMyPayslips } from "@/features/payroll/mobile-payslips-view";
 
 export function MobilePayrollView() {
   return (
-    <MobileScreen title="สลิปเงินเดือน" contentClassName="space-y-4 p-4">
+    <MobileScreen title="สลิปเงินเดือน" backHref="/dashboard" contentClassName="space-y-4 p-4">
       <MobileMyPayslips />
     </MobileScreen>
   );

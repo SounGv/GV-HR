@@ -55,7 +55,16 @@ const formSchema = z
   .refine((d) => d.unit !== "HOUR" || !d.startTime || !d.endTime || d.endTime > d.startTime, {
     message: "เวลาสิ้นสุดต้องหลังเวลาเริ่ม",
     path: ["endTime"],
-  });
+  })
+  // The same two rules the server checks (features/leave/schema.ts), so the form says so before sending.
+  .refine((d) => d.unit !== "HOUR" || d.startDate === d.endDate, {
+    message: "ลาเป็นชั่วโมงต้องเป็นวันเดียว",
+    path: ["endDate"],
+  })
+  .refine(
+    (d) => d.unit !== "HOUR" || !d.startTime || !d.endTime || d.endTime <= d.startTime || computeLeaveHours(d.startTime, d.endTime) >= 1,
+    { message: "ลาเป็นชั่วโมงได้อย่างน้อย 1 ชั่วโมง", path: ["endTime"] },
+  );
 
 type FormSchema = z.infer<typeof formSchema>;
 
@@ -170,6 +179,8 @@ export function MobileLeaveForm() {
     toast.error(first?.message ?? "กรุณากรอกข้อมูลให้ครบ");
   }
 
+  const blockedIsSunday = isHourly ? !!start && isSunday(new Date(start)) : preview === 0;
+
   async function onSubmit(values: FormSchema) {
     if (blockedMessage) return;
     try {
@@ -217,7 +228,7 @@ export function MobileLeaveForm() {
             { label: "สถานะ", value: "รออนุมัติ", highlight: true },
           ]}
           action={
-            <MobilePrimaryButton onClick={() => router.push("/services")}>
+            <MobilePrimaryButton onClick={() => router.push("/dashboard")}>
               กลับหน้าหลัก
             </MobilePrimaryButton>
           }
@@ -238,7 +249,7 @@ export function MobileLeaveForm() {
             form={FORM_ID}
             disabled={!!blockedMessage || createMutation.isPending}
           >
-            {blockedMessage ? "วันลาไม่พอ — แก้ไขก่อนส่ง" : createMutation.isPending ? "กำลังส่ง…" : "ส่งคำขอลา"}
+            {blockedMessage ? (blockedIsSunday ? "เลือกวันอื่นก่อนส่ง" : "วันลาไม่พอ — แก้ไขก่อนส่ง") : createMutation.isPending ? "กำลังส่ง…" : "ส่งคำขอลา"}
           </MobilePrimaryButton>
         </MobileActionFooter>
       }
@@ -290,7 +301,11 @@ export function MobileLeaveForm() {
                   <button
                     key={u}
                     type="button"
-                    onClick={() => form.setValue("unit", u, { shouldValidate: true })}
+                    onClick={() => {
+                      form.setValue("unit", u, { shouldValidate: true });
+                      // Hourly leave is a single day: drop any end date left over from the day mode.
+                      if (u === "HOUR") form.setValue("endDate", form.getValues("startDate"));
+                    }}
                     className={cn(
                       "rounded-[10px] border-[1.5px] p-3 text-center text-[13px] font-semibold transition active:scale-[0.99]",
                       unit === u

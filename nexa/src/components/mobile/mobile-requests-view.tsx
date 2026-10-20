@@ -203,7 +203,8 @@ function MyRequests() {
                   <p className="mt-0.5 text-sm text-muted-foreground">{itemLine(item)}</p>
                 </div>
               </Link>
-              {(item.request.status === "PENDING" || item.request.status === "APPROVED") && (
+              {/* A time correction can only be withdrawn while it is still waiting; leave and OT also after approval. */}
+              {(item.request.status === "PENDING" || (item.request.status === "APPROVED" && item.kind !== "correction")) && (
                 <Button variant="ghost" size="sm" className="h-11 min-w-16 text-destructive" onClick={() => setTarget(item)}>
                   ยกเลิก
                 </Button>

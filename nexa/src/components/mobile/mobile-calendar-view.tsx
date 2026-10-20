@@ -75,6 +75,11 @@ export function MobileCalendarView() {
 
   const [month, setMonth] = useState(currentMonth());
   const [selected, setSelected] = useState<string | null>(todayIso());
+  /** Changing month moves the picked day with it (today in the current month, else the 1st), so the list never shows a day from a month that is not loaded. */
+  const goToMonth = (next: string) => {
+    setMonth(next);
+    setSelected(next === currentMonth() ? todayIso() : `${next}-01`);
+  };
 
   const { data, isLoading, isError, refetch } = useMonth(month);
   const items = useMemo(() => data?.data.items ?? [], [data]);
@@ -113,7 +118,7 @@ export function MobileCalendarView() {
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
-          onClick={() => setMonth(addMonth(month, -1))}
+          onClick={() => goToMonth(addMonth(month, -1))}
           aria-label="เดือนก่อน"
           className="flex size-9 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
         >
@@ -122,7 +127,7 @@ export function MobileCalendarView() {
         <p className="text-base font-semibold text-foreground">{monthLabel}</p>
         <button
           type="button"
-          onClick={() => setMonth(addMonth(month, 1))}
+          onClick={() => goToMonth(addMonth(month, 1))}
           aria-label="เดือนถัดไป"
           className="flex size-9 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
         >
@@ -177,7 +182,11 @@ export function MobileCalendarView() {
                     <button
                       key={c.iso}
                       type="button"
-                      onClick={() => setSelected(c.iso)}
+                      onClick={() => {
+                        setSelected(c.iso);
+                        // A grey day belongs to the month before or after: open that month so its events load.
+                        if (!c.inMonth) setMonth(c.iso.slice(0, 7));
+                      }}
                       className={cn(
                         "relative flex h-11 flex-col items-center justify-center gap-0.5 rounded-lg border text-xs transition",
                         c.inMonth ? "bg-card" : "bg-muted/30 text-muted-foreground/60",

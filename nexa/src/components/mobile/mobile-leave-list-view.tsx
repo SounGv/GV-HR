@@ -5,7 +5,7 @@ import { LeaveView } from "@/features/leave/leave-view";
 
 export function MobileLeaveListView() {
   return (
-    <MobileScreen title="การลา" contentClassName="space-y-4 p-4">
+    <MobileScreen title="การลา" backHref="/dashboard" contentClassName="space-y-4 p-4">
       <LeaveView />
     </MobileScreen>
   );

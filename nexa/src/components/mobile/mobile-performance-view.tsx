@@ -5,13 +5,12 @@ import { Check, ClipboardCheck, ChevronRight, Clock, ListChecks } from "lucide-r
 
 import { MobileScreen } from "./mobile-screen";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getInitials, displayName } from "@/lib/format";
+import { useQuery } from "@tanstack/react-query";
 import { useReviews } from "@/features/performance/hooks";
 import { ReviewCard } from "@/features/performance/review-card";
-import { useMyEvaluationAssignments } from "@/features/campaign/hooks";
-import type { MyEvaluationAssignment as MyAssignment } from "@/features/campaign/types";
-import { RATER_LABEL } from "@/features/campaign/labels";
+import { fetchTasks } from "@/features/appraisal-round/api";
+import { appraisalRoundKeys } from "@/features/appraisal-round/hooks";
+import { RATER_LABEL, type TaskItem } from "@/features/appraisal-round/types";
 
 function fmtDate(iso: string) {
   return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(iso));
@@ -75,13 +74,14 @@ function StatusChip({ submitted, days }: { submitted: boolean; days: number }) {
   return <span className="inline-flex shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">รอทำ</span>;
 }
 
+/** My evaluation jobs in open rounds of the current evaluation system (the old campaign pages now only redirect). */
 function PendingSection() {
-  const { data, isLoading } = useMyEvaluationAssignments();
-  const items = data?.data ?? [];
+  const { data, isLoading } = useQuery({ queryKey: appraisalRoundKeys.tasks, queryFn: fetchTasks, retry: false, staleTime: 30_000 });
+  const items = (data?.data ?? []).filter((t) => t.roundStatus === "OPEN");
 
   if (isLoading || items.length === 0) return null;
 
-  const withDays = items.map((item) => ({ item, days: daysUntil(item.endDate) }));
+  const withDays = items.map((item) => ({ item, days: item.endIso ? daysUntil(item.endIso) : Number.POSITIVE_INFINITY }));
   const todo = withDays.filter((x) => x.item.status !== "SUBMITTED").sort((a, b) => a.days - b.days);
   const done = withDays.filter((x) => x.item.status === "SUBMITTED");
   const total = items.length;
@@ -107,7 +107,7 @@ function PendingSection() {
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           ส่งแล้ว {done.length} จาก {total} คน
-          {nearest ? ` · ปิดเร็วสุด ${fmtDate(nearest.item.endDate)} (${dueLabel(nearest.days)})` : ""}
+          {nearest?.item.endIso ? ` · ปิดเร็วสุด ${fmtDate(nearest.item.endIso)} (${dueLabel(nearest.days)})` : ""}
         </p>
       </div>
 
@@ -117,7 +117,7 @@ function PendingSection() {
             <ListChecks className="size-4 text-[#0d9488]" aria-hidden="true" /> ต้องทำ ({todo.length})
           </h2>
           {todo.map(({ item, days }) => (
-            <AssignmentRow key={item.responseId} item={item} days={days} />
+            <AssignmentRow key={item.id} item={item} days={days} />
           ))}
         </section>
       )}
@@ -126,7 +126,7 @@ function PendingSection() {
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">ส่งแล้ว ({done.length})</h2>
           {done.map(({ item, days }) => (
-            <AssignmentRow key={item.responseId} item={item} days={days} />
+            <AssignmentRow key={item.id} item={item} days={days} />
           ))}
         </section>
       )}
@@ -134,26 +134,22 @@ function PendingSection() {
   );
 }
 
-function AssignmentRow({ item, days }: { item: MyAssignment; days: number }) {
+function AssignmentRow({ item, days }: { item: TaskItem; days: number }) {
+  const initials = item.personName.replace(/\s*\(.*\)$/, "").split(/\s+/).map((w) => w.charAt(0)).join("").slice(0, 2);
   return (
     <Link
-      href={`/performance/campaigns/${item.campaignId}/participants/${item.participantId}`}
+      href={`/appraisal/tasks/${item.id}`}
       className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm ring-1 ring-border/60 active:bg-muted"
     >
-      <Avatar className="size-11">
-        {item.employee.avatarUrl && <AvatarImage src={item.employee.avatarUrl} alt={item.employee.firstName} />}
-        <AvatarFallback className="bg-primary/10 text-sm text-primary">
-          {getInitials(item.employee.firstName, item.employee.lastName)}
-        </AvatarFallback>
-      </Avatar>
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+        {initials || "?"}
+      </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-base font-semibold text-foreground">
-          {displayName(item.employee)}
-        </p>
+        <p className="truncate text-base font-semibold text-foreground">{item.personName}</p>
         <p className="truncate text-sm text-muted-foreground">
-          {RATER_LABEL[item.raterType] ?? item.raterType} · {item.campaignName}
+          {RATER_LABEL[item.raterType] ?? item.raterType} · {item.roundName}
         </p>
-        <p className="text-sm text-muted-foreground">ปิดรอบ {fmtDate(item.endDate)}</p>
+        {item.endIso && <p className="text-sm text-muted-foreground">ปิดรอบ {fmtDate(item.endIso)}</p>}
       </div>
       <StatusChip submitted={item.status === "SUBMITTED"} days={days} />
       <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />

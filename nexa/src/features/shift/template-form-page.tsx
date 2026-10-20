@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { HourMinuteSelect } from "@/components/shared/time-select";
 import { ApiError } from "@/lib/api/client";
 import { useCreateTemplate, useUpdateTemplate } from "./hooks";
 import type { ShiftTemplate, TemplateFormValues } from "./types";
@@ -115,7 +116,7 @@ export function TemplateFormPage({ template }: { template?: ShiftTemplate }) {
                 <FormItem>
                   <FormLabel>เวลาเริ่ม</FormLabel>
                   <FormControl>
-                    <Input type="time" {...field} />
+                    <HourMinuteSelect className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" minuteStep={5} value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -128,7 +129,7 @@ export function TemplateFormPage({ template }: { template?: ShiftTemplate }) {
                 <FormItem>
                   <FormLabel>เวลาสิ้นสุด</FormLabel>
                   <FormControl>
-                    <Input type="time" {...field} />
+                    <HourMinuteSelect className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" minuteStep={5} value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

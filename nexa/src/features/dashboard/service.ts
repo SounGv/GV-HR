@@ -93,12 +93,9 @@ export async function getActionCenter(
   const myOvertimeRows = employeeId
     ? await prisma.overtimeRequest.findMany({ where: { companyId, deletedAt: null, employeeId }, select: { status: true } })
     : [];
-  const myExpenseRows = employeeId
-    ? await prisma.expenseClaim.findMany({ where: { companyId, deletedAt: null, employeeId }, select: { status: true } })
+  const myCorrectionRows = employeeId
+    ? await prisma.attendanceCorrectionRequest.findMany({ where: { companyId, deletedAt: null, employeeId }, select: { status: true } })
     : [];
-  const myWorkflowTotal = employeeId
-    ? await prisma.approvalRequest.count({ where: { companyId, requesterEmployeeId: employeeId } })
-    : 0;
   const shift = employeeId
     ? await prisma.shiftAssignment.findUnique({
         where: { employeeId_date: { employeeId, date: todayUtc } },
@@ -108,11 +105,6 @@ export async function getActionCenter(
 
   const myLeave = myLeaveRows.filter((r) => r.status === "PENDING").length;
   const myOvertime = myOvertimeRows.filter((r) => r.status === "PENDING").length;
-  const myExpense = myExpenseRows.filter((r) => r.status === "PENDING").length;
-  // Already have every company-wide pending approval request above (for the
-  // role-step match below) — filtering it for mine avoids a third query that
-  // would just recount a subset of the same rows.
-  const myWorkflow = pendingRequests.filter((r) => r.requesterEmployeeId === employeeId).length;
 
   const roleSet = new Set(roles);
   const workflow = pendingRequests.filter((r) => {
@@ -124,8 +116,11 @@ export async function getActionCenter(
 
   return {
     approvals: { leave, overtime, correction, expense, workflow },
-    myPending: myLeave + myOvertime + myExpense + myWorkflow,
-    myTotal: myLeaveRows.length + myOvertimeRows.length + myExpenseRows.length + myWorkflowTotal,
+    // The same three kinds "คำขอของฉัน" (/requests) lists — leave, OT and time corrections —
+    // so the number on the home page matches what opens. Expense claims and workflow
+    // requests have their own pages.
+    myPending: myLeave + myOvertime + myCorrectionRows.filter((r) => r.status === "PENDING").length,
+    myTotal: myLeaveRows.length + myOvertimeRows.length + myCorrectionRows.length,
     shiftToday: shift?.template ?? null,
   };
 }

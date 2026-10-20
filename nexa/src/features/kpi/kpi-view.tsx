@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus, Target, Pencil, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,7 +32,9 @@ export function KpiView() {
   const canDelete = can("kpi:delete");
   const myEmployeeId = user.employee?.id ?? null;
 
-  const [scope, setScope] = useState<GoalScope>("me");
+  // The "KPI องค์กร" menu opens /kpi?view=org: start on everyone's KPIs for people who can see them.
+  const orgView = useSearchParams().get("view") === "org";
+  const [scope, setScope] = useState<GoalScope>(orgView && canManage ? "all" : "me");
   const { data, isLoading, isError, refetch } = useGoals(scope);
   const goals = data?.data ?? [];
 

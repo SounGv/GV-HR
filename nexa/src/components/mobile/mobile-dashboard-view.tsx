@@ -1,5 +1,6 @@
 "use client";
 
+import { useMenuVisibility } from "./use-menu-visibility";
 import Link from "next/link";
 import {
   Bell,
@@ -23,15 +24,16 @@ import {
 } from "@/components/shared/illustrated-icons";
 
 /** What an employee does most often, rows of three. Each item only shows if the account may use it. */
+/** `id` matches the menu ids in config/mobile-menu.ts, so hiding a menu in "ตั้งค่าเมนู" hides it here too. */
 const QUICK_MENU = [
-  { href: "/leave/new", label: "ขอลา", icon: LeaveIcon, permission: "leave:read" },
-  { href: "/overtime/new", label: "ขอ OT", icon: OvertimeIcon, permission: "overtime:read" },
+  { id: "leave", href: "/leave/new", label: "ขอลา", icon: LeaveIcon, permission: "leave:read" },
+  { id: "overtime", href: "/overtime/new", label: "ขอ OT", icon: OvertimeIcon, permission: "overtime:read" },
   // The attendance page lists the last 30 days of scans, with each day's in and out times.
-  { href: "/attendance", label: "ประวัติเข้า-ออกงาน", icon: CheckInIcon, permission: "attendance:read" },
-  { href: "/attendance/corrections/new", label: "แก้เวลาเข้า-ออก", icon: TimeEditIcon, permission: "attendance:create" },
-  { href: "/benefits/medical/new", label: "เบิกค่ารักษา", icon: BenefitsIcon, permission: "expense:read" },
-  { href: "/shifts", label: "ตารางกะ", icon: ShiftIcon, permission: "shift:read" },
-  { href: "/calendar", label: "ปฏิทิน", icon: CalendarIcon, permission: "calendar:read" },
+  { id: "checkin", href: "/attendance", label: "ประวัติเข้า-ออกงาน", icon: CheckInIcon, permission: "attendance:read" },
+  { id: "timeedit", href: "/attendance/corrections/new", label: "แก้เวลาเข้า-ออก", icon: TimeEditIcon, permission: "attendance:create" },
+  { id: "benefits", href: "/benefits/medical/new", label: "เบิกค่ารักษา", icon: BenefitsIcon, permission: "expense:read" },
+  { id: "shift", href: "/shifts", label: "ตารางกะ", icon: ShiftIcon, permission: "shift:read" },
+  { id: "calendar", href: "/calendar", label: "ปฏิทิน", icon: CalendarIcon, permission: "calendar:read" },
 ] as const;
 
 export interface MobileDashboardSnapshot {
@@ -71,6 +73,7 @@ export function MobileDashboardView({
   actions: DashboardActions;
 }) {
   const { user, can } = useAuth();
+  const { isVisible: isMenuVisible } = useMenuVisibility();
   const { data: notifData } = useNotifications();
   const unreadCount = notifData?.data?.unread ?? 0;
   const hrNotifCount = notifData?.data?.items.filter((n) => !n.read && n.category === "hr").length ?? 0;
@@ -95,7 +98,9 @@ export function MobileDashboardView({
   const leaveByType = mine
     ? [...mine.leaveBalances].sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type))
     : [];
-  const hasTodo = actions.myPending > 0 || pendingCount > 0 || hrNotifCount > 0;
+  // What waits for this person's decision (team leave, OT, time corrections, claims, workflows).
+  const toApprove = Object.values(actions.approvals).reduce((sum, n) => sum + n, 0);
+  const hasTodo = toApprove > 0 || actions.myPending > 0 || pendingCount > 0 || hrNotifCount > 0;
 
   return (
     <div className="min-h-full bg-background md:hidden">
@@ -148,13 +153,25 @@ export function MobileDashboardView({
             </div>
           ) : (
             <div className="divide-y divide-gv-border overflow-hidden rounded-2xl bg-card shadow-sm">
+              {toApprove > 0 && (
+                <Link href="/requests?view=approvals" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
+                  <TodoIcon count={toApprove}>
+                    <ClipboardIcon size={32} />
+                  </TodoIcon>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">รอคุณอนุมัติ</p>
+                    <p className="text-xs text-muted-foreground">{toApprove} รายการ</p>
+                  </div>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </Link>
+              )}
               {actions.myPending > 0 && (
                 <Link href="/requests" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
                   <TodoIcon count={actions.myPending}>
                     <ClipboardIcon size={32} />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground">มีคำขอรออนุมัติ</p>
+                    <p className="text-sm font-semibold text-foreground">คำขอของฉันที่รออนุมัติ</p>
                     <p className="text-xs text-muted-foreground">{actions.myPending} รายการ</p>
                   </div>
                   <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
@@ -199,7 +216,7 @@ export function MobileDashboardView({
         <section className="space-y-2">
           <h2 className="px-1 text-[13px] font-bold text-foreground">เมนูด่วน</h2>
           <div className="grid grid-cols-3 gap-2">
-            {QUICK_MENU.filter((item) => can(item.permission)).map((item) => (
+            {QUICK_MENU.filter((item) => can(item.permission) && isMenuVisible(item.id)).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
