@@ -15,6 +15,44 @@ interface SectionProps {
 
 const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
+/**
+ * The day split into status pieces: one rounded piece per status with a small
+ * gap between them, each as long as its share of people. Pieces grow by count
+ * (not a percentage width) so the gaps never push the line past its track.
+ *
+ * @param counts People per status.
+ * @param className Height and track colour.
+ * @param link Where a piece goes when tapped; omit for a plain picture.
+ */
+function SegmentLine({
+  counts,
+  className,
+  link,
+}: {
+  counts: Record<TodayStatus, number>;
+  className?: string;
+  link?: (s: TodayStatus) => string;
+}) {
+  const shown = STATUS_ORDER.filter((s) => counts[s] > 0);
+  return (
+    <div
+      className={cn("flex gap-1", className)}
+      role="img"
+      aria-label={STATUS_ORDER.map((s) => `${STATUS_META[s].label} ${counts[s]} คน`).join(" ")}
+    >
+      {shown.map((s) => {
+        const piece = cn("h-full min-w-2 basis-0 rounded-full", STATUS_META[s].segment);
+        const style = { flexGrow: counts[s] };
+        return link ? (
+          <Link key={s} href={link(s)} aria-label={`${STATUS_META[s].label} ${counts[s]} คน`} className={piece} style={style} />
+        ) : (
+          <span key={s} className={piece} style={style} />
+        );
+      })}
+    </div>
+  );
+}
+
 /** A. "Scanned in X of Y people" with the day split into status segments. Every segment and legend item is a real link. */
 export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
   const { counts, total, scanned } = data;
@@ -37,21 +75,11 @@ export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
         <p className="mt-4 text-base">ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</p>
       ) : (
         <>
-          <div
-            className="mt-4 flex h-3 overflow-hidden rounded-full bg-white/25"
-            role="img"
-            aria-label={STATUS_ORDER.map((s) => `${STATUS_META[s].label} ${counts[s]} คน`).join(" ")}
-          >
-            {STATUS_ORDER.filter((s) => counts[s] > 0).map((s) => (
-              <Link
-                key={s}
-                href={attendanceListHref(s, departmentIds)}
-                aria-label={`${STATUS_META[s].label} ${counts[s]} คน`}
-                className={cn("h-full min-w-1.5 border-r border-white/40 last:border-r-0", STATUS_META[s].segment)}
-                style={{ width: `${pct(counts[s], total)}%` }}
-              />
-            ))}
-          </div>
+          <SegmentLine
+            counts={counts}
+            className="mt-4 h-3.5"
+            link={(s) => attendanceListHref(s, departmentIds)}
+          />
           <ul className="mt-2 flex flex-wrap gap-x-5">
             {STATUS_ORDER.map((s) => (
               <li key={s}>
@@ -228,22 +256,22 @@ export function DepartmentBreakdownCard({ data, departmentIds }: SectionProps) {
         <CardTitle className="text-base">แยกตามแผนก</CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="divide-y divide-border">
+        {/* One shared set of columns for every row (subgrid), so each line starts and ends at the same place. */}
+        <ul className="grid gap-x-5 divide-y divide-border md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_5.5rem_minmax(0,16rem)]">
           {rows.map((d) => (
-            <li key={d.name} className="py-3">
+            <li key={d.name} className="py-3 md:col-span-4 md:grid md:grid-cols-subgrid">
               <Link
                 href={attendanceListHref("all", d.id ? [d.id] : departmentIds)}
-                className="grid items-center gap-x-4 gap-y-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_auto]"
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 rounded-lg hover:bg-muted/40 md:col-span-4 md:grid-cols-subgrid"
               >
                 <span className="min-w-0 text-sm font-semibold break-words text-foreground">
                   {d.name} <span className="font-normal text-muted-foreground">({d.total} คน)</span>
                 </span>
-                <span className="flex h-2.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                  {STATUS_ORDER.filter((s) => d.counts[s] > 0).map((s) => (
-                    <span key={s} className={STATUS_META[s].segment} style={{ width: `${pct(d.counts[s], d.total)}%` }} />
-                  ))}
+                <SegmentLine counts={d.counts} className="order-3 col-span-2 h-2.5 md:order-none md:col-span-1" />
+                <span className="text-right text-xs text-muted-foreground tabular-nums">
+                  มาแล้ว <b className="text-foreground">{d.counts.NORMAL + d.counts.LATE}</b>/{d.total}
                 </span>
-                <span className="flex flex-wrap gap-1.5">
+                <span className="order-4 col-span-2 flex flex-wrap gap-1.5 md:order-none md:col-span-1 md:justify-end">
                   {tags.map((s) => {
                     const Icon = STATUS_META[s].icon;
                     return d.counts[s] > 0 ? (
