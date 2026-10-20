@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { AuthProvider } from "@/features/auth/auth-context";
 import { AppShell } from "@/components/layout/app-shell";
+import { NavTrailTracker } from "@/components/mobile/nav-trail-tracker";
 
 /**
  * Authenticated shell. Server-side session gate (defense in depth beyond
@@ -13,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <AuthProvider user={user}>
+      <NavTrailTracker />
       <AppShell>{children}</AppShell>
     </AuthProvider>
   );

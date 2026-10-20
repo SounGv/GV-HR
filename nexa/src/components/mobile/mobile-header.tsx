@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { previousOf, readTrail } from "./nav-trail";
 
 export function MobileHeader({
   title,
   backHref,
-  preferHistory,
   onBack,
   trailing,
   className,
 }: {
   title: React.ReactNode;
   backHref?: string;
-  /** Go back to the page the user actually came from; `backHref` is only the fallback when there is none (a page opened straight from a link). */
+  /** Kept for older callers; every back arrow now returns to the page the person came from (see nav-trail.ts). */
   preferHistory?: boolean;
   onBack?: () => void;
   trailing?: React.ReactNode;
@@ -38,9 +38,11 @@ export function MobileHeader({
             href={backHref}
             aria-label="ย้อนกลับ"
             onClick={(e) => {
-              if (preferHistory && window.history.length > 1) {
+              // Back to the page the person came from inside the app; `backHref` only when this page was opened first.
+              const previous = previousOf(readTrail());
+              if (previous) {
                 e.preventDefault();
-                router.back();
+                router.push(previous);
               }
             }}
             className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
