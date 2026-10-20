@@ -130,6 +130,7 @@ export interface OrgOptions {
     id: string;
     firstName: string;
     lastName: string;
+    nickname: string | null;
     employeeCode: string;
     managerId: string | null;
     departmentId: string | null;

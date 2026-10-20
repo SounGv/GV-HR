@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { formatDate, loginIdentifier, displayName, fullName } from "@/lib/format";
+import { formatDate, loginIdentifier, displayName } from "@/lib/format";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import type { EmploymentType } from "@/features/employee/types";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
@@ -522,8 +522,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       return {
         date: formatDate(r.workDate),
         code: r.employee.employeeCode,
-        name: fullName(r.employee.firstName, r.employee.lastName),
-        nickname: r.employee.nickname ?? "-",
+        name: displayName(r.employee),
         department: r.employee.department?.name ?? "-",
         employmentType: EMPLOYMENT_LABEL[r.employee.employmentType] ?? r.employee.employmentType,
         shiftStart: minutesToHHMM(shift.startMin),
@@ -615,8 +614,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       return {
         date: formatDate(day),
         code: person.employeeCode,
-        name: fullName(person.firstName, person.lastName),
-        nickname: person.nickname ?? blank,
+        name: displayName(person),
         department: person.department?.name ?? blank,
         employmentType: EMPLOYMENT_LABEL[person.employmentType] ?? person.employmentType,
         shiftStart: minutesToHHMM(shift.startMin),
@@ -812,7 +810,6 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "date", label: "วันที่" },
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
-        { key: "nickname", label: "ชื่อเล่น" },
         { key: "department", label: "แผนก" },
         { key: "employmentType", label: "ประเภทการจ้าง" },
         { key: "shiftStart", label: "เวลาเริ่มกะ" },

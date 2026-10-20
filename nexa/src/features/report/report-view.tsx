@@ -1,5 +1,6 @@
 "use client";
 
+import { displayName } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Download, FileSpreadsheet, Printer, Sparkles, Loader2, TriangleAlert } from "lucide-react";
@@ -706,7 +707,7 @@ export function ReportView() {
 
   const employeeOptions: MultiSelectOption[] = employees.map((e) => ({
     value: e.id,
-    label: `${e.firstName} ${e.lastName} (${e.employeeCode})`,
+    label: `${displayName(e)} · ${e.employeeCode}`,
   }));
   const departmentOptions: MultiSelectOption[] = departments.map((d) => ({ value: d.id, label: d.name }));
   const branchOptions: MultiSelectOption[] = branches.map((b) => ({ value: b.id, label: b.name }));

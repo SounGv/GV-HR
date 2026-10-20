@@ -1,5 +1,6 @@
 "use client";
 
+import { displayName } from "@/lib/format";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -171,7 +172,7 @@ export function ReviewFormPage({ review }: { review?: ReviewInit }) {
                           {(value) => {
                             const m = (orgData?.data.managers ?? []).find((x) => x.id === value);
                             return m
-                              ? `${m.firstName} ${m.lastName} (${m.employeeCode})`
+                              ? `${displayName(m)} · ${m.employeeCode}`
                               : "เลือกพนักงาน";
                           }}
                         </SelectValue>

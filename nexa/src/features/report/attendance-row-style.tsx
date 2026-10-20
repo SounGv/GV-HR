@@ -138,7 +138,7 @@ const MAIN_KEYS = [
   "note",
 ] as const;
 
-const EXTRA_KEYS = ["nickname", "employmentType", "breakMinutes", "otApprover", "otReason", "workMode", "editor"] as const;
+const EXTRA_KEYS = ["employmentType", "breakMinutes", "otApprover", "otReason", "workMode", "editor"] as const;
 
 const dash = (v: string | number | undefined) => v == null || v === "" || v === "-";
 

@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getInitials } from "@/lib/format";
+import { getInitials, displayName } from "@/lib/format";
 import { fileToSquareDataUrl } from "@/lib/image";
 import {
   COMPENSATION_TYPES,
@@ -255,7 +255,7 @@ export function EmployeeForm({
               <SelectField form={form} name="managerId" label="หัวหน้างาน" placeholder="เลือกหัวหน้างาน" clearable
                 options={(orgOptions?.managers ?? []).map((m) => ({
                   value: m.id,
-                  label: `${m.firstName} ${m.lastName} (${m.employeeCode})`,
+                  label: `${displayName(m)} · ${m.employeeCode}`,
                 }))} />
               <SelectField form={form} name="costCenterId" label="ศูนย์ต้นทุน" placeholder="เลือกศูนย์ต้นทุน" clearable
                 options={(orgOptions?.costCenters ?? []).map((c) => ({ value: c.id, label: c.name }))} />
