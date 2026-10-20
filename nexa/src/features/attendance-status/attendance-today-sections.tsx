@@ -15,6 +15,62 @@ interface SectionProps {
 
 const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
+const RING_COLOR: Record<TodayStatus, string> = {
+  NORMAL: "var(--status-normal-dot)",
+  LATE: "var(--status-late-dot)",
+  ABSENT: "var(--status-absent-dot)",
+  ON_LEAVE: "var(--status-leave-dot)",
+  NOT_YET: "var(--status-notyet-dot)",
+};
+
+/**
+ * A small ring split by status, with the share already scanned in the middle.
+ * Takes far less room than a full-width line and reads at a glance.
+ *
+ * @param counts People per status.
+ * @param total People counted today.
+ * @param scanned People who have scanned in.
+ */
+function StatusRing({ counts, total, scanned }: { counts: Record<TodayStatus, number>; total: number; scanned: number }) {
+  const r = 42;
+  const circumference = 2 * Math.PI * r;
+  const shown = STATUS_ORDER.filter((s) => counts[s] > 0);
+  const gap = shown.length > 1 ? 3 : 0;
+  let offset = 0;
+  return (
+    <div className="relative size-28 shrink-0" role="img" aria-label={`มาแล้ว ${pct(scanned, total)}% · ${STATUS_ORDER.map((s) => `${STATUS_META[s].label} ${counts[s]} คน`).join(" ")}`}>
+      <svg viewBox="0 0 100 100" className="size-full -rotate-90" aria-hidden="true">
+        <circle cx="50" cy="50" r={r} fill="none" stroke="rgb(255 255 255 / 0.18)" strokeWidth="10" />
+        {shown.map((s) => {
+          const len = (counts[s] / total) * circumference;
+          const dash = Math.max(len - gap, 1.5);
+          const el = (
+            <circle
+              key={s}
+              cx="50"
+              cy="50"
+              r={r}
+              fill="none"
+              stroke={RING_COLOR[s]}
+              strokeWidth="10"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={-offset}
+            />
+          );
+          offset += len;
+          return el;
+        })}
+      </svg>
+      <div className="absolute inset-0 grid place-items-center text-center">
+        <div>
+          <p className="text-2xl leading-none font-bold tabular-nums">{pct(scanned, total)}%</p>
+          <p className="mt-1 text-xs">มาแล้ว</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * The day split into status pieces: one rounded piece per status with a small
  * gap between them, each as long as its share of people. Pieces grow by count
@@ -58,48 +114,41 @@ export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
   const { counts, total, scanned } = data;
   return (
     <section className="rounded-2xl bg-[var(--flip7-teal-dark)] p-5 text-white">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <p className="text-sm">การเข้างานวันนี้</p>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm">การเข้างานวันนี้ · ข้อมูล ณ {data.asOf} น.</p>
           <p className="mt-1 text-2xl font-bold">
             สแกนเข้างานแล้ว <span className="tabular-nums">{scanned}</span> จาก{" "}
             <span className="tabular-nums">{total}</span> คน
           </p>
-        </div>
-        <p className="text-sm">ข้อมูล ณ {data.asOf} น.</p>
-      </div>
 
-      {!data.isWorkingDay ? (
-        <p className="mt-4 text-base">วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</p>
-      ) : total === 0 ? (
-        <p className="mt-4 text-base">ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</p>
-      ) : (
-        <>
-          <SegmentLine
-            counts={counts}
-            className="mt-4 h-3.5"
-            link={(s) => attendanceListHref(s, departmentIds)}
-          />
-          <ul className="mt-2 flex flex-wrap gap-x-5">
-            {STATUS_ORDER.map((s) => (
-              <li key={s}>
-                <Link
-                  href={attendanceListHref(s, departmentIds)}
-                  className="inline-flex min-h-11 items-center gap-2 text-sm hover:underline"
-                >
-                  <span className={cn("size-2.5 rounded-full ring-2 ring-white/70", STATUS_META[s].dot)} aria-hidden="true" />
-                  {STATUS_META[s].label} <b className="tabular-nums">{counts[s]}</b>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {data.notChecked > 0 && (
-        <p className="mt-1 text-sm">
-          ไม่นับ {data.notChecked} คนที่ยังไม่เคยใช้เช็คอินในแอป (ไม่ถือว่าขาดงาน)
-        </p>
-      )}
+          {!data.isWorkingDay ? (
+            <p className="mt-3 text-base">วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</p>
+          ) : total === 0 ? (
+            <p className="mt-3 text-base">ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</p>
+          ) : (
+            <ul className="mt-2 flex flex-wrap gap-x-5">
+              {STATUS_ORDER.map((s) => (
+                <li key={s}>
+                  <Link
+                    href={attendanceListHref(s, departmentIds)}
+                    className="inline-flex min-h-11 items-center gap-2 text-sm hover:underline"
+                  >
+                    <span className={cn("size-2.5 rounded-full ring-2 ring-white/70", STATUS_META[s].dot)} aria-hidden="true" />
+                    {STATUS_META[s].label} <b className="tabular-nums">{counts[s]}</b>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {data.notChecked > 0 && (
+            <p className="mt-1 text-sm">
+              ไม่นับ {data.notChecked} คนที่ยังไม่เคยใช้เช็คอินในแอป (ไม่ถือว่าขาดงาน)
+            </p>
+          )}
+        </div>
+        {data.isWorkingDay && total > 0 && <StatusRing counts={counts} total={total} scanned={scanned} />}
+      </div>
     </section>
   );
 }
@@ -257,7 +306,7 @@ export function DepartmentBreakdownCard({ data, departmentIds }: SectionProps) {
       </CardHeader>
       <CardContent>
         {/* One shared set of columns for every row (subgrid), so each line starts and ends at the same place. */}
-        <ul className="grid gap-x-5 divide-y divide-border md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_5.5rem_minmax(0,16rem)]">
+        <ul className="grid gap-x-5 divide-y divide-border md:grid-cols-[minmax(0,1fr)_minmax(8rem,14rem)_5.5rem_minmax(0,16rem)]">
           {rows.map((d) => (
             <li key={d.name} className="py-3 md:col-span-4 md:grid md:grid-cols-subgrid">
               <Link

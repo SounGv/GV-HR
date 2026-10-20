@@ -14,6 +14,7 @@ import {
   type LeaveBalanceSummary,
 } from "@/features/dashboard/service";
 import { ActionCenter } from "@/features/dashboard/action-center";
+import { MeetingsTodaySection, MissedScanOutSection, OvertimeTodaySection } from "@/features/dashboard-daily/daily-sections";
 import {
   loadAttendanceWatchCached,
   loadTodayAttendance,
@@ -22,7 +23,6 @@ import {
 import {
   LiveAttentionCards,
   LiveDepartmentBreakdown,
-  LiveFollowChips,
   LiveStamp,
   LiveStatusBar,
   LiveStatusTiles,
@@ -275,6 +275,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     can(user!.permissions, "campaign:manage") ||
     can(user!.permissions, "campaign:update") ||
     can(user!.permissions, "campaign:approve");
+  const canSeeOvertime = can(user!.permissions, "overtime:approve");
+  const canSeeMeetings = can(user!.permissions, "meeting:read");
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
   const departmentOptions = canSeeAttendance ? await listDepartmentOptions(user!.companyId) : [];
 
@@ -356,14 +358,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </Card>
 
       {attendanceToday && (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <DepartmentFilter departments={departmentOptions} selected={deptIds[0] ?? null} />
-            <LiveStamp />
-          </div>
-          <LiveStatusBar />
-        </>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <DepartmentFilter departments={departmentOptions} selected={deptIds[0] ?? null} />
+          <LiveStamp />
+        </div>
       )}
+
+      {/* Today's attendance and what waits for me sit side by side, so neither takes a whole row. */}
+      <div className={cn("grid items-stretch gap-4", attendanceToday && "xl:grid-cols-2")}>
+        {attendanceToday && <LiveStatusBar />}
+        <ActionCenter data={actions} />
+      </div>
 
       {/* My today — personal snapshot, not company aggregates. "เงินเดือนล่าสุด"
           deliberately left out for now — HR wants to focus rollout on
@@ -391,16 +396,36 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </section>
       )}
 
-      {/* Action center */}
-      <ActionCenter
-        data={actions}
-        followUp={attendanceToday ? <LiveFollowChips /> : undefined}
-      />
-
       {attendanceToday && (
         <>
           <LiveStatusTiles />
           <LiveAttentionCards />
+        </>
+      )}
+
+      {/* Day-to-day follow-ups for managers and HR: each card loads on its own. */}
+      {(canSeeAttendance || canSeeOvertime || canSeeMeetings) && (
+        <section aria-label="งานประจำวัน" className="grid items-start gap-3 lg:grid-cols-3">
+          {canSeeAttendance && (
+            <Suspense fallback={<PeopleCardFallback />}>
+              <MissedScanOutSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeOvertime && (
+            <Suspense fallback={<PeopleCardFallback />}>
+              <OvertimeTodaySection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeMeetings && (
+            <Suspense fallback={<PeopleCardFallback />}>
+              <MeetingsTodaySection companyId={user!.companyId} employeeId={user!.employee?.id} />
+            </Suspense>
+          )}
+        </section>
+      )}
+
+      {attendanceToday && (
+        <>
           {/* The 30-day watch list is the slowest part (it reads a month of attendance), so it streams in after the rest. */}
           <Suspense
             fallback={
