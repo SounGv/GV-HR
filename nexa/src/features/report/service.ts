@@ -429,8 +429,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     const branches = await prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } });
     // Every status here (not just APPROVED) — "สถานะ OT"/"ผู้อนุมัติ OT" below
     // need to show a still-pending request too, not just go blank for it.
-    // The `otByKey` hours sum (used for the "ชั่วโมง OT" column and as the
-    // fallback OT estimate) still only counts APPROVED, same as before.
+    // The `otByKey` hours sum (the "ชั่วโมง OT" column) only counts APPROVED.
     const ots = await prisma.overtimeRequest.findMany({
       where: { companyId, deletedAt: null, date: { gte: start, lt: end }, ...deptRel },
       select: { employeeId: true, date: true, hours: true, status: true, approverUserId: true, reason: true },
@@ -492,29 +491,6 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       const ms = breakEndAt.getTime() - breakStartAt.getTime();
       return ms > 0 ? Math.round(ms / 60_000) : "-";
     };
-    // Hours actually worked past the shift end (real shift if assigned, else
-    // the 09:00–18:00 default) — most employees (esp. daily-wage warehouse
-    // staff with no app account) never file a formal OvertimeRequest at all,
-    // so an APPROVED-only figure was blank for them every day despite clearly
-    // working late. Used as the OT figure whenever no approved request
-    // exists; the approved amount wins when one does, so a real filed/paid
-    // OT request is never silently overridden by the raw clock-time estimate.
-    //
-    // Measured from max(clockIn, shiftEnd) to clockOut, not from a fixed
-    // shiftEnd — clocking in AFTER the shift already ended (e.g. arriving at
-    // 14:09 to a 09:00–12:00 Saturday half-day) must not count the whole
-    // session as "OT past shift end" on top of it already being counted as
-    // ชั่วโมงทำงาน; that previously produced OT hours *exceeding total hours
-    // worked* that day, which can never be a correct OT figure.
-    const calculatedOtHoursOf = (clockInAt: Date | null, clockOutAt: Date | null, shiftEndMin: number): number => {
-      if (!clockInAt || !clockOutAt) return 0;
-      const clockInMin = bangkokParts(clockInAt).minutesOfDay;
-      const clockOutMin = bangkokParts(clockOutAt).minutesOfDay;
-      const overlapStart = Math.max(clockInMin, shiftEndMin);
-      const over = clockOutMin - overlapStart;
-      return over > 0 ? Math.round((over / 60) * 100) / 100 : 0;
-    };
-
     // Per-record figures for the footnote; summed after the row cap so the
     // totals describe exactly the rows that are returned.
     const recStats: { hours: number | "-"; ot: number; late: number | "-" }[] = [];
@@ -524,7 +500,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
       const approvedOt = otByKey.get(otKey);
       const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate, r.employee.employmentType);
-      const otHoursNum = approvedOt ?? calculatedOtHoursOf(r.clockInAt, r.clockOutAt, shift.endMin);
+      // OT counts only when the person asked for it and it was approved. Staying
+      // past the shift end without a request is not OT (HR rule, 2026-10-20).
+      const otHoursNum = approvedOt ?? 0;
       const otApproval = otApprovalByKey.get(otKey);
       const lateMinutes = lateMinutesOf(r.clockInAt, shift.startMin);
       recStats.push({ hours, ot: otHoursNum || 0, late: lateMinutes });
@@ -814,7 +792,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     const avgHours = hoursCount ? totalHours / hoursCount : 0;
     const footnote =
       `รวม ${rows.length} รายการ · ชั่วโมงทำงานรวม ${totalHours.toFixed(2)} ชม. ` +
-      `(เฉลี่ย ${avgHours.toFixed(2)} ชม./วัน) · OT รวม ${totalOt.toFixed(2)} ชม. · ` +
+      `(เฉลี่ย ${avgHours.toFixed(2)} ชม./วัน) · OT ที่อนุมัติแล้วรวม ${totalOt.toFixed(2)} ชม. · ` +
       `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)` +
       (leaveShown > 0 ? ` · ลางานโดยไม่มีบันทึกเวลา ${leaveShown} วัน` : "") +
       (absentShown > 0 ? ` · ขาดงาน (ไม่มีบันทึกเวลาและไม่มีใบลาอนุมัติ) ${absentShown} วัน` : "") +
@@ -1019,7 +997,6 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         endTime: true,
         hours: true,
         multiplier: true,
-        estimatedAmount: true,
         reason: true,
         status: true,
         paidAt: true,
@@ -1060,7 +1037,6 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "endTime", label: "เวลาสิ้นสุด OT" },
         { key: "hours", label: "จำนวนชั่วโมง", numeric: true },
         { key: "multiplier", label: "อัตรา OT", numeric: true },
-        { key: "amount", label: "จำนวนเงิน OT (บาท)", numeric: true },
         { key: "reason", label: "เหตุผล" },
         { key: "approver", label: "ผู้อนุมัติ" },
         { key: "status", label: "สถานะ" },
@@ -1074,7 +1050,6 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         endTime: o.endTime,
         hours: Math.round(o.hours * 100) / 100,
         multiplier: o.multiplier,
-        amount: o.estimatedAmount,
         reason: o.reason ?? "-",
         approver: o.approverUserId ? approverNameById.get(o.approverUserId) ?? "-" : "-",
         status: statusLabel(o),
