@@ -110,3 +110,54 @@ export function HourMinuteSelect({
     </div>
   );
 }
+
+/**
+ * A date plus a 24-hour time, stored as "YYYY-MM-DDTHH:mm" (the same value a
+ * `datetime-local` input gives), for forms that need both — e.g. a meeting.
+ * The date stays the browser's own date picker; the time uses
+ * {@link HourMinuteSelect} so it never shows AM/PM.
+ *
+ * @param value "YYYY-MM-DDTHH:mm", or empty.
+ * @param onChange Called with the combined value; the time defaults to 09:00 until one is picked.
+ */
+export function DateTimeField({
+  value,
+  onChange,
+  onBlur,
+  minuteStep = 5,
+  inputClassName,
+  id,
+  "aria-invalid": ariaInvalid,
+}: {
+  value: string | undefined | null;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  minuteStep?: number;
+  inputClassName?: string;
+  id?: string;
+  "aria-invalid"?: boolean;
+}) {
+  const [date = "", time = ""] = (value ?? "").split("T");
+  return (
+    <div className="space-y-1.5">
+      <input
+        id={id}
+        type="date"
+        aria-label="วันที่"
+        aria-invalid={ariaInvalid}
+        className={inputClassName}
+        value={date}
+        onBlur={onBlur}
+        onChange={(e) => onChange(e.target.value ? `${e.target.value}T${time || "09:00"}` : "")}
+      />
+      <HourMinuteSelect
+        className={inputClassName}
+        minuteStep={minuteStep}
+        aria-invalid={ariaInvalid}
+        value={time}
+        onBlur={onBlur}
+        onChange={(t) => onChange(`${date || new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date())}T${t}`)}
+      />
+    </div>
+  );
+}

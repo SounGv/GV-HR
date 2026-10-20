@@ -1,5 +1,11 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * The action bar at the foot of a phone form. It sits just above the bottom
+ * tab bar (fixed, h-16, z-40), which is always shown on phones: as a sticky
+ * bar at the very bottom it slid underneath the tabs while scrolling, hiding
+ * the send button. A spacer of the same height keeps the last fields clear.
+ */
 export function MobileActionFooter({
   children,
   className,
@@ -8,14 +14,17 @@ export function MobileActionFooter({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "sticky bottom-0 z-20 shrink-0 border-t border-border bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden",
-        className,
-      )}
-    >
-      {children}
-    </div>
+    <>
+      <div aria-hidden="true" className="h-24 shrink-0 md:hidden" />
+      <div
+        className={cn(
+          "fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-card px-4 py-3 md:hidden",
+          className,
+        )}
+      >
+        {children}
+      </div>
+    </>
   );
 }
 
