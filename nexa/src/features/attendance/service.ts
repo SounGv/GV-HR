@@ -9,6 +9,7 @@ import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
+import { shouldPostScansToLineGroups } from "@/features/notification/line-policy";
 import type { AttendanceListQuery, ClockInput } from "./schema";
 
 const recordSelect = {
@@ -303,13 +304,16 @@ export async function clockIn(
   });
 
   const clockInTimeLabel = `${String(bp.hour).padStart(2, "0")}:${String(bp.minute).padStart(2, "0")}`;
-  await broadcastToLineGroups(
-    companyId,
-    "hr-alerts",
-    `🟢 ${displayName(employee)} เช็คอินแล้ว เวลา ${clockInTimeLabel}` +
-      (status === "LATE" ? " (มาสาย)" : "") +
-      (employee.branch?.name ? `\n${employee.branch.name}` : ""),
-  );
+  // Off by default: a post per scan is thousands of LINE messages a month (see shouldPostScansToLineGroups).
+  if (shouldPostScansToLineGroups()) {
+    await broadcastToLineGroups(
+      companyId,
+      "hr-alerts",
+      `🟢 ${displayName(employee)} เช็คอินแล้ว เวลา ${clockInTimeLabel}` +
+        (status === "LATE" ? " (มาสาย)" : "") +
+        (employee.branch?.name ? `\n${employee.branch.name}` : ""),
+    );
+  }
 
   return record;
 }
@@ -389,13 +393,15 @@ export async function clockOut(
   });
 
   const clockOutTimeLabel = `${String(bp.hour).padStart(2, "0")}:${String(bp.minute).padStart(2, "0")}`;
-  await broadcastToLineGroups(
-    companyId,
-    "hr-alerts",
-    `🔴 ${displayName(employee)} เช็คเอาท์แล้ว เวลา ${clockOutTimeLabel}` +
-      (record.earlyLeaveOut ? " (ออกก่อนเวลา)" : "") +
-      (employee.branch?.name ? `\n${employee.branch.name}` : ""),
-  );
+  if (shouldPostScansToLineGroups()) {
+    await broadcastToLineGroups(
+      companyId,
+      "hr-alerts",
+      `🔴 ${displayName(employee)} เช็คเอาท์แล้ว เวลา ${clockOutTimeLabel}` +
+        (record.earlyLeaveOut ? " (ออกก่อนเวลา)" : "") +
+        (employee.branch?.name ? `\n${employee.branch.name}` : ""),
+    );
+  }
 
   return record;
 }
