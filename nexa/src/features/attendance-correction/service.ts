@@ -12,6 +12,7 @@ import type {
   AttendanceCorrectionDecideInput,
   AttendanceCorrectionListQuery,
 } from "./schema";
+import { appBaseUrl } from "@/lib/app-url";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -120,7 +121,7 @@ export async function createAttendanceCorrection(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `📝 มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}\n${(process.env.APP_URL ?? "http://localhost:3000") + `/attendance/corrections/${record.id}`}`,
+    `📝 มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}\n${appBaseUrl() + `/attendance/corrections/${record.id}`}`,
   );
 
   return record;

@@ -14,6 +14,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
 import { computeLeaveDays, computeLeaveHours, deductsBalance, HOURLY_LEAVE_TYPES, isSunday, PAID_LEAVE_TYPES } from "./days";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
+import { appBaseUrl } from "@/lib/app-url";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -277,7 +278,7 @@ export async function createLeave(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `📋 มีคำขอลารออนุมัติ\n${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}\n${(process.env.APP_URL ?? "http://localhost:3000") + `/leave/${record.id}`}`,
+    `📋 มีคำขอลารออนุมัติ\n${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}\n${appBaseUrl() + `/leave/${record.id}`}`,
   );
 
   return { ...record, routedTo };

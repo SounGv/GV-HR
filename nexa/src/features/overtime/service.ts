@@ -14,6 +14,7 @@ import { can } from "@/lib/auth/rbac";
 import { computeHours, dayOffReason, estimateAmount, minutesSinceWorkDateStart, shiftOverlapMessage, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER, MIN_OT_MINUTES, multiplierFor } from "./calc";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
+import { appBaseUrl } from "@/lib/app-url";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -129,7 +130,7 @@ export async function createOvertime(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง${dayOffNote}\n${(process.env.APP_URL ?? "http://localhost:3000") + `/overtime/${record.id}`}`,
+    `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง${dayOffNote}\n${appBaseUrl() + `/overtime/${record.id}`}`,
   );
 
   return record;

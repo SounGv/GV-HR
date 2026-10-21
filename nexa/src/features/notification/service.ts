@@ -5,6 +5,7 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { SendNotificationInput } from "./schema";
+import { appBaseUrl } from "@/lib/app-url";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -90,7 +91,7 @@ export async function createNotification(
       select: { lineUserId: true },
     });
     if (employee?.lineUserId) {
-      const linkLine = input.link ? `\n${(process.env.APP_URL ?? "http://localhost:3000") + input.link}` : "";
+      const linkLine = input.link ? `\n${appBaseUrl() + input.link}` : "";
       await pushLineMessage(employee.lineUserId, `${input.title}\n${input.body}${linkLine}`);
     }
   }

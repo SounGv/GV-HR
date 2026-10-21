@@ -4,6 +4,7 @@ import { sendEmail } from "@/lib/email";
 import { Unauthorized } from "@/lib/api/errors";
 import { hashPassword } from "./password";
 import { revokeAllForUser } from "./token-store";
+import { appBaseUrl } from "@/lib/app-url";
 
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -36,7 +37,7 @@ export async function requestPasswordReset(
     },
   });
 
-  const url = `${process.env.APP_URL ?? "http://localhost:3000"}/reset-password?token=${token}`;
+  const url = `${appBaseUrl()}/reset-password?token=${token}`;
   await sendEmail({
     to: normalized,
     subject: "รีเซ็ตรหัสผ่าน GV One",

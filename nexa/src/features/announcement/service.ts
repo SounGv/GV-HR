@@ -12,6 +12,7 @@ import type {
   AnnouncementUpdateInput,
   AnnouncementListQuery,
 } from "./schema";
+import { appBaseUrl } from "@/lib/app-url";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -75,7 +76,7 @@ async function notifyPublished(
   if (!shouldPushToLine("announcement") || !isLineConfigured()) return;
   const lineTargets = recipients.filter((r) => r.lineUserId).map((r) => r.lineUserId as string);
   if (lineTargets.length === 0) return;
-  const text = `${title}\n${preview}\n${(process.env.APP_URL ?? "http://localhost:3000") + link}`;
+  const text = `${title}\n${preview}\n${appBaseUrl() + link}`;
   try {
     after(async () => {
       for (const to of lineTargets) {

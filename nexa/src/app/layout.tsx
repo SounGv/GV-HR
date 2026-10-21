@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
+import { appBaseUrl } from "@/lib/app-url";
 
 const mono = IBM_Plex_Mono({
   variable: "--font-mono",
@@ -28,7 +29,7 @@ const sansThai = IBM_Plex_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(appBaseUrl()),
   title: {
     default: "GV One People Platform",
     template: "%s · GV One",

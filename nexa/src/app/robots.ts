@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { appBaseUrl } from "@/lib/app-url";
 
-const base = process.env.APP_URL ?? "http://localhost:3000";
+const base = appBaseUrl();
 
 /**
  * Everything past /login and /register sits behind auth, so there's nothing
