@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { isLineConfigured, pushLineMessage } from "@/lib/integrations/line";
+import { shouldPushToLine } from "@/features/notification/line-policy";
 import { NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
@@ -69,7 +70,9 @@ async function notifyPublished(
     })),
   });
 
-  if (!isLineConfigured()) return;
+  // One announcement is one LINE push per linked person, the biggest use of the monthly allowance;
+  // the policy keeps it in the app (see notification/line-policy.ts).
+  if (!shouldPushToLine("announcement") || !isLineConfigured()) return;
   const lineTargets = recipients.filter((r) => r.lineUserId).map((r) => r.lineUserId as string);
   if (lineTargets.length === 0) return;
   const text = `${title}\n${preview}\n${(process.env.APP_URL ?? "http://localhost:3000") + link}`;

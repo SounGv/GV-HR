@@ -120,6 +120,8 @@ export async function checkMissedScans(): Promise<{ checked: number; flagged: nu
           body: `วันที่ ${dateLabel} — ตรวจสอบและอนุมัติคำขอแก้ไขเวลาถ้ามีการยื่นมา`,
           category: "attendance",
           link: "/attendance/corrections",
+          // The group summary below already tells the managers; this copy stays in the app.
+          line: false,
         });
       }
     }

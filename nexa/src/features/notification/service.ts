@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { isLineConfigured, pushLineMessage } from "@/lib/integrations/line";
+import { shouldPushToLine } from "./line-policy";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -66,7 +67,7 @@ export async function markNotificationsByLinkRead(companyId: string, employeeId:
 export async function createNotification(
   companyId: string,
   employeeId: string,
-  /** `line: false` keeps the message in the app only (default: also push to LINE when linked). */
+  /** `line` forces the LINE push on or off; left out, the category decides (see line-policy.ts). */
   input: { title: string; body: string; category?: string; link?: string; line?: boolean },
   createdById?: string | null,
 ) {
@@ -83,7 +84,7 @@ export async function createNotification(
     select: { id: true },
   });
 
-  if (input.line !== false && isLineConfigured()) {
+  if (shouldPushToLine(input.category, input.line) && isLineConfigured()) {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
       select: { lineUserId: true },
