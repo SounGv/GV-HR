@@ -72,12 +72,13 @@ export function HourMinuteSelect({
     else if (hour) onChange(`${hour}:00`);
   };
   return (
-    <div className="flex items-center gap-1.5">
+    // No native arrow and centred digits: on a phone two pickers share half a row, and the arrow covered "08" / "59".
+    <div className="flex min-w-0 items-center gap-1">
       <select
         id={id}
         aria-label="ชั่วโมง"
         aria-invalid={ariaInvalid}
-        className={cn("tabular-nums", className)}
+        className={cn("min-w-0 flex-1 appearance-none text-center tabular-nums", className)}
         value={h ?? ""}
         onBlur={onBlur}
         onChange={(e) => set(e.target.value, m || "00")}
@@ -89,11 +90,11 @@ export function HourMinuteSelect({
           </option>
         ))}
       </select>
-      <span aria-hidden="true">:</span>
+      <span aria-hidden="true" className="shrink-0">:</span>
       <select
         aria-label="นาที"
         aria-invalid={ariaInvalid}
-        className={cn("tabular-nums", className)}
+        className={cn("min-w-0 flex-1 appearance-none text-center tabular-nums", className)}
         value={m ?? ""}
         onBlur={onBlur}
         onChange={(e) => set(h || "00", e.target.value)}
@@ -106,7 +107,7 @@ export function HourMinuteSelect({
           </option>
         ))}
       </select>
-      <span className="text-sm text-muted-foreground">น.</span>
+      <span className="shrink-0 text-sm text-muted-foreground">น.</span>
     </div>
   );
 }
