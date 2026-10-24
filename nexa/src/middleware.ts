@@ -8,10 +8,16 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * Edge auth guard.
  *
  *  • Valid access token           → allow (and bounce away from /login).
- *  • Expired access + refresh set  → allow the page through; the client will
- *                                    silently refresh via /api/auth/refresh.
- *                                    For API calls, return 401 so the client's
- *                                    fetch layer can refresh-and-retry.
+ *  • Expired access + refresh set  → for pages, redirect through
+ *                                    GET /api/auth/refresh (rotates the
+ *                                    refresh token, sets a fresh access-token
+ *                                    cookie, then bounces back) instead of
+ *                                    rendering straight through — a server
+ *                                    component layout only ever checks the
+ *                                    access token and would otherwise send an
+ *                                    expired-but-"remembered" session to
+ *                                    /login. For API calls, return 401 so the
+ *                                    client's fetch layer can refresh-and-retry.
  *  • No tokens at all              → redirect pages to /login; 401 for API.
  *
  * NOTE: this is the real Next middleware (must be named `middleware.ts`) — the
@@ -64,13 +70,15 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Already authenticated users shouldn't see the login/register pages.
-  if (PUBLIC_PAGES.has(pathname) && claims) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-  // Login/register are public — let them through, otherwise unauthenticated
-  // visits redirect to /login → /login → … (infinite loop).
+  // Already authenticated users shouldn't see the login/register pages — this
+  // also covers "remembered" sessions whose access token expired while they
+  // weren't using the app (e.g. the PWA reopened after sitting closed for
+  // >15 min): refresh first instead of showing the login form again.
   if (PUBLIC_PAGES.has(pathname)) {
+    if (claims) return NextResponse.redirect(new URL("/dashboard", req.url));
+    if (hasRefresh) return NextResponse.redirect(new URL("/api/auth/refresh", req.url));
+    // Login/register are public — let them through, otherwise unauthenticated
+    // visits redirect to /login → /login → … (infinite loop).
     return NextResponse.next();
   }
 
@@ -100,7 +108,12 @@ export async function middleware(req: NextRequest) {
   }
 
   // Page requests
-  if (claims || hasRefresh) return NextResponse.next();
+  if (claims) return NextResponse.next();
+  if (hasRefresh) {
+    const refreshUrl = new URL("/api/auth/refresh", req.url);
+    refreshUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(refreshUrl);
+  }
 
   const loginUrl = new URL("/login", req.url);
   if (pathname !== "/") loginUrl.searchParams.set("redirect", pathname);

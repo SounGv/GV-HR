@@ -39,3 +39,35 @@ export async function POST(req: NextRequest) {
     return res;
   }
 }
+
+/** Only an app-relative path — never follow a redirect target off this origin. */
+function safeRedirectPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
+
+/**
+ * Full-page-navigation counterpart to POST: a page whose access-token cookie
+ * expired while its refresh cookie is still good (e.g. the app reopened after
+ * sitting closed for >15 min) gets redirected here by middleware instead of
+ * rendering straight through to a server component that only ever checks the
+ * access token and would otherwise bounce it to /login despite "remember me."
+ */
+export async function GET(req: NextRequest) {
+  const redirectTo = safeRedirectPath(req.nextUrl.searchParams.get("redirect"));
+  try {
+    const raw = getRefreshTokenFromRequest(req);
+    if (!raw) throw Unauthorized("ไม่พบเซสชัน");
+
+    const { accessToken, refreshToken, remember } = await refresh(raw, getRequestMeta(req));
+    const res = NextResponse.redirect(new URL(redirectTo, req.url));
+    setSessionCookies(res, accessToken, refreshToken, remember);
+    return res;
+  } catch {
+    const loginUrl = new URL("/login", req.url);
+    if (redirectTo !== "/dashboard") loginUrl.searchParams.set("redirect", redirectTo);
+    const res = NextResponse.redirect(loginUrl);
+    clearSessionCookies(res);
+    return res;
+  }
+}
