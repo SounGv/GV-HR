@@ -25,9 +25,24 @@ export function useCameraStream(active: boolean, facing: CameraFacing, options?:
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
+    let timedOut = false;
     setReady(false);
     setError(false);
     setErrorMessage(null);
+
+    // getUserMedia can hang forever — neither resolving nor rejecting —
+    // instead of failing fast, on some Android WebViews/in-app browsers (the
+    // same reliability class of bug already worked around for the
+    // Geolocation API in lib/geolocation.ts). Without a hard timeout here,
+    // the employee is stuck on "กำลังเปิดกล้อง…" with no error state and
+    // therefore no way out (the skip-capture button only appears on error).
+    const hardTimeout = setTimeout(() => {
+      if (cancelled) return;
+      timedOut = true;
+      setError(true);
+      setErrorMessage("เปิดกล้องไม่สำเร็จ (หมดเวลา) — ลองปิดแล้วเปิดใหม่ หรือข้ามขั้นตอนถ่ายรูป");
+    }, 15_000);
+
     (async () => {
       try {
         // Without explicit resolution constraints, some browsers/devices
@@ -40,7 +55,8 @@ export function useCameraStream(active: boolean, facing: CameraFacing, options?:
             : { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 1280 } },
           audio: false,
         });
-        if (cancelled) {
+        clearTimeout(hardTimeout);
+        if (cancelled || timedOut) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
@@ -64,7 +80,8 @@ export function useCameraStream(active: boolean, facing: CameraFacing, options?:
         if (cancelled) return;
         setReady(true);
       } catch (e) {
-        if (cancelled) return;
+        clearTimeout(hardTimeout);
+        if (cancelled || timedOut) return;
         setError(true);
         const name = e instanceof DOMException ? e.name : "";
         setErrorMessage(
@@ -78,6 +95,7 @@ export function useCameraStream(active: boolean, facing: CameraFacing, options?:
     })();
     return () => {
       cancelled = true;
+      clearTimeout(hardTimeout);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
