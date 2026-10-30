@@ -3,12 +3,14 @@
 import { displayName } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Download, FileSpreadsheet, Printer, Sparkles, Loader2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +54,13 @@ import { REPORT_LABELS, REPORT_TYPES, REPORT_PERIOD_KIND, type ReportType } from
 import { useCostCenters } from "@/features/cost-center/hooks";
 import { useReports } from "./hooks";
 import type { ReportParams } from "./api";
-import { ReportSummaryChart } from "./report-summary-chart";
+// recharts is one of the heaviest single dependencies in this bundle — lazy
+// load it so the report table (the part people actually need first) doesn't
+// wait on it, instead of a static import pulling it into /reports' initial JS.
+const ReportSummaryChart = dynamic(
+  () => import("./report-summary-chart").then((m) => m.ReportSummaryChart),
+  { ssr: false, loading: () => <Skeleton className="h-[220px] w-full" /> },
+);
 import { ReportMobileCards } from "./report-mobile-cards";
 import { PhotoCell, type PhotoPreview } from "./report-photo-cell";
 import {

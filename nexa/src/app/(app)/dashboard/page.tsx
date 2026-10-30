@@ -38,7 +38,8 @@ import {
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AttendanceRateLine, KpiMiniBars } from "@/features/dashboard/dashboard-charts";
+import { AttendanceRateLine } from "@/features/dashboard/dashboard-charts-lazy";
+import { KpiMiniBars } from "@/features/dashboard/kpi-mini-bars";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
 import { loginIdentifier, displayName } from "@/lib/format";
 import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
