@@ -426,7 +426,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       ATTENDANCE_DAILY_RECORD_FETCH_LIMIT,
     );
     const recs = fetchCap.kept.map((x) => x.rec);
-    const branches = await prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } });
+    // Both internal-only callers that skip name resolution (see includeNames
+    // on ReportQuery) also never read the "ที่ตั้ง" column, so the branch
+    // lookup is skipped alongside it — one less query at the row counts this
+    // report type runs at.
+    const includeNames = query.includeNames !== false;
+    const branches = includeNames
+      ? await prisma.branch.findMany({ where: { companyId }, select: { id: true, name: true } })
+      : [];
     // Every status here (not just APPROVED) — "สถานะ OT"/"ผู้อนุมัติ OT" below
     // need to show a still-pending request too, not just go blank for it.
     // The `otByKey` hours sum (the "ชั่วโมง OT" column) only counts APPROVED.
@@ -436,8 +443,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       orderBy: { createdAt: "desc" },
     });
     const shiftMap = await resolveShiftMinutesBatch(companyId, start, end);
-    const editorNameById = await resolveUserNames(recs.map((r) => r.updatedById));
-    const otApproverNameById = await resolveUserNames(ots.map((o) => o.approverUserId));
+    // resolveUserNames is its own DB round trip against up to
+    // ATTENDANCE_DAILY_RECORD_FETCH_LIMIT ids — real cost at this row count,
+    // not just unused object fields, so callers that never show "แก้ไขโดย"/
+    // "ผู้อนุมัติ OT" (e.g. the dashboard's attendance-watch list) skip it.
+    const editorNameById = includeNames ? await resolveUserNames(recs.map((r) => r.updatedById)) : new Map<string, string>();
+    const otApproverNameById = includeNames
+      ? await resolveUserNames(ots.map((o) => o.approverUserId))
+      : new Map<string, string>();
     const branchName = new Map(branches.map((b) => [b.id, b.name]));
     const otByKey = new Map<string, number>();
     // One request per (employee, day) is the near-universal case; if more

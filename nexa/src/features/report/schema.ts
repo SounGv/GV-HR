@@ -77,4 +77,14 @@ export const reportQuerySchema = z.object({
  */
 export type ReportQuery = z.infer<typeof reportQuerySchema> & {
   employeeWhere?: Prisma.EmployeeWhereInput;
+  /**
+   * attendance_daily only, never set from user input (same in-process-only
+   * shape as employeeWhere). Default true. A caller that only reads a few
+   * fields off each row (e.g. the dashboard's attendance-watch list, which
+   * never shows who approved OT or who last edited a record) can set this to
+   * false to skip the two extra resolveUserNames lookups entirely — real
+   * DB round trips, not just unused object fields — since those are a
+   * meaningful share of this report type's cost at the row counts it runs at.
+   */
+  includeNames?: boolean;
 };

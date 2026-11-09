@@ -198,6 +198,9 @@ export async function loadAttendanceWatch(
     to,
     ...(departmentIds && departmentIds.length ? { departmentId: departmentIds } : {}),
     employeeWhere: teamScopeFilter(session) ?? undefined,
+    // The watch list only ever reads code/name/department/statusKey/note
+    // (see the row loop below) — never who edited a record or approved OT.
+    includeNames: false,
   });
 
   const byPerson = new Map<string, WatchPerson>();
@@ -301,6 +304,8 @@ export async function loadEmployeeAttendanceSummary(
     to: today.toISOString().slice(0, 10),
     employeeId: [emp.id],
     employeeWhere: scope ?? undefined,
+    // This side panel only reads statusKey/note/date/clockIn/lateMinutes below.
+    includeNames: false,
   });
   let present = 0;
   let late = 0;
