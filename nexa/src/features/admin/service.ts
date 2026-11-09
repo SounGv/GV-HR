@@ -320,19 +320,26 @@ export async function setUserRoles(
 ) {
   const user = await prisma.user.findFirst({
     where: { id: userId, companyId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, roles: { select: { roleId: true } } },
   });
   if (!user) throw NotFound("ไม่พบผู้ใช้");
 
   if (roleIds.length > 0) {
     const roles = await prisma.role.findMany({
       where: { id: { in: roleIds }, OR: [{ companyId }, { companyId: null }], deletedAt: null },
-      select: { permissions: { select: { permission: { select: { key: true } } } } },
+      select: { id: true, permissions: { select: { permission: { select: { key: true } } } } },
     });
     if (roles.length !== roleIds.length) throw BadRequest("มีบทบาทที่ไม่ถูกต้อง");
     // Same reasoning as assertGrantable in setRolePermissions: assigning a
     // role can't hand the target user permissions the caller doesn't have.
-    const grantedKeys = [...new Set(roles.flatMap((r) => r.permissions.map((p) => p.permission.key)))];
+    // Roles the user already holds aren't a new grant, so keeping them must
+    // not block unrelated edits.
+    const heldRoleIds = new Set(user.roles.map((r) => r.roleId));
+    const grantedKeys = [
+      ...new Set(
+        roles.filter((r) => !heldRoleIds.has(r.id)).flatMap((r) => r.permissions.map((p) => p.permission.key)),
+      ),
+    ];
     assertGrantable(session, grantedKeys);
   }
 
