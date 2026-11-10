@@ -134,6 +134,12 @@ enum LeaveUnit {
   HOUR
 }
 
+/** Which half of the day a halfDay=true request covers — see LeaveRequest.halfDayPeriod. */
+enum HalfDayPeriod {
+  MORNING
+  AFTERNOON
+}
+
 enum MeetingStatus {
   SCHEDULED
   CANCELLED
@@ -1074,6 +1080,10 @@ model LeaveRequest {
   startDate     DateTime  @db.Date
   endDate       DateTime  @db.Date
   halfDay       Boolean   @default(false)
+  // Required when halfDay is true, null otherwise — which half the request
+  // covers. Added after HR found the half-day checkbox alone ambiguous (no
+  // way to say morning vs. afternoon).
+  halfDayPeriod HalfDayPeriod?
   days          Float
   // Hour-based leave (currently SICK/PERSONAL only, see leave/days.ts's
   // HOURLY_LEAVE_TYPES) — startDate must equal endDate, days is 0, and these

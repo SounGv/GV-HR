@@ -11,7 +11,9 @@ import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { TimeSelect } from "@/components/shared/time-select";
-import { LEAVE_TYPES, LEAVE_UNITS } from "@/features/leave/schema";
+import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "@/features/leave/schema";
+import { HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
+import type { HalfDayPeriod } from "@/features/leave/types";
 import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "@/features/leave/days";
 import { remainingLeaveHours } from "@/features/leave/hour-pool";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
@@ -34,6 +36,7 @@ const formSchema = z
     startDate: z.string().min(1, "กรุณาเลือกวันเริ่ม"),
     endDate: z.string().min(1, "กรุณาเลือกวันสิ้นสุด"),
     halfDay: z.boolean(),
+    halfDayPeriod: z.enum(HALF_DAY_PERIODS).optional(),
     unit: z.enum(LEAVE_UNITS),
     startTime: z.string().optional(),
     endTime: z.string().optional(),
@@ -47,6 +50,10 @@ const formSchema = z
   .refine((d) => !d.halfDay || d.startDate === d.endDate, {
     message: "ลาครึ่งวันต้องเป็นวันเดียว",
     path: ["halfDay"],
+  })
+  .refine((d) => !d.halfDay || !!d.halfDayPeriod, {
+    message: "กรุณาเลือกช่วงเวลาลาครึ่งวัน",
+    path: ["halfDayPeriod"],
   })
   .refine((d) => d.unit !== "HOUR" || !!(d.startTime && d.endTime), {
     message: "กรุณาระบุเวลาเริ่ม-สิ้นสุด",
@@ -95,6 +102,7 @@ export function MobileLeaveForm() {
       startDate: "",
       endDate: "",
       halfDay: false,
+      halfDayPeriod: undefined,
       unit: "DAY",
       startTime: "",
       endTime: "",
@@ -103,11 +111,12 @@ export function MobileLeaveForm() {
     },
   });
 
-  const [type, start, end, half, unit, startTime, endTime] = form.watch([
+  const [type, start, end, half, halfDayPeriod, unit, startTime, endTime] = form.watch([
     "type",
     "startDate",
     "endDate",
     "halfDay",
+    "halfDayPeriod",
     "unit",
     "startTime",
     "endTime",
@@ -391,10 +400,31 @@ export function MobileLeaveForm() {
                   {...form.register("halfDay", {
                     onChange: (e) => {
                       if (e.target.checked) form.setValue("endDate", form.getValues("startDate"));
+                      else form.setValue("halfDayPeriod", undefined);
                     },
                   })}
                 />
               </label>
+
+              {half && (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {HALF_DAY_PERIODS.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => form.setValue("halfDayPeriod", p as HalfDayPeriod, { shouldValidate: true })}
+                      className={cn(
+                        "rounded-[10px] border-[1.5px] p-2.5 text-center text-[13px] font-semibold transition active:scale-[0.99]",
+                        halfDayPeriod === p
+                          ? "border-primary bg-accent text-accent-foreground"
+                          : "border-border bg-card text-foreground",
+                      )}
+                    >
+                      {HALF_DAY_PERIOD_LABEL[p]}
+                    </button>
+                  ))}
+                </div>
+              )}
             </>
           )}
 

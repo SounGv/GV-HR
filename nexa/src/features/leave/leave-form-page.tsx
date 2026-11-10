@@ -33,9 +33,9 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { MobileLeaveForm } from "@/components/mobile/mobile-leave-form";
 import { DesktopOnly } from "@/components/mobile/mobile-screen";
-import { LEAVE_TYPES, LEAVE_UNITS } from "./schema";
+import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "./schema";
 import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "./days";
-import { LEAVE_TYPE_LABEL } from "./labels";
+import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "./labels";
 import { useCreateLeave } from "./hooks";
 import { BalanceCards } from "./balance-cards";
 
@@ -52,6 +52,7 @@ const formSchema = z
     startDate: z.string().min(1, "กรุณาเลือกวันเริ่ม"),
     endDate: z.string().min(1, "กรุณาเลือกวันสิ้นสุด"),
     halfDay: z.boolean(),
+    halfDayPeriod: z.enum(HALF_DAY_PERIODS).optional(),
     unit: z.enum(LEAVE_UNITS),
     startTime: z.string().optional(),
     endTime: z.string().optional(),
@@ -65,6 +66,10 @@ const formSchema = z
   .refine((d) => !d.halfDay || d.startDate === d.endDate, {
     message: "ลาครึ่งวันต้องเป็นวันเดียว",
     path: ["halfDay"],
+  })
+  .refine((d) => !d.halfDay || !!d.halfDayPeriod, {
+    message: "กรุณาเลือกช่วงเวลาลาครึ่งวัน",
+    path: ["halfDayPeriod"],
   })
   .refine((d) => d.unit !== "HOUR" || !!(d.startTime && d.endTime), {
     message: "กรุณาระบุเวลาเริ่ม-สิ้นสุด",
@@ -88,6 +93,7 @@ export function LeaveFormPage() {
       startDate: "",
       endDate: "",
       halfDay: false,
+      halfDayPeriod: undefined,
       unit: "DAY",
       startTime: "",
       endTime: "",
@@ -105,6 +111,7 @@ export function LeaveFormPage() {
     "startTime",
     "endTime",
   ]);
+  const halfDayPeriod = form.watch("halfDayPeriod");
   const showHourlyOption = isHourlyType(leaveType);
   const isHourly = showHourlyOption && unit === "HOUR";
   const preview = isHourly
@@ -315,12 +322,40 @@ export function LeaveFormPage() {
                         onCheckedChange={(on) => {
                           field.onChange(on);
                           if (on) form.setValue("endDate", form.getValues("startDate"), { shouldValidate: true });
+                          else form.setValue("halfDayPeriod", undefined);
                         }}
                       />
                     </FormControl>
                   </FormItem>
                 )}
               />
+
+              {half && (
+                <FormField
+                  control={form.control}
+                  name="halfDayPeriod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ช่วงเวลาลาครึ่งวัน</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="เลือกช่วงเวลา" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {HALF_DAY_PERIODS.map((p) => (
+                            <SelectItem key={p} value={p}>
+                              {HALF_DAY_PERIOD_LABEL[p]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </>
           )}
 

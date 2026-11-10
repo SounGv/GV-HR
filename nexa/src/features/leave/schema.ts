@@ -5,6 +5,7 @@ import { HOURLY_LEAVE_TYPES, computeLeaveHours } from "./days";
 export const LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL", "UNPAID", "OTHER", "HOLIDAY_SWAP"] as const;
 export const LEAVE_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
 export const LEAVE_UNITS = ["DAY", "HOUR"] as const;
+export const HALF_DAY_PERIODS = ["MORNING", "AFTERNOON"] as const;
 
 const TIME_STRING = z
   .string()
@@ -24,6 +25,10 @@ export const leaveCreateSchema = z
     startDate: z.coerce.date({ message: "กรุณาเลือกวันเริ่ม" }),
     endDate: z.coerce.date({ message: "กรุณาเลือกวันสิ้นสุด" }),
     halfDay: z.coerce.boolean().default(false),
+    halfDayPeriod: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.enum(HALF_DAY_PERIODS).optional(),
+    ),
     unit: z.enum(LEAVE_UNITS).default("DAY"),
     startTime: z.preprocess((v) => (v === "" || v == null ? undefined : v), TIME_STRING.optional()),
     endTime: z.preprocess((v) => (v === "" || v == null ? undefined : v), TIME_STRING.optional()),
@@ -40,6 +45,10 @@ export const leaveCreateSchema = z
   .refine((d) => !d.halfDay || sameDay(d.startDate, d.endDate), {
     message: "ลาครึ่งวันต้องเป็นวันเดียว",
     path: ["halfDay"],
+  })
+  .refine((d) => !d.halfDay || !!d.halfDayPeriod, {
+    message: "กรุณาเลือกช่วงเวลาลาครึ่งวัน (เช้า/บ่าย)",
+    path: ["halfDayPeriod"],
   })
   .refine((d) => d.unit !== "HOUR" || (HOURLY_LEAVE_TYPES as readonly string[]).includes(d.type), {
     message: "ลาเป็นชั่วโมงได้เฉพาะลาป่วย/ลากิจ",

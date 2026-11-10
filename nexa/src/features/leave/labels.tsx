@@ -1,5 +1,5 @@
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
-import type { LeaveStatus, LeaveType } from "./types";
+import type { HalfDayPeriod, LeaveStatus, LeaveType } from "./types";
 
 export const LEAVE_TYPE_LABEL: Record<LeaveType, string> = {
   ANNUAL: "ลาพักร้อน",
@@ -8,6 +8,11 @@ export const LEAVE_TYPE_LABEL: Record<LeaveType, string> = {
   UNPAID: "ลาไม่รับค่าจ้าง",
   OTHER: "อื่น ๆ",
   HOLIDAY_SWAP: "ใช้สิทธิ์วันหยุด",
+};
+
+export const HALF_DAY_PERIOD_LABEL: Record<HalfDayPeriod, string> = {
+  MORNING: "ครึ่งเช้า",
+  AFTERNOON: "ครึ่งบ่าย",
 };
 
 export const LEAVE_STATUS_LABEL: Record<LeaveStatus, string> = {

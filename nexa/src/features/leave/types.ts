@@ -2,6 +2,7 @@ export type LeaveType = "ANNUAL" | "SICK" | "PERSONAL" | "UNPAID" | "OTHER" | "H
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 export type LeaveScope = "me" | "team" | "all";
 export type LeaveUnit = "DAY" | "HOUR";
+export type HalfDayPeriod = "MORNING" | "AFTERNOON";
 
 export interface LeaveRequest {
   /** Set only on the response to creating a request: who it was sent to for approval. */
@@ -11,6 +12,8 @@ export interface LeaveRequest {
   startDate: string;
   endDate: string;
   halfDay: boolean;
+  /** Set only when halfDay is true. */
+  halfDayPeriod: HalfDayPeriod | null;
   days: number;
   unit: LeaveUnit;
   hours: number | null;
@@ -54,6 +57,7 @@ export interface LeaveFormValues {
   startDate: string;
   endDate: string;
   halfDay: boolean;
+  halfDayPeriod?: HalfDayPeriod;
   unit?: LeaveUnit;
   startTime?: string;
   endTime?: string;
