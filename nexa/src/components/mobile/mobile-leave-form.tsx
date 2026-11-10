@@ -14,7 +14,7 @@ import { TimeSelect } from "@/components/shared/time-select";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "@/features/leave/schema";
 import { addHoursToTime, computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "@/features/leave/days";
 import { remainingLeaveHours } from "@/features/leave/hour-pool";
-import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
+import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
 import { useBalances, useCreateLeave } from "@/features/leave/hooks";
 import type { LeaveType } from "@/features/leave/types";
 import { MobileActionFooter, MobilePrimaryButton } from "./mobile-action-footer";
@@ -448,10 +448,19 @@ export function MobileLeaveForm() {
             {...form.register("reason")}
           />
 
-          {preview !== null && (
+          {half ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              รวมทั้งหมด <span className="font-semibold text-foreground">{preview}</span> {isHourly ? "ชั่วโมง" : "วัน (นับจันทร์–เสาร์ ไม่นับวันอาทิตย์)"}
+              รวมทั้งหมด{" "}
+              <span className="font-semibold text-foreground">
+                ครึ่งวัน{halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[halfDayPeriod]})` : ""}
+              </span>
             </p>
+          ) : (
+            preview !== null && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                รวมทั้งหมด <span className="font-semibold text-foreground">{preview}</span> {isHourly ? "ชั่วโมง" : "วัน (นับจันทร์–เสาร์ ไม่นับวันอาทิตย์)"}
+              </p>
+            )
           )}
         </div>
       </form>
