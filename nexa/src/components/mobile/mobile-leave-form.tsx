@@ -12,9 +12,7 @@ import { cn } from "@/lib/utils";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { TimeSelect } from "@/components/shared/time-select";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "@/features/leave/schema";
-import { HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
-import type { HalfDayPeriod } from "@/features/leave/types";
-import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "@/features/leave/days";
+import { addHoursToTime, computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "@/features/leave/days";
 import { remainingLeaveHours } from "@/features/leave/hour-pool";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { useBalances, useCreateLeave } from "@/features/leave/hooks";
@@ -78,6 +76,11 @@ type FormSchema = z.infer<typeof formSchema>;
 const TYPE_ORDER: LeaveType[] = ["SICK", "PERSONAL", "ANNUAL", "UNPAID", "HOLIDAY_SWAP", "OTHER"];
 const UNLIMITED_TYPES: LeaveType[] = ["UNPAID", "HOLIDAY_SWAP", "OTHER"];
 
+/** Whole-hour presets offered by the single "ระยะเวลาลา" picker — anything
+ * approaching a full 8-hour day stops making sense as "hourly" leave. */
+const HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+const DEFAULT_HOUR_START = "09:00";
+
 function fmtThaiDate(iso: string) {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("th-TH", {
@@ -123,6 +126,47 @@ export function MobileLeaveForm() {
   ]);
   const showHourlyOption = isHourlyType(type);
   const isHourly = showHourlyOption && unit === "HOUR";
+
+  // One "ระยะเวลาลา" picker standing in for what used to be three separate
+  // controls (DAY/HOUR toggle, half-day checkbox, morning/afternoon picker) —
+  // its value is derived from the real form fields rather than tracked
+  // separately, so there is exactly one source of truth.
+  const durationValue = isHourly
+    ? startTime && endTime && endTime > startTime
+      ? `HOUR_${Math.round(computeLeaveHours(startTime, endTime))}`
+      : ""
+    : half
+      ? halfDayPeriod === "AFTERNOON"
+        ? "HALF_AFTERNOON"
+        : halfDayPeriod === "MORNING"
+          ? "HALF_MORNING"
+          : ""
+      : "FULL_DAY";
+
+  function onDurationChange(value: string) {
+    if (value === "FULL_DAY") {
+      form.setValue("unit", "DAY");
+      form.setValue("halfDay", false, { shouldValidate: true });
+      form.setValue("halfDayPeriod", undefined);
+    } else if (value === "HALF_MORNING" || value === "HALF_AFTERNOON") {
+      form.setValue("unit", "DAY");
+      form.setValue("halfDay", true);
+      form.setValue("halfDayPeriod", value === "HALF_MORNING" ? "MORNING" : "AFTERNOON", { shouldValidate: true });
+      const sd = form.getValues("startDate");
+      if (sd) form.setValue("endDate", sd);
+    } else if (value.startsWith("HOUR_")) {
+      const hours = Number(value.slice(5));
+      form.setValue("unit", "HOUR");
+      form.setValue("halfDay", false);
+      form.setValue("halfDayPeriod", undefined);
+      const sd = form.getValues("startDate");
+      if (sd) form.setValue("endDate", sd);
+      const st = form.getValues("startTime") || DEFAULT_HOUR_START;
+      form.setValue("startTime", st);
+      form.setValue("endTime", addHoursToTime(st, hours), { shouldValidate: true });
+    }
+  }
+
   const preview = isHourly
     ? startTime && endTime && endTime > startTime
       ? computeLeaveHours(startTime, endTime)
@@ -286,7 +330,10 @@ export function MobileLeaveForm() {
                   type="button"
                   onClick={() => {
                     form.setValue("type", t, { shouldValidate: true });
-                    if (!isHourlyType(t)) form.setValue("unit", "DAY");
+                    // Hourly leave isn't offered for this type — fall back to
+                    // a full day rather than leaving an hour-unit selection
+                    // the picker below can no longer show.
+                    if (!isHourlyType(t) && form.getValues("unit") === "HOUR") onDurationChange("FULL_DAY");
                   }}
                   className={cn(
                     "rounded-[10px] border-[1.5px] p-3 text-left transition active:scale-[0.99]",
@@ -302,36 +349,58 @@ export function MobileLeaveForm() {
             })}
           </div>
 
-          {showHourlyOption && (
-            <>
-              <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">รูปแบบการลา</p>
-              <div className="grid grid-cols-2 gap-2">
-                {LEAVE_UNITS.map((u) => (
-                  <button
-                    key={u}
-                    type="button"
-                    onClick={() => {
-                      form.setValue("unit", u, { shouldValidate: true });
-                      // Hourly leave is a single day: drop any end date left over from the day mode.
-                      if (u === "HOUR") form.setValue("endDate", form.getValues("startDate"));
-                    }}
-                    className={cn(
-                      "rounded-[10px] border-[1.5px] p-3 text-center text-[13px] font-semibold transition active:scale-[0.99]",
-                      unit === u
-                        ? "border-primary bg-accent text-accent-foreground"
-                        : "border-border bg-card text-foreground",
-                    )}
-                  >
-                    {u === "DAY" ? "เต็มวัน / ครึ่งวัน" : "เป็นชั่วโมง"}
-                  </button>
+          <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">ระยะเวลาลา</p>
+          <label className="block rounded-[10px] border border-border px-3 py-2.5">
+            <span className="block text-[10px] text-muted-foreground">เลือกระยะเวลา</span>
+            <select
+              className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+              value={durationValue}
+              onChange={(e) => onDurationChange(e.target.value)}
+            >
+              {durationValue === "" && <option value="">เลือกระยะเวลา</option>}
+              <option value="FULL_DAY">เต็มวัน</option>
+              <option value="HALF_MORNING">ครึ่งวัน (ช่วงเช้า)</option>
+              <option value="HALF_AFTERNOON">ครึ่งวัน (ช่วงบ่าย)</option>
+              {showHourlyOption &&
+                HOUR_OPTIONS.map((n) => (
+                  <option key={n} value={`HOUR_${n}`}>
+                    ลา {n} ชั่วโมง
+                  </option>
                 ))}
+            </select>
+          </label>
+
+          {durationValue === "FULL_DAY" ? (
+            <>
+              <p className="mb-2 mt-3 text-[13px] font-semibold text-foreground">ช่วงวันที่ลา</p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="rounded-[10px] border border-border px-3 py-2.5">
+                  <span className="block text-[10px] text-muted-foreground">เริ่มลา</span>
+                  <input
+                    type="date"
+                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+                    {...form.register("startDate", {
+                      onChange: (e) => {
+                        const next = e.target.value as string;
+                        const currentEnd = form.getValues("endDate");
+                        if (!currentEnd || currentEnd < next) form.setValue("endDate", next);
+                      },
+                    })}
+                  />
+                </label>
+                <label className="rounded-[10px] border border-border px-3 py-2.5">
+                  <span className="block text-[10px] text-muted-foreground">ถึงวันที่</span>
+                  <input
+                    type="date"
+                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+                    {...form.register("endDate")}
+                  />
+                </label>
               </div>
             </>
-          )}
-
-          {isHourly ? (
+          ) : (
             <>
-              <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">วันที่ลา</p>
+              <p className="mb-2 mt-3 text-[13px] font-semibold text-foreground">วันที่ลา</p>
               <label className="block rounded-[10px] border border-border px-3 py-2.5">
                 <span className="block text-[10px] text-muted-foreground">วันที่</span>
                 <input
@@ -342,89 +411,25 @@ export function MobileLeaveForm() {
                   })}
                 />
               </label>
-
-              <p className="mb-2 mt-3 text-[13px] font-semibold text-foreground">ช่วงเวลาที่ลา</p>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="rounded-[10px] border border-border px-3 py-2.5">
-                  <span className="block text-[10px] text-muted-foreground">เวลาเริ่ม</span>
-                  <TimeSelect
-                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
-                    {...form.register("startTime")}
-                  />
-                </label>
-                <label className="rounded-[10px] border border-border px-3 py-2.5">
-                  <span className="block text-[10px] text-muted-foreground">เวลาสิ้นสุด</span>
-                  <TimeSelect
-                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
-                    {...form.register("endTime")}
-                  />
-                </label>
-              </div>
             </>
-          ) : (
-            <>
-              <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">ช่วงวันที่ลา</p>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="rounded-[10px] border border-border px-3 py-2.5">
-                  <span className="block text-[10px] text-muted-foreground">เริ่มลา</span>
-                  <input
-                    type="date"
-                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
-                    {...form.register("startDate", {
-                      // A half day is a single day, and an empty end date just follows the start.
-                      onChange: (e) => {
-                        const next = e.target.value as string;
-                        const currentEnd = form.getValues("endDate");
-                        if (form.getValues("halfDay") || !currentEnd || currentEnd < next) form.setValue("endDate", next);
-                      },
-                    })}
-                  />
-                </label>
-                <label className={cn("rounded-[10px] border border-border px-3 py-2.5", half && "opacity-60")}>
-                  <span className="block text-[10px] text-muted-foreground">ถึงวันที่</span>
-                  <input
-                    type="date"
-                    readOnly={half}
-                    aria-readonly={half}
-                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
-                    {...form.register("endDate")}
-                  />
-                </label>
-              </div>
+          )}
 
-              <label className="mt-3 flex items-center justify-between rounded-[10px] border border-border px-3 py-2.5">
-                <span className="text-[13px] font-medium text-foreground">ลาครึ่งวัน</span>
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  {...form.register("halfDay", {
+          {isHourly && (
+            <>
+              <p className="mb-2 mt-3 text-[13px] font-semibold text-foreground">เวลาเริ่ม</p>
+              <label className="block rounded-[10px] border border-border px-3 py-2.5">
+                <span className="block text-[10px] text-muted-foreground">เวลาเริ่ม (สิ้นสุด {endTime || "—"} น.)</span>
+                <TimeSelect
+                  className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+                  {...form.register("startTime", {
                     onChange: (e) => {
-                      if (e.target.checked) form.setValue("endDate", form.getValues("startDate"));
-                      else form.setValue("halfDayPeriod", undefined);
+                      const newStart = e.target.value as string;
+                      const hours = startTime && endTime ? computeLeaveHours(startTime, endTime) : 1;
+                      form.setValue("endTime", addHoursToTime(newStart, hours), { shouldValidate: true });
                     },
                   })}
                 />
               </label>
-
-              {half && (
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {HALF_DAY_PERIODS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => form.setValue("halfDayPeriod", p as HalfDayPeriod, { shouldValidate: true })}
-                      className={cn(
-                        "rounded-[10px] border-[1.5px] p-2.5 text-center text-[13px] font-semibold transition active:scale-[0.99]",
-                        halfDayPeriod === p
-                          ? "border-primary bg-accent text-accent-foreground"
-                          : "border-border bg-card text-foreground",
-                      )}
-                    >
-                      {HALF_DAY_PERIOD_LABEL[p]}
-                    </button>
-                  ))}
-                </div>
-              )}
             </>
           )}
 

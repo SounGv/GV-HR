@@ -46,3 +46,17 @@ export function computeLeaveHours(startTime: string, endTime: string): number {
   const minutes = parseTimeToMinutes(endTime) - parseTimeToMinutes(startTime);
   return Math.round((minutes / 60) * 100) / 100;
 }
+
+/**
+ * `startTime` plus a whole number of hours, as "HH:mm" — used by the leave
+ * form's single "ลา N ชั่วโมง" picker to derive `endTime` from `startTime`
+ * without a second time picker. Clamped to 23:59 rather than wrapping past
+ * midnight: a leave request never spans into the next day (see the
+ * same-day refine in schema.ts).
+ */
+export function addHoursToTime(startTime: string, hours: number): string {
+  const minutes = Math.min(23 * 60 + 59, parseTimeToMinutes(startTime) + Math.round(hours * 60));
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}

@@ -12,7 +12,6 @@ import type { FormFooterAction } from "@/components/shared/form-footer";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,7 +20,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { TimeSelect } from "@/components/shared/time-select";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import {
   Select,
@@ -34,13 +32,17 @@ import { ApiError } from "@/lib/api/client";
 import { MobileLeaveForm } from "@/components/mobile/mobile-leave-form";
 import { DesktopOnly } from "@/components/mobile/mobile-screen";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "./schema";
-import { computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "./days";
-import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "./labels";
+import { addHoursToTime, computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "./days";
+import { LEAVE_TYPE_LABEL } from "./labels";
 import { useCreateLeave } from "./hooks";
 import { BalanceCards } from "./balance-cards";
 
 const FORM_ID = "leave-form";
 const LIST = "/leave";
+
+/** Same presets as the mobile form's single "ระยะเวลาลา" picker — see its comment. */
+const HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+const DEFAULT_HOUR_START = "09:00";
 
 function isHourlyType(type: string): boolean {
   return (HOURLY_LEAVE_TYPES as readonly string[]).includes(type);
@@ -122,13 +124,58 @@ export function LeaveFormPage() {
       ? computeLeaveDays(new Date(start), new Date(end), half)
       : null;
 
-  useEffect(() => {
-    if (!showHourlyOption && unit === "HOUR") form.setValue("unit", "DAY");
-  }, [showHourlyOption, unit, form]);
+  // One "ระยะเวลาลา" select standing in for what used to be three separate
+  // controls (DAY/HOUR toggle, half-day switch, morning/afternoon picker) —
+  // its value is derived from the real form fields, not tracked separately,
+  // so there is exactly one source of truth (same pattern as the mobile form).
+  const durationValue = isHourly
+    ? startTime && endTime && endTime > startTime
+      ? `HOUR_${Math.round(computeLeaveHours(startTime, endTime))}`
+      : ""
+    : half
+      ? halfDayPeriod === "AFTERNOON"
+        ? "HALF_AFTERNOON"
+        : halfDayPeriod === "MORNING"
+          ? "HALF_MORNING"
+          : ""
+      : "FULL_DAY";
+
+  function onDurationChange(value: string | null) {
+    if (!value) return;
+    if (value === "FULL_DAY") {
+      form.setValue("unit", "DAY");
+      form.setValue("halfDay", false, { shouldValidate: true });
+      form.setValue("halfDayPeriod", undefined);
+    } else if (value === "HALF_MORNING" || value === "HALF_AFTERNOON") {
+      form.setValue("unit", "DAY");
+      form.setValue("halfDay", true);
+      form.setValue("halfDayPeriod", value === "HALF_MORNING" ? "MORNING" : "AFTERNOON", { shouldValidate: true });
+      const sd = form.getValues("startDate");
+      if (sd) form.setValue("endDate", sd);
+    } else if (value.startsWith("HOUR_")) {
+      const hours = Number(value.slice(5));
+      form.setValue("unit", "HOUR");
+      form.setValue("halfDay", false);
+      form.setValue("halfDayPeriod", undefined);
+      const sd = form.getValues("startDate");
+      if (sd) form.setValue("endDate", sd);
+      const st = form.getValues("startTime") || DEFAULT_HOUR_START;
+      form.setValue("startTime", st);
+      form.setValue("endTime", addHoursToTime(st, hours), { shouldValidate: true });
+    }
+  }
 
   useEffect(() => {
-    if (isHourly && start) form.setValue("endDate", start);
-  }, [isHourly, start, form]);
+    // Hourly leave isn't offered for this type anymore — fall back to a full
+    // day rather than leaving an hour-unit selection the picker can't show.
+    if (!showHourlyOption && unit === "HOUR") onDurationChange("FULL_DAY");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showHourlyOption, unit]);
+
+  useEffect(() => {
+    if (durationValue !== "FULL_DAY" && start) form.setValue("endDate", start);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durationValue, start]);
 
   async function onSubmit(values: FormSchema) {
     try {
@@ -194,42 +241,58 @@ export function LeaveFormPage() {
             )}
           />
 
-          {showHourlyOption && (
-            <FormField
-              control={form.control}
-              name="unit"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>รูปแบบการลา</FormLabel>
-                  <div className="flex gap-2">
-                    {LEAVE_UNITS.map((u) => (
-                      <button
-                        key={u}
-                        type="button"
-                        onClick={() => field.onChange(u)}
-                        className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
-                          field.value === u
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border text-muted-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {u === "DAY" ? "เต็มวัน / ครึ่งวัน" : "เป็นชั่วโมง"}
-                      </button>
-                    ))}
-                  </div>
-                </FormItem>
-              )}
-            />
-          )}
+          <FormItem>
+            <FormLabel>ระยะเวลาลา</FormLabel>
+            <Select value={durationValue} onValueChange={onDurationChange}>
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="เลือกระยะเวลา" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="FULL_DAY">เต็มวัน</SelectItem>
+                <SelectItem value="HALF_MORNING">ครึ่งวัน (ช่วงเช้า)</SelectItem>
+                <SelectItem value="HALF_AFTERNOON">ครึ่งวัน (ช่วงบ่าย)</SelectItem>
+                {showHourlyOption &&
+                  HOUR_OPTIONS.map((n) => (
+                    <SelectItem key={n} value={`HOUR_${n}`}>
+                      ลา {n} ชั่วโมง
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </FormItem>
 
-          {isHourly ? (
-            <>
+          {durationValue === "FULL_DAY" ? (
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="startDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>วันที่ลา</FormLabel>
+                    <FormLabel>วันเริ่ม</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const next = e.target.value;
+                          const currentEnd = form.getValues("endDate");
+                          if (!currentEnd || currentEnd < next) form.setValue("endDate", next);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>วันสิ้นสุด</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -237,126 +300,46 @@ export function LeaveFormPage() {
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="startTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>เวลาเริ่ม</FormLabel>
-                      <FormControl>
-                        <TimeSelect className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="endTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>เวลาสิ้นสุด</FormLabel>
-                      <FormControl>
-                        <TimeSelect className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>วันเริ่ม</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            // A half day is a single day, and an empty or earlier end date follows the start.
-                            const next = e.target.value;
-                            const currentEnd = form.getValues("endDate");
-                            if (form.getValues("halfDay") || !currentEnd || currentEnd < next) form.setValue("endDate", next);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="endDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>วันสิ้นสุด</FormLabel>
-                      <FormControl>
-                        <Input type="date" readOnly={form.watch("halfDay")} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="halfDay"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>ลาครึ่งวัน</FormLabel>
-                      <FormDescription>นับเป็น 0.5 วัน (เฉพาะวันเดียว)</FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={(on) => {
-                          field.onChange(on);
-                          if (on) form.setValue("endDate", form.getValues("startDate"), { shouldValidate: true });
-                          else form.setValue("halfDayPeriod", undefined);
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {half && (
-                <FormField
-                  control={form.control}
-                  name="halfDayPeriod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ช่วงเวลาลาครึ่งวัน</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="เลือกช่วงเวลา" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {HALF_DAY_PERIODS.map((p) => (
-                            <SelectItem key={p} value={p}>
-                              {HALF_DAY_PERIOD_LABEL[p]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>วันที่ลา</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </>
+            />
+          )}
+
+          {isHourly && (
+            <FormField
+              control={form.control}
+              name="startTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>เวลาเริ่ม (สิ้นสุด {endTime || "—"} น.)</FormLabel>
+                  <FormControl>
+                    <TimeSelect
+                      className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                      {...field}
+                      onChange={(e) => {
+                        const newStart = e.target.value;
+                        const hours = startTime && endTime ? computeLeaveHours(startTime, endTime) : 1;
+                        field.onChange(e);
+                        form.setValue("endTime", addHoursToTime(newStart, hours), { shouldValidate: true });
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
 
           <FormField
