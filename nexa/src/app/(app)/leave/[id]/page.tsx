@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, displayName } from "@/lib/format";
 import { getLeave } from "@/features/leave/service";
 import { LeaveDecideActions } from "@/features/leave/decide-actions";
-import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "@/features/leave/labels";
+import { LEAVE_TYPE_LABEL, LeaveStatusBadge, HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
 
 export const metadata: Metadata = { title: "รายละเอียดคำขอลา" };
 
@@ -29,7 +29,14 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
   const rangeValue = isHourly
     ? `${formatDate(request.startDate)} (${request.startTime}–${request.endTime})`
     : `${formatDate(request.startDate)} - ${formatDate(request.endDate)}`;
-  const amountValue = isHourly ? `${request.hours} ชม.` : `${request.days} วัน`;
+  // A half-day request's "0.5 วัน" alone doesn't say which half — the
+  // approver needs morning vs. afternoon, not just the count (older requests
+  // from before halfDayPeriod existed fall back to a plain "ครึ่งวัน").
+  const amountValue = isHourly
+    ? `${request.hours} ชม.`
+    : request.halfDay
+      ? `ครึ่งวัน${request.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[request.halfDayPeriod]})` : ""}`
+      : `${request.days} วัน`;
 
   // Mirrors decideLeave's own authorization exactly (isManager || HR-level,
   // never your own request) — this just decides whether to show the

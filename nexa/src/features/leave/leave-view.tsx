@@ -17,7 +17,7 @@ import { ApiError } from "@/lib/api/client";
 
 import { BalanceCards } from "./balance-cards";
 import { useLeave, useCancelLeave, useDecideLeave } from "./hooks";
-import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "./labels";
+import { LEAVE_TYPE_LABEL, LeaveStatusBadge, HALF_DAY_PERIOD_LABEL } from "./labels";
 import type { LeaveRequest } from "./types";
 
 function fmtDate(iso: string) {
@@ -34,7 +34,12 @@ function dateRange(r: LeaveRequest) {
 }
 
 function amountLabel(r: LeaveRequest) {
-  return r.unit === "HOUR" ? `${r.hours} ชม.` : `${r.days} วัน`;
+  if (r.unit === "HOUR") return `${r.hours} ชม.`;
+  // A half-day request's "0.5 วัน" alone doesn't say which half — the
+  // approver needs morning vs. afternoon, not just the count (older
+  // requests from before halfDayPeriod existed fall back to a plain "ครึ่งวัน").
+  if (r.halfDay) return `ครึ่งวัน${r.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[r.halfDayPeriod]})` : ""}`;
+  return `${r.days} วัน`;
 }
 
 export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {

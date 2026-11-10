@@ -25,7 +25,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { getInitials, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
-import { LEAVE_TYPE_LABEL, LeaveStatusBadge } from "@/features/leave/labels";
+import { LEAVE_TYPE_LABEL, LeaveStatusBadge, HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
 import { useLeave, useCancelLeave, useDecideLeave } from "@/features/leave/hooks";
 import { useOvertime, useCancelOvertime, useDecideOvertime } from "@/features/overtime/hooks";
 import {
@@ -70,7 +70,15 @@ function itemLine(item: ReqItem) {
       : r.startDate === r.endDate
         ? fmtDate(r.startDate)
         : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`;
-    const amount = isHourly ? `${r.hours} ชม.` : `${r.days} วัน`;
+    // A half-day request's "0.5 วัน" alone doesn't say which half — the
+    // approver needs to know morning vs. afternoon, not just the count
+    // (older requests from before halfDayPeriod existed fall back to a
+    // plain "ครึ่งวัน").
+    const amount = isHourly
+      ? `${r.hours} ชม.`
+      : r.halfDay
+        ? `ครึ่งวัน${r.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[r.halfDayPeriod]})` : ""}`
+        : `${r.days} วัน`;
     return `${LEAVE_TYPE_LABEL[r.type]} · ${range} · ${amount}`;
   }
   if (item.kind === "ot") {
