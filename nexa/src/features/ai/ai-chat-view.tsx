@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { ArrowUp, Globe, Sparkles, Wrench } from "lucide-react";
+import { ArrowUp, Globe, Wrench } from "lucide-react";
+import { VBot, type VBotMood } from "@/components/shared/v-bot";
+import { MarkdownLite } from "./markdown-lite";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useChat } from "./hooks";
@@ -20,26 +22,33 @@ interface Turn {
   steps?: ChatStep[];
 }
 
-/** The assistant's face: one teal disc, the same on every message so the thread reads as a conversation. */
-function BotAvatar({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--chat-teal-bright),var(--chat-teal))] text-white shadow-sm",
-        className,
-      )}
-    >
-      <Sparkles className="size-4" />
-    </span>
-  );
+/** The assistant's face: น้องวีบอท, the same on every message so the thread reads as a conversation. */
+function BotAvatar({ className, mood = "ok" }: { className?: string; mood?: VBotMood }) {
+  return <VBot mood={mood} className={cn("h-8 w-9", className)} />;
 }
 
-export function AiChatView({ className = "h-[calc(100vh-20rem)] min-h-[24rem]" }: { className?: string }) {
+export function AiChatView({
+  className = "h-[calc(100vh-20rem)] min-h-[24rem]",
+  initialQuestion,
+}: {
+  className?: string;
+  /** Asked once on mount (the dashboard's ask box links to `/ai?q=`). */
+  initialQuestion?: string;
+}) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const chat = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const askedInitial = useRef(false);
+
+  useEffect(() => {
+    if (initialQuestion && !askedInitial.current) {
+      askedInitial.current = true;
+      submit(initialQuestion);
+    }
+    // Ask exactly once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -72,9 +81,9 @@ export function AiChatView({ className = "h-[calc(100vh-20rem)] min-h-[24rem]" }
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4" aria-live="polite">
         {turns.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-            <BotAvatar className="size-14 [&>svg]:size-7" />
+            <VBot mood="hi" full className="h-24 w-20" />
             <div>
-              <p className="text-base font-semibold text-foreground">สวัสดีครับ ผมคือ AI Assistant</p>
+              <p className="text-base font-semibold text-foreground">สวัสดีครับ ผมน้องวีบอท</p>
               <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
                 ดึงข้อมูลจริงจากระบบมาตอบ ช่วยสรุปข้อมูล ค้นเว็บ และส่งการแจ้งเตือนถึงพนักงานได้
               </p>
@@ -117,13 +126,13 @@ export function AiChatView({ className = "h-[calc(100vh-20rem)] min-h-[24rem]" }
               )}
               <div
                 className={cn(
-                  "px-4 py-2.5 text-sm leading-relaxed break-words whitespace-pre-wrap",
+                  "px-4 py-2.5 text-sm leading-relaxed break-words",
                   t.role === "user"
-                    ? "rounded-2xl rounded-br-md bg-[var(--chat-teal)] text-white"
-                    : "rounded-2xl rounded-bl-md border border-border bg-card text-foreground shadow-sm",
+                    ? "rounded-2xl rounded-br-md bg-[var(--chat-teal)] whitespace-pre-wrap text-white"
+                    : "min-w-0 rounded-2xl rounded-bl-md border border-border bg-card text-foreground shadow-sm",
                 )}
               >
-                {t.content}
+                {t.role === "assistant" ? <MarkdownLite text={t.content} /> : t.content}
               </div>
             </div>
           </div>
@@ -131,7 +140,7 @@ export function AiChatView({ className = "h-[calc(100vh-20rem)] min-h-[24rem]" }
 
         {chat.isPending && (
           <div className="flex items-end gap-2" role="status">
-            <BotAvatar />
+            <BotAvatar mood="think" />
             <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3 shadow-sm">
               <span className="flex gap-1" aria-hidden="true">
                 {[0, 150, 300].map((delay) => (

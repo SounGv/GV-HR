@@ -8,7 +8,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans-thai), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
-  --font-mono: var(--font-mono);
+  /* Times and codes use the same Anuphan face (one typeface everywhere); callers add tabular-nums so digits still line up. */
+  --font-mono: var(--font-sans-thai), ui-monospace, monospace;
   --font-heading: var(--font-sans-thai), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
 
   /* Semantic status colors (GV One) */
@@ -110,7 +111,7 @@
 :root {
   --radius: 0.75rem;
 
-  /* IBM Plex Sans Thai via next/font (see layout.tsx) is the single typeface for body and
+  /* Anuphan via next/font (see layout.tsx) is the single typeface for body and
      headings. The stacks live in the @theme block above. Do not redeclare
      --font-sans / --font-heading on :root: the old declaration there read
      next/font variables that were only defined on <body>, so it was invalid
@@ -523,6 +524,19 @@
 .gv-lift {
   transition: border-color 0.15s ease;
 }
+/* น้องวีบอท blinks every few seconds (transform only, so it costs nothing to paint). */
+.vbot .vbot-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: vbot-blink 4.2s infinite;
+}
+@keyframes vbot-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vbot .vbot-eyes { animation: none; }
+}
 .theme-flip7 .gv-lift:hover {
   border-color: var(--card-hover-border);
 }
@@ -553,4 +567,47 @@
   .theme-flip7 .flip7-pill-btn:active {
     transform: none;
   }
+}
+
+/* ── Login hero (2026-11, login-motion-mock.html) ──
+   Light comes from plain radial gradients (no blur filter) and only
+   transform animates, so the drift is GPU-cheap; reduced motion holds still. */
+.login-glow {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+.login-glow-a {
+  width: 900px;
+  height: 900px;
+  left: -200px;
+  top: -420px;
+  background: radial-gradient(closest-side, rgba(13, 148, 136, 0.55), rgba(13, 148, 136, 0));
+  animation: login-drift 14s ease-in-out infinite alternate;
+}
+.login-glow-b {
+  width: 700px;
+  height: 700px;
+  right: -260px;
+  bottom: -320px;
+  background: radial-gradient(closest-side, rgba(45, 212, 191, 0.22), rgba(45, 212, 191, 0));
+  animation: login-drift 18s ease-in-out infinite alternate-reverse;
+}
+.login-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse at 30% 30%, #000 10%, transparent 70%);
+  mask-image: radial-gradient(ellipse at 30% 30%, #000 10%, transparent 70%);
+}
+@keyframes login-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(60px, 40px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-glow { animation: none; }
 }

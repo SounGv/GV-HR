@@ -10,6 +10,7 @@ import { executeTool, NEXA_TOOLS } from "@/lib/ai/tools";
 import { resolveAiAccess, employeeScopeWhere } from "@/lib/ai/scope";
 import { prisma } from "@/lib/prisma";
 import { loginIdentifier } from "@/lib/format";
+import { REPORT_LABELS, type ReportType } from "@/features/report/schema";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,7 @@ const MAX_STEPS = 6;
 const MAX_TOKENS = 2048;
 
 /** Activity surfaced to the UI so the user sees how the AI grounded its answer. */
-type Step = { tool: string; detail: string };
+type Step = { tool: string; detail: string; report?: { type: string; period?: string } };
 
 function buildSystemPrompt(companyName: string, userName: string, today: string): string {
   return [
@@ -45,6 +46,11 @@ function buildSystemPrompt(companyName: string, userName: string, today: string)
     "6) ค้นเว็บ — ใช้ web_search เฉพาะเมื่อคำถามไม่เกี่ยวกับข้อมูลภายในบริษัท (เช่น กฎหมายแรงงาน, วันหยุดราชการ, ความรู้ทั่วไปด้าน HR) ห้ามใช้ถามเรื่องพนักงาน/เวลาทำงาน/เงินเดือน/ประกาศของบริษัทนี้ เมื่อใช้ผลจาก web_search ต้องบอกผู้ใช้ชัดเจนว่าข้อมูลนี้มาจากอินเทอร์เน็ต ไม่ใช่จากระบบภายในบริษัท พร้อมระบุแหล่งที่มา (ชื่อเว็บไซต์/ลิงก์)",
     "",
     "ตอบเป็นภาษาไทยกระชับ ชัดเจน มีตัวเลขและที่มาของข้อมูลเมื่อเกี่ยวข้อง",
+    "",
+    "รูปแบบคำตอบ (หน้าจอแบ่งคำตอบเป็น 2 ส่วน):",
+    "- ย่อหน้าแรก: สรุปคำตอบ 1-2 ประโยค เป็นข้อความธรรมดา ไม่มีหัวข้อหรือตาราง แล้วเว้นบรรทัดว่าง 1 บรรทัด",
+    "- ส่วนรายละเอียด: ขึ้นต้นด้วยหัวข้อ ## แล้วใช้ตาราง Markdown (| คอลัมน์ |) สำหรับรายชื่อหรือตัวเลขหลายแถว ใช้ ### แบ่งหัวข้อย่อย ข้อควรระวังเขียนเป็นย่อหน้าที่ขึ้นต้นด้วย ⚠️",
+    "- คำถามสั้นที่ตอบได้ในประโยคเดียว ไม่ต้องมีส่วนรายละเอียด",
   ].join("\n");
 }
 
@@ -101,7 +107,15 @@ export async function POST(request: NextRequest) {
         const toolResults: Anthropic.ToolResultBlockParam[] = [];
         for (const block of response.content) {
           if (block.type !== "tool_use") continue;
-          steps.push({ tool: block.name, detail: describeTool(block.name, block.input) });
+          const input = (block.input ?? {}) as Record<string, unknown>;
+          steps.push({
+            tool: block.name,
+            detail: describeTool(block.name, block.input),
+            // Lets the UI offer "เปิดรายงานเต็ม" straight into the same report.
+            ...(block.name === "get_hr_report" && typeof input.type === "string"
+              ? { report: { type: input.type, ...(typeof input.period === "string" ? { period: input.period } : {}) } }
+              : {}),
+          });
           const out = await executeTool(session, block.name, block.input as Record<string, unknown>, meta, scopeWhere);
           toolResults.push({ type: "tool_result", tool_use_id: block.id, content: out });
         }
@@ -125,7 +139,7 @@ function describeTool(name: string, input: unknown): string {
     case "get_headcount":
       return "ดึงสรุปจำนวนพนักงาน";
     case "get_hr_report":
-      return `ดึงรายงาน: ${String(i.type ?? "")}${i.period ? ` (${i.period})` : ""}`;
+      return `ดึงรายงาน: ${REPORT_LABELS[i.type as ReportType] ?? String(i.type ?? "")}${i.period ? ` · ${String(i.period)}` : ""}`;
     case "search_employees":
       return `ค้นหาพนักงาน: ${String(i.query ?? "")}`;
     case "get_employee_context":

@@ -1,136 +1,94 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { ReceiptText, GitBranch, CalendarClock, CheckCircle2, PencilLine } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { ArrowRight, CalendarClock, CalendarDays, CheckCircle2, GitBranch, PencilLine, ReceiptText, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LeaveIcon, OvertimeIcon } from "@/components/shared/illustrated-icons";
 import type { DashboardActions } from "./service";
 
 interface ApprovalTile {
   key: keyof DashboardActions["approvals"];
   label: string;
   href: string;
-  render: () => ReactNode;
+  icon: typeof ReceiptText;
+  /** Chip colours: background, border, icon. */
+  tone: string;
 }
 
 const TILES: ApprovalTile[] = [
-  { key: "leave", label: "การลารออนุมัติ", href: "/leave?view=overview", render: () => <LeaveIcon size={34} /> },
-  { key: "overtime", label: "OT รออนุมัติ", href: "/overtime?view=overview", render: () => <OvertimeIcon size={34} /> },
-  {
-    key: "correction",
-    label: "แก้ไขเวลารออนุมัติ",
-    href: "/attendance/corrections",
-    render: () => (
-      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-teal,#0D9488)]">
-        <PencilLine className="size-[18px] text-white" />
-      </span>
-    ),
-  },
-  {
-    key: "expense",
-    label: "เบิกจ่ายรออนุมัติ",
-    href: "/expenses",
-    render: () => (
-      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-teal,#0D9488)]">
-        <ReceiptText className="size-[18px] text-white" />
-      </span>
-    ),
-  },
-  {
-    key: "workflow",
-    label: "คำขออนุมัติ",
-    href: "/workflows",
-    render: () => (
-      <span className="flex size-[34px] items-center justify-center rounded-lg bg-[var(--flip7-teal,#0D9488)]">
-        <GitBranch className="size-[18px] text-white" />
-      </span>
-    ),
-  },
+  { key: "leave", label: "การลา", href: "/leave?view=overview", icon: CalendarDays, tone: "border-status-leave-border bg-status-leave-bg text-status-leave-fg" },
+  { key: "overtime", label: "OT", href: "/overtime?view=overview", icon: Zap, tone: "border-violet-200 bg-violet-50 text-violet-700" },
+  { key: "correction", label: "แก้ไขเวลาเข้า-ออก", href: "/attendance/corrections", icon: PencilLine, tone: "border-teal-100 bg-teal-50 text-teal-700" },
+  { key: "expense", label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, tone: "border-amber-200 bg-amber-50 text-amber-700" },
+  { key: "workflow", label: "คำขออนุมัติอื่นๆ", href: "/workflows", icon: GitBranch, tone: "border-slate-200 bg-slate-50 text-slate-700" },
 ];
 
 /**
- * "รอคุณอนุมัติ" — a dark banner (redesign spec: N mockup) with the total
- * pending count in lime up front, one pill per approval type that actually
- * has something pending, and a CTA into the first one. Falls back to a
- * plain empty-state card when there's nothing to approve and no personal
- * shift/pending-request info to show either.
+ * "รอคุณอนุมัติ": a white card with the total up front, one row per approval
+ * type that has something pending, and a single CTA into the first one. The
+ * personal line (today's shift, my own pending requests) sits in the footer.
  */
-export function ActionCenter({ data, followUp }: { data: DashboardActions; followUp?: React.ReactNode }) {
+export function ActionCenter({ data }: { data: DashboardActions }) {
   const tiles = TILES.filter((t) => data.approvals[t.key] > 0);
-  const nothingToApprove = tiles.length === 0;
-  const showPersonal = !!data.shiftToday || data.myPending > 0;
   const totalApprovals = tiles.reduce((sum, t) => sum + data.approvals[t.key], 0);
-
-  if (nothingToApprove && !showPersonal) {
-    return (
-      <section>
-        <h2 className="mb-3 text-sm font-semibold text-foreground">ศูนย์การดำเนินการ</h2>
-        <Card className="flex-row items-center gap-2 p-4 text-sm text-muted-foreground">
-          <CheckCircle2 className="size-4 text-success" />
-          ไม่มีงานค้างที่ต้องดำเนินการ
-        </Card>
-      </section>
-    );
-  }
+  const showPersonal = !!data.shiftToday || data.myPending > 0;
 
   return (
-    <section className="space-y-3">
-      {!nothingToApprove && (
-        <div className="gv-teal-surface flex flex-wrap items-center gap-4 rounded-2xl p-5">
-          <div className="flex flex-col">
-            <span className="text-sm text-white/85">รอคุณอนุมัติ</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-[30px] leading-tight font-bold text-[var(--flip7-gold)] tabular-nums">{totalApprovals}</span>
-              <span className="text-sm">รายการ</span>
-            </div>
-          </div>
+    <section
+      aria-label="รอคุณอนุมัติ"
+      className="gv-lift flex flex-col rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]"
+    >
+      <div className="flex items-center gap-2 px-4 pt-3.5">
+        <h2 className="text-sm font-semibold">รอคุณอนุมัติ</h2>
+      </div>
 
-          <div className="flex min-w-0 flex-1 flex-col gap-3">
-          {/* Attendance follow-up chips (absent / late / leave today) sit in the free space of this strip. */}
-          {followUp}
-          <div className="flex flex-wrap gap-3">
-            {tiles.map((t) => (
-              <Link
-                key={t.key}
-                href={t.href}
-                className="flex min-w-[170px] items-center gap-3 rounded-xl bg-white/10 px-3 py-2 ring-1 ring-white/10 transition-colors hover:bg-white/15"
-              >
-                {t.render()}
-                <div className="flex flex-col leading-tight">
-                  <span className="text-lg leading-tight font-bold tabular-nums">{data.approvals[t.key]}</span>
-                  <span className="text-xs text-slate-100">{t.label}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-          </div>
-
-          <Link
-            href={tiles[0].href}
-            className="flip7-pill-btn flex h-10 items-center px-4 text-sm"
-          >
-            ตรวจอนุมัติ
-          </Link>
-        </div>
+      {tiles.length === 0 ? (
+        <p className="flex items-center gap-2 px-4 pt-2 pb-4 text-sm text-muted-foreground">
+          <CheckCircle2 className="size-4 text-success" aria-hidden="true" />
+          ไม่มีคำขอรออนุมัติ
+        </p>
+      ) : (
+        <>
+          <p className="flex items-baseline gap-1.5 px-4">
+            <span className="text-[30px] leading-tight font-bold text-[var(--flip7-teal-dark)] tabular-nums">{totalApprovals}</span>
+            <span className="text-[13px] text-muted-foreground">รายการ</span>
+          </p>
+          <ul className="mt-1.5 px-2">
+            {tiles.map((t) => {
+              const Icon = t.icon;
+              return (
+                <li key={t.key}>
+                  <Link href={t.href} className="gv-row flex items-center gap-2.5 rounded-[10px] px-2 py-1.5 text-sm">
+                    <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg border", t.tone)}>
+                      <Icon className="size-[15px]" aria-hidden="true" />
+                    </span>
+                    {t.label}
+                    <span className="ml-auto text-[15px] font-semibold tabular-nums">{data.approvals[t.key]}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
-      {showPersonal && (
-        <div className={cn("flex flex-wrap items-center gap-2", nothingToApprove && "pt-0")}>
+      {(tiles.length > 0 || showPersonal) && (
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-3">
           {data.shiftToday && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm">
-              <CalendarClock className="size-4 text-primary" />
-              เวรวันนี้: <span className="font-medium">{data.shiftToday.name}</span>
-              <span className="text-muted-foreground">
-                {data.shiftToday.startTime}–{data.shiftToday.endTime}
-              </span>
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CalendarClock className="size-3.5 text-primary" aria-hidden="true" />
+              เวรวันนี้ <span className="font-medium text-foreground">{data.shiftToday.name}</span>
+              {data.shiftToday.startTime}–{data.shiftToday.endTime}
             </span>
           )}
           {data.myPending > 0 && (
+            <Link href="/workflows" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+              คำขอของฉันที่รออนุมัติ <span className="font-medium text-foreground tabular-nums">{data.myPending}</span>
+            </Link>
+          )}
+          {tiles.length > 0 && (
             <Link
-              href="/workflows"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:border-primary/40"
+              href={tiles[0].href}
+              className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)] transition-colors hover:bg-[#115e59]"
             >
-              คำขอของฉันที่รออนุมัติ: <span className="font-medium">{data.myPending}</span>
+              ตรวจอนุมัติ <ArrowRight className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
             </Link>
           )}
         </div>

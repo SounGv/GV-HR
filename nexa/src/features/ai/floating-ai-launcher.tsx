@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
+import { VBot } from "@/components/shared/v-bot";
 
 import { useAiAccess } from "./hooks";
 import { AiChatView } from "./ai-chat-view";
@@ -28,12 +29,12 @@ export function AiChatPanel() {
       className="fixed right-6 bottom-6 z-50 hidden h-[34rem] w-[24rem] flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl md:flex"
     >
       <div className="flex items-center gap-3 bg-[var(--chat-teal)] px-4 py-3 text-white">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25" aria-hidden="true">
-          <Sparkles className="size-[18px]" />
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-white/25" aria-hidden="true">
+          <VBot mood="hi" className="h-7 w-8" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm leading-tight font-semibold">AI Assistant</p>
-          <p className="text-xs leading-tight text-white/85">ผู้ช่วยงาน HR ตอบจากข้อมูลจริง</p>
+          <p className="text-xs leading-tight text-white/85">น้องวีบอท · ตอบจากข้อมูลจริง</p>
         </div>
         <button
           type="button"

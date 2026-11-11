@@ -31,6 +31,19 @@ export function displayName(person: {
   return nickname ? `${name} (${nickname})` : name;
 }
 
+/**
+ * One or two letters for an avatar circle, taken from a displayName() string:
+ * the nickname in brackets when there is one (that's what colleagues call each
+ * other), else the first name. Splits by grapheme so a Thai consonant keeps its
+ * vowel/tone marks instead of being cut off mid-cluster.
+ */
+export function avatarInitials(name: string): string {
+  const nick = /\(([^)]+)\)\s*$/.exec(name)?.[1]?.trim();
+  const source = (nick || name.trim().split(/\s+/)[0] || "?").trim();
+  const graphemes = [...new Intl.Segmenter("th", { granularity: "grapheme" }).segment(source)].map((g) => g.segment);
+  return graphemes.slice(0, 2).join("").toUpperCase();
+}
+
 /** Login identifier for display when there's no employee name to show —
  * accounts can have an email, a username, or (rarely, transiently) neither. */
 export function loginIdentifier(user: { email?: string | null; username?: string | null }): string {

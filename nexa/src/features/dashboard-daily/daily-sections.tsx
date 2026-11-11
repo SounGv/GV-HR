@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { STATUS_META } from "@/features/attendance-status/status-meta";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { cn } from "@/lib/utils";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 import {
   loadMeetingsToday,
   loadMissedScanOuts,
@@ -60,10 +61,11 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function Person({ name, sub, tag }: { name: string; sub: string; tag?: React.ReactNode }) {
   return (
-    <li className="gv-row -mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-2">
-      <span className="min-w-0">
-        <span className="block text-sm font-semibold break-words text-foreground">{name}</span>
-        <span className="block text-sm text-muted-foreground tabular-nums">{sub}</span>
+    <li className="gv-row -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+      <PersonAvatar name={name} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] leading-snug font-semibold break-words text-foreground">{name}</span>
+        <span className="block text-xs text-muted-foreground tabular-nums">{sub}</span>
       </span>
       {tag}
     </li>
@@ -87,7 +89,7 @@ export function MissedScanOutCard({ rows, days }: { rows: MissedScanOut[]; days:
       {rows.length === 0 ? (
         <Empty>ทุกคนสแกนออกครบ</Empty>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul>
           {rows.slice(0, SHOWN).map((r) => (
             <Person
               key={r.recordId}
@@ -121,7 +123,7 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
       {rows.length === 0 ? (
         <Empty>วันนี้ยังไม่มีใครขอ OT</Empty>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul>
           {rows.slice(0, SHOWN).map((r) => (
             <Person
               key={r.requestId}
@@ -159,7 +161,7 @@ export function MeetingsTodayCard({ rows }: { rows: MeetingToday[] }) {
       {rows.length === 0 ? (
         <Empty>วันนี้ไม่มีนัดประชุม</Empty>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul>
           {rows.slice(0, SHOWN).map((m) => (
             <li key={m.id} className="gv-row -mx-2 rounded-lg px-2 py-2">
               <Link href={`/meetings/${m.id}`} className="block hover:underline">

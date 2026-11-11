@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 import { STATUS_META, watchListHref } from "./status-meta";
 import { WATCH_ABSENT_DAYS, WATCH_LATE_COUNT, WATCH_LEAVE_COUNT, type TodayStatus } from "./status-rules";
 import type { AttendanceWatch, WatchPerson } from "./types";
@@ -63,12 +64,13 @@ export function WatchlistCard({ data, departmentIds }: WatchProps) {
         {data.people.length === 0 ? (
           <p className="text-sm text-muted-foreground">ยังไม่มีใครเข้าเกณฑ์ติดตาม</p>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul>
             {data.people.slice(0, 6).map((p) => (
-              <li key={p.code} className="gv-row -mx-2 flex flex-wrap items-center justify-between gap-2 rounded-lg px-2 py-2.5">
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
-                  <span className="block text-sm text-muted-foreground">{p.department}</span>
+              <li key={p.code} className="gv-row -mx-2 flex flex-wrap items-center gap-2.5 rounded-lg px-2 py-1.5">
+                <PersonAvatar name={p.name} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] leading-snug font-semibold break-words text-foreground">{p.name}</span>
+                  <span className="block text-xs text-muted-foreground">{p.department}</span>
                 </span>
                 <WatchTags person={p} />
               </li>

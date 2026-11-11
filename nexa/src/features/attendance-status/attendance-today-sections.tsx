@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 import { STATUS_META, STATUS_ORDER, attendanceListHref } from "./status-meta";
 import type { TodayStatus } from "./status-rules";
 import type { TodayAttendance, TodayPerson } from "./types";
@@ -268,13 +269,16 @@ export function AttendanceAttentionCards({ data, departmentIds }: SectionProps) 
               {sorted.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{empty}</p>
               ) : (
-                <ul className="divide-y divide-border">
+                <ul>
                   {sorted.slice(0, 5).map((p) => (
-                    <li key={p.employeeId} className="gv-row -mx-2 rounded-lg px-2 py-2">
-                      <p className="text-sm font-semibold break-words text-foreground">{p.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {p.department} · {personLine(p, status)}
-                      </p>
+                    <li key={p.employeeId} className="gv-row -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+                      <PersonAvatar name={p.name} />
+                      <span className="min-w-0">
+                        <span className="block text-[13px] leading-snug font-semibold break-words text-foreground">{p.name}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {p.department} · {personLine(p, status)}
+                        </span>
+                      </span>
                     </li>
                   ))}
                 </ul>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
-import { ArrowUpRight, ArrowRight, TriangleAlert, Sparkles } from "lucide-react";
+import { ArrowUp, ArrowUpRight, ArrowRight, TriangleAlert } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { can } from "@/lib/auth/rbac";
 import {
@@ -38,6 +38,7 @@ import {
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { VBot } from "@/components/shared/v-bot";
 import { AttendanceRateLine } from "@/features/dashboard/dashboard-charts-lazy";
 import { KpiMiniBars } from "@/features/dashboard/kpi-mini-bars";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
@@ -201,8 +202,19 @@ function SectionHeading({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
+/** Bangkok wall-clock hour: the server runs in UTC, so getHours() alone greeted people with the wrong part of the day. */
+function bangkokHour(): number {
+  return Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Asia/Bangkok" }).format(new Date()));
+}
+
+/** e.g. "วันพุธที่ 11 พฤศจิกายน 2569" (Buddhist year, Bangkok date). */
+function todayLabel(): string {
+  return new Intl.DateTimeFormat("th-TH", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" })
+    .format(new Date());
+}
+
 function greeting(): string {
-  const h = new Date().getHours();
+  const h = bangkokHour();
   if (h < 12) return "สวัสดีตอนเช้า";
   if (h < 17) return "สวัสดีตอนบ่าย";
   return "สวัสดีตอนเย็น";
@@ -322,6 +334,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // Display-only re-sort (dashboard-fix-3): lateness is the real actionable
   // signal, a missing clock-in is often just an unlogged record — leaves the
   // watchlist query/service untouched, just changes the order shown here.
+  const pendingApprovals = Object.values(actions.approvals).reduce((sum, n) => sum + n, 0);
   const departmentWatchlistRanked = [...departmentWatchlist].sort(
     (a, b) => b.late - a.late || b.absent - a.absent,
   );
@@ -331,51 +344,59 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <MobileDashboardView name={name} mine={mine} actions={actions} />
       <LiveTodayProvider initial={attendanceToday} departmentIds={deptIds}>
       <div className="theme-flip7 gv-page-band hidden space-y-6 md:-mx-6 md:-mt-6 md:block md:px-6 md:pt-6">
-      {/* Greeting + AI summary — plain text header, one dark AI card right
-          under it (redesign spec: N mockup merges what used to be two
-          separate dark hero cards bookending the page into this single one). */}
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-[22px] leading-snug font-bold">
-          {greeting()}, {name} 👋
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          ยินดีต้อนรับเข้าสู่ GV One HR AI Platform · {user?.company?.name}
-        </p>
+      {/* Greeting, date and the page-wide controls on one row. */}
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="font-heading text-[22px] leading-snug font-bold">
+            {greeting()}, {name} 👋
+          </h1>
+          <p className="text-[13px] text-muted-foreground">
+            {todayLabel()} · {user?.company?.name}
+          </p>
+        </div>
+        {attendanceToday && (
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            <LiveStamp />
+            <DepartmentFilter departments={departmentOptions} selected={deptIds[0] ?? null} />
+          </div>
+        )}
       </div>
 
-      <Card className="gv-teal-surface rounded-2xl border-0 p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <span className="flex size-[34px] shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-            <Sparkles className="size-4 text-[var(--flip7-gold)]" />
-          </span>
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-xs font-semibold tracking-wide text-[var(--flip7-gold)] uppercase">สรุปวันนี้จาก AI</p>
-            <p className="text-sm leading-relaxed text-slate-100">
-              วันนี้พนักงานเข้างาน <b className="text-white">{s.presentToday}</b> คน
-              ({s.attendanceRate}%) · มาสาย <b className="text-white">{s.lateToday}</b> คน ·
-              ลา <b className="text-white">{s.onLeaveToday}</b> คน ·
-              OT <b className="text-white">{s.otHoursToday}</b> ชม.
-              {s.lateToday > 0
-                ? " แนะนำให้ตรวจสอบพนักงานที่มาสายและติดตามเป็นรายบุคคล"
-                : " อัตราการเข้างานอยู่ในเกณฑ์ดี 👍"}
-            </p>
-          </div>
-          <Button
-            size="sm"
-            className="flip7-pill-btn shrink-0"
-            render={<Link href="/ai" />}
+      {/* AI: one-line summary plus an ask box that opens the AI page with the question. */}
+      <section
+        aria-label="สรุปวันนี้จาก AI"
+        className="grid items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-card p-3 pr-3.5 shadow-[var(--card-shadow)] lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
+      >
+        <VBot mood="hi" className="hidden h-10 w-11 lg:block" />
+        <p className="text-[13.5px] leading-relaxed">
+          <span className="block text-xs font-semibold text-[var(--flip7-teal-dark)]">สรุปวันนี้จาก AI</span>
+          เข้างาน <b className="tabular-nums">{s.presentToday}</b> คน ({s.attendanceRate}%) · มาสาย{" "}
+          <b className="tabular-nums">{s.lateToday}</b> คน · ลา <b className="tabular-nums">{s.onLeaveToday}</b> คน
+          {pendingApprovals > 0 && (
+            <>
+              {" "}
+              · รอคุณอนุมัติ <b className="tabular-nums">{pendingApprovals}</b> รายการ
+            </>
+          )}
+        </p>
+        <form action="/ai" className="flex h-10 items-center gap-1.5 rounded-xl border-[1.5px] border-[#cfd6dc] bg-card pr-1 pl-3 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15">
+          <input
+            name="q"
+            required
+            maxLength={500}
+            aria-label="ถาม AI Assistant"
+            placeholder="ถาม AI เช่น ใครมาสายเกิน 3 ครั้งเดือนนี้"
+            className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+          />
+          <button
+            type="submit"
+            aria-label="ส่งคำถาม"
+            className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#115e59]"
           >
-            <Sparkles className="size-4" /> ถาม AI Assistant
-          </Button>
-        </div>
-      </Card>
-
-      {attendanceToday && (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <DepartmentFilter departments={departmentOptions} selected={deptIds[0] ?? null} />
-          <LiveStamp />
-        </div>
-      )}
+            <ArrowUp className="size-4" strokeWidth={2.4} />
+          </button>
+        </form>
+      </section>
 
       {/* Today's attendance and what waits for me sit side by side, so neither takes a whole row. */}
       <div className={cn("grid items-stretch gap-4", attendanceToday && "xl:grid-cols-2")}>
