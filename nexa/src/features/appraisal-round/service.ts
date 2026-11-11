@@ -92,6 +92,7 @@ export async function listCandidates(companyId: string) {
       lastName: true,
       nickname: true,
       managerId: true,
+      gender: true,
       department: { select: { id: true, name: true } },
     },
     orderBy: [{ department: { name: "asc" } }, { employeeCode: "asc" }],
@@ -103,6 +104,7 @@ export async function listCandidates(companyId: string) {
     departmentId: e.department?.id ?? null,
     department: e.department?.name ?? "ไม่ระบุแผนก",
     hasManager: !!e.managerId,
+    gender: e.gender ?? null,
   }));
 }
 
@@ -213,7 +215,18 @@ export async function updateRound(companyId: string, session: AccessClaims, id: 
 async function loadRoster(companyId: string) {
   return prisma.employee.findMany({
     where: { companyId, deletedAt: null },
-    select: { id: true, managerId: true, status: true, firstName: true, lastName: true, nickname: true, userId: true, lineUserId: true },
+    select: {
+      id: true,
+      managerId: true,
+      status: true,
+      firstName: true,
+      lastName: true,
+      nickname: true,
+      userId: true,
+      lineUserId: true,
+      gender: true,
+      department: { select: { name: true } },
+    },
   });
 }
 
@@ -277,6 +290,37 @@ export async function getRound(companyId: string, id: string) {
   const byType = new Map<string, number>();
   for (const m of match.matches) byType.set(m.raterType, (byType.get(m.raterType) ?? 0) + 1);
 
+  // One row per person for the wizard's "who rates whom" table.
+  const rosterById = new Map(roster.map((e) => [e.id, e]));
+  const perPerson = new Map<string, { managerId: string | null; self: boolean; peers: number; subs: number }>();
+  for (const pid of participantIds) perPerson.set(pid, { managerId: null, self: false, peers: 0, subs: 0 });
+  for (const m of match.matches) {
+    const row = perPerson.get(m.participantId);
+    if (!row) continue;
+    if (m.raterType === "MANAGER") row.managerId = m.raterId;
+    else if (m.raterType === "SELF") row.self = true;
+    else if (m.raterType === "PEER") row.peers++;
+    else row.subs++;
+  }
+  const rows = participantIds.map((pid) => {
+    const r = perPerson.get(pid)!;
+    const e = rosterById.get(pid);
+    return {
+      employeeId: pid,
+      name: nameOf.get(pid) ?? "-",
+      gender: e?.gender ?? null,
+      department: e?.department?.name ?? "ไม่ระบุแผนก",
+      managerId: r.managerId,
+      managerName: r.managerId ? (nameOf.get(r.managerId) ?? "-") : null,
+      managerGender: r.managerId ? (rosterById.get(r.managerId)?.gender ?? null) : null,
+      self: r.self,
+      peers: r.peers,
+      subs: r.subs,
+    };
+  });
+  // The rater with the most people: the example message the review step previews.
+  const busiest = plan.lines.filter((l) => reachable.has(l.raterId)).sort((a, b) => b.count - a.count)[0];
+
   return {
     id: round.id,
     name: round.name,
@@ -298,6 +342,8 @@ export async function getRound(companyId: string, id: string) {
       assignmentCount: match.matches.length,
       byType: Object.fromEntries(byType),
       exceptions: match.exceptions.map((e) => ({ kind: e.kind, employeeId: e.employeeId, name: nameOf.get(e.employeeId) ?? "-", detail: e.detail ?? null })),
+      raterCount: plan.lines.length,
+      rows,
     },
     invitations: {
       total: plan.total,
@@ -306,6 +352,7 @@ export async function getRound(companyId: string, id: string) {
       unreachable: plan.unreachable,
       unreachableNames,
       lineConfigured: isLineConfigured(),
+      example: busiest ? { name: nameOf.get(busiest.raterId) ?? "-", count: busiest.count } : null,
     },
     checks,
     ready: checks.every((c) => c.ok),

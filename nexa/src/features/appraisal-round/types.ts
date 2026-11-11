@@ -44,12 +44,27 @@ export interface Candidate {
   departmentId: string | null;
   department: string;
   hasManager: boolean;
+  gender: string | null;
 }
 
 export interface PublishedForm {
   id: string;
   name: string;
   questionCount: number;
+}
+
+/** One person in the round and who will rate them, as matched from the org chart. */
+export interface MatchRow {
+  employeeId: string;
+  name: string;
+  gender: string | null;
+  department: string;
+  managerId: string | null;
+  managerName: string | null;
+  managerGender: string | null;
+  self: boolean;
+  peers: number;
+  subs: number;
 }
 
 export interface RoundCheck {
@@ -80,6 +95,9 @@ export interface RoundDetail {
     assignmentCount: number;
     byType: Record<string, number>;
     exceptions: { kind: "NO_MANAGER" | "NO_PEERS" | "NO_RATER" | "OVERLOADED"; employeeId: string; name: string; detail: number | null }[];
+    /** Different people who will get an invitation. */
+    raterCount: number;
+    rows: MatchRow[];
   };
   invitations: {
     total: number;
@@ -88,6 +106,8 @@ export interface RoundDetail {
     unreachable: number;
     unreachableNames: string[];
     lineConfigured: boolean;
+    /** The rater with the most people to rate, for the message preview. */
+    example: { name: string; count: number } | null;
   };
   checks: RoundCheck[];
   ready: boolean;
