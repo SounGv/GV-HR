@@ -124,7 +124,7 @@ export function TeamOverview({
                         top ? "text-[#0f766e]" : "text-muted-foreground",
                       )}
                     >
-                      {i + 1}
+                      {d.name === "อื่นๆ" ? "–" : i + 1}
                     </span>
                     <span
                       className={cn(

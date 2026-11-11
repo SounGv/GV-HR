@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Check, ChevronRight, type LucideIcon } from "lucide-react";
 
+import { avatarInitials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
@@ -22,13 +23,6 @@ export type FollowOrder = number;
 
 const AVATAR_TINT = ["bg-[#ccfbf1] text-[#0f766e]", "bg-[#fef3c7] text-[#92400e]", "bg-[#e0e7ff] text-[#3730a3]"];
 
-/** "วันชัย (เบียร์)" → "เบ": the nickname reads best; else the first two letters of the name. */
-function faceLetters(name: string): string {
-  const open = name.indexOf("(");
-  const close = name.indexOf(")", open + 1);
-  const nick = open >= 0 && close > open ? name.slice(open + 1, close) : name;
-  return nick.trim().slice(0, 2);
-}
 
 /** Up to three overlapping initials + "+N" (wide cards only), so the names read at a glance. */
 function Faces({ names }: { names: string[] }) {
@@ -44,7 +38,7 @@ function Faces({ names }: { names: string[] }) {
             AVATAR_TINT[i % AVATAR_TINT.length],
           )}
         >
-          {faceLetters(n)}
+          {avatarInitials(n)}
         </span>
       ))}
       {uniq.length > 3 && (
@@ -102,7 +96,7 @@ export function FollowRow({
     // Nothing to follow: a short muted line at the end of the list.
     return (
       <div
-        className="flex items-center gap-3 border-t border-[#eef1f3] px-4 py-2 first:border-t-0 dark:border-border"
+        className="flex items-center gap-3 border-t border-[#eef1f3] px-4 py-2 dark:border-border"
         style={{ order: 100 + order }}
       >
         <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset", TONE.ok.chip)}>
@@ -143,13 +137,13 @@ export function FollowRow({
 
   if (!opens) {
     return (
-      <div className={cn(rowClass, "border-t border-[#eef1f3] first:border-t-0 dark:border-border")} style={{ order }}>
+      <div className={cn(rowClass, "border-t border-[#eef1f3] dark:border-border")} style={{ order }}>
         {head}
       </div>
     );
   }
   return (
-    <details className="group border-t border-[#eef1f3] first:border-t-0 dark:border-border" style={{ order }}>
+    <details className="group border-t border-[#eef1f3] dark:border-border" style={{ order }}>
       <summary
         className={cn(rowClass, "cursor-pointer list-none transition-colors hover:bg-[var(--row-hover,#f6f8f9)] [&::-webkit-details-marker]:hidden")}
       >
@@ -176,7 +170,7 @@ export function FollowRowFailed({ icon, title, what, order }: { icon: LucideIcon
   const Icon = icon;
   return (
     <div
-      className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-t border-[#eef1f3] px-4 py-3 first:border-t-0 dark:border-border"
+      className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-t border-[#eef1f3] px-4 py-3 dark:border-border"
       style={{ order }}
     >
       <span className="flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
@@ -193,7 +187,7 @@ export function FollowRowFailed({ icon, title, what, order }: { icon: LucideIcon
 /** Placeholder row while a slow row loads. */
 export function FollowRowLoading({ order }: { order: FollowOrder }) {
   return (
-    <div className="flex items-center gap-3 border-t border-[#eef1f3] px-4 py-3 first:border-t-0 dark:border-border" style={{ order }}>
+    <div className="flex items-center gap-3 border-t border-[#eef1f3] px-4 py-3 dark:border-border" style={{ order }}>
       <span className="size-10 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
       <span className="h-4 w-40 animate-pulse rounded bg-muted motion-reduce:animate-none" />
     </div>

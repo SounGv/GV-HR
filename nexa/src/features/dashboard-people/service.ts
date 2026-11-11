@@ -188,6 +188,7 @@ const RATER_LABEL: Record<string, string> = {
   PEER: "เพื่อนร่วมงานประเมิน",
   UPWARD: "ลูกน้องประเมินหัวหน้า",
   HR_EXEC: "HR/ผู้บริหารประเมิน",
+  SUBORDINATE: "ลูกน้องประเมินหัวหน้า",
 };
 
 export interface CampaignProgress {
@@ -199,6 +200,8 @@ export interface CampaignProgress {
   daysLeft: number;
   overall: ResponseTally;
   byRater: { raterType: string; label: string; tally: ResponseTally }[];
+  /** Where "ดูรายละเอียดรอบนี้" goes: the new appraisal round page, or the old campaign page. */
+  href: string;
 }
 
 /**
@@ -236,6 +239,38 @@ export async function loadEvaluationProgress(companyId: string, session: AccessC
         label: RATER_LABEL[raterType] ?? raterType,
         tally: tallyResponses(statuses),
       })),
+      href: `/performance/campaigns/${c.id}`,
+    });
+  }
+
+  // The evaluation system HR uses now (/appraisal): open rounds and their rater assignments.
+  const rounds = await prisma.appraisalRound.findMany({
+    where: { companyId, deletedAt: null, status: "OPEN" },
+    select: { id: true, name: true, endDate: true },
+    orderBy: { endDate: "asc" },
+    take: 5,
+  });
+  for (const r of rounds) {
+    const assignments = await prisma.appraisalAssignment.findMany({
+      where: { participant: { roundId: r.id, ...(scope ? { employee: scope } : {}) } },
+      select: { raterType: true, status: true },
+    });
+    const byType = new Map<string, ("PENDING" | "IN_PROGRESS" | "SUBMITTED")[]>();
+    for (const a of assignments) byType.set(a.raterType, [...(byType.get(a.raterType) ?? []), a.status]);
+    const end = r.endDate ? bangkokDay(r.endDate) : null;
+    result.push({
+      id: r.id,
+      name: r.name,
+      cycle: "รอบประเมิน",
+      endIso: end ? iso(end) : iso(today),
+      daysLeft: end ? daysBetween(today, end) : 0,
+      overall: tallyResponses(assignments.map((a) => a.status)),
+      byRater: [...byType.entries()].map(([raterType, statuses]) => ({
+        raterType,
+        label: RATER_LABEL[raterType] ?? raterType,
+        tally: tallyResponses(statuses),
+      })),
+      href: `/appraisal/rounds/${r.id}`,
     });
   }
   return result;

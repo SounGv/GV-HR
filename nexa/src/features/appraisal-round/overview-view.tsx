@@ -73,6 +73,7 @@ function useStartNewRound() {
   const create = useCreateRound();
   async function start() {
     try {
+      if (!window.confirm("สร้างรอบประเมินฉบับร่างใหม่? (ยังไม่ส่งถึงใคร จนกว่าจะเปิดรอบ)")) return;
       const res = await create.mutateAsync("รอบประเมินใหม่");
       router.push(`/appraisal/rounds/${res.data.id}`);
     } catch (err) {

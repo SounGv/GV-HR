@@ -87,9 +87,9 @@ type Placement = { departmentId: string | null; managerId: string | null };
  * leave / OT. Everything is validated before anything is written: employees,
  * departments and managers must be live records of this company, nobody may
  * manage themself, and the moves together must not create a manager loop.
- * Only fields that actually change are written, in one transaction, then one
- * audit entry per changed employee (after commit: the pool has one
- * connection, so `writeAudit` cannot run beside the open transaction).
+ * Only fields that actually change are written, each with its audit entry,
+ * all in one transaction through the transaction client (the pool has one
+ * connection, so the global `writeAudit` cannot run beside an open transaction).
  */
 export async function applyOrgMoves(
   companyId: string,
@@ -140,28 +140,29 @@ export async function applyOrgMoves(
   });
   if (changes.length === 0) return { updated: 0 };
 
-  // Sequential on purpose: the connection pool is 1 (no Promise.all).
+  // Sequential on purpose: the connection pool is 1 (no Promise.all). Audit rows are
+  // written with the same transaction client, so the data and its history land together.
   await prisma.$transaction(
     async (tx) => {
       for (const c of changes) {
         await tx.employee.update({ where: { id: c.id }, data: { ...c.data, updatedById: session.sub }, select: { id: true } });
+        await tx.auditLog.create({
+          data: {
+            companyId,
+            actorUserId: session.sub,
+            action: "employee.org_move",
+            entity: "Employee",
+            entityId: c.id,
+            before: c.before,
+            after: c.after,
+            ip: meta?.ip,
+            userAgent: meta?.userAgent,
+          },
+        });
       }
     },
     { maxWait: 10_000, timeout: 30_000 },
   );
-
-  for (const c of changes) {
-    await writeAudit({
-      companyId,
-      actorUserId: session.sub,
-      action: "employee.org_move",
-      entity: "Employee",
-      entityId: c.id,
-      before: c.before,
-      after: c.after,
-      ...meta,
-    });
-  }
   return { updated: changes.length };
 }
 

@@ -211,7 +211,7 @@ export function EvaluationProgressCard({ campaigns }: { campaigns: CampaignProgr
             </div>
           )}
           <Link
-            href={`/performance/campaigns/${c.id}`}
+            href={c.href}
             className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline"
           >
             ดูรายละเอียดรอบนี้ <ChevronRight className="size-4" aria-hidden="true" />

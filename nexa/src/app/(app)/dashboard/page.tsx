@@ -428,7 +428,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-3">
             <SectionHeading title="ต้องตามวันนี้" hint="เรียงจากเร่งด่วนที่สุด · กดแถวเพื่อดูรายชื่อ" />
             {/* Each row loads on its own; its order value keeps the most urgent on top whatever arrives first. */}
-            <Card className="gv-rise @container gap-0 py-0" style={{ "--i": 2 } as React.CSSProperties}>
+            <Card className="gv-rise @container gap-0 py-0 [&>*]:-mt-px" style={{ "--i": 2 } as React.CSSProperties}>
               {attendanceToday && <LiveFollowRows />}
               {canSeeAttendance && (
                 <Suspense fallback={<FollowRowLoading order={3} />}>

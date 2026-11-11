@@ -161,13 +161,14 @@ export async function updateEmployeeAccount(
         select: {
           email: true,
           username: true,
+          deletedAt: true,
           roles: { select: { role: { select: { permissions: { select: { permission: { select: { key: true } } } } } } } },
         },
       },
     },
   });
   if (!emp) throw NotFound("ไม่พบพนักงาน");
-  if (!emp.userId || !emp.user) throw BadRequest("พนักงานคนนี้ยังไม่มีบัญชีเข้าใช้งาน");
+  if (!emp.userId || !emp.user || emp.user.deletedAt) throw BadRequest("พนักงานคนนี้ยังไม่มีบัญชีเข้าใช้งาน");
 
   const targetKeys = new Set<string>();
   for (const ur of emp.user.roles) {
