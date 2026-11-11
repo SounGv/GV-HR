@@ -275,7 +275,15 @@ export function MobileLeaveForm() {
             },
             {
               label: wasHourly ? "จำนวนชั่วโมง" : "จำนวนวัน",
-              value: wasHourly ? (hours != null ? `${hours} ชม.` : "—") : days != null ? `${days} วัน` : "—",
+              value: wasHourly
+                ? hours != null
+                  ? `${hours} ชม.`
+                  : "—"
+                : lastRequest.halfDay
+                  ? `ครึ่งวัน${lastRequest.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[lastRequest.halfDayPeriod]})` : ""}`
+                  : days != null
+                    ? `${days} วัน`
+                    : "—",
             },
             ...(routedTo ? [{ label: "ส่งถึง", value: routedTo }] : []),
             { label: "สถานะ", value: "รออนุมัติ", highlight: true },

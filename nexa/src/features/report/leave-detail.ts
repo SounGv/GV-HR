@@ -32,6 +32,7 @@ export interface LeaveRequestLine {
   days: number;
   hours: number | null;
   halfDay: boolean;
+  halfDayPeriod: "MORNING" | "AFTERNOON" | null;
   status: string;
   statusLabel: string;
 }
@@ -75,7 +76,7 @@ export async function loadEmployeeLeaveYear(
   });
   const requests = await prisma.leaveRequest.findMany({
     where: { employeeId: emp.id, deletedAt: null, startDate: { lt: yearEnd }, endDate: { gte: yearStart } },
-    select: { id: true, type: true, startDate: true, endDate: true, days: true, hours: true, unit: true, halfDay: true, status: true },
+    select: { id: true, type: true, startDate: true, endDate: true, days: true, hours: true, unit: true, halfDay: true, halfDayPeriod: true, status: true },
     orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
     take: 200,
   });
@@ -128,6 +129,7 @@ export async function loadEmployeeLeaveYear(
       days: r1(r.days),
       hours: r.unit === "HOUR" ? r.hours : null,
       halfDay: r.halfDay,
+      halfDayPeriod: r.halfDayPeriod,
       status: r.status,
       statusLabel: LEAVE_STATUS_LABEL[r.status] ?? r.status,
     })),

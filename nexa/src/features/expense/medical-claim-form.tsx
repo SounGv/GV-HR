@@ -31,6 +31,7 @@ import { Card } from "@/components/ui/card";
 import { PhotoAttachField } from "@/components/shared/photo-attach-field";
 import { ApiError } from "@/lib/api/client";
 import { formatDate } from "@/lib/format";
+import { HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
 import { useCreateExpense, useMedicalSummary, useSickLeaves } from "./hooks";
 import type { ExpenseFormValues } from "./types";
 
@@ -215,7 +216,11 @@ export function MedicalClaimForm() {
                     {sickLeaves.map((l) => (
                       <SelectItem key={l.id} value={l.id}>
                         ลาป่วย {formatDate(l.startDate)}
-                        {l.startDate !== l.endDate ? ` – ${formatDate(l.endDate)}` : ""} ({l.days} วัน)
+                        {l.startDate !== l.endDate ? ` – ${formatDate(l.endDate)}` : ""} (
+                        {l.halfDay
+                          ? `ครึ่งวัน${l.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[l.halfDayPeriod]})` : ""}`
+                          : `${l.days} วัน`}
+                        )
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -20,6 +20,8 @@ export async function GET() {
         startDate: r.startDate.toISOString(),
         endDate: r.endDate.toISOString(),
         days: r.days,
+        halfDay: r.halfDay,
+        halfDayPeriod: r.halfDayPeriod,
         attachmentUrl: r.attachmentUrl,
       }));
     return ok(sickLeaves);

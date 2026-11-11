@@ -13,6 +13,7 @@ import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
 import { computeLeaveDays, computeLeaveHours, deductsBalance, HOURLY_LEAVE_TYPES, isSunday, PAID_LEAVE_TYPES } from "./days";
+import { HALF_DAY_PERIOD_LABEL } from "./labels";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
 
@@ -191,8 +192,11 @@ export async function createLeave(
   } else if (deductsBalance(input.type)) {
     const remaining = await getRemainingBalance(companyId, employeeId, input.type, input.startDate.getUTCFullYear());
     if (days > remaining) {
+      const requested = input.halfDay
+        ? `ครึ่งวัน${input.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[input.halfDayPeriod]})` : ""}`
+        : `${days} วัน`;
       throw BadRequest(
-        `วัน${LEAVE_TYPE_LABEL[input.type] ?? input.type}คงเหลือไม่พอ — คุณมีสิทธิ์คงเหลือ ${remaining} วัน แต่ขอลา ${days} วัน`,
+        `วัน${LEAVE_TYPE_LABEL[input.type] ?? input.type}คงเหลือไม่พอ — คุณมีสิทธิ์คงเหลือ ${remaining} วัน แต่ขอลา ${requested}`,
       );
     }
   }
@@ -257,7 +261,11 @@ export async function createLeave(
     ...meta,
   });
 
-  const amountLabel = isHourly ? `${hours} ชม. (${input.startTime}–${input.endTime})` : `${days} วัน`;
+  const amountLabel = isHourly
+    ? `${hours} ชม. (${input.startTime}–${input.endTime})`
+    : input.halfDay
+      ? `ครึ่งวัน${input.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[input.halfDayPeriod]})` : ""}`
+      : `${days} วัน`;
   const leaveNotice = {
     title: "มีคำขอลารออนุมัติ",
     body: `${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}`,
@@ -349,6 +357,8 @@ export async function decideLeave(
       employeeId: true,
       type: true,
       days: true,
+      halfDay: true,
+      halfDayPeriod: true,
       unit: true,
       hours: true,
       status: true,
@@ -396,8 +406,11 @@ export async function decideLeave(
     } else if (deductsBalance(req.type)) {
       const remaining = await getRemainingBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
       if (req.days > remaining) {
+        const requested = req.halfDay
+          ? `ครึ่งวัน${req.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[req.halfDayPeriod]})` : ""}`
+          : `${req.days} วัน`;
         throw BadRequest(
-          `ไม่สามารถอนุมัติได้ — วัน${LEAVE_TYPE_LABEL[req.type] ?? req.type}คงเหลือของพนักงานไม่พอ (คงเหลือ ${remaining} วัน แต่คำขอนี้ ${req.days} วัน)`,
+          `ไม่สามารถอนุมัติได้ — วัน${LEAVE_TYPE_LABEL[req.type] ?? req.type}คงเหลือของพนักงานไม่พอ (คงเหลือ ${remaining} วัน แต่คำขอนี้ ${requested})`,
         );
       }
       const quota = await getCompanyLeaveQuota(companyId);
@@ -467,7 +480,11 @@ export async function decideLeave(
     await markNotificationsByLinkRead(companyId, session.employeeId, `/leave/${req.id}`);
   }
 
-  const decidedAmountLabel = isHourly ? `${req.hours} ชม.` : `${req.days} วัน`;
+  const decidedAmountLabel = isHourly
+    ? `${req.hours} ชม.`
+    : req.halfDay
+      ? `ครึ่งวัน${req.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[req.halfDayPeriod]})` : ""}`
+      : `${req.days} วัน`;
   await createNotification(
     companyId,
     req.employeeId,
@@ -497,6 +514,8 @@ export async function cancelLeave(
       employeeId: true,
       type: true,
       days: true,
+      halfDay: true,
+      halfDayPeriod: true,
       unit: true,
       hours: true,
       status: true,
@@ -560,7 +579,11 @@ export async function cancelLeave(
     ...meta,
   });
 
-  const amountLabel = isHourly ? `${req.hours} ชม.` : `${req.days} วัน`;
+  const amountLabel = isHourly
+    ? `${req.hours} ชม.`
+    : req.halfDay
+      ? `ครึ่งวัน${req.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[req.halfDayPeriod]})` : ""}`
+      : `${req.days} วัน`;
   // The manager either still needs to know not to act on a now-cancelled
   // PENDING request, or (if it was already APPROVED) that the leave they
   // were expecting no longer happens — silent cancellation otherwise leaves

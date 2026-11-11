@@ -27,6 +27,8 @@ export interface SickLeaveOption {
   startDate: string;
   endDate: string;
   days: number;
+  halfDay: boolean;
+  halfDayPeriod: "MORNING" | "AFTERNOON" | null;
   attachmentUrl: string | null;
 }
 

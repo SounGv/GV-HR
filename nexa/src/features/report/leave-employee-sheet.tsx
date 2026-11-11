@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { api, type Envelope } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
 import type { EmployeeLeaveYear, LeaveRequestLine } from "./leave-detail";
 
 export interface LeaveSheetTarget {
@@ -24,7 +25,7 @@ function when(r: LeaveRequestLine): string {
 
 function amount(r: LeaveRequestLine): string {
   if (r.hours != null) return `${r.hours} ชม.`;
-  return r.halfDay ? "ครึ่งวัน" : `${r.days} วัน`;
+  return r.halfDay ? `ครึ่งวัน${r.halfDayPeriod ? ` (${HALF_DAY_PERIOD_LABEL[r.halfDayPeriod]})` : ""}` : `${r.days} วัน`;
 }
 
 const STATUS_TONE: Record<string, string> = {
