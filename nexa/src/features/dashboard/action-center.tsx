@@ -76,12 +76,12 @@ export function ActionCenter({ data, followUp }: { data: DashboardActions; follo
   return (
     <section className="space-y-3">
       {!nothingToApprove && (
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-[linear-gradient(135deg,var(--flip7-teal-dark),var(--flip7-teal))] p-5 text-white">
+        <div className="gv-teal-surface flex flex-wrap items-center gap-4 rounded-2xl p-5">
           <div className="flex flex-col">
-            <span className="text-sm text-slate-100">รอคุณอนุมัติ</span>
+            <span className="text-sm text-white/85">รอคุณอนุมัติ</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-[var(--flip7-gold)] tabular-nums">{totalApprovals}</span>
-              <span className="text-base">รายการ</span>
+              <span className="text-[30px] leading-tight font-bold text-[var(--flip7-gold)] tabular-nums">{totalApprovals}</span>
+              <span className="text-sm">รายการ</span>
             </div>
           </div>
 
@@ -93,11 +93,11 @@ export function ActionCenter({ data, followUp }: { data: DashboardActions; follo
               <Link
                 key={t.key}
                 href={t.href}
-                className="flex min-w-[190px] items-center gap-3 rounded-2xl bg-white/10 px-4 py-2.5 transition hover:bg-white/15"
+                className="flex min-w-[170px] items-center gap-3 rounded-xl bg-white/10 px-3 py-2 ring-1 ring-white/10 transition-colors hover:bg-white/15"
               >
                 {t.render()}
                 <div className="flex flex-col leading-tight">
-                  <span className="text-lg font-bold tabular-nums">{data.approvals[t.key]}</span>
+                  <span className="text-lg leading-tight font-bold tabular-nums">{data.approvals[t.key]}</span>
                   <span className="text-xs text-slate-100">{t.label}</span>
                 </div>
               </Link>
@@ -107,7 +107,7 @@ export function ActionCenter({ data, followUp }: { data: DashboardActions; follo
 
           <Link
             href={tiles[0].href}
-            className="flip7-pill-btn flex h-12 items-center px-5 text-base"
+            className="flip7-pill-btn flex h-10 items-center px-4 text-sm"
           >
             ตรวจอนุมัติ
           </Link>

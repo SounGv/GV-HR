@@ -65,7 +65,7 @@ export function WatchlistCard({ data, departmentIds }: WatchProps) {
         ) : (
           <ul className="divide-y divide-border">
             {data.people.slice(0, 6).map((p) => (
-              <li key={p.code} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <li key={p.code} className="gv-row -mx-2 flex flex-wrap items-center justify-between gap-2 rounded-lg px-2 py-2.5">
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
                   <span className="block text-sm text-muted-foreground">{p.department}</span>
@@ -106,7 +106,7 @@ export function DepartmentWatchCard({ data }: { data: AttendanceWatch }) {
         ) : (
           <ol className="divide-y divide-border">
             {top.map((d, i) => (
-              <li key={d.department} className="flex items-center justify-between gap-3 py-2.5">
+              <li key={d.department} className="gv-row -mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-2.5">
                 <span className="min-w-0 text-sm">
                   <span className="font-semibold break-words text-foreground">
                     {i + 1}. {d.department}

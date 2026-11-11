@@ -38,7 +38,7 @@ function StatusRing({ counts, total, scanned }: { counts: Record<TodayStatus, nu
   const gap = shown.length > 1 ? 3 : 0;
   let offset = 0;
   return (
-    <div className="relative size-28 shrink-0" role="img" aria-label={`มาแล้ว ${pct(scanned, total)}% · ${STATUS_ORDER.map((s) => `${STATUS_META[s].label} ${counts[s]} คน`).join(" ")}`}>
+    <div className="relative size-[104px] shrink-0" role="img" aria-label={`มาแล้ว ${pct(scanned, total)}% · ${STATUS_ORDER.map((s) => `${STATUS_META[s].label} ${counts[s]} คน`).join(" ")}`}>
       <svg viewBox="0 0 100 100" className="size-full -rotate-90" aria-hidden="true">
         <circle cx="50" cy="50" r={r} fill="none" stroke="rgb(255 255 255 / 0.18)" strokeWidth="10" />
         {shown.map((s) => {
@@ -63,7 +63,7 @@ function StatusRing({ counts, total, scanned }: { counts: Record<TodayStatus, nu
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
-          <p className="text-2xl leading-none font-bold tabular-nums">{pct(scanned, total)}%</p>
+          <p className="text-xl leading-none font-bold tabular-nums">{pct(scanned, total)}%</p>
           <p className="mt-1 text-xs">มาแล้ว</p>
         </div>
       </div>
@@ -113,11 +113,11 @@ function SegmentLine({
 export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
   const { counts, total, scanned } = data;
   return (
-    <section className="rounded-2xl bg-[var(--flip7-teal-dark)] p-5 text-white">
+    <section className="gv-teal-surface rounded-2xl p-5">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm">การเข้างานวันนี้ · ข้อมูล ณ {data.asOf} น.</p>
-          <p className="mt-1 text-2xl font-bold">
+          <p className="text-sm text-white/85">การเข้างานวันนี้ · ข้อมูล ณ {data.asOf} น.</p>
+          <p className="mt-1 text-[19px] leading-snug font-bold">
             สแกนเข้างานแล้ว <span className="tabular-nums">{scanned}</span> จาก{" "}
             <span className="tabular-nums">{total}</span> คน
           </p>
@@ -185,29 +185,44 @@ export function AttendanceStatusTiles({ data, departmentIds }: SectionProps) {
   if (!data.isWorkingDay || data.total === 0) return null;
   const order: TodayStatus[] = ["NORMAL", "LATE", "ABSENT", "ON_LEAVE", "NOT_YET"];
   return (
-    <section aria-label="สถานะการเข้างานวันนี้" className="grid grid-cols-2 gap-3 md:grid-cols-5">
-      {order.map((s) => {
-        const meta = STATUS_META[s];
-        const Icon = meta.icon;
-        return (
-          <Link
-            key={s}
-            href={attendanceListHref(s, departmentIds)}
-            className={cn("flex min-h-[132px] flex-col justify-between rounded-2xl border p-4 transition hover:brightness-[0.97]", meta.surface)}
-          >
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <Icon className="size-5 shrink-0" aria-hidden="true" /> {meta.label}
-            </span>
-            <span>
-              <span className="block text-4xl leading-none font-bold tabular-nums">{data.counts[s]}</span>
-              <span className="mt-1 block text-sm">{pct(data.counts[s], data.total)}% ของทั้งหมด</span>
-            </span>
-            <span className="inline-flex items-center text-sm font-medium underline-offset-2">
-              ดูรายชื่อ <ChevronRight className="size-4" aria-hidden="true" />
-            </span>
-          </Link>
-        );
-      })}
+    <section aria-label="สถานะการเข้างานวันนี้" className="space-y-3">
+      <div className="flex items-end gap-3">
+        <div className="min-w-0">
+          <h2 className="text-[15px] leading-snug font-semibold text-foreground">ใครต้องดูวันนี้</h2>
+          <p className="text-xs text-muted-foreground">แตะการ์ดเพื่อดูรายชื่อของแต่ละสถานะ</p>
+        </div>
+        <span aria-hidden="true" className="mb-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {order.map((s) => {
+          const meta = STATUS_META[s];
+          const Icon = meta.icon;
+          const share = pct(data.counts[s], data.total);
+          return (
+            <Link
+              key={s}
+              href={attendanceListHref(s, departmentIds)}
+              className="gv-lift relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border bg-card p-4 pt-5 shadow-[var(--card-shadow)]"
+            >
+              <span aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-1", meta.dot)} />
+              <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <span className={cn("flex size-[30px] shrink-0 items-center justify-center rounded-lg border", meta.surface)}>
+                  <Icon className="size-4" aria-hidden="true" />
+                </span>
+                {meta.label}
+                <ChevronRight className="ml-auto size-4 text-muted-foreground" aria-hidden="true" />
+              </span>
+              <span className="flex items-baseline gap-1.5">
+                <span className="text-[26px] leading-none font-bold text-foreground tabular-nums">{data.counts[s]}</span>
+                <span className="text-xs text-muted-foreground">คน · {share}%</span>
+              </span>
+              <span className="block h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                <span className={cn("block h-full rounded-full", meta.dot)} style={{ width: `${share}%` }} />
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -239,14 +254,14 @@ export function AttendanceAttentionCards({ data, departmentIds }: SectionProps) 
             : a.shiftStart.localeCompare(b.shiftStart) || a.name.localeCompare(b.name, "th"),
         );
         return (
-          <Card key={status} className="gap-0">
+          <Card key={status} className="gv-lift gap-0">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <span className={cn("flex size-8 items-center justify-center rounded-full border", meta.surface)}>
+                <span className={cn("flex size-[30px] items-center justify-center rounded-lg border", meta.surface)}>
                   <Icon className="size-4" aria-hidden="true" />
                 </span>
                 {meta.label}
-                <span className="ml-auto text-2xl font-bold tabular-nums">{all.length}</span>
+                <span className="ml-auto text-lg font-bold tabular-nums">{all.length}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -255,7 +270,7 @@ export function AttendanceAttentionCards({ data, departmentIds }: SectionProps) 
               ) : (
                 <ul className="divide-y divide-border">
                   {sorted.slice(0, 5).map((p) => (
-                    <li key={p.employeeId} className="py-2">
+                    <li key={p.employeeId} className="gv-row -mx-2 rounded-lg px-2 py-2">
                       <p className="text-sm font-semibold break-words text-foreground">{p.name}</p>
                       <p className="text-sm text-muted-foreground">
                         {p.department} · {personLine(p, status)}

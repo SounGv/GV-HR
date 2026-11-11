@@ -112,7 +112,7 @@ function Kpi({
   footer?: ReactNode;
 }) {
   return (
-    <Card className="gap-0 p-5 transition hover:shadow-md">
+    <Card className="gv-lift gap-0 p-5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="size-2.5 shrink-0 rounded-[3px]" style={{ background: color }} />
@@ -121,7 +121,7 @@ function Kpi({
         {miniBars && <TrendBadge data={miniBars.data} goodDirection={miniBars.goodDirection} />}
       </div>
       <div className="mt-3 flex items-baseline gap-1.5">
-        <span className="text-3xl font-semibold tracking-tight tabular-nums">{value}</span>
+        <span className="text-[26px] leading-none font-semibold tracking-tight tabular-nums">{value}</span>
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
       {sub && <div className="mt-1.5 text-xs text-muted-foreground">{sub}</div>}
@@ -141,7 +141,7 @@ function Kpi({
 function LeaveBalanceTile({ balances, href }: { balances: LeaveBalanceSummary[]; href: string }) {
   return (
     <Link href={href}>
-      <Card className="gap-0 p-4 transition hover:border-primary/40 hover:shadow-sm">
+      <Card className="gv-lift gap-0 p-4">
         <div className="flex items-center gap-2">
           <LeaveIcon size={32} />
           <span className="truncate text-xs text-muted-foreground">วันลาคงเหลือ</span>
@@ -176,7 +176,7 @@ function MyTile({
 }) {
   return (
     <Link href={href}>
-      <Card className="gap-0 p-4 transition hover:border-primary/40 hover:shadow-sm">
+      <Card className="gv-lift gap-0 p-4">
         <div className="flex items-center gap-2">
           <Icon size={32} />
           <span className="truncate text-xs text-muted-foreground">{label}</span>
@@ -185,6 +185,19 @@ function MyTile({
         {sub && <div className="mt-0.5 truncate text-xs text-muted-foreground">{sub}</div>}
       </Card>
     </Link>
+  );
+}
+
+/** Section title with a short hint and a line that fades out to the right. */
+function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="flex items-end gap-3">
+      <div className="min-w-0">
+        <h2 className="text-[15px] leading-snug font-semibold text-foreground">{title}</h2>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+      <span aria-hidden="true" className="mb-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+    </div>
   );
 }
 
@@ -317,12 +330,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <>
       <MobileDashboardView name={name} mine={mine} actions={actions} />
       <LiveTodayProvider initial={attendanceToday} departmentIds={deptIds}>
-      <div className="theme-flip7 hidden space-y-6 md:block">
+      <div className="theme-flip7 gv-page-band hidden space-y-6 md:-mx-6 md:-mt-6 md:block md:px-6 md:pt-6">
       {/* Greeting + AI summary — plain text header, one dark AI card right
           under it (redesign spec: N mockup merges what used to be two
           separate dark hero cards bookending the page into this single one). */}
       <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-2xl font-bold sm:text-3xl">
+        <h1 className="font-heading text-[22px] leading-snug font-bold">
           {greeting()}, {name} 👋
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -330,11 +343,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </p>
       </div>
 
-      <Card className="relative overflow-hidden border-0 bg-[linear-gradient(135deg,var(--flip7-teal-dark),var(--flip7-teal))] p-5 text-white">
-        <div className="pointer-events-none absolute -top-16 -left-10 size-72 rounded-full bg-[var(--flip7-gold)]/20 blur-[90px]" />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-            <Sparkles className="size-5 text-[var(--flip7-gold)]" />
+      <Card className="gv-teal-surface rounded-2xl border-0 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <span className="flex size-[34px] shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
+            <Sparkles className="size-4 text-[var(--flip7-gold)]" />
           </span>
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-xs font-semibold tracking-wide text-[var(--flip7-gold)] uppercase">สรุปวันนี้จาก AI</p>
@@ -375,8 +387,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           deliberately left out for now — HR wants to focus rollout on
           attendance/leave and the evaluation system first. */}
       {mine && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-foreground">ของฉันวันนี้</h2>
+        <section className="space-y-3">
+          <SectionHeading title="ของฉันวันนี้" hint="เวลาเข้างาน วันลา และคะแนนของคุณ" />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <MyTile
               icon={CheckInIcon}
@@ -406,7 +418,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {/* Day-to-day follow-ups for managers and HR: each card loads on its own. */}
       {(canSeeAttendance || canSeeOvertime || canSeeMeetings) && (
-        <section aria-label="งานประจำวัน" className="grid items-start gap-3 lg:grid-cols-3">
+        <section aria-label="งานประจำวัน" className="space-y-3">
+          <SectionHeading title="งานประจำวัน" hint="ลืมสแกนออก OT และประชุมของวันนี้" />
+          <div className="grid items-start gap-3 lg:grid-cols-3">
           {canSeeAttendance && (
             <Suspense fallback={<PeopleCardFallback />}>
               <MissedScanOutSection companyId={user!.companyId} session={session} />
@@ -422,11 +436,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <MeetingsTodaySection companyId={user!.companyId} employeeId={user!.employee?.id} />
             </Suspense>
           )}
+          </div>
         </section>
       )}
 
       {attendanceToday && (
         <>
+          <SectionHeading title="แนวโน้มและรายแผนก" hint="คนที่มาสายหรือขาดบ่อยใน 30 วัน และแต่ละแผนกวันนี้" />
           {/* The 30-day watch list is the slowest part (it reads a month of attendance), so it streams in after the rest. */}
           <Suspense
             fallback={
@@ -442,7 +458,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       )}
 
       {(canSeeLeaves || canSeeProbation || canSeeEvaluation) && (
-        <section aria-label="คนและงานที่ต้องติดตาม" className="grid items-start gap-3 lg:grid-cols-3">
+        <section aria-label="คนและงานที่ต้องติดตาม" className="space-y-3">
+          <SectionHeading title="คนและงานที่ต้องติดตาม" hint="ลาที่กำลังจะมา ทดลองงาน และความคืบหน้าการประเมิน" />
+          <div className="grid items-start gap-3 lg:grid-cols-3">
           {canSeeLeaves && (
             <Suspense fallback={<PeopleCardFallback />}>
               <UpcomingLeavesSection companyId={user!.companyId} session={session} />
@@ -458,6 +476,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <EvaluationProgressSection companyId={user!.companyId} session={session} />
             </Suspense>
           )}
+          </div>
         </section>
       )}
 
@@ -553,9 +572,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <AttendanceRateLine data={attendanceTrend} />
             </div>
             <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:w-[220px] lg:grid-cols-1">
-              <div className="flex flex-col rounded-2xl p-3" style={{ background: "var(--series-highlight)" }}>
-                <span className="text-xs text-[var(--flip7-teal-dark)]/70">เข้างานเฉลี่ย</span>
-                <span className="text-2xl font-bold text-[var(--flip7-teal-dark)] tabular-nums">{avgAttendanceRate}%</span>
+              <div className="gv-teal-surface flex flex-col rounded-2xl p-3">
+                <span className="text-xs text-white/80">เข้างานเฉลี่ย</span>
+                <span className="text-2xl font-bold text-white tabular-nums">{avgAttendanceRate}%</span>
               </div>
               <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
                 <span className="text-xs" style={{ color: "var(--series-late)" }}>มาสายรวม</span>
@@ -659,7 +678,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="flex flex-col rounded-2xl bg-[linear-gradient(135deg,var(--flip7-teal-dark),var(--flip7-teal))] p-3 text-white">
+            <div className="gv-teal-surface flex flex-col rounded-2xl p-3">
               <span className="text-xs text-slate-100">พนักงานทั้งหมด</span>
               <span className="text-2xl font-bold text-[var(--flip7-gold)] tabular-nums">
                 {s.headcount} <span className="text-sm font-medium text-white">คน</span>
@@ -689,7 +708,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <div
                   key={d.name}
                   className={cn(
-                    "grid grid-cols-[28px_180px_1fr_76px] items-center gap-3 rounded-xl p-2",
+                    "gv-row grid grid-cols-[28px_180px_1fr_76px] items-center gap-3 rounded-xl p-2",
                     isTop && "bg-[var(--flip7-gold-light)]/40",
                   )}
                 >

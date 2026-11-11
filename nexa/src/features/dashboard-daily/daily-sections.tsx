@@ -60,7 +60,7 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function Person({ name, sub, tag }: { name: string; sub: string; tag?: React.ReactNode }) {
   return (
-    <li className="flex items-center justify-between gap-3 py-2">
+    <li className="gv-row -mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-2">
       <span className="min-w-0">
         <span className="block text-sm font-semibold break-words text-foreground">{name}</span>
         <span className="block text-sm text-muted-foreground tabular-nums">{sub}</span>
@@ -161,7 +161,7 @@ export function MeetingsTodayCard({ rows }: { rows: MeetingToday[] }) {
       ) : (
         <ul className="divide-y divide-border">
           {rows.slice(0, SHOWN).map((m) => (
-            <li key={m.id} className="py-2">
+            <li key={m.id} className="gv-row -mx-2 rounded-lg px-2 py-2">
               <Link href={`/meetings/${m.id}`} className="block hover:underline">
                 <span className="block text-sm font-semibold break-words text-foreground">{m.title}</span>
                 <span className="block text-sm text-muted-foreground tabular-nums">

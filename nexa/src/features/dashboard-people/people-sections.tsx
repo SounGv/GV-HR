@@ -48,7 +48,7 @@ function LeaveGroup({ title, people, empty }: { title: string; people: LeavePers
       ) : (
         <ul className="divide-y divide-border">
           {people.slice(0, SHOWN).map((p) => (
-            <li key={p.requestId} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
+            <li key={p.requestId} className="gv-row -mx-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg px-2 py-2">
               <span className="min-w-0">
                 <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
                 <span className="block text-sm text-muted-foreground">{p.department}</span>
