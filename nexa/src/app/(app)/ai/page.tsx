@@ -17,10 +17,11 @@ export default async function AiPage() {
   await requireAiPageAccess();
 
   return (
-    <div className="space-y-5">
-      <Card className="relative hidden overflow-hidden border-0 bg-[var(--chat-teal)] p-6 text-white md:block">
-        <div className="pointer-events-none absolute -top-16 -right-10 size-64 rounded-full bg-white/15 blur-[90px]" />
-        <div className="relative flex flex-col gap-4">
+    // Capped and centred on desktop: a chat stretched across a 1920px screen
+    // puts the input and the replies far apart. Mobile is narrower than the cap.
+    <div className="mx-auto w-full max-w-[960px] space-y-5">
+      <Card className="gv-teal-surface hidden rounded-2xl border-0 p-5 md:block">
+        <div className="flex flex-col gap-4">
           <div className="flex items-start gap-3">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
               <Sparkles className="size-6 text-white" />
