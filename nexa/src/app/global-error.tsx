@@ -1,5 +1,9 @@
 "use client";
 
+import { Anuphan } from "next/font/google";
+
+const anuphan = Anuphan({ subsets: ["thai", "latin"], weight: ["400", "600"], display: "swap" });
+
 /**
  * Root error boundary — catches errors thrown in the root/app layout that the
  * segment boundary can't. Renders the real error text so production failures are
@@ -16,7 +20,7 @@ export default function GlobalError({
     <html lang="th">
       <body
         style={{
-          fontFamily: "system-ui, sans-serif",
+          fontFamily: `${anuphan.style.fontFamily}, system-ui, sans-serif`,
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",

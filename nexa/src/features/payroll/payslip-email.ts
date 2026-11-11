@@ -68,7 +68,7 @@ export function renderPayslipEmailHtml({
   const statusLabel = record.status === "PAID" ? "จ่ายแล้ว" : "ฉบับร่าง";
 
   return `
-<div style="font-family:'Segoe UI',Tahoma,sans-serif;max-width:600px;margin:0 auto;color:#0f172a;">
+<div style="font-family:'Anuphan','Segoe UI',Tahoma,sans-serif;max-width:600px;margin:0 auto;color:#0f172a;">
   <div style="border-bottom:2px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px;">
     <p style="margin:0;font-size:16px;font-weight:700;">${company.legalName ?? company.name}</p>
     <p style="margin:2px 0 0;font-size:12px;color:#64748b;">${companyAddress(company)}</p>

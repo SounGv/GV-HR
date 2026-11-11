@@ -640,15 +640,15 @@ function SuccessStep({
         <div className="grid grid-cols-3 gap-2 border-t border-black/5 pt-3 text-center">
           <div>
             <p className="text-xs text-muted-foreground">เวลาเข้า</p>
-            <p className="mt-0.5 font-mono text-sm font-semibold">{fmtTime(record?.clockInAt)}</p>
+            <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">{fmtTime(record?.clockInAt)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">เวลาออก</p>
-            <p className="mt-0.5 font-mono text-sm font-semibold">{fmtTime(record?.clockOutAt)}</p>
+            <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">{fmtTime(record?.clockOutAt)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">เวลาทำงาน</p>
-            <p className="mt-0.5 font-mono text-sm font-semibold">{worked}</p>
+            <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">{worked}</p>
           </div>
         </div>
       </div>
