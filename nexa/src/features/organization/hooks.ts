@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchDepartments,
+  fetchOrgPeople,
   createDepartment,
   updateDepartment,
   deleteDepartment,
@@ -17,10 +18,15 @@ export const orgKeys = {
   all: ["organization"] as const,
   departments: ["organization", "departments"] as const,
   positions: ["organization", "positions"] as const,
+  people: ["organization", "people"] as const,
 };
 
 export function useDepartments() {
   return useQuery({ queryKey: orgKeys.departments, queryFn: fetchDepartments });
+}
+/** Active employees with department and manager, for the org chart's people view. */
+export function useOrgPeople() {
+  return useQuery({ queryKey: orgKeys.people, queryFn: fetchOrgPeople });
 }
 export function usePositions() {
   return useQuery({ queryKey: orgKeys.positions, queryFn: fetchPositions });

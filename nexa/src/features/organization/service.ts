@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
-import type { DepartmentRow, PositionRow } from "./types";
+import { displayName } from "@/lib/format";
+import type { DepartmentRow, OrgPersonRow, PositionRow } from "./types";
 import type {
   DepartmentCreateInput,
   DepartmentUpdateInput,
@@ -32,6 +33,37 @@ export async function listDepartments(companyId: string): Promise<DepartmentRow[
     code: d.code,
     parentId: d.parentId,
     employeeCount: d._count.employees,
+  }));
+}
+
+/**
+ * Active employees for the org chart's people view: who sits in which
+ * department and who reports to whom. Read-only; one query.
+ *
+ * "Active" follows the roster convention (ACTIVE or ON_LEAVE, not deleted), so
+ * leavers kept on file don't show up as someone's team member.
+ */
+export async function listOrgPeople(companyId: string): Promise<OrgPersonRow[]> {
+  const rows = await prisma.employee.findMany({
+    where: { companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      nickname: true,
+      departmentId: true,
+      managerId: true,
+      position: { select: { title: true } },
+    },
+    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+  });
+  return rows.map((e) => ({
+    id: e.id,
+    name: displayName(e),
+    nickname: e.nickname?.trim() || null,
+    departmentId: e.departmentId,
+    managerId: e.managerId,
+    positionTitle: e.position?.title ?? null,
   }));
 }
 

@@ -18,6 +18,8 @@ export interface CurrentUser {
     lastName: string;
     nickname: string | null;
     avatarUrl: string | null;
+    /** MALE / FEMALE / OTHER or null; picks the character avatar when there is no photo. */
+    gender: string | null;
     status: string;
     department: { id: string; name: string } | null;
     position: { id: string; title: string } | null;
@@ -45,6 +47,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
           lastName: true,
           nickname: true,
           avatarUrl: true,
+          gender: true,
           status: true,
           department: { select: { id: true, name: true } },
           position: { select: { id: true, title: true } },

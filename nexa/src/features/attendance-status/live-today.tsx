@@ -14,6 +14,7 @@ import {
   AttendanceStatusTiles,
   DepartmentBreakdownCard,
 } from "./attendance-today-sections";
+import { AttendanceFollowRows, AttendanceHero } from "./attendance-hero";
 import type { TodayAttendance } from "./types";
 
 /** How often today's attendance numbers are read again while the page is in view. */
@@ -123,6 +124,18 @@ export function LiveStatusBar() {
   return <AttendanceStatusBar data={data} departmentIds={departmentIds} />;
 }
 
+/** Dashboard hero: today's attendance on the dark teal surface with glass tiles. */
+export function LiveHero() {
+  const { data, departmentIds } = useLiveToday();
+  return <AttendanceHero data={data} departmentIds={departmentIds} />;
+}
+
+/** The live absent / late rows at the top of "ต้องตามวันนี้". */
+export function LiveFollowRows() {
+  const { data, departmentIds } = useLiveToday();
+  return <AttendanceFollowRows data={data} departmentIds={departmentIds} />;
+}
+
 export function LiveFollowChips() {
   const { data, departmentIds } = useLiveToday();
   return <AttendanceFollowChips data={data} departmentIds={departmentIds} />;
@@ -153,7 +166,8 @@ export function LiveStamp() {
       {/* The time is stamped when the query is created, a few seconds apart on the
           server and in the browser; without this React logged a hydration
           mismatch (#418) on every dashboard load. The browser's value wins. */}
-      <span className="tabular-nums" suppressHydrationWarning>
+      <span className="gv-live" aria-hidden="true" />
+      <span className="-ml-1.5 tabular-nums" suppressHydrationWarning>
         อัปเดตล่าสุด {clock.format(updatedAt)} · อัปเดตเองทุก {TODAY_REFRESH_MS / 1000} วินาที
       </span>
       <Button type="button" variant="outline" size="sm" onClick={refreshAll} disabled={refreshing} aria-label="รีเฟรชข้อมูลตอนนี้">

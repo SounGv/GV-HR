@@ -1,5 +1,6 @@
 "use client";
 
+import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import {
@@ -10,7 +11,6 @@ import {
   ShieldCheck,
   Settings2,
   User,
-  UserRound,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/features/auth/auth-context";
@@ -188,7 +188,7 @@ export function ProfileDrawer() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={user.employee.avatarUrl} alt={nameLabel} className="size-full object-cover" />
                 ) : (
-                  <UserRound className="size-7" strokeWidth={3} />
+                  <CharacterAvatar character={characterFor(user.employee)} className="size-full" />
                 )}
               </span>
               <div className="min-w-0 flex-1">

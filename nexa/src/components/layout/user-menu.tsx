@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/features/auth/auth-context";
-import { getInitials, loginIdentifier, displayName } from "@/lib/format";
+import { loginIdentifier, displayName } from "@/lib/format";
+import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { useProfileDrawer } from "./profile-drawer-context";
 
 /** Desktop entry point for the account drawer — same drawer the mobile bottom
@@ -17,10 +18,10 @@ export function UserMenu() {
 
   return (
     <Button variant="ghost" className="h-9 gap-2 px-1.5 sm:px-2" onClick={openDrawer} aria-label="เปิดเมนูโปรไฟล์">
-      <Avatar className="size-7">
+      <Avatar className="size-8">
         {emp?.avatarUrl && <AvatarImage src={emp.avatarUrl} alt={name} />}
-        <AvatarFallback className="bg-primary/10 text-xs text-primary">
-          {getInitials(emp?.firstName, emp?.lastName)}
+        <AvatarFallback className="bg-transparent p-0">
+          <CharacterAvatar character={characterFor(emp)} className="size-full" />
         </AvatarFallback>
       </Avatar>
       <span className="hidden text-left sm:block">

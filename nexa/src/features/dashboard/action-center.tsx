@@ -36,7 +36,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
       className="gv-lift flex flex-col rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]"
     >
       <div className="flex items-center gap-2 px-4 pt-3.5">
-        <h2 className="text-sm font-semibold">รอคุณอนุมัติ</h2>
+        <h3 className="text-[15px] font-semibold">คำขอทั้งหมด</h3>
       </div>
 
       {tiles.length === 0 ? (

@@ -165,7 +165,7 @@ export function OrganizationView() {
         ) : deptQuery.isError ? (
           <ErrorState onRetry={() => deptQuery.refetch()} />
         ) : (
-          <OrgChart tree={tree} companyName={user.company?.name} />
+          <OrgChart departments={departments} companyName={user.company?.name} />
         )}
       </TabsContent>
 

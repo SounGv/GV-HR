@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleCheck, ClipboardList, Lock } from "lucide-react";
+import { CircleCheck, ClipboardList, Lock, UserRoundX } from "lucide-react";
+import { useAuth } from "@/features/auth/auth-context";
 import { toast } from "sonner";
 
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
@@ -27,7 +28,18 @@ const fmtDay = (iso: string | null) =>
 
 /** "งานประเมินของฉัน": who the signed-in person has to rate. This is where the invitation link lands. */
 export function TaskListView() {
-  const { data, isLoading, isError, refetch } = useTasks();
+  const { user } = useAuth();
+  const { data, isLoading, isError, refetch } = useTasks(!!user.employee);
+  // Evaluation jobs belong to employees; an admin-only login has none (the API answers 400), so say so plainly.
+  if (!user.employee) {
+    return (
+      <EmptyState
+        icon={UserRoundX}
+        title="บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน"
+        description="งานประเมินเป็นของพนักงานแต่ละคน บัญชีนี้จึงไม่มีคนที่ต้องประเมิน ดูความคืบหน้าทุกรอบได้ที่ ภาพรวมการประเมิน"
+      />
+    );
+  }
   const tasks = data?.data ?? [];
   const todo = tasks.filter((t) => t.status !== "SUBMITTED" && t.roundStatus === "OPEN");
   const rest = tasks.filter((t) => !todo.includes(t));

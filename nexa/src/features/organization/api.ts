@@ -1,6 +1,7 @@
 import { api, type Envelope } from "@/lib/api/client";
 import type {
   DepartmentRow,
+  OrgPersonRow,
   PositionRow,
   DepartmentFormValues,
   PositionFormValues,
@@ -8,6 +9,9 @@ import type {
 
 export function fetchDepartments() {
   return api.get<Envelope<DepartmentRow[]>>("/api/org/departments");
+}
+export function fetchOrgPeople() {
+  return api.get<Envelope<OrgPersonRow[]>>("/api/org/people");
 }
 export function createDepartment(input: DepartmentFormValues) {
   return api.post<Envelope<{ id: string }>>("/api/org/departments", input);

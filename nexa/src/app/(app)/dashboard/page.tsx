@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
-import { ArrowUp, ArrowUpRight, ArrowRight, TriangleAlert } from "lucide-react";
+import { ArrowUp, ArrowUpRight, ArrowRight, CalendarDays, CircleCheck, CircleX, Clock, TriangleAlert, Users, Zap } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { can } from "@/lib/auth/rbac";
 import {
@@ -21,13 +21,15 @@ import {
   listDepartmentOptions,
 } from "@/features/attendance-status/service";
 import {
-  LiveAttentionCards,
   LiveDepartmentBreakdown,
+  LiveFollowRows,
+  LiveHero,
   LiveStamp,
-  LiveStatusBar,
-  LiveStatusTiles,
   LiveTodayProvider,
 } from "@/features/attendance-status/live-today";
+import { FollowRowLoading } from "@/features/dashboard/follow-up";
+import { SectionHeading } from "@/components/shared/section-heading";
+import { CountUp } from "@/components/shared/count-up";
 import { DepartmentWatchCard, WatchlistCard } from "@/features/attendance-status/attendance-watch-sections";
 import { DepartmentFilter } from "@/features/attendance-status/department-filter";
 import {
@@ -189,15 +191,31 @@ function MyTile({
   );
 }
 
-/** Section title with a short hint and a line that fades out to the right. */
-function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+/** One cell of the "14 วันทำการล่าสุด" strip: one card split by dividers (dashboard-v3-mock.html). */
+function StripCell({
+  icon: Icon,
+  label,
+  value,
+  decimals = 0,
+  unit,
+  sub,
+}: {
+  icon: typeof Clock;
+  label: string;
+  value: number;
+  decimals?: number;
+  unit: string;
+  sub?: ReactNode;
+}) {
   return (
-    <div className="flex items-end gap-3">
-      <div className="min-w-0">
-        <h2 className="text-[15px] leading-snug font-semibold text-foreground">{title}</h2>
-        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-      </div>
-      <span aria-hidden="true" className="mb-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+    <div className="border-border px-[18px] py-3.5 not-first:border-l max-lg:[&:nth-child(4)]:border-l-0 max-lg:[&:nth-child(n+4)]:border-t">
+      <p className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+        <Icon className="size-3.5" aria-hidden="true" /> {label}
+      </p>
+      <p className="mt-0.5 text-[22px] leading-tight font-bold tabular-nums">
+        <CountUp value={value} decimals={decimals} /> <span className="text-xs font-medium text-muted-foreground">{unit}</span>
+      </p>
+      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </div>
   );
 }
@@ -257,14 +275,6 @@ async function AttendanceWatchSection({
   );
 }
 
-function PeopleCardFallback() {
-  return (
-    <Card>
-      <CardContent className="py-4 text-sm text-muted-foreground">กำลังโหลด…</CardContent>
-    </Card>
-  );
-}
-
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ dept?: string }> }) {
@@ -303,6 +313,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     can(user!.permissions, "campaign:approve");
   const canSeeOvertime = can(user!.permissions, "overtime:approve");
   const canSeeMeetings = can(user!.permissions, "meeting:read");
+  const showFollow = canSeeAttendance || canSeeOvertime || canSeeMeetings || canSeeLeaves || canSeeProbation || canSeeEvaluation;
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
   const departmentOptions = canSeeAttendance ? await listDepartmentOptions(user!.companyId) : [];
 
@@ -346,13 +357,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="theme-flip7 gv-page-band hidden space-y-6 md:-mx-6 md:-mt-6 md:block md:px-6 md:pt-6">
       {/* Greeting, date and the page-wide controls on one row. */}
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        <div className="min-w-0">
-          <h1 className="font-heading text-[22px] leading-snug font-bold">
-            {greeting()}, {name} 👋
-          </h1>
-          <p className="text-[13px] text-muted-foreground">
-            {todayLabel()} · {user?.company?.name}
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          {/* น้องวีบอท waves hello in place of the old 👋 emoji. */}
+          <VBot mood="hi" full className="h-[54px] w-[46px]" />
+          <div className="min-w-0">
+            <h1 className="font-heading text-[22px] leading-snug font-bold">
+              {greeting()}, {name}
+            </h1>
+            <p className="text-[13px] text-muted-foreground">
+              {todayLabel()} · {user?.company?.name}
+            </p>
+          </div>
         </div>
         {attendanceToday && (
           <div className="ml-auto flex flex-wrap items-center gap-3">
@@ -412,71 +427,114 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </form>
       </section>
 
-      {/* Today's attendance and what waits for me sit side by side, so neither takes a whole row. */}
-      <div className={cn("grid items-stretch gap-4", attendanceToday && "xl:grid-cols-2")}>
-        {attendanceToday && <LiveStatusBar />}
-        <ActionCenter data={actions} />
+      {attendanceToday && <LiveHero />}
+
+      {/* What needs following up today (left) and what waits for my approval (right). */}
+      <div className={cn("grid items-start gap-[22px]", showFollow && "xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]")}>
+        {showFollow && (
+          <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-3">
+            <SectionHeading title="ต้องตามวันนี้" hint="เรียงจากเร่งด่วนที่สุด · กดแถวเพื่อดูรายชื่อ" />
+            {/* Each row loads on its own; its order value keeps the most urgent on top whatever arrives first. */}
+            <Card className="gv-rise gap-0 py-0" style={{ "--i": 2 } as React.CSSProperties}>
+              {attendanceToday && <LiveFollowRows />}
+              {canSeeAttendance && (
+                <Suspense fallback={<FollowRowLoading order={3} />}>
+                  <MissedScanOutSection companyId={user!.companyId} session={session} />
+                </Suspense>
+              )}
+              {canSeeOvertime && (
+                <Suspense fallback={<FollowRowLoading order={4} />}>
+                  <OvertimeTodaySection companyId={user!.companyId} session={session} />
+                </Suspense>
+              )}
+              {canSeeLeaves && (
+                <Suspense fallback={<FollowRowLoading order={5} />}>
+                  <UpcomingLeavesSection companyId={user!.companyId} session={session} />
+                </Suspense>
+              )}
+              {canSeeProbation && (
+                <Suspense fallback={<FollowRowLoading order={6} />}>
+                  <ProbationDueSection companyId={user!.companyId} session={session} />
+                </Suspense>
+              )}
+              {canSeeEvaluation && (
+                <Suspense fallback={<FollowRowLoading order={7} />}>
+                  <EvaluationProgressSection companyId={user!.companyId} session={session} />
+                </Suspense>
+              )}
+              {canSeeMeetings && (
+                <Suspense fallback={<FollowRowLoading order={8} />}>
+                  <MeetingsTodaySection companyId={user!.companyId} employeeId={user!.employee?.id} />
+                </Suspense>
+              )}
+            </Card>
+          </section>
+        )}
+
+        <div className="space-y-[22px]">
+          <section aria-label="รอคุณอนุมัติ" className="gv-rise space-y-3" style={{ "--i": 3 } as React.CSSProperties}>
+            <SectionHeading title="รอคุณอนุมัติ" hint="คำขอที่ส่งมาถึงคุณ" />
+            <ActionCenter data={actions} />
+          </section>
+
+          {/* My today — personal snapshot, not company aggregates. "เงินเดือนล่าสุด"
+              deliberately left out for now — HR wants to focus rollout on
+              attendance/leave and the evaluation system first. */}
+          {mine && (
+            <section className="space-y-3">
+              <SectionHeading title="ของฉันวันนี้" hint="เวลาเข้างาน วันลา และคะแนนของคุณ" />
+              <div className={cn("grid grid-cols-2 gap-3", !showFollow && "lg:grid-cols-3")}>
+                <MyTile
+                  icon={CheckInIcon}
+                  label="เวลาเข้างานวันนี้"
+                  value={fmtClock(mine.clockInAt) ?? "ยังไม่เช็คอิน"}
+                  sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
+                  href="/attendance"
+                />
+                <MyTile
+                  icon={StarIllustrationIcon}
+                  label="คะแนนให้กำลังใจ"
+                  value={`${mine.recognition.star + mine.recognition.award + mine.recognition.heart}`}
+                  sub={`+${mine.recognition.point} คะแนน`}
+                  href="/attendance"
+                />
+                <div className={cn("col-span-2", !showFollow && "lg:col-span-1")}>
+                  <LeaveBalanceTile balances={mine.leaveBalances} href="/leave" />
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
       </div>
 
-      {/* My today — personal snapshot, not company aggregates. "เงินเดือนล่าสุด"
-          deliberately left out for now — HR wants to focus rollout on
-          attendance/leave and the evaluation system first. */}
-      {mine && (
-        <section className="space-y-3">
-          <SectionHeading title="ของฉันวันนี้" hint="เวลาเข้างาน วันลา และคะแนนของคุณ" />
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-            <MyTile
-              icon={CheckInIcon}
-              label="เวลาเข้างานวันนี้"
-              value={fmtClock(mine.clockInAt) ?? "ยังไม่เช็คอิน"}
-              sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
-              href="/attendance"
+      {attendanceToday && (
+        <section aria-label="14 วันทำการล่าสุด" className="space-y-3">
+          <SectionHeading title="14 วันทำการล่าสุด" hint="ยอดรวมจากการเข้างานย้อนหลัง และ OT ของวันนี้" />
+          <Card className="grid grid-cols-3 gap-0 py-0 lg:grid-cols-6">
+            <StripCell
+              icon={Users}
+              label="พนักงานทั้งหมด"
+              value={s.headcount}
+              unit="คน"
+              sub={s.newThisMonth > 0 ? <span className="text-success">+{s.newThisMonth} เดือนนี้</span> : undefined}
             />
-            <LeaveBalanceTile balances={mine.leaveBalances} href="/leave" />
-            <MyTile
-              icon={StarIllustrationIcon}
-              label="คะแนนให้กำลังใจ"
-              value={`${mine.recognition.star + mine.recognition.award + mine.recognition.heart}`}
-              sub={`+${mine.recognition.point} คะแนน`}
-              href="/attendance"
+            <StripCell icon={CircleCheck} label="เข้างานเฉลี่ย" value={avgAttendanceRate} unit="%" />
+            <StripCell icon={Clock} label="มาสายรวม" value={lateSum} unit="ครั้ง" />
+            <StripCell icon={CalendarDays} label="ลารวม" value={leaveSum} unit="ครั้ง" />
+            <StripCell icon={CircleX} label="ไม่มีบันทึกเวลา" value={absentSum} unit="คน-วัน" />
+            <StripCell
+              icon={Zap}
+              label="OT วันนี้"
+              value={s.otHoursToday}
+              decimals={Number.isInteger(s.otHoursToday) ? 0 : 1}
+              unit="ชม."
             />
-          </div>
+          </Card>
         </section>
       )}
 
       {attendanceToday && (
-        <>
-          <LiveStatusTiles />
-          <LiveAttentionCards />
-        </>
-      )}
-
-      {/* Day-to-day follow-ups for managers and HR: each card loads on its own. */}
-      {(canSeeAttendance || canSeeOvertime || canSeeMeetings) && (
-        <section aria-label="งานประจำวัน" className="space-y-3">
-          <SectionHeading title="งานประจำวัน" hint="ลืมสแกนออก OT และประชุมของวันนี้" />
-          <div className="grid items-start gap-3 lg:grid-cols-3">
-          {canSeeAttendance && (
-            <Suspense fallback={<PeopleCardFallback />}>
-              <MissedScanOutSection companyId={user!.companyId} session={session} />
-            </Suspense>
-          )}
-          {canSeeOvertime && (
-            <Suspense fallback={<PeopleCardFallback />}>
-              <OvertimeTodaySection companyId={user!.companyId} session={session} />
-            </Suspense>
-          )}
-          {canSeeMeetings && (
-            <Suspense fallback={<PeopleCardFallback />}>
-              <MeetingsTodaySection companyId={user!.companyId} employeeId={user!.employee?.id} />
-            </Suspense>
-          )}
-          </div>
-        </section>
-      )}
-
-      {attendanceToday && (
-        <>
+        <section aria-label="แนวโน้มและรายแผนก" className="space-y-3">
           <SectionHeading title="แนวโน้มและรายแผนก" hint="คนที่มาสายหรือขาดบ่อยใน 30 วัน และแต่ละแผนกวันนี้" />
           {/* The 30-day watch list is the slowest part (it reads a month of attendance), so it streams in after the rest. */}
           <Suspense
@@ -489,34 +547,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <AttendanceWatchSection companyId={user!.companyId} session={session} departmentIds={deptIds} />
           </Suspense>
           <LiveDepartmentBreakdown />
-        </>
-      )}
-
-      {(canSeeLeaves || canSeeProbation || canSeeEvaluation) && (
-        <section aria-label="คนและงานที่ต้องติดตาม" className="space-y-3">
-          <SectionHeading title="คนและงานที่ต้องติดตาม" hint="ลาที่กำลังจะมา ทดลองงาน และความคืบหน้าการประเมิน" />
-          <div className="grid items-start gap-3 lg:grid-cols-3">
-          {canSeeLeaves && (
-            <Suspense fallback={<PeopleCardFallback />}>
-              <UpcomingLeavesSection companyId={user!.companyId} session={session} />
-            </Suspense>
-          )}
-          {canSeeProbation && (
-            <Suspense fallback={<PeopleCardFallback />}>
-              <ProbationDueSection companyId={user!.companyId} session={session} />
-            </Suspense>
-          )}
-          {canSeeEvaluation && (
-            <Suspense fallback={<PeopleCardFallback />}>
-              <EvaluationProgressSection companyId={user!.companyId} session={session} />
-            </Suspense>
-          )}
-          </div>
         </section>
       )}
 
-      {/* KPI cards (today) */}
-      <section className={cn("grid grid-cols-2 gap-4", attendanceToday ? "lg:grid-cols-2" : "lg:grid-cols-5")}>
+      {/* KPI cards (today) — for people without the attendance view; the strip above covers the rest. */}
+      {!attendanceToday && (
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Kpi
           label="พนักงานทั้งหมด"
           value={s.headcount}
@@ -542,8 +578,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </div>
           }
         />
-        {!attendanceToday && (
-        <>
         <Kpi
           label="เข้างานวันนี้"
           value={s.presentToday}
@@ -577,8 +611,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             goodDirection: "neutral",
           }}
         />
-        </>
-        )}
         <Kpi
           label="OT วันนี้"
           value={s.otHoursToday}
@@ -593,6 +625,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           }}
         />
       </section>
+      )}
 
       {/* Attendance rate line (dashboard-fix-3) — % of headcount per business
           day, plus a rolled-up summary alongside it. */}
@@ -606,6 +639,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <div className="min-w-0 flex-1">
               <AttendanceRateLine data={attendanceTrend} />
             </div>
+            {!attendanceToday && (
             <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:w-[220px] lg:grid-cols-1">
               <div className="gv-teal-surface flex flex-col rounded-2xl p-3">
                 <span className="text-xs text-white/80">เข้างานเฉลี่ย</span>
@@ -624,6 +658,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <span className="text-xl font-bold tabular-nums">{absentSum}</span>
               </div>
             </div>
+            )}
           </div>
         </CardContent>
       </Card>

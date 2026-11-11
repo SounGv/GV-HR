@@ -1,8 +1,9 @@
 "use client";
 
+import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Bell, Globe, Pencil, ShieldCheck, LogOut, User, Wallet, ChevronRight } from "lucide-react";
+import { Bell, Globe, Pencil, ShieldCheck, LogOut, Wallet, ChevronRight } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { formatCurrency, loginIdentifier, displayName } from "@/lib/format";
 import { useMyProfile } from "@/features/profile/hooks";
@@ -62,7 +63,7 @@ export function MobileProfileView() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.employee.avatarUrl} alt={nameLabel} className="size-full object-cover" />
           ) : (
-            <User className="size-7 text-primary-foreground" />
+            <CharacterAvatar character={characterFor(user.employee)} className="size-full" />
           )}
         </a>
         <p className="text-[15px] font-bold text-foreground">{nameLabel}</p>

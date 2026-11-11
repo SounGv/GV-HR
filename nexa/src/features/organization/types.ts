@@ -6,6 +6,17 @@ export interface DepartmentRow {
   employeeCount: number;
 }
 
+/** One active employee as the org chart's people view needs it (GET /api/org/people). */
+export interface OrgPersonRow {
+  id: string;
+  /** displayName(): "first last (nickname)". */
+  name: string;
+  nickname: string | null;
+  departmentId: string | null;
+  managerId: string | null;
+  positionTitle: string | null;
+}
+
 export interface DepartmentNode extends DepartmentRow {
   children: DepartmentNode[];
 }

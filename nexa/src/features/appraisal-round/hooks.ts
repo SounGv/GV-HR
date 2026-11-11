@@ -83,7 +83,8 @@ export function useDeleteRound() {
   return useMutation({ mutationFn: (id: string) => deleteRound(id), onSuccess: invalidate });
 }
 
-export const useTasks = () => useQuery({ queryKey: appraisalRoundKeys.tasks, queryFn: fetchTasks });
+/** The signed-in person's own jobs; pass false for an account with no employee record (the API would refuse it). */
+export const useTasks = (enabled = true) => useQuery({ queryKey: appraisalRoundKeys.tasks, queryFn: fetchTasks, enabled });
 export const useTask = (id: string) => useQuery({ queryKey: appraisalRoundKeys.task(id), queryFn: () => fetchTask(id) });
 export function useSaveTask(id: string) {
   const qc = useQueryClient();

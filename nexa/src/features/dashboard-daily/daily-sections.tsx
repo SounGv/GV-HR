@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { CalendarDays, ChevronRight, LogOut, Timer } from "lucide-react";
+import { CalendarDays, LogOut, Timer } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FollowRow, FollowRowFailed } from "@/features/dashboard/follow-up";
 import { STATUS_META } from "@/features/attendance-status/status-meta";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { cn } from "@/lib/utils";
@@ -17,17 +17,29 @@ import {
 
 const SHOWN = 5;
 
+/** "ก · ข และอีก 3 คน": the first two names for a row's one-line summary (duplicates folded). */
+export function namesLine(names: string[]): string {
+  const uniq = [...new Set(names)];
+  const head = uniq.slice(0, 2).join(" · ");
+  return uniq.length > 2 ? `${head} และอีก ${uniq.length - 2} คน` : head;
+}
+
 /** "2026-10-19" → "19 ต.ค." (a Bangkok calendar day, so format in UTC). */
 const fmtDay = (iso: string) =>
   new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
 
+/** Each card is one row of the dashboard's "ต้องตามวันนี้" list; it opens to the names. */
 function Frame({
-  icon: Icon,
+  icon,
   title,
   hint,
   count,
   children,
   link,
+  tone,
+  tag,
+  unit,
+  order,
 }: {
   icon: typeof Timer;
   title: string;
@@ -35,23 +47,15 @@ function Frame({
   count: number;
   children: React.ReactNode;
   link: { href: string; label: string };
+  tone: "bad" | "warn" | "info";
+  tag: string;
+  unit: string;
+  order: number;
 }) {
   return (
-    <Card className="gap-0">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Icon className="size-5 shrink-0" aria-hidden="true" /> {title}
-          <span className="ml-auto text-xl font-bold tabular-nums">{count}</span>
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">{hint}</p>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {children}
-        <Link href={link.href} className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">
-          {link.label} <ChevronRight className="size-4" aria-hidden="true" />
-        </Link>
-      </CardContent>
-    </Card>
+    <FollowRow icon={icon} title={title} sub={hint} count={count} unit={unit} tone={tone} tag={tag} order={order} link={link}>
+      {children}
+    </FollowRow>
   );
 }
 
@@ -81,9 +85,13 @@ export function MissedScanOutCard({ rows, days }: { rows: MissedScanOut[]; days:
   return (
     <Frame
       icon={LogOut}
-      title="ลืมสแกนออก"
-      hint={`${days} วันล่าสุด ไม่นับวันนี้ · ชั่วโมงทำงานยังว่างจนกว่าจะแก้เวลา`}
+      title={`ลืมสแกนออก (${days} วันล่าสุด)`}
+      hint={rows.length ? `${namesLine(rows.map((r) => r.name))} · ชั่วโมงยังว่างจนกว่าจะแก้เวลา` : "ทุกคนสแกนออกครบ"}
       count={rows.length}
+      tone="warn"
+      tag="รอแก้เวลา"
+      unit="รายการ"
+      order={3}
       link={{ href: "/attendance/corrections", label: "ไปหน้าแก้ไขเวลา" }}
     >
       {rows.length === 0 ? (
@@ -112,12 +120,17 @@ export function MissedScanOutCard({ rows, days }: { rows: MissedScanOut[]; days:
 /** Who is down to work overtime tonight, waiting for a decision or already approved. */
 export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
   const hours = Math.round(rows.reduce((s, r) => s + r.hours, 0) * 10) / 10;
+  const waiting = rows.filter((r) => r.status !== "APPROVED").length;
   return (
     <Frame
       icon={Timer}
       title="OT วันนี้"
-      hint={rows.length ? `รวม ${hours} ชม. · ทั้งที่รออนุมัติและอนุมัติแล้ว` : "คำขอ OT ของวันนี้ ทั้งที่รออนุมัติและอนุมัติแล้ว"}
+      hint={rows.length ? `รวม ${hours} ชม.${waiting ? ` · รออนุมัติ ${waiting} รายการ` : " · อนุมัติครบแล้ว"}` : "วันนี้ยังไม่มีใครขอ OT"}
       count={rows.length}
+      tone={waiting ? "warn" : "info"}
+      tag={waiting ? "รออนุมัติ" : "อนุมัติแล้ว"}
+      unit="คน"
+      order={4}
       link={{ href: "/overtime", label: "ดูคำขอ OT ทั้งหมด" }}
     >
       {rows.length === 0 ? (
@@ -154,8 +167,12 @@ export function MeetingsTodayCard({ rows }: { rows: MeetingToday[] }) {
     <Frame
       icon={CalendarDays}
       title="นัดประชุมวันนี้"
-      hint="ที่คุณนัดหรือได้รับเชิญ"
+      hint={rows.length ? `ถัดไป ${rows[0].start} น. · ${rows[0].title}` : "วันนี้ไม่มีนัดประชุม"}
       count={rows.length}
+      tone="info"
+      tag="ข้อมูล"
+      unit="นัด"
+      order={8}
       link={{ href: "/meetings", label: "ดูนัดประชุมทั้งหมด" }}
     >
       {rows.length === 0 ? (
@@ -179,21 +196,13 @@ export function MeetingsTodayCard({ rows }: { rows: MeetingToday[] }) {
   );
 }
 
-function LoadFailed({ what }: { what: string }) {
-  return (
-    <Card>
-      <CardContent className="py-4 text-sm text-muted-foreground">โหลด{what}ไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง</CardContent>
-    </Card>
-  );
-}
-
 /** Async wrappers for `<Suspense>`: each card loads and fails on its own. */
 export async function MissedScanOutSection({ companyId, session }: { companyId: string; session: AccessClaims }) {
   try {
     const data = await loadMissedScanOuts(companyId, session);
     return <MissedScanOutCard rows={data.rows} days={data.days} />;
   } catch {
-    return <LoadFailed what="รายชื่อคนลืมสแกนออก" />;
+    return <FollowRowFailed icon={LogOut} title="ลืมสแกนออก" what="รายชื่อคนลืมสแกนออก" order={3} />;
   }
 }
 
@@ -201,7 +210,7 @@ export async function OvertimeTodaySection({ companyId, session }: { companyId: 
   try {
     return <OvertimeTodayCard rows={await loadOvertimeToday(companyId, session)} />;
   } catch {
-    return <LoadFailed what="OT วันนี้" />;
+    return <FollowRowFailed icon={Timer} title="OT วันนี้" what="OT วันนี้" order={4} />;
   }
 }
 
@@ -209,6 +218,6 @@ export async function MeetingsTodaySection({ companyId, employeeId }: { companyI
   try {
     return <MeetingsTodayCard rows={await loadMeetingsToday(companyId, employeeId)} />;
   } catch {
-    return <LoadFailed what="นัดประชุมวันนี้" />;
+    return <FollowRowFailed icon={CalendarDays} title="นัดประชุมวันนี้" what="นัดประชุมวันนี้" order={8} />;
   }
 }

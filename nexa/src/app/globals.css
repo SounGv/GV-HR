@@ -553,6 +553,121 @@
   background: var(--row-hover);
 }
 
+/* ── Hero + glass + entrance motion (2026-11, dashboard-v3-mock.html) ──
+   Shared by the dashboard, the evaluation overview and the org chart. Light is
+   plain radial gradients; only transform/opacity/stroke animate, each once on
+   load (the hero glow drifts slowly); reduced motion turns all of it off. */
+.gv-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 22px;
+  color: #fff;
+  background: linear-gradient(135deg, #0b3b38 0%, #0f5f5a 45%, #0f766e 100%);
+  box-shadow: 0 1px 2px rgba(15, 118, 110, 0.2), 0 10px 24px -12px rgba(15, 118, 110, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.gv-hero::before,
+.gv-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.gv-hero::before {
+  width: 640px;
+  height: 640px;
+  left: -200px;
+  top: -320px;
+  background: radial-gradient(closest-side, rgba(45, 212, 191, 0.28), rgba(45, 212, 191, 0));
+  animation: gv-drift 16s ease-in-out infinite alternate;
+}
+.gv-hero::after {
+  width: 520px;
+  height: 520px;
+  right: -180px;
+  bottom: -300px;
+  background: radial-gradient(closest-side, rgba(205, 235, 3, 0.12), rgba(205, 235, 3, 0));
+  animation: gv-drift 20s ease-in-out infinite alternate-reverse;
+}
+@keyframes gv-drift {
+  to { transform: translate3d(90px, 40px, 0); }
+}
+/* Translucent tile inside .gv-hero. */
+.gv-glass {
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: transform 0.18s ease, background-color 0.15s ease;
+}
+a.gv-glass:hover,
+button.gv-glass:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.07));
+}
+/* Section heading's teal bar. */
+.gv-bar-heading::before {
+  content: "";
+  flex: none;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: #0d9488;
+}
+/* Row with a coloured severity edge on the left (set --edge). */
+.gv-edge {
+  position: relative;
+}
+.gv-edge::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--edge, transparent);
+}
+/* Entrance: rises once; stagger with style={{ "--i": n }}. */
+@keyframes gv-rise {
+  from { opacity: 0; transform: translateY(8px); }
+}
+.gv-rise {
+  animation: gv-rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+/* Progress ring draws itself once (set --len to the circumference). */
+@keyframes gv-draw {
+  from { stroke-dashoffset: var(--len); }
+}
+.gv-draw {
+  animation: gv-draw 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s both;
+}
+@keyframes gv-grow {
+  from { transform: scaleX(0); }
+}
+.gv-grow {
+  transform-origin: left;
+  animation: gv-grow 1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s both;
+}
+/* "Live" dot beside an auto-refresh stamp. */
+@keyframes gv-pulse {
+  70% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+.gv-live {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  animation: gv-pulse 2s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gv-hero::before, .gv-hero::after, .gv-rise, .gv-draw, .gv-grow, .gv-live { animation: none; }
+  .gv-glass, a.gv-glass:hover, button.gv-glass:hover { transition: none; transform: none; }
+}
+
 /* Confirmation moment: the check on a finished check-in/out eases in once.
    Content is visible by default; reduced motion keeps only a short fade. */
 @keyframes gv-confirm {

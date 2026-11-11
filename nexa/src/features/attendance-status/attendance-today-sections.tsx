@@ -32,7 +32,7 @@ const RING_COLOR: Record<TodayStatus, string> = {
  * @param total People counted today.
  * @param scanned People who have scanned in.
  */
-function StatusRing({ counts, total, scanned }: { counts: Record<TodayStatus, number>; total: number; scanned: number }) {
+export function StatusRing({ counts, total, scanned }: { counts: Record<TodayStatus, number>; total: number; scanned: number }) {
   const r = 42;
   const circumference = 2 * Math.PI * r;
   const shown = STATUS_ORDER.filter((s) => counts[s] > 0);
@@ -234,7 +234,7 @@ const ATTENTION: { status: TodayStatus; empty: string }[] = [
   { status: "ON_LEAVE", empty: "วันนี้ยังไม่มีคนลา" },
 ];
 
-function personLine(p: TodayPerson, status: TodayStatus): string {
+export function personLine(p: TodayPerson, status: TodayStatus): string {
   if (status === "LATE") return `เข้า ${p.clockIn} น. · สาย ${p.lateMinutes ?? 0} นาที`;
   if (status === "ABSENT") return `ยังไม่สแกน · กะเริ่ม ${p.shiftStart} น.`;
   return "ลางานทั้งวัน";

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarClock, ChevronRight, ClipboardCheck, UserCheck } from "lucide-react";
+import { FollowRow, FollowRowFailed } from "@/features/dashboard/follow-up";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { STATUS_META } from "@/features/attendance-status/status-meta";
 import { ProbationRoundButton } from "@/features/appraisal-round/probation-round-button";
 import { can } from "@/lib/auth/rbac";
@@ -22,14 +22,6 @@ const SHOWN = 6;
 /** "2026-10-06" → "6 ต.ค." The ISO strings are Bangkok calendar days, so format them in UTC. */
 const fmtDay = (iso: string) =>
   new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
-
-function LoadFailed({ what }: { what: string }) {
-  return (
-    <Card>
-      <CardContent className="py-4 text-sm text-muted-foreground">โหลด{what}ไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง</CardContent>
-    </Card>
-  );
-}
 
 function leaveWhen(p: LeavePerson): string {
   const range = p.startIso === p.endIso ? fmtDay(p.startIso) : `${fmtDay(p.startIso)} – ${fmtDay(p.endIso)}`;
@@ -73,42 +65,51 @@ function LeaveGroup({ title, people, empty }: { title: string; people: LeavePers
   );
 }
 
+/** "ต้องตามวันนี้" row: approved leave today and in the next few days; opens to both lists. */
 export function UpcomingLeavesCard({ data }: { data: UpcomingLeaves }) {
+  const count = data.today.length + data.soon.length;
   return (
-    <Card className="gap-0">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <CalendarClock className="size-5 shrink-0" aria-hidden="true" /> ใครลาบ้าง
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">เฉพาะที่อนุมัติแล้ว วันนี้และอีก {data.lookaheadDays} วันข้างหน้า</p>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <FollowRow
+      icon={CalendarClock}
+      title={`ลาวันนี้และ ${data.lookaheadDays} วันข้างหน้า`}
+      sub={count ? `วันนี้ ${data.today.length} คน · เริ่มลาเร็วๆ นี้ ${data.soon.length} คน · ดูก่อนจัดคนเข้ากะ` : "ยังไม่มีใครลา (เฉพาะที่อนุมัติแล้ว)"}
+      count={count}
+      unit="คน"
+      tone="info"
+      tag="ข้อมูล"
+      order={5}
+      link={{ href: "/leave?view=overview", label: "ดูคำขอลาทั้งหมด" }}
+    >
+      <div className="space-y-4">
         <LeaveGroup title="ลาวันนี้" people={data.today} empty="วันนี้ยังไม่มีคนลา" />
         <LeaveGroup title={`เริ่มลาภายใน ${data.lookaheadDays} วัน`} people={data.soon} empty="ยังไม่มีใครลาล่วงหน้า" />
-        <Link
-          href="/leave?view=overview"
-          className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline"
-        >
-          ดูคำขอลาทั้งหมด <ChevronRight className="size-4" aria-hidden="true" />
-        </Link>
-      </CardContent>
-    </Card>
+      </div>
+    </FollowRow>
   );
 }
 
+/** "ต้องตามวันนี้" row: people whose probation ends soon; opens to the names and the round button. */
 export function ProbationDueCard({ data, canCreateRound = false }: { data: ProbationDue; canCreateRound?: boolean }) {
   const missing = data.total - data.known;
+  const soonest = data.people.reduce<number | null>((m, p) => (m === null || p.daysLeft < m ? p.daysLeft : m), null);
   return (
-    <Card className="gap-0">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <UserCheck className="size-5 shrink-0" aria-hidden="true" /> ใกล้ครบทดลองงาน
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          ครบภายใน {data.windowDays} วัน ควรประเมินให้เสร็จก่อนวันที่ 120 ของการทำงาน
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <FollowRow
+      icon={UserCheck}
+      title={`ครบทดลองงานใน ${data.windowDays} วัน`}
+      sub={
+        data.people.length
+          ? `ใกล้สุด${soonest === 0 ? "ครบวันนี้" : ` อีก ${soonest} วัน`} · ประเมินให้เสร็จก่อนวันที่ 120`
+          : missing > 0
+            ? `ไม่มีใครครบเร็วๆ นี้ · อีก ${missing} คนยังไม่มีวันเริ่มงานในระบบ`
+            : "ไม่มีใครครบทดลองงานเร็วๆ นี้"
+      }
+      count={data.people.length}
+      unit="คน"
+      tone={soonest !== null && soonest <= 7 ? "bad" : "warn"}
+      tag="ต้องประเมิน"
+      order={6}
+    >
+      <div className="space-y-3">
         {data.people.length === 0 ? (
           <p className="text-sm text-muted-foreground">ไม่มีใครครบทดลองงานภายใน {data.windowDays} วัน</p>
         ) : (
@@ -147,8 +148,8 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
             จึงไม่ถูกนับในรายการนี้ (เพิ่มได้ที่หน้าข้อมูลพนักงาน)
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FollowRow>
   );
 }
 
@@ -178,53 +179,55 @@ function ProgressRow({ label, tally }: { label: string; tally: CampaignProgress[
   );
 }
 
+/** "ต้องตามวันนี้" row: evaluation answers still owed in open rounds; opens to each round's progress. */
 export function EvaluationProgressCard({ campaigns }: { campaigns: CampaignProgress[] }) {
+  const owed = campaigns.reduce((n, c) => n + (c.overall.total - c.overall.submitted), 0);
+  const overdue = campaigns.some((c) => c.daysLeft < 0 && c.overall.total > c.overall.submitted);
   return (
-    <Card className="gap-0">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ClipboardCheck className="size-5 shrink-0" aria-hidden="true" /> ประเมินผลที่ยังค้าง
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {campaigns.length === 0 ? (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">ตอนนี้ไม่มีรอบประเมินที่เปิดอยู่</p>
-            <Link href="/performance" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">
-              ไปที่เมนูประเมิน <ChevronRight className="size-4" aria-hidden="true" />
-            </Link>
+    <FollowRow
+      icon={ClipboardCheck}
+      title="ประเมินผลที่ยังค้าง"
+      sub={
+        campaigns.length === 0
+          ? "ตอนนี้ไม่มีรอบประเมินที่เปิดอยู่"
+          : campaigns.map((c) => `${c.name} ส่งแล้ว ${c.overall.percent}%`).join(" · ")
+      }
+      count={owed}
+      unit="งาน"
+      tone={overdue ? "bad" : "warn"}
+      tag={overdue ? "เลยกำหนด" : "ค้างส่ง"}
+      order={7}
+    >
+      <div className="space-y-5">
+      {campaigns.map((c) => (
+        <section key={c.id} aria-label={c.name} className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold break-words text-foreground">
+              {c.name} <span className="font-normal text-muted-foreground">({c.cycle})</span>
+            </h3>
+            <p className={cn("text-sm", c.daysLeft < 0 ? "font-semibold text-status-late-fg" : "text-muted-foreground")}>
+              ปิดรอบ {fmtDay(c.endIso)} ·{" "}
+              {c.daysLeft < 0 ? `เลยกำหนด ${-c.daysLeft} วัน` : c.daysLeft === 0 ? "ครบวันนี้" : `อีก ${c.daysLeft} วัน`}
+            </p>
           </div>
-        ) : (
-          campaigns.map((c) => (
-            <section key={c.id} aria-label={c.name} className="space-y-3">
-              <div>
-                <h3 className="text-sm font-semibold break-words text-foreground">
-                  {c.name} <span className="font-normal text-muted-foreground">({c.cycle})</span>
-                </h3>
-                <p className={cn("text-sm", c.daysLeft < 0 ? "font-semibold text-status-late-fg" : "text-muted-foreground")}>
-                  ปิดรอบ {fmtDay(c.endIso)} ·{" "}
-                  {c.daysLeft < 0 ? `เลยกำหนด ${-c.daysLeft} วัน` : c.daysLeft === 0 ? "ครบวันนี้" : `อีก ${c.daysLeft} วัน`}
-                </p>
-              </div>
-              {c.overall.total === 0 ? (
-                <p className="text-sm text-muted-foreground">ไม่มีแบบประเมินของคนในทีมที่คุณดูแลในรอบนี้</p>
-              ) : (
-                <div className="space-y-3">
-                  <ProgressRow label="ทั้งหมด" tally={c.overall} />
-                  {c.byRater.length > 1 && c.byRater.map((r) => <ProgressRow key={r.raterType} label={r.label} tally={r.tally} />)}
-                </div>
-              )}
-              <Link
-                href={`/performance/campaigns/${c.id}`}
-                className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline"
-              >
-                ดูรายละเอียดรอบนี้ <ChevronRight className="size-4" aria-hidden="true" />
-              </Link>
-            </section>
-          ))
-        )}
-      </CardContent>
-    </Card>
+          {c.overall.total === 0 ? (
+            <p className="text-sm text-muted-foreground">ไม่มีแบบประเมินของคนในทีมที่คุณดูแลในรอบนี้</p>
+          ) : (
+            <div className="space-y-3">
+              <ProgressRow label="ทั้งหมด" tally={c.overall} />
+              {c.byRater.length > 1 && c.byRater.map((r) => <ProgressRow key={r.raterType} label={r.label} tally={r.tally} />)}
+            </div>
+          )}
+          <Link
+            href={`/performance/campaigns/${c.id}`}
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline"
+          >
+            ดูรายละเอียดรอบนี้ <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
+        </section>
+      ))}
+      </div>
+    </FollowRow>
   );
 }
 
@@ -233,7 +236,7 @@ export async function UpcomingLeavesSection({ companyId, session }: { companyId:
   try {
     return <UpcomingLeavesCard data={await loadUpcomingLeaves(companyId, session)} />;
   } catch {
-    return <LoadFailed what="รายชื่อคนลา" />;
+    return <FollowRowFailed icon={CalendarClock} title="ลาวันนี้และวันข้างหน้า" what="รายชื่อคนลา" order={5} />;
   }
 }
 
@@ -241,7 +244,7 @@ export async function ProbationDueSection({ companyId, session }: { companyId: s
   try {
     return <ProbationDueCard data={await loadProbationDue(companyId, session)} canCreateRound={can(session.perms, "campaign:create")} />;
   } catch {
-    return <LoadFailed what="รายชื่อคนใกล้ครบทดลองงาน" />;
+    return <FollowRowFailed icon={UserCheck} title="ครบทดลองงาน" what="รายชื่อคนใกล้ครบทดลองงาน" order={6} />;
   }
 }
 
@@ -249,6 +252,6 @@ export async function EvaluationProgressSection({ companyId, session }: { compan
   try {
     return <EvaluationProgressCard campaigns={await loadEvaluationProgress(companyId, session)} />;
   } catch {
-    return <LoadFailed what="ความคืบหน้าการประเมิน" />;
+    return <FollowRowFailed icon={ClipboardCheck} title="ประเมินผลที่ยังค้าง" what="ความคืบหน้าการประเมิน" order={7} />;
   }
 }
