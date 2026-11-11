@@ -5,6 +5,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { MobileRequestsView } from "@/components/mobile/mobile-requests-view";
+import { ApprovalsDesk } from "@/features/requests/approvals-desk";
 
 export const metadata: Metadata = { title: "คำขอ" };
 
@@ -20,10 +21,11 @@ export default async function RequestsPage({
     <>
       <MobileRequestsView defaultTab={view === "approvals" ? "approvals" : "me"} />
       <div className="hidden space-y-6 md:block">
-        <PageHeader title="คำขอ" description="ภาพรวมคำขอลา OT และแก้ไขเวลา — จัดการรายละเอียดที่หน้าของแต่ละประเภท" />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <PageHeader title="คำขอ" description="อนุมัติคำขอของทีมได้จากหน้านี้ ส่วนรายละเอียดและประวัติอยู่ที่หน้าของแต่ละประเภท" />
+        <ApprovalsDesk />
+        <div className="grid gap-3 sm:grid-cols-3">
           <Link href="/leave">
-            <Card className="flex-row items-center gap-3 p-5 transition hover:border-primary/40 hover:shadow-sm">
+            <Card className="gv-lift flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
               <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-primary">
                 <CalendarDays className="size-5" />
               </span>
@@ -34,7 +36,7 @@ export default async function RequestsPage({
             </Card>
           </Link>
           <Link href="/overtime">
-            <Card className="flex-row items-center gap-3 p-5 transition hover:border-primary/40 hover:shadow-sm">
+            <Card className="gv-lift flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
               <span className="flex size-10 items-center justify-center rounded-xl bg-warning/10 text-warning">
                 <Timer className="size-5" />
               </span>
@@ -45,7 +47,7 @@ export default async function RequestsPage({
             </Card>
           </Link>
           <Link href="/attendance/corrections">
-            <Card className="flex-row items-center gap-3 p-5 transition hover:border-primary/40 hover:shadow-sm">
+            <Card className="gv-lift flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
               <span className="flex size-10 items-center justify-center rounded-xl bg-info/10 text-info">
                 <PencilLine className="size-5" />
               </span>

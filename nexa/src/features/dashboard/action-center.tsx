@@ -85,7 +85,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
           )}
           {tiles.length > 0 && (
             <Link
-              href={tiles[0].href}
+              href="/requests?view=approvals"
               className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)] transition-colors hover:bg-[#115e59]"
             >
               ตรวจอนุมัติ <ArrowRight className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
