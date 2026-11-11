@@ -11,6 +11,8 @@ export interface FormSnap {
   name: string;
   version: number;
   ratingMax: number;
+  /** The form's own score names when it had them at opening time; absent = system names. */
+  ratingLabels?: unknown;
   questions: {
     id: string;
     text: string;

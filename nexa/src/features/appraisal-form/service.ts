@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { Prisma } from "@prisma/client";
+import { DEFAULT_PRESET, LABEL_PRESETS, parseRatingLabels } from "./rating-labels";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, NotFound } from "@/lib/api/errors";
@@ -69,6 +70,7 @@ export async function getForm(companyId: string, id: string) {
       description: true,
       status: true,
       ratingMax: true,
+      ratingLabels: true,
       publishedAt: true,
       questions: { select: questionSelect, orderBy: { order: "asc" } },
     },
@@ -76,6 +78,7 @@ export async function getForm(companyId: string, id: string) {
   if (!f) throw NotFound("ไม่พบแบบประเมิน");
   return {
     ...f,
+    ratingLabels: parseRatingLabels(f.ratingLabels, f.ratingMax),
     publishedAt: f.publishedAt?.toISOString() ?? null,
     questions: f.questions.map((q) => ({ ...q, options: asOptions(q.options) })),
   };
@@ -88,6 +91,8 @@ export async function createForm(companyId: string, session: AccessClaims, input
       lineageId: randomUUID(),
       name: input.name,
       description: input.description ?? null,
+      // New forms start with the score names HR set; the builder lets them switch.
+      ratingLabels: LABEL_PRESETS[DEFAULT_PRESET].labels.map((l) => ({ ...l })),
       createdById: session.sub,
       updatedById: session.sub,
     },
@@ -109,18 +114,23 @@ export async function createForm(companyId: string, session: AccessClaims, input
 export async function updateForm(companyId: string, session: AccessClaims, id: string, input: FormUpdateInput, meta?: Meta) {
   const existing = await prisma.appraisalForm.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, status: true },
+    select: { id: true, status: true, ratingMax: true },
   });
   if (!existing) throw NotFound("ไม่พบแบบประเมิน");
   if (!isEditable(existing.status)) {
     throw BadRequest("แบบนี้ถูกใช้งานแล้วแก้ไขไม่ได้ กรุณาสร้างเวอร์ชันใหม่");
   }
 
+  // Score names: null = back to the system names; otherwise one name for every score.
+  const labels = input.ratingLabels === undefined ? undefined : input.ratingLabels === null ? null : parseRatingLabels(input.ratingLabels, existing.ratingMax);
+  if (input.ratingLabels && !labels) throw BadRequest(`ตั้งชื่อระดับคะแนนให้ครบทั้ง ${existing.ratingMax} ระดับ`);
+
   await prisma.appraisalForm.update({
     where: { id },
     data: {
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(labels !== undefined ? { ratingLabels: labels === null ? Prisma.DbNull : (labels as unknown as Prisma.InputJsonValue) } : {}),
       updatedById: session.sub,
       ...(input.questions !== undefined
         ? {

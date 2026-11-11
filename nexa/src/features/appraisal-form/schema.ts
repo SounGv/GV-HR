@@ -28,6 +28,12 @@ export const formUpdateSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อแบบประเมิน").max(200).optional(),
   description: z.string().trim().max(1000).optional().nullable(),
   questions: z.array(questionSchema).max(100).optional(),
+  /** One name per score 1..ratingMax; null = the system's original names. */
+  ratingLabels: z
+    .array(z.object({ score: z.number().int().min(1).max(10), label: z.string().trim().min(1, "กรุณาตั้งชื่อทุกระดับคะแนน").max(40) }))
+    .max(10)
+    .optional()
+    .nullable(),
 });
 
 export type FormCreateInput = z.infer<typeof formCreateSchema>;

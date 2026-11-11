@@ -774,7 +774,7 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
   if (!a) throw NotFound("ไม่พบงานประเมินนี้");
   const form = pickForm(a.participant.round.formSnapshot as unknown as RoundSnapshot | null, a.participant.formId);
   if (!form) throw BadRequest("รอบนี้ยังไม่พร้อม");
-  return { a, snap: { ratingMax: form.ratingMax, questions: form.questions as SnapQuestion[] } };
+  return { a, snap: { ratingMax: form.ratingMax, ratingLabels: form.ratingLabels ?? null, questions: form.questions as SnapQuestion[] } };
 }
 
 export async function getMyAssignment(companyId: string, session: AccessClaims, id: string) {
@@ -789,6 +789,7 @@ export async function getMyAssignment(companyId: string, session: AccessClaims, 
     roundStatus: a.participant.round.status,
     endIso: a.participant.round.endDate ? iso(a.participant.round.endDate) : null,
     ratingMax: snap.ratingMax,
+    ratingLabels: snap.ratingLabels,
     questions: visibleQuestions(snap.questions, a.raterType),
     answers: (Array.isArray(a.answers) ? a.answers : []) as unknown as Answer[],
   };

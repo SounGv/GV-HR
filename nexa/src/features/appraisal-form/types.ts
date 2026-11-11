@@ -54,6 +54,8 @@ export interface FormDetail {
   description: string | null;
   status: FormStatus;
   ratingMax: number;
+  /** One name per score; null = the system's original names. */
+  ratingLabels: { score: number; label: string }[] | null;
   publishedAt: string | null;
   questions: QuestionDetail[];
 }

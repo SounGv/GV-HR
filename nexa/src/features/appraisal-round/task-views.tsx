@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { SCORE_RUBRIC } from "@/features/performance/calc";
+import { rubricFor } from "@/features/appraisal-form/rating-labels";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { useHrAssignment, useSaveHrAssignment, useSaveTask, useTask, useTasks } from "./hooks";
@@ -163,7 +163,7 @@ function TaskForm({
     }
   }
 
-  const rubric = SCORE_RUBRIC.filter((r) => r.score <= task.ratingMax);
+  const rubric = rubricFor(task.ratingMax, task.ratingLabels);
 
   return (
     <div className="space-y-4 pb-28">
@@ -223,7 +223,7 @@ function TaskForm({
                       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent font-bold text-accent-foreground">{r.score}</span>
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold">{r.label}</span>
-                        <span className="block text-sm text-muted-foreground">{r.desc}</span>
+                        {r.desc && <span className="block text-sm text-muted-foreground">{r.desc}</span>}
                       </span>
                     </button>
                   );

@@ -122,6 +122,8 @@ export interface TaskDetail {
   roundStatus: RoundStatus;
   endIso: string | null;
   ratingMax: number;
+  /** Score names frozen with the round; null = the system's original names. */
+  ratingLabels: unknown;
   questions: SnapQuestion[];
   answers: { questionId: string; value: number | string | string[] }[];
 }

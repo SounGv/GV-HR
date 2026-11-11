@@ -383,6 +383,7 @@ export async function getAssignmentForHr(companyId: string, roundId: string, ass
     roundStatus: a.participant.round.status,
     endIso: a.participant.round.endDate ? a.participant.round.endDate.toISOString().slice(0, 10) : null,
     ratingMax: form.ratingMax,
+    ratingLabels: form.ratingLabels ?? null,
     questions: visibleQuestions(form.questions as SnapQuestion[], a.raterType),
     answers: (Array.isArray(a.answers) ? a.answers : []) as unknown as Answer[],
     raterName: displayName(a.rater),

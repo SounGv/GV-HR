@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/features/auth/auth-context";
-import { SCORE_RUBRIC } from "@/features/performance/calc";
+import { LABEL_PRESETS, presetOf, rubricFor, type LabelPresetKey, type RatingLabel } from "./rating-labels";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import {
@@ -77,13 +77,18 @@ function FormEditor({ form }: { form: FormDetail }) {
   const [name, setName] = useState(form.name);
   const [questions, setQuestions] = useState<QuestionValues[]>(() => toValues(form));
   const [rater, setRater] = useState<RaterType>("MANAGER");
+  // Score names for this form; null = the system's original names (forms saved before this existed).
+  const [labels, setLabels] = useState<RatingLabel[] | null>(form.ratingLabels);
 
   const save = useSaveAppraisalForm(form.id);
   const publish = usePublishAppraisalForm(form.id);
   const newVersion = useNewAppraisalFormVersion(form.id);
   const busy = save.isPending || publish.isPending;
 
-  const problems = formProblems(questions);
+  const problems = [
+    ...formProblems(questions),
+    ...(labels && labels.some((l) => !l.label.trim()) ? ["ตั้งชื่อระดับคะแนนให้ครบทุกระดับ"] : []),
+  ];
   const weightTotal = ratingWeightTotal(questions);
 
   const update = (i: number, patch: Partial<QuestionValues>) =>
@@ -100,6 +105,7 @@ function FormEditor({ form }: { form: FormDetail }) {
   function payload() {
     return {
       name: name.trim() || form.name,
+      ratingLabels: labels,
       questions: questions.map((q) => ({
         text: q.text,
         helpText: q.helpText || null,
@@ -308,6 +314,7 @@ function FormEditor({ form }: { form: FormDetail }) {
         </div>
 
         <aside className="space-y-3 lg:sticky lg:top-4">
+          <ScoreNames ratingMax={form.ratingMax} labels={labels} onChange={setLabels} disabled={!canEdit} />
           <Card className="gap-2 p-4" aria-label="ความพร้อมของแบบ">
             <h2 className="text-sm font-semibold">ความพร้อมก่อนยืนยันใช้</h2>
             {problems.length === 0 ? (
@@ -324,7 +331,7 @@ function FormEditor({ form }: { form: FormDetail }) {
               </ul>
             )}
             <p className="text-xs text-muted-foreground">
-              คำถามให้คะแนน: น้ำหนักรวม {weightTotal} · สเกล 1–{form.ratingMax} (ค่าเริ่มต้น รอ HR ยืนยัน)
+              คำถามให้คะแนน: น้ำหนักรวม {weightTotal} · สเกล 1–{form.ratingMax}
             </p>
           </Card>
 
@@ -343,7 +350,7 @@ function FormEditor({ form }: { form: FormDetail }) {
                 </button>
               ))}
             </div>
-            <Preview questions={questions} rater={rater} ratingMax={form.ratingMax} />
+            <Preview questions={questions} rater={rater} ratingMax={form.ratingMax} labels={labels} />
           </Card>
         </aside>
       </div>
@@ -364,10 +371,100 @@ function FormEditor({ form }: { form: FormDetail }) {
   );
 }
 
+/**
+ * The names raters see for each score: pick one of the ready-made sets or type
+ * your own. Only changes the words; the scores (1..ratingMax) and the weighting
+ * stay the same.
+ */
+function ScoreNames({
+  ratingMax,
+  labels,
+  onChange,
+  disabled,
+}: {
+  ratingMax: number;
+  labels: RatingLabel[] | null;
+  onChange: (next: RatingLabel[] | null) => void;
+  disabled: boolean;
+}) {
+  const current = presetOf(labels);
+  const shown = labels ?? rubricFor(ratingMax, null).map((r) => ({ score: r.score, label: r.label })).reverse();
+  const choices: { key: LabelPresetKey | "system"; name: string; sample: string }[] = [
+    ...(Object.keys(LABEL_PRESETS) as LabelPresetKey[]).map((k) => ({
+      key: k,
+      name: LABEL_PRESETS[k].name,
+      sample: LABEL_PRESETS[k].labels.map((l) => l.label).join(" · "),
+    })),
+    { key: "system", name: "ชุดเดิมของระบบ", sample: "ต้องปรับปรุงเร่งด่วน · ต้องพัฒนา · ปานกลาง · ดี · ดีเยี่ยม" },
+  ];
+  return (
+    <Card className="gap-3 p-4" aria-label="ชื่อระดับคะแนน">
+      <div>
+        <h2 className="text-sm font-semibold">ชื่อระดับคะแนน (1–{ratingMax})</h2>
+        <p className="text-xs text-muted-foreground">เปลี่ยนแค่คำที่ผู้ประเมินเห็น คะแนนและการคำนวณเหมือนเดิม</p>
+      </div>
+      <div role="radiogroup" aria-label="ชุดชื่อระดับคะแนน" className="space-y-1.5">
+        {choices.map((c) => {
+          const on = c.key === "system" ? current === null : current === c.key;
+          return (
+            <button
+              key={c.key}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              disabled={disabled}
+              onClick={() => onChange(c.key === "system" ? null : LABEL_PRESETS[c.key].labels.map((l) => ({ ...l })))}
+              className={cn(
+                "w-full rounded-xl border px-3 py-2 text-left transition-colors disabled:opacity-60",
+                on ? "border-primary bg-accent" : "border-border bg-card hover:border-[#b9c2c9]",
+              )}
+            >
+              <span className={cn("block text-[13px] font-semibold", on && "text-accent-foreground")}>{c.name}</span>
+              <span className="block text-xs text-muted-foreground">{c.sample}</span>
+            </button>
+          );
+        })}
+        {current === "custom" && <p className="text-xs font-medium text-accent-foreground">ใช้ชื่อที่ตั้งเอง</p>}
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-muted-foreground">แก้ชื่อเองได้</p>
+        {shown.map((l) => (
+          <label key={l.score} className="flex items-center gap-2">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">
+              {l.score}
+            </span>
+            <Input
+              value={l.label}
+              maxLength={40}
+              disabled={disabled}
+              aria-label={`ชื่อระดับคะแนน ${l.score}`}
+              className="h-9"
+              onChange={(e) => {
+                const base = labels ?? shown;
+                onChange(base.map((x) => (x.score === l.score ? { ...x, label: e.target.value } : x)));
+              }}
+            />
+          </label>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 /** Read-only picture of the form as one rater type would see it. */
-function Preview({ questions, rater, ratingMax }: { questions: QuestionValues[]; rater: RaterType; ratingMax: number }) {
+function Preview({
+  questions,
+  rater,
+  ratingMax,
+  labels,
+}: {
+  questions: QuestionValues[];
+  rater: RaterType;
+  ratingMax: number;
+  labels: RatingLabel[] | null;
+}) {
   const visible = questions.filter((q) => q.visibleTo.length === 0 || q.visibleTo.includes(rater));
-  const rubric = SCORE_RUBRIC.filter((r) => r.score <= ratingMax);
+  const rubric = rubricFor(ratingMax, labels);
   if (visible.length === 0) return <p className="text-sm text-muted-foreground">ยังไม่มีคำถามที่ {RATER_LABEL[rater]} เห็น</p>;
   return (
     <ol className="max-h-[420px] space-y-4 overflow-y-auto rounded-2xl border border-border p-3 text-sm">
