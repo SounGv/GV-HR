@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
-import { ArrowUp, ArrowUpRight, ArrowRight, CalendarDays, CircleCheck, CircleX, Clock, Sparkles, TriangleAlert, Users, Zap } from "lucide-react";
+import { ArrowUp, ArrowUpRight, CalendarDays, CircleCheck, CircleX, Clock, Sparkles, TriangleAlert, Users, Zap } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { can } from "@/lib/auth/rbac";
 import {
@@ -39,15 +39,15 @@ import {
 } from "@/features/dashboard-people/people-sections";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { AttendanceRateLine } from "@/features/dashboard/dashboard-charts-lazy";
 import { KpiMiniBars } from "@/features/dashboard/kpi-mini-bars";
+import { TeamOverview } from "@/features/dashboard/team-overview";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
 import { loginIdentifier, displayName } from "@/lib/format";
 import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import type { EmploymentType } from "@/features/employee/types";
 import { cn } from "@/lib/utils";
-import { PeopleIcon, DailyWorkerIcon, LeaveIcon, StarIllustrationIcon } from "@/components/shared/illustrated-icons";
+import { LeaveIcon, StarIllustrationIcon } from "@/components/shared/illustrated-icons";
 import { CheckInIcon } from "@/components/shared/menu-icons";
 import type { MenuIcon } from "@/config/mobile-menu";
 
@@ -237,13 +237,6 @@ function greeting(): string {
   return "สวัสดีตอนเย็น";
 }
 
-/** One illustrated icon per employment type — daily workers get their own
- * artwork (matches the N mockup exactly); every other type (full-time,
- * part-time, contract, etc.) shares a generic "people" mark since the
- * mockup only ever distinguishes those two categories visually. */
-function employmentTypeIcon(type: string) {
-  return type === "DAILY_WORKER" ? DailyWorkerIcon : PeopleIcon;
-}
 
 async function AttendanceWatchSection({
   companyId,
@@ -663,40 +656,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </CardContent>
       </Card>
 
-      {/* Employment-type breakdown + department watchlist */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className={attendanceToday ? "lg:col-span-3" : "lg:col-span-1"}>
-          <CardHeader>
-            <CardTitle>ประเภทการจ้าง</CardTitle>
-            <p className="text-xs text-muted-foreground">ทั้งหมด {s.headcount} คน</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex h-[18px] gap-[3px] overflow-hidden rounded-full">
-              {employmentTypes.map((t) => (
-                <div
-                  key={t.type}
-                  style={{ width: `${t.pct}%`, background: t.type === "DAILY_WORKER" ? "var(--flip7-gold)" : "var(--flip7-teal)" }}
-                />
-              ))}
-            </div>
-            <div className="flex flex-col gap-2.5">
-              {employmentTypes.map((t) => {
-                const Icon = employmentTypeIcon(t.type);
-                return (
-                  <div key={t.type} className="flex items-center gap-3 rounded-2xl bg-surface-muted p-3">
-                    <Icon size={36} />
-                    <span className="flex-1 text-sm">{t.label}</span>
-                    <span className="text-lg font-bold tabular-nums">{t.count}</span>
-                    <span className="w-9 text-right text-xs text-muted-foreground">{t.pct}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
+      {/* Department watch list for people without the live attendance view. */}
         {!attendanceToday && (
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span className="flex size-8 items-center justify-center rounded-lg bg-warning/15 text-warning">
@@ -732,86 +694,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </CardContent>
         </Card>
         )}
-      </div>
 
-      {/* Department ranking — full width, no donut companion (the donut read
-          as a near-duplicate of this ranked list at a glance). */}
-      <Card>
-        <CardHeader className="flex-row items-start justify-between">
-          <div className="flex flex-col gap-1">
-            <CardTitle>พนักงานแต่ละแผนก</CardTitle>
-            <p className="text-xs text-muted-foreground">{departmentRanked.length} แผนกที่มีคนมากที่สุด</p>
-          </div>
-          <Button variant="ghost" size="sm" render={<Link href="/employees" />}>
-            ดูทุกแผนก <ArrowRight className="size-4" />
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-2.5">
-            <div className="gv-teal-surface flex flex-col rounded-2xl p-3">
-              <span className="text-xs text-slate-100">พนักงานทั้งหมด</span>
-              <span className="text-2xl font-bold text-[var(--flip7-gold)] tabular-nums">
-                {s.headcount} <span className="text-sm font-medium text-white">คน</span>
-              </span>
-            </div>
-            <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
-              <span className="text-xs text-muted-foreground">จำนวนแผนก</span>
-              <span className="text-2xl font-bold tabular-nums">
-                {departmentRanked.length} <span className="text-sm font-medium text-muted-foreground">แผนก</span>
-              </span>
-            </div>
-            <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
-              <span className="text-xs text-muted-foreground">เฉลี่ยต่อแผนก</span>
-              <span className="text-2xl font-bold tabular-nums">
-                {departmentRanked.length > 0 ? (s.headcount / departmentRanked.length).toFixed(1) : "0"}{" "}
-                <span className="text-sm font-medium text-muted-foreground">คน</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            {departmentRanked.map((d, i) => {
-              const max = Math.max(...departmentRanked.map((r) => r.count), 1);
-              const isTop = i === 0;
-              const isPodium = i < 3;
-              return (
-                <div
-                  key={d.name}
-                  className={cn(
-                    "gv-row grid grid-cols-[28px_180px_1fr_76px] items-center gap-3 rounded-xl p-2",
-                    isTop && "bg-[var(--flip7-gold-light)]/40",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex size-[26px] items-center justify-center rounded-lg text-[13px] font-bold tabular-nums",
-                      isTop ? "bg-[var(--flip7-gold)] text-[var(--flip7-teal-dark)]" : isPodium ? "bg-[var(--flip7-teal-dark)] text-white" : "bg-surface-muted text-muted-foreground",
-                    )}
-                  >
-                    {i + 1}
-                  </span>
-                  <span className={cn("truncate text-sm", isPodium ? "font-semibold" : "font-normal")}>{d.name}</span>
-                  <div className="h-3 overflow-hidden rounded-full bg-surface-muted">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${(d.count / max) * 100}%`,
-                        background: isPodium ? "linear-gradient(90deg, var(--flip7-teal-light) 0%, var(--flip7-teal-dark) 100%)" : "linear-gradient(90deg, #B8BEC4 0%, #8A9199 100%)",
-                      }}
-                    />
-                  </div>
-                  <span className="flex items-baseline justify-end gap-1.5 tabular-nums">
-                    <span className="text-base font-bold">{d.count}</span>
-                    <span className="w-8 text-right text-xs text-muted-foreground">
-                      {s.headcount > 0 ? Math.round((d.count / s.headcount) * 100) : 0}%
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* ทีมงาน: who works here, by employment type and by department. */}
+      <TeamOverview headcount={s.headcount} employmentTypes={employmentTypes} departments={departmentRanked} />
       </div>
       </LiveTodayProvider>
     </>
