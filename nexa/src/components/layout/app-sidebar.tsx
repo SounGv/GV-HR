@@ -32,6 +32,7 @@ import { SidebarEditor } from "@/features/menu-prefs/sidebar-editor";
 import { EMPTY_MENU_PREFS, isDefaultMenuPrefs, isHidden, orderMenu, type MenuPrefs } from "@/features/menu-prefs/rules";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
+import { VBot } from "@/components/shared/v-bot";
 
 
 export function AppSidebar() {
@@ -190,7 +191,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="justify-center overflow-hidden px-4 py-3 group-data-[collapsible=icon]:h-16">
+      <SidebarHeader className="justify-center overflow-hidden px-4 pt-5 pb-2 group-data-[collapsible=icon]:h-16 group-data-[collapsible=icon]:py-3">
         <Link href="/dashboard" aria-label="GV One">
           {/* Import kept inline to avoid a client/server import cycle warning */}
           <NexaHeaderLogo />
@@ -265,21 +266,64 @@ export function AppSidebar() {
   );
 }
 
+const BRAND_DAY = new Intl.DateTimeFormat("th-TH", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Bangkok" });
+const BRAND_TIME = new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Asia/Bangkok" });
+
+/** Ticks every 30 s; null until mounted so the server and browser never disagree on the time. */
+function useNow(): Date | null {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const first = window.setTimeout(tick, 0);
+    const timer = window.setInterval(tick, 30_000);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(timer);
+    };
+  }, []);
+  return now;
+}
+
+/**
+ * Sidebar brand, "ลายเซ็น" (sidebar-brand-mock.html, option A + น้องวีบอท):
+ * no box — the real GV mark large with the wordmark and a lime HR tag, a soft
+ * teal light pooling behind it, น้องวีบอท waving at the end, and a live
+ * "today" line under a hairline. Collapsed to icon width it is the mark alone.
+ */
 function NexaHeaderLogo() {
+  const now = useNow();
   return (
     <div className="flex w-full items-center justify-center">
       {/* Icon-only mark when the sidebar is collapsed to icon width */}
       <Logo size={40} className="hidden size-10 group-data-[collapsible=icon]:block" />
 
-      {/* Expanded: the brand sits on one teal card at the top of the white menu. */}
-      <div className="hidden w-full items-center gap-2.5 rounded-2xl bg-[linear-gradient(150deg,#115e59,#0f766e_55%,#0d9488)] px-3 py-2.5 text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5),inset_0_1px_0_rgba(255,255,255,.14)] group-data-[collapsible=icon]:hidden md:flex">
-        <Logo size={44} className="h-auto w-11" />
-        <span className="min-w-0 leading-tight">
-          <b className="block text-[15px] whitespace-nowrap">GV One</b>
-          <span className="text-[11.5px] text-white/80">Gadget Villa</span>
-        </span>
-        <span className="ml-auto shrink-0 rounded-full bg-[#CDEB03] px-1.5 py-px text-[10px] font-bold whitespace-nowrap text-[#131516]">
-          HR
+      <div className="relative hidden w-full flex-col group-data-[collapsible=icon]:hidden md:flex">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-[120px] -left-[110px] h-[260px] w-[330px] rounded-full bg-[radial-gradient(closest-side,rgba(13,148,136,0.16),rgba(13,148,136,0))]"
+        />
+        <div className="group/brand relative flex items-center gap-2.5">
+          <Logo
+            size={56}
+            className="h-auto w-14 drop-shadow-[0_6px_10px_rgba(19,21,22,0.18)] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/brand:-translate-y-0.5 group-hover/brand:-rotate-3 motion-reduce:transition-none"
+          />
+          <span className="min-w-0 leading-tight">
+            <b className="flex items-center gap-1.5 text-[20px] leading-[1.15] font-bold tracking-[-0.02em] whitespace-nowrap text-foreground">
+              GV One
+              <span className="rounded-[5px] bg-[#CDEB03] px-1.5 py-px text-[10.5px] leading-[1.4] font-bold tracking-[0.02em] text-[#131516] shadow-[0_2px_6px_-2px_rgba(132,152,0,0.6)]">
+                HR
+              </span>
+            </b>
+            <span className="mt-0.5 block text-xs text-muted-foreground">Gadget Villa</span>
+          </span>
+          <VBot mood="hi" full className="gv-wave ml-auto h-[50px] w-[42px]" />
+        </div>
+        <span className="relative mt-3 flex items-center gap-2 border-t border-[#eef1f3] pt-2.5 text-xs text-muted-foreground dark:border-sidebar-border">
+          <span className="gv-live" aria-hidden="true" />
+          <span>
+            วันนี้ <b className="font-semibold text-foreground tabular-nums">{now ? BRAND_DAY.format(now) : "—"}</b>
+          </span>
+          <b className="ml-auto font-semibold text-foreground tabular-nums">{now ? BRAND_TIME.format(now) : ""}</b>
         </span>
       </div>
     </div>

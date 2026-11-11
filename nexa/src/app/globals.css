@@ -649,6 +649,17 @@ button.gv-glass:hover {
   transform-origin: left;
   animation: gv-grow 1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s both;
 }
+/* น้องวีบอท in the sidebar brand gives a short wave every few seconds. */
+@keyframes gv-wave {
+  0%, 70%, 100% { transform: rotate(0); }
+  76% { transform: rotate(-8deg); }
+  82% { transform: rotate(6deg); }
+  88% { transform: rotate(-3deg); }
+}
+.gv-wave {
+  transform-origin: 50% 100%;
+  animation: gv-wave 6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
 /* "Live" dot beside an auto-refresh stamp. */
 @keyframes gv-pulse {
   70% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); }
@@ -664,7 +675,7 @@ button.gv-glass:hover {
   animation: gv-pulse 2s infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .gv-hero::before, .gv-hero::after, .gv-rise, .gv-draw, .gv-grow, .gv-live { animation: none; }
+  .gv-hero::before, .gv-hero::after, .gv-rise, .gv-draw, .gv-grow, .gv-live, .gv-wave { animation: none; }
   .gv-glass, a.gv-glass:hover, button.gv-glass:hover { transition: none; transform: none; }
 }
 
