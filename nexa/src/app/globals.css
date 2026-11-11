@@ -593,21 +593,39 @@
   background: radial-gradient(closest-side, rgba(45, 212, 191, 0.22), rgba(45, 212, 191, 0));
   animation: login-drift 18s ease-in-out infinite alternate-reverse;
 }
-.login-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-  background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(ellipse at 30% 30%, #000 10%, transparent 70%);
-  mask-image: radial-gradient(ellipse at 30% 30%, #000 10%, transparent 70%);
-}
 @keyframes login-drift {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(60px, 40px, 0); }
 }
+/* The dial draws itself once (check mark after the arc), then a dot keeps orbiting like a second hand. */
+.login-dial-arc {
+  stroke-dashoffset: 72;
+  animation: login-draw 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+.login-dial-check {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: login-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+}
+.login-dial-orbit {
+  transform-box: view-box;
+  transform-origin: 210px 210px;
+  animation: login-orbit 60s linear infinite;
+}
+@keyframes login-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes login-orbit {
+  to { transform: rotate(360deg); }
+}
+.login-page ::selection {
+  background: #ccfbf1;
+  color: #134e4a;
+}
+.login-page input {
+  caret-color: #0d9488;
+}
 @media (prefers-reduced-motion: reduce) {
-  .login-glow { animation: none; }
+  .login-glow, .login-dial-orbit { animation: none; }
+  .login-dial-arc, .login-dial-check { animation: none; stroke-dashoffset: 0; }
 }

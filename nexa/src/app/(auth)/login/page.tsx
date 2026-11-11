@@ -2,30 +2,33 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { CalendarDays, ScanLine, Sparkles } from "lucide-react";
 import { LoginForm } from "@/features/auth/login-form";
+import { LoginClock } from "@/features/auth/login-clock";
+import { LoginDial } from "@/features/auth/login-dial";
 import { Logo } from "@/components/shared/logo";
 import { VBot } from "@/components/shared/v-bot";
 import { isGoogleOAuthEnabled } from "@/lib/auth/google-oauth";
 
 export const metadata: Metadata = { title: { absolute: "เข้าสู่ระบบ · Gadget Villa" } };
 
-const FEATURES = [
-  { icon: ScanLine, title: "สแกนเข้างาน", text: "เช็คพิกัดสาขาให้อัตโนมัติ" },
-  { icon: CalendarDays, title: "ลาและ OT", text: "ส่งคำขอ หัวหน้าอนุมัติในแอป" },
-  { icon: Sparkles, title: "ผู้ช่วย AI", text: "สรุปจากข้อมูลจริง สำหรับหัวหน้าและ HR" },
+const FACTS = [
+  { icon: ScanLine, text: "สแกนเข้างานตามพิกัดสาขา" },
+  { icon: CalendarDays, text: "ขอลาและ OT ให้หัวหน้าอนุมัติในแอป" },
+  { icon: Sparkles, text: "น้องวีบอทสรุปข้อมูลให้หัวหน้าและ HR" },
 ];
 
 /**
- * Sign-in: a dark teal hero on the left (soft light from plain radial
- * gradients that only move by transform, so it stays cheap) and the form card
- * on the right. On a phone the hero shrinks to a short header above the card.
+ * Sign-in. The hero says what GV One is with its own mark drawn large: a
+ * clock that checks you in, with น้องวีบอท in front. Light is plain radial
+ * gradients (no blur) and only transform / stroke-dashoffset animate, so it
+ * stays cheap on mid-range phones. On a phone the hero shrinks to a short
+ * header and the form comes first.
  */
 export default function LoginPage() {
   return (
-    <div className="grid min-h-dvh bg-[#0b1414] lg:grid-cols-[minmax(0,1.1fr)_minmax(460px,0.9fr)]">
-      <section className="relative overflow-hidden px-5 pt-6 pb-8 text-white sm:px-10 lg:flex lg:flex-col lg:px-14 lg:py-9">
+    <div className="login-page grid min-h-dvh bg-[#0b1414] lg:grid-cols-[minmax(0,1.3fr)_minmax(460px,0.7fr)]">
+      <section className="relative overflow-hidden px-5 pt-6 pb-9 text-white sm:px-10 lg:flex lg:flex-col lg:px-14 lg:py-10">
         <span aria-hidden="true" className="login-glow login-glow-a" />
         <span aria-hidden="true" className="login-glow login-glow-b" />
-        <span aria-hidden="true" className="login-grid" />
 
         <div className="relative flex items-center gap-3">
           <Logo size={64} className="h-auto w-16" />
@@ -35,38 +38,39 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <div className="relative max-w-[560px] pt-8 lg:my-auto lg:py-12">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 py-1 pr-3 pl-1 text-[12.5px] text-[#d5e3e1]">
-            <span className="rounded-full bg-[#0d9488] px-2 text-[11px] font-semibold text-white">GV One</span>
-            ใช้ได้ทั้งมือถือและคอมพิวเตอร์
-          </span>
-          <div className="flex items-end gap-4">
-            <h1 className="mt-4 text-[30px] leading-[1.3] font-bold text-white lg:text-[44px]">
-              ทุกเรื่องของทีม
-              <span className="block bg-[linear-gradient(90deg,#5eead4,#2dd4bf_40%,#99f6e4)] bg-clip-text text-transparent">
-                อยู่ในที่เดียว
-              </span>
-            </h1>
-            <VBot mood="hi" full className="mb-1 hidden h-[118px] w-[100px] lg:block" />
+        <div className="relative flex items-center gap-10 pt-7 lg:my-auto lg:py-10">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-end justify-between gap-4">
+              <h1 className="text-[34px] leading-[1.22] font-bold tracking-[-0.01em] text-balance text-white sm:text-[44px] xl:text-[60px]">
+                ทุกเรื่องของทีม
+                <span className="mt-1 block">
+                  อยู่ใน{" "}
+                  <span className="inline-block rounded-[12px] bg-[#CDEB03] px-3 pb-0.5 text-[#131516] shadow-[0_10px_24px_-12px_rgba(205,235,3,0.6)]">
+                    ที่เดียว
+                  </span>
+                </span>
+              </h1>
+              <VBot mood="hi" full className="h-[104px] w-[88px] shrink-0 lg:hidden" />
+            </div>
+            <p className="mt-5 max-w-[460px] text-[15.5px] leading-relaxed text-[#a9bcba] xl:text-[17px]">
+              ลงเวลาเข้างาน ขอลา ขอ OT และดูผลประเมิน จากมือถือหรือคอมพิวเตอร์ ด้วยบัญชีเดียว
+            </p>
+            <ul className="mt-8 hidden space-y-3 lg:block">
+              {FACTS.map((f) => {
+                const Icon = f.icon;
+                return (
+                  <li key={f.text} className="flex items-center gap-3 text-[14.5px] text-[#d5e3e1]">
+                    <span className="flex size-8 items-center justify-center rounded-[10px] bg-white/[0.06] ring-1 ring-white/10">
+                      <Icon className="size-4 text-[#2dd4bf]" aria-hidden="true" />
+                    </span>
+                    {f.text}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-          <p className="mt-3 max-w-[470px] text-[15px] text-[#9fb3b1] lg:text-[15.5px]">
-            ลงเวลาเข้างาน ขอลา ขอ OT และดูผลประเมิน ได้ทั้งบนมือถือและคอมพิวเตอร์
-          </p>
-          <ul className="mt-7 hidden grid-cols-3 gap-2.5 lg:grid">
-            {FEATURES.map((f) => {
-              const Icon = f.icon;
-              return (
-                <li
-                  key={f.title}
-                  className="rounded-[14px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.08)]"
-                >
-                  <Icon className="size-[18px] text-[#2dd4bf]" aria-hidden="true" />
-                  <b className="mt-1.5 block text-[13.5px]">{f.title}</b>
-                  <span className="block text-xs leading-snug text-[#9fb3b1]">{f.text}</span>
-                </li>
-              );
-            })}
-          </ul>
+          <LoginDial className="hidden w-[min(40%,420px)] shrink-0 xl:block" />
+          <VBot mood="hi" full className="hidden h-[170px] w-[146px] shrink-0 lg:block xl:hidden" />
         </div>
 
         <p className="relative hidden gap-4 text-xs text-[#6f8583] lg:flex">
@@ -75,17 +79,18 @@ export default function LoginPage() {
         </p>
       </section>
 
-      <section className="flex justify-center px-4 pb-10 lg:items-center lg:bg-[radial-gradient(120%_60%_at_100%_0,#e7f6f3_0,rgba(245,246,247,0)_60%),var(--login-page-bg)] lg:px-6 lg:py-10">
-        <div className="w-full max-w-[420px] self-start rounded-[20px] border border-[var(--login-card-border)] bg-[var(--login-background)] p-6 shadow-[0_1px_2px_rgba(19,21,22,.06),0_24px_48px_-28px_rgba(19,21,22,.3)] sm:p-7 lg:self-center">
-          <h2 className="text-[22px] leading-snug font-bold text-[var(--login-text-primary)]">เข้าสู่ระบบ</h2>
-          <p className="text-sm text-[var(--login-text-secondary)]">ใช้อีเมลหรือชื่อผู้ใช้ของคุณ</p>
-          <div className="pt-5">
+      <section className="relative flex justify-center bg-[var(--login-page-bg)] px-4 pt-7 pb-10 max-lg:rounded-t-[28px] lg:items-center lg:bg-[radial-gradient(110%_55%_at_100%_0,#e3f5f1_0,rgba(246,247,243,0)_60%),var(--login-page-bg)] lg:px-10">
+        <div className="w-full max-w-[400px]">
+          <LoginClock />
+          <h2 className="mt-3 text-[28px] leading-tight font-bold text-[var(--login-text-primary)]">ยินดีต้อนรับกลับ</h2>
+          <p className="mt-1 text-[15px] text-[var(--login-text-secondary)]">เข้าสู่ระบบด้วยอีเมลหรือชื่อผู้ใช้ของคุณ</p>
+          <div className="pt-6">
             <Suspense fallback={<div className="h-64" />}>
               <LoginForm googleEnabled={isGoogleOAuthEnabled()} />
             </Suspense>
           </div>
-          <p className="pt-5 text-center text-[12.5px] text-[var(--login-text-secondary)]">
-            ลืมรหัสหรือเข้าระบบไม่ได้ ติดต่อฝ่ายบุคคล
+          <p className="mt-8 border-t border-[var(--login-card-border)] pt-4 text-[12.5px] text-[var(--login-text-secondary)]">
+            ลืมรหัสหรือเข้าระบบไม่ได้ ติดต่อฝ่ายบุคคลของบริษัท
           </p>
         </div>
       </section>
