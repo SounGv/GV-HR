@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/features/auth/auth-context";
+import { useDepartments } from "@/features/organization/hooks";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import {
@@ -187,8 +188,28 @@ function StepForm({ round, persist }: { round: RoundDetail; persist: Persist }) 
   );
 }
 
+/**
+ * Department id → its top-level department (the ฝ่าย): walk parents up; a
+ * parent that is missing (deleted) ends the walk, and a loop can't hang it.
+ */
+function divisionOf(departments: { id: string; name: string; parentId: string | null }[]) {
+  const byId = new Map(departments.map((d) => [d.id, d]));
+  const root = new Map<string, { id: string; name: string }>();
+  for (const d of departments) {
+    let cur = d;
+    const seen = new Set<string>();
+    while (cur.parentId && byId.has(cur.parentId) && !seen.has(cur.parentId)) {
+      seen.add(cur.id);
+      cur = byId.get(cur.parentId)!;
+    }
+    root.set(d.id, { id: cur.id, name: cur.name });
+  }
+  return root;
+}
+
 function StepPeople({ round, persist }: { round: RoundDetail; persist: Persist }) {
   const { data, isLoading, isError, refetch } = useCandidates();
+  const depts = useDepartments();
   const [selected, setSelected] = useState<Set<string>>(() => new Set(round.participantIds));
   const [q, setQ] = useState("");
   const forms = usePublishedForms();
@@ -206,6 +227,20 @@ function StepPeople({ round, persist }: { round: RoundDetail; persist: Persist }
     }
     return [...map.entries()];
   }, [people, q]);
+
+  // "เลือกทั้งฝ่าย" shortcuts: every person grouped under their top-level department.
+  const divisions = useMemo(() => {
+    const roots = divisionOf(depts.data?.data ?? []);
+    const map = new Map<string, { name: string; ids: string[] }>();
+    for (const p of people) {
+      const r = p.departmentId ? roots.get(p.departmentId) : undefined;
+      const key = r?.id ?? "none";
+      const entry = map.get(key) ?? { name: r?.name ?? "ไม่ระบุแผนก", ids: [] };
+      entry.ids.push(p.id);
+      map.set(key, entry);
+    }
+    return [...map.entries()].map(([id, v]) => ({ id, ...v })).sort((a, b) => b.ids.length - a.ids.length);
+  }, [depts.data, people]);
 
   const toggle = (ids: string[], on: boolean) =>
     setSelected((s) => {
@@ -240,6 +275,51 @@ function StepPeople({ round, persist }: { round: RoundDetail; persist: Persist }
         <h2 className="text-base font-semibold">เลือกคนที่ถูกประเมิน</h2>
         <span className="text-sm text-muted-foreground tabular-nums">เลือกแล้ว {selected.size} จาก {people.length} คน</span>
       </div>
+      {divisions.length > 1 && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground">เลือกทั้งฝ่าย (กดอีกครั้งเพื่อเอาออก)</p>
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="เลือกทั้งฝ่าย">
+            {divisions.map((d) => {
+              const on = d.ids.every((id) => selected.has(id));
+              const some = !on && d.ids.some((id) => selected.has(id));
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggle(d.ids, !on)}
+                  className={cn(
+                    "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors md:h-9",
+                    on
+                      ? "border-[#131516] bg-[#131516] text-white"
+                      : some
+                        ? "border-[#0d9488] bg-[#f0fdfa] text-[#0f766e]"
+                        : "border-border bg-card hover:border-[#0d9488]",
+                  )}
+                >
+                  {on && <CircleCheck className="size-3.5" aria-hidden="true" />}
+                  {d.name}
+                  <span className="font-medium opacity-70 tabular-nums">{d.ids.length}</span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => toggle(people.map((p) => p.id), true)}
+              className="inline-flex h-11 shrink-0 items-center rounded-full border border-dashed border-border px-3.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground md:h-9"
+            >
+              ทุกคน
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className="inline-flex h-11 shrink-0 items-center rounded-full border border-dashed border-border px-3.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground md:h-9"
+            >
+              ล้างทั้งหมด
+            </button>
+          </div>
+        </div>
+      )}
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <Input aria-label="ค้นหาชื่อ รหัส หรือแผนก" placeholder="ค้นหาชื่อ รหัส หรือแผนก" className="h-11 pl-9 md:h-9" value={q} onChange={(e) => setQ(e.target.value)} />
