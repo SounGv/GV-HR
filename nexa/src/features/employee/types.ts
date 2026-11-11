@@ -26,6 +26,7 @@ export interface EmployeeListItem {
   lastName: string;
   nickname: string | null;
   avatarUrl: string | null;
+  gender: "MALE" | "FEMALE" | "OTHER" | null;
   email: string | null;
   phone: string | null;
   status: EmployeeStatus;
@@ -39,7 +40,6 @@ export interface EmployeeListItem {
 export interface EmployeeDetail extends EmployeeListItem {
   firstNameEn: string | null;
   lastNameEn: string | null;
-  gender: "MALE" | "FEMALE" | "OTHER" | null;
   dateOfBirth: string | null;
   maritalStatus: "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED" | null;
   nationalId: string | null;

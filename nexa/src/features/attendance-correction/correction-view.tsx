@@ -9,10 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { getInitials, formatDate, displayName } from "@/lib/format";
+import { formatDate, displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { LeaveStatusBadge } from "@/features/leave/labels";
 
@@ -154,8 +155,8 @@ function Approvals() {
           <Link href={`/attendance/corrections/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
             <Avatar className="size-9">
               {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
-              <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                {getInitials(r.employee.firstName, r.employee.lastName)}
+              <AvatarFallback className="bg-transparent p-0">
+                <CharacterAvatar character={characterFor({ gender: r.employee.gender ?? null })} seed={r.employee.id} className="size-full" />
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">

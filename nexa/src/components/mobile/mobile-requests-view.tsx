@@ -10,10 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { getInitials, displayName } from "@/lib/format";
+import { displayName } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 import { LeaveStatusBadge } from "@/features/leave/labels";
 import { useLeave, useCancelLeave } from "@/features/leave/hooks";
@@ -223,8 +224,12 @@ function Approvals() {
               {item.request.employee.avatarUrl && (
                 <AvatarImage src={item.request.employee.avatarUrl} alt={item.request.employee.firstName} />
               )}
-              <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                {getInitials(item.request.employee.firstName, item.request.employee.lastName)}
+              <AvatarFallback className="bg-transparent p-0">
+                <CharacterAvatar
+                  character={characterFor({ gender: item.request.employee.gender ?? null })}
+                  seed={item.request.employee.id}
+                  className="size-full"
+                />
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">

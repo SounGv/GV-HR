@@ -18,6 +18,7 @@ export interface AttendanceCorrectionRequest {
     lastName: string;
     nickname: string | null;
     avatarUrl: string | null;
+    gender: "MALE" | "FEMALE" | "OTHER" | null;
   };
 }
 

@@ -59,10 +59,10 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <p className="py-2 text-sm text-muted-foreground">{children}</p>;
 }
 
-function Person({ name, sub, tag }: { name: string; sub: string; tag?: React.ReactNode }) {
+function Person({ name, sub, tag, gender, seed }: { name: string; sub: string; tag?: React.ReactNode; gender?: string | null; seed?: string }) {
   return (
     <li className="gv-row -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-      <PersonAvatar name={name} />
+      <PersonAvatar name={name} gender={gender} seed={seed} />
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] leading-snug font-semibold break-words text-foreground">{name}</span>
         <span className="block text-xs text-muted-foreground tabular-nums">{sub}</span>
@@ -99,6 +99,8 @@ export function MissedScanOutCard({ rows, days }: { rows: MissedScanOut[]; days:
             <Person
               key={r.recordId}
               name={r.name}
+              gender={r.gender}
+              seed={r.employeeId}
               sub={`${r.department} · เข้า ${r.clockIn} น.`}
               tag={
                 <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums", STATUS_META.LATE.surface)}>
@@ -139,6 +141,8 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
             <Person
               key={r.requestId}
               name={r.name}
+              gender={r.gender}
+              seed={r.employeeId}
               sub={`${r.startTime}–${r.endTime} น. · ${r.hours} ชม.`}
               tag={
                 <span

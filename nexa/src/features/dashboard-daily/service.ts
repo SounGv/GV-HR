@@ -15,6 +15,8 @@ const clock = (d: Date) =>
   new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Bangkok" }).format(d);
 
 const employeeSelect = {
+  id: true,
+  gender: true,
   employeeCode: true,
   firstName: true,
   lastName: true,
@@ -24,6 +26,8 @@ const employeeSelect = {
 
 export interface MissedScanOut {
   recordId: string;
+  employeeId: string;
+  gender: string | null;
   name: string;
   department: string;
   /** Bangkok calendar day of the shift (YYYY-MM-DD). */
@@ -58,6 +62,8 @@ export async function loadMissedScanOuts(companyId: string, session: AccessClaim
     days: MISSED_SCAN_OUT_DAYS,
     rows: records.map((r) => ({
       recordId: r.id,
+      employeeId: r.employee.id,
+      gender: r.employee.gender ?? null,
       name: displayName(r.employee),
       department: r.employee.department?.name ?? "ไม่ระบุแผนก",
       dayIso: iso(r.workDate),
@@ -68,6 +74,8 @@ export async function loadMissedScanOuts(companyId: string, session: AccessClaim
 
 export interface OvertimeToday {
   requestId: string;
+  employeeId: string;
+  gender: string | null;
   name: string;
   department: string;
   startTime: string;
@@ -100,6 +108,8 @@ export async function loadOvertimeToday(companyId: string, session: AccessClaims
   });
   return rows.map((r) => ({
     requestId: r.id,
+    employeeId: r.employee.id,
+    gender: r.employee.gender ?? null,
     name: displayName(r.employee),
     department: r.employee.department?.name ?? "ไม่ระบุแผนก",
     startTime: r.startTime,

@@ -2,6 +2,8 @@ import type { TodayStatus } from "./status-rules";
 
 export interface TodayPerson {
   employeeId: string;
+  /** MALE / FEMALE / OTHER / null — picks the character avatar. */
+  gender: string | null;
   code: string;
   name: string;
   department: string;
@@ -37,6 +39,8 @@ export interface TodayAttendance {
 
 export interface WatchPerson {
   code: string;
+  /** MALE / FEMALE / OTHER / null — picks the character avatar (looked up after the report). */
+  gender?: string | null;
   name: string;
   department: string;
   late: number;

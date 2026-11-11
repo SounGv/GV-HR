@@ -15,6 +15,8 @@ export interface OrgPersonRow {
   departmentId: string | null;
   managerId: string | null;
   positionTitle: string | null;
+  /** MALE / FEMALE / OTHER / null — picks the character avatar. */
+  gender: string | null;
 }
 
 export interface DepartmentNode extends DepartmentRow {

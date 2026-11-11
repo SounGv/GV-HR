@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { fullName, getInitials, formatDate } from "@/lib/format";
+import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
+import { fullName, formatDate } from "@/lib/format";
 import type { EmployeeListItem } from "./types";
 import { EmployeeStatusBadge } from "./status-badge";
 import { EMPLOYMENT_LABEL } from "./labels";
@@ -35,8 +36,8 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
           <div className="flex items-center gap-3">
             <Avatar className="size-9">
               {e.avatarUrl && <AvatarImage src={e.avatarUrl} alt={e.firstName} />}
-              <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                {getInitials(e.firstName, e.lastName)}
+              <AvatarFallback className="bg-transparent p-0">
+                <CharacterAvatar character={characterFor({ gender: e.gender ?? null })} seed={e.id} className="size-full" />
               </AvatarFallback>
             </Avatar>
             <div className="min-w-[160px]">

@@ -186,7 +186,7 @@ function DivisionCard({
         </div>
         {head && (
           <Link href={employeeHref(head.person.id)} className="mt-2 flex items-center gap-2 rounded-lg hover:opacity-80">
-            <PersonAvatar name={head.person.name} />
+            <PersonAvatar name={head.person.name} gender={head.person.gender ?? null} seed={head.person.id} />
             <small className="min-w-0 text-xs leading-tight text-muted-foreground">
               <b className="block truncate text-[12.5px] font-semibold text-foreground">{head.person.name}</b>
               <span className="block truncate">{head.person.positionTitle ?? "หัวหน้าสูงสุดในฝ่าย"}</span>
@@ -399,7 +399,7 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
           : "border-[#e6f4f1] bg-[#f8fdfc] hover:border-[#99f6e4] dark:border-border dark:bg-accent/40",
       )}
     >
-      <PersonAvatar name={p.name} className={top ? "size-11 text-sm" : undefined} />
+      <PersonAvatar name={p.name} gender={p.gender ?? null} seed={p.id} className={top ? "size-11 text-sm" : undefined} />
       <span className="min-w-0">
         <b className="block truncate text-sm leading-snug">{p.name}</b>
         <small className="block truncate text-xs text-muted-foreground">{p.positionTitle ?? "ไม่ระบุตำแหน่ง"}</small>
@@ -459,7 +459,7 @@ function MemberLink({ person, className }: { person: OrgPerson; className?: stri
       href={employeeHref(person.id)}
       className={cn("flex min-w-0 items-center gap-2 rounded-[10px] py-1.5 pr-1.5 pl-[18px] text-[13px] hover:bg-muted/60", className)}
     >
-      <PersonAvatar name={person.name} className="size-[26px] text-[10.5px]" />
+      <PersonAvatar name={person.name} gender={person.gender ?? null} seed={person.id} className="size-[26px] text-[10.5px]" />
       <span className="min-w-0 leading-tight">
         <span className="block truncate">{person.name}</span>
         <small className="block truncate text-[11.5px] text-muted-foreground">{person.positionTitle ?? "ไม่ระบุตำแหน่ง"}</small>

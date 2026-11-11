@@ -27,7 +27,7 @@ const requestSelect = {
   decisionNote: true,
   createdAt: true,
   employee: {
-    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true, gender: true },
   },
 } satisfies Prisma.AttendanceCorrectionRequestSelect;
 

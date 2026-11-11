@@ -211,7 +211,7 @@ export function AttendanceFollowRows({ data, departmentIds }: Props) {
             <ul>
               {sorted.slice(0, 5).map((p) => (
                 <li key={p.employeeId} className="gv-row -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-                  <PersonAvatar name={p.name} />
+                  <PersonAvatar name={p.name} gender={p.gender} seed={p.employeeId} />
                   <span className="min-w-0">
                     <span className="block text-[13px] leading-snug font-semibold break-words text-foreground">{p.name}</span>
                     <span className="block text-xs text-muted-foreground">

@@ -53,6 +53,7 @@ export async function listOrgPeople(companyId: string): Promise<OrgPersonRow[]> 
       nickname: true,
       departmentId: true,
       managerId: true,
+      gender: true,
       position: { select: { title: true } },
     },
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
@@ -64,6 +65,7 @@ export async function listOrgPeople(companyId: string): Promise<OrgPersonRow[]> 
     departmentId: e.departmentId,
     managerId: e.managerId,
     positionTitle: e.position?.title ?? null,
+    gender: e.gender ?? null,
   }));
 }
 

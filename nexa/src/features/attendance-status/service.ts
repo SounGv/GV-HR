@@ -96,6 +96,7 @@ export async function loadTodayAttendance(
       firstName: true,
       lastName: true,
       nickname: true,
+      gender: true,
       employmentType: true,
       departmentId: true,
       department: { select: { name: true } },
@@ -151,6 +152,7 @@ export async function loadTodayAttendance(
     counts[status]++;
     return {
       employeeId: e.id,
+      gender: e.gender ?? null,
       code: e.employeeCode,
       name: displayName(e),
       department: e.department?.name ?? "ไม่มีแผนก",
@@ -230,6 +232,15 @@ export async function loadAttendanceWatch(
     .map((p) => ({ ...p, reasons: watchReasons(p), score: watchScore(p) }))
     .filter((p) => p.reasons.length > 0)
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "th"));
+  // The report rows carry no gender; one lookup by code gives each person their character avatar.
+  if (people.length > 0) {
+    const genders = await prisma.employee.findMany({
+      where: { companyId, deletedAt: null, employeeCode: { in: people.map((p) => p.code) } },
+      select: { employeeCode: true, gender: true },
+    });
+    const byCode = new Map(genders.map((g) => [g.employeeCode, g.gender ?? null]));
+    for (const p of people) p.gender = byCode.get(p.code) ?? null;
+  }
 
   const departments: DepartmentWatch[] = [...deptStats.entries()]
     .map(([department, d]) => ({

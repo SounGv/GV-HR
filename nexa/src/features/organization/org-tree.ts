@@ -48,6 +48,8 @@ export interface OrgPerson {
   departmentId: string | null;
   managerId: string | null;
   positionTitle: string | null;
+  /** MALE / FEMALE / OTHER / null — only for the avatar; the tree rules never read it. */
+  gender?: string | null;
 }
 
 export interface DivisionDept {

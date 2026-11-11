@@ -12,11 +12,12 @@ import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { EmployeeStatusBadge } from "@/features/employee/status-badge";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
 import { EmployeeDocumentList } from "@/features/employee-document/employee-document-list";
 import { EmployeeCompetencyGapView } from "@/features/competency-matrix/employee-gap-view";
-import { getInitials, formatDate, formatCurrency, displayName } from "@/lib/format";
+import { formatDate, formatCurrency, displayName } from "@/lib/format";
 
 export const metadata: Metadata = { title: "รายละเอียดพนักงาน" };
 
@@ -107,8 +108,8 @@ export default async function EmployeeDetailPage({
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <Avatar className="size-16">
             {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={name} />}
-            <AvatarFallback className="bg-primary/10 text-lg text-primary">
-              {getInitials(employee.firstName, employee.lastName)}
+            <AvatarFallback className="bg-transparent p-0">
+              <CharacterAvatar character={characterFor({ gender: employee.gender ?? null })} seed={employee.id} className="size-full" />
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-1">

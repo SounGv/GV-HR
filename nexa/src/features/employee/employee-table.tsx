@@ -11,7 +11,8 @@ import { DataTable } from "@/components/shared/data-table";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { fullName, getInitials } from "@/lib/format";
+import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
+import { fullName } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EmployeeStatusBadge } from "./status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -339,8 +340,8 @@ export function EmployeeTable() {
                   >
                     <Avatar className="size-12 shrink-0">
                       {e.avatarUrl && <AvatarImage src={e.avatarUrl} alt="" />}
-                      <AvatarFallback className="bg-primary/10 text-sm text-primary">
-                        {getInitials(e.firstName, e.lastName)}
+                      <AvatarFallback className="bg-transparent p-0">
+                        <CharacterAvatar character={characterFor({ gender: e.gender ?? null })} seed={e.id} className="size-full" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
