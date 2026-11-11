@@ -4,7 +4,7 @@ import { displayName } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Download, FileSpreadsheet, Printer, Sparkles, Loader2, TriangleAlert } from "lucide-react";
+import { Download, FileSpreadsheet, Printer, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -46,8 +46,6 @@ import { useOrgOptions } from "@/features/employee/hooks";
 import { EMPLOYMENT_TYPES } from "@/features/employee/schema";
 import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
 import type { EmploymentType } from "@/features/employee/types";
-import { sendChat } from "@/features/ai/api";
-import { useAiAccess } from "@/features/ai/hooks";
 import { cn } from "@/lib/utils";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import { REPORT_LABELS, REPORT_TYPES, REPORT_PERIOD_KIND, type ReportType } from "./schema";
@@ -113,45 +111,6 @@ function parseImageDataUrl(value: string | number | undefined): { base64: string
 }
 
 /** Render one report as a compact text table the AI can reason over. */
-/** A value that is a link or an embedded picture (scan photos): useless to the AI and very long. */
-const isLinkValue = (v: unknown) => typeof v === "string" && /^(https?:|data:|\/api\/|\/uploads\/)/.test(v);
-
-/**
- * The report as a short table for the AI summary. The chat API takes at most
- * 8,000 characters per message, and the daily attendance report carries a
- * photo link on every row, so a fixed 60 rows went over the limit and the
- * summary always failed. Photo/link columns are dropped and rows are added
- * only while the whole prompt stays under {@link PROMPT_BUDGET}.
- */
-const PROMPT_BUDGET = 7_400;
-function reportToPrompt(label: string, result: ReportResult): string {
-  const MAX_ROWS = 60;
-  const columns = exportableColumns(result).filter((c) => !result.rows.some((r) => isLinkValue(r[c.key])));
-  const header = columns.map((c) => columnLabel(c)).join(" | ");
-  const intro = `นี่คือรายงาน "${label}"${result.period ? ` งวด ${result.period}` : ""} จากระบบ GV One`;
-  const lines: string[] = [];
-  let size = intro.length + header.length + 400;
-  for (const row of result.rows.slice(0, MAX_ROWS)) {
-    const line = columns.map((c) => String(row[c.key] ?? "")).join(" | ");
-    if (size + line.length + 1 > PROMPT_BUDGET) break;
-    lines.push(line);
-    size += line.length + 1;
-  }
-  const body = lines.join("\n");
-  const omitted =
-    result.rows.length > lines.length ? `\n(แสดง ${lines.length} จาก ${result.rows.length} แถว)` : "";
-  return [
-    intro,
-    "",
-    header,
-    body,
-    omitted,
-    "",
-    "ช่วยสรุปเชิงผู้บริหาร (3-5 bullet): แนวโน้ม จุดที่ควรสนใจ ค่าผิดปกติ และข้อเสนอแนะเชิงปฏิบัติ",
-    "ตอบเป็นภาษาไทยกระชับ อ้างอิงตัวเลขจากตารางนี้เท่านั้น ไม่ต้องเรียกเครื่องมือใด",
-  ].join("\n");
-}
-
 type Workbook = import("exceljs").Workbook;
 
 type ExcelImage = { base64: string; extension: "png" | "jpeg" };
@@ -262,7 +221,6 @@ function ReportSection({
   from,
   to,
   canExport,
-  canAi,
   onOpenPhoto,
 }: {
   type: ReportType;
@@ -273,14 +231,10 @@ function ReportSection({
   from: string;
   to: string;
   canExport: boolean;
-  canAi: boolean;
   onOpenPhoto: (photo: PhotoPreview) => void;
 }) {
   const [showExtraColumns, setShowExtraColumns] = useState(false);
   const isMobile = useIsMobile();
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiText, setAiText] = useState("");
   // Leave report only: whose year to show in the side panel.
   const [leaveTarget, setLeaveTarget] = useState<LeaveSheetTarget | null>(null);
 
@@ -325,22 +279,6 @@ function ReportSection({
     toast.success("ดาวน์โหลด PDF แล้ว");
   }
 
-  async function summarizeWithAi() {
-    if (!result) return;
-    setAiOpen(true);
-    setAiLoading(true);
-    setAiText("");
-    try {
-      const prompt = reportToPrompt(REPORT_LABELS[type], result);
-      const res = await sendChat([{ role: "user", content: prompt }]);
-      setAiText(res.data.reply);
-    } catch {
-      setAiText("ขออภัย ไม่สามารถวิเคราะห์รายงานได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง");
-    } finally {
-      setAiLoading(false);
-    }
-  }
-
   // Daily attendance report: a focused default set of columns (extras behind a
   // toggle). Every other report shows its columns as the service sent them.
   const isDaily = type === "attendance_daily";
@@ -364,18 +302,6 @@ function ReportSection({
               onClick={() => setShowExtraColumns((v) => !v)}
             >
               {showExtraColumns ? "ซ่อนคอลัมน์เพิ่ม" : `แสดงคอลัมน์เพิ่ม (${DAILY_EXTRA_COUNT})`}
-            </Button>
-          )}
-          {canAi && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={summarizeWithAi}
-              disabled={!result || result.rows.length === 0 || aiLoading}
-              className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
-            >
-              {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              AI สรุปรายงาน
             </Button>
           )}
           {canExport && (
@@ -558,29 +484,6 @@ function ReportSection({
         <LeaveEmployeeSheet target={leaveTarget} year={result.year} onClose={() => setLeaveTarget(null)} />
       )}
 
-      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
-                <Sparkles className="size-4 text-primary" />
-              </span>
-              AI สรุปรายงาน · {REPORT_LABELS[type]}
-            </DialogTitle>
-            <DialogDescription>วิเคราะห์โดย AI Assistant จากข้อมูลรายงานปัจจุบัน</DialogDescription>
-          </DialogHeader>
-          {aiLoading ? (
-            <div className="flex items-center gap-3 py-8 text-sm text-muted-foreground">
-              <Loader2 className="size-5 animate-spin text-primary" />
-              กำลังวิเคราะห์รายงาน...
-            </div>
-          ) : (
-            <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-              {aiText}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }
@@ -604,8 +507,6 @@ export function ReportView() {
   // API enforces the same payroll:read gate independently, see
   // src/app/api/reports/route.ts's TYPE_PERMISSION).
   const visibleReportTypes = REPORT_TYPES.filter((t) => t !== "payroll" || can("payroll:read"));
-  const { data: aiAccess } = useAiAccess();
-  const canAi = !!aiAccess?.data.allowed;
 
   // Nav/quick-menu links deep-link here via ?view=<ReportType>, or a
   // comma-joined list of several (e.g. "รายงานการเข้างาน" → /reports?view=attendance,
@@ -837,7 +738,6 @@ export function ReportView() {
           from={from}
           to={to}
           canExport={canExport}
-          canAi={canAi}
           onOpenPhoto={setPhotoPreview}
         />
       ))}

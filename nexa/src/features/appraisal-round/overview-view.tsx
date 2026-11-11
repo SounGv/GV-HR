@@ -84,15 +84,12 @@ function useStartNewRound() {
 
 /* ── header actions ─────────────────────────────────────────────────── */
 
-/** "แบบประเมิน" + "สร้างรอบประเมิน" buttons for the overview header (the create button needs campaign:create). */
+/** "สร้างรอบประเมิน" for the overview header (needs campaign:create); แบบประเมิน is a tab above the page now. */
 export function OverviewActions({ className }: { className?: string }) {
   const { can } = useAuth();
   const newRound = useStartNewRound();
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      <Button variant="outline" className="h-11 md:h-9" render={<Link href="/appraisal/forms" />}>
-        <FileText className="size-4" /> แบบประเมิน
-      </Button>
       {can("campaign:create") && (
         <Button className="h-11 md:h-9" onClick={newRound.start} disabled={newRound.pending}>
           <Plus className="size-4" /> สร้างรอบประเมิน

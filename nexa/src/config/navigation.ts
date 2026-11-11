@@ -18,7 +18,6 @@ import {
   Boxes,
   Building2,
   Network,
-  Target,
   CalendarPlus,
   GraduationCap,
   ReceiptText,
@@ -152,17 +151,16 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: Sparkles,
     chipColor: "#0D9488",
     items: [
+      // Kept to four (2026-11-11, the menu had 11 and confused people): the two
+      // "ของฉัน" pages for everyone, one entry for HR into the evaluation
+      // system (its own tabs: ภาพรวม / แบบประเมิน / รอบประเมิน / KPI / ตั้งค่า),
+      // and training. The old /performance and /kpi pages (2 old reviews, 6
+      // goals, no rounds) stay reachable by address but leave the menu;
+      // นัดประชุม moved to รายงานและสื่อสาร.
       { label: "งานประเมินของฉัน", href: "/appraisal/tasks", icon: ClipboardCheck, permission: "notification:read", ready: true, badgeKey: "pendingReviews" },
       { label: "ผลประเมินของฉัน", href: "/appraisal/my-results", icon: ClipboardList, permission: "notification:read", ready: true },
-      { label: "ประเมินผล", href: "/performance", icon: ClipboardCheck, permission: "performance:read", ready: true, badgeKey: "pendingReviews" },
-      { label: "KPI & Level", href: "/kpi", icon: Target, permission: "kpi:read", ready: true },
-      { label: "นัดประชุม", href: "/meetings", icon: CalendarPlus, permission: "meeting:read", ready: true },
+      { label: "จัดการประเมิน", href: "/appraisal", icon: Settings2, permission: "campaign:manage", ready: true },
       { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read", ready: true },
-      { label: "ภาพรวมประเมิน", href: "/appraisal", icon: ClipboardCheck, permission: "campaign:manage", ready: true },
-      { label: "แบบประเมิน", href: "/appraisal/forms", icon: ClipboardCheck, permission: "campaign:manage", ready: true },
-      { label: "รอบประเมิน", href: "/appraisal/rounds", icon: ClipboardList, permission: "campaign:manage", ready: true },
-      { label: "KPI Profile", href: "/appraisal/kpi", icon: ClipboardList, permission: "campaign:manage", ready: true },
-      { label: "ตั้งค่าการประเมิน", href: "/appraisal/settings", icon: Settings2, permission: "campaign:manage", ready: true },
     ],
   },
   {
@@ -191,6 +189,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "รายงานประเมินผล", href: "/reports?view=performance", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานและวิเคราะห์ทั้งหมด", href: "/reports", icon: BarChart3, permission: "report:read", ready: true },
       { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read", ready: true },
+      { label: "นัดประชุม", href: "/meetings", icon: CalendarPlus, permission: "meeting:read", ready: true },
     ],
   },
   {
