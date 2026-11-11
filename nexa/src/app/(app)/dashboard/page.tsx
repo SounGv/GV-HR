@@ -370,8 +370,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <VBot mood="hi" className="hidden h-10 w-11 lg:block" />
         <p className="text-[13.5px] leading-relaxed">
           <span className="block text-xs font-semibold text-[var(--flip7-teal-dark)]">สรุปวันนี้จาก AI</span>
-          เข้างาน <b className="tabular-nums">{s.presentToday}</b> คน ({s.attendanceRate}%) · มาสาย{" "}
-          <b className="tabular-nums">{s.lateToday}</b> คน · ลา <b className="tabular-nums">{s.onLeaveToday}</b> คน
+          {/* Same base as the attendance card beside it (people who use the check-in app),
+              so the two never disagree (it used to say 34% here and 100% there). */}
+          {attendanceToday && attendanceToday.total > 0 ? (
+            <>
+              สแกนเข้างาน <b className="tabular-nums">{attendanceToday.scanned}</b> จาก{" "}
+              <b className="tabular-nums">{attendanceToday.total}</b> คน (
+              {Math.round((attendanceToday.scanned / attendanceToday.total) * 100)}%) · มาสาย{" "}
+              <b className="tabular-nums">{attendanceToday.counts.LATE}</b> คน · ลา{" "}
+              <b className="tabular-nums">{attendanceToday.counts.ON_LEAVE}</b> คน
+            </>
+          ) : (
+            <>
+              เข้างาน <b className="tabular-nums">{s.presentToday}</b> คน ({s.attendanceRate}%) · มาสาย{" "}
+              <b className="tabular-nums">{s.lateToday}</b> คน · ลา <b className="tabular-nums">{s.onLeaveToday}</b> คน
+            </>
+          )}
           {pendingApprovals > 0 && (
             <>
               {" "}

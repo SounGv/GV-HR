@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Check, X, Timer } from "lucide-react";
+import { Plus, Check, X, Timer, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,11 +24,14 @@ function line(r: OvertimeRequest) {
 }
 
 export function OvertimeView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
-  const { canAny } = useAuth();
+  const { canAny, user } = useAuth();
+  // An account with no employee record (e.g. a pure admin) has no requests of
+  // its own; open on the team queue instead of an empty/error "mine" tab.
+  const hasEmployee = !!user.employee;
   const canApprove = canAny(["overtime:approve", "overtime:manage"]);
 
   return (
-    <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">
+    <Tabs defaultValue={canApprove ? (hasEmployee ? defaultTab : "approvals") : "me"} className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">คำขอของฉัน</TabsTrigger>
         {canApprove && <TabsTrigger value="approvals">รออนุมัติ</TabsTrigger>}
@@ -48,7 +51,9 @@ export function OvertimeView({ defaultTab = "me" }: { defaultTab?: "me" | "appro
 }
 
 function MyRequests() {
-  const { data, isLoading, isError, refetch } = useOvertime("me");
+  const { user } = useAuth();
+  const hasEmployee = !!user.employee;
+  const { data, isLoading, isError, refetch } = useOvertime("me", undefined, { enabled: hasEmployee });
   const cancelMut = useCancelOvertime();
   const [cancelTarget, setCancelTarget] = useState<OvertimeRequest | null>(null);
   const requests = data?.data ?? [];
@@ -62,6 +67,16 @@ function MyRequests() {
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ยกเลิกไม่สำเร็จ");
     }
+  }
+
+  if (!hasEmployee) {
+    return (
+      <EmptyState
+        icon={UserRoundX}
+        title="บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน"
+        description="จึงไม่มีประวัติคำขอ OTของตัวเอง ดูและอนุมัติคำขอของทีมได้ที่แท็บ รออนุมัติ"
+      />
+    );
   }
 
   return (

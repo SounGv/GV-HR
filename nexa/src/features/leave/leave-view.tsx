@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Check, X, CalendarDays } from "lucide-react";
+import { Plus, Check, X, CalendarDays, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,11 +43,14 @@ function amountLabel(r: LeaveRequest) {
 }
 
 export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
-  const { canAny } = useAuth();
+  const { canAny, user } = useAuth();
+  // An account with no employee record (e.g. a pure admin) has no requests of
+  // its own; open on the team queue instead of an empty/error "mine" tab.
+  const hasEmployee = !!user.employee;
   const canApprove = canAny(["leave:approve", "leave:manage"]);
 
   return (
-    <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">
+    <Tabs defaultValue={canApprove ? (hasEmployee ? defaultTab : "approvals") : "me"} className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">คำขอของฉัน</TabsTrigger>
         {canApprove && <TabsTrigger value="approvals">รออนุมัติ</TabsTrigger>}
@@ -67,7 +70,9 @@ export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approval
 }
 
 function MyRequests() {
-  const { data, isLoading, isError, refetch } = useLeave("me");
+  const { user } = useAuth();
+  const hasEmployee = !!user.employee;
+  const { data, isLoading, isError, refetch } = useLeave("me", undefined, { enabled: hasEmployee });
   const cancelMut = useCancelLeave();
   const [cancelTarget, setCancelTarget] = useState<LeaveRequest | null>(null);
   const requests = data?.data ?? [];
@@ -81,6 +86,16 @@ function MyRequests() {
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ยกเลิกไม่สำเร็จ");
     }
+  }
+
+  if (!hasEmployee) {
+    return (
+      <EmptyState
+        icon={UserRoundX}
+        title="บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน"
+        description="จึงไม่มีประวัติการลาของตัวเอง ดูและอนุมัติคำขอของทีมได้ที่แท็บ รออนุมัติ"
+      />
+    );
   }
 
   return (
