@@ -289,17 +289,20 @@ function ReportSection({
     const { jsPDF } = await import("jspdf");
     const autoTable = (await import("jspdf-autotable")).default;
     const { registerThaiFont } = await import("@/lib/pdf-fonts");
+    const { drawThaiText, thaiTableHooks } = await import("@/lib/pdf-thai");
     const doc = new jsPDF({ orientation: columns.length > 6 ? "landscape" : "portrait" });
     const fontName = await registerThaiFont(doc);
     doc.setFont(fontName);
     doc.setFontSize(12);
-    doc.text(`${REPORT_LABELS[type]} (${from} - ${to})`, 14, 14);
+    // Thai-aware drawing: without it tone marks over vowels/tall consonants vanish ("ที่" → "ที").
+    drawThaiText(doc, `${REPORT_LABELS[type]} (${from} - ${to})`, 14, 14);
     autoTable(doc, {
       startY: 20,
       head: [columns.map((c) => columnLabel(c))],
       body: result.rows.map((r) => columns.map((c) => String(r[c.key] ?? ""))),
       styles: { font: fontName, fontSize: 9 },
-      headStyles: { font: fontName, fontStyle: "bold", fillColor: [79, 70, 229] },
+      headStyles: { font: fontName, fontStyle: "bold", fillColor: [15, 118, 110] },
+      ...thaiTableHooks(doc),
     });
     doc.save(`${type}-${from}_${to}.pdf`);
     toast.success("ดาวน์โหลด PDF แล้ว");
