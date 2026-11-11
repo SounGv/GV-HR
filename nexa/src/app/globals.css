@@ -462,6 +462,9 @@
    keep working, but gold/coral/sky no longer introduce extra hues. Chart
    series keep the same data colours as every other page (late = amber,
    leave = blue, OT = purple from :root). */
+/* The --flip7-* names are read outside the dashboard too (AI page, appraisal
+   progress bars); defined on :root so they never resolve to nothing there. */
+:root,
 .theme-flip7 {
   --flip7-teal: #0d9488;
   --flip7-teal-light: #14b8a6;
@@ -476,6 +479,8 @@
   --flip7-cream: #f0fdfa;
   --flip7-sky: #3b82f6;
 
+}
+.theme-flip7 {
   --series-present: var(--flip7-teal);
   --series-highlight: var(--flip7-teal);
 }
