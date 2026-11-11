@@ -5,12 +5,22 @@ import { cn } from "@/lib/utils";
 type Tone = "primary" | "success" | "warning" | "danger" | "info" | "muted";
 
 const toneMap: Record<Tone, string> = {
-  primary: "bg-primary/10 text-primary",
-  success: "bg-success/10 text-success",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-destructive/10 text-destructive",
-  info: "bg-info/10 text-info",
-  muted: "bg-muted text-muted-foreground",
+  primary: "border-primary/20 bg-primary/10 text-primary",
+  success: "border-success/20 bg-success/10 text-success",
+  warning: "border-warning/20 bg-warning/10 text-warning",
+  danger: "border-destructive/20 bg-destructive/10 text-destructive",
+  info: "border-info/20 bg-info/10 text-info",
+  muted: "border-border bg-muted text-muted-foreground",
+};
+
+/** The thin colour edge along the top of the card, same idea as the dashboard's status tiles. */
+const edgeMap: Record<Tone, string> = {
+  primary: "before:bg-primary",
+  success: "before:bg-success",
+  warning: "before:bg-[#d97706]",
+  danger: "before:bg-destructive",
+  info: "before:bg-info",
+  muted: "before:bg-[#94a3b8]",
 };
 
 /** KPI stat card used across dashboards. `chart` renders an optional sparkline. */
@@ -37,12 +47,12 @@ export function StatCard({
   const positive = dir === "up";
 
   return (
-    <Card className={cn("gap-0 p-5", className)}>
+    <Card className={cn("relative gap-0 p-4 pt-5 before:absolute before:inset-x-0 before:top-0 before:h-1", edgeMap[tone], className)}>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
           {Icon && (
-            <span className={cn("flex size-6 items-center justify-center rounded-md", toneMap[tone])}>
-              <Icon className="size-3.5" />
+            <span className={cn("flex size-[30px] items-center justify-center rounded-lg border", toneMap[tone])}>
+              <Icon className="size-4" />
             </span>
           )}
           <span>{label}</span>
@@ -65,7 +75,7 @@ export function StatCard({
       </div>
 
       <div className="mt-3 flex items-baseline gap-1">
-        <span className="text-2xl font-semibold tracking-tight text-foreground">{value}</span>
+        <span className="text-[26px] leading-tight font-bold text-foreground tabular-nums">{value}</span>
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
 

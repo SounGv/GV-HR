@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
 export type StatusTone = "success" | "warning" | "danger" | "info" | "primary" | "neutral";
 
 const TONE: Record<StatusTone, string> = {
-  success: "bg-success-muted text-success",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-destructive-muted text-destructive",
-  info: "bg-accent text-accent-foreground",
-  primary: "bg-accent text-accent-foreground",
-  neutral: "bg-surface-muted text-muted-foreground",
+  success: "border-success/25 bg-success-muted text-success",
+  warning: "border-warning/25 bg-warning/10 text-warning",
+  danger: "border-destructive/25 bg-destructive-muted text-destructive",
+  info: "border-accent-foreground/20 bg-accent text-accent-foreground",
+  primary: "border-accent-foreground/20 bg-accent text-accent-foreground",
+  neutral: "border-border bg-surface-muted text-muted-foreground",
 };
 
 export function StatusChip({
@@ -29,7 +29,7 @@ export function StatusChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[15px] font-medium",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
         TONE[tone],
         className,
       )}

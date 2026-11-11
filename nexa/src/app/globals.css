@@ -127,11 +127,10 @@
   --popover: #ffffff;
   --popover-foreground: #131516;
 
-  /* Charcoal is the primary action color (buttons on white) per the
-     palette's own legend; Volt lime is reserved for accents/selected
-     states on dark surfaces (sidebar active item, status dots) — see
-     --sidebar-primary below, not used here. */
-  --primary: #131516;
+  /* Primary actions are teal (2026-11, owner's pick in pages-system-mock):
+     one tone with the dashboard, AI page, login and sidebar. White on
+     #0f766e is 5.5:1. Volt lime stays an accent fill only. */
+  --primary: #0f766e;
   --primary-foreground: #ffffff;
   --secondary: #e0f5f2;
   --secondary-foreground: #0f766e;
@@ -157,14 +156,16 @@
 
   --border: #e5e9ed;
   --input: #e5e9ed;
-  --ring: #131516;
+  --ring: #0d9488;
 
   /* Edges that can actually be seen: surfaces differ from the page by tone only (1.08:1), so fields,
      outline buttons and cards carry a border or shadow of their own. Field border is 3.1:1 on white. */
   --field-border: #8b939c;
   --field-bg: #ffffff;
   --field-shadow: inset 0 1px 2px rgba(19, 21, 22, 0.06);
-  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06), 0 10px 24px -14px rgba(19, 21, 22, 0.2);
+  /* Depth from two cheap shadows plus a 1px inset top highlight (no blur filters). */
+  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06), 0 4px 10px -6px rgba(19, 21, 22, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   /* Secondary text that must stay easy to read at 14px (inactive tabs): 8.8:1 on white. */
   --muted-strong: #444b54;
   /* Lines between table rows: visible but quiet (1.4:1). */
@@ -643,4 +644,13 @@
   --sidebar-accent-foreground: #131516;
   --sidebar-border: #e5e9ed;
   --sidebar-ring: #0d9488;
+}
+
+/* ── Every page (2026-11, pages-system-mock.html) ──
+   The soft band at the top of the canvas the dashboard introduced, now on
+   every desktop page; light mode only. */
+@media (min-width: 768px) {
+  :root:not(.dark) main.gv-main {
+    background: linear-gradient(180deg, #e9eef0 0, rgba(245, 246, 247, 0) 300px);
+  }
 }

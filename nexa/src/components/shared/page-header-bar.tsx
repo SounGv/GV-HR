@@ -78,7 +78,7 @@ export function PageHeaderBar({
           )}
           <div className="min-w-0 space-y-0.5">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-heading truncate text-xl font-bold text-foreground sm:text-2xl">
+              <h1 className="font-heading truncate text-xl leading-snug font-bold text-foreground">
                 {title}
               </h1>
               {status}

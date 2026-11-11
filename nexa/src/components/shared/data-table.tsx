@@ -142,7 +142,7 @@ export function DataTable<TData, TValue>({
       ) : data.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
