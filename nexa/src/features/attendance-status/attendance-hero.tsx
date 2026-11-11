@@ -175,7 +175,7 @@ export function AttendanceHero({ data, departmentIds }: Props) {
 }
 
 const LIVE_ROWS: { status: TodayStatus; icon: LucideIcon; title: string; tone: "bad" | "warn"; tag: string; order: number; empty: string }[] = [
-  { status: "ABSENT", icon: CircleX, title: "ขาดงาน", tone: "bad", tag: "ต้องโทรตาม", order: 1, empty: "ยังไม่สแกน และไม่มีใบลา" },
+  { status: "ABSENT", icon: CircleX, title: "ขาดงาน", tone: "bad", tag: "ต้องโทรตาม", order: 1, empty: "ยังไม่สแกนและไม่มีใบลา" },
   { status: "LATE", icon: Clock, title: "มาสาย", tone: "warn", tag: "สายวันนี้", order: 2, empty: "วันนี้ยังไม่มีคนมาสาย" },
 ];
 
@@ -192,13 +192,8 @@ export function AttendanceFollowRows({ data, departmentIds }: Props) {
             : a.shiftStart.localeCompare(b.shiftStart) || a.name.localeCompare(b.name, "th"),
         );
         const names = [...new Set(sorted.map((p) => p.name))];
-        const sub = !open
-          ? data.isWorkingDay
-            ? "ยังไม่มีคนใช้เช็คอินในขอบเขตที่เลือก"
-            : "วันนี้ไม่ใช่วันทำงาน"
-          : all.length === 0
-            ? r.empty
-            : `${names.slice(0, 2).join(" · ")}${names.length > 2 ? ` และอีก ${names.length - 2} คน` : ""}`;
+        const worst = sorted[0]?.lateMinutes ?? 0;
+        const sub = r.status === "LATE" ? `สายสุด ${worst} นาที · ${names[0] ?? ""}` : `ยังไม่สแกนและไม่มีใบลา · ${names[0] ?? ""}`;
         return (
           <FollowRow
             key={r.status}
@@ -210,6 +205,7 @@ export function AttendanceFollowRows({ data, departmentIds }: Props) {
             tone={r.tone}
             tag={r.tag}
             order={r.order}
+            people={names}
             link={{ href: attendanceListHref(r.status, departmentIds), label: `ดูทั้งหมด ${all.length} คน` }}
           >
             <ul>

@@ -17,12 +17,6 @@ import {
 
 const SHOWN = 5;
 
-/** "ก · ข และอีก 3 คน": the first two names for a row's one-line summary (duplicates folded). */
-export function namesLine(names: string[]): string {
-  const uniq = [...new Set(names)];
-  const head = uniq.slice(0, 2).join(" · ");
-  return uniq.length > 2 ? `${head} และอีก ${uniq.length - 2} คน` : head;
-}
 
 /** "2026-10-19" → "19 ต.ค." (a Bangkok calendar day, so format in UTC). */
 const fmtDay = (iso: string) =>
@@ -40,6 +34,7 @@ function Frame({
   tag,
   unit,
   order,
+  people,
 }: {
   icon: typeof Timer;
   title: string;
@@ -51,9 +46,10 @@ function Frame({
   tag: string;
   unit: string;
   order: number;
+  people?: string[];
 }) {
   return (
-    <FollowRow icon={icon} title={title} sub={hint} count={count} unit={unit} tone={tone} tag={tag} order={order} link={link}>
+    <FollowRow icon={icon} title={title} sub={hint} count={count} unit={unit} tone={tone} tag={tag} order={order} link={link} people={people}>
       {children}
     </FollowRow>
   );
@@ -85,8 +81,9 @@ export function MissedScanOutCard({ rows, days }: { rows: MissedScanOut[]; days:
   return (
     <Frame
       icon={LogOut}
-      title={`ลืมสแกนออก (${days} วันล่าสุด)`}
-      hint={rows.length ? `${namesLine(rows.map((r) => r.name))} · ชั่วโมงยังว่างจนกว่าจะแก้เวลา` : "ทุกคนสแกนออกครบ"}
+      title="ลืมสแกนออก"
+      hint={`${days} วันล่าสุด · ชั่วโมงยังว่างจนกว่าจะแก้เวลา`}
+      people={rows.map((r) => r.name)}
       count={rows.length}
       tone="warn"
       tag="รอแก้เวลา"
@@ -125,10 +122,11 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
     <Frame
       icon={Timer}
       title="OT วันนี้"
-      hint={rows.length ? `รวม ${hours} ชม.${waiting ? ` · รออนุมัติ ${waiting} รายการ` : " · อนุมัติครบแล้ว"}` : "วันนี้ยังไม่มีใครขอ OT"}
+      hint={`รวม ${hours} ชม.`}
+      people={rows.map((r) => r.name)}
       count={rows.length}
       tone={waiting ? "warn" : "info"}
-      tag={waiting ? "รออนุมัติ" : "อนุมัติแล้ว"}
+      tag={waiting ? `รออนุมัติ ${waiting}` : "อนุมัติครบแล้ว"}
       unit="คน"
       order={4}
       link={{ href: "/overtime", label: "ดูคำขอ OT ทั้งหมด" }}
@@ -166,11 +164,11 @@ export function MeetingsTodayCard({ rows }: { rows: MeetingToday[] }) {
   return (
     <Frame
       icon={CalendarDays}
-      title="นัดประชุมวันนี้"
-      hint={rows.length ? `ถัดไป ${rows[0].start} น. · ${rows[0].title}` : "วันนี้ไม่มีนัดประชุม"}
+      title="ประชุมวันนี้"
+      hint={rows[0]?.title ?? ""}
       count={rows.length}
       tone="info"
-      tag="ข้อมูล"
+      tag={rows.length ? `ถัดไป ${rows[0].start} น.` : ""}
       unit="นัด"
       order={8}
       link={{ href: "/meetings", label: "ดูนัดประชุมทั้งหมด" }}

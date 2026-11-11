@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ArrowUpDown, ChevronDown, Star } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sidebar,
@@ -40,7 +40,7 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const { can, canAny, logout } = useAuth();
   const { data: aiAccess } = useAiAccess();
-  const { toggle: toggleAiPanel } = useAiPanel();
+  const { toggle: toggleAiPanel, open: aiPanelOpen } = useAiPanel();
 
   // A grant-only user (see src/lib/ai/scope.ts) has no ai:* key in their JWT
   // claims, so the plain permission filter below would hide "AI Assistant"
@@ -126,7 +126,9 @@ export function AppSidebar() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<MenuPrefs>(EMPTY_MENU_PREFS);
 
-  const visibleGroups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => canSee(i.permission)) })).filter(
+  // Featured items (AI Assistant) sit on their own above the groups, so they never appear inside one.
+  const showAi = NAV_GROUPS.some((g) => g.items.some((i) => i.featured && i.opensAiPanel && canSee(i.permission)));
+  const visibleGroups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => !i.featured && canSee(i.permission)) })).filter(
     (g) => g.items.length > 0,
   );
   const ordered = orderMenu(visibleGroups, editing ? draft : prefs);
@@ -199,6 +201,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-0.5">
+        {!editing && showAi && <AiShortcut active={aiPanelOpen || pathname === "/ai"} onClick={toggleAiPanel} />}
         {editing ? (
           <SidebarEditor
             groups={ordered}
@@ -266,6 +269,41 @@ export function AppSidebar() {
   );
 }
 
+/**
+ * AI Assistant on its own, right under the brand: a soft mint card with
+ * น้องวีบอท, so it is the easiest thing in the menu to reach. Opens the
+ * floating AI panel (like the old menu item did); collapsed to icon width it
+ * is น้องวีบอท alone.
+ */
+function AiShortcut({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <div className="px-3 pt-1 pb-2 group-data-[collapsible=icon]:px-2">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        aria-label="เปิด AI Assistant"
+        className={cn(
+          "relative flex w-full items-center gap-2.5 rounded-2xl border border-[#99f6e4] bg-[linear-gradient(135deg,#f0fdfa,#ecfeff_60%,#f7fee7)] p-2 pr-3 text-left",
+          "shadow-[0_1px_2px_rgba(15,118,110,0.08),0_8px_18px_-12px_rgba(15,118,110,0.45)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "hover:-translate-y-px hover:border-[#5eead4] hover:shadow-[0_1px_2px_rgba(15,118,110,0.1),0_12px_24px_-12px_rgba(15,118,110,0.55)] focus-visible:ring-3 focus-visible:ring-[#0d9488]/30 focus-visible:outline-none motion-reduce:transition-none",
+          "dark:border-sidebar-border dark:bg-none dark:bg-sidebar-accent group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1",
+          active && "border-[#0d9488] ring-2 ring-[#0d9488]/20",
+        )}
+      >
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-[inset_0_0_0_1px_#ccfbf1] group-data-[collapsible=icon]:size-8 dark:bg-background">
+          <VBot mood="hi" className="gv-wave size-8 group-data-[collapsible=icon]:size-6" />
+        </span>
+        <span className="min-w-0 flex-1 leading-tight group-data-[collapsible=icon]:hidden">
+          <b className="block text-[14px] font-bold text-[#115e59] dark:text-foreground">AI Assistant</b>
+          <span className="block truncate text-[11.5px] text-muted-foreground">ถามน้องวีบอทได้เลย</span>
+        </span>
+        <Sparkles className="size-4 shrink-0 text-[#0d9488] group-data-[collapsible=icon]:hidden" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
 const BRAND_DAY = new Intl.DateTimeFormat("th-TH", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Bangkok" });
 const BRAND_TIME = new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Asia/Bangkok" });
 
@@ -285,10 +323,11 @@ function useNow(): Date | null {
 }
 
 /**
- * Sidebar brand, "ลายเซ็น" (sidebar-brand-mock.html, option A + น้องวีบอท):
- * no box — the real GV mark large with the wordmark and a lime HR tag, a soft
- * teal light pooling behind it, น้องวีบอท waving at the end, and a live
- * "today" line under a hairline. Collapsed to icon width it is the mark alone.
+ * Sidebar brand, "ลายเซ็น" (sidebar-brand-mock.html, option A): no box —
+ * the real GV mark large with the wordmark and a lime HR tag, a soft teal
+ * light pooling behind it, and a live "today" line under a hairline.
+ * น้องวีบอท lives on the AI Assistant shortcut right below (one place only).
+ * Collapsed to icon width it is the mark alone.
  */
 function NexaHeaderLogo() {
   const now = useNow();
@@ -316,7 +355,6 @@ function NexaHeaderLogo() {
             </b>
             <span className="mt-0.5 block text-xs text-muted-foreground">Gadget Villa</span>
           </span>
-          <VBot mood="hi" full className="gv-wave ml-auto h-[50px] w-[42px]" />
         </div>
         <span className="relative mt-3 flex items-center gap-2 border-t border-[#eef1f3] pt-2.5 text-xs text-muted-foreground dark:border-sidebar-border">
           <span className="gv-live" aria-hidden="true" />

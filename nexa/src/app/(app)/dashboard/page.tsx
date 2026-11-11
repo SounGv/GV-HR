@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
-import { ArrowUp, ArrowUpRight, ArrowRight, CalendarDays, CircleCheck, CircleX, Clock, TriangleAlert, Users, Zap } from "lucide-react";
+import { ArrowUp, ArrowUpRight, ArrowRight, CalendarDays, CircleCheck, CircleX, Clock, Sparkles, TriangleAlert, Users, Zap } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { can } from "@/lib/auth/rbac";
 import {
@@ -40,7 +40,6 @@ import {
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { VBot } from "@/components/shared/v-bot";
 import { AttendanceRateLine } from "@/features/dashboard/dashboard-charts-lazy";
 import { KpiMiniBars } from "@/features/dashboard/kpi-mini-bars";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
@@ -358,8 +357,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {/* Greeting, date and the page-wide controls on one row. */}
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
         <div className="flex min-w-0 items-center gap-3">
-          {/* น้องวีบอท waves hello in place of the old 👋 emoji. */}
-          <VBot mood="hi" full className="h-[54px] w-[46px]" />
           <div className="min-w-0">
             <h1 className="font-heading text-[22px] leading-snug font-bold">
               {greeting()}, {name}
@@ -382,7 +379,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         aria-label="สรุปวันนี้จาก AI"
         className="grid items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-card p-3 pr-3.5 shadow-[var(--card-shadow)] lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
       >
-        <VBot mood="hi" className="hidden h-10 w-11 lg:block" />
+        {/* น้องวีบอท appears once per screen (the sidebar's AI shortcut); here a sparkle marks the AI summary. */}
+        <span className="hidden size-10 items-center justify-center rounded-xl bg-[#f0fdfa] text-[#0d9488] ring-1 ring-[#ccfbf1] ring-inset lg:flex">
+          <Sparkles className="size-5" aria-hidden="true" />
+        </span>
         <p className="text-[13.5px] leading-relaxed">
           <span className="block text-xs font-semibold text-[var(--flip7-teal-dark)]">สรุปวันนี้จาก AI</span>
           {/* Same base as the attendance card beside it (people who use the check-in app),
@@ -435,7 +435,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-3">
             <SectionHeading title="ต้องตามวันนี้" hint="เรียงจากเร่งด่วนที่สุด · กดแถวเพื่อดูรายชื่อ" />
             {/* Each row loads on its own; its order value keeps the most urgent on top whatever arrives first. */}
-            <Card className="gv-rise gap-0 py-0" style={{ "--i": 2 } as React.CSSProperties}>
+            <Card className="gv-rise @container gap-0 py-0" style={{ "--i": 2 } as React.CSSProperties}>
               {attendanceToday && <LiveFollowRows />}
               {canSeeAttendance && (
                 <Suspense fallback={<FollowRowLoading order={3} />}>

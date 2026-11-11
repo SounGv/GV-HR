@@ -71,12 +71,13 @@ export function UpcomingLeavesCard({ data }: { data: UpcomingLeaves }) {
   return (
     <FollowRow
       icon={CalendarClock}
-      title={`ลาวันนี้และ ${data.lookaheadDays} วันข้างหน้า`}
-      sub={count ? `วันนี้ ${data.today.length} คน · เริ่มลาเร็วๆ นี้ ${data.soon.length} คน · ดูก่อนจัดคนเข้ากะ` : "ยังไม่มีใครลา (เฉพาะที่อนุมัติแล้ว)"}
+      title={`ลา ${data.lookaheadDays} วันข้างหน้า`}
+      sub={`วันนี้ ${data.today.length} · เร็วๆ นี้ ${data.soon.length} คน`}
+      people={[...data.today, ...data.soon].map((p) => p.name)}
       count={count}
       unit="คน"
       tone="info"
-      tag="ข้อมูล"
+      tag="ดูก่อนจัดกะ"
       order={5}
       link={{ href: "/leave?view=overview", label: "ดูคำขอลาทั้งหมด" }}
     >
@@ -95,18 +96,13 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
   return (
     <FollowRow
       icon={UserCheck}
-      title={`ครบทดลองงานใน ${data.windowDays} วัน`}
-      sub={
-        data.people.length
-          ? `ใกล้สุด${soonest === 0 ? "ครบวันนี้" : ` อีก ${soonest} วัน`} · ประเมินให้เสร็จก่อนวันที่ 120`
-          : missing > 0
-            ? `ไม่มีใครครบเร็วๆ นี้ · อีก ${missing} คนยังไม่มีวันเริ่มงานในระบบ`
-            : "ไม่มีใครครบทดลองงานเร็วๆ นี้"
-      }
+      title="ครบทดลองงาน"
+      sub="ประเมินให้เสร็จก่อนวันที่ 120"
+      people={data.people.map((p) => p.name)}
       count={data.people.length}
       unit="คน"
       tone={soonest !== null && soonest <= 7 ? "bad" : "warn"}
-      tag="ต้องประเมิน"
+      tag={soonest === 0 ? "ครบวันนี้" : `ใกล้สุดอีก ${soonest} วัน`}
       order={6}
     >
       <div className="space-y-3">
@@ -186,12 +182,8 @@ export function EvaluationProgressCard({ campaigns }: { campaigns: CampaignProgr
   return (
     <FollowRow
       icon={ClipboardCheck}
-      title="ประเมินผลที่ยังค้าง"
-      sub={
-        campaigns.length === 0
-          ? "ตอนนี้ไม่มีรอบประเมินที่เปิดอยู่"
-          : campaigns.map((c) => `${c.name} ส่งแล้ว ${c.overall.percent}%`).join(" · ")
-      }
+      title="ประเมินค้างส่ง"
+      sub={campaigns.map((c) => `${c.name} ส่งแล้ว ${c.overall.percent}%`).join(" · ")}
       count={owed}
       unit="งาน"
       tone={overdue ? "bad" : "warn"}

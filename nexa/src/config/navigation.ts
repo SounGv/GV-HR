@@ -58,6 +58,10 @@ export interface NavItem {
   /** Renders as a button that opens the floating AI chat panel (desktop)
    * instead of navigating to `href` — see AiPanelProvider/useAiPanel. */
   opensAiPanel?: boolean;
+  /** Shown on its own, prominently, above the menu groups instead of inside
+   * its group (AI Assistant). Still listed here so search and saved menu
+   * layouts keep seeing it. */
+  featured?: boolean;
 }
 
 export interface NavGroup {
@@ -83,7 +87,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", ready: true },
-      { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read", ready: true, opensAiPanel: true },
+      { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read", ready: true, opensAiPanel: true, featured: true },
       {
         label: "แจ้งเตือน",
         href: "/notifications",
