@@ -113,18 +113,35 @@ function parseImageDataUrl(value: string | number | undefined): { base64: string
 }
 
 /** Render one report as a compact text table the AI can reason over. */
+/** A value that is a link or an embedded picture (scan photos): useless to the AI and very long. */
+const isLinkValue = (v: unknown) => typeof v === "string" && /^(https?:|data:|\/api\/|\/uploads\/)/.test(v);
+
+/**
+ * The report as a short table for the AI summary. The chat API takes at most
+ * 8,000 characters per message, and the daily attendance report carries a
+ * photo link on every row, so a fixed 60 rows went over the limit and the
+ * summary always failed. Photo/link columns are dropped and rows are added
+ * only while the whole prompt stays under {@link PROMPT_BUDGET}.
+ */
+const PROMPT_BUDGET = 7_400;
 function reportToPrompt(label: string, result: ReportResult): string {
   const MAX_ROWS = 60;
-  const columns = exportableColumns(result);
+  const columns = exportableColumns(result).filter((c) => !result.rows.some((r) => isLinkValue(r[c.key])));
   const header = columns.map((c) => columnLabel(c)).join(" | ");
-  const body = result.rows
-    .slice(0, MAX_ROWS)
-    .map((row) => columns.map((c) => String(row[c.key] ?? "")).join(" | "))
-    .join("\n");
+  const intro = `นี่คือรายงาน "${label}"${result.period ? ` งวด ${result.period}` : ""} จากระบบ GV One`;
+  const lines: string[] = [];
+  let size = intro.length + header.length + 400;
+  for (const row of result.rows.slice(0, MAX_ROWS)) {
+    const line = columns.map((c) => String(row[c.key] ?? "")).join(" | ");
+    if (size + line.length + 1 > PROMPT_BUDGET) break;
+    lines.push(line);
+    size += line.length + 1;
+  }
+  const body = lines.join("\n");
   const omitted =
-    result.rows.length > MAX_ROWS ? `\n(แสดง ${MAX_ROWS} จาก ${result.rows.length} แถว)` : "";
+    result.rows.length > lines.length ? `\n(แสดง ${lines.length} จาก ${result.rows.length} แถว)` : "";
   return [
-    `นี่คือรายงาน "${label}"${result.period ? ` งวด ${result.period}` : ""} จากระบบ GV One`,
+    intro,
     "",
     header,
     body,
