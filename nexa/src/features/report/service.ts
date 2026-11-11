@@ -237,7 +237,12 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     const holidayDates = new Set(holidays.map((h) => h.date.toISOString().slice(0, 10)));
     const DAY_MS = 86_400_000;
     let businessDays = 0;
+    // A month still in progress only counts working days up to today
+    // (Bangkok): a day that hasn't happened yet can't be scheduled or missed,
+    // otherwise every future day of the month showed up as "absent".
+    const todayBkk = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
     for (let d = new Date(start); d.getTime() < end.getTime(); d = new Date(d.getTime() + DAY_MS)) {
+      if (d.toISOString().slice(0, 10) > todayBkk) break;
       const dow = d.getUTCDay();
       if (dow === 0 || dow === 6) continue;
       if (holidayDates.has(d.toISOString().slice(0, 10))) continue;
