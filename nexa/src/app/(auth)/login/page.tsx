@@ -45,7 +45,8 @@ export default function LoginPage() {
                 ทุกเรื่องของทีม
                 <span className="mt-1 block">
                   อยู่ใน{" "}
-                  <span className="inline-block rounded-[10px] bg-[#CDEB03] px-2.5 pb-0.5 sm:rounded-[12px] sm:px-3 text-[#131516] shadow-[0_10px_24px_-12px_rgba(205,235,3,0.6)]">
+                  {/* Padding in em so the tone mark on "ที่" stays inside the pill at every size. */}
+                  <span className="inline-block rounded-[0.24em] bg-[#CDEB03] px-[0.3em] pt-[0.18em] pb-[0.1em] leading-[1.2] whitespace-nowrap text-[#131516] shadow-[0_10px_24px_-12px_rgba(205,235,3,0.6)]">
                     ที่เดียว
                   </span>
                 </span>

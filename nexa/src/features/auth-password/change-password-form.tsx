@@ -9,7 +9,6 @@ import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { VBot } from "@/components/shared/v-bot";
 import { PasswordInput } from "@/features/auth/password-input";
 import { ApiError } from "@/lib/api/client";
 import { passwordSchema } from "@/lib/auth/password-policy";
@@ -58,7 +57,7 @@ function strength(pw: string): number {
 
 /**
  * Change-password card (profile → ความปลอดภัย), in the sign-in page's look:
- * a dark teal side panel with น้องวีบอท, tall fields with show/hide and a
+ * a dark teal side panel, tall fields with show/hide and a
  * Caps Lock warning, a live rule checklist with a strength bar, and a
  * "ตรงกัน" check on the confirmation. After saving, other devices are signed out.
  */
@@ -93,12 +92,9 @@ export function ChangePasswordForm() {
       {/* Side panel: what this does and what happens after. */}
       {/* .gv-hero is unlayered CSS, so its corner radius is reset inline (a utility class would lose). */}
       <div className="gv-hero relative flex flex-col gap-4 p-5 sm:p-6" style={{ borderRadius: 0, boxShadow: "none" }}>
-        <div className="flex items-start justify-between gap-3">
-          <span className="flex size-11 items-center justify-center rounded-[13px] border border-white/20 bg-white/10">
-            <LockKeyhole className="size-[22px]" aria-hidden="true" />
-          </span>
-          <VBot mood={done ? "ok" : "hi"} full className="h-[78px] w-[66px] md:h-[96px] md:w-[82px]" />
-        </div>
+        <span className="flex size-12 items-center justify-center rounded-[14px] border border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+          <LockKeyhole className="size-6" aria-hidden="true" />
+        </span>
         <div>
           <h2 className="text-[22px] leading-tight font-bold">เปลี่ยนรหัสผ่าน</h2>
           <p className="mt-1 text-[13.5px] leading-relaxed text-white/80">ตั้งรหัสใหม่ที่เดาได้ยาก และไม่ใช้ซ้ำกับเว็บอื่น</p>

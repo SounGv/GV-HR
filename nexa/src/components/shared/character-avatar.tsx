@@ -1,8 +1,8 @@
 import { useId } from "react";
 import { cn } from "@/lib/utils";
-import { VBot } from "./v-bot";
+import { Logo } from "./logo";
 
-/** Who the avatar draws: an employee by gender, or น้องวีบอท for an account with no employee record. */
+/** Who the avatar draws: an employee by gender, or the GV mark for an account with no employee record. */
 export type AvatarCharacter = "MALE" | "FEMALE" | "OTHER" | "BOT";
 
 /** Maps the employee's stored gender (or no employee) to a character; unknown gender gets the neutral one. */
@@ -21,8 +21,8 @@ const LIME = "#CDEB03";
 /**
  * Round character picture used when a person has no photo (GV One look:
  * teal shirt, lime GV badge). Men get short hair, women longer hair, anyone
- * else a soft neutral cut; an account with no employee record gets
- * น้องวีบอท. Purely decorative (aria-hidden): the name is always shown beside it.
+ * else a soft neutral cut; an account with no employee record (admin) gets
+ * the GV mark — น้องวีบอท stays on the AI shortcut only. Purely decorative (aria-hidden): the name is always shown beside it.
  *
  * @param character From characterFor().
  * @param className Size it with size-* classes; it fills its box.
@@ -32,7 +32,7 @@ export function CharacterAvatar({ character, className }: { character: AvatarCha
   if (character === "BOT") {
     return (
       <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(150deg,#ecfeff,#ccfbf1)]", className)}>
-        <VBot mood="hi" className="size-[82%] translate-y-[6%]" />
+        <Logo size={40} className="h-auto w-[76%]" />
       </span>
     );
   }
