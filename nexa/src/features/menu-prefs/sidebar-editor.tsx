@@ -44,7 +44,7 @@ export function SidebarEditor({ groups, draft, onChange, onDone, onCancel, onRes
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <p className="px-3 pb-2 text-xs text-slate-400">ลากเพื่อเรียงใหม่ · ตา = ซ่อน · ดาว = ขึ้นก่อนในหมวดของตัวเอง</p>
+      <p className="px-3 pb-2 text-xs text-muted-foreground">ลากเพื่อเรียงใหม่ · ตา = ซ่อน · ดาว = ขึ้นก่อนในหมวดของตัวเอง</p>
 
       <Reorder.Group
         axis="y"
@@ -67,14 +67,14 @@ export function SidebarEditor({ groups, draft, onChange, onDone, onCancel, onRes
         <button
           type="button"
           onClick={onReset}
-          className="min-h-9 flex-1 rounded-lg border border-slate-600 px-2 text-[13px] font-semibold text-slate-100 transition hover:bg-sidebar-accent"
+          className="min-h-9 flex-1 rounded-lg border border-sidebar-border px-2 text-[13px] font-semibold text-sidebar-foreground transition hover:bg-sidebar-accent"
         >
           คืนค่าเดิม
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="min-h-9 flex-1 rounded-lg border border-slate-600 px-2 text-[13px] font-semibold text-slate-100 transition hover:bg-sidebar-accent"
+          className="min-h-9 flex-1 rounded-lg border border-sidebar-border px-2 text-[13px] font-semibold text-sidebar-foreground transition hover:bg-sidebar-accent"
         >
           ยกเลิก
         </button>
@@ -108,7 +108,7 @@ function EditableGroup({
 
   return (
     <Reorder.Item value={group.label} dragListener={false} dragControls={controls} className="rounded-xl bg-sidebar select-none">
-      <div onPointerDown={dragFromRow(controls)} className="flex h-10 cursor-grab items-center gap-2 rounded-xl px-1.5 text-[14px] font-semibold text-slate-100 active:cursor-grabbing">
+      <div onPointerDown={dragFromRow(controls)} className="flex h-10 cursor-grab items-center gap-2 rounded-xl px-1.5 text-[14px] font-semibold text-sidebar-foreground active:cursor-grabbing">
         <Handle label={`ย้ายกลุ่ม ${group.label}`} controls={controls} onMove={onMoveGroup} />
         <span className="flex size-6 shrink-0 items-center justify-center rounded-[7px]" style={{ background: group.chipColor }}>
           <group.icon className="size-3.5 text-white" strokeWidth={2.25} />
@@ -160,15 +160,15 @@ function EditableItem({
   const controls = useDragControls();
   return (
     <Reorder.Item value={item.href} dragListener={false} dragControls={controls} className="rounded-lg bg-sidebar select-none">
-      <div onPointerDown={dragFromRow(controls)} className="flex h-9 cursor-grab items-center gap-1.5 px-1 text-[13px] text-[#E6E8EA] active:cursor-grabbing">
+      <div onPointerDown={dragFromRow(controls)} className="flex h-9 cursor-grab items-center gap-1.5 px-1 text-[13px] text-sidebar-foreground/85 active:cursor-grabbing">
         <Handle label={`ย้าย ${item.label}`} controls={controls} onMove={onMove} />
-        <span className={cn("flex-grow truncate", hidden && "text-slate-500 line-through")}>{item.label}</span>
+        <span className={cn("flex-grow truncate", hidden && "text-muted-foreground line-through")}>{item.label}</span>
         <button
           type="button"
           onClick={onToggleHidden}
           aria-pressed={hidden}
           aria-label={hidden ? `แสดง ${item.label}` : `ซ่อน ${item.label}`}
-          className="flex size-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-sidebar-accent hover:text-white"
+          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
         >
           {hidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>
@@ -179,7 +179,7 @@ function EditableItem({
           aria-label={pinned ? `เลิกปักหมุด ${item.label}` : `ปักหมุด ${item.label}`}
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-md transition hover:bg-sidebar-accent",
-            pinned ? "text-sidebar-primary" : "text-slate-400 hover:text-white",
+            pinned ? "text-sidebar-primary" : "text-muted-foreground hover:text-sidebar-foreground",
           )}
         >
           <Star className="size-4" fill={pinned ? "currentColor" : "none"} />
@@ -212,7 +212,7 @@ function Handle({
           onMove(e.key === "ArrowUp" ? -1 : 1);
         }
       }}
-      className="flex size-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-slate-500 transition hover:bg-sidebar-accent hover:text-white active:cursor-grabbing"
+      className="flex size-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-foreground active:cursor-grabbing"
     >
       <GripVertical className="size-4" />
     </button>

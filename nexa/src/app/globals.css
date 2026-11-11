@@ -629,3 +629,18 @@
   .login-glow, .login-dial-orbit { animation: none; }
   .login-dial-arc, .login-dial-check { animation: none; stroke-dashoffset: 0; }
 }
+
+/* ── Sidebar, light mode (2026-11, sidebar-options-mock.html option C) ──
+   White menu with teal accents. Scoped to the sidebar itself because
+   --sidebar is also used as a dark surface elsewhere (check-in card, auth
+   brand panel); dark mode keeps the charcoal tokens. */
+:root:not(.dark) [data-slot="sidebar"] {
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2b3238;
+  --sidebar-primary: #0f766e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f6f8f9;
+  --sidebar-accent-foreground: #131516;
+  --sidebar-border: #e5e9ed;
+  --sidebar-ring: #0d9488;
+}

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Michroma } from "next/font/google";
 import { ArrowUpDown, ChevronDown, Star } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -34,7 +33,6 @@ import { EMPTY_MENU_PREFS, isDefaultMenuPrefs, isHidden, orderMenu, type MenuPre
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
 
-const michroma = Michroma({ subsets: ["latin"], weight: "400" });
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -161,8 +159,8 @@ export function AppSidebar() {
           className={cn(
             "h-9 text-[14px] [&_svg]:size-4",
             active
-              ? "data-active:bg-sidebar-primary data-active:font-bold data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
-              : "text-[#E6E8EA] hover:text-white",
+              ? "data-active:bg-sidebar-primary data-active:font-semibold data-active:text-sidebar-primary-foreground data-active:shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)] data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
+              : "text-sidebar-foreground/85 hover:text-sidebar-foreground",
           )}
           render={
             item.isLogout ? (
@@ -182,9 +180,9 @@ export function AppSidebar() {
             {item.label}
           </span>
         </SidebarMenuButton>
-        {!item.ready && <SidebarMenuBadge className="text-[10px] text-slate-400">เร็วๆ นี้</SidebarMenuBadge>}
+        {!item.ready && <SidebarMenuBadge className="text-[10px] text-muted-foreground">เร็วๆ นี้</SidebarMenuBadge>}
         {item.ready && badge > 0 && (
-          <SidebarMenuBadge className="bg-badge text-badge-foreground">{badge > 9 ? "9+" : badge}</SidebarMenuBadge>
+          <SidebarMenuBadge className="bg-[#CDEB03] font-semibold text-[#131516]">{badge > 9 ? "9+" : badge}</SidebarMenuBadge>
         )}
       </SidebarMenuItem>
     );
@@ -223,19 +221,24 @@ export function AppSidebar() {
                     type="button"
                     onClick={() => toggle(group.label)}
                     aria-expanded={expanded}
-                    className="flex h-[46px] w-full items-center gap-3 rounded-xl px-2.5 text-[15px] font-semibold text-slate-200 transition hover:bg-sidebar-accent hover:text-white"
+                    className="flex h-11 w-full items-center gap-3 rounded-xl px-2.5 text-[14.5px] font-semibold text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
                   >
+                    {/* The open group's icon fills teal so you can see where you are at a glance. */}
                     <span
-                      className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px]"
-                      style={{ background: group.chipColor }}
+                      className={cn(
+                        "flex size-[30px] shrink-0 items-center justify-center rounded-[9px] transition-colors",
+                        expanded
+                          ? "bg-[linear-gradient(150deg,#115e59,#0f766e_55%,#0d9488)] text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_4px_10px_-6px_rgba(15,118,110,.5)]"
+                          : "border border-sidebar-border bg-card text-[#0f766e] shadow-[0_1px_2px_rgba(19,21,22,.06)] dark:text-[#2dd4bf]",
+                      )}
                     >
-                      <group.icon className="size-[18px] text-white" strokeWidth={2.25} />
+                      <group.icon className="size-[17px]" strokeWidth={2.2} />
                     </span>
-                    <span className="flex-grow text-left tracking-wide">{group.label}</span>
-                    <ChevronDown className={cn("size-4 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")} />
+                    <span className="flex-grow text-left">{group.label}</span>
+                    <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
                   </button>
                   {expanded && (
-                    <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 border-l-2 border-sidebar-accent pl-3.5">
+                    <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 border-l-2 border-sidebar-border pl-3">
                       <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
                     </SidebarGroupContent>
                   )}
@@ -251,7 +254,7 @@ export function AppSidebar() {
           <button
             type="button"
             onClick={startEditing}
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-slate-600 text-[13px] font-semibold text-slate-100 transition hover:bg-sidebar-accent"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#cfd6dc] text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground dark:border-sidebar-border"
           >
             <ArrowUpDown className="size-4" />
             จัดเรียงเมนู
@@ -268,21 +271,16 @@ function NexaHeaderLogo() {
       {/* Icon-only mark when the sidebar is collapsed to icon width */}
       <Logo size={40} className="hidden size-10 group-data-[collapsible=icon]:block" />
 
-      {/* Full gradient lockup box when expanded */}
-      <div
-        className="hidden w-full flex-col items-center gap-1.5 rounded-[14px] border border-[#2E3338] bg-[linear-gradient(180deg,#24282C_0%,#131516_100%)] px-3 pt-2.5 pb-2.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08),0_8px_20px_rgb(0_0_0_/_0.45)] group-data-[collapsible=icon]:hidden md:flex"
-      >
-        <Logo size={84} className="h-[41px] w-[84px]" />
-        <div className="h-[2px] w-[100px] rounded-full bg-[linear-gradient(90deg,rgb(205_235_3_/_0)_0%,#CDEB03_50%,rgb(205_235_3_/_0)_100%)]" />
-        <div
-          className={cn(
-            michroma.className,
-            "bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E7EA_45%,#9AA1A8_100%)] bg-clip-text text-[10px] leading-tight tracking-[0.2em] whitespace-nowrap text-transparent",
-          )}
-          style={{ paddingLeft: "0.2em", filter: "drop-shadow(0 1px 0 #5E6670) drop-shadow(0 3px 3px rgb(0 0 0 / 0.7))" }}
-        >
-          GADGET VILLA
-        </div>
+      {/* Expanded: the brand sits on one teal card at the top of the white menu. */}
+      <div className="hidden w-full items-center gap-2.5 rounded-2xl bg-[linear-gradient(150deg,#115e59,#0f766e_55%,#0d9488)] px-3 py-2.5 text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5),inset_0_1px_0_rgba(255,255,255,.14)] group-data-[collapsible=icon]:hidden md:flex">
+        <Logo size={44} className="h-auto w-11" />
+        <span className="min-w-0 leading-tight">
+          <b className="block text-[15px] whitespace-nowrap">GV One</b>
+          <span className="text-[11.5px] text-white/80">Gadget Villa</span>
+        </span>
+        <span className="ml-auto shrink-0 rounded-full bg-[#CDEB03] px-1.5 py-px text-[10px] font-bold whitespace-nowrap text-[#131516]">
+          HR
+        </span>
       </div>
     </div>
   );
