@@ -26,7 +26,7 @@ const FACTS = [
 export default function LoginPage() {
   return (
     <div className="login-page flex min-h-dvh flex-col bg-[#0b1414] lg:grid lg:grid-cols-[minmax(0,1.3fr)_minmax(460px,0.7fr)]">
-      <section className="relative overflow-hidden px-5 pt-3.5 pb-10 text-white sm:px-10 sm:pt-6 sm:pb-16 lg:flex lg:flex-col lg:px-14 lg:py-10">
+      <section className="relative overflow-hidden px-5 pt-[calc(env(safe-area-inset-top)+0.875rem)] pb-10 text-white sm:px-10 sm:pt-[calc(env(safe-area-inset-top)+1.5rem)] sm:pb-16 lg:flex lg:flex-col lg:px-14 lg:py-10">
         <span aria-hidden="true" className="login-glow login-glow-a" />
         <span aria-hidden="true" className="login-glow login-glow-b" />
 
@@ -80,7 +80,7 @@ export default function LoginPage() {
         </p>
       </section>
 
-      <section className="relative z-10 flex flex-1 justify-center bg-white px-5 pt-5 pb-6 max-lg:-mt-7 max-lg:shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.6)] max-lg:rounded-t-[26px] sm:pt-8 sm:pb-10 lg:items-center lg:bg-[radial-gradient(110%_55%_at_100%_0,#e3f5f1_0,rgba(246,247,243,0)_60%),var(--login-page-bg)] lg:px-10">
+      <section className="relative z-10 flex flex-1 justify-center bg-white px-5 pt-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] max-lg:-mt-7 max-lg:shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.6)] max-lg:rounded-t-[26px] sm:pt-8 sm:pb-10 lg:items-center lg:bg-[radial-gradient(110%_55%_at_100%_0,#e3f5f1_0,rgba(246,247,243,0)_60%),var(--login-page-bg)] lg:px-10">
         <div className="w-full max-w-[400px]">
           <div className="hidden sm:block">
             <LoginClock />

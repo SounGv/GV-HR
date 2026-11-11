@@ -31,10 +31,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <AppBadgeSync />
           <AppSidebar />
-          <SidebarInset className="bg-background">
+          {/* Installed on iPhone the app is drawn under the status bar (black-translucent +
+              viewport-fit=cover), so the clock needs a coloured strip behind it and the page
+              starts below it. env() is 0 everywhere else, so nothing changes off iOS. */}
+          <div
+            aria-hidden="true"
+            className="fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-[#0D9488] dark:bg-[#0A0E1A]"
+          />
+          <SidebarInset className="bg-background pt-[env(safe-area-inset-top)]">
             {/* The wrapper itself sticks: a sticky header inside a plain div scrolls away with it,
                 which left page header bars (md:top-16) floating 64px below an empty strip. */}
-            <div className="hidden md:sticky md:top-0 md:z-30 md:block">
+            <div className="hidden md:sticky md:top-[env(safe-area-inset-top)] md:z-30 md:block">
               <AppTopbar />
             </div>
             <main className="gv-main min-w-0 flex-1 pb-24 md:space-y-6 md:p-6 md:pb-6">

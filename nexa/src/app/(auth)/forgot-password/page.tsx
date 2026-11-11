@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "ลืมรหัสผ่าน" }
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] lg:grid-cols-2 lg:pt-0 lg:pb-0">
       <AuthBrandPanel
         eyebrow="ACCOUNT RECOVERY"
         headline={
