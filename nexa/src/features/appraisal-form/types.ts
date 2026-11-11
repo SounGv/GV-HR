@@ -46,6 +46,22 @@ export interface QuestionDetail {
   visibleTo: RaterType[];
   /** RATING only: what each score looks like for this question; null = none written. */
   levelDescriptions: { score: number; text: string }[] | null;
+  /** Section (หมวด) name; null = none. */
+  section: string | null;
+}
+
+/** One reusable question in the bank (คลังหัวข้อ). */
+export interface BankItem {
+  id: string;
+  text: string;
+  helpText: string | null;
+  section: string | null;
+  answerType: AnswerType;
+  levelDescriptions: { score: number; text: string }[] | null;
+  /** The scale the descriptions were written for. */
+  scaleMax: number;
+  usedCount: number;
+  updatedAt: string;
 }
 
 export interface FormDetail {

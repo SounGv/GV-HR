@@ -1,9 +1,12 @@
 import { api, type Envelope } from "@/lib/api/client";
-import type { FormDetail, FormListItem } from "./types";
+import type { BankItem, FormDetail, FormListItem } from "./types";
 
 export interface FormSavePayload {
   name?: string;
   description?: string | null;
+  ratingMax?: number;
+  ratingLabels?: { score: number; label: string }[] | null;
+  noteAtLowest?: boolean;
   questions?: {
     text: string;
     helpText?: string | null;
@@ -12,6 +15,8 @@ export interface FormSavePayload {
     weight: number;
     required: boolean;
     visibleTo: string[];
+    section?: string | null;
+    levelDescriptions?: { score: number; text: string }[] | null;
   }[];
 }
 
@@ -24,3 +29,6 @@ export const publishForm = (id: string) => api.post<Envelope<{ id: string }>>(`/
 export const newFormVersion = (id: string) =>
   api.post<Envelope<{ id: string }>>(`/api/appraisal-forms/${id}/new-version`);
 export const deleteForm = (id: string) => api.del<Envelope<{ ok: true }>>(`/api/appraisal-forms/${id}`);
+
+export const fetchBank = () => api.get<Envelope<BankItem[]>>("/api/appraisal-bank");
+export const removeBankItem = (id: string) => api.del<Envelope<{ id: string }>>(`/api/appraisal-bank/${id}`);

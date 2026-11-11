@@ -503,7 +503,7 @@ export function TaskForm({
 }
 
 /** One question: the full-width score rows (number, name and what it looks like together), or the choice / text input. */
-function QuestionStep({
+export function QuestionStep({
   q,
   index,
   total,
@@ -535,6 +535,7 @@ function QuestionStep({
       <div>
         <span className="dark:bg-accent dark:text-primary inline-flex rounded-full bg-[#ccfbf1] px-2.5 py-0.5 text-[11.5px] font-bold text-[#0f766e] tabular-nums">
           ข้อ {index + 1} จาก {total}
+          {q.section ? ` · ${q.section}` : ""}
           {!q.required && " · ไม่บังคับ"}
         </span>
         <h2 className="mt-2 text-xl leading-snug font-bold break-words">{q.text}</h2>

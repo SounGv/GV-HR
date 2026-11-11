@@ -416,6 +416,7 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
           required: true,
           visibleTo: true,
           levelDescriptions: true,
+          section: true,
         },
         orderBy: { order: "asc" },
       },

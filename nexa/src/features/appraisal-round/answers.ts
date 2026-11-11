@@ -18,6 +18,8 @@ export interface SnapQuestion {
   visibleTo: string[];
   /** RATING only: what each score looks like for this question (rounds opened before this existed have none). */
   levelDescriptions?: { score: number; text: string }[] | null;
+  /** Section (หมวด) name; absent or null = none. */
+  section?: string | null;
 }
 
 export interface Answer {
@@ -102,6 +104,7 @@ export function unansweredRequired(
 export interface QuestionSummary {
   questionId: string;
   text: string;
+  section: string | null;
   answerType: SnapAnswerType;
   /** How many raters answered this question. */
   count: number;
@@ -142,6 +145,7 @@ export function summarizeAnswers(
     return {
       questionId: q.id,
       text: q.text,
+      section: q.section ?? null,
       answerType: q.answerType,
       count: values.length,
       average: q.answerType === "RATING" && numbers.length ? Math.round((numbers.reduce((s, n) => s + n, 0) / numbers.length) * 100) / 100 : null,

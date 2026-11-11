@@ -21,6 +21,7 @@ const questionSelect = {
   required: true,
   visibleTo: true,
   levelDescriptions: true,
+  section: true,
 } satisfies Prisma.AppraisalQuestionSelect;
 
 const asOptions = (v: Prisma.JsonValue | null): { value: string; label: string }[] | null =>
@@ -123,9 +124,11 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
     throw BadRequest("แบบนี้ถูกใช้งานแล้วแก้ไขไม่ได้ กรุณาสร้างเวอร์ชันใหม่");
   }
 
+  // A draft may change its number of scores; names and descriptions are then read against the new scale.
+  const ratingMax = input.ratingMax ?? existing.ratingMax;
   // Score names: null = back to the system names; otherwise one name for every score.
-  const labels = input.ratingLabels === undefined ? undefined : input.ratingLabels === null ? null : parseRatingLabels(input.ratingLabels, existing.ratingMax);
-  if (input.ratingLabels && !labels) throw BadRequest(`ตั้งชื่อระดับคะแนนให้ครบทั้ง ${existing.ratingMax} ระดับ`);
+  const labels = input.ratingLabels === undefined ? undefined : input.ratingLabels === null ? null : parseRatingLabels(input.ratingLabels, ratingMax);
+  if (input.ratingLabels && !labels) throw BadRequest(`ตั้งชื่อระดับคะแนนให้ครบทั้ง ${ratingMax} ระดับ`);
 
   await prisma.appraisalForm.update({
     where: { id },
@@ -134,6 +137,7 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(labels !== undefined ? { ratingLabels: labels === null ? Prisma.DbNull : (labels as unknown as Prisma.InputJsonValue) } : {}),
       ...(input.noteAtLowest !== undefined ? { noteAtLowest: input.noteAtLowest } : {}),
+      ...(input.ratingMax !== undefined ? { ratingMax: input.ratingMax } : {}),
       updatedById: session.sub,
       ...(input.questions !== undefined
         ? {
@@ -151,9 +155,10 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
                 weight: q.answerType === "RATING" ? q.weight : 0,
                 required: q.required,
                 visibleTo: q.visibleTo,
+                section: q.section?.trim() || null,
                 levelDescriptions:
                   q.answerType === "RATING"
-                    ? ((cleanLevels(q.levelDescriptions, existing.ratingMax) ?? undefined) as Prisma.InputJsonValue | undefined)
+                    ? ((cleanLevels(q.levelDescriptions, ratingMax) ?? undefined) as Prisma.InputJsonValue | undefined)
                     : undefined,
               })),
             },
@@ -176,7 +181,7 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
 export async function publishForm(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
   const form = await prisma.appraisalForm.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, status: true, lineageId: true, questions: { select: questionSelect, orderBy: { order: "asc" } } },
+    select: { id: true, status: true, lineageId: true, ratingMax: true, questions: { select: questionSelect, orderBy: { order: "asc" } } },
   });
   if (!form) throw NotFound("ไม่พบแบบประเมิน");
   if (form.status !== "DRAFT") throw BadRequest("แบบนี้ถูกใช้งานแล้ว");
@@ -200,6 +205,12 @@ export async function publishForm(companyId: string, session: AccessClaims, id: 
       data: { status: "PUBLISHED", publishedAt: new Date(), updatedById: session.sub },
     }),
   ]);
+  // Every published question goes into the bank (best effort: publishing never fails because of it).
+  try {
+    await saveToBank(companyId, session, form.ratingMax, form.questions);
+  } catch {
+    /* the form is published; the bank can be filled next time */
+  }
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -258,6 +269,7 @@ export async function createNewVersion(companyId: string, session: AccessClaims,
           weight: q.weight,
           required: q.required,
           visibleTo: q.visibleTo,
+          section: q.section,
           levelDescriptions: (q.levelDescriptions ?? undefined) as Prisma.InputJsonValue | undefined,
         })),
       },
@@ -293,4 +305,91 @@ export async function deleteForm(companyId: string, session: AccessClaims, id: s
     before: { name: existing.name },
     ...meta,
   });
+}
+
+/* ───────────────────────────── Question bank (คลังหัวข้อ) ───────────────────────────── */
+
+type BankSource = {
+  text: string;
+  helpText: string | null;
+  section: string | null;
+  answerType: Prisma.AppraisalQuestionGetPayload<{ select: { answerType: true } }>["answerType"];
+  levelDescriptions: Prisma.JsonValue | null;
+};
+
+/**
+ * Adds or refreshes one bank entry per question (matched by its wording). A newer form's
+ * help text, section and score descriptions win when it has them. Sequential on purpose
+ * (connection pool of 1).
+ */
+async function saveToBank(companyId: string, session: AccessClaims, scaleMax: number, questions: BankSource[]) {
+  for (const q of questions) {
+    const text = q.text.trim();
+    if (!text) continue;
+    const levels = q.answerType === "RATING" ? cleanLevels(q.levelDescriptions, scaleMax) : null;
+    const found = await prisma.appraisalQuestionBank.findFirst({ where: { companyId, text, deletedAt: null }, select: { id: true } });
+    if (found) {
+      await prisma.appraisalQuestionBank.update({
+        where: { id: found.id },
+        data: {
+          answerType: q.answerType,
+          ...(q.helpText ? { helpText: q.helpText } : {}),
+          ...(q.section ? { section: q.section } : {}),
+          ...(levels ? { levelDescriptions: levels as unknown as Prisma.InputJsonValue, scaleMax } : {}),
+          usedCount: { increment: 1 },
+        },
+      });
+    } else {
+      await prisma.appraisalQuestionBank.create({
+        data: {
+          companyId,
+          text,
+          helpText: q.helpText,
+          section: q.section,
+          answerType: q.answerType,
+          levelDescriptions: (levels ?? undefined) as Prisma.InputJsonValue | undefined,
+          scaleMax,
+          usedCount: 1,
+          createdById: session.sub,
+        },
+      });
+    }
+  }
+}
+
+/** The bank, most used first. */
+export async function listBank(companyId: string) {
+  const rows = await prisma.appraisalQuestionBank.findMany({
+    where: { companyId, deletedAt: null },
+    orderBy: [{ usedCount: "desc" }, { updatedAt: "desc" }],
+    take: 500,
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    text: r.text,
+    helpText: r.helpText,
+    section: r.section,
+    answerType: r.answerType,
+    levelDescriptions: cleanLevels(r.levelDescriptions, r.scaleMax),
+    scaleMax: r.scaleMax,
+    usedCount: r.usedCount,
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+}
+
+/** Takes one entry out of the bank (forms that already copied it keep their copy). */
+export async function removeFromBank(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+  const row = await prisma.appraisalQuestionBank.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true, text: true } });
+  if (!row) throw NotFound("ไม่พบหัวข้อในคลัง");
+  await prisma.appraisalQuestionBank.update({ where: { id }, data: { deletedAt: new Date() } });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "appraisal_bank.remove",
+    entity: "AppraisalQuestionBank",
+    entityId: id,
+    before: { text: row.text },
+    ...meta,
+  });
+  return { id };
 }

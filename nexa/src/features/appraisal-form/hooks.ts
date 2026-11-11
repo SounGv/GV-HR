@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createForm, deleteForm, fetchForm, fetchForms, newFormVersion, publishForm, saveForm, type FormSavePayload } from "./api";
+import { createForm, deleteForm, fetchBank, fetchForm, fetchForms, newFormVersion, publishForm, removeBankItem, saveForm, type FormSavePayload } from "./api";
 
 export const appraisalFormKeys = {
   all: ["appraisal-forms"] as const,
   list: ["appraisal-forms", "list"] as const,
   detail: (id: string) => ["appraisal-forms", "detail", id] as const,
+  bank: ["appraisal-forms", "bank"] as const,
 };
 
 export function useAppraisalForms() {
@@ -45,4 +46,14 @@ export function useNewAppraisalFormVersion(id: string) {
 export function useDeleteAppraisalForm() {
   const invalidate = useInvalidate();
   return useMutation({ mutationFn: (id: string) => deleteForm(id), onSuccess: invalidate });
+}
+
+/** The question bank (คลังหัวข้อ), loaded only when the picker opens. */
+export function useQuestionBank(enabled: boolean) {
+  return useQuery({ queryKey: appraisalFormKeys.bank, queryFn: fetchBank, enabled, staleTime: 60_000 });
+}
+
+export function useRemoveBankItem() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => removeBankItem(id), onSuccess: () => qc.invalidateQueries({ queryKey: appraisalFormKeys.bank }) });
 }

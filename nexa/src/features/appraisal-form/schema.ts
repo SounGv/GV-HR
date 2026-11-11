@@ -17,6 +17,8 @@ export const questionSchema = z.object({
   weight: z.coerce.number().int().min(0).max(100).default(1),
   required: z.boolean().default(true),
   visibleTo: z.array(z.enum(RATER_TYPES)).default([]),
+  /** Section (หมวด) the question sits under; null = none. */
+  section: z.string().trim().max(80).optional().nullable(),
   /** RATING only: what each score looks like for this question. */
   levelDescriptions: z
     .array(z.object({ score: z.number().int().min(1).max(10), text: z.string().trim().max(300) }))
@@ -42,6 +44,8 @@ export const formUpdateSchema = z.object({
     .nullable(),
   /** The rater must write an example when giving the lowest score. */
   noteAtLowest: z.boolean().optional(),
+  /** Number of scores (a draft only); ratingLabels must then have one name per score. */
+  ratingMax: z.number().int().min(2).max(5).optional(),
 });
 
 export type FormCreateInput = z.infer<typeof formCreateSchema>;

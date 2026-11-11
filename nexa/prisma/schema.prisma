@@ -2528,12 +2528,39 @@ model AppraisalQuestion {
   // RATING only: what each score looks like for this question, e.g. [{ score: 3, text: "..." }].
   // Null = the form's general score names only.
   levelDescriptions Json?
+  // The section (หมวด) this question sits under, e.g. "ผลงาน". Questions of a section are
+  // consecutive by `order`. Null = no section.
+  section    String?
   required   Boolean             @default(true)
   // Which rater types see this question; empty = everyone.
   visibleTo  AppraisalRaterType[] @default([])
 
   @@index([formId, order])
   @@map("appraisal_questions")
+}
+
+// Reusable questions (คลังหัวข้อ): saved automatically when a form is published, picked
+// into a new form or version so the same topic keeps one wording (and can be compared
+// across rounds). A copy is taken when picked; editing the bank never changes a form.
+model AppraisalQuestionBank {
+  id                String              @id @default(uuid())
+  companyId         String
+  text              String
+  helpText          String?
+  section           String?
+  answerType        AppraisalAnswerType
+  // [{ score, text }] written for a scale of `scaleMax` scores.
+  levelDescriptions Json?
+  scaleMax          Int                 @default(5)
+  // How many published forms used it (most used first in the picker).
+  usedCount         Int                 @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  createdById       String?
+  deletedAt         DateTime?
+
+  @@index([companyId, deletedAt])
+  @@map("appraisal_question_bank")
 }
 
 // A round = which form, for whom, rated by whom, and when. Created as a DRAFT through

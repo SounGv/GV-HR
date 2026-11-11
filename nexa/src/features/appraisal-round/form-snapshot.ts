@@ -25,6 +25,7 @@ export interface FormSnap {
     required: boolean;
     visibleTo: string[];
     levelDescriptions?: { score: number; text: string }[] | null;
+    section?: string | null;
   }[];
 }
 

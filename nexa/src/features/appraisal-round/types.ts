@@ -180,6 +180,7 @@ export interface MatrixRow {
 export interface QuestionSummary {
   questionId: string;
   text: string;
+  section: string | null;
   answerType: "RATING" | "CHOICE" | "MULTI_CHOICE" | "SHORT_TEXT" | "PARAGRAPH";
   count: number;
   average: number | null;
