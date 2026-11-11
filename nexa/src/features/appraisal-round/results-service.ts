@@ -308,7 +308,11 @@ export async function listMyResults(companyId: string, session: AccessClaims): P
       .filter(([t, sets]) => NAMED_TYPES.has(t) || sets.length >= ANON_MIN)
       .map(([raterType, sets]) => ({
         raterType,
-        texts: summarizeAnswers((form?.questions ?? []) as SnapQuestion[], raterType, sets).flatMap((s) => s.texts),
+        // Written answers plus the examples raters gave with their scores (same anonymity rule).
+        texts: summarizeAnswers((form?.questions ?? []) as SnapQuestion[], raterType, sets, form?.ratingMax ?? 5).flatMap((s) => [
+          ...s.texts,
+          ...s.notes.map((n) => n.text),
+        ]),
       }))
       .filter((c) => c.texts.length > 0);
 
@@ -359,7 +363,9 @@ async function loadForHr(companyId: string, roundId: string, assignmentId: strin
       participant: {
         select: {
           formId: true,
-          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
+          departmentName: true,
+          positionName: true,
+          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true, gender: true } },
           round: { select: { name: true, status: true, endDate: true, formSnapshot: true } },
         },
       },
@@ -379,11 +385,14 @@ export async function getAssignmentForHr(companyId: string, roundId: string, ass
     status: a.status,
     personName: displayName(a.participant.employee),
     personCode: a.participant.employee.employeeCode,
+    personGender: a.participant.employee.gender ?? null,
+    personRole: [a.participant.positionName, a.participant.departmentName].filter(Boolean).join(" · ") || null,
     roundName: a.participant.round.name,
     roundStatus: a.participant.round.status,
     endIso: a.participant.round.endDate ? a.participant.round.endDate.toISOString().slice(0, 10) : null,
     ratingMax: form.ratingMax,
     ratingLabels: form.ratingLabels ?? null,
+    noteAtLowest: !!form.noteAtLowest,
     questions: visibleQuestions(form.questions as SnapQuestion[], a.raterType),
     answers: (Array.isArray(a.answers) ? a.answers : []) as unknown as Answer[],
     raterName: displayName(a.rater),
@@ -396,7 +405,7 @@ export async function saveAssignmentAsHr(
   session: AccessClaims,
   roundId: string,
   assignmentId: string,
-  input: { answers: { questionId: string; value: unknown }[]; submit: boolean },
+  input: { answers: { questionId: string; value: unknown; note?: string }[]; submit: boolean },
   meta?: Meta,
 ) {
   const { a, form } = await loadForHr(companyId, roundId, assignmentId);
@@ -404,7 +413,7 @@ export async function saveAssignmentAsHr(
   if (a.status === "SUBMITTED") throw BadRequest("ส่งผลประเมินแล้ว แก้ไขไม่ได้");
   const answers = cleanAnswers(form.questions as SnapQuestion[], a.raterType, input.answers, form.ratingMax);
   if (input.submit) {
-    const missing = unansweredRequired(form.questions as SnapQuestion[], a.raterType, answers);
+    const missing = unansweredRequired(form.questions as SnapQuestion[], a.raterType, answers, { noteAtLowest: !!form.noteAtLowest });
     if (missing.length) throw BadRequest(`ยังตอบไม่ครบ: ${missing.join(", ")}`);
   }
   await prisma.appraisalAssignment.update({

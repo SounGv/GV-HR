@@ -13,7 +13,7 @@ import {
   shouldRemind,
 } from "../src/features/appraisal-round/rules.ts";
 import { formsInUse, pickForm } from "../src/features/appraisal-round/form-snapshot.ts";
-import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions } from "../src/features/appraisal-round/answers.ts";
+import { cleanAnswers, needsNote, summarizeAnswers, unansweredRequired, visibleQuestions } from "../src/features/appraisal-round/answers.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -176,6 +176,28 @@ check("a person is rated with their own form, else the round's default", () => {
 check("a round needs the default form plus each different form people were given", () => {
   assert.deepEqual(formsInUse("f1", [null, "f2", "f2", "f1"]), ["f1", "f2"]);
   assert.deepEqual(formsInUse("f1", []), ["f1"]);
+});
+
+check("a rating keeps its example; examples on other question types are dropped", () => {
+  assert.deepEqual(cleanAnswers(Q, "MANAGER", [{ questionId: "r", value: 1, note: "  ส่งผิด 3 ครั้ง " }, { questionId: "c", value: "a", note: "x" }], 5), [
+    { questionId: "r", value: 1, note: "ส่งผิด 3 ครั้ง" },
+    { questionId: "c", value: "a" },
+  ]);
+});
+check("the lowest score needs an example only when the form asks for one", () => {
+  const q = Q[0];
+  assert.equal(needsNote(q, { questionId: "r", value: 1 }, true), true);
+  assert.equal(needsNote(q, { questionId: "r", value: 1, note: "เหตุการณ์" }, true), false);
+  assert.equal(needsNote(q, { questionId: "r", value: 2 }, true), false);
+  assert.equal(needsNote(q, { questionId: "r", value: 1 }, false), false);
+  assert.deepEqual(unansweredRequired(Q, "SELF", [{ questionId: "r", value: 1 }], { noteAtLowest: true }), ["ข้อ 1 (ต้องมีตัวอย่าง)"]);
+  assert.deepEqual(unansweredRequired(Q, "SELF", [{ questionId: "r", value: 1 }]), []);
+});
+check("a rating summary counts raters per score and keeps the examples", () => {
+  const sets = [[{ questionId: "r", value: 3, note: "เกินเป้า" }], [{ questionId: "r", value: 3 }], [{ questionId: "r", value: 1, note: "ช้า" }]];
+  const [r] = summarizeAnswers(Q, "MANAGER", sets, 3);
+  assert.deepEqual(r.scores, [{ score: 3, count: 2 }, { score: 2, count: 0 }, { score: 1, count: 1 }]);
+  assert.deepEqual(r.notes, [{ score: 3, text: "เกินเป้า" }, { score: 1, text: "ช้า" }]);
 });
 
 console.log(`\n${n} checks passed`);

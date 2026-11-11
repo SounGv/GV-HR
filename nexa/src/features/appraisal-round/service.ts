@@ -403,8 +403,20 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
       version: true,
       ratingMax: true,
       ratingLabels: true,
+      noteAtLowest: true,
       questions: {
-        select: { id: true, order: true, text: true, helpText: true, answerType: true, options: true, weight: true, required: true, visibleTo: true },
+        select: {
+          id: true,
+          order: true,
+          text: true,
+          helpText: true,
+          answerType: true,
+          options: true,
+          weight: true,
+          required: true,
+          visibleTo: true,
+          levelDescriptions: true,
+        },
         orderBy: { order: "asc" },
       },
     },
@@ -680,6 +692,8 @@ export interface ParticipantResult {
   department: string;
   roundName: string;
   roundStatus: string;
+  ratingMax: number;
+  ratingLabels: unknown;
   groups: { raterType: string; total: number; submitted: number; summary: QuestionSummary[] }[];
   result: {
     status: string;
@@ -712,7 +726,9 @@ export async function getParticipantResult(companyId: string, roundId: string, p
     },
   });
   if (!p) throw NotFound("ไม่พบข้อมูล");
-  const questions = (pickForm(p.round.formSnapshot as unknown as RoundSnapshot | null, p.formId)?.questions ?? []) as SnapQuestion[];
+  const form = pickForm(p.round.formSnapshot as unknown as RoundSnapshot | null, p.formId);
+  const questions = (form?.questions ?? []) as SnapQuestion[];
+  const ratingMax = form?.ratingMax ?? 5;
   const types = [...new Set(p.assignments.map((a) => a.raterType))];
   return {
     participantId: p.id,
@@ -721,6 +737,8 @@ export async function getParticipantResult(companyId: string, roundId: string, p
     department: p.departmentName ?? "ไม่ระบุแผนก",
     roundName: p.round.name,
     roundStatus: p.round.status,
+    ratingMax,
+    ratingLabels: form?.ratingLabels ?? null,
     result: {
       status: p.resultStatus,
       scorePercent: p.scorePercent,
@@ -735,7 +753,7 @@ export async function getParticipantResult(companyId: string, roundId: string, p
         raterType: t,
         total: mine.length,
         submitted: done.length,
-        summary: summarizeAnswers(questions, t, done.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : []))),
+        summary: summarizeAnswers(questions, t, done.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [])), ratingMax),
       };
     }),
   };
@@ -812,7 +830,9 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
       participant: {
         select: {
           formId: true,
-          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
+          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true, gender: true } },
+          departmentName: true,
+          positionName: true,
           round: { select: { id: true, name: true, status: true, endDate: true, formSnapshot: true } },
         },
       },
@@ -821,7 +841,10 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
   if (!a) throw NotFound("ไม่พบงานประเมินนี้");
   const form = pickForm(a.participant.round.formSnapshot as unknown as RoundSnapshot | null, a.participant.formId);
   if (!form) throw BadRequest("รอบนี้ยังไม่พร้อม");
-  return { a, snap: { ratingMax: form.ratingMax, ratingLabels: form.ratingLabels ?? null, questions: form.questions as SnapQuestion[] } };
+  return {
+    a,
+    snap: { ratingMax: form.ratingMax, ratingLabels: form.ratingLabels ?? null, noteAtLowest: !!form.noteAtLowest, questions: form.questions as SnapQuestion[] },
+  };
 }
 
 export async function getMyAssignment(companyId: string, session: AccessClaims, id: string) {
@@ -832,11 +855,14 @@ export async function getMyAssignment(companyId: string, session: AccessClaims, 
     status: a.status,
     personName: fullName(a.participant.employee),
     personCode: a.participant.employee.employeeCode,
+    personGender: a.participant.employee.gender ?? null,
+    personRole: [a.participant.positionName, a.participant.departmentName].filter(Boolean).join(" · ") || null,
     roundName: a.participant.round.name,
     roundStatus: a.participant.round.status,
     endIso: a.participant.round.endDate ? iso(a.participant.round.endDate) : null,
     ratingMax: snap.ratingMax,
     ratingLabels: snap.ratingLabels,
+    noteAtLowest: snap.noteAtLowest,
     questions: visibleQuestions(snap.questions, a.raterType),
     answers: (Array.isArray(a.answers) ? a.answers : []) as unknown as Answer[],
   };
@@ -847,7 +873,7 @@ export async function saveMyAnswers(
   companyId: string,
   session: AccessClaims,
   id: string,
-  input: { answers: { questionId: string; value: unknown }[]; submit: boolean },
+  input: { answers: { questionId: string; value: unknown; note?: string }[]; submit: boolean },
   meta?: Meta,
 ) {
   const { a, snap } = await loadMine(companyId, session, id);
@@ -856,7 +882,7 @@ export async function saveMyAnswers(
 
   const answers = cleanAnswers(snap.questions, a.raterType, input.answers, snap.ratingMax);
   if (input.submit) {
-    const missing = unansweredRequired(snap.questions, a.raterType, answers);
+    const missing = unansweredRequired(snap.questions, a.raterType, answers, { noteAtLowest: snap.noteAtLowest });
     if (missing.length) throw BadRequest(`ยังตอบไม่ครบ: ${missing.join(", ")}`);
   }
   await prisma.appraisalAssignment.update({

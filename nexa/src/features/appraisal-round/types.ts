@@ -138,14 +138,20 @@ export interface TaskDetail {
   status: AssignmentStatus;
   personName: string;
   personCode: string;
+  /** For the character avatar; null = not recorded. */
+  personGender: string | null;
+  /** "position · department" at the time the round opened. */
+  personRole: string | null;
   roundName: string;
   roundStatus: RoundStatus;
   endIso: string | null;
   ratingMax: number;
   /** Score names frozen with the round; null = the system's original names. */
   ratingLabels: unknown;
+  /** The lowest score needs a written example. */
+  noteAtLowest: boolean;
   questions: SnapQuestion[];
-  answers: { questionId: string; value: number | string | string[] }[];
+  answers: { questionId: string; value: number | string | string[]; note?: string }[];
 }
 
 /** What the wizard sends when saving a step. */
@@ -179,6 +185,11 @@ export interface QuestionSummary {
   average: number | null;
   options: { label: string; count: number }[];
   texts: string[];
+  /** RATING only: raters per score, highest first. */
+  scores: { score: number; count: number }[];
+  /** RATING only: written examples with the score given. */
+  notes: { score: number; text: string }[];
+  levelDescriptions: { score: number; text: string }[] | null;
 }
 
 export interface ParticipantResult {
@@ -188,6 +199,9 @@ export interface ParticipantResult {
   department: string;
   roundName: string;
   roundStatus: string;
+  ratingMax: number;
+  /** Score names frozen with the round; null = system names. */
+  ratingLabels: unknown;
   groups: { raterType: RaterType; total: number; submitted: number; summary: QuestionSummary[] }[];
   result: {
     status: ResultStatus;

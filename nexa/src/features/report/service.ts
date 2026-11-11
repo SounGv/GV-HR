@@ -1,3 +1,7 @@
+import { rubricFor } from "@/features/appraisal-form/rating-labels";
+import { summarizeAnswers, type Answer, type SnapQuestion } from "@/features/appraisal-round/answers";
+import { pickForm, type RoundSnapshot } from "@/features/appraisal-round/form-snapshot";
+import { RATER_LABEL as APPRAISAL_RATER_LABEL } from "@/features/appraisal-round/types";
 import { prisma } from "@/lib/prisma";
 import { formatDate, loginIdentifier, displayName } from "@/lib/format";
 import { STATUS_LABEL, EMPLOYMENT_LABEL } from "@/features/employee/labels";
@@ -1284,6 +1288,19 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       },
       orderBy: [{ employee: { employeeCode: "asc" } }, { finalizedAt: "desc" }],
     });
+    // Rounds run from /appraisal (AppraisalRound): every person whose result has been calculated.
+    const appraised = await prisma.appraisalParticipant.findMany({
+      where: { round: { companyId, deletedAt: null }, resultStatus: { not: "NOT_CALCULATED" }, ...deptRel },
+      select: {
+        overallScore: true,
+        scorePercent: true,
+        grade: true,
+        resultStatus: true,
+        round: { select: { name: true } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true } },
+      },
+      orderBy: [{ employee: { employeeCode: "asc" } }, { calculatedAt: "desc" }],
+    });
     return {
       title,
       period: null,
@@ -1297,6 +1314,15 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "source", label: "ที่มา" },
       ],
       rows: [
+        ...appraised.map((p) => ({
+          code: p.employee.employeeCode,
+          name: displayName(p.employee),
+          cycle: p.round.name,
+          score: p.overallScore != null ? Math.round(p.overallScore * 100) / 100 : "-",
+          percent: p.scorePercent != null ? Math.round(p.scorePercent * 10) / 10 : "-",
+          band: p.grade ?? "-",
+          source: p.resultStatus === "CALCULATED" ? "รอบประเมิน (ยังไม่อนุมัติ)" : "รอบประเมิน",
+        })),
         ...participants.map((p) => ({
           code: p.employee.employeeCode,
           name: displayName(p.employee),
@@ -1316,6 +1342,76 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           source: "แบบประเมินเดิม",
         })),
       ],
+    };
+  }
+
+  if (query.type === "appraisal_detail") {
+    // One row per person × question × rater group, from submitted answers only. No rater names:
+    // the same anonymous view as the round's per-person page.
+    const people = await prisma.appraisalParticipant.findMany({
+      where: { round: { companyId, deletedAt: null, status: { in: ["OPEN", "CLOSED"] } }, ...deptRel },
+      select: {
+        formId: true,
+        departmentName: true,
+        round: { select: { name: true, formSnapshot: true } },
+        employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true } },
+        assignments: { where: { status: "SUBMITTED" }, select: { raterType: true, answers: true } },
+      },
+      orderBy: [{ round: { startDate: "desc" } }, { employee: { employeeCode: "asc" } }],
+      take: 2000,
+    });
+    const rows: Record<string, string | number>[] = [];
+    for (const p of people) {
+      const form = pickForm(p.round.formSnapshot as unknown as RoundSnapshot | null, p.formId);
+      if (!form) continue;
+      const labelOf = new Map(rubricFor(form.ratingMax, form.ratingLabels ?? null).map((r) => [r.score, r.label]));
+      const byType = new Map<string, Answer[][]>();
+      for (const a of p.assignments) {
+        byType.set(a.raterType, [...(byType.get(a.raterType) ?? []), Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : []]);
+      }
+      for (const [raterType, sets] of byType) {
+        for (const s of summarizeAnswers(form.questions as SnapQuestion[], raterType, sets, form.ratingMax)) {
+          if (s.count === 0) continue;
+          const rating = s.answerType === "RATING";
+          rows.push({
+            code: p.employee.employeeCode,
+            name: displayName(p.employee),
+            department: p.departmentName ?? "-",
+            round: p.round.name,
+            topic: s.text,
+            rater: APPRAISAL_RATER_LABEL[raterType as keyof typeof APPRAISAL_RATER_LABEL] ?? raterType,
+            raters: s.count,
+            average: rating && s.average != null ? s.average : "-",
+            level: rating && s.average != null ? (labelOf.get(Math.round(s.average)) ?? "-") : "-",
+            spread: rating
+              ? s.scores
+                  .filter((x) => x.count > 0)
+                  .map((x) => `${labelOf.get(x.score) ?? x.score} ${x.count}`)
+                  .join(" · ")
+              : s.options.filter((o) => o.count > 0).map((o) => `${o.label} ${o.count}`).join(" · ") || "-",
+            examples: rating ? s.notes.map((n) => `[${labelOf.get(n.score) ?? n.score}] ${n.text}`).join(" / ") || "-" : s.texts.join(" / ") || "-",
+          });
+        }
+      }
+    }
+    return {
+      title,
+      period: null,
+      columns: [
+        { key: "code", label: "รหัส" },
+        { key: "name", label: "ชื่อ-สกุล" },
+        { key: "department", label: "แผนก" },
+        { key: "round", label: "รอบประเมิน" },
+        { key: "topic", label: "หัวข้อ" },
+        { key: "rater", label: "ผู้ประเมิน" },
+        { key: "raters", label: "จำนวนผู้ตอบ", numeric: true },
+        { key: "average", label: "คะแนนเฉลี่ย", numeric: true },
+        { key: "level", label: "ระดับ" },
+        { key: "spread", label: "แยกตามระดับ" },
+        { key: "examples", label: "ตัวอย่าง / ความเห็น" },
+      ],
+      rows,
+      footnote: `${rows.length} แถว · จากคำตอบที่ส่งแล้วเท่านั้น · ไม่ระบุชื่อผู้ประเมิน`,
     };
   }
 

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
-import { formProblems, isEditable, nextVersion, type QuestionDraft } from "./rules";
+import { cleanLevels, formProblems, isEditable, nextVersion, type QuestionDraft } from "./rules";
 import type { FormCreateInput, FormUpdateInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -20,6 +20,7 @@ const questionSelect = {
   weight: true,
   required: true,
   visibleTo: true,
+  levelDescriptions: true,
 } satisfies Prisma.AppraisalQuestionSelect;
 
 const asOptions = (v: Prisma.JsonValue | null): { value: string; label: string }[] | null =>
@@ -71,6 +72,7 @@ export async function getForm(companyId: string, id: string) {
       status: true,
       ratingMax: true,
       ratingLabels: true,
+      noteAtLowest: true,
       publishedAt: true,
       questions: { select: questionSelect, orderBy: { order: "asc" } },
     },
@@ -80,7 +82,7 @@ export async function getForm(companyId: string, id: string) {
     ...f,
     ratingLabels: parseRatingLabels(f.ratingLabels, f.ratingMax),
     publishedAt: f.publishedAt?.toISOString() ?? null,
-    questions: f.questions.map((q) => ({ ...q, options: asOptions(q.options) })),
+    questions: f.questions.map((q) => ({ ...q, options: asOptions(q.options), levelDescriptions: cleanLevels(q.levelDescriptions, f.ratingMax) })),
   };
 }
 
@@ -131,6 +133,7 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(labels !== undefined ? { ratingLabels: labels === null ? Prisma.DbNull : (labels as unknown as Prisma.InputJsonValue) } : {}),
+      ...(input.noteAtLowest !== undefined ? { noteAtLowest: input.noteAtLowest } : {}),
       updatedById: session.sub,
       ...(input.questions !== undefined
         ? {
@@ -148,6 +151,10 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
                 weight: q.answerType === "RATING" ? q.weight : 0,
                 required: q.required,
                 visibleTo: q.visibleTo,
+                levelDescriptions:
+                  q.answerType === "RATING"
+                    ? ((cleanLevels(q.levelDescriptions, existing.ratingMax) ?? undefined) as Prisma.InputJsonValue | undefined)
+                    : undefined,
               })),
             },
           }
@@ -214,6 +221,7 @@ export async function createNewVersion(companyId: string, session: AccessClaims,
       description: true,
       ratingMax: true,
       ratingLabels: true,
+      noteAtLowest: true,
       status: true,
       questions: { select: questionSelect, orderBy: { order: "asc" } },
     },
@@ -237,6 +245,7 @@ export async function createNewVersion(companyId: string, session: AccessClaims,
       description: source.description,
       ratingMax: source.ratingMax,
       ratingLabels: (source.ratingLabels ?? undefined) as Prisma.InputJsonValue | undefined,
+      noteAtLowest: source.noteAtLowest,
       createdById: session.sub,
       updatedById: session.sub,
       questions: {
@@ -249,6 +258,7 @@ export async function createNewVersion(companyId: string, session: AccessClaims,
           weight: q.weight,
           required: q.required,
           visibleTo: q.visibleTo,
+          levelDescriptions: (q.levelDescriptions ?? undefined) as Prisma.InputJsonValue | undefined,
         })),
       },
     },

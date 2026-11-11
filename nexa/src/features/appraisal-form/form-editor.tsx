@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/features/auth/auth-context";
 import { LABEL_PRESETS, presetOf, rubricFor, type LabelPresetKey, type RatingLabel } from "./rating-labels";
 import { ApiError } from "@/lib/api/client";
@@ -40,7 +41,7 @@ const CHOICE = new Set<AnswerType>(["CHOICE", "MULTI_CHOICE"]);
 const newKey = () => crypto.randomUUID();
 
 function emptyQuestion(): QuestionValues {
-  return { uiKey: newKey(), text: "", helpText: "", answerType: "RATING", options: [], weight: 1, required: true, visibleTo: [] };
+  return { uiKey: newKey(), text: "", helpText: "", answerType: "RATING", options: [], weight: 1, required: true, visibleTo: [], levels: {} };
 }
 
 function emptyOption(n: number) {
@@ -57,8 +58,20 @@ function toValues(form: FormDetail): QuestionValues[] {
     weight: q.weight,
     required: q.required,
     visibleTo: q.visibleTo,
+    levels: Object.fromEntries((q.levelDescriptions ?? []).map((l) => [l.score, l.text])),
   }));
 }
+
+/** Typed descriptions -> what the API stores (RATING only; blanks dropped). */
+const levelsOut = (q: QuestionValues) =>
+  q.answerType === "RATING"
+    ? Object.entries(q.levels)
+        .filter(([, t]) => t.trim())
+        .map(([score, text]) => ({ score: Number(score), text: text.trim() }))
+    : null;
+
+/** A question text listing several things ("ปริมาณ, คุณภาพ, ตรงเวลา") is probably several questions. */
+const looksCombined = (text: string) => (text.match(/[,/]| และ /g) ?? []).length >= 2;
 
 /** Loads one form and hands it to the editor. */
 export function FormEditorPage({ id }: { id: string }) {
@@ -79,6 +92,7 @@ function FormEditor({ form }: { form: FormDetail }) {
   const [rater, setRater] = useState<RaterType>("MANAGER");
   // Score names for this form; null = the system's original names (forms saved before this existed).
   const [labels, setLabels] = useState<RatingLabel[] | null>(form.ratingLabels);
+  const [noteAtLowest, setNoteAtLowest] = useState(form.noteAtLowest);
 
   const save = useSaveAppraisalForm(form.id);
   const publish = usePublishAppraisalForm(form.id);
@@ -90,6 +104,10 @@ function FormEditor({ form }: { form: FormDetail }) {
     ...(labels && labels.some((l) => !l.label.trim()) ? ["ตั้งชื่อระดับคะแนนให้ครบทุกระดับ"] : []),
   ];
   const weightTotal = ratingWeightTotal(questions);
+  const rubric = rubricFor(form.ratingMax, labels);
+  // Advice, not blockers: rating questions with no per-score descriptions, and questions that bundle several topics.
+  const noLevels = questions.map((q, i) => ({ q, n: i + 1 })).filter(({ q }) => q.answerType === "RATING" && !levelsOut(q)?.length);
+  const combined = questions.map((q, i) => ({ q, n: i + 1 })).filter(({ q }) => looksCombined(q.text));
 
   const update = (i: number, patch: Partial<QuestionValues>) =>
     setQuestions((qs) => qs.map((q, j) => (j === i ? { ...q, ...patch } : q)));
@@ -106,6 +124,7 @@ function FormEditor({ form }: { form: FormDetail }) {
     return {
       name: name.trim() || form.name,
       ratingLabels: labels,
+      noteAtLowest,
       questions: questions.map((q) => ({
         text: q.text,
         helpText: q.helpText || null,
@@ -114,6 +133,7 @@ function FormEditor({ form }: { form: FormDetail }) {
         weight: q.weight,
         required: q.required,
         visibleTo: q.visibleTo,
+        levelDescriptions: levelsOut(q),
       })),
     };
   }
@@ -204,7 +224,7 @@ function FormEditor({ form }: { form: FormDetail }) {
               </div>
 
               <Input aria-label={`คำถามข้อ ${i + 1}`} placeholder="พิมพ์คำถาม" value={q.text} onChange={(e) => update(i, { text: e.target.value })} disabled={!canEdit} maxLength={500} />
-              <Input aria-label={`ตัวอย่างพฤติกรรมข้อ ${i + 1}`} placeholder="ตัวอย่างพฤติกรรม (ไม่บังคับ)" value={q.helpText} onChange={(e) => update(i, { helpText: e.target.value })} disabled={!canEdit} maxLength={500} />
+              <Input aria-label={`ดูจากอะไร ข้อ ${i + 1}`} placeholder="ดูจากอะไร เช่น งานที่ส่ง ความถูกต้อง กำหนดส่ง (ไม่บังคับ)" value={q.helpText} onChange={(e) => update(i, { helpText: e.target.value })} disabled={!canEdit} maxLength={500} />
 
               <div className="flex flex-wrap items-center gap-3">
                 <Select
@@ -252,6 +272,43 @@ function FormEditor({ form }: { form: FormDetail }) {
                   ต้องตอบ
                 </label>
               </div>
+
+              {looksCombined(q.text) && (
+                <p className="flex items-start gap-2 rounded-lg bg-[#fffbeb] px-3 py-2 text-xs text-[#92400e] dark:bg-amber-500/10 dark:text-amber-200">
+                  <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                  ข้อนี้มีหลายเรื่องในข้อเดียว ถ้าคนเก่งเรื่องหนึ่งแต่อ่อนอีกเรื่องจะให้คะแนนยาก ลองแยกเป็นข้อละเรื่อง
+                </p>
+              )}
+
+              {q.answerType === "RATING" && (
+                <fieldset className="space-y-1.5 rounded-xl border border-dashed border-border p-3">
+                  <legend className="px-1 text-[13px] font-semibold">แต่ละคะแนนหมายถึงพฤติกรรมแบบไหน</legend>
+                  <p className="text-xs text-muted-foreground">ผู้ประเมินเห็นใต้ปุ่มคะแนน ช่วยให้หัวหน้าทุกคนให้คะแนนด้วยมาตรฐานเดียวกัน (แนะนำ ไม่บังคับ)</p>
+                  {rubric.map((r) => (
+                    <label key={r.score} className="flex items-start gap-2">
+                      <span className="mt-0.5 flex min-w-[88px] shrink-0 items-center gap-1.5 text-xs font-semibold">
+                        <span className="flex size-7 items-center justify-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">{r.score}</span>
+                        <span className="min-w-0 truncate">{r.label}</span>
+                      </span>
+                      <Input
+                        aria-label={`ข้อ ${i + 1} คะแนน ${r.score} หมายถึง`}
+                        placeholder={
+                          r.score === rubric[0].score
+                            ? "เช่น ทำได้มากกว่าเป้าอย่างสม่ำเสมอ"
+                            : r.score === rubric[rubric.length - 1].score
+                              ? "เช่น งานล่าช้าหรือผิดบ่อย ต้องมีคนตามแก้"
+                              : "เช่น ทำได้ครบตามเป้า ผิดพลาดน้อย"
+                        }
+                        value={q.levels[r.score] ?? ""}
+                        maxLength={300}
+                        disabled={!canEdit}
+                        className="h-11 md:h-9"
+                        onChange={(e) => update(i, { levels: { ...q.levels, [r.score]: e.target.value } })}
+                      />
+                    </label>
+                  ))}
+                </fieldset>
+              )}
 
               {CHOICE.has(q.answerType) && (
                 <div className="space-y-2">
@@ -315,6 +372,16 @@ function FormEditor({ form }: { form: FormDetail }) {
 
         <aside className="space-y-3 lg:sticky lg:top-4">
           <ScoreNames ratingMax={form.ratingMax} labels={labels} onChange={setLabels} disabled={!canEdit} />
+          <Card className="gap-2 p-4" aria-label="กติกาตอนตอบ">
+            <h2 className="text-sm font-semibold">กติกาตอนตอบ</h2>
+            <label className="flex cursor-pointer items-start gap-3 text-sm">
+              <Switch className="mt-0.5" checked={noteAtLowest} onCheckedChange={(v) => setNoteAtLowest(v === true)} disabled={!canEdit} />
+              <span>
+                ให้คะแนนต่ำสุด ({rubric[rubric.length - 1]?.label ?? 1}) ต้องเขียนตัวอย่างเหตุการณ์
+                <span className="block text-xs text-muted-foreground">พนักงานรู้ว่าต้องแก้อะไร และ HR ใช้ประกอบตอนตรวจผล</span>
+              </span>
+            </label>
+          </Card>
           <Card className="gap-2 p-4" aria-label="ความพร้อมของแบบ">
             <h2 className="text-sm font-semibold">ความพร้อมก่อนยืนยันใช้</h2>
             {problems.length === 0 ? (
@@ -328,6 +395,12 @@ function FormEditor({ form }: { form: FormDetail }) {
                     <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" /> <span>{p}</span>
                   </li>
                 ))}
+              </ul>
+            )}
+            {(noLevels.length > 0 || combined.length > 0) && (
+              <ul className="space-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
+                {noLevels.length > 0 && <li>แนะนำ: ข้อ {noLevels.map((x) => x.n).join(", ")} ยังไม่มีคำอธิบายรายคะแนน</li>}
+                {combined.length > 0 && <li>แนะนำ: ข้อ {combined.map((x) => x.n).join(", ")} อาจรวมหลายเรื่องในข้อเดียว</li>}
               </ul>
             )}
             <p className="text-xs text-muted-foreground">
@@ -477,9 +550,12 @@ function Preview({
           {q.helpText && <p className="text-xs text-muted-foreground">{q.helpText}</p>}
           {q.answerType === "RATING" &&
             rubric.map((r) => (
-              <div key={r.score} className="flex items-center gap-2 rounded-xl border border-border px-2 py-1.5">
+              <div key={r.score} className="flex items-start gap-2 rounded-xl border border-border px-2 py-1.5">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent font-bold text-accent-foreground">{r.score}</span>
-                <span>{r.label}</span>
+                <span className="min-w-0">
+                  <span className="block">{r.label}</span>
+                  {q.levels[r.score]?.trim() && <span className="block text-xs text-muted-foreground">{q.levels[r.score]}</span>}
+                </span>
               </div>
             ))}
           {CHOICE.has(q.answerType) &&

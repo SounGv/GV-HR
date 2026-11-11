@@ -44,6 +44,8 @@ export interface QuestionDetail {
   weight: number;
   required: boolean;
   visibleTo: RaterType[];
+  /** RATING only: what each score looks like for this question; null = none written. */
+  levelDescriptions: { score: number; text: string }[] | null;
 }
 
 export interface FormDetail {
@@ -56,6 +58,8 @@ export interface FormDetail {
   ratingMax: number;
   /** One name per score; null = the system's original names. */
   ratingLabels: { score: number; label: string }[] | null;
+  /** The rater must write an example when giving the lowest score. */
+  noteAtLowest: boolean;
   publishedAt: string | null;
   questions: QuestionDetail[];
 }
@@ -70,4 +74,6 @@ export interface QuestionValues {
   weight: number;
   required: boolean;
   visibleTo: RaterType[];
+  /** score -> description text being typed ("" = none). */
+  levels: Record<number, string>;
 }

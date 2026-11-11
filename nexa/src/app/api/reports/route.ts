@@ -15,6 +15,8 @@ export const runtime = "nodejs";
 // payroll:read (e.g. Manager) can't read everyone's payroll through Reports.
 const TYPE_PERMISSION: Partial<Record<string, string>> = {
   payroll: "payroll:read",
+  // Per-topic scores and the examples raters wrote: the same people who manage evaluation rounds.
+  appraisal_detail: "campaign:manage",
 };
 
 export async function GET(req: NextRequest) {

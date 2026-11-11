@@ -2494,6 +2494,8 @@ model AppraisalForm {
   // Scale for RATING questions. Defaults are placeholders until HR confirms the scale.
   ratingMax    Int   @default(5)
   ratingLabels Json? // optional [{ score, label }]; null = the app's default descriptions
+  // A rater who gives the lowest score must write an example of what happened. Off = old behaviour.
+  noteAtLowest Boolean @default(false)
 
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
@@ -2523,6 +2525,9 @@ model AppraisalQuestion {
   // CHOICE / MULTI_CHOICE: [{ value, label }]. Null for every other type.
   options    Json?
   weight     Int                 @default(1) // only used by RATING
+  // RATING only: what each score looks like for this question, e.g. [{ score: 3, text: "..." }].
+  // Null = the form's general score names only.
+  levelDescriptions Json?
   required   Boolean             @default(true)
   // Which rater types see this question; empty = everyone.
   visibleTo  AppraisalRaterType[] @default([])

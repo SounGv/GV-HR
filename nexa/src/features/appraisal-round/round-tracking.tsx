@@ -7,6 +7,7 @@ import { CircleCheck, Clock, ListChecks, PencilLine } from "lucide-react";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { Card } from "@/components/ui/card";
+import { rubricFor } from "@/features/appraisal-form/rating-labels";
 import { cn } from "@/lib/utils";
 import { useParticipantResult, useRoundMatrix } from "./hooks";
 import { ASSIGNMENT_STATUS_LABEL, RATER_LABEL, RESULT_STATUS_LABEL, type AssignmentStatus } from "./types";
@@ -89,6 +90,8 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading || !data) return <TableLoadingState rows={4} />;
   const r = data.data;
+  const rubric = rubricFor(r.ratingMax, r.ratingLabels);
+  const labelOf = new Map(rubric.map((x) => [x.score, x.label]));
 
   return (
     <div className="space-y-4 pb-6">
@@ -140,9 +143,41 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
                     {i + 1}. {s.text}
                   </p>
                   {s.answerType === "RATING" && (
-                    <p className="text-sm tabular-nums">
-                      ค่าเฉลี่ย <b>{s.average ?? "-"}</b> <span className="text-muted-foreground">(จาก {s.count} คน)</span>
-                    </p>
+                    <>
+                      <p className="text-sm tabular-nums">
+                        ค่าเฉลี่ย <b>{s.average ?? "-"}</b> <span className="text-muted-foreground">(จาก {s.count} คน)</span>
+                      </p>
+                      {s.count > 0 && (
+                        <ul className="grid gap-1 text-[13px]" aria-label="จำนวนคนต่อระดับคะแนน">
+                          {s.scores.map((x) => {
+                            const desc = s.levelDescriptions?.find((l) => l.score === x.score)?.text;
+                            return (
+                              <li key={x.score} className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] items-center gap-2" title={desc}>
+                                <span className="truncate">
+                                  <b className="tabular-nums">{x.score}</b> {labelOf.get(x.score) ?? ""}
+                                </span>
+                                <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                                  <span className="block h-full rounded-full bg-[#0d9488]" style={{ width: `${s.count ? (x.count / s.count) * 100 : 0}%` }} />
+                                </span>
+                                <span className="text-muted-foreground tabular-nums">{x.count} คน</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                      {s.notes.length > 0 && (
+                        <ul className="space-y-1.5 text-sm" aria-label="ตัวอย่างเหตุการณ์">
+                          {s.notes.map((n, k) => (
+                            <li key={k} className="flex gap-2 rounded-lg border border-border px-3 py-2">
+                              <span className="shrink-0 rounded-md bg-muted px-1.5 text-xs font-bold tabular-nums">
+                                {n.score} {labelOf.get(n.score) ?? ""}
+                              </span>
+                              <span className="min-w-0 break-words whitespace-pre-wrap">{n.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
                   )}
                   {s.options.length > 0 && (
                     <ul className="space-y-0.5 text-sm">

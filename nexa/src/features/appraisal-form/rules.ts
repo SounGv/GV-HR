@@ -39,6 +39,30 @@ export function formProblems(questions: readonly QuestionDraft[]): string[] {
   return problems;
 }
 
+/** What one score looks like for one question. */
+export interface LevelDescription {
+  score: number;
+  text: string;
+}
+
+/**
+ * Cleans per-score descriptions for a RATING question: trims, drops blanks and
+ * scores outside 1..ratingMax, one entry per score, highest score first.
+ * Returns null when nothing is left (the form's general score names are used).
+ */
+export function cleanLevels(levels: unknown, ratingMax: number): LevelDescription[] | null {
+  if (!Array.isArray(levels)) return null;
+  const by = new Map<number, string>();
+  for (const l of levels) {
+    if (!l || typeof l !== "object") continue;
+    const score = Number((l as { score?: unknown }).score);
+    const text = typeof (l as { text?: unknown }).text === "string" ? (l as { text: string }).text.trim().slice(0, 300) : "";
+    if (Number.isInteger(score) && score >= 1 && score <= ratingMax && text) by.set(score, text);
+  }
+  const out = [...by.entries()].sort((a, b) => b[0] - a[0]).map(([score, text]) => ({ score, text }));
+  return out.length ? out : null;
+}
+
 /** Sum of weights of the questions that count towards the score (RATING only). */
 export const ratingWeightTotal = (questions: readonly QuestionDraft[]): number =>
   questions.filter((q) => q.answerType === "RATING").reduce((sum, q) => sum + q.weight, 0);

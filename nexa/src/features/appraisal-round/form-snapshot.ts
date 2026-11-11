@@ -13,6 +13,8 @@ export interface FormSnap {
   ratingMax: number;
   /** The form's own score names when it had them at opening time; absent = system names. */
   ratingLabels?: unknown;
+  /** The rater must write an example for the lowest score (absent on rounds opened before this existed). */
+  noteAtLowest?: boolean;
   questions: {
     id: string;
     text: string;
@@ -22,6 +24,7 @@ export interface FormSnap {
     weight: number;
     required: boolean;
     visibleTo: string[];
+    levelDescriptions?: { score: number; text: string }[] | null;
   }[];
 }
 

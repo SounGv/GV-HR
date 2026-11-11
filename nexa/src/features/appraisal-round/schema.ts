@@ -22,7 +22,7 @@ export const roundUpdateSchema = z.object({
 });
 
 export const answersSchema = z.object({
-  answers: z.array(z.object({ questionId: z.string().min(1), value: z.unknown() })).max(200),
+  answers: z.array(z.object({ questionId: z.string().min(1), value: z.unknown(), note: z.string().max(2000).optional() })).max(200),
   submit: z.boolean().default(false),
 });
 

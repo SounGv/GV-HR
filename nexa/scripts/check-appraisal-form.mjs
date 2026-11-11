@@ -1,7 +1,7 @@
 // Checks the pure rules of appraisal forms with made-up questions only.
 // Run: node --experimental-strip-types scripts/check-appraisal-form.mjs
 import assert from "node:assert/strict";
-import { formProblems, isEditable, nextVersion, ratingWeightTotal } from "../src/features/appraisal-form/rules.ts";
+import { cleanLevels, formProblems, isEditable, nextVersion, ratingWeightTotal } from "../src/features/appraisal-form/rules.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -50,6 +50,15 @@ check("next version follows the highest existing one", () => {
   assert.equal(nextVersion([]), 1);
   assert.equal(nextVersion([1, 2]), 3);
   assert.equal(nextVersion([3, 1]), 4);
+});
+
+check("score descriptions: trimmed, blanks and out-of-scale scores dropped, highest first", () => {
+  assert.deepEqual(
+    cleanLevels([{ score: 1, text: " ช้า " }, { score: 3, text: "เกินเป้า" }, { score: 2, text: "  " }, { score: 4, text: "นอกสเกล" }], 3),
+    [{ score: 3, text: "เกินเป้า" }, { score: 1, text: "ช้า" }],
+  );
+  assert.equal(cleanLevels([{ score: 2, text: "" }], 3), null);
+  assert.equal(cleanLevels(null, 3), null);
 });
 
 console.log(`\n${n} checks passed`);

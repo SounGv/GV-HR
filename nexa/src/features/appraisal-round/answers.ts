@@ -16,14 +16,19 @@ export interface SnapQuestion {
   required: boolean;
   /** Rater types that see this question; empty means everyone. */
   visibleTo: string[];
+  /** RATING only: what each score looks like for this question (rounds opened before this existed have none). */
+  levelDescriptions?: { score: number; text: string }[] | null;
 }
 
 export interface Answer {
   questionId: string;
   value: AnswerValue;
+  /** RATING only: the example the rater wrote for this score. */
+  note?: string;
 }
 
 export const SHORT_MAX = 500;
+export const NOTE_MAX = 1000;
 export const PARAGRAPH_MAX = 4000;
 
 /** The questions this kind of rater is asked. */
@@ -65,22 +70,33 @@ export function cleanAnswers(
     const q = asked.get(a.questionId);
     if (!q) continue;
     const value = cleanValue(q, a.value, ratingMax);
-    if (value !== null) out.set(q.id, { questionId: q.id, value });
+    if (value === null) continue;
+    const raw = (a as { note?: unknown }).note;
+    const note = q.answerType === "RATING" && typeof raw === "string" ? raw.trim().slice(0, NOTE_MAX) : "";
+    out.set(q.id, note ? { questionId: q.id, value, note } : { questionId: q.id, value });
   }
   return [...out.values()];
 }
+
+/** A lowest-score answer that still needs its example (only when the form asks for one). */
+export const needsNote = (q: SnapQuestion, a: Answer | undefined, noteAtLowest: boolean): boolean =>
+  noteAtLowest && q.answerType === "RATING" && a?.value === 1 && !a.note?.trim();
 
 /** What is still missing before this rater can submit (empty = ready). */
 export function unansweredRequired(
   questions: readonly SnapQuestion[],
   raterType: string,
   answers: readonly Answer[],
+  opts: { noteAtLowest?: boolean } = {},
 ): string[] {
-  const done = new Set(answers.map((a) => a.questionId));
+  const byId = new Map(answers.map((a) => [a.questionId, a]));
   return visibleQuestions(questions, raterType)
     .map((q, i) => ({ q, n: i + 1 }))
-    .filter(({ q }) => q.required && !done.has(q.id))
-    .map(({ n }) => `ข้อ ${n}`);
+    .flatMap(({ q, n }) => {
+      if (q.required && !byId.has(q.id)) return [`ข้อ ${n}`];
+      if (needsNote(q, byId.get(q.id), !!opts.noteAtLowest)) return [`ข้อ ${n} (ต้องมีตัวอย่าง)`];
+      return [];
+    });
 }
 
 export interface QuestionSummary {
@@ -95,6 +111,12 @@ export interface QuestionSummary {
   options: { label: string; count: number }[];
   /** SHORT_TEXT / PARAGRAPH: the written answers, without who wrote them. */
   texts: string[];
+  /** RATING only: how many raters gave each score, highest score first. */
+  scores: { score: number; count: number }[];
+  /** RATING only: the examples raters wrote, with the score they gave (no names). */
+  notes: { score: number; text: string }[];
+  /** RATING only: the question's own score descriptions, frozen with the round. */
+  levelDescriptions: { score: number; text: string }[] | null;
 }
 
 /**
@@ -106,9 +128,11 @@ export function summarizeAnswers(
   questions: readonly SnapQuestion[],
   raterType: string,
   sets: readonly (readonly Answer[])[],
+  ratingMax = 5,
 ): QuestionSummary[] {
   return visibleQuestions(questions, raterType).map((q) => {
-    const values = sets.flatMap((set) => set.filter((a) => a.questionId === q.id).map((a) => a.value));
+    const mine = sets.flatMap((set) => set.filter((a) => a.questionId === q.id));
+    const values = mine.map((a) => a.value);
     const numbers = values.filter((v): v is number => typeof v === "number");
     const picks = new Map<string, number>();
     for (const v of values) {
@@ -123,6 +147,15 @@ export function summarizeAnswers(
       average: q.answerType === "RATING" && numbers.length ? Math.round((numbers.reduce((s, n) => s + n, 0) / numbers.length) * 100) / 100 : null,
       options: isChoice ? (q.options ?? []).map((o) => ({ label: o.label, count: picks.get(o.value) ?? 0 })) : [],
       texts: q.answerType === "SHORT_TEXT" || q.answerType === "PARAGRAPH" ? values.filter((v): v is string => typeof v === "string") : [],
+      scores:
+        q.answerType === "RATING"
+          ? Array.from({ length: ratingMax }, (_, i) => ratingMax - i).map((score) => ({ score, count: numbers.filter((n) => n === score).length }))
+          : [],
+      notes:
+        q.answerType === "RATING"
+          ? mine.filter((a) => typeof a.value === "number" && a.note?.trim()).map((a) => ({ score: a.value as number, text: a.note!.trim() }))
+          : [],
+      levelDescriptions: q.answerType === "RATING" ? (q.levelDescriptions ?? null) : null,
     };
   });
 }

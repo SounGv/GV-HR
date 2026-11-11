@@ -506,7 +506,9 @@ export function ReportView() {
   // the option entirely rather than let someone pick it and hit a 403 (the
   // API enforces the same payroll:read gate independently, see
   // src/app/api/reports/route.ts's TYPE_PERMISSION).
-  const visibleReportTypes = REPORT_TYPES.filter((t) => t !== "payroll" || can("payroll:read"));
+  const visibleReportTypes = REPORT_TYPES.filter(
+    (t) => (t !== "payroll" || can("payroll:read")) && (t !== "appraisal_detail" || can("campaign:manage")),
+  );
 
   // Nav/quick-menu links deep-link here via ?view=<ReportType>, or a
   // comma-joined list of several (e.g. "รายงานการเข้างาน" → /reports?view=attendance,
