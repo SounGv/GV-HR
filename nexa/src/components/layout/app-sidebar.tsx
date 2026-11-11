@@ -238,7 +238,7 @@ export function AppSidebar() {
                     <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
                   </button>
                   {expanded && (
-                    <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 border-l-2 border-sidebar-border pl-3">
+                    <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 w-auto border-l-2 border-sidebar-border pl-3">
                       <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
                     </SidebarGroupContent>
                   )}
