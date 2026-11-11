@@ -3,10 +3,13 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { displayName } from "@/lib/format";
+import { teamScopeFilter } from "@/features/employee/service";
+import { checkOrgMoves } from "./org-tree";
 import type { DepartmentRow, OrgPersonRow, PositionRow } from "./types";
 import type {
   DepartmentCreateInput,
   DepartmentUpdateInput,
+  OrgMovesInput,
   PositionCreateInput,
   PositionUpdateInput,
 } from "./schema";
@@ -42,10 +45,15 @@ export async function listDepartments(companyId: string): Promise<DepartmentRow[
  *
  * "Active" follows the roster convention (ACTIVE or ON_LEAVE, not deleted), so
  * leavers kept on file don't show up as someone's team member.
+ *
+ * Visibility follows the employee directory (`teamScopeFilter`): HR / admin /
+ * Finance see the whole company; everyone else sees themself and their direct
+ * reports only.
  */
-export async function listOrgPeople(companyId: string): Promise<OrgPersonRow[]> {
+export async function listOrgPeople(companyId: string, session: AccessClaims): Promise<OrgPersonRow[]> {
+  const scope = teamScopeFilter(session);
   const rows = await prisma.employee.findMany({
-    where: { companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } },
+    where: { companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] }, ...(scope ?? {}) },
     select: {
       id: true,
       firstName: true,
@@ -67,6 +75,94 @@ export async function listOrgPeople(companyId: string): Promise<OrgPersonRow[]> 
     positionTitle: e.position?.title ?? null,
     gender: e.gender ?? null,
   }));
+}
+
+// ─────────── Org chart edit mode ───────────
+
+type Placement = { departmentId: string | null; managerId: string | null };
+
+/**
+ * Saves the org chart's edit mode (HR / admin): each listed employee gets the
+ * given department and direct manager — the manager is who approves their
+ * leave / OT. Everything is validated before anything is written: employees,
+ * departments and managers must be live records of this company, nobody may
+ * manage themself, and the moves together must not create a manager loop.
+ * Only fields that actually change are written, in one transaction, then one
+ * audit entry per changed employee (after commit: the pool has one
+ * connection, so `writeAudit` cannot run beside the open transaction).
+ */
+export async function applyOrgMoves(
+  companyId: string,
+  session: AccessClaims,
+  input: OrgMovesInput,
+  meta?: Meta,
+): Promise<{ updated: number }> {
+  // One read of every live employee: needed to walk manager chains for loops.
+  const everyone = await prisma.employee.findMany({
+    where: { companyId, deletedAt: null },
+    select: { id: true, firstName: true, lastName: true, nickname: true, departmentId: true, managerId: true },
+  });
+  const byId = new Map(everyone.map((e) => [e.id, e]));
+  const nameOf = (id: string) => {
+    const e = byId.get(id);
+    return e ? displayName(e) : "ไม่ทราบชื่อ";
+  };
+
+  for (const m of input.moves) {
+    if (!byId.has(m.employeeId)) throw NotFound("ไม่พบพนักงานบางคนในรายการ อาจถูกลบไปแล้ว กรุณารีเฟรชหน้า");
+    if (m.managerId && !byId.has(m.managerId)) {
+      throw BadRequest(`ไม่พบหัวหน้าที่เลือกให้ ${nameOf(m.employeeId)} อาจถูกลบไปแล้ว กรุณารีเฟรชหน้า`);
+    }
+  }
+  const deptIds = [...new Set(input.moves.map((m) => m.departmentId).filter((id): id is string => !!id))];
+  if (deptIds.length > 0) {
+    const found = await prisma.department.count({ where: { companyId, deletedAt: null, id: { in: deptIds } } });
+    if (found !== deptIds.length) throw BadRequest("ไม่พบแผนกที่เลือก หรือแผนกถูกลบไปแล้ว กรุณารีเฟรชหน้า");
+  }
+
+  const problem = checkOrgMoves(everyone, input.moves);
+  if (problem?.kind === "duplicate") throw BadRequest(`มี ${nameOf(problem.employeeId)} ซ้ำในรายการ`);
+  if (problem?.kind === "self") throw BadRequest(`ตั้ง ${nameOf(problem.employeeId)} เป็นหัวหน้าของตัวเองไม่ได้`);
+  if (problem?.kind === "cycle") {
+    const chain = [...problem.ids, problem.ids[0]].map(nameOf).join(" → ");
+    throw BadRequest(`บันทึกไม่ได้ เพราะหัวหน้าจะวนกันเอง: ${chain}`);
+  }
+
+  const changes = input.moves.flatMap((m) => {
+    const cur = byId.get(m.employeeId)!;
+    const data: Partial<Placement> = {};
+    if (cur.departmentId !== m.departmentId) data.departmentId = m.departmentId;
+    if (cur.managerId !== m.managerId) data.managerId = m.managerId;
+    if (Object.keys(data).length === 0) return [];
+    const before: Placement = { departmentId: cur.departmentId, managerId: cur.managerId };
+    const after: Placement = { departmentId: m.departmentId, managerId: m.managerId };
+    return [{ id: m.employeeId, data, before, after }];
+  });
+  if (changes.length === 0) return { updated: 0 };
+
+  // Sequential on purpose: the connection pool is 1 (no Promise.all).
+  await prisma.$transaction(
+    async (tx) => {
+      for (const c of changes) {
+        await tx.employee.update({ where: { id: c.id }, data: { ...c.data, updatedById: session.sub }, select: { id: true } });
+      }
+    },
+    { maxWait: 10_000, timeout: 30_000 },
+  );
+
+  for (const c of changes) {
+    await writeAudit({
+      companyId,
+      actorUserId: session.sub,
+      action: "employee.org_move",
+      entity: "Employee",
+      entityId: c.id,
+      before: c.before,
+      after: c.after,
+      ...meta,
+    });
+  }
+  return { updated: changes.length };
 }
 
 async function assertCodeFree(companyId: string, code: string, exceptId?: string) {

@@ -1,14 +1,19 @@
-// Checks the pure org chart rules (divisions, ฝ่ายอื่นๆ, heads, leads, data issues) with made-up data only.
+// Checks the pure org chart rules (divisions, ฝ่ายอื่นๆ, heads, leads, data issues, edit-mode moves) with made-up data only.
 // Run: node --experimental-strip-types scripts/check-org-tree.mjs
 import assert from "node:assert/strict";
 import {
   OTHER_KEY,
+  applyOrgMoves,
   buildCompanyTree,
   buildDivisionPeople,
+  checkOrgMoves,
   detectOrgIssues,
+  divisionColumns,
   divisionHead,
+  findManagerCycle,
   hasOrgIssues,
   looksLikeSameDept,
+  planOrgDrop,
 } from "../src/features/organization/org-tree.ts";
 
 let n = 0;
@@ -203,6 +208,89 @@ check("data issues: orphan, duplicate, test dept, no department, no manager", ()
 check("clean data has no issues", () => {
   const issues = detectOrgIssues([dept("a", "ฝ่าย A")], []);
   assert.equal(hasOrgIssues(issues), false);
+});
+
+// ─────────── Editing: moves, loops, drops ───────────
+
+check("a manager loop made by the moves is rejected; an old loop elsewhere is not", () => {
+  // whLead → boss today; making boss report to w1 (who reports to whLead) closes a loop.
+  const problem = checkOrgMoves(people, [{ employeeId: "boss", departmentId: "log", managerId: "w1" }]);
+  assert.equal(problem?.kind, "cycle");
+  assert.deepEqual(problem.ids, ["boss", "w1", "whLead"]);
+  // An existing A ↔ B loop does not block moving C, nor a department-only move of A.
+  const loop = [...people, person("A", "wh", "B"), person("B", "wh", "A"), person("C", "wh", "A")];
+  assert.equal(checkOrgMoves(loop, [{ employeeId: "C", departmentId: "tr", managerId: "trLead" }]), null);
+  assert.equal(checkOrgMoves(loop, [{ employeeId: "A", departmentId: "tr", managerId: "B" }]), null);
+  // Two moves that only loop together are caught too.
+  const pair = checkOrgMoves(people, [
+    { employeeId: "w1", departmentId: "wh", managerId: "t1" },
+    { employeeId: "t1", departmentId: "tr", managerId: "w1" },
+  ]);
+  assert.equal(pair?.kind, "cycle");
+});
+
+check("self as manager and the same person twice are rejected", () => {
+  assert.deepEqual(checkOrgMoves(people, [{ employeeId: "w1", departmentId: "wh", managerId: "w1" }]), {
+    kind: "self",
+    employeeId: "w1",
+  });
+  const dup = checkOrgMoves(people, [
+    { employeeId: "w1", departmentId: "wh", managerId: "whLead" },
+    { employeeId: "w1", departmentId: "tr", managerId: "trLead" },
+  ]);
+  assert.equal(dup?.kind, "duplicate");
+  assert.equal(findManagerCycle(people, ["w1", "t1"]), null);
+});
+
+check("dropping on a members zone: new department, reports to that column's lead (or the head)", () => {
+  const log = buildCompanyTree(depts, people).divisions[0];
+  assert.deepEqual(planOrgDrop(log, people, "w1", { deptId: "tr", slot: "member" }), [
+    { employeeId: "w1", departmentId: "tr", managerId: "trLead" },
+  ]);
+  // The root column has no lead → the division head.
+  assert.deepEqual(planOrgDrop(log, people, "loner", { deptId: "log", slot: "member" }), [
+    { employeeId: "loner", departmentId: "log", managerId: "boss" },
+  ]);
+  // Dropping where they already are changes nothing.
+  assert.deepEqual(planOrgDrop(log, people, "w1", { deptId: "wh", slot: "member" }), []);
+  // The head dropped into a column never reports to themself.
+  const headMove = planOrgDrop(log, people, "boss", { deptId: "log", slot: "member" });
+  assert.ok(headMove.every((m) => m.managerId !== m.employeeId));
+});
+
+check("dropping on a lead slot re-points the old lead's reports and the unmanaged, not the head", () => {
+  const log = buildCompanyTree(depts, people).divisions[0];
+  const moves = planOrgDrop(log, people, "w1", { deptId: "tr", slot: "lead" });
+  const byId = Object.fromEntries(moves.map((m) => [m.employeeId, m]));
+  assert.deepEqual(byId.w1, { employeeId: "w1", departmentId: "tr", managerId: "boss" });
+  assert.equal(byId.t1.managerId, "w1"); // reported to the old lead trLead
+  assert.equal(byId.loner.managerId, "w1"); // had no manager at all
+  assert.equal(byId.trLead, undefined); // the old lead keeps their own manager
+  assert.equal(byId.boss, undefined);
+  assert.equal(moves.length, 3);
+  // Applied, the column's lead is the new person and nothing loops.
+  const after = applyOrgMoves(people, moves);
+  assert.equal(checkOrgMoves(people, moves), null);
+  const tr = buildDivisionPeople(log, after).teams.find((t) => t.deptId === "tr");
+  assert.equal(tr.lead.person.id, "w1");
+});
+
+check("a lead-slot drop never makes the person's own managers report to them", () => {
+  // No division head: x1 has nobody above inside the division, and x2 reports to x1.
+  const d = [dept("div", "ฝ่าย Q"), dept("q1", "แผนก Q1", "div"), dept("q2", "แผนก Q2", "div")];
+  const p = [person("x1", "q1"), person("x2", "q1", "x1"), person("y1", "q2"), person("y2", "q2", "y1")];
+  const div = buildCompanyTree(d, p).divisions[0];
+  assert.equal(buildDivisionPeople(div, p).heads.length, 0);
+  const moves = planOrgDrop(div, p, "x2", { deptId: "q1", slot: "lead" });
+  assert.equal(moves.find((m) => m.employeeId === "x1"), undefined);
+  assert.equal(checkOrgMoves(p, moves), null);
+});
+
+check("edit mode keeps empty columns so every department is a drop target", () => {
+  const log = buildCompanyTree(depts, people).divisions[0];
+  assert.equal(buildDivisionPeople(log, people).teams.some((t) => t.deptId === "log"), false);
+  const all = buildDivisionPeople(log, people, { includeEmpty: true });
+  assert.deepEqual(all.teams.map((t) => t.deptId), divisionColumns(log).map((c) => c.id));
 });
 
 console.log(`\n${n} checks passed`);

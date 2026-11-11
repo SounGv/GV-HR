@@ -26,6 +26,9 @@
  *   employee) and nobody under them, who are not the head. People whose manager
  *   is in another division stay in their department column. Not used for ฝ่ายอื่นๆ.
  * - managerId loops (A → B → A) never hang: every walk keeps a visited set.
+ * - Editing (org-edit-mock.html): {@link planOrgDrop} turns a drop into new
+ *   department + manager placements, {@link checkOrgMoves} rejects a person as
+ *   their own manager or a new manager loop (the API runs the same check).
  */
 
 export const OTHER_KEY = "__other";
@@ -225,8 +228,21 @@ export interface DivisionPeople {
 
 const byPersonName = (a: OrgPerson, b: OrgPerson) => a.name.localeCompare(b.name, "th");
 
-/** The reporting-line view of one division: heads, one column per department, and the unassigned box. */
-export function buildDivisionPeople(division: Division, people: OrgPerson[]): DivisionPeople {
+/** The division's department columns in display order: the root first (not for ฝ่ายอื่นๆ), then its sub-departments. */
+export function divisionColumns(division: Division): { id: string; name: string }[] {
+  const subs = division.departments.map((d) => ({ id: d.id, name: d.name }));
+  return division.isOther ? subs : [{ id: division.key, name: division.name }, ...subs];
+}
+
+/**
+ * The reporting-line view of one division: heads, one column per department, and the unassigned box.
+ * `includeEmpty` keeps columns with nobody to show (the chart's edit mode needs every column as a drop target).
+ */
+export function buildDivisionPeople(
+  division: Division,
+  people: OrgPerson[],
+  opts: { includeEmpty?: boolean } = {},
+): DivisionPeople {
   const deptSet = new Set(division.deptIds);
   const allIds = new Set(people.map((p) => p.id));
   const members = people.filter((p) => p.departmentId && deptSet.has(p.departmentId));
@@ -260,15 +276,11 @@ export function buildDivisionPeople(division: Division, people: OrgPerson[]): Di
     if (!headIds.has(c.person.id) && !leadCandidates.has(c.person.departmentId!)) leadCandidates.set(c.person.departmentId!, c);
   }
 
-  const columnOrder: { id: string; name: string }[] = division.isOther
-    ? division.departments.map((d) => ({ id: d.id, name: d.name }))
-    : [{ id: division.key, name: division.name }, ...division.departments.map((d) => ({ id: d.id, name: d.name }))];
-
   const teams: TeamColumn[] = [];
-  for (const col of columnOrder) {
+  for (const col of divisionColumns(division)) {
     const inDept = members.filter((p) => p.departmentId === col.id);
     const shown = inDept.filter((p) => !headIds.has(p.id) && !unassignedIds.has(p.id));
-    if (shown.length === 0) continue;
+    if (shown.length === 0 && !opts.includeEmpty) continue;
     // A top person with a team who sits here leads it; otherwise the member
     // with the most people of this department under them.
     let lead: PersonNode | null = leadCandidates.get(col.id) ?? null;
@@ -409,4 +421,146 @@ export function hasOrgIssues(i: OrgIssues): boolean {
     i.noManager > 0 ||
     i.managerLoop > 0
   );
+}
+
+// ─────────── Editing the chart (HR moves people between columns) ───────────
+
+/** Where one person sits: department and direct manager (what approvals follow). */
+export interface OrgPlacement {
+  departmentId: string | null;
+  managerId: string | null;
+}
+
+/** One person's new placement, as sent to POST /api/org/moves. */
+export interface OrgMove extends OrgPlacement {
+  employeeId: string;
+}
+
+type Placed = { id: string } & OrgPlacement;
+
+/** People with each move applied (moves for unknown ids are ignored; later moves win). */
+export function applyOrgMoves<T extends Placed>(people: T[], moves: readonly OrgMove[]): T[] {
+  if (moves.length === 0) return people;
+  const byId = new Map(moves.map((m) => [m.employeeId, m]));
+  return people.map((p) => {
+    const m = byId.get(p.id);
+    return m ? { ...p, departmentId: m.departmentId, managerId: m.managerId } : p;
+  });
+}
+
+/**
+ * The first manager loop that passes through one of `startIds`, as the ids
+ * along it (start first), or null. Loops elsewhere (old data the moves did not
+ * touch) are ignored; every walk keeps a visited set so it always ends.
+ */
+export function findManagerCycle(people: Placed[], startIds: Iterable<string>): string[] | null {
+  const managerOf = new Map(people.map((p) => [p.id, p.managerId]));
+  for (const start of startIds) {
+    const path = [start];
+    const seen = new Set(path);
+    let cur = managerOf.get(start) ?? null;
+    while (cur) {
+      if (cur === start) return path;
+      if (seen.has(cur)) break;
+      seen.add(cur);
+      path.push(cur);
+      cur = managerOf.get(cur) ?? null;
+    }
+  }
+  return null;
+}
+
+export type OrgMoveProblem =
+  | { kind: "duplicate"; employeeId: string }
+  | { kind: "self"; employeeId: string }
+  | { kind: "cycle"; ids: string[] };
+
+/**
+ * What would go wrong if `moves` were saved on top of `people`: the same person
+ * twice, someone as their own manager, or a manager loop. Only people whose
+ * manager actually changes are walked, so an old loop elsewhere never blocks a
+ * plain department move.
+ */
+export function checkOrgMoves(people: Placed[], moves: readonly OrgMove[]): OrgMoveProblem | null {
+  const ids = new Set<string>();
+  for (const m of moves) {
+    if (ids.has(m.employeeId)) return { kind: "duplicate", employeeId: m.employeeId };
+    ids.add(m.employeeId);
+    if (m.managerId === m.employeeId) return { kind: "self", employeeId: m.employeeId };
+  }
+  const managerBefore = new Map(people.map((p) => [p.id, p.managerId]));
+  const changed = moves.filter((m) => managerBefore.get(m.employeeId) !== m.managerId).map((m) => m.employeeId);
+  const cycle = findManagerCycle(applyOrgMoves(people, moves), changed);
+  return cycle ? { kind: "cycle", ids: cycle } : null;
+}
+
+/** A drop target in a division's edit mode: a column's lead slot or its members zone. */
+export interface OrgDropTarget {
+  deptId: string;
+  slot: "lead" | "member";
+}
+
+/**
+ * The placements a drop (or the "ย้ายไป…" select) causes, given the chart as it
+ * looks now (`people` already has earlier pending moves applied). Only people
+ * whose placement changes are returned.
+ *
+ * - Member zone: the person joins the column's department and reports to the
+ *   column's lead; with no lead (or when the lead is the person), to the
+ *   division head; if that is the person too, their manager stays.
+ * - Lead slot: the person joins the department and reports to the division head
+ *   (unchanged when there is none or it is the person). Everyone else in that
+ *   column who reported to the old lead, or has no manager inside the division,
+ *   now reports to the person. Division heads and the person's own managers
+ *   (chain above them) are never re-pointed, so no loop comes from this rule.
+ *   The old lead keeps their own manager (HR can drop them on the members zone).
+ */
+export function planOrgDrop(
+  division: Division,
+  people: OrgPerson[],
+  personId: string,
+  target: OrgDropTarget,
+): OrgMove[] {
+  const byId = new Map(people.map((p) => [p.id, p]));
+  const person = byId.get(personId);
+  if (!person) return [];
+  const view = buildDivisionPeople(division, people, { includeEmpty: true });
+  const headId = view.heads[0]?.person.id ?? null;
+  const leadId = view.teams.find((t) => t.deptId === target.deptId)?.lead?.person.id ?? null;
+
+  const next = new Map<string, OrgPlacement>();
+  if (target.slot === "member") {
+    let managerId = person.managerId;
+    if (leadId && leadId !== personId) managerId = leadId;
+    else if (headId && headId !== personId) managerId = headId;
+    next.set(personId, { departmentId: target.deptId, managerId });
+  } else {
+    const managerId = headId && headId !== personId ? headId : person.managerId;
+    next.set(personId, { departmentId: target.deptId, managerId });
+
+    // The person's own chain after the change: those must not report to them.
+    const moved = applyOrgMoves(people, [{ employeeId: personId, departmentId: target.deptId, managerId }]);
+    const managerOf = new Map(moved.map((p) => [p.id, p.managerId]));
+    const above = new Set<string>();
+    for (let cur = managerOf.get(personId) ?? null; cur && cur !== personId && !above.has(cur); cur = managerOf.get(cur) ?? null) {
+      above.add(cur);
+    }
+
+    const memberIds = new Set(view.members.map((p) => p.id));
+    const headIds = new Set(view.heads.map((h) => h.person.id));
+    for (const x of view.members) {
+      if (x.id === personId || x.departmentId !== target.deptId || headIds.has(x.id) || above.has(x.id)) continue;
+      const reportedToOldLead = leadId !== null && leadId !== personId && x.managerId === leadId;
+      const noManagerInside = !x.managerId || x.managerId === x.id || !memberIds.has(x.managerId);
+      if (reportedToOldLead || noManagerInside) next.set(x.id, { departmentId: x.departmentId, managerId: personId });
+    }
+  }
+
+  const out: OrgMove[] = [];
+  for (const [employeeId, p] of next) {
+    const cur = byId.get(employeeId);
+    if (cur && cur.departmentId === p.departmentId && cur.managerId === p.managerId) continue;
+    out.push({ employeeId, ...p });
+  }
+  return out;
 }

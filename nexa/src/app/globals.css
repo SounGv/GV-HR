@@ -559,7 +559,10 @@
    load (the hero glow drifts slowly); reduced motion turns all of it off. */
 .gv-hero {
   position: relative;
+  /* clip, not hidden: a hidden box can still be scrolled when a button inside
+     gets focus, which pushed the title out of view in org-chart edit mode. */
   overflow: hidden;
+  overflow: clip;
   isolation: isolate;
   border-radius: 22px;
   color: #fff;

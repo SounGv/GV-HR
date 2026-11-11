@@ -1,31 +1,57 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
-import { AlertTriangle, Building2, Users } from "lucide-react";
+import { AlertTriangle, Building2, Check, Pencil, Users } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { useAuth } from "@/features/auth/auth-context";
+import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
-import { useOrgPeople } from "./hooks";
+import { useOrgPeople, useSaveOrgMoves } from "./hooks";
 import {
+  ConfirmMovesDialog,
+  DropHint,
+  DropZone,
+  EditableRow,
+  MovedTag,
+  OrgEditContext,
+  PendingTray,
+  useOrgEdit,
+  type MoveRow,
+  type OrgEditState,
+} from "./org-edit";
+import {
+  applyOrgMoves,
   buildCompanyTree,
   buildDivisionPeople,
+  checkOrgMoves,
   detectOrgIssues,
+  divisionColumns,
   divisionHead,
   hasOrgIssues,
   OTHER_MAX_PEOPLE,
+  planOrgDrop,
   type CompanyTree,
   type Division,
+  type OrgDropTarget,
   type OrgIssues,
+  type OrgMove,
+  type OrgMoveProblem,
   type OrgPerson,
+  type OrgPlacement,
   type PersonNode,
   type TeamColumn,
 } from "./org-tree";
 import type { DepartmentRow } from "./types";
+
+/** The API takes at most this many people per save. */
+const MAX_MOVES = 100;
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties;
 
@@ -57,6 +83,42 @@ export function OrgChart({ departments, companyName }: { departments: Department
   const [divisionKey, setDivisionKey] = useState<string | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
+  // Edit mode (HR / admin): pending placements by employee id, only ones that differ from the saved data.
+  const { can } = useAuth();
+  const canEdit = can("employee:update");
+  const [editing, setEditing] = useState(false);
+  const [pending, setPending] = useState<ReadonlyMap<string, OrgPlacement>>(() => new Map());
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const saveMoves = useSaveOrgMoves();
+
+  const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
+  const pendingMoves = useMemo<OrgMove[]>(
+    () =>
+      [...pending]
+        .filter(([id, p]) => {
+          const cur = byId.get(id);
+          return cur && (cur.departmentId !== p.departmentId || cur.managerId !== p.managerId);
+        })
+        .map(([employeeId, p]) => ({ employeeId, ...p })),
+    [pending, byId],
+  );
+  // While editing, the division view shows the chart as it will be after saving.
+  const shownPeople = useMemo(
+    () => (editing ? applyOrgMoves(people, pendingMoves) : people),
+    [editing, people, pendingMoves],
+  );
+  const moveRows = useMemo<MoveRow[]>(() => {
+    const deptName = new Map(departments.map((d) => [d.id, d.name]));
+    const label = (p: OrgPlacement) => ({
+      dept: p.departmentId ? (deptName.get(p.departmentId) ?? "แผนกที่ถูกลบ") : "ไม่มีแผนก",
+      manager: p.managerId ? (byId.get(p.managerId)?.name ?? "หัวหน้านอกรายชื่อ") : "ไม่มีหัวหน้า",
+    });
+    return pendingMoves.map((m) => {
+      const cur = byId.get(m.employeeId)!;
+      return { id: m.employeeId, name: cur.name, before: label(cur), after: label(m) };
+    });
+  }, [pendingMoves, departments, byId]);
+
   if (departments.length === 0) {
     return <EmptyState icon={Building2} title="ยังไม่มีโครงสร้างองค์กร" description="เพิ่มฝ่ายและแผนกในแท็บ ฝ่าย / แผนก" />;
   }
@@ -64,12 +126,59 @@ export function OrgChart({ departments, companyName }: { departments: Department
   if (peopleQuery.isError) return <ErrorState onRetry={() => peopleQuery.refetch()} />;
 
   const selected = tree.divisions.find((d) => d.key === divisionKey) ?? tree.divisions[0];
+  const isEditing = canEdit && editing && view === "division" && !!selected;
 
   function openDivision(key: string) {
     setDivisionKey(key);
     setView("division");
     topRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
+
+  function toggleEdit() {
+    if (editing && pendingMoves.length > 0) {
+      toast.info(`ยังไม่ได้บันทึก ${pendingMoves.length} รายการ · กด “แก้ไขผัง” เพื่อกลับไปตรวจและบันทึก`);
+    }
+    setEditing((v) => !v);
+  }
+
+  /** Stage what a drop / "ย้ายไป…" pick does, unless it would loop or exceed one save. */
+  function move(personId: string, target: OrgDropTarget) {
+    if (!selected) return;
+    const planned = planOrgDrop(selected, shownPeople, personId, target);
+    if (planned.length === 0) return;
+    const next = new Map(pendingMoves.map((m) => [m.employeeId, { departmentId: m.departmentId, managerId: m.managerId }]));
+    for (const m of planned) {
+      const cur = byId.get(m.employeeId);
+      if (cur && cur.departmentId === m.departmentId && cur.managerId === m.managerId) next.delete(m.employeeId);
+      else next.set(m.employeeId, { departmentId: m.departmentId, managerId: m.managerId });
+    }
+    const problem = checkOrgMoves(people, [...next].map(([employeeId, p]) => ({ employeeId, ...p })));
+    if (problem) {
+      toast.error(problemText(problem, byId));
+      return;
+    }
+    if (next.size > MAX_MOVES) {
+      toast.error(`แก้ได้ครั้งละไม่เกิน ${MAX_MOVES} คน · กด “ตรวจและบันทึก” ก่อน แล้วค่อยแก้ต่อ`);
+      return;
+    }
+    setPending(next);
+  }
+
+  async function save() {
+    try {
+      const res = await saveMoves.mutateAsync(pendingMoves);
+      toast.success(`บันทึกผังแล้ว · แก้ข้อมูลพนักงาน ${res.data.updated} คน`);
+      setPending(new Map());
+      setConfirmOpen(false);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ กรุณาลองใหม่");
+    }
+  }
+
+  const editState: OrgEditState | null =
+    isEditing && selected
+      ? { columns: divisionColumns(selected), moved: new Set(pendingMoves.map((m) => m.employeeId)), move }
+      : null;
 
   return (
     <div ref={topRef} className="grid scroll-mt-4 gap-5">
@@ -104,12 +213,47 @@ export function OrgChart({ departments, companyName }: { departments: Department
       {view === "company" ? (
         <CompanyView tree={tree} people={people} issues={issues} companyName={companyName} onOpen={openDivision} />
       ) : selected ? (
-        <DivisionView tree={tree} division={selected} people={people} onSelect={setDivisionKey} />
+        <OrgEditContext.Provider value={editState}>
+          <DivisionView
+            tree={tree}
+            division={selected}
+            people={isEditing ? shownPeople : people}
+            onSelect={setDivisionKey}
+            editButton={canEdit ? { editing: isEditing, onToggle: toggleEdit } : null}
+          />
+        </OrgEditContext.Provider>
       ) : (
         <EmptyState icon={Building2} title="ยังไม่มีฝ่าย" />
       )}
+
+      {isEditing && (
+        <>
+          {/* Room so the tray never covers the last row. */}
+          {moveRows.length > 0 && <div aria-hidden="true" className="h-40" />}
+          <PendingTray rows={moveRows} onUndoAll={() => setPending(new Map())} onReview={() => setConfirmOpen(true)} />
+          <ConfirmMovesDialog
+            open={confirmOpen && moveRows.length > 0}
+            onOpenChange={setConfirmOpen}
+            rows={moveRows}
+            saving={saveMoves.isPending}
+            onSave={save}
+          />
+        </>
+      )}
     </div>
   );
+}
+
+function problemText(problem: OrgMoveProblem, byId: Map<string, OrgPerson>): string {
+  const name = (id: string) => byId.get(id)?.name ?? "พนักงานนอกรายชื่อ";
+  switch (problem.kind) {
+    case "self":
+      return `ตั้ง ${name(problem.employeeId)} เป็นหัวหน้าของตัวเองไม่ได้`;
+    case "duplicate":
+      return `มี ${name(problem.employeeId)} ซ้ำในรายการ`;
+    case "cycle":
+      return `ย้ายแบบนี้ไม่ได้ เพราะหัวหน้าจะวนกันเอง: ${[...problem.ids, problem.ids[0]].map(name).join(" → ")}`;
+  }
 }
 
 // ─────────── ทั้งบริษัท ───────────
@@ -283,13 +427,20 @@ function DivisionView({
   division,
   people,
   onSelect,
+  editButton,
 }: {
   tree: CompanyTree;
   division: Division;
   people: OrgPerson[];
   onSelect: (key: string) => void;
+  /** Shown only to HR / admin (employee:update). */
+  editButton: { editing: boolean; onToggle: () => void } | null;
 }) {
-  const view = useMemo(() => buildDivisionPeople(division, people), [division, people]);
+  const editing = useOrgEdit() !== null;
+  const view = useMemo(
+    () => buildDivisionPeople(division, people, { includeEmpty: editing }),
+    [division, people, editing],
+  );
 
   return (
     <section className="grid gap-[18px]" aria-label="ผังรายฝ่าย">
@@ -324,6 +475,24 @@ function DivisionView({
               ? "รวมฝ่ายเล็กที่ไม่มีแผนกย่อย · สายบังคับบัญชาจาก “หัวหน้า” ในข้อมูลพนักงาน"
               : "ผังสายบังคับบัญชาจาก “หัวหน้า” ที่ตั้งไว้ในข้อมูลพนักงาน"}
           </p>
+          {editButton && (
+            <button
+              type="button"
+              aria-pressed={editButton.editing}
+              onClick={editButton.onToggle}
+              className={cn(
+                "mt-3 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-[13.5px] font-bold transition-[translate,background-color] duration-200 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 md:h-9",
+                editButton.editing ? "bg-[#CDEB03] text-[#131516]" : "bg-white text-[#0f766e]",
+              )}
+            >
+              {editButton.editing ? (
+                <Check className="size-4" aria-hidden="true" />
+              ) : (
+                <Pencil className="size-4" aria-hidden="true" />
+              )}
+              {editButton.editing ? "เสร็จ" : "แก้ไขผัง"}
+            </button>
+          )}
         </div>
         <div className="grid grid-cols-3 gap-2.5">
           <HeroStat label="พนักงาน" value={view.members.length} />
@@ -331,6 +500,19 @@ function DivisionView({
           <HeroStat label="หัวหน้าแผนก" value={view.leadCount} />
         </div>
       </div>
+
+      {editing && (
+        <div
+          role="note"
+          className="flex items-start gap-2.5 rounded-[14px] border border-[#fde68a] bg-[#fffbeb] px-4 py-2.5 text-[13px] text-[#713f12] dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+        >
+          <span aria-hidden="true">⇅</span>
+          <span>
+            <b>โหมดแก้ไข:</b> ลากชื่อไปวางที่ช่อง “หัวหน้าทีม” หรือ “สมาชิก” ของแผนกที่ต้องการ หรือกดปุ่ม ⇄ ข้างชื่อแล้วเลือก
+            “ย้ายไป…” · ยังไม่บันทึกจนกว่าจะกด “ตรวจและบันทึก”
+          </span>
+        </div>
+      )}
 
       {view.members.length === 0 ? (
         <EmptyState icon={Users} title="ยังไม่มีพนักงานในฝ่ายนี้" />
@@ -371,9 +553,11 @@ function DivisionView({
           {view.unassigned.length > 0 && <UnassignedBox people={view.unassigned} />}
         </Card>
       )}
-      <p className="text-[12.5px] text-muted-foreground">
-        กดชื่อคนเพื่อเปิดข้อมูลพนักงาน · คนที่ยังไม่ได้ตั้งหัวหน้าจะขึ้นแยกในกล่อง “ยังไม่ระบุหัวหน้า” ท้ายผัง
-      </p>
+      {!editing && (
+        <p className="text-[12.5px] text-muted-foreground">
+          กดชื่อคนเพื่อเปิดข้อมูลพนักงาน · คนที่ยังไม่ได้ตั้งหัวหน้าจะขึ้นแยกในกล่อง “ยังไม่ระบุหัวหน้า” ท้ายผัง
+        </p>
+      )}
     </section>
   );
 }
@@ -388,34 +572,69 @@ function HeroStat({ label, value }: { label: string; value: number }) {
 }
 
 function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: boolean }) {
+  const edit = useOrgEdit();
   const p = node.person;
+  const className = cn(
+    "flex min-w-0 items-center gap-2.5 rounded-[14px] border bg-card px-3.5 py-2.5 transition-colors",
+    top
+      ? "border-[#99f6e4] shadow-[0_0_0_3px_#ccfbf1,var(--card-shadow)] hover:border-[#0d9488] sm:min-w-[230px] dark:border-primary/40 dark:shadow-none"
+      : "border-[#e6f4f1] bg-[#f8fdfc] hover:border-[#99f6e4] dark:border-border dark:bg-accent/40",
+  );
+  const avatar = (
+    <PersonAvatar name={p.name} gender={p.gender ?? null} seed={p.id} className={top ? "size-11 text-sm" : undefined} />
+  );
+  const text = (moved: boolean) => (
+    <span className="min-w-0">
+      <b className="block truncate text-sm leading-snug">{p.name}</b>
+      <Subtitle moved={moved} className="text-xs">
+        {p.positionTitle ?? "ไม่ระบุตำแหน่ง"}
+      </Subtitle>
+    </span>
+  );
+  const tagEl = (
+    <span className="shrink-0 rounded-full bg-[#ccfbf1] px-2 text-[11px] font-bold whitespace-nowrap text-[#0f766e] tabular-nums dark:bg-accent dark:text-primary">
+      {tag}
+    </span>
+  );
+
+  if (edit) {
+    return (
+      <EditableRow person={p} className={cn(className, "gap-2 px-2.5 py-2")} trailing={tagEl}>
+        {(moved) => (
+          <>
+            {avatar}
+            {text(moved)}
+          </>
+        )}
+      </EditableRow>
+    );
+  }
   return (
-    <Link
-      href={employeeHref(p.id)}
-      className={cn(
-        "flex min-w-0 items-center gap-2.5 rounded-[14px] border bg-card px-3.5 py-2.5 transition-colors",
-        top
-          ? "border-[#99f6e4] shadow-[0_0_0_3px_#ccfbf1,var(--card-shadow)] hover:border-[#0d9488] sm:min-w-[230px] dark:border-primary/40 dark:shadow-none"
-          : "border-[#e6f4f1] bg-[#f8fdfc] hover:border-[#99f6e4] dark:border-border dark:bg-accent/40",
-      )}
-    >
-      <PersonAvatar name={p.name} gender={p.gender ?? null} seed={p.id} className={top ? "size-11 text-sm" : undefined} />
-      <span className="min-w-0">
-        <b className="block truncate text-sm leading-snug">{p.name}</b>
-        <small className="block truncate text-xs text-muted-foreground">{p.positionTitle ?? "ไม่ระบุตำแหน่ง"}</small>
-      </span>
-      <span className="ml-auto shrink-0 rounded-full bg-[#ccfbf1] px-2 text-[11px] font-bold whitespace-nowrap text-[#0f766e] tabular-nums dark:bg-accent dark:text-primary">
-        {tag}
-      </span>
+    <Link href={employeeHref(p.id)} className={className}>
+      {avatar}
+      {text(false)}
+      <span className="ml-auto">{tagEl}</span>
     </Link>
+  );
+}
+
+/** Position line under a name; in edit mode a moved person also gets the ย้ายแล้ว word. */
+function Subtitle({ moved, className, children }: { moved: boolean; className?: string; children: ReactNode }) {
+  return (
+    <small className={cn("flex min-w-0 items-center gap-1 text-muted-foreground", className)}>
+      {moved && <MovedTag />}
+      <span className="min-w-0 truncate">{children}</span>
+    </small>
   );
 }
 
 const MEMBERS_SHOWN = 4;
 
 function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
+  const edit = useOrgEdit();
   const [expanded, setExpanded] = useState(false);
-  const shown = expanded ? team.members : team.members.slice(0, MEMBERS_SHOWN);
+  // Edit mode shows everyone: a collapsed list would hide people HR needs to drag.
+  const shown = expanded || edit ? team.members : team.members.slice(0, MEMBERS_SHOWN);
   const hidden = team.members.length - shown.length;
   return (
     <div className="gv-rise overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]" style={rise(index)}>
@@ -425,21 +644,32 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
           {team.count}
         </span>
       </div>
-      {team.lead && (
-        <div className="border-b border-dashed border-border p-2.5">
-          <PersonCard node={team.lead} tag={`ดูแล ${team.lead.under} คน`} />
-        </div>
+      {(team.lead || edit) && (
+        <DropZone
+          target={{ deptId: team.deptId, slot: "lead" }}
+          label="หัวหน้าทีม"
+          className="border-b border-dashed border-border p-2.5"
+        >
+          {team.lead ? (
+            <PersonCard node={team.lead} tag={`ดูแล ${team.lead.under} คน`} />
+          ) : (
+            <DropHint>วางที่นี่เพื่อตั้งเป็นหัวหน้าทีม</DropHint>
+          )}
+        </DropZone>
       )}
-      {shown.length > 0 && (
-        <ul className="relative m-0 list-none py-1.5 pr-2 pl-[22px] before:absolute before:top-0 before:bottom-[22px] before:left-6 before:w-0.5 before:bg-[#e6ebee] dark:before:bg-border">
-          {shown.map((p) => (
-            <li key={p.id} className="relative before:absolute before:top-1/2 before:left-0.5 before:h-0.5 before:w-3.5 before:bg-[#e6ebee] dark:before:bg-border">
-              <MemberLink person={p} />
-            </li>
-          ))}
-        </ul>
-      )}
-      {(hidden > 0 || expanded) && team.members.length > MEMBERS_SHOWN && (
+      <DropZone target={{ deptId: team.deptId, slot: "member" }} label="สมาชิก">
+        {shown.length > 0 && (
+          <ul className="relative m-0 list-none py-1.5 pr-2 pl-[22px] before:absolute before:top-0 before:bottom-[22px] before:left-6 before:w-0.5 before:bg-[#e6ebee] dark:before:bg-border">
+            {shown.map((p) => (
+              <li key={p.id} className="relative before:absolute before:top-1/2 before:left-0.5 before:h-0.5 before:w-3.5 before:bg-[#e6ebee] dark:before:bg-border">
+                <MemberLink person={p} />
+              </li>
+            ))}
+          </ul>
+        )}
+        {edit && shown.length === 0 && <DropHint>วางที่นี่เพื่อย้ายเข้าแผนกนี้</DropHint>}
+      </DropZone>
+      {!edit && (hidden > 0 || expanded) && team.members.length > MEMBERS_SHOWN && (
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -454,16 +684,29 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
 }
 
 function MemberLink({ person, className }: { person: OrgPerson; className?: string }) {
-  return (
-    <Link
-      href={employeeHref(person.id)}
-      className={cn("flex min-w-0 items-center gap-2 rounded-[10px] py-1.5 pr-1.5 pl-[18px] text-[13px] hover:bg-muted/60", className)}
-    >
+  const edit = useOrgEdit();
+  const rowClass = cn("flex min-w-0 items-center gap-2 rounded-[10px] py-1.5 pr-1.5 pl-[18px] text-[13px] hover:bg-muted/60", className);
+  const body = (moved: boolean) => (
+    <>
       <PersonAvatar name={person.name} gender={person.gender ?? null} seed={person.id} className="size-[26px] text-[10.5px]" />
       <span className="min-w-0 leading-tight">
         <span className="block truncate">{person.name}</span>
-        <small className="block truncate text-[11.5px] text-muted-foreground">{person.positionTitle ?? "ไม่ระบุตำแหน่ง"}</small>
+        <Subtitle moved={moved} className="text-[11.5px]">
+          {person.positionTitle ?? "ไม่ระบุตำแหน่ง"}
+        </Subtitle>
       </span>
+    </>
+  );
+  if (edit) {
+    return (
+      <EditableRow person={person} className={cn(rowClass, "border border-transparent pl-2")}>
+        {body}
+      </EditableRow>
+    );
+  }
+  return (
+    <Link href={employeeHref(person.id)} className={rowClass}>
+      {body(false)}
     </Link>
   );
 }

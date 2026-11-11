@@ -6,12 +6,17 @@ import type {
   DepartmentFormValues,
   PositionFormValues,
 } from "./types";
+import type { OrgMove } from "./org-tree";
 
 export function fetchDepartments() {
   return api.get<Envelope<DepartmentRow[]>>("/api/org/departments");
 }
 export function fetchOrgPeople() {
   return api.get<Envelope<OrgPersonRow[]>>("/api/org/people");
+}
+/** Org chart edit mode: save new department + manager placements (HR / admin). */
+export function saveOrgMoves(moves: OrgMove[]) {
+  return api.post<Envelope<{ updated: number }>>("/api/org/moves", { moves });
 }
 export function createDepartment(input: DepartmentFormValues) {
   return api.post<Envelope<{ id: string }>>("/api/org/departments", input);

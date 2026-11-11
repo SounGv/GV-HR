@@ -43,3 +43,19 @@ export const positionUpdateSchema = z.object({
   departmentId: nullableId.optional(),
 });
 export type PositionUpdateInput = z.infer<typeof positionUpdateSchema>;
+
+/** POST /api/org/moves — HR saves the org chart's edit mode: each person's new department + direct manager. */
+export const orgMovesSchema = z.object({
+  moves: z
+    .array(
+      z.object({
+        employeeId: z.string().uuid(),
+        departmentId: z.string().uuid().nullable(),
+        managerId: z.string().uuid().nullable(),
+      }),
+    )
+    .min(1, "ไม่มีรายการที่จะบันทึก")
+    .max(100, "บันทึกได้ครั้งละไม่เกิน 100 คน")
+    .refine((moves) => new Set(moves.map((m) => m.employeeId)).size === moves.length, "มีพนักงานซ้ำในรายการ"),
+});
+export type OrgMovesInput = z.infer<typeof orgMovesSchema>;

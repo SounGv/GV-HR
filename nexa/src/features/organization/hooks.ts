@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchDepartments,
   fetchOrgPeople,
+  saveOrgMoves,
   createDepartment,
   updateDepartment,
   deleteDepartment,
@@ -13,6 +14,7 @@ import {
   deletePosition,
 } from "./api";
 import type { DepartmentFormValues, PositionFormValues } from "./types";
+import type { OrgMove } from "./org-tree";
 
 export const orgKeys = {
   all: ["organization"] as const,
@@ -35,6 +37,22 @@ export function usePositions() {
 function useInvalidate() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries({ queryKey: orgKeys.all });
+}
+
+/**
+ * Saves the org chart's pending moves. Resolves only after the org and
+ * employee queries have refetched, so the chart never flashes the old layout.
+ */
+export function useSaveOrgMoves() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (moves: OrgMove[]) => saveOrgMoves(moves),
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: orgKeys.all }),
+        qc.invalidateQueries({ queryKey: ["employees"] }),
+      ]),
+  });
 }
 
 export function useCreateDepartment() {
