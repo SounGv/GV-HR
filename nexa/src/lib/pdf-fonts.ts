@@ -10,17 +10,18 @@ async function loadFontBase64(url: string): Promise<string> {
 
 /**
  * jsPDF's built-in fonts (helvetica, etc.) have no Thai glyphs — without this,
- * Thai text in exported PDFs renders as blank boxes. Registers Sarabun
- * (SIL OFL, public/fonts/) as a real embedded font instead.
+ * Thai text in exported PDFs renders as blank boxes. Registers Anuphan, the
+ * same face as the app (SIL OFL, static TTFs from github.com/cadsondemak/Anuphan
+ * in public/fonts/, licence in Anuphan-OFL.txt), as a real embedded font.
  */
 export async function registerThaiFont(doc: jsPDF): Promise<string> {
   const [regular, bold] = await Promise.all([
-    loadFontBase64("/fonts/Sarabun-Regular.ttf"),
-    loadFontBase64("/fonts/Sarabun-Bold.ttf"),
+    loadFontBase64("/fonts/Anuphan-Regular.ttf"),
+    loadFontBase64("/fonts/Anuphan-Bold.ttf"),
   ]);
-  doc.addFileToVFS("Sarabun-Regular.ttf", regular);
-  doc.addFont("Sarabun-Regular.ttf", "Sarabun", "normal");
-  doc.addFileToVFS("Sarabun-Bold.ttf", bold);
-  doc.addFont("Sarabun-Bold.ttf", "Sarabun", "bold");
-  return "Sarabun";
+  doc.addFileToVFS("Anuphan-Regular.ttf", regular);
+  doc.addFont("Anuphan-Regular.ttf", "Anuphan", "normal");
+  doc.addFileToVFS("Anuphan-Bold.ttf", bold);
+  doc.addFont("Anuphan-Bold.ttf", "Anuphan", "bold");
+  return "Anuphan";
 }
