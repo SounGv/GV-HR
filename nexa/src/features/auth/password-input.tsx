@@ -23,7 +23,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, React.ComponentP
             ref={ref}
             type={visible ? "text" : "password"}
             className={cn(
-              "h-12 rounded-xl border-transparent shadow-none !bg-[var(--login-field-bg)] pr-11 pl-11 text-[15px] text-[var(--login-text-primary)] placeholder:text-[var(--login-text-secondary)] focus-visible:border-[#0d9488] focus-visible:!bg-[var(--login-surface)] focus-visible:ring-[#0d9488]/15",
+              "h-12 rounded-xl border-[#d7dce1] shadow-[inset_0_1px_2px_rgba(19,21,22,0.04)] !bg-white pr-11 pl-11 text-[15px] text-[var(--login-text-primary)] placeholder:text-[var(--login-text-secondary)] focus-visible:border-[#0d9488] focus-visible:!bg-[var(--login-surface)] focus-visible:ring-[#0d9488]/15",
               className,
             )}
             {...props}

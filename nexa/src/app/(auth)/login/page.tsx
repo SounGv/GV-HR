@@ -25,23 +25,23 @@ const FACTS = [
  */
 export default function LoginPage() {
   return (
-    <div className="login-page grid min-h-dvh bg-[#0b1414] lg:grid-cols-[minmax(0,1.3fr)_minmax(460px,0.7fr)]">
-      <section className="relative overflow-hidden px-5 pt-4 pb-6 text-white sm:px-10 sm:pt-6 sm:pb-9 lg:flex lg:flex-col lg:px-14 lg:py-10">
+    <div className="login-page flex min-h-dvh flex-col bg-[#0b1414] lg:grid lg:grid-cols-[minmax(0,1.3fr)_minmax(460px,0.7fr)]">
+      <section className="relative overflow-hidden px-5 pt-3.5 pb-10 text-white sm:px-10 sm:pt-6 sm:pb-16 lg:flex lg:flex-col lg:px-14 lg:py-10">
         <span aria-hidden="true" className="login-glow login-glow-a" />
         <span aria-hidden="true" className="login-glow login-glow-b" />
 
         <div className="relative flex items-center gap-3">
-          <Logo size={64} className="h-auto w-12 sm:w-16" />
+          <Logo size={64} className="h-auto w-10 sm:w-16" />
           <span className="leading-tight">
-            <b className="block text-[15px]">GV One HR</b>
+            <b className="block text-sm sm:text-[15px]">GV One HR</b>
             <span className="text-xs text-[#9fb3b1]">Gadget Villa</span>
           </span>
         </div>
 
-        <div className="relative flex items-center gap-10 pt-4 sm:pt-7 lg:my-auto lg:py-10">
+        <div className="relative flex items-center gap-10 pt-3 sm:pt-7 lg:my-auto lg:py-10">
           <div className="min-w-0 flex-1">
             <div className="flex items-end justify-between gap-4">
-              <h1 className="text-[26px] leading-[1.25] font-bold tracking-[-0.01em] text-balance text-white sm:text-[44px] xl:text-[60px]">
+              <h1 className="text-[22px] leading-[1.25] font-bold tracking-[-0.01em] text-balance text-white sm:text-[44px] xl:text-[60px]">
                 ทุกเรื่องของทีม
                 <span className="mt-1 block">
                   อยู่ใน{" "}
@@ -50,7 +50,7 @@ export default function LoginPage() {
                   </span>
                 </span>
               </h1>
-              <VBot mood="hi" full className="h-[78px] w-[66px] shrink-0 sm:h-[104px] sm:w-[88px] lg:hidden" />
+              <VBot mood="hi" full className="h-[64px] w-[54px] shrink-0 sm:h-[104px] sm:w-[88px] lg:hidden" />
             </div>
             <p className="mt-5 hidden max-w-[460px] text-[15.5px] leading-relaxed text-[#a9bcba] sm:block xl:text-[17px]">
               ลงเวลาเข้างาน ขอลา ขอ OT และดูผลประเมิน จากมือถือหรือคอมพิวเตอร์ ด้วยบัญชีเดียว
@@ -79,17 +79,19 @@ export default function LoginPage() {
         </p>
       </section>
 
-      <section className="relative flex justify-center bg-[var(--login-page-bg)] px-4 pt-5 pb-8 max-lg:rounded-t-[24px] sm:pt-7 sm:pb-10 lg:items-center lg:bg-[radial-gradient(110%_55%_at_100%_0,#e3f5f1_0,rgba(246,247,243,0)_60%),var(--login-page-bg)] lg:px-10">
+      <section className="relative z-10 flex flex-1 justify-center bg-white px-5 pt-5 pb-6 max-lg:-mt-7 max-lg:shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.6)] max-lg:rounded-t-[26px] sm:pt-8 sm:pb-10 lg:items-center lg:bg-[radial-gradient(110%_55%_at_100%_0,#e3f5f1_0,rgba(246,247,243,0)_60%),var(--login-page-bg)] lg:px-10">
         <div className="w-full max-w-[400px]">
-          <LoginClock />
-          <h2 className="mt-2 text-[22px] leading-tight font-bold text-[var(--login-text-primary)] sm:mt-3 sm:text-[28px]">ยินดีต้อนรับกลับ</h2>
+          <div className="hidden sm:block">
+            <LoginClock />
+          </div>
+          <h2 className="text-[20px] sm:mt-3 leading-tight font-bold text-[var(--login-text-primary)] sm:text-[28px]">ยินดีต้อนรับกลับ</h2>
           <p className="mt-1 text-sm text-[var(--login-text-secondary)] sm:text-[15px]">เข้าสู่ระบบด้วยอีเมลหรือชื่อผู้ใช้ของคุณ</p>
           <div className="pt-4 sm:pt-6">
             <Suspense fallback={<div className="h-64" />}>
               <LoginForm googleEnabled={isGoogleOAuthEnabled()} />
             </Suspense>
           </div>
-          <p className="mt-5 border-t border-[var(--login-card-border)] pt-3 sm:mt-8 sm:pt-4 text-[12.5px] text-[var(--login-text-secondary)]">
+          <p className="mt-8 hidden border-t border-[var(--login-card-border)] pt-4 text-[12.5px] sm:block text-[var(--login-text-secondary)]">
             ลืมรหัสหรือเข้าระบบไม่ได้ ติดต่อฝ่ายบุคคลของบริษัท
           </p>
         </div>
