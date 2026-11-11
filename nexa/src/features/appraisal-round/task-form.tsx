@@ -54,8 +54,8 @@ type Save = {
   isPending: boolean;
 };
 
-/** Score chip colour: the lowest score warns, the highest is teal, the rest neutral. */
-function scoreTone(score: number, max: number) {
+/** Score chip colour: the lowest score warns, the highest is teal, the rest neutral (also used by the form builder). */
+export function scoreTone(score: number, max: number) {
   if (score === 1) return "bg-[#fff7ed] text-[#c2410c] dark:bg-orange-500/15 dark:text-orange-300";
   if (score === max) return "bg-[#ccfbf1] text-[#0f766e] dark:bg-teal-500/15 dark:text-teal-300";
   return "bg-muted text-foreground";
@@ -101,6 +101,8 @@ export function TaskForm({
   );
   const [cur, setCur] = useState(firstOpen === -1 ? 0 : firstOpen);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  // A failed auto-save stays visible (with a retry) until a save goes through.
+  const [saveFailed, setSaveFailed] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const dirty = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -126,21 +128,42 @@ export function TaskForm({
     setNotes((c) => ({ ...c, [qid]: t }));
   }
 
+  async function saveNow() {
+    try {
+      await save.mutateAsync({ answers: list, submit: false });
+      dirty.current = false;
+      setSaveFailed(false);
+      setSavedAt(timeNow());
+    } catch (err) {
+      setSaveFailed(true);
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "บันทึกอัตโนมัติไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วกด “ลองใหม่” ด้านบน",
+        {
+          id: "appraisal-autosave",
+        },
+      );
+    }
+  }
+
   // Auto-save a moment after the last change.
   useEffect(() => {
     if (locked || !dirty.current) return;
-    const t = setTimeout(async () => {
-      try {
-        await save.mutateAsync({ answers: list, submit: false });
-        dirty.current = false;
-        setSavedAt(timeNow());
-      } catch {
-        /* the send button reports errors; auto-save stays quiet */
-      }
-    }, 1200);
+    const t = setTimeout(saveNow, 1200);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, notes]);
+
+  // Closing the page with answers not yet saved asks first.
+  useEffect(() => {
+    if (locked) return;
+    const h = (e: BeforeUnloadEvent) => {
+      if (dirty.current) e.preventDefault();
+    };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [locked]);
 
   function go(next: "start" | "q" | "review", index = cur) {
     setView(next);
@@ -187,24 +210,35 @@ export function TaskForm({
               {task.endIso ? ` · ปิด ${fmtDay(task.endIso)}` : ""}
             </p>
           </div>
-          {!locked && (
-            <span
-              className="flex shrink-0 items-center gap-1.5 text-[11px] text-white/80"
-              aria-live="polite"
+          {!locked && saveFailed && !save.isPending ? (
+            <button
+              type="button"
+              onClick={saveNow}
+              className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[#fef2f2] px-2.5 text-[11.5px] font-bold text-[#b91c1c]"
             >
+              <span className="size-1.5 rounded-full bg-[#dc2626]" aria-hidden="true" />
+              ยังไม่บันทึก · ลองใหม่
+            </button>
+          ) : (
+            !locked && (
               <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  save.isPending ? "bg-[#fde047]" : "bg-[#4ade80]",
-                )}
-                aria-hidden="true"
-              />
-              {save.isPending
-                ? "กำลังบันทึก"
-                : savedAt
-                  ? `บันทึกแล้ว ${savedAt}`
-                  : "บันทึกอัตโนมัติ"}
-            </span>
+                className="flex shrink-0 items-center gap-1.5 text-[11px] text-white/80"
+                aria-live="polite"
+              >
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full",
+                    save.isPending ? "bg-[#fde047]" : "bg-[#4ade80]",
+                  )}
+                  aria-hidden="true"
+                />
+                {save.isPending
+                  ? "กำลังบันทึก"
+                  : savedAt
+                    ? `บันทึกแล้ว ${savedAt}`
+                    : "บันทึกอัตโนมัติ"}
+              </span>
+            )
           )}
         </div>
         <div

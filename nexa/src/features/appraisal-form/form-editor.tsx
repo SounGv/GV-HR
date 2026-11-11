@@ -36,7 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/auth-context";
-import { QuestionStep } from "@/features/appraisal-round/task-form";
+import { QuestionStep, scoreTone } from "@/features/appraisal-round/task-form";
 import type { AnswerValue, SnapQuestion } from "@/features/appraisal-round/answers";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -132,14 +132,6 @@ const splitParts = (text: string) =>
     .filter(Boolean);
 const looksCombined = (text: string) => splitParts(text).length >= 3;
 const hasLevels = (q: QuestionValues) => Object.values(q.levels).some((t) => t.trim());
-/** Score chip colour: lowest warns, highest teal. */
-const scoreTone = (score: number, max: number) =>
-  score === 1
-    ? "bg-[#fff7ed] text-[#c2410c]"
-    : score === max
-      ? "bg-[#ccfbf1] text-[#0f766e]"
-      : "bg-muted text-foreground";
-
 /** Loads one form and hands it to the editor. */
 export function FormEditorPage({ id }: { id: string }) {
   const { data, isLoading, isError, refetch } = useAppraisalForm(id);
@@ -227,6 +219,7 @@ function FormEditor({ form }: { form: FormDetail }) {
           setLabels(before.labels);
           setCustom(before.custom);
           setSel(before.sel);
+          setDirty(true);
         },
       },
     });
@@ -371,6 +364,17 @@ function FormEditor({ form }: { form: FormDetail }) {
       (k) => (k === score ? null : k > score ? k - 1 : k),
       `ลบระดับ “${labels.find((l) => l.score === score)?.label}” แล้ว`,
     );
+  };
+  /** Back to the system's own 1–5 names (they come with a short description each). */
+  const applySystemNames = () => {
+    setScale(
+      rubricFor(5, null)
+        .map((r) => ({ score: r.score, label: r.label }))
+        .reverse(),
+      (k) => (labels.length === 5 ? k : null),
+      "ใช้ชื่อเดิมของระบบ (5 ระดับ)",
+    );
+    setCustom(false);
   };
   const applyPreset = (n: number) =>
     setScale(
@@ -607,6 +611,8 @@ function FormEditor({ form }: { form: FormDetail }) {
               onAdd={addLevel}
               onRemove={removeLevel}
               onPreset={applyPreset}
+              onSystem={applySystemNames}
+              usingSystem={!custom}
             />
             <Card className="gap-3 rounded-[20px] p-4" aria-label="กติกาและความพร้อม">
               <h2 className="gv-bar-heading flex items-center gap-2 text-sm font-semibold">
@@ -1275,6 +1281,8 @@ function ScaleCard({
   onAdd,
   onRemove,
   onPreset,
+  onSystem,
+  usingSystem,
 }: {
   labels: RatingLabel[];
   canEdit: boolean;
@@ -1282,6 +1290,9 @@ function ScaleCard({
   onAdd: () => void;
   onRemove: (score: number) => void;
   onPreset: (n: number) => void;
+  onSystem: () => void;
+  /** The form uses the system's names (and descriptions). */
+  usingSystem: boolean;
 }) {
   return (
     <Card className="gap-3 rounded-[20px] p-4" aria-label="ระดับคะแนน">
@@ -1303,7 +1314,23 @@ function ScaleCard({
               ชุด {n} ระดับ
             </button>
           ))}
+          <button
+            type="button"
+            aria-pressed={usingSystem}
+            onClick={onSystem}
+            className={cn(
+              "min-h-8 rounded-full border-[1.5px] px-3 text-xs font-semibold hover:border-[#0d9488]",
+              usingSystem ? "border-[#0f766e] bg-[#f0fdfa] text-[#0f766e]" : "border-border",
+            )}
+          >
+            ชื่อเดิมของระบบ
+          </button>
         </div>
+      )}
+      {usingSystem && (
+        <p className="text-muted-foreground text-xs">
+          ใช้ชื่อเดิมของระบบ ผู้ประเมินเห็นคำอธิบายสั้นๆ ใต้แต่ละระดับด้วย
+        </p>
       )}
       <ul className="space-y-1.5">
         {[...labels].reverse().map((l) => (

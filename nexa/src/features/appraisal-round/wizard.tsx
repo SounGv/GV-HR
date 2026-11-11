@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -33,6 +33,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/features/auth/auth-context";
 import { useDepartments, useSaveOrgMoves } from "@/features/organization/hooks";
+import { buildCompanyTree } from "@/features/organization/org-tree";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import {
@@ -105,25 +106,6 @@ const timeNow = () =>
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((x) => b.includes(x));
 
-/**
- * Department id → its top-level department (the ฝ่าย): walk parents up; a
- * parent that is missing (deleted) ends the walk, and a loop can't hang it.
- */
-function divisionOf(departments: { id: string; name: string; parentId: string | null }[]) {
-  const byId = new Map(departments.map((d) => [d.id, d]));
-  const root = new Map<string, { id: string; name: string }>();
-  for (const d of departments) {
-    let cur = d;
-    const seen = new Set<string>();
-    while (cur.parentId && byId.has(cur.parentId) && !seen.has(cur.parentId)) {
-      seen.add(cur.id);
-      cur = byId.get(cur.parentId)!;
-    }
-    root.set(d.id, { id: cur.id, name: cur.name });
-  }
-  return root;
-}
-
 /** Everything the wizard edits, kept here so any move (next, back, a step tab) saves it in one go. */
 interface Draft {
   name: string;
@@ -182,9 +164,21 @@ export function Wizard({ round }: { round: RoundDetail }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(round));
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Set after saving people: the server keeps only active employees, so the draft takes the saved list back.
+  const [resyncPeople, setResyncPeople] = useState(false);
   const save = useSaveRound(round.id);
   const open = useOpenRound(round.id);
   const update = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
+
+  useEffect(() => {
+    if (!resyncPeople) return;
+    setResyncPeople(false);
+    setDraft((d) => ({
+      ...d,
+      selected: new Set(round.participantIds),
+      formOf: { ...round.participantForms },
+    }));
+  }, [resyncPeople, round.participantIds, round.participantForms]);
 
   const pending = patchOf(draft, round);
   const dirty = Object.keys(pending).length > 0;
@@ -206,6 +200,7 @@ export function Wizard({ round }: { round: RoundDetail }) {
     try {
       await save.mutateAsync(patch);
       setSavedAt(timeNow());
+      if (patch.participantIds) setResyncPeople(true);
       return true;
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ");
@@ -225,8 +220,7 @@ export function Wizard({ round }: { round: RoundDetail }) {
   async function pickPreset(k: PresetKey) {
     const types = [...PRESETS[k]];
     const weights = DEFAULT_WEIGHTS[k];
-    update({ types, weights });
-    await flush({ raterTypes: types, perspectiveWeights: weights });
+    if (await flush({ raterTypes: types, perspectiveWeights: weights })) update({ types, weights });
   }
 
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
@@ -249,6 +243,11 @@ export function Wizard({ round }: { round: RoundDetail }) {
 
   const failing = round.checks.filter((c) => !c.ok);
   const ready = round.ready && !dirty;
+  /** Unsaved edits are saved first; the server re-checks readiness when the round opens. */
+  async function askOpen() {
+    if (dirty && !(await flush())) return;
+    setConfirmOpen(true);
+  }
   const stepDone = (i: number) => i < step || (i === 3 && ready);
 
   return (
@@ -294,9 +293,9 @@ export function Wizard({ round }: { round: RoundDetail }) {
             <ArrowLeft className="size-4" aria-hidden="true" /> ย้อนกลับ
           </Button>
           <span className="flex-1" />
-          {step === 3 && !ready && (
+          {step === 3 && !ready && !dirty && (
             <span className="order-first w-full text-center text-[12.5px] font-semibold text-[#b45309] sm:order-none sm:w-auto">
-              ยังเปิดไม่ได้ · {dirty ? "มีการแก้ที่ยังไม่บันทึก" : `เหลือ ${failing.length} ข้อ`}
+              ยังเปิดไม่ได้ · เหลือ {failing.length} ข้อ
             </span>
           )}
           {step < 3 ? (
@@ -312,8 +311,8 @@ export function Wizard({ round }: { round: RoundDetail }) {
             <Button
               className="h-11 px-5 font-bold text-[#131516] hover:brightness-95 md:h-10"
               style={{ background: LIME }}
-              disabled={!ready || open.isPending}
-              onClick={() => setConfirmOpen(true)}
+              disabled={(!ready && !dirty) || open.isPending || save.isPending}
+              onClick={askOpen}
             >
               <Rocket className="size-4" aria-hidden="true" />
               {sendsNow ? "เปิดรอบ · ส่งทันที" : `เปิดรอบ · ส่ง ${fmtShort(round.startIso)}`}
@@ -775,24 +774,42 @@ function StepPeople({
   const people = useMemo(() => data?.data ?? [], [data]);
   const selected = draft.selected;
 
+  // Same divisions as the org chart (small departments grouped as ฝ่ายอื่นๆ); people with no department last.
   const divisions = useMemo(() => {
-    const roots = divisionOf(depts.data?.data ?? []);
-    const map = new Map<string, { name: string; people: Candidate[]; subs: Set<string> }>();
-    for (const p of people) {
-      const r = p.departmentId ? roots.get(p.departmentId) : undefined;
-      const key = r?.id ?? "none";
-      const entry = map.get(key) ?? {
-        name: r?.name ?? "ไม่ระบุแผนก",
-        people: [],
-        subs: new Set<string>(),
-      };
-      entry.people.push(p);
-      if (p.department !== entry.name) entry.subs.add(p.department);
-      map.set(key, entry);
-    }
-    return [...map.entries()]
-      .map(([id, v]) => ({ id, ...v }))
-      .sort((a, b) => b.people.length - a.people.length);
+    const tree = buildCompanyTree(
+      (depts.data?.data ?? []).map((d) => ({
+        id: d.id,
+        name: d.name,
+        code: d.code,
+        parentId: d.parentId,
+      })),
+      people.map((p) => ({
+        id: p.id,
+        name: p.name,
+        nickname: null,
+        departmentId: p.departmentId,
+        managerId: null,
+        positionTitle: null,
+      })),
+    );
+    const placed = new Set<string>();
+    const out = tree.divisions
+      .map((d) => {
+        const ids = new Set(d.deptIds);
+        const members = people.filter((p) => p.departmentId && ids.has(p.departmentId));
+        members.forEach((p) => placed.add(p.id));
+        return {
+          id: d.key,
+          name: d.name,
+          people: members,
+          subs: new Set(d.departments.filter((x) => x.count > 0).map((x) => x.name)),
+        };
+      })
+      .filter((d) => d.people.length > 0);
+    const rest = people.filter((p) => !placed.has(p.id));
+    if (rest.length)
+      out.push({ id: "none", name: "ไม่ระบุแผนก", people: rest, subs: new Set<string>() });
+    return out;
   }, [depts.data, people]);
 
   const toggle = (ids: string[], on: boolean) => {

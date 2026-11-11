@@ -327,12 +327,14 @@ async function saveToBank(companyId: string, session: AccessClaims, scaleMax: nu
     const text = q.text.trim();
     if (!text) continue;
     const levels = q.answerType === "RATING" ? cleanLevels(q.levelDescriptions, scaleMax) : null;
-    const found = await prisma.appraisalQuestionBank.findFirst({ where: { companyId, text, deletedAt: null }, select: { id: true } });
+    const found = await prisma.appraisalQuestionBank.findFirst({
+      where: { companyId, text, answerType: q.answerType, deletedAt: null },
+      select: { id: true },
+    });
     if (found) {
       await prisma.appraisalQuestionBank.update({
         where: { id: found.id },
         data: {
-          answerType: q.answerType,
           ...(q.helpText ? { helpText: q.helpText } : {}),
           ...(q.section ? { section: q.section } : {}),
           ...(levels ? { levelDescriptions: levels as unknown as Prisma.InputJsonValue, scaleMax } : {}),

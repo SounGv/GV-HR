@@ -1290,7 +1290,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     });
     // Rounds run from /appraisal (AppraisalRound): every person whose result has been calculated.
     const appraised = await prisma.appraisalParticipant.findMany({
-      where: { round: { companyId, deletedAt: null }, resultStatus: { not: "NOT_CALCULATED" }, ...deptRel },
+      // Approved results only: a calculated-but-unapproved score is HR's working draft, and this
+      // report is open to anyone with report:read (team heads included).
+      where: { round: { companyId, deletedAt: null }, resultStatus: { in: ["APPROVED", "PUBLISHED", "ACKNOWLEDGED"] }, ...deptRel },
       select: {
         overallScore: true,
         scorePercent: true,
@@ -1321,7 +1323,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           score: p.overallScore != null ? Math.round(p.overallScore * 100) / 100 : "-",
           percent: p.scorePercent != null ? Math.round(p.scorePercent * 10) / 10 : "-",
           band: p.grade ?? "-",
-          source: p.resultStatus === "CALCULATED" ? "รอบประเมิน (ยังไม่อนุมัติ)" : "รอบประเมิน",
+          source: "รอบประเมิน",
         })),
         ...participants.map((p) => ({
           code: p.employee.employeeCode,
