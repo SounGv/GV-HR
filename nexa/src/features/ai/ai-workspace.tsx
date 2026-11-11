@@ -11,12 +11,15 @@ import {
   Database,
   ExternalLink,
   Globe,
+  FileSpreadsheet,
+  Loader2,
   LogOut,
   Plus,
   RotateCcw,
   UsersRound,
   Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import { VBot } from "@/components/shared/v-bot";
 import { cn } from "@/lib/utils";
 import { useChat } from "./hooks";
@@ -69,6 +72,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const chat = useChat();
   const elapsed = useElapsed(chat.isPending);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -129,6 +133,20 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   // The first heading is already the panel title; don't print it twice.
   const panelBody = answerParts ? withoutFirstHeading(answerParts.rest || answer!.content) : "";
   const reportStep = answer?.steps?.find((s) => s.report);
+
+  async function downloadExcel() {
+    if (!answer || exporting) return;
+    setExporting(true);
+    try {
+      const { exportAnswerToExcel } = await import("./export-answer");
+      const name = await exportAnswerToExcel(answer);
+      toast.success(`ดาวน์โหลด ${name} แล้ว`);
+    } catch {
+      toast.error("สร้างไฟล์ไม่สำเร็จ ลองอีกครั้ง หรือเปิดรายงานเต็มแล้วส่งออกจากหน้ารายงาน");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function copyAnswer() {
     if (!answer) return;
@@ -266,6 +284,15 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               >
                 {copied ? <Check className="size-4 text-success" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
                 {copied ? "คัดลอกแล้ว" : "คัดลอก"}
+              </button>
+              <button
+                type="button"
+                onClick={downloadExcel}
+                disabled={exporting}
+                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#cfd6dc] bg-card px-3 text-[13px] font-medium transition-colors hover:border-[#b9c2c9] disabled:opacity-60 dark:border-border"
+              >
+                {exporting ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" aria-hidden="true" /> : <FileSpreadsheet className="size-4 text-[#15803d]" aria-hidden="true" />}
+                {exporting ? "กำลังสร้างไฟล์…" : "ดาวน์โหลด Excel"}
               </button>
               {reportStep?.report && (
                 <Link

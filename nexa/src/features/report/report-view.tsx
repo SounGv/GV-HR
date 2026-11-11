@@ -187,7 +187,7 @@ async function loadExcelImages(
  * per-section "Excel" export and the combined "ส่งออกทั้งหมด" multi-sheet
  * export, so a single report and a multi-type bundle produce byte-identical
  * sheets either way. */
-async function addExcelSheet(workbook: Workbook, label: string, result: ReportResult) {
+export async function addExcelSheet(workbook: Workbook, label: string, result: ReportResult) {
   const columns = result.columns; // photo columns included — embedded as real images below
   const PHOTO_PX = 70;
   const sheet = workbook.addWorksheet(label.slice(0, 31));
@@ -217,7 +217,7 @@ async function addExcelSheet(workbook: Workbook, label: string, result: ReportRe
   }
 }
 
-function downloadWorkbook(workbook: Workbook, fileName: string) {
+export function downloadWorkbook(workbook: Workbook, fileName: string) {
   return workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

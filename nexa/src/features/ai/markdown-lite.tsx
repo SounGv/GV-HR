@@ -75,8 +75,43 @@ export function MarkdownLite({ text, className }: { text: string; className?: st
       const body: string[][] = [];
       while (i < lines.length && isTableRow(lines[i])) body.push(cells(lines[i++]));
       const num = head.map((_, c) => numericCol(body, c));
+      // Narrow places (the floating AI panel, phones) can't fit a 4–6 column
+      // table: names wrapped letter by letter and the right columns fell off.
+      // Below 32rem of width each row becomes a small card instead.
+      const rankCol = head.findIndex((h) => /^(#|อันดับ|ลำดับ|ที่)$/.test(h.replace(/\*/g, "").trim()));
+      const nameIdx = head.findIndex((h, ci) => ci !== rankCol && /ชื่อ|พนักงาน|แผนก/.test(h));
+      const titleCol = nameIdx >= 0 ? nameIdx : head.findIndex((_, ci) => ci !== rankCol);
+      const cardList = (
+        <ol className="space-y-1.5 @lg:hidden">
+          {body.map((r, ri) => (
+            <li key={ri} className="rounded-xl border border-border bg-card px-3 py-2">
+              <p className="flex items-baseline gap-2 font-semibold text-foreground">
+                {rankCol >= 0 && (
+                  <span className="inline-grid size-5 shrink-0 place-items-center rounded-md bg-[#0f766e] text-[11px] text-white tabular-nums">
+                    {r[rankCol]}
+                  </span>
+                )}
+                <span className="min-w-0">{inline(r[titleCol] ?? "", `${key}t${ri}`)}</span>
+              </p>
+              <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12.5px]">
+                {head.map((h, ci) =>
+                  ci === rankCol || ci === titleCol || !(r[ci] ?? "").trim() ? null : (
+                    <Fragment key={ci}>
+                      <dt className="text-muted-foreground">{inline(h, `${key}d${ri}h${ci}`)}</dt>
+                      <dd className={cn("text-foreground", num[ci] && "font-semibold tabular-nums")}>{inline(r[ci] ?? "", `${key}d${ri}c${ci}`)}</dd>
+                    </Fragment>
+                  ),
+                )}
+              </dl>
+            </li>
+          ))}
+        </ol>
+      );
+      const compactable = head.length > 2 && titleCol >= 0;
       blocks.push(
-        <div key={key} className="my-1 overflow-x-auto rounded-xl border border-border">
+        <div key={key} className="@container my-1">
+        {compactable && cardList}
+        <div className={cn("overflow-x-auto rounded-xl border border-border", compactable && "hidden @lg:block")}>
           <table className="w-full border-collapse text-[13px]">
             <thead>
               <tr>
@@ -111,6 +146,7 @@ export function MarkdownLite({ text, className }: { text: string; className?: st
               ))}
             </tbody>
           </table>
+        </div>
         </div>,
       );
       continue;

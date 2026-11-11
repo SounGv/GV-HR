@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { ArrowUp, Globe, Wrench } from "lucide-react";
+import { ArrowUp, FileSpreadsheet, Globe, Loader2, Wrench } from "lucide-react";
+import { toast } from "sonner";
 import { VBot, type VBotMood } from "@/components/shared/v-bot";
 import { MarkdownLite } from "./markdown-lite";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,37 @@ interface Turn {
   role: "user" | "assistant";
   content: string;
   steps?: ChatStep[];
+  /** The question this answer replies to (assistant turns only). */
+  question?: string;
+}
+
+/** Turns an answer into an Excel file (summary + the real report it read); shown under answers with data. */
+function DownloadAnswer({ turn }: { turn: Turn }) {
+  const [busy, setBusy] = useState(false);
+  const hasData = !!turn.steps?.some((s) => s.report) || /^\s*\|.*\|\s*$/m.test(turn.content);
+  if (!hasData) return null;
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          const { exportAnswerToExcel } = await import("./export-answer");
+          const name = await exportAnswerToExcel(turn);
+          toast.success(`ดาวน์โหลด ${name} แล้ว`);
+        } catch {
+          toast.error("สร้างไฟล์ไม่สำเร็จ ลองอีกครั้ง");
+        } finally {
+          setBusy(false);
+        }
+      }}
+      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground transition-colors hover:border-[#b9c2c9] disabled:opacity-60"
+    >
+      {busy ? <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> : <FileSpreadsheet className="size-3.5 text-[#15803d]" aria-hidden="true" />}
+      {busy ? "กำลังสร้างไฟล์…" : "ดาวน์โหลดสรุปเป็น Excel"}
+    </button>
+  );
 }
 
 /** The assistant's face: น้องวีบอท, the same on every message so the thread reads as a conversation. */
@@ -65,7 +97,7 @@ export function AiChatView({
     const history: ChatMessage[] = nextTurns.map((t) => ({ role: t.role, content: t.content }));
     chat.mutate(history, {
       onSuccess: (res) => {
-        setTurns((prev) => [...prev, { role: "assistant", content: res.data.reply, steps: res.data.steps }]);
+        setTurns((prev) => [...prev, { role: "assistant", content: res.data.reply, steps: res.data.steps, question: trimmed }]);
       },
       onError: () => {
         setTurns((prev) => [
@@ -134,6 +166,7 @@ export function AiChatView({
               >
                 {t.role === "assistant" ? <MarkdownLite text={t.content} /> : t.content}
               </div>
+              {t.role === "assistant" && <DownloadAnswer turn={t} />}
             </div>
           </div>
         ))}

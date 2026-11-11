@@ -26,7 +26,7 @@ export function AiChatPanel() {
     <div
       role="dialog"
       aria-label="AI Assistant"
-      className="fixed right-6 bottom-6 z-50 hidden h-[34rem] w-[24rem] flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl md:flex"
+      className="fixed right-6 bottom-6 z-50 hidden h-[min(38rem,calc(100dvh-3rem))] w-[27rem] flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl md:flex"
     >
       <div className="flex items-center gap-3 bg-[var(--chat-teal)] px-4 py-3 text-white">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-white/25" aria-hidden="true">
