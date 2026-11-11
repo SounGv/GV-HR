@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { getEmployee } from "@/features/employee/service";
+import { getEmployeeLogin } from "@/features/employee/account";
 import { AppError } from "@/lib/api/errors";
 import { EmployeeAccountFormPage } from "@/features/employee/employee-account-form-page";
 import { displayName } from "@/lib/format";
@@ -17,8 +18,11 @@ export default async function EmployeeAccountPage({ params }: { params: Promise<
     throw e;
   });
 
+  const login = employee.userId ? await getEmployeeLogin(session.companyId, employee.id) : null;
+
   return (
     <EmployeeAccountFormPage
+      currentLogin={login}
       employeeId={employee.id}
       employeeName={displayName(employee)}
       hasAccount={!!employee.userId}

@@ -5,7 +5,7 @@ import { writeAudit } from "@/lib/audit";
 import { revokeAllForUser } from "@/lib/auth/token-store";
 import { can } from "@/lib/auth/rbac";
 import type { SessionUser } from "@/lib/auth/session";
-import type { EmployeeAccountInput, EmployeePasswordResetInput } from "./schema";
+import type { EmployeeAccountInput, EmployeeAccountUpdateInput, EmployeePasswordResetInput } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -126,4 +126,96 @@ export async function resetEmployeeAccountPassword(
     entityId: employeeId,
     ...meta,
   });
+}
+
+/** The login an employee has (email / username), for the edit-account form. Null when there is none. */
+export async function getEmployeeLogin(companyId: string, employeeId: string) {
+  const emp = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId, deletedAt: null },
+    select: { user: { select: { email: true, username: true, deletedAt: true } } },
+  });
+  if (!emp?.user || emp.user.deletedAt) return null;
+  return { email: emp.user.email, username: emp.user.username };
+}
+
+/**
+ * HR edits an employee's existing login: the email and/or username used to
+ * sign in, and/or the password. Same escalation guard as the password reset
+ * (the target's permissions must be a subset of the caller's), duplicate IDs
+ * are refused, at least one login ID must remain, and any change signs the
+ * user out everywhere. The audit records old and new IDs, never the password.
+ */
+export async function updateEmployeeAccount(
+  companyId: string,
+  employeeId: string,
+  input: EmployeeAccountUpdateInput,
+  session: SessionUser,
+  meta?: Meta,
+) {
+  const emp = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId, deletedAt: null },
+    select: {
+      id: true,
+      userId: true,
+      user: {
+        select: {
+          email: true,
+          username: true,
+          roles: { select: { role: { select: { permissions: { select: { permission: { select: { key: true } } } } } } } },
+        },
+      },
+    },
+  });
+  if (!emp) throw NotFound("ไม่พบพนักงาน");
+  if (!emp.userId || !emp.user) throw BadRequest("พนักงานคนนี้ยังไม่มีบัญชีเข้าใช้งาน");
+
+  const targetKeys = new Set<string>();
+  for (const ur of emp.user.roles) {
+    for (const rp of ur.role.permissions) targetKeys.add(rp.permission.key);
+  }
+  if ([...targetKeys].some((k) => !can(session.perms, k))) {
+    throw Forbidden("ไม่สามารถแก้บัญชีของผู้ใช้ที่มีสิทธิ์เกินกว่าคุณได้");
+  }
+
+  const email = input.email === undefined ? emp.user.email : input.email;
+  const username = input.username === undefined ? emp.user.username : input.username;
+  if (!email && !username) throw BadRequest("ต้องมีอีเมลหรือชื่อผู้ใช้อย่างน้อย 1 อย่างสำหรับเข้าสู่ระบบ");
+
+  const emailChanged = email !== emp.user.email;
+  const usernameChanged = username !== emp.user.username;
+  if (!emailChanged && !usernameChanged && !input.password) throw BadRequest("ไม่มีอะไรเปลี่ยน");
+
+  if (email && emailChanged) {
+    const dupe = await prisma.user.findFirst({ where: { email, deletedAt: null, NOT: { id: emp.userId } }, select: { id: true } });
+    if (dupe) throw Conflict("อีเมลนี้ถูกใช้งานแล้ว");
+  }
+  if (username && usernameChanged) {
+    const dupe = await prisma.user.findFirst({ where: { username, deletedAt: null, NOT: { id: emp.userId } }, select: { id: true } });
+    if (dupe) throw Conflict("ชื่อผู้ใช้นี้ถูกใช้งานแล้ว");
+  }
+
+  const passwordHash = input.password ? await hashPassword(input.password) : undefined;
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: emp.userId! },
+      data: { email, username, ...(passwordHash ? { passwordHash } : {}), updatedById: session.sub },
+    });
+    // The employee record shows the login email too; keep it in step when it changes.
+    if (emailChanged && email) {
+      await tx.employee.update({ where: { id: employeeId }, data: { email, updatedById: session.sub } });
+    }
+  });
+  await revokeAllForUser(emp.userId);
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "employee.update_account",
+    entity: "Employee",
+    entityId: employeeId,
+    before: { email: emp.user.email, username: emp.user.username },
+    after: { email, username, passwordChanged: !!input.password },
+    ...meta,
+  });
+  return { email, username };
 }

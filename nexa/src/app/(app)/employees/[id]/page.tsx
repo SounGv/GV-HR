@@ -78,14 +78,14 @@ export default async function EmployeeDetailPage({
               {canEdit && (
                 <>
                   {employee.userId && (
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-success/10 px-3 py-1.5 text-xs font-medium text-success">
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-success/10 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-success">
                       <CheckCircle2 className="size-4" /> มีบัญชีเข้าใช้งานแล้ว
                     </span>
                   )}
                   <Button variant="outline" size="sm" render={<Link href={`/employees/${employee.id}/account`} />}>
                     {employee.userId ? (
                       <>
-                        <RotateCcw className="size-4" /> รีเซ็ตรหัสผ่าน
+                        <RotateCcw className="size-4" /> แก้ไขบัญชีเข้าใช้งาน
                       </>
                     ) : (
                       <>

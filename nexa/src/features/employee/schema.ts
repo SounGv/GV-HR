@@ -148,3 +148,27 @@ export const employeePasswordResetSchema = z.object({
   password: passwordSchema,
 });
 export type EmployeePasswordResetInput = z.infer<typeof employeePasswordResetSchema>;
+
+const emptyToNull = (v: unknown) => (v === "" ? null : v);
+
+/**
+ * HR edits an existing login: email and/or username (send "" or null to
+ * clear one; leave a key out to keep it) and/or a new password (leave it out
+ * to keep the old one). At least one login ID must remain — checked in the
+ * service against the stored values.
+ */
+export const employeeAccountUpdateSchema = z.object({
+  email: z.preprocess(emptyToNull, z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง").max(200).nullable().optional()),
+  username: z.preprocess(
+    emptyToNull,
+    z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(USERNAME_RE, "ชื่อผู้ใช้ต้องขึ้นต้นด้วยตัวอักษร ใช้ได้เฉพาะตัวพิมพ์เล็ก ตัวเลข _ . ความยาว 3-32 ตัวอักษร")
+      .nullable()
+      .optional(),
+  ),
+  password: z.preprocess(emptyToUndefined, passwordSchema.optional()),
+});
+export type EmployeeAccountUpdateInput = z.infer<typeof employeeAccountUpdateSchema>;

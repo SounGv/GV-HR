@@ -32,7 +32,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <AppBadgeSync />
           <AppSidebar />
           <SidebarInset className="bg-background">
-            <div className="hidden md:block">
+            {/* The wrapper itself sticks: a sticky header inside a plain div scrolls away with it,
+                which left page header bars (md:top-16) floating 64px below an empty strip. */}
+            <div className="hidden md:sticky md:top-0 md:z-30 md:block">
               <AppTopbar />
             </div>
             <main className="gv-main min-w-0 flex-1 pb-24 md:space-y-6 md:p-6 md:pb-6">
