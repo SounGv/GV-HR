@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { runAfterResponse } from "@/lib/after-response";
 
 /**
  * LINE Messaging API — real push/reply integration, gated on env config
@@ -39,13 +40,26 @@ async function callLineApi(path: string, body: unknown): Promise<void> {
   }
 }
 
-/** Best-effort push — never throws, so a LINE outage never blocks the caller. */
-export async function pushLineMessage(lineUserId: string, text: string): Promise<void> {
+/**
+ * Sends one push now (user, group or room id all go in `to`). Never throws.
+ * Callers inside a request use pushLineMessage / pushLineGroupMessage, which
+ * send after the response; this is for work that already runs after it.
+ */
+export async function sendLinePush(to: string, text: string): Promise<void> {
   if (!isLineConfigured()) return;
   await callLineApi("/v2/bot/message/push", {
-    to: lineUserId,
+    to,
     messages: [{ type: "text", text: text.slice(0, 5000) }],
   });
+}
+
+/**
+ * Best-effort push — never throws, so a LINE outage never blocks the caller,
+ * and it is sent after the response so the caller never waits on LINE either.
+ */
+export async function pushLineMessage(lineUserId: string, text: string): Promise<void> {
+  if (!isLineConfigured()) return;
+  await runAfterResponse(() => sendLinePush(lineUserId, text));
 }
 
 export async function replyLineMessage(replyToken: string, text: string): Promise<void> {
@@ -63,10 +77,7 @@ export async function replyLineMessage(replyToken: string, text: string): Promis
  */
 export async function pushLineGroupMessage(groupId: string, text: string): Promise<void> {
   if (!isLineConfigured()) return;
-  await callLineApi("/v2/bot/message/push", {
-    to: groupId,
-    messages: [{ type: "text", text: text.slice(0, 5000) }],
-  });
+  await runAfterResponse(() => sendLinePush(groupId, text));
 }
 
 /** 6-char, unambiguous alphabet (no 0/O/1/I) — read out loud/typed by hand. */

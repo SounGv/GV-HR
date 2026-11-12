@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { pushLineGroupMessage } from "./line";
+import { runAfterResponse } from "@/lib/after-response";
+import { sendLinePush } from "./line";
 import { pushViaGateway, readGatewayConfig } from "./line-gateway";
 
 /**
@@ -34,15 +35,21 @@ export async function broadcastToLineGroups(
         console.error("[line-gateway] GV_GATEWAY_LINE_GROUP_IDS is empty: group alert not sent");
         return;
       }
-      for (const to of gateway.groupIds) {
-        await pushViaGateway(gateway, to, text);
-      }
+      // Sent after the response: a check-in or a leave request never waits on LINE.
+      await runAfterResponse(async () => {
+        for (const to of gateway.groupIds) {
+          await pushViaGateway(gateway, to, text);
+        }
+      });
       return;
     }
 
-    for (const g of groups) {
-      await pushLineGroupMessage(g.groupId, text);
-    }
+    if (groups.length === 0) return;
+    await runAfterResponse(async () => {
+      for (const g of groups) {
+        await sendLinePush(g.groupId, text);
+      }
+    });
   } catch (err) {
     console.error("[line] broadcastToLineGroups failed:", err);
   }
