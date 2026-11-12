@@ -32,6 +32,22 @@ export const PAID_LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL"] as const;
 /** Leave types that can be requested by the hour instead of by the day. */
 export const HOURLY_LEAVE_TYPES = ["SICK", "PERSONAL"] as const;
 
+/**
+ * Whether this person may take this leave type by the hour.
+ *
+ * Sick and personal leave can always be taken by the hour (from the quota).
+ * Unpaid leave can be too, but only by daily-wage staff (owner's call,
+ * 2026-11-12): they are paid per day worked, so payroll takes the unpaid
+ * hours off at the daily rate ÷ 8 (see payroll/calc.ts).
+ *
+ * @param type The leave type.
+ * @param compensationType The employee's pay type (MONTHLY / DAILY / HOURLY), if known.
+ */
+export function canTakeHourly(type: string, compensationType: string | null | undefined): boolean {
+  if ((HOURLY_LEAVE_TYPES as readonly string[]).includes(type)) return true;
+  return type === "UNPAID" && compensationType === "DAILY";
+}
+
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 /** Minutes since midnight for an "HH:mm" string — throws if malformed. */

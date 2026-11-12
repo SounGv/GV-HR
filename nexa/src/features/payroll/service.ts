@@ -129,6 +129,57 @@ async function getUnpaidLeaveDaysByEmployee(
 }
 
 /**
+ * Approved hour-unit unpaid leave per employee in [from, to), counted only on
+ * days the employee clocked in. Used for DAILY staff, whose pay is a full day
+ * per day worked: the hours they were on unpaid leave that day are then taken
+ * off at the daily rate ÷ 8. A day with no clock-in is already unpaid, so its
+ * hours are skipped (no double deduction).
+ */
+async function getUnpaidLeaveHoursOnWorkedDays(
+  companyId: string,
+  from: Date,
+  to: Date,
+  employeeIds: string[],
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (employeeIds.length === 0) return map;
+  const requests = await prisma.leaveRequest.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      status: "APPROVED",
+      type: "UNPAID",
+      unit: "HOUR",
+      employeeId: { in: employeeIds },
+      startDate: { gte: from, lt: to },
+    },
+    select: { employeeId: true, startDate: true, hours: true },
+  });
+  if (requests.length === 0) return map;
+  const worked = await prisma.attendanceRecord.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      employeeId: { in: [...new Set(requests.map((r) => r.employeeId))] },
+      workDate: { gte: from, lt: to },
+      clockInAt: { not: null },
+    },
+    select: { employeeId: true, workDate: true },
+  });
+  const workedDays = new Set(worked.map((w) => `${w.employeeId}|${w.workDate.toISOString().slice(0, 10)}`));
+  for (const r of requests) {
+    if (!workedDays.has(`${r.employeeId}|${r.startDate.toISOString().slice(0, 10)}`)) continue;
+    map.set(r.employeeId, (map.get(r.employeeId) ?? 0) + (r.hours ?? 0));
+  }
+  return map;
+}
+
+/** Daily rate ÷ 8: what one hour of unpaid leave takes off a DAILY employee's pay. */
+function unpaidHourRate(emp: { compensationType: string; dailyRate: unknown }): number {
+  return emp.compensationType === "DAILY" ? Number(emp.dailyRate ?? 0) / 8 : 0;
+}
+
+/**
  * Days-present (any record with a clock-in) and total clocked hours per
  * employee, for DAILY/HOURLY compensation — base pay for those two types is
  * literally rate × actual attendance, unlike MONTHLY which pays the fixed
@@ -425,6 +476,12 @@ export async function generatePayroll(
   const otMap = new Map(otAgg.map((o) => [o.employeeId, o._sum.estimatedAmount ?? 0]));
   const unpaidLeaveMap = await getUnpaidLeaveDaysByEmployee(companyId, from, to);
   const wagedIds = employees.filter((e) => e.compensationType !== "MONTHLY").map((e) => e.id);
+  const unpaidHoursMap = await getUnpaidLeaveHoursOnWorkedDays(
+    companyId,
+    from,
+    to,
+    employees.filter((e) => e.compensationType === "DAILY").map((e) => e.id),
+  );
   const workedMap =
     wagedIds.length > 0 ? await getWorkedDaysAndHours(companyId, from, to, wagedIds) : new Map();
   // Credit approved paid leave into DAILY/HOURLY base pay — see
@@ -485,6 +542,8 @@ export async function generatePayroll(
       // Unpaid leave only makes sense to deduct for MONTHLY — DAILY/HOURLY
       // base pay already excludes unworked days/hours by construction.
       unpaidLeaveDays: isMonthly ? unpaidLeaveMap.get(emp.id) ?? 0 : 0,
+      unpaidLeaveHours: unpaidHoursMap.get(emp.id) ?? 0,
+      unpaidLeaveHourRate: unpaidHourRate(emp),
       absentDays: absenceMap.get(emp.id)?.absentDays ?? 0,
       pendingReviewDays: absenceMap.get(emp.id)?.pendingReviewDays ?? 0,
       lateOccurrences: absenceMap.get(emp.id)?.lateOccurrences ?? 0,
@@ -649,6 +708,10 @@ export async function updatePayrollAdjustments(
   const workedMap = isMonthly
     ? new Map<string, { days: number; hours: number }>()
     : await getWorkedDaysAndHours(companyId, from, to, [record.employeeId]);
+  const unpaidHoursMap =
+    employee.compensationType === "DAILY"
+      ? await getUnpaidLeaveHoursOnWorkedDays(companyId, from, to, [record.employeeId])
+      : new Map<string, number>();
 
   const attendancePolicy = await prisma.company.findUnique({
     where: { id: companyId },
@@ -672,6 +735,8 @@ export async function updatePayrollAdjustments(
     compensationType: employee.compensationType as "MONTHLY" | "DAILY" | "HOURLY",
     overtime: otAgg._sum.estimatedAmount ?? 0,
     unpaidLeaveDays: unpaidLeaveMap.get(record.employeeId) ?? 0,
+    unpaidLeaveHours: unpaidHoursMap.get(record.employeeId) ?? 0,
+    unpaidLeaveHourRate: unpaidHourRate(employee),
     absentDays: absenceMap.get(record.employeeId)?.absentDays ?? 0,
     lateOccurrences: absenceMap.get(record.employeeId)?.lateOccurrences ?? 0,
     lateDeductionPerOccurrence: Number(attendancePolicy?.lateDeductionPerOccurrence ?? 0),

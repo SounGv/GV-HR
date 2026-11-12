@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { useAuth } from "@/features/auth/auth-context";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -32,7 +33,7 @@ import { ApiError } from "@/lib/api/client";
 import { MobileLeaveForm } from "@/components/mobile/mobile-leave-form";
 import { DesktopOnly } from "@/components/mobile/mobile-screen";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "./schema";
-import { addHoursToTime, computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "./days";
+import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday } from "./days";
 import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "./labels";
 import { useCreateLeave } from "./hooks";
 import { BalanceCards } from "./balance-cards";
@@ -44,9 +45,6 @@ const LIST = "/leave";
 const HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
 const DEFAULT_HOUR_START = "09:00";
 
-function isHourlyType(type: string): boolean {
-  return (HOURLY_LEAVE_TYPES as readonly string[]).includes(type);
-}
 
 const formSchema = z
   .object({
@@ -84,6 +82,7 @@ const formSchema = z
 type FormSchema = z.infer<typeof formSchema>;
 
 export function LeaveFormPage() {
+  const { user } = useAuth();
   const router = useRouter();
   const createMutation = useCreateLeave();
   const againRef = useRef(false);
@@ -114,7 +113,7 @@ export function LeaveFormPage() {
     "endTime",
   ]);
   const halfDayPeriod = form.watch("halfDayPeriod");
-  const showHourlyOption = isHourlyType(leaveType);
+  const showHourlyOption = canTakeHourly(leaveType, user.employee?.compensationType);
   const isHourly = showHourlyOption && unit === "HOUR";
   const preview = isHourly
     ? startTime && endTime && endTime > startTime

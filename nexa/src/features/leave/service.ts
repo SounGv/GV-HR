@@ -12,7 +12,7 @@ import {
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { computeLeaveDays, computeLeaveHours, deductsBalance, HOURLY_LEAVE_TYPES, isSunday, PAID_LEAVE_TYPES } from "./days";
+import { canTakeHourly, computeLeaveDays, computeLeaveHours, deductsBalance, isSunday, PAID_LEAVE_TYPES } from "./days";
 import { HALF_DAY_PERIOD_LABEL } from "./labels";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
@@ -180,9 +180,12 @@ export async function createLeave(
   }
 
   if (isHourly) {
-    if (!(HOURLY_LEAVE_TYPES as readonly string[]).includes(input.type)) {
-      throw BadRequest("ลาเป็นชั่วโมงได้เฉพาะลาป่วย/ลากิจ");
+    const daily = await isDailyCompensation(employeeId);
+    if (!canTakeHourly(input.type, daily ? "DAILY" : null)) {
+      throw BadRequest("ลาเป็นชั่วโมงได้เฉพาะลาป่วย/ลากิจ (พนักงานรายวันลาไม่รับค่าจ้างเป็นชั่วโมงได้ด้วย)");
     }
+  }
+  if (isHourly && deductsBalance(input.type)) {
     const remaining = await getRemainingHourBalance(companyId, employeeId, input.type, input.startDate.getUTCFullYear());
     if (hours! > remaining) {
       throw BadRequest(
@@ -382,13 +385,15 @@ export async function decideLeave(
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
   const isHourly = req.unit === "HOUR";
+  // Unpaid hours (daily-wage staff) come from no quota: nothing to check or count.
+  const usesBalance = deductsBalance(req.type);
 
   let quotaDaysForNewBalance = 0;
   let quotaHoursForNewBalance = 0;
   // The hour quota of the balance this hourly request comes out of: 0 means it uses the day balance.
   let hourPoolTotal = 0;
   if (input.action === "approve") {
-    if (isHourly) {
+    if (isHourly && usesBalance) {
       const remaining = await getRemainingHourBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
       if ((req.hours ?? 0) > remaining) {
         throw BadRequest(
@@ -404,7 +409,7 @@ export async function decideLeave(
         select: { totalHours: true },
       });
       hourPoolTotal = existing ? existing.totalHours : quotaHoursForNewBalance;
-    } else if (deductsBalance(req.type)) {
+    } else if (usesBalance) {
       const remaining = await getRemainingBalance(companyId, req.employeeId, req.type, req.startDate.getUTCFullYear());
       if (req.days > remaining) {
         const requested = req.halfDay
@@ -440,7 +445,7 @@ export async function decideLeave(
     if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
     const rec = await tx.leaveRequest.findFirstOrThrow({ where: { id: req.id }, select: requestSelect });
 
-    if (input.action === "approve" && (isHourly || deductsBalance(req.type))) {
+    if (input.action === "approve" && usesBalance) {
       const year = req.startDate.getUTCFullYear();
       const hourly = hourlyUsage(isHourly ? req.hours ?? 0 : 0, hourPoolTotal);
       await tx.leaveBalance.upsert({
@@ -545,7 +550,7 @@ export async function cancelLeave(
     });
 
     // Restore balance if a previously-approved paid leave is cancelled.
-    if (req.status === "APPROVED" && (isHourly || deductsBalance(req.type))) {
+    if (req.status === "APPROVED" && deductsBalance(req.type)) {
       const year = req.startDate.getUTCFullYear();
       if (isHourly) {
         // Give back to the same balance the approval took it from (hours, or days at 8 hours a day).

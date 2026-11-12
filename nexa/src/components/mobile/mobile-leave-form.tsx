@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { useAuth } from "@/features/auth/auth-context";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { TimeSelect } from "@/components/shared/time-select";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "@/features/leave/schema";
-import { addHoursToTime, computeLeaveDays, computeLeaveHours, HOURLY_LEAVE_TYPES, isSunday } from "@/features/leave/days";
+import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday } from "@/features/leave/days";
 import { remainingLeaveHours } from "@/features/leave/hour-pool";
 import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
 import { useBalances, useCreateLeave } from "@/features/leave/hooks";
@@ -24,9 +25,6 @@ import { MobileScreen } from "./mobile-screen";
 const FORM_ID = "mobile-leave-form";
 const LIST = "/leave";
 
-function isHourlyType(type: string): boolean {
-  return (HOURLY_LEAVE_TYPES as readonly string[]).includes(type);
-}
 
 const formSchema = z
   .object({
@@ -91,6 +89,7 @@ function fmtThaiDate(iso: string) {
 }
 
 export function MobileLeaveForm() {
+  const { user } = useAuth();
   const router = useRouter();
   const createMutation = useCreateLeave();
   const { data: balanceData } = useBalances();
@@ -124,7 +123,7 @@ export function MobileLeaveForm() {
     "startTime",
     "endTime",
   ]);
-  const showHourlyOption = isHourlyType(type);
+  const showHourlyOption = canTakeHourly(type, user.employee?.compensationType);
   const isHourly = showHourlyOption && unit === "HOUR";
 
   // One "ระยะเวลาลา" picker standing in for what used to be three separate
@@ -341,7 +340,7 @@ export function MobileLeaveForm() {
                     // Hourly leave isn't offered for this type — fall back to
                     // a full day rather than leaving an hour-unit selection
                     // the picker below can no longer show.
-                    if (!isHourlyType(t) && form.getValues("unit") === "HOUR") onDurationChange("FULL_DAY");
+                    if (!canTakeHourly(t, user.employee?.compensationType) && form.getValues("unit") === "HOUR") onDurationChange("FULL_DAY");
                   }}
                   className={cn(
                     "rounded-[10px] border-[1.5px] p-3 text-left transition active:scale-[0.99]",

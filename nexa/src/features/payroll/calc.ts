@@ -45,6 +45,12 @@ export interface PayrollInput {
   // an unpaid-leave day was never counted as worked in the first place and
   // deducting it again here would double-count it.
   unpaidLeaveDays?: number;
+  // Approved hour-unit unpaid leave of a DAILY employee, counted only on days
+  // they clocked in (a day with no clock-in is already left out of their pay).
+  // Deducted at unpaidLeaveHourRate = daily rate ÷ 8: a full day's wage minus
+  // the hours on leave (owner's call "A", 2026-11-12).
+  unpaidLeaveHours?: number;
+  unpaidLeaveHourRate?: number;
   // Workdays with no clock-in and no approved leave of any type covering
   // them — detected by the caller from attendance + shift + leave records.
   // Same day-rate deduction as unpaid leave, but shown as its own line so
@@ -122,6 +128,8 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const advance = Math.round(input.advance ?? 0);
   const unpaidLeaveDays = Math.max(0, input.unpaidLeaveDays ?? 0);
   const unpaidLeaveDeduction = Math.round((salary / 30) * unpaidLeaveDays);
+  const unpaidLeaveHours = Math.max(0, input.unpaidLeaveHours ?? 0);
+  const unpaidHourDeduction = Math.round(unpaidLeaveHours * Math.max(0, input.unpaidLeaveHourRate ?? 0));
   const absentDays = Math.max(0, input.absentDays ?? 0);
   const absenceDeduction = Math.round((salary / 30) * absentDays);
   const pendingReviewDays = Math.max(0, input.pendingReviewDays ?? 0);
@@ -193,6 +201,10 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   if (loan) deductions.push({ label: "หักชำระเงินกู้", amount: loan });
   if (advance) deductions.push({ label: "หักเบิกล่วงหน้า", amount: advance });
   if (unpaidLeaveDeduction) deductions.push({ label: "หักลาไม่รับค่าจ้าง", amount: unpaidLeaveDeduction });
+  if (unpaidHourDeduction) {
+    const hoursLabel = Math.round(unpaidLeaveHours * 100) / 100;
+    deductions.push({ label: `หักลาไม่รับค่าจ้าง (${hoursLabel} ชม.)`, amount: unpaidHourDeduction });
+  }
   if (absenceDeduction) deductions.push({ label: `หักขาดงาน (${absentDays} วัน)`, amount: absenceDeduction });
   if (pendingReviewDays) {
     deductions.push({ label: `รอตรวจสอบเวลาเข้า-ออก (${pendingReviewDays} วัน) — ยังไม่หักเงิน`, amount: 0 });
