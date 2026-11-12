@@ -45,10 +45,9 @@ export interface PayrollInput {
   // an unpaid-leave day was never counted as worked in the first place and
   // deducting it again here would double-count it.
   unpaidLeaveDays?: number;
-  // Approved hour-unit unpaid leave of a DAILY employee, counted only on days
-  // they clocked in (a day with no clock-in is already left out of their pay).
-  // Deducted at unpaidLeaveHourRate = daily rate ÷ 8: a full day's wage minus
-  // the hours on leave (owner's call "A", 2026-11-12).
+  // Approved hour-unit unpaid leave in this period, deducted at
+  // unpaidLeaveHourRate (the hourly value of the person's pay — see
+  // unpaidHourRate below; owner's call, 2026-11-12).
   unpaidLeaveHours?: number;
   unpaidLeaveHourRate?: number;
   // Workdays with no clock-in and no approved leave of any type covering
@@ -232,4 +231,15 @@ export function periodLabel(period: string): string {
 
 export function isValidPeriod(period: string): boolean {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(period);
+}
+
+/**
+ * What one hour of unpaid leave takes off: daily rate ÷ 8 (DAILY), the hourly
+ * rate (HOURLY), or salary ÷ 30 ÷ 8 (MONTHLY — the same ÷30 day the full-day
+ * unpaid deduction uses, split into 8 hours).
+ */
+export function unpaidHourRate(emp: { compensationType: string; baseSalary: unknown; dailyRate: unknown; hourlyRate: unknown }): number {
+  if (emp.compensationType === "DAILY") return Number(emp.dailyRate ?? 0) / 8;
+  if (emp.compensationType === "HOURLY") return Number(emp.hourlyRate ?? 0);
+  return Number(emp.baseSalary ?? 0) / 30 / 8;
 }

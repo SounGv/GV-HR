@@ -50,9 +50,8 @@ export const leaveCreateSchema = z
     message: "กรุณาเลือกช่วงเวลาลาครึ่งวัน (เช้า/บ่าย)",
     path: ["halfDayPeriod"],
   })
-  // Unpaid leave by the hour is daily-wage staff only; the service checks the pay type (canTakeHourly).
   .refine((d) => d.unit !== "HOUR" || d.type === "UNPAID" || (HOURLY_LEAVE_TYPES as readonly string[]).includes(d.type), {
-    message: "ลาเป็นชั่วโมงได้เฉพาะลาป่วย/ลากิจ (พนักงานรายวันลาไม่รับค่าจ้างเป็นชั่วโมงได้ด้วย)",
+    message: "ลาเป็นชั่วโมงได้เฉพาะลาป่วย ลากิจ และลาไม่รับค่าจ้าง",
     path: ["unit"],
   })
   .refine((d) => d.unit !== "HOUR" || sameDay(d.startDate, d.endDate), {

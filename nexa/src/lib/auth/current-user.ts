@@ -21,8 +21,6 @@ export interface CurrentUser {
     /** MALE / FEMALE / OTHER or null; picks the character avatar when there is no photo. */
     gender: string | null;
     status: string;
-    /** MONTHLY / DAILY / HOURLY: decides e.g. whether unpaid leave can be taken by the hour. */
-    compensationType: string;
     department: { id: string; name: string } | null;
     position: { id: string; title: string } | null;
   } | null;
@@ -51,7 +49,6 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
           avatarUrl: true,
           gender: true,
           status: true,
-          compensationType: true,
           department: { select: { id: true, name: true } },
           position: { select: { id: true, title: true } },
         },

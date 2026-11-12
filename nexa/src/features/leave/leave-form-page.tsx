@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { useAuth } from "@/features/auth/auth-context";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -82,7 +81,6 @@ const formSchema = z
 type FormSchema = z.infer<typeof formSchema>;
 
 export function LeaveFormPage() {
-  const { user } = useAuth();
   const router = useRouter();
   const createMutation = useCreateLeave();
   const againRef = useRef(false);
@@ -113,7 +111,7 @@ export function LeaveFormPage() {
     "endTime",
   ]);
   const halfDayPeriod = form.watch("halfDayPeriod");
-  const showHourlyOption = canTakeHourly(leaveType, user.employee?.compensationType);
+  const showHourlyOption = canTakeHourly(leaveType);
   const isHourly = showHourlyOption && unit === "HOUR";
   const preview = isHourly
     ? startTime && endTime && endTime > startTime

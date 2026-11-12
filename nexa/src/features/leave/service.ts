@@ -179,11 +179,8 @@ export async function createLeave(
     throw BadRequest("วันที่เลือกเป็นวันอาทิตย์ ซึ่งไม่ใช่วันทำงาน (นับวันลาจันทร์–เสาร์) กรุณาเลือกวันอื่น");
   }
 
-  if (isHourly) {
-    const daily = await isDailyCompensation(employeeId);
-    if (!canTakeHourly(input.type, daily ? "DAILY" : null)) {
-      throw BadRequest("ลาเป็นชั่วโมงได้เฉพาะลาป่วย/ลากิจ (พนักงานรายวันลาไม่รับค่าจ้างเป็นชั่วโมงได้ด้วย)");
-    }
+  if (isHourly && !canTakeHourly(input.type)) {
+    throw BadRequest("ลาเป็นชั่วโมงได้เฉพาะลาป่วย ลากิจ และลาไม่รับค่าจ้าง");
   }
   if (isHourly && deductsBalance(input.type)) {
     const remaining = await getRemainingHourBalance(companyId, employeeId, input.type, input.startDate.getUTCFullYear());
@@ -385,7 +382,7 @@ export async function decideLeave(
 
   const nextStatus = input.action === "approve" ? "APPROVED" : "REJECTED";
   const isHourly = req.unit === "HOUR";
-  // Unpaid hours (daily-wage staff) come from no quota: nothing to check or count.
+  // Unpaid hours come from no quota: nothing to check or count.
   const usesBalance = deductsBalance(req.type);
 
   let quotaDaysForNewBalance = 0;

@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { useAuth } from "@/features/auth/auth-context";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -89,7 +88,6 @@ function fmtThaiDate(iso: string) {
 }
 
 export function MobileLeaveForm() {
-  const { user } = useAuth();
   const router = useRouter();
   const createMutation = useCreateLeave();
   const { data: balanceData } = useBalances();
@@ -123,7 +121,7 @@ export function MobileLeaveForm() {
     "startTime",
     "endTime",
   ]);
-  const showHourlyOption = canTakeHourly(type, user.employee?.compensationType);
+  const showHourlyOption = canTakeHourly(type);
   const isHourly = showHourlyOption && unit === "HOUR";
 
   // One "ระยะเวลาลา" picker standing in for what used to be three separate
@@ -340,7 +338,7 @@ export function MobileLeaveForm() {
                     // Hourly leave isn't offered for this type — fall back to
                     // a full day rather than leaving an hour-unit selection
                     // the picker below can no longer show.
-                    if (!canTakeHourly(t, user.employee?.compensationType) && form.getValues("unit") === "HOUR") onDurationChange("FULL_DAY");
+                    if (!canTakeHourly(t) && form.getValues("unit") === "HOUR") onDurationChange("FULL_DAY");
                   }}
                   className={cn(
                     "rounded-[10px] border-[1.5px] p-3 text-left transition active:scale-[0.99]",

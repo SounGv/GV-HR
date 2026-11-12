@@ -7,7 +7,7 @@ import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { sendEmail } from "@/lib/email";
 import { getCompanyProfile } from "@/features/company/service";
-import { computePayroll, periodLabel, type LineItem, type TaxDeductionInputs } from "./calc";
+import { computePayroll, periodLabel, type LineItem, type TaxDeductionInputs, unpaidHourRate } from "./calc";
 import { PAID_LEAVE_TYPES } from "@/features/leave/days";
 import { renderPayslipEmailHtml } from "./payslip-email";
 import {
@@ -129,17 +129,19 @@ async function getUnpaidLeaveDaysByEmployee(
 }
 
 /**
- * Approved hour-unit unpaid leave per employee in [from, to), counted only on
- * days the employee clocked in. Used for DAILY staff, whose pay is a full day
- * per day worked: the hours they were on unpaid leave that day are then taken
- * off at the daily rate ÷ 8. A day with no clock-in is already unpaid, so its
- * hours are skipped (no double deduction).
+ * Approved hour-unit unpaid leave per employee in [from, to).
+ *
+ * For staff paid by attendance (DAILY / HOURLY: ids in `attendancePaid`) an
+ * hour counts only on a day they clocked in: a day with no clock-in is already
+ * left out of their pay, so its hours are not taken off again. MONTHLY staff
+ * are paid the same salary either way, so every approved hour counts.
  */
-async function getUnpaidLeaveHoursOnWorkedDays(
+async function getUnpaidLeaveHours(
   companyId: string,
   from: Date,
   to: Date,
   employeeIds: string[],
+  attendancePaid: ReadonlySet<string>,
 ): Promise<Map<string, number>> {
   const map = new Map<string, number>();
   if (employeeIds.length === 0) return map;
@@ -156,11 +158,12 @@ async function getUnpaidLeaveHoursOnWorkedDays(
     select: { employeeId: true, startDate: true, hours: true },
   });
   if (requests.length === 0) return map;
-  const worked = await prisma.attendanceRecord.findMany({
+  const checkIds = [...new Set(requests.map((r) => r.employeeId).filter((id) => attendancePaid.has(id)))];
+  const worked = checkIds.length === 0 ? [] : await prisma.attendanceRecord.findMany({
     where: {
       companyId,
       deletedAt: null,
-      employeeId: { in: [...new Set(requests.map((r) => r.employeeId))] },
+      employeeId: { in: checkIds },
       workDate: { gte: from, lt: to },
       clockInAt: { not: null },
     },
@@ -168,16 +171,13 @@ async function getUnpaidLeaveHoursOnWorkedDays(
   });
   const workedDays = new Set(worked.map((w) => `${w.employeeId}|${w.workDate.toISOString().slice(0, 10)}`));
   for (const r of requests) {
-    if (!workedDays.has(`${r.employeeId}|${r.startDate.toISOString().slice(0, 10)}`)) continue;
+    const day = `${r.employeeId}|${r.startDate.toISOString().slice(0, 10)}`;
+    if (attendancePaid.has(r.employeeId) && !workedDays.has(day)) continue;
     map.set(r.employeeId, (map.get(r.employeeId) ?? 0) + (r.hours ?? 0));
   }
   return map;
 }
 
-/** Daily rate ÷ 8: what one hour of unpaid leave takes off a DAILY employee's pay. */
-function unpaidHourRate(emp: { compensationType: string; dailyRate: unknown }): number {
-  return emp.compensationType === "DAILY" ? Number(emp.dailyRate ?? 0) / 8 : 0;
-}
 
 /**
  * Days-present (any record with a clock-in) and total clocked hours per
@@ -476,11 +476,12 @@ export async function generatePayroll(
   const otMap = new Map(otAgg.map((o) => [o.employeeId, o._sum.estimatedAmount ?? 0]));
   const unpaidLeaveMap = await getUnpaidLeaveDaysByEmployee(companyId, from, to);
   const wagedIds = employees.filter((e) => e.compensationType !== "MONTHLY").map((e) => e.id);
-  const unpaidHoursMap = await getUnpaidLeaveHoursOnWorkedDays(
+  const unpaidHoursMap = await getUnpaidLeaveHours(
     companyId,
     from,
     to,
-    employees.filter((e) => e.compensationType === "DAILY").map((e) => e.id),
+    employees.map((e) => e.id),
+    new Set(wagedIds),
   );
   const workedMap =
     wagedIds.length > 0 ? await getWorkedDaysAndHours(companyId, from, to, wagedIds) : new Map();
@@ -708,10 +709,13 @@ export async function updatePayrollAdjustments(
   const workedMap = isMonthly
     ? new Map<string, { days: number; hours: number }>()
     : await getWorkedDaysAndHours(companyId, from, to, [record.employeeId]);
-  const unpaidHoursMap =
-    employee.compensationType === "DAILY"
-      ? await getUnpaidLeaveHoursOnWorkedDays(companyId, from, to, [record.employeeId])
-      : new Map<string, number>();
+  const unpaidHoursMap = await getUnpaidLeaveHours(
+    companyId,
+    from,
+    to,
+    [record.employeeId],
+    new Set(isMonthly ? [] : [record.employeeId]),
+  );
 
   const attendancePolicy = await prisma.company.findUnique({
     where: { id: companyId },
