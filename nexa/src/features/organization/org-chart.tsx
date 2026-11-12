@@ -30,6 +30,7 @@ import {
   applyOrgMoves,
   buildCompanyTree,
   buildDivisionPeople,
+  buildDivisionTree,
   checkOrgMoves,
   detectOrgIssues,
   divisionColumns,
@@ -48,6 +49,7 @@ import {
   type PersonNode,
   type TeamColumn,
 } from "./org-tree";
+import { DivisionTreeChart } from "./org-tree-view";
 import type { DepartmentRow } from "./types";
 
 /** The API takes at most this many people per save. */
@@ -57,7 +59,8 @@ const rise = (i: number) => ({ "--i": i }) as CSSProperties;
 
 /* Tree connectors (org-division-mock.html), drawn from sm up; on phones the
    cards stack as a plain list. Line colour matches the mock's --line. */
-const LINE = "sm:before:bg-[#cfd8dc] sm:after:bg-[#cfd8dc] dark:sm:before:bg-border dark:sm:after:bg-border";
+const LINE =
+  "sm:before:bg-[#cfd8dc] sm:after:bg-[#cfd8dc] dark:sm:before:bg-border dark:sm:after:bg-border";
 /** Row of children under one parent: a short stem down from the parent's centre. */
 const ROW =
   "mt-4 flex flex-col gap-3 sm:relative sm:mt-0 sm:flex-row sm:justify-center sm:gap-4 sm:pt-[26px] " +
@@ -73,7 +76,13 @@ const ITEM =
 const employeeHref = (id: string) => `/employees/${id}`;
 
 /** Org chart tab: the whole company by division, or one division's people by reporting line. */
-export function OrgChart({ departments, companyName }: { departments: DepartmentRow[]; companyName?: string }) {
+export function OrgChart({
+  departments,
+  companyName,
+}: {
+  departments: DepartmentRow[];
+  companyName?: string;
+}) {
   const peopleQuery = useOrgPeople();
   const people = useMemo(() => peopleQuery.data?.data ?? [], [peopleQuery.data]);
   const tree = useMemo(() => buildCompanyTree(departments, people), [departments, people]);
@@ -120,7 +129,13 @@ export function OrgChart({ departments, companyName }: { departments: Department
   }, [pendingMoves, departments, byId]);
 
   if (departments.length === 0) {
-    return <EmptyState icon={Building2} title="ยังไม่มีโครงสร้างองค์กร" description="เพิ่มฝ่ายและแผนกในแท็บ ฝ่าย / แผนก" />;
+    return (
+      <EmptyState
+        icon={Building2}
+        title="ยังไม่มีโครงสร้างองค์กร"
+        description="เพิ่มฝ่ายและแผนกในแท็บ ฝ่าย / แผนก"
+      />
+    );
   }
   if (peopleQuery.isLoading) return <TableLoadingState rows={4} />;
   if (peopleQuery.isError) return <ErrorState onRetry={() => peopleQuery.refetch()} />;
@@ -136,7 +151,9 @@ export function OrgChart({ departments, companyName }: { departments: Department
 
   function toggleEdit() {
     if (editing && pendingMoves.length > 0) {
-      toast.info(`ยังไม่ได้บันทึก ${pendingMoves.length} รายการ · กด “แก้ไขผัง” เพื่อกลับไปตรวจและบันทึก`);
+      toast.info(
+        `ยังไม่ได้บันทึก ${pendingMoves.length} รายการ · กด “แก้ไขผัง” เพื่อกลับไปตรวจและบันทึก`,
+      );
     }
     setEditing((v) => !v);
   }
@@ -146,13 +163,22 @@ export function OrgChart({ departments, companyName }: { departments: Department
     if (!selected) return;
     const planned = planOrgDrop(selected, shownPeople, personId, target);
     if (planned.length === 0) return;
-    const next = new Map(pendingMoves.map((m) => [m.employeeId, { departmentId: m.departmentId, managerId: m.managerId }]));
+    const next = new Map(
+      pendingMoves.map((m) => [
+        m.employeeId,
+        { departmentId: m.departmentId, managerId: m.managerId },
+      ]),
+    );
     for (const m of planned) {
       const cur = byId.get(m.employeeId);
-      if (cur && cur.departmentId === m.departmentId && cur.managerId === m.managerId) next.delete(m.employeeId);
+      if (cur && cur.departmentId === m.departmentId && cur.managerId === m.managerId)
+        next.delete(m.employeeId);
       else next.set(m.employeeId, { departmentId: m.departmentId, managerId: m.managerId });
     }
-    const problem = checkOrgMoves(people, [...next].map(([employeeId, p]) => ({ employeeId, ...p })));
+    const problem = checkOrgMoves(
+      people,
+      [...next].map(([employeeId, p]) => ({ employeeId, ...p })),
+    );
     if (problem) {
       toast.error(problemText(problem, byId));
       return;
@@ -177,7 +203,11 @@ export function OrgChart({ departments, companyName }: { departments: Department
 
   const editState: OrgEditState | null =
     isEditing && selected
-      ? { columns: divisionColumns(selected), moved: new Set(pendingMoves.map((m) => m.employeeId)), move }
+      ? {
+          columns: divisionColumns(selected),
+          moved: new Set(pendingMoves.map((m) => m.employeeId)),
+          move,
+        }
       : null;
 
   return (
@@ -185,7 +215,7 @@ export function OrgChart({ departments, companyName }: { departments: Department
       <div
         role="group"
         aria-label="มุมมองผังองค์กร"
-        className="inline-flex w-fit max-w-full rounded-xl border border-border bg-card p-1 shadow-[var(--card-shadow)]"
+        className="border-border bg-card inline-flex w-fit max-w-full rounded-xl border p-1 shadow-[var(--card-shadow)]"
       >
         {(
           [
@@ -211,7 +241,13 @@ export function OrgChart({ departments, companyName }: { departments: Department
       </div>
 
       {view === "company" ? (
-        <CompanyView tree={tree} people={people} issues={issues} companyName={companyName} onOpen={openDivision} />
+        <CompanyView
+          tree={tree}
+          people={people}
+          issues={issues}
+          companyName={companyName}
+          onOpen={openDivision}
+        />
       ) : selected ? (
         <OrgEditContext.Provider value={editState}>
           <DivisionView
@@ -230,7 +266,11 @@ export function OrgChart({ departments, companyName }: { departments: Department
         <>
           {/* Room so the tray never covers the last row. */}
           {moveRows.length > 0 && <div aria-hidden="true" className="h-40" />}
-          <PendingTray rows={moveRows} onUndoAll={() => setPending(new Map())} onReview={() => setConfirmOpen(true)} />
+          <PendingTray
+            rows={moveRows}
+            onUndoAll={() => setPending(new Map())}
+            onReview={() => setConfirmOpen(true)}
+          />
           <ConfirmMovesDialog
             open={confirmOpen && moveRows.length > 0}
             onOpenChange={setConfirmOpen}
@@ -277,7 +317,10 @@ function CompanyView({
       <div className="-mx-1 overflow-x-auto px-1 pt-1 pb-4">
         <div className="sm:mx-auto sm:w-max">
           <div className="flex sm:justify-center">
-            <div className="gv-hero gv-rise flex w-full items-center gap-3 rounded-[18px] px-5 py-3.5 sm:inline-flex sm:w-auto" style={rise(0)}>
+            <div
+              className="gv-hero gv-rise flex w-full items-center gap-3 rounded-[18px] px-5 py-3.5 sm:inline-flex sm:w-auto"
+              style={rise(0)}
+            >
               <span className="grid size-[38px] shrink-0 place-items-center rounded-[11px] border border-white/20 bg-white/10">
                 <Building2 className="size-5" aria-hidden="true" />
               </span>
@@ -317,23 +360,36 @@ function DivisionCard({
   const head = useMemo(() => divisionHead(division, people), [division, people]);
   return (
     <div
-      className="gv-rise overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--card-shadow)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(19,21,22,.06),0_14px_28px_-14px_rgba(19,21,22,.25)]"
+      className="gv-rise border-border bg-card overflow-hidden rounded-2xl border shadow-[var(--card-shadow)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(19,21,22,.06),0_14px_28px_-14px_rgba(19,21,22,.25)]"
       style={rise(index)}
     >
-      <div className="border-b border-[#e6f4f1] bg-[linear-gradient(180deg,#f0fdfa,transparent)] px-3.5 py-3 dark:border-border dark:bg-[linear-gradient(180deg,#12332f,transparent)]">
+      <div className="dark:border-border border-b border-[#e6f4f1] bg-[linear-gradient(180deg,#f0fdfa,transparent)] px-3.5 py-3 dark:bg-[linear-gradient(180deg,#12332f,transparent)]">
         <b className="block text-[14.5px] leading-snug">{division.name}</b>
-        <div className="mt-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span className="truncate">{division.isOther ? `ฝ่ายเล็กไม่มีแผนกย่อย (≤${OTHER_MAX_PEOPLE} คน)` : division.code}</span>
-          <span className="shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-[#0f766e] tabular-nums dark:bg-accent dark:text-primary">
+        <div className="text-muted-foreground mt-1.5 flex items-center justify-between gap-2 text-xs">
+          <span className="truncate">
+            {division.isOther ? `ฝ่ายเล็กไม่มีแผนกย่อย (≤${OTHER_MAX_PEOPLE} คน)` : division.code}
+          </span>
+          <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-[#0f766e] tabular-nums">
             {division.headcount} คน
           </span>
         </div>
         {head && (
-          <Link href={employeeHref(head.person.id)} className="mt-2 flex items-center gap-2 rounded-lg hover:opacity-80">
-            <PersonAvatar name={head.person.name} gender={head.person.gender ?? null} seed={head.person.id} />
-            <small className="min-w-0 text-xs leading-tight text-muted-foreground">
-              <b className="block truncate text-[12.5px] font-semibold text-foreground">{head.person.name}</b>
-              <span className="block truncate">{head.person.positionTitle ?? "หัวหน้าสูงสุดในฝ่าย"}</span>
+          <Link
+            href={employeeHref(head.person.id)}
+            className="mt-2 flex items-center gap-2 rounded-lg hover:opacity-80"
+          >
+            <PersonAvatar
+              name={head.person.name}
+              gender={head.person.gender ?? null}
+              seed={head.person.id}
+            />
+            <small className="text-muted-foreground min-w-0 text-xs leading-tight">
+              <b className="text-foreground block truncate text-[12.5px] font-semibold">
+                {head.person.name}
+              </b>
+              <span className="block truncate">
+                {head.person.positionTitle ?? "หัวหน้าสูงสุดในฝ่าย"}
+              </span>
             </small>
           </Link>
         )}
@@ -343,16 +399,18 @@ function DivisionCard({
           <DeptLine name="ขึ้นตรงกับฝ่าย" count={division.rootCount} depth={1} muted />
         )}
         {division.departments.length === 0 ? (
-          <p className="px-2 py-1.5 text-[13px] text-muted-foreground/80">ไม่มีแผนกย่อย</p>
+          <p className="text-muted-foreground/80 px-2 py-1.5 text-[13px]">ไม่มีแผนกย่อย</p>
         ) : (
-          division.departments.map((dep) => <DeptLine key={dep.id} name={dep.name} count={dep.count} depth={dep.depth} />)
+          division.departments.map((dep) => (
+            <DeptLine key={dep.id} name={dep.name} count={dep.count} depth={dep.depth} />
+          ))
         )}
       </div>
       <div className="flex justify-center px-2.5 pb-3">
         <button
           type="button"
           onClick={() => onOpen(division.key)}
-          className="inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-[#cfd6dc] px-3.5 text-[12.5px] font-semibold transition-colors hover:border-[#0d9488] hover:text-[#0f766e] dark:border-border"
+          className="dark:border-border inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-[#cfd6dc] px-3.5 text-[12.5px] font-semibold transition-colors hover:border-[#0d9488] hover:text-[#0f766e]"
         >
           {division.isOther ? "เปิดผัง →" : "เปิดผังฝ่าย →"}
         </button>
@@ -361,17 +419,27 @@ function DivisionCard({
   );
 }
 
-function DeptLine({ name, count, depth, muted }: { name: string; count: number; depth: number; muted?: boolean }) {
+function DeptLine({
+  name,
+  count,
+  depth,
+  muted,
+}: {
+  name: string;
+  count: number;
+  depth: number;
+  muted?: boolean;
+}) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-2 rounded-[10px] py-1.5 pr-2 text-[13px] hover:bg-muted/60",
+        "hover:bg-muted/60 flex items-center justify-between gap-2 rounded-[10px] py-1.5 pr-2 text-[13px]",
         muted && "text-muted-foreground",
       )}
       style={{ paddingLeft: 8 + (depth - 1) * 12 }}
     >
       <span className="min-w-0 truncate">{name}</span>
-      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{count}</span>
+      <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{count}</span>
     </div>
   );
 }
@@ -387,7 +455,9 @@ function IssuesBox({ issues }: { issues: OrgIssues }) {
     items.push(`มี ${group.map((n) => `“${n}”`).join(" กับ ")} น่าจะเป็นฝ่ายเดียวกัน`);
   }
   if (issues.testDepts.length > 0) {
-    items.push(`${issues.testDepts.map((d) => `“${d.name}” (${d.count} คน)`).join(", ")} น่าจะเป็นข้อมูลทดสอบ`);
+    items.push(
+      `${issues.testDepts.map((d) => `“${d.name}” (${d.count} คน)`).join(", ")} น่าจะเป็นข้อมูลทดสอบ`,
+    );
   }
   const people: string[] = [];
   if (issues.noDepartment > 0) people.push(`พนักงาน ${issues.noDepartment} คนยังไม่มีแผนก`);
@@ -400,9 +470,14 @@ function IssuesBox({ issues }: { issues: OrgIssues }) {
       role="note"
       className="flex items-start gap-2.5 rounded-[14px] border border-[#fde68a] bg-[#fffbeb] px-4 py-3 text-[13px] text-[#713f12] dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
     >
-      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[#b45309] dark:text-amber-400" aria-hidden="true" />
+      <AlertTriangle
+        className="mt-0.5 size-4 shrink-0 text-[#b45309] dark:text-amber-400"
+        aria-hidden="true"
+      />
       <div className="min-w-0">
-        <b className="block text-[#b45309] dark:text-amber-400">ข้อมูลที่ควรแก้ก่อน ผังจึงจะถูกต้อง</b>
+        <b className="block text-[#b45309] dark:text-amber-400">
+          ข้อมูลที่ควรแก้ก่อน ผังจึงจะถูกต้อง
+        </b>
         <ul className="mt-1 list-disc space-y-0.5 pl-[18px]">
           {items.map((t) => (
             <li key={t}>{t}</li>
@@ -410,7 +485,10 @@ function IssuesBox({ issues }: { issues: OrgIssues }) {
         </ul>
         <p className="mt-1.5 text-xs">
           HR แก้ได้ในแท็บ{" "}
-          <Link href="/organization?tab=departments" className="font-semibold underline underline-offset-2">
+          <Link
+            href="/organization?tab=departments"
+            className="font-semibold underline underline-offset-2"
+          >
             ฝ่าย / แผนก
           </Link>{" "}
           และช่อง “หัวหน้า” ในข้อมูลพนักงาน
@@ -441,10 +519,19 @@ function DivisionView({
     () => buildDivisionPeople(division, people, { includeEmpty: editing }),
     [division, people, editing],
   );
+  // Read-only view: the reporting tree (head → team heads → teams), like the paper chart.
+  const reporting = useMemo(
+    () => (editing ? null : buildDivisionTree(division, people)),
+    [division, people, editing],
+  );
 
   return (
-    <section className="grid gap-[18px]" aria-label="ผังรายฝ่าย">
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="เลือกฝ่าย">
+    <section className="gv-otree-print grid gap-[18px]" aria-label="ผังรายฝ่าย">
+      <div
+        className="ot-noprint -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        role="group"
+        aria-label="เลือกฝ่าย"
+      >
         {tree.divisions.map((d) => {
           const on = d.key === division.key;
           return (
@@ -457,7 +544,7 @@ function DivisionView({
                 "h-9 shrink-0 rounded-full border-[1.5px] px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors",
                 on
                   ? "border-[#131516] bg-[#131516] text-white dark:border-white dark:bg-white dark:text-[#131516]"
-                  : "border-[#cfd6dc] bg-card hover:border-[#0d9488] dark:border-border",
+                  : "bg-card dark:border-border border-[#cfd6dc] hover:border-[#0d9488]",
               )}
             >
               {d.name}
@@ -467,7 +554,10 @@ function DivisionView({
         })}
       </div>
 
-      <div className="gv-hero gv-rise grid items-center gap-[18px] px-5 py-5 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto]" style={rise(0)}>
+      <div
+        className="gv-hero gv-rise grid items-center gap-[18px] px-5 py-5 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto]"
+        style={rise(0)}
+      >
         <div className="min-w-0">
           <h2 className="text-[22px] leading-snug font-bold sm:text-2xl">{division.name}</h2>
           <p className="mt-0.5 text-[13px] text-white/80">
@@ -494,11 +584,20 @@ function DivisionView({
             </button>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-2.5">
-          <HeroStat label="พนักงาน" value={view.members.length} />
-          <HeroStat label="แผนก" value={division.departments.length} />
-          <HeroStat label="หัวหน้าแผนก" value={view.leadCount} />
-        </div>
+        {reporting ? (
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <HeroStat label="พนักงาน" value={reporting.members.length} />
+            <HeroStat label="หัวหน้า" value={reporting.leads.length} />
+            <HeroStat label="ทีม" value={reporting.teamCount} />
+            <HeroStat label="รายวัน" value={reporting.dailyCount} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2.5">
+            <HeroStat label="พนักงาน" value={view.members.length} />
+            <HeroStat label="แผนก" value={division.departments.length} />
+            <HeroStat label="หัวหน้าแผนก" value={view.leadCount} />
+          </div>
+        )}
       </div>
 
       {editing && (
@@ -508,14 +607,19 @@ function DivisionView({
         >
           <span aria-hidden="true">⇅</span>
           <span>
-            <b>โหมดแก้ไข:</b> ลากชื่อไปวางที่ช่อง “หัวหน้าทีม” หรือ “สมาชิก” ของแผนกที่ต้องการ หรือกดปุ่ม ⇄ ข้างชื่อแล้วเลือก
-            “ย้ายไป…” · ยังไม่บันทึกจนกว่าจะกด “ตรวจและบันทึก”
+            <b>โหมดแก้ไข:</b> ลากชื่อไปวางที่ช่อง “หัวหน้าทีม” หรือ “สมาชิก” ของแผนกที่ต้องการ
+            หรือกดปุ่ม ⇄ ข้างชื่อแล้วเลือก “ย้ายไป…” · ยังไม่บันทึกจนกว่าจะกด “ตรวจและบันทึก”
           </span>
         </div>
       )}
 
       {view.members.length === 0 ? (
         <EmptyState icon={Users} title="ยังไม่มีพนักงานในฝ่ายนี้" />
+      ) : reporting ? (
+        <>
+          <DivisionTreeChart tree={reporting} divisionName={division.name} />
+          {reporting.unassigned.length > 0 && <UnassignedBox people={reporting.unassigned} />}
+        </>
       ) : (
         <Card className="px-3 py-5">
           <div className="-mx-1 overflow-x-auto px-1 pt-1 pb-3">
@@ -528,12 +632,17 @@ function DivisionView({
                 </div>
               ) : (
                 <div className="flex sm:justify-center">
-                  <div className="inline-flex w-full items-center gap-2.5 rounded-[14px] border border-dashed border-[#cfd6dc] bg-card px-4 py-2.5 sm:w-auto sm:min-w-[230px] dark:border-border">
-                    <Building2 className="size-5 shrink-0 text-[#0f766e] dark:text-primary" aria-hidden="true" />
+                  <div className="bg-card dark:border-border inline-flex w-full items-center gap-2.5 rounded-[14px] border border-dashed border-[#cfd6dc] px-4 py-2.5 sm:w-auto sm:min-w-[230px]">
+                    <Building2
+                      className="dark:text-primary size-5 shrink-0 text-[#0f766e]"
+                      aria-hidden="true"
+                    />
                     <span className="min-w-0">
                       <b className="block truncate text-sm leading-snug">{division.name}</b>
-                      <small className="block text-xs text-muted-foreground">
-                        {division.isOther ? "รวมฝ่ายเล็กที่ไม่มีแผนกย่อย" : "ยังไม่มีหัวหน้าฝ่ายในข้อมูลพนักงาน"}
+                      <small className="text-muted-foreground block text-xs">
+                        {division.isOther
+                          ? "รวมฝ่ายเล็กที่ไม่มีแผนกย่อย"
+                          : "ยังไม่มีหัวหน้าฝ่ายในข้อมูลพนักงาน"}
                       </small>
                     </span>
                   </div>
@@ -554,8 +663,10 @@ function DivisionView({
         </Card>
       )}
       {!editing && (
-        <p className="text-[12.5px] text-muted-foreground">
-          กดชื่อคนเพื่อเปิดข้อมูลพนักงาน · คนที่ยังไม่ได้ตั้งหัวหน้าจะขึ้นแยกในกล่อง “ยังไม่ระบุหัวหน้า” ท้ายผัง
+        <p className="ot-noprint text-muted-foreground text-[12.5px]">
+          กดชื่อเพื่อเปิดข้อมูลพนักงาน · ผู้ช่วยหัวหน้าดูจากตำแหน่งที่ขึ้นต้นว่า “ผู้ช่วยหัวหน้า” ·
+          รายวันดูจากประเภทการจ้าง/การจ่ายเงิน · คนที่ยังไม่ได้ตั้งหัวหน้าอยู่ในกล่อง
+          “ยังไม่ระบุหัวหน้า” ท้ายผัง
         </p>
       )}
     </section>
@@ -581,7 +692,12 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
       : "border-[#e6f4f1] bg-[#f8fdfc] hover:border-[#99f6e4] dark:border-border dark:bg-accent/40",
   );
   const avatar = (
-    <PersonAvatar name={p.name} gender={p.gender ?? null} seed={p.id} className={top ? "size-11 text-sm" : undefined} />
+    <PersonAvatar
+      name={p.name}
+      gender={p.gender ?? null}
+      seed={p.id}
+      className={top ? "size-11 text-sm" : undefined}
+    />
   );
   const text = (moved: boolean) => (
     <span className="min-w-0">
@@ -592,7 +708,7 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
     </span>
   );
   const tagEl = (
-    <span className="shrink-0 rounded-full bg-[#ccfbf1] px-2 text-[11px] font-bold whitespace-nowrap text-[#0f766e] tabular-nums dark:bg-accent dark:text-primary">
+    <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2 text-[11px] font-bold whitespace-nowrap text-[#0f766e] tabular-nums">
       {tag}
     </span>
   );
@@ -619,9 +735,17 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
 }
 
 /** Position line under a name; in edit mode a moved person also gets the ย้ายแล้ว word. */
-function Subtitle({ moved, className, children }: { moved: boolean; className?: string; children: ReactNode }) {
+function Subtitle({
+  moved,
+  className,
+  children,
+}: {
+  moved: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <small className={cn("flex min-w-0 items-center gap-1 text-muted-foreground", className)}>
+    <small className={cn("text-muted-foreground flex min-w-0 items-center gap-1", className)}>
       {moved && <MovedTag />}
       <span className="min-w-0 truncate">{children}</span>
     </small>
@@ -637,10 +761,13 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
   const shown = expanded || edit ? team.members : team.members.slice(0, MEMBERS_SHOWN);
   const hidden = team.members.length - shown.length;
   return (
-    <div className="gv-rise overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]" style={rise(index)}>
-      <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-3.5 py-2 text-[13.5px] font-bold">
+    <div
+      className="gv-rise border-border bg-card overflow-hidden rounded-2xl border shadow-[var(--card-shadow)]"
+      style={rise(index)}
+    >
+      <div className="border-border bg-muted/50 flex items-center justify-between gap-2 border-b px-3.5 py-2 text-[13.5px] font-bold">
         <span className="min-w-0 truncate">{team.name}</span>
-        <span className="shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-[#0f766e] tabular-nums dark:bg-accent dark:text-primary">
+        <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-[#0f766e] tabular-nums">
           {team.count}
         </span>
       </div>
@@ -648,7 +775,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
         <DropZone
           target={{ deptId: team.deptId, slot: "lead" }}
           label="หัวหน้าทีม"
-          className="border-b border-dashed border-border p-2.5"
+          className="border-border border-b border-dashed p-2.5"
         >
           {team.lead ? (
             <PersonCard node={team.lead} tag={`ดูแล ${team.lead.under} คน`} />
@@ -659,9 +786,12 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
       )}
       <DropZone target={{ deptId: team.deptId, slot: "member" }} label="สมาชิก">
         {shown.length > 0 && (
-          <ul className="relative m-0 list-none py-1.5 pr-2 pl-[22px] before:absolute before:top-0 before:bottom-[22px] before:left-6 before:w-0.5 before:bg-[#e6ebee] dark:before:bg-border">
+          <ul className="dark:before:bg-border relative m-0 list-none py-1.5 pr-2 pl-[22px] before:absolute before:top-0 before:bottom-[22px] before:left-6 before:w-0.5 before:bg-[#e6ebee]">
             {shown.map((p) => (
-              <li key={p.id} className="relative before:absolute before:top-1/2 before:left-0.5 before:h-0.5 before:w-3.5 before:bg-[#e6ebee] dark:before:bg-border">
+              <li
+                key={p.id}
+                className="dark:before:bg-border relative before:absolute before:top-1/2 before:left-0.5 before:h-0.5 before:w-3.5 before:bg-[#e6ebee]"
+              >
                 <MemberLink person={p} />
               </li>
             ))}
@@ -674,7 +804,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mb-2.5 ml-10 text-[12.5px] font-semibold text-[#0f766e] hover:underline dark:text-primary"
+          className="dark:text-primary mb-2.5 ml-10 text-[12.5px] font-semibold text-[#0f766e] hover:underline"
         >
           {expanded ? "ย่อรายชื่อ" : `+ ดูอีก ${hidden} คน`}
         </button>
@@ -685,10 +815,18 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
 
 function MemberLink({ person, className }: { person: OrgPerson; className?: string }) {
   const edit = useOrgEdit();
-  const rowClass = cn("flex min-w-0 items-center gap-2 rounded-[10px] py-1.5 pr-1.5 pl-[18px] text-[13px] hover:bg-muted/60", className);
+  const rowClass = cn(
+    "flex min-w-0 items-center gap-2 rounded-[10px] py-1.5 pr-1.5 pl-[18px] text-[13px] hover:bg-muted/60",
+    className,
+  );
   const body = (moved: boolean) => (
     <>
-      <PersonAvatar name={person.name} gender={person.gender ?? null} seed={person.id} className="size-[26px] text-[10.5px]" />
+      <PersonAvatar
+        name={person.name}
+        gender={person.gender ?? null}
+        seed={person.id}
+        className="size-[26px] text-[10.5px]"
+      />
       <span className="min-w-0 leading-tight">
         <span className="block truncate">{person.name}</span>
         <Subtitle moved={moved} className="text-[11.5px]">
@@ -713,7 +851,7 @@ function MemberLink({ person, className }: { person: OrgPerson; className?: stri
 
 function UnassignedBox({ people }: { people: OrgPerson[] }) {
   return (
-    <div className="mx-1 mt-3 rounded-2xl border border-dashed border-[#cfd6dc] p-3 dark:border-border">
+    <div className="dark:border-border mx-1 mt-3 rounded-2xl border border-dashed border-[#cfd6dc] p-3">
       <SectionHeading
         as="h3"
         title="ยังไม่ระบุหัวหน้า"

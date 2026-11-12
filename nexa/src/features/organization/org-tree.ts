@@ -53,6 +53,8 @@ export interface OrgPerson {
   positionTitle: string | null;
   /** MALE / FEMALE / OTHER / null — only for the avatar; the tree rules never read it. */
   gender?: string | null;
+  /** Paid by the day (รายวัน): listed in the team card's own box. */
+  daily?: boolean;
 }
 
 export interface DivisionDept {
@@ -249,7 +251,8 @@ export function buildDivisionPeople(
   const memberIds = new Set(members.map((p) => p.id));
   const reports = reportsWithin(members);
   const under = (id: string) => countUnder(id, reports);
-  const hasNoManager = (p: OrgPerson) => !p.managerId || p.managerId === p.id || !allIds.has(p.managerId);
+  const hasNoManager = (p: OrgPerson) =>
+    !p.managerId || p.managerId === p.id || !allIds.has(p.managerId);
 
   // Tops: nobody inside the division above them. Those with people under them
   // are heads or department leads; the rest keep their column, except people
@@ -269,11 +272,14 @@ export function buildDivisionPeople(
   const headIds = new Set(heads.map((h) => h.person.id));
   const unassigned = division.isOther
     ? []
-    : tops.filter((p) => !headIds.has(p.id) && hasNoManager(p) && under(p.id) === 0).sort(byPersonName);
+    : tops
+        .filter((p) => !headIds.has(p.id) && hasNoManager(p) && under(p.id) === 0)
+        .sort(byPersonName);
   const unassignedIds = new Set(unassigned.map((p) => p.id));
   const leadCandidates = new Map<string, PersonNode>();
   for (const c of candidates) {
-    if (!headIds.has(c.person.id) && !leadCandidates.has(c.person.departmentId!)) leadCandidates.set(c.person.departmentId!, c);
+    if (!headIds.has(c.person.id) && !leadCandidates.has(c.person.departmentId!))
+      leadCandidates.set(c.person.departmentId!, c);
   }
 
   const teams: TeamColumn[] = [];
@@ -296,10 +302,14 @@ export function buildDivisionPeople(
       }
     }
     const rest = shown.filter((p) => p.id !== lead?.person.id);
-    const directOfLead = new Set((lead ? reports.get(lead.person.id) ?? [] : []).map((p) => p.id));
+    const directOfLead = new Set(
+      (lead ? (reports.get(lead.person.id) ?? []) : []).map((p) => p.id),
+    );
     rest.sort(
       (a, b) =>
-        Number(directOfLead.has(b.id)) - Number(directOfLead.has(a.id)) || under(b.id) - under(a.id) || byPersonName(a, b),
+        Number(directOfLead.has(b.id)) - Number(directOfLead.has(a.id)) ||
+        under(b.id) - under(a.id) ||
+        byPersonName(a, b),
     );
     teams.push({ deptId: col.id, name: col.name, count: inDept.length, lead, members: rest });
   }
@@ -310,6 +320,145 @@ export function buildDivisionPeople(
     teams,
     unassigned,
     leadCount: teams.filter((t) => t.lead).length,
+  };
+}
+
+// ─────────── Reporting tree (org-tree-mock.html) ───────────
+
+/** Position titles starting with this mark a team's assistant head (ผู้ช่วยหัวหน้า). */
+export const ASSISTANT_PREFIX = "ผู้ช่วยหัวหน้า";
+
+export const isAssistant = (p: OrgPerson): boolean =>
+  (p.positionTitle ?? "").trim().startsWith(ASSISTANT_PREFIX);
+
+export interface TreeTeam {
+  /** Department id; null for people with no department. */
+  deptId: string | null;
+  name: string;
+  code: string;
+  /** Assistant heads, by name. */
+  assistants: OrgPerson[];
+  /** Everyone else except daily-paid people, by name. */
+  members: OrgPerson[];
+  /** Daily-paid people (รายวัน), by name. */
+  daily: OrgPerson[];
+  count: number;
+}
+
+export interface TreeLead {
+  person: OrgPerson;
+  /** People of the division under this person, directly or further down. */
+  under: number;
+  teams: TreeTeam[];
+}
+
+export interface DivisionTree {
+  /** Division head(s), as in {@link buildDivisionPeople}. */
+  heads: PersonNode[];
+  /** Team heads: people with a team under them who report to the head (or to nobody in the division). */
+  leads: TreeLead[];
+  /** Everyone not under a team head (reports straight to the head, or to someone in another division). */
+  direct: TreeTeam[];
+  unassigned: OrgPerson[];
+  members: OrgPerson[];
+  teamCount: number;
+  dailyCount: number;
+}
+
+/**
+ * The division as a reporting tree: head → team heads → teams (one card per
+ * department), the way the warehouse draws it on paper.
+ *
+ * - Team head: a member who is not the head, has people under them, and
+ *   reports to the head or to nobody inside the division. Everyone under a
+ *   team head, however deep, lands in that head's team cards, grouped by
+ *   department (a deeper head shows as a member, tagged when an assistant).
+ * - Assistant: position title starting with {@link ASSISTANT_PREFIX}; listed
+ *   first in the team and tagged.
+ * - Daily-paid people (`daily`) go to the team card's รายวัน box.
+ * - Everyone else not under a team head is grouped by department under the head.
+ * - People with no manager at all stay in "ยังไม่ระบุหัวหน้า" as before.
+ */
+export function buildDivisionTree(division: Division, people: OrgPerson[]): DivisionTree {
+  const base = buildDivisionPeople(division, people);
+  const members = base.members;
+  const memberIds = new Set(members.map((p) => p.id));
+  const reports = reportsWithin(members);
+  const under = (id: string) => countUnder(id, reports);
+  const headIds = new Set(base.heads.map((h) => h.person.id));
+  const unassignedIds = new Set(base.unassigned.map((p) => p.id));
+
+  const deptInfo = new Map<string, { name: string; code: string; order: number }>();
+  divisionColumns(division).forEach((c, i) => {
+    const sub = division.departments.find((x) => x.id === c.id);
+    deptInfo.set(c.id, {
+      name: c.name,
+      code: sub?.code ?? (c.id === division.key ? division.code : ""),
+      order: i,
+    });
+  });
+
+  const toTeams = (list: OrgPerson[]): TreeTeam[] => {
+    const groups = new Map<string, OrgPerson[]>();
+    for (const p of list) {
+      const k = p.departmentId ?? "";
+      groups.set(k, [...(groups.get(k) ?? []), p]);
+    }
+    return [...groups]
+      .map(([k, ps]) => {
+        const info = deptInfo.get(k);
+        const rest = ps.filter((p) => !isAssistant(p));
+        const team: TreeTeam = {
+          deptId: k || null,
+          name: info?.name ?? "ไม่ระบุแผนก",
+          code: info?.code ?? "",
+          assistants: ps.filter(isAssistant).sort(byPersonName),
+          members: rest.filter((p) => !p.daily).sort(byPersonName),
+          daily: rest.filter((p) => p.daily).sort(byPersonName),
+          count: ps.length,
+        };
+        return { team, order: info?.order ?? Number.MAX_SAFE_INTEGER };
+      })
+      .sort((a, b) => a.order - b.order || a.team.name.localeCompare(b.team.name, "th"))
+      .map((x) => x.team);
+  };
+
+  const reportsToHeadOrNobody = (p: OrgPerson) =>
+    !p.managerId || !memberIds.has(p.managerId) || headIds.has(p.managerId);
+  const leadPeople = members
+    .filter(
+      (p) =>
+        !headIds.has(p.id) &&
+        !unassignedIds.has(p.id) &&
+        under(p.id) > 0 &&
+        reportsToHeadOrNobody(p),
+    )
+    .sort((a, b) => under(b.id) - under(a.id) || byPersonName(a, b));
+
+  const placed = new Set<string>([...headIds, ...unassignedIds, ...leadPeople.map((p) => p.id)]);
+  const leads: TreeLead[] = leadPeople.map((person) => {
+    const below: OrgPerson[] = [];
+    const stack = [person.id];
+    while (stack.length > 0) {
+      for (const r of reports.get(stack.pop()!) ?? []) {
+        if (placed.has(r.id)) continue;
+        placed.add(r.id);
+        below.push(r);
+        stack.push(r.id);
+      }
+    }
+    return { person, under: under(person.id), teams: toTeams(below) };
+  });
+  const direct = toTeams(members.filter((p) => !placed.has(p.id)));
+  const allTeams = [...leads.flatMap((l) => l.teams), ...direct];
+  return {
+    heads: base.heads,
+    leads,
+    direct,
+    unassigned: base.unassigned,
+    members,
+    teamCount: allTeams.length,
+    dailyCount: allTeams.reduce((n, t) => n + t.daily.length, 0),
   };
 }
 
@@ -373,7 +522,8 @@ export function detectOrgIssues(depts: OrgDept[], people: OrgPerson[]): OrgIssue
     if (grouped.has(depts[i].id)) continue;
     const group = [depts[i]];
     for (let j = i + 1; j < depts.length; j++) {
-      if (!grouped.has(depts[j].id) && looksLikeSameDept(depts[i].name, depts[j].name)) group.push(depts[j]);
+      if (!grouped.has(depts[j].id) && looksLikeSameDept(depts[i].name, depts[j].name))
+        group.push(depts[j]);
     }
     if (group.length > 1) {
       group.forEach((d) => grouped.add(d.id));
@@ -406,7 +556,9 @@ export function detectOrgIssues(depts: OrgDept[], people: OrgPerson[]): OrgIssue
     duplicateNames,
     testDepts,
     noDepartment: people.filter((p) => !p.departmentId || !live.has(p.departmentId)).length,
-    noManager: people.filter((p) => !p.managerId || p.managerId === p.id || !personIds.has(p.managerId)).length,
+    noManager: people.filter(
+      (p) => !p.managerId || p.managerId === p.id || !personIds.has(p.managerId),
+    ).length,
     managerLoop,
   };
 }
@@ -489,7 +641,9 @@ export function checkOrgMoves(people: Placed[], moves: readonly OrgMove[]): OrgM
     if (m.managerId === m.employeeId) return { kind: "self", employeeId: m.employeeId };
   }
   const managerBefore = new Map(people.map((p) => [p.id, p.managerId]));
-  const changed = moves.filter((m) => managerBefore.get(m.employeeId) !== m.managerId).map((m) => m.employeeId);
+  const changed = moves
+    .filter((m) => managerBefore.get(m.employeeId) !== m.managerId)
+    .map((m) => m.employeeId);
   const cycle = findManagerCycle(applyOrgMoves(people, moves), changed);
   return cycle ? { kind: "cycle", ids: cycle } : null;
 }
@@ -539,20 +693,33 @@ export function planOrgDrop(
     next.set(personId, { departmentId: target.deptId, managerId });
 
     // The person's own chain after the change: those must not report to them.
-    const moved = applyOrgMoves(people, [{ employeeId: personId, departmentId: target.deptId, managerId }]);
+    const moved = applyOrgMoves(people, [
+      { employeeId: personId, departmentId: target.deptId, managerId },
+    ]);
     const managerOf = new Map(moved.map((p) => [p.id, p.managerId]));
     const above = new Set<string>();
-    for (let cur = managerOf.get(personId) ?? null; cur && cur !== personId && !above.has(cur); cur = managerOf.get(cur) ?? null) {
+    for (
+      let cur = managerOf.get(personId) ?? null;
+      cur && cur !== personId && !above.has(cur);
+      cur = managerOf.get(cur) ?? null
+    ) {
       above.add(cur);
     }
 
     const memberIds = new Set(view.members.map((p) => p.id));
     const headIds = new Set(view.heads.map((h) => h.person.id));
     for (const x of view.members) {
-      if (x.id === personId || x.departmentId !== target.deptId || headIds.has(x.id) || above.has(x.id)) continue;
+      if (
+        x.id === personId ||
+        x.departmentId !== target.deptId ||
+        headIds.has(x.id) ||
+        above.has(x.id)
+      )
+        continue;
       const reportedToOldLead = leadId !== null && leadId !== personId && x.managerId === leadId;
       const noManagerInside = !x.managerId || x.managerId === x.id || !memberIds.has(x.managerId);
-      if (reportedToOldLead || noManagerInside) next.set(x.id, { departmentId: x.departmentId, managerId: personId });
+      if (reportedToOldLead || noManagerInside)
+        next.set(x.id, { departmentId: x.departmentId, managerId: personId });
     }
   }
 

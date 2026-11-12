@@ -50,7 +50,10 @@ export async function listDepartments(companyId: string): Promise<DepartmentRow[
  * Finance see the whole company; everyone else sees themself and their direct
  * reports only.
  */
-export async function listOrgPeople(companyId: string, session: AccessClaims): Promise<OrgPersonRow[]> {
+export async function listOrgPeople(
+  companyId: string,
+  session: AccessClaims,
+): Promise<OrgPersonRow[]> {
   const scope = teamScopeFilter(session);
   const rows = await prisma.employee.findMany({
     where: { companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] }, ...(scope ?? {}) },
@@ -62,6 +65,8 @@ export async function listOrgPeople(companyId: string, session: AccessClaims): P
       departmentId: true,
       managerId: true,
       gender: true,
+      employmentType: true,
+      compensationType: true,
       position: { select: { title: true } },
     },
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
@@ -74,6 +79,7 @@ export async function listOrgPeople(companyId: string, session: AccessClaims): P
     managerId: e.managerId,
     positionTitle: e.position?.title ?? null,
     gender: e.gender ?? null,
+    daily: e.employmentType === "DAILY_WORKER" || e.compensationType === "DAILY",
   }));
 }
 
@@ -100,7 +106,14 @@ export async function applyOrgMoves(
   // One read of every live employee: needed to walk manager chains for loops.
   const everyone = await prisma.employee.findMany({
     where: { companyId, deletedAt: null },
-    select: { id: true, firstName: true, lastName: true, nickname: true, departmentId: true, managerId: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      nickname: true,
+      departmentId: true,
+      managerId: true,
+    },
   });
   const byId = new Map(everyone.map((e) => [e.id, e]));
   const nameOf = (id: string) => {
@@ -109,20 +122,30 @@ export async function applyOrgMoves(
   };
 
   for (const m of input.moves) {
-    if (!byId.has(m.employeeId)) throw NotFound("ไม่พบพนักงานบางคนในรายการ อาจถูกลบไปแล้ว กรุณารีเฟรชหน้า");
+    if (!byId.has(m.employeeId))
+      throw NotFound("ไม่พบพนักงานบางคนในรายการ อาจถูกลบไปแล้ว กรุณารีเฟรชหน้า");
     if (m.managerId && !byId.has(m.managerId)) {
-      throw BadRequest(`ไม่พบหัวหน้าที่เลือกให้ ${nameOf(m.employeeId)} อาจถูกลบไปแล้ว กรุณารีเฟรชหน้า`);
+      throw BadRequest(
+        `ไม่พบหัวหน้าที่เลือกให้ ${nameOf(m.employeeId)} อาจถูกลบไปแล้ว กรุณารีเฟรชหน้า`,
+      );
     }
   }
-  const deptIds = [...new Set(input.moves.map((m) => m.departmentId).filter((id): id is string => !!id))];
+  const deptIds = [
+    ...new Set(input.moves.map((m) => m.departmentId).filter((id): id is string => !!id)),
+  ];
   if (deptIds.length > 0) {
-    const found = await prisma.department.count({ where: { companyId, deletedAt: null, id: { in: deptIds } } });
-    if (found !== deptIds.length) throw BadRequest("ไม่พบแผนกที่เลือก หรือแผนกถูกลบไปแล้ว กรุณารีเฟรชหน้า");
+    const found = await prisma.department.count({
+      where: { companyId, deletedAt: null, id: { in: deptIds } },
+    });
+    if (found !== deptIds.length)
+      throw BadRequest("ไม่พบแผนกที่เลือก หรือแผนกถูกลบไปแล้ว กรุณารีเฟรชหน้า");
   }
 
   const problem = checkOrgMoves(everyone, input.moves);
-  if (problem?.kind === "duplicate") throw BadRequest(`มี ${nameOf(problem.employeeId)} ซ้ำในรายการ`);
-  if (problem?.kind === "self") throw BadRequest(`ตั้ง ${nameOf(problem.employeeId)} เป็นหัวหน้าของตัวเองไม่ได้`);
+  if (problem?.kind === "duplicate")
+    throw BadRequest(`มี ${nameOf(problem.employeeId)} ซ้ำในรายการ`);
+  if (problem?.kind === "self")
+    throw BadRequest(`ตั้ง ${nameOf(problem.employeeId)} เป็นหัวหน้าของตัวเองไม่ได้`);
   if (problem?.kind === "cycle") {
     const chain = [...problem.ids, problem.ids[0]].map(nameOf).join(" → ");
     throw BadRequest(`บันทึกไม่ได้ เพราะหัวหน้าจะวนกันเอง: ${chain}`);
@@ -145,7 +168,11 @@ export async function applyOrgMoves(
   await prisma.$transaction(
     async (tx) => {
       for (const c of changes) {
-        await tx.employee.update({ where: { id: c.id }, data: { ...c.data, updatedById: session.sub }, select: { id: true } });
+        await tx.employee.update({
+          where: { id: c.id },
+          data: { ...c.data, updatedById: session.sub },
+          select: { id: true },
+        });
         await tx.auditLog.create({
           data: {
             companyId,
