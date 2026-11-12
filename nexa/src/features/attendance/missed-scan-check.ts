@@ -131,7 +131,7 @@ export async function checkMissedScans(): Promise<{ checked: number; flagged: nu
     const lines = [`📋 สรุปการลงเวลาที่ต้องตรวจสอบ — วันที่ ${dateLabel}`];
     if (noClockOut.length) lines.push(`ลืมสแกนออก (${noClockOut.length}): ${noClockOut.join(", ")}`);
     if (noScan.length) lines.push(`ไม่มีข้อมูลลงเวลาเลย — อาจลืมสแกนหรือขาดงาน ต้องตรวจสอบ (${noScan.length}): ${noScan.join(", ")}`);
-    await broadcastToLineGroups(company.id, "hr-alerts", lines.join("\n"));
+    await broadcastToLineGroups(company.id, "hr-alerts", lines.join("\n"), "attendance");
   }
 
   return { checked, flagged };

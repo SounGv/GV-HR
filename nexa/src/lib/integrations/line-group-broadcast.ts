@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { runAfterResponse } from "@/lib/after-response";
+import { shouldPushToLine } from "@/features/notification/line-policy";
 import { sendLinePush } from "./line";
 import { pushViaGateway, readGatewayConfig } from "./line-gateway";
 
@@ -18,7 +19,10 @@ export async function broadcastToLineGroups(
   companyId: string,
   purpose: string,
   text: string,
+  /** Notification category of the post; only categories in LINE_CATEGORIES go out (see line-policy.ts). */
+  topic: string,
 ): Promise<void> {
+  if (!shouldPushToLine(topic)) return;
   try {
     const groups = await prisma.lineGroupTarget.findMany({
       where: { companyId, purpose, active: true },

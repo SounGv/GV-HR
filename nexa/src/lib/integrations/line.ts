@@ -1,5 +1,4 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
-import { runAfterResponse } from "@/lib/after-response";
 
 /**
  * LINE Messaging API — real push/reply integration, gated on env config
@@ -41,6 +40,16 @@ async function callLineApi(path: string, body: unknown): Promise<void> {
 }
 
 /**
+ * Sends after the response (see after-response.ts). Loaded on use so this file
+ * stays importable by the plain-Node check scripts, which have no "@/" alias
+ * and no Next.js request.
+ */
+async function sendAfterResponse(to: string, text: string): Promise<void> {
+  const { runAfterResponse } = await import("@/lib/after-response");
+  await runAfterResponse(() => sendLinePush(to, text));
+}
+
+/**
  * Sends one push now (user, group or room id all go in `to`). Never throws.
  * Callers inside a request use pushLineMessage / pushLineGroupMessage, which
  * send after the response; this is for work that already runs after it.
@@ -59,7 +68,7 @@ export async function sendLinePush(to: string, text: string): Promise<void> {
  */
 export async function pushLineMessage(lineUserId: string, text: string): Promise<void> {
   if (!isLineConfigured()) return;
-  await runAfterResponse(() => sendLinePush(lineUserId, text));
+  await sendAfterResponse(lineUserId, text);
 }
 
 export async function replyLineMessage(replyToken: string, text: string): Promise<void> {
@@ -77,7 +86,7 @@ export async function replyLineMessage(replyToken: string, text: string): Promis
  */
 export async function pushLineGroupMessage(groupId: string, text: string): Promise<void> {
   if (!isLineConfigured()) return;
-  await runAfterResponse(() => sendLinePush(groupId, text));
+  await sendAfterResponse(groupId, text);
 }
 
 /** 6-char, unambiguous alphabet (no 0/O/1/I) — read out loud/typed by hand. */

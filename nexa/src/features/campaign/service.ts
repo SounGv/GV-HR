@@ -479,6 +479,7 @@ export async function updateCampaign(
         companyId,
         "hr-alerts",
         `📊 เปิดรอบประเมิน ${cycleLabel} แล้ว\nมีผู้ต้องทำแบบประเมิน ${pending.length} รายการ`,
+        "evaluation",
       );
     }
   }

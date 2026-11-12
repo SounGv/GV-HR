@@ -122,6 +122,7 @@ export async function createAttendanceCorrection(
     companyId,
     "hr-alerts",
     `📝 มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}\n${appBaseUrl() + `/attendance/corrections/${record.id}`}`,
+    "attendance",
   );
 
   return record;

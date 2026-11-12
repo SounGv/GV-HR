@@ -1,25 +1,15 @@
 /**
- * Which in-app notifications are also pushed to LINE.
+ * Which in-app notifications are also pushed to LINE, personally and to the
+ * HR LINE group.
  *
- * LINE counts every push to every person against a monthly free allowance, so
- * only messages a person has to act on or wants an answer to go there: leave,
- * OT, time corrections, approval workflows, expense and medical claims,
- * evaluations, meeting invitations (few, and tied to a time), and messages HR
- * sends by hand. Everything else (announcements, KPI, assets, AI replies,
- * system notices) stays in the app's inbox.
+ * LINE counts every push to every person against the monthly allowance, and
+ * the company's LINE account is on the free plan (300 messages a month, none
+ * beyond it). The owner chose on 2026-11-12 to send only leave and OT requests
+ * (and their answers) for now; everything else stays in the app's inbox.
+ * The earlier, longer list was: leave, overtime, attendance, workflow,
+ * expense, medical, performance, evaluation, meeting, hr.
  */
-export const LINE_CATEGORIES: ReadonlySet<string> = new Set([
-  "leave",
-  "overtime",
-  "attendance",
-  "workflow",
-  "expense",
-  "medical",
-  "performance",
-  "evaluation",
-  "meeting",
-  "hr",
-]);
+export const LINE_CATEGORIES: ReadonlySet<string> = new Set(["leave", "overtime"]);
 
 /**
  * Whether every check-in and check-out is posted to the LINE groups. Off by

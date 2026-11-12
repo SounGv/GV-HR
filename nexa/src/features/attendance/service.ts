@@ -312,6 +312,7 @@ export async function clockIn(
       `🟢 ${displayName(employee)} เช็คอินแล้ว เวลา ${clockInTimeLabel}` +
         (status === "LATE" ? " (มาสาย)" : "") +
         (employee.branch?.name ? `\n${employee.branch.name}` : ""),
+        "attendance",
     );
   }
 
@@ -400,6 +401,7 @@ export async function clockOut(
       `🔴 ${displayName(employee)} เช็คเอาท์แล้ว เวลา ${clockOutTimeLabel}` +
         (record.earlyLeaveOut ? " (ออกก่อนเวลา)" : "") +
         (employee.branch?.name ? `\n${employee.branch.name}` : ""),
+        "attendance",
     );
   }
 

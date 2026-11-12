@@ -289,6 +289,7 @@ export async function createLeave(
     companyId,
     "hr-alerts",
     `📋 มีคำขอลารออนุมัติ\n${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}\n${appBaseUrl() + `/leave/${record.id}`}`,
+    "leave",
   );
 
   return { ...record, routedTo };
@@ -605,6 +606,7 @@ export async function cancelLeave(
     companyId,
     "hr-alerts",
     `↩️ ${req.employee.firstName} ${req.employee.lastName} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+    "leave",
   );
 
   return updated;

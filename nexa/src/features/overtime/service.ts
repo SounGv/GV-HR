@@ -131,6 +131,7 @@ export async function createOvertime(
     companyId,
     "hr-alerts",
     `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง${dayOffNote}\n${appBaseUrl() + `/overtime/${record.id}`}`,
+    "overtime",
   );
 
   return record;
@@ -470,6 +471,7 @@ export async function cancelOvertime(
     companyId,
     "hr-alerts",
     `↩️ ${req.employee.firstName} ${req.employee.lastName} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+    "overtime",
   );
 
   return record;

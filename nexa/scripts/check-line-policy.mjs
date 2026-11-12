@@ -10,9 +10,12 @@ const check = (name, fn) => {
   console.log(`ok  ${name}`);
 };
 
-check("things a person must act on or answer go to LINE", () => {
-  for (const c of ["leave", "overtime", "attendance", "workflow", "expense", "medical", "performance", "evaluation", "meeting", "hr"]) {
-    assert.equal(shouldPushToLine(c), true, c);
+check("leave and OT requests go to LINE (free plan: only these for now)", () => {
+  for (const c of ["leave", "overtime"]) assert.equal(shouldPushToLine(c), true, c);
+});
+check("everything else stays in the app for now, the group broadcast included", () => {
+  for (const c of ["attendance", "workflow", "expense", "medical", "performance", "evaluation", "meeting", "hr"]) {
+    assert.equal(shouldPushToLine(c), false, c);
   }
 });
 check("announcements, KPI, assets, AI and system notices stay in the app", () => {
@@ -29,8 +32,8 @@ check("the caller's own choice always wins, in both directions", () => {
   assert.equal(shouldPushToLine("announcement", true), true);
   assert.equal(shouldPushToLine(undefined, true), true);
 });
-check("the list has exactly the ten agreed categories", () => {
-  assert.equal(LINE_CATEGORIES.size, 10);
+check("the list has exactly the two agreed categories", () => {
+  assert.deepEqual([...LINE_CATEGORIES].sort(), ["leave", "overtime"]);
 });
 check("check-in and check-out posts to LINE groups are off by default and on only for the exact value true", () => {
   const before = process.env.LINE_GROUP_POST_SCANS;
