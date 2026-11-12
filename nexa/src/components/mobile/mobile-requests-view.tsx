@@ -51,7 +51,7 @@ function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
 
   return (
     <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">
-      <TabsList className="group-data-horizontal/tabs:h-[54px]">
+      <TabsList className="w-full group-data-horizontal/tabs:h-[54px]">
         <TabsTrigger value="me">ของฉัน</TabsTrigger>
         {canApprove && (
           <TabsTrigger value="approvals" className="gap-1.5">
