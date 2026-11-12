@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Check, X, CalendarDays, Loader2 } from "lucide-react";
+import { Plus, Check, X, CalendarDays, Loader2, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
 
 import { MobileScreen } from "./mobile-screen";
@@ -38,7 +38,10 @@ export function MobileRequestsView({ defaultTab = "me" }: { defaultTab?: "me" | 
 }
 
 function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
-  const { canAny } = useAuth();
+  const { canAny, user } = useAuth();
+  // An account with no employee record (e.g. a pure admin) has no requests of
+  // its own; open on the team queue instead of the "mine" tab.
+  const hasEmployee = !!user.employee;
   const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
   const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
   const canApproveCorrection = canAny(["attendance:approve", "attendance:manage"]);
@@ -50,7 +53,7 @@ function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
     (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0) + (correctionPendingQ.data?.data.length ?? 0);
 
   return (
-    <Tabs defaultValue={canApprove ? defaultTab : "me"} className="space-y-4">
+    <Tabs defaultValue={canApprove ? (hasEmployee ? defaultTab : "approvals") : "me"} className="space-y-4">
       <TabsList className="w-full group-data-horizontal/tabs:h-[54px]">
         <TabsTrigger value="me">ของฉัน</TabsTrigger>
         {canApprove && (
@@ -79,9 +82,11 @@ function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
 }
 
 function MyRequests() {
-  const leaveQ = useLeave("me");
-  const otQ = useOvertime("me");
-  const correctionQ = useAttendanceCorrections("me");
+  const { user } = useAuth();
+  const hasEmployee = !!user.employee;
+  const leaveQ = useLeave("me", undefined, { enabled: hasEmployee });
+  const otQ = useOvertime("me", undefined, { enabled: hasEmployee });
+  const correctionQ = useAttendanceCorrections("me", undefined, { enabled: hasEmployee });
   const cancelLeave = useCancelLeave();
   const cancelOt = useCancelOvertime();
   const cancelCorrection = useCancelAttendanceCorrection();
@@ -111,6 +116,16 @@ function MyRequests() {
 
   const isLoading = leaveQ.isLoading || otQ.isLoading || correctionQ.isLoading;
   const isError = leaveQ.isError || otQ.isError || correctionQ.isError;
+
+  if (!hasEmployee) {
+    return (
+      <EmptyState
+        icon={UserRoundX}
+        title="บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน"
+        description="จึงไม่มีคำขอของตัวเอง ดูและอนุมัติคำขอของทีมได้ที่แท็บ รออนุมัติ"
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
