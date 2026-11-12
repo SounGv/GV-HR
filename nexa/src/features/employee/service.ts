@@ -278,7 +278,7 @@ export async function updateEmployee(
         actor.employeeId ?? null,
         {
           title: "พนักงานที่พ้นสภาพยังถือทรัพย์สินอยู่",
-          body: `${updated.firstName} ${updated.lastName} ยังถือ ${held.length} รายการ: ${held.map((a) => a.name).slice(0, 3).join(", ")}${held.length > 3 ? " …" : ""}`,
+          body: `${displayName(updated)} ยังถือ ${held.length} รายการ: ${held.map((a) => a.name).slice(0, 3).join(", ")}${held.length > 3 ? " …" : ""}`,
           category: "asset",
           link: `/employees/${id}`,
         },

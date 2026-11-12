@@ -466,7 +466,7 @@ export async function updateCampaign(
             }
           : {
               title: r.raterType === "MANAGER" ? "มีพนักงานรอการประเมินจากคุณ" : "คุณได้รับเชิญให้ร่วมประเมิน",
-              body: `${r.participant.employee.firstName} ${r.participant.employee.lastName} — รอบประเมิน ${cycleLabel}`,
+              body: `${displayName(r.participant.employee)} — รอบประเมิน ${cycleLabel}`,
               category: "performance",
               link: `/performance/campaigns/${id}/participants/${r.participant.id}`,
             },
@@ -659,7 +659,7 @@ export async function addParticipants(
           emp.managerId,
           {
             title: "มีพนักงานรอการประเมินจากคุณ",
-            body: `${emp.firstName} ${emp.lastName} — รอบประเมิน ${cycleLabel}`,
+            body: `${displayName(emp)} — รอบประเมิน ${cycleLabel}`,
             category: "performance",
             link,
           },
@@ -1408,7 +1408,7 @@ export async function invitePeerRater(
         raterId,
         {
           title: "คุณได้รับเชิญให้ร่วมประเมิน",
-          body: `ในฐานะ${RATER_LABEL[input.raterType] ?? input.raterType} — ${participant.employee.firstName} ${participant.employee.lastName} · ${participant.campaign.name} · ${participant.campaign.cycle}`,
+          body: `ในฐานะ${RATER_LABEL[input.raterType] ?? input.raterType} — ${displayName(participant.employee)} · ${participant.campaign.name} · ${participant.campaign.cycle}`,
           category: "performance",
           link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
         },

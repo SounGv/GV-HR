@@ -110,7 +110,7 @@ export async function createMeeting(
       a.id,
       {
         title: "คุณได้รับเชิญเข้าร่วมประชุม",
-        body: `${input.title} — ${when}${organizer ? ` · นัดโดย ${organizer.firstName} ${organizer.lastName}` : ""}`,
+        body: `${input.title} — ${when}${organizer ? ` · นัดโดย ${displayName(organizer)}` : ""}`,
         category: "meeting",
         link: `/meetings/${meeting.id}`,
       },

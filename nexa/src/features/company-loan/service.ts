@@ -7,6 +7,7 @@ import { hasCompletedOneYear, hasPassedProbation } from "@/lib/tenure";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { CompanyLoanRequest, LoanEligibility } from "./types";
 import type { LoanCreateInput, LoanDecideInput, LoanListQuery, LoanRepayInput } from "./schema";
+import { displayName } from "@/lib/format";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -161,7 +162,7 @@ export async function createLoan(companyId: string, session: AccessClaims, input
       requester.managerId,
       {
         title: "มีคำขอกู้เงินบริษัทรออนุมัติ",
-        body: `${requester.firstName} ${requester.lastName} ขอกู้เงิน ${input.amount.toFixed(2)} บาท`,
+        body: `${displayName(requester)} ขอกู้เงิน ${input.amount.toFixed(2)} บาท`,
         category: "expense",
         link: `/benefits/loans/${record.id}`,
       },
