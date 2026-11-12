@@ -108,7 +108,7 @@ export async function createAttendanceCorrection(
   const correctionNotice = {
     title: "มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ",
     body: `${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}`,
-    category: "attendance",
+    category: "attendance-correction",
     link: `/attendance/corrections/${record.id}`,
   };
   if (employee?.managerId) {
@@ -122,7 +122,7 @@ export async function createAttendanceCorrection(
     companyId,
     "hr-alerts",
     `📝 มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}\n${appBaseUrl() + `/attendance/corrections/${record.id}`}`,
-    "attendance",
+    "attendance-correction",
   );
 
   return record;
@@ -275,7 +275,7 @@ export async function decideAttendanceCorrection(
     {
       title: nextStatus === "APPROVED" ? "คำขอแก้ไขเวลาได้รับอนุมัติ" : "คำขอแก้ไขเวลาไม่ได้รับอนุมัติ",
       body: `${nextStatus === "APPROVED" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}${input.note ? `: ${input.note}` : ""}`,
-      category: "attendance",
+      category: "attendance-correction",
       link: `/attendance/corrections/${req.id}`,
     },
     session.sub,
