@@ -6,6 +6,7 @@ import { revokeAllForUser } from "@/lib/auth/token-store";
 import { can } from "@/lib/auth/rbac";
 import type { SessionUser } from "@/lib/auth/session";
 import type { EmployeeAccountInput, EmployeeAccountUpdateInput, EmployeePasswordResetInput } from "./schema";
+import { rolePermissionKeys } from "@/config/permissions";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -98,7 +99,7 @@ export async function resetEmployeeAccountPassword(
       id: true,
       userId: true,
       user: {
-        select: { roles: { select: { role: { select: { permissions: { select: { permission: { select: { key: true } } } } } } } } },
+        select: { roles: { select: { role: { select: { name: true, isSystem: true, permissions: { select: { permission: { select: { key: true } } } } } } } } },
       },
     },
   });
@@ -107,7 +108,7 @@ export async function resetEmployeeAccountPassword(
 
   const targetKeys = new Set<string>();
   for (const ur of emp.user?.roles ?? []) {
-    for (const rp of ur.role.permissions) targetKeys.add(rp.permission.key);
+    for (const k of rolePermissionKeys(ur.role)) targetKeys.add(k);
   }
   const notOwned = [...targetKeys].filter((k) => !can(session.perms, k));
   if (notOwned.length > 0) {
@@ -162,7 +163,7 @@ export async function updateEmployeeAccount(
           email: true,
           username: true,
           deletedAt: true,
-          roles: { select: { role: { select: { permissions: { select: { permission: { select: { key: true } } } } } } } },
+          roles: { select: { role: { select: { name: true, isSystem: true, permissions: { select: { permission: { select: { key: true } } } } } } } },
         },
       },
     },
@@ -172,7 +173,7 @@ export async function updateEmployeeAccount(
 
   const targetKeys = new Set<string>();
   for (const ur of emp.user.roles) {
-    for (const rp of ur.role.permissions) targetKeys.add(rp.permission.key);
+    for (const k of rolePermissionKeys(ur.role)) targetKeys.add(k);
   }
   if ([...targetKeys].some((k) => !can(session.perms, k))) {
     throw Forbidden("ไม่สามารถแก้บัญชีของผู้ใช้ที่มีสิทธิ์เกินกว่าคุณได้");

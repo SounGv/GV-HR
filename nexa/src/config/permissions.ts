@@ -239,3 +239,28 @@ export function expandPermissions(patterns: string[]): string[] {
   }
   return [...set];
 }
+
+/** A role as read from the database, with its permission rows. */
+export interface RoleWithPermissionRows {
+  name: string;
+  isSystem: boolean;
+  permissions: { permission: { key: string } }[];
+}
+
+/**
+ * The permission keys a role really grants.
+ *
+ * Custom roles grant exactly their database rows. System roles (Super Admin,
+ * HR Manager, Manager, Employee…) also grant everything their preset in
+ * this file names: their rows were copied from the catalog when
+ * the company was set up, so a permission added to the catalog later (e.g.
+ * `leave:manage`) was missing from Super Admin even though its preset is "*".
+ * Rows are never taken away, only topped up to what the preset says.
+ */
+export function rolePermissionKeys(role: RoleWithPermissionRows): string[] {
+  const rows = role.permissions.map((p) => p.permission.key);
+  if (!role.isSystem) return rows;
+  const preset = ROLE_PRESETS.find((p) => p.name === role.name);
+  if (!preset) return rows;
+  return [...new Set([...rows, ...expandPermissions(preset.permissions)])];
+}

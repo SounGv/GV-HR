@@ -9,7 +9,10 @@
  * the catalog after a company already exists never reaches that company's
  * roles on its own — there's no live sync. Run this once after adding a new
  * permission (e.g. `campaign:manage`) so every existing company's system
- * roles catch up. Additive only: it never removes a permission a role
+ * roles catch up. (Logins no longer depend on it: rolePermissionKeys() tops
+ * system roles up to their preset at sign-in; this keeps the stored rows and
+ * the DB-side permission filters, e.g. notification recipients, in line.)
+ * Additive only: it never removes a permission a role
  * already has, so it's safe to re-run any time and cannot revoke access.
  *
  * Usage: node node_modules/tsx/dist/cli.mjs scripts/sync-role-permissions.ts

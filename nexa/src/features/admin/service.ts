@@ -6,6 +6,7 @@ import { revokeAllForUser } from "@/lib/auth/token-store";
 import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { RoleCreateInput, RoleUpdateInput } from "./schema";
+import { rolePermissionKeys } from "@/config/permissions";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -60,7 +61,7 @@ export async function listRoles(companyId: string) {
     name: r.name,
     description: r.description,
     isSystem: r.isSystem,
-    permissionKeys: r.permissions.map((p) => p.permission.key),
+    permissionKeys: rolePermissionKeys(r),
     userCount: r._count.users,
   }));
 }
@@ -327,7 +328,7 @@ export async function setUserRoles(
   if (roleIds.length > 0) {
     const roles = await prisma.role.findMany({
       where: { id: { in: roleIds }, OR: [{ companyId }, { companyId: null }], deletedAt: null },
-      select: { id: true, permissions: { select: { permission: { select: { key: true } } } } },
+      select: { id: true, name: true, isSystem: true, permissions: { select: { permission: { select: { key: true } } } } },
     });
     if (roles.length !== roleIds.length) throw BadRequest("มีบทบาทที่ไม่ถูกต้อง");
     // Same reasoning as assertGrantable in setRolePermissions: assigning a
@@ -337,7 +338,7 @@ export async function setUserRoles(
     const heldRoleIds = new Set(user.roles.map((r) => r.roleId));
     const grantedKeys = [
       ...new Set(
-        roles.filter((r) => !heldRoleIds.has(r.id)).flatMap((r) => r.permissions.map((p) => p.permission.key)),
+        roles.filter((r) => !heldRoleIds.has(r.id)).flatMap((r) => rolePermissionKeys(r)),
       ),
     ];
     assertGrantable(session, grantedKeys);

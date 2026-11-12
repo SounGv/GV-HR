@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Unauthorized, BadRequest } from "@/lib/api/errors";
 import { verifyPassword, hashPassword } from "./password";
+import { rolePermissionKeys } from "@/config/permissions";
 import { signAccessToken, signMfaToken, verifyMfaToken, type AccessClaims } from "./jwt";
 import { issueRefreshToken, rotateRefreshToken, revokeRefreshToken, revokeAllExcept, revokeAllForUser } from "./token-store";
 import {
@@ -68,11 +69,7 @@ type UserWithRoles = NonNullable<Awaited<ReturnType<typeof loadUserForClaims>>>;
 
 function buildClaims(user: UserWithRoles): AccessClaims {
   const roles = user.roles.map((ur) => ur.role.name);
-  const perms = [
-    ...new Set(
-      user.roles.flatMap((ur) => ur.role.permissions.map((rp) => rp.permission.key)),
-    ),
-  ];
+  const perms = [...new Set(user.roles.flatMap((ur) => rolePermissionKeys(ur.role)))];
   return {
     sub: user.id,
     companyId: user.companyId,
