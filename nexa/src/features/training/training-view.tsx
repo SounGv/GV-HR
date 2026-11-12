@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Plus, GraduationCap, Pencil, Trash2, Clock, MapPin, Users, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger, stickyTabsRow } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
@@ -73,7 +74,7 @@ export function TrainingView() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="courses">
-        <div className="flex items-center justify-between gap-2">
+        <div className={cn("flex items-center justify-between gap-2", stickyTabsRow)}>
           <TabsList>
             <TabsTrigger value="courses">หลักสูตร</TabsTrigger>
             <TabsTrigger value="mine">การอบรมของฉัน</TabsTrigger>

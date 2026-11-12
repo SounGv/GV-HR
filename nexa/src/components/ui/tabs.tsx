@@ -23,12 +23,23 @@ function Tabs({
   )
 }
 
+/**
+ * Keeps a page's tab row in view while the page scrolls: just under the mobile
+ * header (h-14) or the desktop topbar (h-16), 8px below it. TabsList has it
+ * built in; a row that wraps the list with buttons beside it uses this class.
+ */
+export const stickyTabsRow =
+  "sticky z-20 top-[calc(env(safe-area-inset-top)+4rem)] md:top-[4.5rem]"
+
 const tabsListVariants = cva(
   "group/tabs-list inline-flex w-fit items-center justify-center rounded-xl p-1 text-muted-foreground group-data-horizontal/tabs:h-10 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none data-[variant=line]:border-b data-[variant=line]:border-border",
   {
     variants: {
       variant: {
-        default: "bg-muted",
+        // Stays in view while the page scrolls (see stickyTabsRow). It only
+        // sticks where the list sits directly inside <Tabs>.
+        default:
+          "bg-muted group-data-horizontal/tabs:sticky group-data-horizontal/tabs:z-20 group-data-horizontal/tabs:top-[calc(env(safe-area-inset-top)+4rem)] group-data-horizontal/tabs:shadow-[0_6px_16px_-10px_rgba(15,23,42,0.35)] md:group-data-horizontal/tabs:top-[4.5rem]",
         line: "gap-1 bg-transparent",
       },
     },

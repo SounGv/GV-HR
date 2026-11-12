@@ -6,7 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { Plus, Target, Pencil, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger, stickyTabsRow } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,7 +55,7 @@ export function KpiView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className={cn("flex items-center justify-between gap-2", stickyTabsRow)}>
         <Tabs value={scope} onValueChange={(v) => setScope((v as GoalScope) ?? "me")}>
           <TabsList>
             <TabsTrigger value="me">ของฉัน</TabsTrigger>

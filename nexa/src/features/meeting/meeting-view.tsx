@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Plus, Users, MapPin, Presentation } from "lucide-react";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger, stickyTabsRow } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
@@ -37,7 +38,7 @@ export function MeetingView() {
 
   return (
     <Tabs defaultValue="invitee" className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className={cn("flex items-center justify-between gap-3", stickyTabsRow)}>
         <TabsList>
           <TabsTrigger value="invitee">คำเชิญของฉัน</TabsTrigger>
           {canCreate && <TabsTrigger value="organizer">ที่ฉันสร้าง</TabsTrigger>}
