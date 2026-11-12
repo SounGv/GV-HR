@@ -4,13 +4,20 @@
  *
  * LINE counts every push to every person against the monthly allowance, and
  * the company's LINE account is on the free plan (300 messages a month, none
- * beyond it). The owner chose on 2026-11-12 to send only leave, OT and
- * time-correction requests (and their answers) for now; everything else,
- * missed-scan alerts included, stays in the app's inbox.
+ * beyond it). The owner chose on 2026-11-12 to send only leave, OT,
+ * time-correction requests (and their answers) and evaluations (round
+ * invitations and reminders follow the round's own LINE switch; results
+ * follow this list) for now; everything else, missed-scan alerts included,
+ * stays in the app's inbox.
  * The earlier, longer list was: leave, overtime, attendance, workflow,
  * expense, medical, performance, evaluation, meeting, hr.
  */
-export const LINE_CATEGORIES: ReadonlySet<string> = new Set(["leave", "overtime", "attendance-correction"]);
+export const LINE_CATEGORIES: ReadonlySet<string> = new Set([
+  "leave",
+  "overtime",
+  "attendance-correction",
+  "evaluation",
+]);
 
 /**
  * Whether every check-in and check-out is posted to the LINE groups. Off by

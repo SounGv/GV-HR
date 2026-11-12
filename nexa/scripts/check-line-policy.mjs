@@ -10,11 +10,11 @@ const check = (name, fn) => {
   console.log(`ok  ${name}`);
 };
 
-check("leave, OT and time-correction requests go to LINE (free plan: only these for now)", () => {
-  for (const c of ["leave", "overtime", "attendance-correction"]) assert.equal(shouldPushToLine(c), true, c);
+check("leave, OT, time corrections and evaluations go to LINE (free plan: only these for now)", () => {
+  for (const c of ["leave", "overtime", "attendance-correction", "evaluation"]) assert.equal(shouldPushToLine(c), true, c);
 });
 check("everything else stays in the app for now (missed-scan alerts are attendance), the group broadcast included", () => {
-  for (const c of ["attendance", "workflow", "expense", "medical", "performance", "evaluation", "meeting", "hr"]) {
+  for (const c of ["attendance", "workflow", "expense", "medical", "performance", "meeting", "hr"]) {
     assert.equal(shouldPushToLine(c), false, c);
   }
 });
@@ -32,8 +32,8 @@ check("the caller's own choice always wins, in both directions", () => {
   assert.equal(shouldPushToLine("announcement", true), true);
   assert.equal(shouldPushToLine(undefined, true), true);
 });
-check("the list has exactly the three agreed categories", () => {
-  assert.deepEqual([...LINE_CATEGORIES].sort(), ["attendance-correction", "leave", "overtime"]);
+check("the list has exactly the four agreed categories", () => {
+  assert.deepEqual([...LINE_CATEGORIES].sort(), ["attendance-correction", "evaluation", "leave", "overtime"]);
 });
 check("check-in and check-out posts to LINE groups are off by default and on only for the exact value true", () => {
   const before = process.env.LINE_GROUP_POST_SCANS;
