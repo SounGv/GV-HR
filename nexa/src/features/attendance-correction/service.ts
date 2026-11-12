@@ -13,6 +13,7 @@ import type {
   AttendanceCorrectionListQuery,
 } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
+import { displayName } from "@/lib/format";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -107,7 +108,7 @@ export async function createAttendanceCorrection(
 
   const correctionNotice = {
     title: "มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ",
-    body: `${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}`,
+    body: `${employee ? displayName(employee) : ""} ขอแก้ไขเวลาวันที่ ${input.workDate}`,
     category: "attendance-correction",
     link: `/attendance/corrections/${record.id}`,
   };
@@ -121,7 +122,7 @@ export async function createAttendanceCorrection(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `📝 มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอแก้ไขเวลาวันที่ ${input.workDate}\n${appBaseUrl() + `/attendance/corrections/${record.id}`}`,
+    `📝 มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ\n${employee ? displayName(employee) : ""} ขอแก้ไขเวลาวันที่ ${input.workDate}\n${appBaseUrl() + `/attendance/corrections/${record.id}`}`,
     "attendance-correction",
   );
 

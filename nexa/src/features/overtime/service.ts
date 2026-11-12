@@ -15,6 +15,7 @@ import { computeHours, dayOffReason, estimateAmount, minutesSinceWorkDateStart, 
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
+import { displayName } from "@/lib/format";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -116,7 +117,7 @@ export async function createOvertime(
 
   const otNotice = {
     title: "มีคำขอ OT รออนุมัติ",
-    body: `${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง${dayOffNote}`,
+    body: `${employee ? displayName(employee) : ""} ขอ OT ${hours} ชั่วโมง${dayOffNote}`,
     category: "overtime",
     link: `/overtime/${record.id}`,
   };
@@ -130,7 +131,7 @@ export async function createOvertime(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `⏱️ มีคำขอ OT รออนุมัติ\n${employee?.firstName} ${employee?.lastName} ขอ OT ${hours} ชั่วโมง${dayOffNote}\n${appBaseUrl() + `/overtime/${record.id}`}`,
+    `⏱️ มีคำขอ OT รออนุมัติ\n${employee ? displayName(employee) : ""} ขอ OT ${hours} ชั่วโมง${dayOffNote}\n${appBaseUrl() + `/overtime/${record.id}`}`,
     "overtime",
   );
 
@@ -460,7 +461,7 @@ export async function cancelOvertime(
       req.employee.managerId,
       {
         title: "คำขอ OT ถูกยกเลิก",
-        body: `${req.employee.firstName} ${req.employee.lastName} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+        body: `${displayName(req.employee)} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
         category: "overtime",
         link: `/overtime/${req.id}`,
       },
@@ -470,7 +471,7 @@ export async function cancelOvertime(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `↩️ ${req.employee.firstName} ${req.employee.lastName} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+    `↩️ ${displayName(req.employee)} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
     "overtime",
   );
 

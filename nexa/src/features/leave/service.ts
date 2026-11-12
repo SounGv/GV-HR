@@ -268,7 +268,7 @@ export async function createLeave(
       : `${days} วัน`;
   const leaveNotice = {
     title: "มีคำขอลารออนุมัติ",
-    body: `${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}`,
+    body: `${requester ? displayName(requester) : ""} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}`,
     category: "leave",
     link: `/leave/${record.id}`,
   };
@@ -288,7 +288,7 @@ export async function createLeave(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `📋 มีคำขอลารออนุมัติ\n${requester?.firstName} ${requester?.lastName} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}\n${appBaseUrl() + `/leave/${record.id}`}`,
+    `📋 มีคำขอลารออนุมัติ\n${requester ? displayName(requester) : ""} ขอ${LEAVE_TYPE_LABEL[input.type] ?? input.type} ${amountLabel}\n${appBaseUrl() + `/leave/${record.id}`}`,
     "leave",
   );
 
@@ -597,7 +597,7 @@ export async function cancelLeave(
       req.employee.managerId,
       {
         title: "คำขอลาถูกยกเลิก",
-        body: `${req.employee.firstName} ${req.employee.lastName} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+        body: `${displayName(req.employee)} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
         category: "leave",
         link: `/leave/${req.id}`,
       },
@@ -607,7 +607,7 @@ export async function cancelLeave(
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",
-    `↩️ ${req.employee.firstName} ${req.employee.lastName} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+    `↩️ ${displayName(req.employee)} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
     "leave",
   );
 
