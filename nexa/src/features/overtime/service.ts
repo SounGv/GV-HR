@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
@@ -38,10 +39,6 @@ const requestSelect = {
   },
 } satisfies Prisma.OvertimeRequestSelect;
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 /**
  * HR-level approvers may act on ANY request company-wide; a plain Manager

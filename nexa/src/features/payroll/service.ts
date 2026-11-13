@@ -1,4 +1,5 @@
 import { displayName } from "@/lib/format";
+import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -397,10 +398,6 @@ function computeBasePay(
   return Number(emp.baseSalary ?? 0);
 }
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 export function canManagePayroll(session: AccessClaims): boolean {
   return can(session.perms, "payroll:create") || can(session.perms, "payroll:approve");
@@ -627,6 +624,8 @@ export async function listPayroll(
   query: PayrollListQuery,
 ) {
   if (query.scope === "me") {
+    // No employee record (admin, system account): nothing is "mine", so an empty list, not an error.
+    if (!hasEmployee(session)) return [];
     const employeeId = requireEmployeeId(session);
     return prisma.payrollRecord.findMany({
       where: { companyId, deletedAt: null, employeeId, ...(query.period ? { period: query.period } : {}) },

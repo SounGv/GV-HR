@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { requireEmployeeId as requireEmployee } from "@/lib/auth/employee";
 import { getLineBotBasicId, lineChatWithTextUrl } from "@/lib/integrations/line";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -46,10 +47,7 @@ const profileSelect = {
 type Meta = { ip?: string; userAgent?: string };
 
 function requireEmployeeId(session: SessionUser): string {
-  if (!session.employeeId) {
-    throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน จึงแก้ไขโปรไฟล์ไม่ได้");
-  }
-  return session.employeeId;
+  return requireEmployee(session, "บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน จึงแก้ไขโปรไฟล์ไม่ได้");
 }
 
 export async function getMyProfile(session: SessionUser) {

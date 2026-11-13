@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
@@ -78,9 +78,10 @@ export function ShiftView() {
 }
 
 function MyScheduleView() {
+  const hasEmployee = !!useAuth().user.employee;
   const today = toIsoLocal(new Date());
   const to = shiftWeek(today, 6);
-  const { data, isLoading, isError, refetch } = useMyAssignments(today, to);
+  const { data, isLoading, isError, error, refetch } = useMyAssignments(today, to);
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => shiftWeek(today, i)), [today]);
 
   const byDate = useMemo(() => {
@@ -89,7 +90,8 @@ function MyScheduleView() {
     return map;
   }, [data]);
 
-  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (!hasEmployee) return <NoEmployeeState />;
+  if (isError) return <ErrorState error={error} onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={4} />;
 
   return (
@@ -245,6 +247,7 @@ function SwapRequestRow({
 }
 
 function SwapRequestsView() {
+  const swapHasEmployee = !!useAuth().user.employee;
   const mineQuery = useSwapRequests("mine");
   const inboxQuery = useSwapRequests("inbox");
   const cancelMut = useCancelSwapRequest();
@@ -268,6 +271,7 @@ function SwapRequestsView() {
     }
   }
 
+  if (!swapHasEmployee) return <NoEmployeeState />;
   const mine = mineQuery.data?.data ?? [];
   const inbox = inboxQuery.data?.data ?? [];
 
@@ -276,7 +280,7 @@ function SwapRequestsView() {
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">คำขอของฉัน</h3>
         {mineQuery.isError ? (
-          <ErrorState onRetry={() => mineQuery.refetch()} />
+          <ErrorState error={mineQuery.error} onRetry={() => mineQuery.refetch()} />
         ) : mineQuery.isLoading ? (
           <TableLoadingState rows={2} />
         ) : mine.length === 0 ? (
@@ -303,7 +307,7 @@ function SwapRequestsView() {
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">รออนุมัติ</h3>
         {inboxQuery.isError ? (
-          <ErrorState onRetry={() => inboxQuery.refetch()} />
+          <ErrorState error={inboxQuery.error} onRetry={() => inboxQuery.refetch()} />
         ) : inboxQuery.isLoading ? (
           <TableLoadingState rows={2} />
         ) : inbox.length === 0 ? (

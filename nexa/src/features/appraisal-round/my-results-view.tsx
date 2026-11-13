@@ -1,9 +1,10 @@
 "use client";
 
 import { CircleCheck, Lock, ListChecks } from "lucide-react";
+import { useAuth } from "@/features/auth/auth-context";
 import { toast } from "sonner";
 
-import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
@@ -15,7 +16,8 @@ const fmt = (iso: string | null) =>
 
 /** "ผลประเมินของฉัน": only results HR has published, and only when the company lets people see them. */
 export function MyResultsView() {
-  const { data, isLoading, isError, refetch } = useMyResults();
+  const hasEmployee = !!useAuth().user.employee;
+  const { data, isLoading, isError, error, refetch } = useMyResults();
   const ack = useAcknowledge();
   const results = data?.data ?? [];
 
@@ -28,7 +30,8 @@ export function MyResultsView() {
     }
   }
 
-  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (!hasEmployee) return <NoEmployeeState />;
+  if (isError) return <ErrorState error={error} onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={3} />;
   if (results.length === 0) {
     return <EmptyState icon={ListChecks} title="ยังไม่มีผลประเมินที่ประกาศ" description="เมื่อ HR ประกาศผลและเปิดให้ดู ผลของคุณจะแสดงที่นี่" />;

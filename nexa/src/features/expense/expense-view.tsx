@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { getInitials, formatCurrency, formatDate, displayName } from "@/lib/format";
@@ -59,7 +59,8 @@ export function ExpenseView() {
 }
 
 function MyClaims() {
-  const { data, isLoading, isError, refetch } = useExpenses("me");
+  const hasEmployee = !!useAuth().user.employee;
+  const { data, isLoading, isError, error, refetch } = useExpenses("me");
   const cancelMut = useCancelExpense();
   const [cancelTarget, setCancelTarget] = useState<ExpenseClaim | null>(null);
   const claims = data?.data ?? [];
@@ -84,8 +85,10 @@ function MyClaims() {
         </Button>
       </div>
 
-      {isError ? (
-        <ErrorState onRetry={() => refetch()} />
+      {!hasEmployee ? (
+        <NoEmployeeState />
+      ) : isError ? (
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
         <TableLoadingState rows={4} />
       ) : claims.length === 0 ? (

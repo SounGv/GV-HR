@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
+import { requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { Forbidden, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { DevelopmentItemCreateInput, DevelopmentItemUpdateInput } from "./schema";
 
@@ -37,10 +38,6 @@ const planSelect = {
   items: { select: itemSelect, orderBy: { createdAt: "asc" } },
 } satisfies Prisma.DevelopmentPlanSelect;
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 function isHrLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("performance:approve");

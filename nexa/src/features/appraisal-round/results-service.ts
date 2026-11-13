@@ -2,7 +2,7 @@ import { displayName } from "@/lib/format";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, NotFound, NoEmployee } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { participantScope, viewableEmployeeIds } from "./viewer-scope";
 import { createNotification } from "@/features/notification/service";
@@ -276,7 +276,7 @@ export interface MyResult {
 
 /** Published results of the signed-in person, only when the company lets people see them. Small peer/subordinate groups stay hidden. */
 export async function listMyResults(companyId: string, session: AccessClaims): Promise<MyResult[]> {
-  if (!session.employeeId) throw Forbidden("บัญชีนี้ไม่ได้ผูกกับพนักงาน");
+  if (!session.employeeId) return []; // no employee record: no results of their own, not an error
   const settings = await getSettings(companyId);
   if (settings.employeeSees !== "AFTER_PUBLISH") return [];
 
@@ -337,7 +337,7 @@ export async function listMyResults(companyId: string, session: AccessClaims): P
 }
 
 export async function acknowledgeMyResult(companyId: string, session: AccessClaims, participantId: string, meta?: Meta) {
-  if (!session.employeeId) throw Forbidden("บัญชีนี้ไม่ได้ผูกกับพนักงาน");
+  if (!session.employeeId) throw NoEmployee();
   const settings = await getSettings(companyId);
   if (!settings.ackRequired) throw BadRequest("ไม่ต้องกดรับทราบผล");
   const p = await prisma.appraisalParticipant.findFirst({

@@ -1,4 +1,5 @@
 import { displayName } from "@/lib/format";
+import { requireEmployeeId as requireEmployee } from "@/lib/auth/employee";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -84,10 +85,7 @@ async function findOpenAttendanceRecord(employeeId: string, todayUTC: Date) {
 }
 
 function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) {
-    throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน ไม่สามารถลงเวลาได้");
-  }
-  return session.employeeId;
+  return requireEmployee(session, "บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน ไม่สามารถลงเวลาได้");
 }
 
 /** Load the employee + branch geofence, or throw. */

@@ -1,4 +1,5 @@
 import { hourlyUsage, remainingLeaveHours } from "./hour-pool";
+import { requireEmployeeId } from "@/lib/auth/employee";
 import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache";
 import { displayName } from "@/lib/format";
 import { Prisma, type LeaveType } from "@prisma/client";
@@ -53,10 +54,6 @@ const requestSelect = {
   },
 } satisfies Prisma.LeaveRequestSelect;
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 /**
  * HR-level approvers may act on ANY request company-wide; a plain Manager

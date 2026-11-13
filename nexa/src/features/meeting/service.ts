@@ -1,4 +1,5 @@
 import { displayName } from "@/lib/format";
+import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -32,10 +33,6 @@ const meetingSelect = {
   attendees: { select: attendeeSelect },
 } satisfies Prisma.MeetingSelect;
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 /** HR-level (wildcard) may view/cancel any meeting; everyone else only their own. */
 function isHrLevel(session: AccessClaims): boolean {
@@ -122,6 +119,7 @@ export async function createMeeting(
 }
 
 export async function listMeetings(companyId: string, session: AccessClaims, query: MeetingListQuery) {
+  if (!hasEmployee(session)) return []; // no employee record: no meetings of their own, not an error
   const employeeId = requireEmployeeId(session);
 
   const meetings = await prisma.meeting.findMany({

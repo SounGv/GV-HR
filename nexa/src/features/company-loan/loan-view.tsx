@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { getInitials, formatCurrency, formatDate, displayName } from "@/lib/format";
@@ -53,7 +53,8 @@ export function LoanView() {
 }
 
 function MyLoans() {
-  const { data, isLoading, isError, refetch } = useLoans("me");
+  const hasEmployee = !!useAuth().user.employee;
+  const { data, isLoading, isError, error, refetch } = useLoans("me");
   const cancelMut = useCancelLoan();
   const [cancelTarget, setCancelTarget] = useState<CompanyLoanRequest | null>(null);
   const loans = data?.data ?? [];
@@ -78,8 +79,10 @@ function MyLoans() {
         </Button>
       </div>
 
-      {isError ? (
-        <ErrorState onRetry={() => refetch()} />
+      {!hasEmployee ? (
+        <NoEmployeeState />
+      ) : isError ? (
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
         <TableLoadingState rows={4} />
       ) : loans.length === 0 ? (

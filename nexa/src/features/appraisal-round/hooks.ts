@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/auth-context";
 import {
   cloneRound,
   closeRound,
@@ -107,9 +108,14 @@ export function useUnscheduleRound(id: string) {
 export const useDepartmentProgress = (id: string, enabled: boolean) =>
   useQuery({ queryKey: ["appraisal-rounds", "departments", id], queryFn: () => fetchDepartmentProgress(id), enabled });
 
-/** My unfinished evaluation jobs in open rounds (drives the menu badge and the "to do" rows). Accounts with no employee record just get an empty list. */
+/**
+ * My unfinished evaluation jobs in open rounds (drives the menu badge and the "to do" rows).
+ * Not fetched at all for accounts with no employee record: the sidebar and bottom bar
+ * call this on every page, and it was a 403 on every page for admin (audit B3).
+ */
 export function useMyPendingAppraisalTasks() {
-  const q = useQuery({ queryKey: appraisalRoundKeys.tasks, queryFn: fetchTasks, retry: false, staleTime: 30_000 });
+  const { user } = useAuth();
+  const q = useQuery({ queryKey: appraisalRoundKeys.tasks, queryFn: fetchTasks, retry: false, staleTime: 30_000, enabled: !!user?.employee });
   const items = (q.data?.data ?? []).filter((t) => t.status !== "SUBMITTED" && t.roundStatus === "OPEN");
   return { items, isLoading: q.isLoading };
 }

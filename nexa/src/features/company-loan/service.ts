@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
@@ -55,10 +56,6 @@ function serialize(l: RawLoan): CompanyLoanRequest {
   };
 }
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 function isFinanceLevel(session: AccessClaims): boolean {
   return session.perms.includes("*") || session.perms.includes("expense:approve");
@@ -177,6 +174,8 @@ export async function listLoans(companyId: string, session: AccessClaims, query:
   let employeeIds: string[] | undefined;
 
   if (query.scope === "me") {
+    // No employee record (admin, system account): nothing is "mine", so an empty list, not an error.
+    if (!hasEmployee(session)) return [];
     employeeIds = [requireEmployeeId(session)];
   } else if (query.scope === "team") {
     const reports = await prisma.employee.findMany({

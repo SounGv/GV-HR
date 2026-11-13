@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "@/features/auth/auth-context";
 import { Stethoscope, Landmark } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
-import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useExpenses } from "@/features/expense/hooks";
 import { ExpenseStatusBadge } from "@/features/expense/labels";
@@ -14,15 +15,17 @@ import { LoanStatusBadge } from "@/features/company-loan/labels";
 /** "ประวัติสวัสดิการของฉัน" — every medical claim + loan request the
  * employee has ever submitted, combined in one read-only view. */
 export function BenefitsHistoryView() {
-  const { data: expenseData, isLoading: expenseLoading, isError: expenseError, refetch: refetchExpense } = useExpenses("me");
-  const { data: loanData, isLoading: loanLoading, isError: loanError, refetch: refetchLoan } = useLoans("me");
+  const hasEmployee = !!useAuth().user.employee;
+  const { data: expenseData, isLoading: expenseLoading, isError: expenseError, error: expenseErr, refetch: refetchExpense } = useExpenses("me");
+  const { data: loanData, isLoading: loanLoading, isError: loanError, error: loanErr, refetch: refetchLoan } = useLoans("me");
 
   const medicalClaims = (expenseData?.data ?? []).filter((c) => c.category === "medical");
   const loans = loanData?.data ?? [];
   const isLoading = expenseLoading || loanLoading;
   const isError = expenseError || loanError;
 
-  if (isError) return <ErrorState onRetry={() => { refetchExpense(); refetchLoan(); }} />;
+  if (!hasEmployee) return <NoEmployeeState />;
+  if (isError) return <ErrorState error={expenseErr ?? loanErr} onRetry={() => { refetchExpense(); refetchLoan(); }} />;
   if (isLoading) return <TableLoadingState rows={5} />;
 
   if (medicalClaims.length === 0 && loans.length === 0) {

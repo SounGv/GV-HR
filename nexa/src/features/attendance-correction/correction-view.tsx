@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
-import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { formatDate, displayName } from "@/lib/format";
@@ -59,7 +59,8 @@ export function CorrectionView() {
 }
 
 function MyRequests() {
-  const { data, isLoading, isError, refetch } = useAttendanceCorrections("me");
+  const hasEmployee = !!useAuth().user.employee;
+  const { data, isLoading, isError, error, refetch } = useAttendanceCorrections("me");
   const cancelMut = useCancelAttendanceCorrection();
   const [cancelTarget, setCancelTarget] = useState<AttendanceCorrectionRequest | null>(null);
   const requests = data?.data ?? [];
@@ -84,8 +85,10 @@ function MyRequests() {
         </Button>
       </div>
 
-      {isError ? (
-        <ErrorState onRetry={() => refetch()} />
+      {!hasEmployee ? (
+        <NoEmployeeState />
+      ) : isError ? (
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
         <TableLoadingState rows={4} />
       ) : requests.length === 0 ? (

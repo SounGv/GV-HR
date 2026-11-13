@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger, stickyTabsRow } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
 
 import { useMeetings } from "./hooks";
@@ -64,10 +64,12 @@ export function MeetingView() {
 }
 
 function MeetingList({ scope }: { scope: "organizer" | "invitee" }) {
-  const { data, isLoading, isError, refetch } = useMeetings(scope);
+  const hasEmployee = !!useAuth().user.employee;
+  const { data, isLoading, isError, error, refetch } = useMeetings(scope);
   const meetings = data?.data ?? [];
 
-  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (!hasEmployee) return <NoEmployeeState />;
+  if (isError) return <ErrorState error={error} onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={4} />;
   if (meetings.length === 0) {
     return (

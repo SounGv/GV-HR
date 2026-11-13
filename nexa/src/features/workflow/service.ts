@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
@@ -16,10 +17,6 @@ import type {
 
 type Meta = { ip?: string; userAgent?: string };
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 function asStepDefs(json: Prisma.JsonValue): WorkflowStepDef[] {
   return (json as unknown as WorkflowStepDef[]) ?? [];
@@ -246,6 +243,8 @@ export async function listRequests(
   query: RequestListQuery,
 ): Promise<ApprovalRequest[]> {
   if (query.scope === "me") {
+    // No employee record (admin, system account): nothing is "mine", so an empty list, not an error.
+    if (!hasEmployee(session)) return [];
     const employeeId = requireEmployeeId(session);
     const rows = await prisma.approvalRequest.findMany({
       where: { companyId, requesterEmployeeId: employeeId },

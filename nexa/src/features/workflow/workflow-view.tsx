@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -116,7 +116,8 @@ export function WorkflowView() {
 }
 
 function MyRequests() {
-  const { data, isLoading, isError, refetch } = useRequests("me");
+  const hasEmployee = !!useAuth().user.employee;
+  const { data, isLoading, isError, error, refetch } = useRequests("me");
   const cancelMut = useCancelRequest();
   const requests = data?.data ?? [];
 
@@ -137,8 +138,10 @@ function MyRequests() {
           <Send className="size-4" /> ส่งคำขอ
         </Button>
       </div>
-      {isError ? (
-        <ErrorState onRetry={() => refetch()} />
+      {!hasEmployee ? (
+        <NoEmployeeState />
+      ) : isError ? (
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
         <TableLoadingState rows={3} />
       ) : requests.length === 0 ? (

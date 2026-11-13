@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
+import { requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { Forbidden, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { computeOverall, scoreBand, type Competency } from "./calc";
 import type { ReviewCreateInput, ReviewListQuery, ReviewUpdateInput } from "./schema";
@@ -34,10 +35,6 @@ const reviewSelect = {
   },
 } satisfies Prisma.PerformanceReviewSelect;
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 /**
  * Wildcard grants like "performance:*" are expanded into concrete permission

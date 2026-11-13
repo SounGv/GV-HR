@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound, Conflict } from "@/lib/api/errors";
@@ -7,10 +8,6 @@ import type { CourseCreateInput, CourseUpdateInput, EnrollmentUpdateInput } from
 
 type Meta = { ip?: string; userAgent?: string };
 
-function requireEmployeeId(session: AccessClaims): string {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
-  return session.employeeId;
-}
 
 const courseSelect = {
   id: true,
@@ -82,6 +79,7 @@ export async function getCourse(companyId: string, id: string) {
 }
 
 export async function listMyEnrollments(companyId: string, session: AccessClaims) {
+  if (!hasEmployee(session)) return []; // no employee record: nothing enrolled, not an error
   const employeeId = requireEmployeeId(session);
   return prisma.trainingEnrollment.findMany({
     where: { companyId, employeeId, status: { not: "CANCELLED" } },

@@ -1,8 +1,9 @@
 import { displayName } from "@/lib/format";
+import { requireEmployeeId } from "@/lib/auth/employee";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
 import { isLineConfigured } from "@/lib/integrations/line";
@@ -794,11 +795,11 @@ export async function getRoundDepartmentProgress(companyId: string, id: string, 
 /* ───────────────────────────── Rater side ───────────────────────────── */
 
 function requireEmployee(session: AccessClaims): string {
-  if (!session.employeeId) throw Forbidden("บัญชีนี้ไม่ได้ผูกกับพนักงาน");
-  return session.employeeId;
+  return requireEmployeeId(session);
 }
 
 export async function listMyAssignments(companyId: string, session: AccessClaims) {
+  if (!session.employeeId) return []; // no employee record: nothing to rate (was a 403 on every page, audit B3)
   const employeeId = requireEmployee(session);
   const rows = await prisma.appraisalAssignment.findMany({
     where: { raterEmployeeId: employeeId, participant: { round: { companyId, deletedAt: null, status: { in: ["OPEN", "CLOSED"] } } } },

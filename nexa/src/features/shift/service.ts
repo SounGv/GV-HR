@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, Forbidden, NotFound, NoEmployee } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ShiftAssignment } from "./types";
 import type {
@@ -303,7 +303,7 @@ export async function createSwapRequest(
   input: SwapRequestCreateInput,
   meta?: Meta,
 ) {
-  if (!session.employeeId) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
+  if (!session.employeeId) throw NoEmployee();
   if (input.targetEmployeeId === session.employeeId) {
     throw BadRequest("กรุณาเลือกเพื่อนร่วมงานคนอื่น");
   }

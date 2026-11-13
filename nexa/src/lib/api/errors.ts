@@ -7,6 +7,7 @@ export type ErrorCode =
   | "BAD_REQUEST"
   | "UNAUTHORIZED"
   | "FORBIDDEN"
+  | "NO_EMPLOYEE"
   | "NOT_FOUND"
   | "CONFLICT"
   | "VALIDATION"
@@ -33,6 +34,9 @@ export const Unauthorized = (msg = "ไม่ได้เข้าสู่ร�
   new AppError("UNAUTHORIZED", 401, msg);
 export const Forbidden = (msg = "ไม่มีสิทธิ์เข้าถึง") =>
   new AppError("FORBIDDEN", 403, msg);
+/** The account is not linked to an employee record, so it has nothing that is "mine". */
+export const NoEmployee = (msg = "บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน") =>
+  new AppError("NO_EMPLOYEE", 403, msg);
 export const NotFound = (msg = "ไม่พบข้อมูล") => new AppError("NOT_FOUND", 404, msg);
 export const Conflict = (msg = "ข้อมูลซ้ำ", details?: unknown) =>
   new AppError("CONFLICT", 409, msg, details);
