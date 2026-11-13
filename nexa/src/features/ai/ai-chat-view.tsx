@@ -8,6 +8,7 @@ import { MarkdownLite } from "./markdown-lite";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useChat } from "./hooks";
+import { playReplyChime } from "./reply-chime";
 import type { ChatMessage, ChatStep } from "./types";
 
 const SUGGESTIONS = [
@@ -98,12 +99,14 @@ export function AiChatView({
     chat.mutate(history, {
       onSuccess: (res) => {
         setTurns((prev) => [...prev, { role: "assistant", content: res.data.reply, steps: res.data.steps, question: trimmed }]);
+        playReplyChime();
       },
       onError: () => {
         setTurns((prev) => [
           ...prev,
           { role: "assistant", content: "เชื่อมต่อน้องวีบอทไม่ได้ ตรวจสัญญาณอินเทอร์เน็ต แล้วลองถามใหม่" },
         ]);
+        playReplyChime();
       },
     });
   }

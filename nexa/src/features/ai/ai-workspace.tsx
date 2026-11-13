@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { VBot } from "@/components/shared/v-bot";
 import { cn } from "@/lib/utils";
 import { useChat } from "./hooks";
+import { playReplyChime } from "./reply-chime";
 import { MarkdownLite } from "./markdown-lite";
 import { firstHeading, splitSummary, withoutFirstHeading } from "./reply-parts";
 import type { ChatMessage, ChatStep } from "./types";
@@ -98,9 +99,11 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
           { role: "assistant", content: res.data.reply, steps: res.data.steps, question: q, seconds: Math.round((Date.now() - started) / 1000) },
         ]);
         setSelected(next.length);
+        playReplyChime();
       },
       onError: () => {
         setTurns((prev) => [...prev, { role: "assistant", content: "", question: q, failed: true }]);
+        playReplyChime();
       },
     });
   }
