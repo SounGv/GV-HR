@@ -12,15 +12,12 @@ interface ApprovalTile {
   tone: string;
 }
 
-/** One teal for every request type: types are told apart by icon and label, not colour (gv-one-design-rules). */
-const TEAL_CHIP = "border-primary/15 bg-primary/10 text-primary";
-
 const TILES: ApprovalTile[] = [
-  { key: "leave", label: "ขอลา", href: "/leave?view=overview", icon: CalendarDays, tone: TEAL_CHIP },
-  { key: "overtime", label: "ขอ OT", href: "/overtime?view=overview", icon: Zap, tone: TEAL_CHIP },
-  { key: "correction", label: "ขอแก้เวลา", href: "/attendance/corrections", icon: PencilLine, tone: TEAL_CHIP },
-  { key: "expense", label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, tone: TEAL_CHIP },
-  { key: "workflow", label: "คำขออนุมัติอื่นๆ", href: "/workflows", icon: GitBranch, tone: TEAL_CHIP },
+  { key: "leave", label: "การลา", href: "/leave?view=overview", icon: CalendarDays, tone: "border-status-leave-border bg-status-leave-bg text-status-leave-fg" },
+  { key: "overtime", label: "OT", href: "/overtime?view=overview", icon: Zap, tone: "border-violet-200 bg-violet-50 text-violet-700" },
+  { key: "correction", label: "แก้ไขเวลาเข้า-ออก", href: "/attendance/corrections", icon: PencilLine, tone: "border-teal-100 bg-teal-50 text-teal-700" },
+  { key: "expense", label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, tone: "border-amber-200 bg-amber-50 text-amber-700" },
+  { key: "workflow", label: "คำขออนุมัติอื่นๆ", href: "/workflows", icon: GitBranch, tone: "border-slate-200 bg-slate-50 text-slate-700" },
 ];
 
 /**
@@ -36,7 +33,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
   return (
     <section
       aria-label="รอคุณอนุมัติ"
-      className="gv-lift flex flex-1 flex-col rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]"
+      className="gv-lift flex flex-col rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]"
     >
       <div className="flex items-center gap-2 px-4 pt-3.5">
         <h3 className="text-[15px] font-semibold">คำขอทั้งหมด</h3>
@@ -91,7 +88,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
               href="/requests?view=approvals"
               className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)] transition-colors hover:bg-[#115e59]"
             >
-              เปิดรายการรออนุมัติ <ArrowRight className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
+              ตรวจอนุมัติ <ArrowRight className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
             </Link>
           )}
         </div>

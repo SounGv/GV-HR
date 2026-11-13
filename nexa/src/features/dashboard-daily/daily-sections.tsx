@@ -81,7 +81,7 @@ export function MissedScanOutCard({ rows, days }: { rows: MissedScanOut[]; days:
   return (
     <Frame
       icon={LogOut}
-      title="ลืมลงเวลาออกงาน"
+      title="ลืมสแกนออก"
       hint={`${days} วันล่าสุด · ชั่วโมงยังว่างจนกว่าจะแก้เวลา`}
       people={rows.map((r) => r.name)}
       count={rows.length}
@@ -92,7 +92,7 @@ export function MissedScanOutCard({ rows, days }: { rows: MissedScanOut[]; days:
       link={{ href: "/attendance/corrections", label: "ไปหน้าแก้ไขเวลา" }}
     >
       {rows.length === 0 ? (
-        <Empty>ทุกคนลงเวลาออกงานครบ</Empty>
+        <Empty>ทุกคนสแกนออกครบ</Empty>
       ) : (
         <ul>
           {rows.slice(0, SHOWN).map((r) => (
@@ -204,7 +204,7 @@ export async function MissedScanOutSection({ companyId, session }: { companyId: 
     const data = await loadMissedScanOuts(companyId, session);
     return <MissedScanOutCard rows={data.rows} days={data.days} />;
   } catch {
-    return <FollowRowFailed icon={LogOut} title="ลืมลงเวลาออกงาน" what="รายชื่อคนลืมลงเวลาออกงาน" order={3} />;
+    return <FollowRowFailed icon={LogOut} title="ลืมสแกนออก" what="รายชื่อคนลืมสแกนออก" order={3} />;
   }
 }
 
