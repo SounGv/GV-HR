@@ -141,7 +141,7 @@ export function DecisionNoteCard({
     <EditableNoteCard
       label="คำสั่งการอนุมัติ"
       value={note}
-      placeholder="หมายเหตุการอนุมัติ/ปฏิเสธ"
+      placeholder="เขียนถึงพนักงาน (ถ้ามี)"
       show={canEdit}
       isPending={mut.isPending}
       onSave={async (next) => {

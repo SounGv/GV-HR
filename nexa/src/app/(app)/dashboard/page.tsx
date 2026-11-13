@@ -51,7 +51,7 @@ import { LeaveIcon, StarIllustrationIcon } from "@/components/shared/illustrated
 import { CheckInIcon } from "@/components/shared/menu-icons";
 import type { MenuIcon } from "@/config/mobile-menu";
 
-export const metadata: Metadata = { title: "แดชบอร์ด" };
+export const metadata: Metadata = { title: "หน้าหลัก" };
 
 /** Day-over-day change badge (dashboard-fix-3) — colored by what the change
  * MEANS for that metric, not by raw direction: more people present is good,
@@ -374,7 +374,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {/* AI: one-line summary plus an ask box that opens the AI page with the question. */}
       {canSeeCompany && (
       <section
-        aria-label="สรุปวันนี้จาก AI"
+        aria-label="สรุปวันนี้"
         className="grid items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-card p-3 pr-3.5 shadow-[var(--card-shadow)] lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
       >
         {/* น้องวีบอท appears once per screen (the sidebar's AI shortcut); here a sparkle marks the AI summary. */}
@@ -382,7 +382,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <Sparkles className="size-5" aria-hidden="true" />
         </span>
         <p className="text-[13.5px] leading-relaxed">
-          <span className="block text-xs font-semibold text-[var(--flip7-teal-dark)]">สรุปวันนี้จาก AI</span>
+          <span className="block text-xs font-semibold text-[var(--flip7-teal-dark)]">สรุปวันนี้</span>
           {/* Same base as the attendance card beside it (people who use the check-in app),
               so the two never disagree (it used to say 34% here and 100% there). */}
           {attendanceToday && attendanceToday.total > 0 ? (

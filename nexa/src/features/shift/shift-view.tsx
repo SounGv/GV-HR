@@ -205,7 +205,7 @@ function RequestSwapButton({ assignment }: { assignment: ShiftAssignment }) {
 const SWAP_STATUS_LABEL: Record<SwapRequest["status"], string> = {
   PENDING: "รออนุมัติ",
   APPROVED: "อนุมัติแล้ว",
-  REJECTED: "ปฏิเสธแล้ว",
+  REJECTED: "ไม่อนุมัติ",
   CANCELLED: "ยกเลิกแล้ว",
 };
 const SWAP_STATUS_TONE: Record<SwapRequest["status"], string> = {
@@ -262,7 +262,7 @@ function SwapRequestsView() {
   async function decide(id: string, action: "approve" | "reject") {
     try {
       await decideMut.mutateAsync({ id, action });
-      toast.success(action === "approve" ? "อนุมัติแล้ว" : "ปฏิเสธแล้ว");
+      toast.success(action === "approve" ? "อนุมัติแล้ว" : "ไม่อนุมัติแล้ว");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
     }
@@ -323,7 +323,7 @@ function SwapRequestsView() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label="ปฏิเสธ"
+                aria-label="ไม่อนุมัติ"
                 disabled={decideMut.isPending}
                 onClick={() => decide(req.id, "reject")}
               >

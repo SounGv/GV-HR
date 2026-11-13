@@ -44,7 +44,7 @@ export function OvertimeDecideActions({
   async function decide(action: "approve" | "reject") {
     try {
       await decideMut.mutateAsync({ id, action, dayType: action === "approve" ? dayType : undefined });
-      toast.success(action === "approve" ? "อนุมัติเรียบร้อย" : "ปฏิเสธคำขอเรียบร้อย");
+      toast.success(action === "approve" ? "อนุมัติแล้ว" : "ไม่อนุมัติคำขอแล้ว");
       router.refresh();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
@@ -76,7 +76,7 @@ export function OvertimeDecideActions({
         ))}
       </div>
       <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide("reject")}>
-        <X className="size-4" /> ปฏิเสธ
+        <X className="size-4" /> ไม่อนุมัติ
       </Button>
       <Button size="sm" disabled={decideMut.isPending} onClick={() => decide("approve")}>
         <Check className="size-4" /> อนุมัติ

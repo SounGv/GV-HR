@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { EmployeeTable } from "@/features/employee/employee-table";
 
-export const metadata: Metadata = { title: "Employee Center" };
+export const metadata: Metadata = { title: "รายชื่อพนักงาน" };
 
 /** Same KPI-dot pattern as the dashboard's own Kpi cards (a color dot, not
  * an icon chip) — one glance across the row reads as a category key. */
@@ -30,8 +30,8 @@ export default async function EmployeesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Employee Center"
-        description="ทำเนียบพนักงานและข้อมูลบุคลากรทั้งองค์กร"
+        title="รายชื่อพนักงาน"
+        description="ข้อมูลพนักงานทุกคนในบริษัท"
       />
 
       {/* Phones: one compact line instead of four coloured tiles that push the list off screen. */}

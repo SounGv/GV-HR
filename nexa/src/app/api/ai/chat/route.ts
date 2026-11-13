@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     if (!isAiConfigured()) {
       return ok({
         reply:
-          "ขออภัย ระบบ AI Assistant ยังไม่ได้ตั้งค่า API key (ANTHROPIC_API_KEY) จึงยังใช้งานไม่ได้ในขณะนี้ กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดใช้งาน",
+          "น้องวีบอทยังไม่พร้อมใช้งาน แจ้ง HR ให้เปิดใช้ก่อน",
         steps: [] as Step[],
         configured: false,
       });
@@ -126,11 +126,13 @@ export async function POST(request: NextRequest) {
         messages.push({ role: "user", content: toolResults });
       }
 
-      if (!reply) reply = "ขออภัย ยังไม่สามารถประมวลผลคำขอได้ กรุณาปรับคำถามแล้วลองใหม่อีกครั้ง";
+      if (!reply) reply = "น้องวีบอทตอบคำถามนี้ไม่ได้ ลองถามให้สั้นลง หรือเปลี่ยนคำถาม";
       return ok({ reply, steps, configured: true });
     } catch (aiErr) {
       const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
-      return ok({ reply: `⚠️ เกิดข้อผิดพลาดจาก AI (Claude):\n${msg.slice(0, 600)}`, steps, configured: true });
+      // The technical message goes to the server log; staff get a plain next step.
+      console.error("[ai/chat] model call failed:", msg.slice(0, 600));
+      return ok({ reply: "น้องวีบอทตอบไม่ได้ตอนนี้ ลองถามใหม่อีกครั้ง ถ้ายังไม่ได้ให้แจ้ง HR", steps, configured: true });
     }
   } catch (error) {
     return handleApiError(error);

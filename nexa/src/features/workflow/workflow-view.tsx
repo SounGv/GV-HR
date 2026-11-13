@@ -41,7 +41,7 @@ function Stepper({ req }: { req: ApprovalRequest }) {
               <span className="ml-1 text-xs text-muted-foreground">({s.approverRole})</span>
               {s.decidedByName && (
                 <span className="ml-1 text-xs text-muted-foreground">
-                  · {s.status === "APPROVED" ? "อนุมัติโดย" : "ปฏิเสธโดย"} {s.decidedByName}
+                  · {s.status === "APPROVED" ? "อนุมัติโดย" : "ไม่อนุมัติโดย"} {s.decidedByName}
                   {s.note ? ` — ${s.note}` : ""}
                 </span>
               )}
@@ -173,7 +173,7 @@ function InboxRequests() {
   async function decide(id: string, action: "approve" | "reject") {
     try {
       await decideMut.mutateAsync({ id, action });
-      toast.success(action === "approve" ? "อนุมัติแล้ว" : "ปฏิเสธแล้ว");
+      toast.success(action === "approve" ? "อนุมัติแล้ว" : "ไม่อนุมัติแล้ว");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
     }
@@ -195,7 +195,7 @@ function InboxRequests() {
             actions={
               <>
                 <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
-                  <X className="size-4" /> ปฏิเสธ
+                  <X className="size-4" /> ไม่อนุมัติ
                 </Button>
                 <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
                   <Check className="size-4" /> อนุมัติ

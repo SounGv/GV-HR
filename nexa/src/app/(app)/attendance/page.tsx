@@ -17,8 +17,8 @@ export default async function AttendancePage() {
       <MobileAttendanceView />
       <div className="hidden space-y-6 md:block">
         <PageHeader
-          title="Smart Attendance"
-          description="เช็คอิน/เช็คเอาท์อัจฉริยะด้วย GPS + Geofence และดูประวัติการลงเวลาของคุณ"
+          title="ลงเวลาทำงาน"
+          description="ลงเวลาเข้า-ออกงาน และดูประวัติเวลาทำงานของคุณ"
         />
         <ClockCard />
         <RecognitionTiles />

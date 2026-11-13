@@ -84,7 +84,7 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: LayoutDashboard,
     chipColor: "#0D9488",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
+      { label: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", ready: true },
       { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read", ready: true, opensAiPanel: true, featured: true },
       {

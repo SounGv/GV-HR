@@ -264,7 +264,7 @@ function Approvals() {
                 setRejectTarget(item);
               }}
             >
-              <X className="size-4" /> ปฏิเสธ
+              <X className="size-4" /> ไม่อนุมัติ
             </Button>
             <Button className="h-11 flex-1" disabled={busy} onClick={() => decide(item, "approve")}>
               {busy ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check className="size-4" />} อนุมัติ

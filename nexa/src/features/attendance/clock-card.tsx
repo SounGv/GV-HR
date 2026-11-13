@@ -45,11 +45,11 @@ function fmtTime(iso: string | null | undefined) {
 }
 
 const MOOD_OPTIONS: { value: AttendanceMood; emoji: string; label: string }[] = [
-  { value: "TERRIBLE", emoji: "😣", label: "Terrible" },
-  { value: "BAD", emoji: "🙁", label: "Bad" },
-  { value: "OK", emoji: "🙂", label: "OK" },
-  { value: "GOOD", emoji: "😊", label: "Good" },
-  { value: "EXCELLENT", emoji: "😄", label: "Excellent" },
+  { value: "TERRIBLE", emoji: "😣", label: "แย่มาก" },
+  { value: "BAD", emoji: "🙁", label: "ไม่ค่อยดี" },
+  { value: "OK", emoji: "🙂", label: "เฉยๆ" },
+  { value: "GOOD", emoji: "😊", label: "ดี" },
+  { value: "EXCELLENT", emoji: "😄", label: "ดีมาก" },
 ];
 
 interface Coords {
@@ -202,10 +202,10 @@ export function ClockCard() {
         workMode: "ONSITE",
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
       });
-      toast.success("เช็คอินด้วย QR สำเร็จ");
+      toast.success("ลงเวลาเข้างานด้วย QR แล้ว");
       refetch();
     } catch (err) {
-      toast.error(err instanceof ApiError || err instanceof Error ? err.message : "เช็คอินไม่สำเร็จ");
+      toast.error(err instanceof ApiError || err instanceof Error ? err.message : "ลงเวลาเข้างานไม่สำเร็จ");
     } finally {
       setChecking(false);
     }
@@ -218,10 +218,10 @@ export function ClockCard() {
         qrBranchId: branchId,
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
       });
-      toast.success("เช็คเอาท์ด้วย QR สำเร็จ");
+      toast.success("ลงเวลาออกงานด้วย QR แล้ว");
       refetch();
     } catch (err) {
-      toast.error(err instanceof ApiError || err instanceof Error ? err.message : "เช็คเอาท์ไม่สำเร็จ");
+      toast.error(err instanceof ApiError || err instanceof Error ? err.message : "ลงเวลาออกงานไม่สำเร็จ");
     } finally {
       setChecking(false);
     }
@@ -284,7 +284,7 @@ export function ClockCard() {
         offsiteReason: reason,
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
       });
-      toast.success("เช็คอินสำเร็จ");
+      toast.success("ลงเวลาเข้างานแล้ว");
       clearPhoto();
       setOffsite(null);
       setOffsiteReason("");
@@ -294,7 +294,7 @@ export function ClockCard() {
       if (details?.offsite) {
         setOffsite({ kind: "in", distance: details.distance ?? 0, branchName: details.branchName ?? null, permitted: details.permitted ?? true });
       } else {
-        toast.error(err instanceof ApiError || err instanceof Error ? err.message : "เช็คอินไม่สำเร็จ");
+        toast.error(err instanceof ApiError || err instanceof Error ? err.message : "ลงเวลาเข้างานไม่สำเร็จ");
       }
     } finally {
       setChecking(false);
@@ -314,7 +314,7 @@ export function ClockCard() {
         offsiteReason: reason,
         device: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 380) : undefined,
       });
-      toast.success("เช็คเอาท์สำเร็จ");
+      toast.success("ลงเวลาออกงานแล้ว");
       clearPhoto();
       setMoodOpen(false);
       setSelectedMood(undefined);
@@ -327,7 +327,7 @@ export function ClockCard() {
         setMoodOpen(false);
         setOffsite({ kind: "out", distance: details.distance ?? 0, branchName: details.branchName ?? null, mood, permitted: details.permitted ?? true });
       } else {
-        toast.error(err instanceof ApiError || err instanceof Error ? err.message : "เช็คเอาท์ไม่สำเร็จ");
+        toast.error(err instanceof ApiError || err instanceof Error ? err.message : "ลงเวลาออกงานไม่สำเร็จ");
       }
     } finally {
       setChecking(false);
@@ -489,7 +489,7 @@ export function ClockCard() {
                   setMoodOpen((v) => !v);
                 }}
               >
-                {checking ? <Loader2 className="size-5 animate-spin" /> : <LogOut className="size-5" />} เช็คเอาท์
+                {checking ? <Loader2 className="size-5 animate-spin" /> : <LogOut className="size-5" />} ลงเวลาออกงาน
               </Button>
             ) : (
               <Button
@@ -498,7 +498,7 @@ export function ClockCard() {
                 disabled={checking}
                 onClick={startClockIn}
               >
-                {checking ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} เช็คอิน
+                {checking ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />} ลงเวลาเข้างาน
               </Button>
             )}
             {!moodOpen && (
@@ -684,7 +684,7 @@ export function ClockCard() {
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>สแกน QR เพื่อ{hasIn ? "เช็คเอาท์" : "เช็คอิน"}</DialogTitle>
+            <DialogTitle>สแกน QR เพื่อ{hasIn ? "ลงเวลาออกงาน" : "ลงเวลาเข้างาน"}</DialogTitle>
             <DialogDescription>เล็งกล้องไปที่ QR ของสาขาที่ติดไว้หน้างาน</DialogDescription>
           </DialogHeader>
           <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900">
@@ -724,7 +724,7 @@ export function ClockCard() {
             <DialogDescription>
               {offsite?.branchName ? `${offsite.branchName} — ` : ""}ห่าง {offsite?.distance.toLocaleString()} เมตร
               {offsite?.permitted === false
-                ? " คุณไม่มีสิทธิ์เช็คอินนอกพื้นที่บริษัท"
+                ? " คุณไม่มีสิทธิ์ลงเวลานอกพื้นที่บริษัท"
                 : " ระบุเหตุผลเพื่อลงเวลานอกสถานที่"}
             </DialogDescription>
           </DialogHeader>

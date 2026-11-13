@@ -102,7 +102,7 @@ export function AiChatView({
       onError: () => {
         setTurns((prev) => [
           ...prev,
-          { role: "assistant", content: "ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง" },
+          { role: "assistant", content: "เชื่อมต่อน้องวีบอทไม่ได้ ตรวจสัญญาณอินเทอร์เน็ต แล้วลองถามใหม่" },
         ]);
       },
     });

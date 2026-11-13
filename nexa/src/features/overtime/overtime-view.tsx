@@ -75,7 +75,7 @@ function MyRequests() {
       <EmptyState
         icon={UserRoundX}
         title="บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน"
-        description="จึงไม่มีประวัติคำขอ OTของตัวเอง ดูและอนุมัติคำขอของทีมได้ที่แท็บ รออนุมัติ"
+        description="จึงไม่มีประวัติคำขอ OT ของตัวเอง ดูและอนุมัติคำขอของทีมได้ที่แท็บ รออนุมัติ"
       />
     );
   }
@@ -141,7 +141,7 @@ function Approvals() {
   async function decide(id: string, action: "approve" | "reject") {
     try {
       await decideMut.mutateAsync({ id, action });
-      toast.success(action === "approve" ? "อนุมัติเรียบร้อย" : "ปฏิเสธคำขอเรียบร้อย");
+      toast.success(action === "approve" ? "อนุมัติแล้ว" : "ไม่อนุมัติคำขอแล้ว");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
     }
@@ -176,7 +176,7 @@ function Approvals() {
           </Link>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
-              <X className="size-4" /> ปฏิเสธ
+              <X className="size-4" /> ไม่อนุมัติ
             </Button>
             <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
               <Check className="size-4" /> อนุมัติ

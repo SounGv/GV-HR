@@ -205,7 +205,7 @@ export function MobileCheckinFlow({
     submit(offsiteReason.trim());
   }
 
-  const title = mode === "in" ? "เช็คอิน" : "เช็คเอาท์";
+  const title = mode === "in" ? "ลงเวลาเข้างาน" : "ลงเวลาออกงาน";
   const activeStepIndex = step === "camera" ? 0 : step === "preview" ? 1 : step === "processing" ? (saveStage === "gps" ? 2 : 3) : 3;
 
   return (
@@ -617,7 +617,7 @@ function SuccessStep({
         <div className="gv-confirm flex size-16 shrink-0 items-center justify-center rounded-full bg-gv-lime text-gv-dark-green">
           <CheckCircle2 className="size-9" />
         </div>
-        <p className="mt-4 text-lg font-semibold">{mode === "in" ? "เช็คอินสำเร็จ" : "เช็คเอาท์สำเร็จ"}</p>
+        <p className="mt-4 text-lg font-semibold">{mode === "in" ? "ลงเวลาเข้างานแล้ว" : "ลงเวลาออกงานแล้ว"}</p>
         <p className="mt-1 text-sm text-white/80">
           {fmtTime(time)} น. · {fmtDate()}
         </p>

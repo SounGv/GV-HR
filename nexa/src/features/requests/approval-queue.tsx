@@ -135,7 +135,7 @@ export function useApprovalQueue() {
       if (item.kind === "leave") await decideLeave.mutateAsync(input);
       else if (item.kind === "ot") await decideOt.mutateAsync(input);
       else await decideCorrection.mutateAsync(input);
-      toast.success(action === "approve" ? "อนุมัติเรียบร้อย" : "ปฏิเสธคำขอเรียบร้อย");
+      toast.success(action === "approve" ? "อนุมัติแล้ว" : "ไม่อนุมัติคำขอแล้ว");
       return true;
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ — ตรวจสัญญาณแล้วลองใหม่");
@@ -200,7 +200,7 @@ export function RejectDialog({
     <Dialog open={!!target} onOpenChange={(o) => !o && !loading && onCancel()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>ปฏิเสธคำขอ{target ? KIND_LABEL[target.kind] : ""}</DialogTitle>
+          <DialogTitle>ไม่อนุมัติคำขอ{target ? KIND_LABEL[target.kind] : ""}</DialogTitle>
           <DialogDescription>
             {target
               ? `${displayName(target.request.employee)} · ${itemLine(target)}`
@@ -224,7 +224,7 @@ export function RejectDialog({
           </Button>
           <Button variant="destructive" className="h-11" onClick={onConfirm} disabled={loading}>
             {loading && <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" />}
-            ยืนยันปฏิเสธ
+            ยืนยันไม่อนุมัติ
           </Button>
         </DialogFooter>
       </DialogContent>
