@@ -1,4 +1,5 @@
 import { displayName } from "@/lib/format";
+import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -252,6 +253,8 @@ export async function updateEmployee(
     data: { ...toUpdateData(input), updatedById: actor.sub },
     select: detailSelect,
   });
+  // Department, code, name or status changes show up in the dashboard watch list.
+  refreshAttendanceWatch(companyId);
 
   // Employment status drives system access: leaving employment must revoke
   // login immediately, and reinstating it must restore access — not leave
@@ -317,6 +320,7 @@ export async function softDeleteEmployee(
     where: { id },
     data: { deletedAt: new Date(), updatedById: actor.sub },
   });
+  refreshAttendanceWatch(companyId);
 
   // A terminated/removed employee must lose system access immediately —
   // disable the linked login account and kill any active sessions, don't

@@ -236,6 +236,10 @@ export async function getDashboardSummary(
   const startOfMonth = new Date(Date.UTC(bkk.year, bkk.month - 1, 1));
 
   const activeFilter = { companyId, deletedAt: null, ...(employeeWhere ?? {}) };
+  // People still working. Resigned / terminated / suspended rows stay in the table
+  // (deletedAt is only for removed records), so counting `activeFilter` alone kept
+  // them in "พนักงานทั้งหมด" (97 instead of 94 after 3 resignations, 13 Nov 2026).
+  const workingFilter = { ...activeFilter, status: { in: ["ACTIVE" as const, "ON_LEAVE" as const] } };
 
   const todayStart = bkk.dateUTC;
   const todayEnd = new Date(todayStart.getTime() + 86_400_000);
@@ -249,10 +253,10 @@ export async function getDashboardSummary(
   const employeeIdFilter = scopedIds ? { employeeId: { in: scopedIds } } : {};
 
   // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
-  const headcount = await prisma.employee.count({ where: activeFilter });
+  const headcount = await prisma.employee.count({ where: workingFilter });
   const active = await prisma.employee.count({ where: { ...activeFilter, status: "ACTIVE" } });
   const onLeave = await prisma.employee.count({ where: { ...activeFilter, status: "ON_LEAVE" } });
-  const newThisMonth = await prisma.employee.count({ where: { ...activeFilter, hireDate: { gte: startOfMonth } } });
+  const newThisMonth = await prisma.employee.count({ where: { ...workingFilter, hireDate: { gte: startOfMonth } } });
   const presentToday = await prisma.attendanceRecord.count({
     where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, clockInAt: { not: null }, ...employeeIdFilter },
   });
@@ -269,7 +273,7 @@ export async function getDashboardSummary(
   });
   const byDeptRaw = await prisma.employee.groupBy({
     by: ["departmentId"],
-    where: activeFilter,
+    where: workingFilter,
     _count: { _all: true },
   });
   const byStatusRaw = await prisma.employee.groupBy({
@@ -279,7 +283,7 @@ export async function getDashboardSummary(
   });
   const byTypeRaw = await prisma.employee.groupBy({
     by: ["employmentType"],
-    where: activeFilter,
+    where: workingFilter,
     _count: { _all: true },
   });
   const depts = await prisma.department.findMany({

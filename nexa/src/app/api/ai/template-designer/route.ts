@@ -108,7 +108,7 @@ async function buildContext(companyId: string, scope: "department" | "company", 
       select: { name: true },
     });
     if (!dept) throw NotFound("ไม่พบแผนก");
-    const headcount = await prisma.employee.count({ where: { companyId, deletedAt: null, departmentId: targetId } });
+    const headcount = await prisma.employee.count({ where: { companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] }, departmentId: targetId } });
     return {
       label: dept.name,
       context: [`ขอบเขต: แผนก`, `แผนก: ${dept.name}`, `จำนวนพนักงานในแผนก: ${headcount}`].join("\n"),
@@ -116,7 +116,7 @@ async function buildContext(companyId: string, scope: "department" | "company", 
   }
 
   // Sequential, not Promise.all — connection_limit=1.
-  const headcount = await prisma.employee.count({ where: { companyId, deletedAt: null } });
+  const headcount = await prisma.employee.count({ where: { companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } } });
   const departments = await prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { name: true }, take: 30 });
   return {
     label: "ทั้งบริษัท",

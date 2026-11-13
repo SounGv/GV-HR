@@ -66,7 +66,6 @@ export async function listOrgPeople(
       managerId: true,
       gender: true,
       employmentType: true,
-      compensationType: true,
       position: { select: { title: true } },
     },
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
@@ -79,7 +78,9 @@ export async function listOrgPeople(
     managerId: e.managerId,
     positionTitle: e.position?.title ?? null,
     gender: e.gender ?? null,
-    daily: e.employmentType === "DAILY_WORKER" || e.compensationType === "DAILY",
+    // Follows ประเภทการจ้าง only, so moving someone to ประจำ updates the chart at once
+    // (pay type can lag behind; the employee form warns while the two disagree).
+    daily: e.employmentType === "DAILY_WORKER",
   }));
 }
 

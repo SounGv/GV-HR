@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera } from "lucide-react";
+import { Camera, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -36,6 +36,7 @@ import {
   MARITAL,
 } from "./schema";
 import { COMPENSATION_LABEL, EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL, STATUS_LABEL } from "./labels";
+import { employmentPayMismatch } from "./pay-consistency";
 import type { EmployeeFormValues, OrgOptions } from "./types";
 
 const NONE = "__none__";
@@ -113,6 +114,7 @@ export function EmployeeForm({
   const firstName = form.watch("firstName");
   const lastName = form.watch("lastName");
   const compensationType = form.watch("compensationType");
+  const payMismatch = employmentPayMismatch(form.watch("employmentType"), compensationType);
   const branchId = form.watch("branchId");
   const departmentId = form.watch("departmentId");
   // Branch → department → position is a real hierarchy (Department.branchId,
@@ -266,6 +268,7 @@ export function EmployeeForm({
               <DateField form={form} name="hireDate" label="วันเริ่มงาน" />
               <DateField form={form} name="probationEndDate" label="สิ้นสุดทดลองงาน" />
             </FieldGrid>
+            <PayMismatchNote message={payMismatch} />
           </TabsContent>
 
           <TabsContent value="payroll" keepMounted>
@@ -282,6 +285,7 @@ export function EmployeeForm({
               <TextField form={form} name="bankName" label="ธนาคาร" />
               <TextField form={form} name="bankAccountNo" label="เลขที่บัญชี" />
             </FieldGrid>
+            <PayMismatchNote message={payMismatch} />
           </TabsContent>
 
           <TabsContent value="tax" keepMounted>
@@ -325,6 +329,17 @@ export function EmployeeForm({
 }
 
 /* ── Layout + field helpers ─────────────────────────────────── */
+
+/** Shown on both the work and the payroll tab while ประเภทการจ้าง and ประเภทค่าจ้าง disagree. */
+function PayMismatchNote({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <p role="status" className="mt-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm leading-relaxed text-foreground">
+      <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+      <span>{message}</span>
+    </p>
+  );
+}
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
