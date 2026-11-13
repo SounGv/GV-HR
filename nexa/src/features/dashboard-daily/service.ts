@@ -3,6 +3,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
 import { displayName } from "@/lib/format";
 import { teamScopeFilter } from "@/features/employee/service";
+import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 
 const DAY_MS = 86_400_000;
 /** How far back the "forgot to scan out" card looks (today is never included: people are still at work). */
@@ -34,41 +35,85 @@ export interface MissedScanOut {
   dayIso: string;
   /** HH:mm of the scan-in. */
   clockIn: string;
+  /** HH:mm of the scan-out, "-" when there is none. */
+  clockOut: string;
+  /** HH:mm the shift starts that day. */
+  shiftStart: string;
 }
 
+/** A first scan this long after the shift start most likely means the morning scan was forgotten. */
+export const LATE_FIRST_SCAN_MIN = 240;
+
+export interface MissedScans {
+  days: number;
+  /** Scanned in, never scanned out. */
+  noClockOut: MissedScanOut[];
+  /** First scan of the day 4+ hours after the shift start, on a day with no approved leave. */
+  lateFirstScan: MissedScanOut[];
+  /** Scan-out earlier than scan-in: a broken record that needs fixing. */
+  outBeforeIn: MissedScanOut[];
+}
+
+const bkkMinutes = (d: Date) => ((d.getUTCHours() + 7) % 24) * 60 + d.getUTCMinutes();
+const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+
 /**
- * People who scanned in but never scanned out on one of the last
- * {@link MISSED_SCAN_OUT_DAYS} days, newest first, for the people the caller
- * may see. Their worked hours are blank until a time correction is filed.
+ * Scans that need a time fix on one of the last {@link MISSED_SCAN_OUT_DAYS}
+ * days (today is never included: people are still at work), newest first, for
+ * the people the caller may see. Three kinds (owner, 13 Nov 2026: a forgotten
+ * morning scan used to show up only as "สาย"): no scan-out; first scan
+ * {@link LATE_FIRST_SCAN_MIN}+ minutes after the shift start with no approved
+ * leave that day; scan-out before scan-in.
  *
  * @param companyId Company of the caller.
  * @param session Caller; narrows to their own team unless company-wide.
  */
-export async function loadMissedScanOuts(companyId: string, session: AccessClaims): Promise<{ rows: MissedScanOut[]; days: number }> {
+export async function loadMissedScans(companyId: string, session: AccessClaims): Promise<MissedScans> {
   const today = bangkokParts().dateUTC;
+  const from = new Date(today.getTime() - MISSED_SCAN_OUT_DAYS * DAY_MS);
   const records = await prisma.attendanceRecord.findMany({
     where: {
       companyId,
-      workDate: { gte: new Date(today.getTime() - MISSED_SCAN_OUT_DAYS * DAY_MS), lt: today },
+      deletedAt: null,
+      workDate: { gte: from, lt: today },
       clockInAt: { not: null },
-      clockOutAt: null,
-      employee: { deletedAt: null, ...(teamScopeFilter(session) ?? {}) },
+      employee: { deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] }, ...(teamScopeFilter(session) ?? {}) },
     },
-    select: { id: true, workDate: true, clockInAt: true, employee: { select: employeeSelect } },
+    select: { id: true, workDate: true, clockInAt: true, clockOutAt: true, employee: { select: { ...employeeSelect, employmentType: true } } },
     orderBy: [{ workDate: "desc" }, { clockInAt: "asc" }],
-    take: ROW_CAP,
   });
-  return {
-    days: MISSED_SCAN_OUT_DAYS,
-    rows: records.map((r) => ({
+  const shiftMap = await resolveShiftMinutesBatch(companyId, from, today);
+  const leaves = await prisma.leaveRequest.findMany({
+    where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: today }, endDate: { gte: from } },
+    select: { employeeId: true, startDate: true, endDate: true },
+  });
+  const onLeave = (employeeId: string, day: Date) =>
+    leaves.some((l) => l.employeeId === employeeId && l.startDate.getTime() <= day.getTime() && day.getTime() <= l.endDate.getTime());
+
+  const out: MissedScans = { days: MISSED_SCAN_OUT_DAYS, noClockOut: [], lateFirstScan: [], outBeforeIn: [] };
+  for (const r of records) {
+    if (!r.clockInAt) continue;
+    const shift = shiftMinutesFromBatch(shiftMap, r.employee.id, r.workDate, r.employee.employmentType);
+    const row: MissedScanOut = {
       recordId: r.id,
       employeeId: r.employee.id,
       gender: r.employee.gender ?? null,
       name: displayName(r.employee),
       department: r.employee.department?.name ?? "ไม่ระบุแผนก",
       dayIso: iso(r.workDate),
-      clockIn: r.clockInAt ? clock(r.clockInAt) : "-",
-    })),
+      clockIn: clock(r.clockInAt),
+      clockOut: r.clockOutAt ? clock(r.clockOutAt) : "-",
+      shiftStart: hhmm(shift.startMin),
+    };
+    if (!r.clockOutAt) out.noClockOut.push(row);
+    else if (r.clockOutAt.getTime() < r.clockInAt.getTime()) out.outBeforeIn.push(row);
+    else if (bkkMinutes(r.clockInAt) - shift.startMin >= LATE_FIRST_SCAN_MIN && !onLeave(r.employee.id, r.workDate)) out.lateFirstScan.push(row);
+  }
+  return {
+    days: out.days,
+    noClockOut: out.noClockOut.slice(0, ROW_CAP),
+    lateFirstScan: out.lateFirstScan.slice(0, ROW_CAP),
+    outBeforeIn: out.outBeforeIn.slice(0, ROW_CAP),
   };
 }
 

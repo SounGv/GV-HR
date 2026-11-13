@@ -8,10 +8,12 @@ import { cn } from "@/lib/utils";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import {
   loadMeetingsToday,
-  loadMissedScanOuts,
+  LATE_FIRST_SCAN_MIN,
+  loadMissedScans,
   loadOvertimeToday,
   type MeetingToday,
   type MissedScanOut,
+  type MissedScans,
   type OvertimeToday,
 } from "./service";
 
@@ -76,42 +78,74 @@ function More({ total }: { total: number }) {
   return total > SHOWN ? <p className="text-sm text-muted-foreground">และอีก {total - SHOWN} รายการ</p> : null;
 }
 
-/** People who scanned in but not out on a recent day — their hours stay blank until the time is fixed. */
-export function MissedScanOutCard({ rows, days }: { rows: MissedScanOut[]; days: number }) {
+/** One kind of scan problem inside the ลืมสแกน card: a status chip with a word, then the names. */
+function ScanGroup({ label, why, bad, rows, sub }: { label: string; why: string; bad?: boolean; rows: MissedScanOut[]; sub: (r: MissedScanOut) => string }) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="space-y-1 py-1.5">
+      <p className="flex flex-wrap items-center gap-2 text-xs leading-relaxed text-muted-foreground">
+        <span className={cn("rounded-full border px-2 py-0.5 font-semibold", bad ? STATUS_META.ABSENT.surface : STATUS_META.LATE.surface)}>
+          {bad ? "✕" : "!"} {label} {rows.length}
+        </span>
+        {why}
+      </p>
+      <ul>
+        {rows.slice(0, SHOWN).map((r) => (
+          <Person
+            key={r.recordId}
+            name={r.name}
+            gender={r.gender}
+            seed={r.employeeId}
+            sub={`${r.department} · ${sub(r)}`}
+            tag={
+              <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums", STATUS_META.LATE.surface)}>
+                {fmtDay(r.dayIso)}
+              </span>
+            }
+          />
+        ))}
+      </ul>
+      <More total={rows.length} />
+    </div>
+  );
+}
+
+/**
+ * Scans that need a time fix on a recent day, in three kinds (owner's approved
+ * mock, 13 Nov 2026): no scan-out, first scan hours after the shift start
+ * (likely a forgotten morning scan, still counted late until fixed), and a
+ * scan-out before the scan-in. Hours stay blank or wrong until the time is fixed.
+ */
+export function MissedScanOutCard({ data }: { data: MissedScans }) {
+  const all = [...data.noClockOut, ...data.lateFirstScan, ...data.outBeforeIn];
+  const hours = LATE_FIRST_SCAN_MIN / 60;
   return (
     <Frame
       icon={LogOut}
-      title="ลืมสแกนออก"
-      hint={`${days} วันล่าสุด · ชั่วโมงยังว่างจนกว่าจะแก้เวลา`}
-      people={rows.map((r) => r.name)}
-      count={rows.length}
-      tone="warn"
+      title="ลืมสแกน"
+      hint={`${data.days} วันล่าสุด · ไม่นับวันนี้ · ชั่วโมงยังผิดจนกว่าจะแก้เวลา`}
+      people={all.map((r) => r.name)}
+      count={all.length}
+      tone={data.outBeforeIn.length ? "bad" : "warn"}
       tag="รอแก้เวลา"
       unit="รายการ"
       order={3}
       link={{ href: "/attendance/corrections", label: "ไปหน้าแก้ไขเวลา" }}
     >
-      {rows.length === 0 ? (
-        <Empty>ทุกคนสแกนออกครบ</Empty>
+      {all.length === 0 ? (
+        <Empty>ทุกคนสแกนครบ</Empty>
       ) : (
-        <ul>
-          {rows.slice(0, SHOWN).map((r) => (
-            <Person
-              key={r.recordId}
-              name={r.name}
-              gender={r.gender}
-              seed={r.employeeId}
-              sub={`${r.department} · เข้า ${r.clockIn} น.`}
-              tag={
-                <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums", STATUS_META.LATE.surface)}>
-                  {fmtDay(r.dayIso)}
-                </span>
-              }
-            />
-          ))}
-        </ul>
+        <>
+          <ScanGroup label="สแกนเข้า ไม่สแกนออก" why="ชั่วโมงทำงานยังคิดไม่ได้" rows={data.noClockOut} sub={(r) => `เข้า ${r.clockIn} น. · ออก -`} />
+          <ScanGroup
+            label="สแกนครั้งแรกตอนบ่าย"
+            why={`เข้าหลังเวลาเข้างานเกิน ${hours} ชม. ตรวจว่าลืมสแกนเข้าไหม ตอนนี้ยังนับเป็นสาย`}
+            rows={data.lateFirstScan}
+            sub={(r) => `เข้างาน ${r.shiftStart} · สแกนแรก ${r.clockIn} · ออก ${r.clockOut}`}
+          />
+          <ScanGroup label="เวลาออกก่อนเวลาเข้า" why="ข้อมูลผิด ต้องแก้" bad rows={data.outBeforeIn} sub={(r) => `เข้า ${r.clockIn} · ออก ${r.clockOut}`} />
+        </>
       )}
-      <More total={rows.length} />
     </Frame>
   );
 }
@@ -201,10 +235,9 @@ export function MeetingsTodayCard({ rows }: { rows: MeetingToday[] }) {
 /** Async wrappers for `<Suspense>`: each card loads and fails on its own. */
 export async function MissedScanOutSection({ companyId, session }: { companyId: string; session: AccessClaims }) {
   try {
-    const data = await loadMissedScanOuts(companyId, session);
-    return <MissedScanOutCard rows={data.rows} days={data.days} />;
+    return <MissedScanOutCard data={await loadMissedScans(companyId, session)} />;
   } catch {
-    return <FollowRowFailed icon={LogOut} title="ลืมสแกนออก" what="รายชื่อคนลืมสแกนออก" order={3} />;
+    return <FollowRowFailed icon={LogOut} title="ลืมสแกน" what="รายชื่อคนลืมสแกน" order={3} />;
   }
 }
 
