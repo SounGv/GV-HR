@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, Plus, Scale, Save, CheckCircle2, ArrowUp, ArrowDown } from "lucide-react";
+import { BackLink } from "@/components/shared/back-link";
+import { Plus, Scale, Save, CheckCircle2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -178,12 +179,7 @@ function SessionDetail({ id, onBack }: { id: string; onBack: () => void }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" /> กลับ
-        </button>
+        <BackLink onClick={onBack}>กลับ</BackLink>
         {canApprove && session.status === "DRAFT" && (
           <Button size="sm" onClick={complete} disabled={completeMut.isPending}>
             <CheckCircle2 className="size-4" /> ปิดรอบปรับเทียบ

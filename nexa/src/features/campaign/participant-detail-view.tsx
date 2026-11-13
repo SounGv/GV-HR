@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { CheckCircle2, ChevronLeft, FileText, Loader2, Plus, Sparkles, X } from "lucide-react";
+import { BackLink } from "@/components/shared/back-link";
+import { CheckCircle2, FileText, Loader2, Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -238,12 +238,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">
-          <Link
-            href={`/performance/campaigns/${participant.campaign.id}`}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ChevronLeft className="size-4" /> กลับไปแคมเปญ
-          </Link>
+          <BackLink href={`/performance/campaigns/${participant.campaign.id}`}>กลับไปแคมเปญ</BackLink>
           <h1 className="text-xl font-semibold text-foreground">
             {displayName(participant.employee)}
           </h1>

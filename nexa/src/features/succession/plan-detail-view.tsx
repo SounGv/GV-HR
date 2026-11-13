@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { BackLink } from "@/components/shared/back-link";
 import Link from "next/link";
-import { ChevronLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -33,12 +34,7 @@ export function PlanDetailView({ planId }: { planId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <Link
-          href="/performance"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" /> กลับ
-        </Link>
+        <BackLink href="/performance">กลับ</BackLink>
         {canManage && (
           <Button variant="outline" size="sm" render={<Link href={`/performance/succession/${planId}/edit`} />}>
             <Pencil className="size-4" /> แก้ไข

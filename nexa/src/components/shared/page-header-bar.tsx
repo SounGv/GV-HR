@@ -71,9 +71,9 @@ export function PageHeaderBar({
             <Link
               href={backHref}
               aria-label="ย้อนกลับ"
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-5" />
             </Link>
           )}
           <div className="min-w-0 space-y-0.5">

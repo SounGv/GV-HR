@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackLink } from "@/components/shared/back-link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { ArrowLeft } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { getBranch } from "@/features/branch/service";
@@ -24,12 +23,9 @@ export default async function BranchQrPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-4 print:space-y-0">
-      <Link
-        href="/branches"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground print:hidden"
-      >
-        <ArrowLeft className="size-4" /> กลับไปสาขา
-      </Link>
+      <BackLink href="/branches" className="print:hidden">
+        กลับไปสาขา
+      </BackLink>
       <Card className="mx-auto max-w-md print:border-none print:shadow-none">
         <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}

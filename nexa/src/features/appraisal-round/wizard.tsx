@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { BackLink } from "@/components/shared/back-link";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -366,12 +367,9 @@ function Hero({
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" aria-labelledby="round-wizard-title">
       <nav aria-label="breadcrumb" className="flex items-center gap-1 text-[12.5px] text-white/70">
-        <Link
-          href="/appraisal/rounds"
-          className="inline-flex min-h-8 items-center gap-1 hover:text-white"
-        >
-          <ArrowLeft className="size-3.5" aria-hidden="true" /> รอบประเมิน
-        </Link>
+        <BackLink href="/appraisal/rounds" onHero>
+          รอบประเมิน
+        </BackLink>
         <ChevronRight className="size-3.5" aria-hidden="true" />
         <span>สร้างรอบ</span>
       </nav>

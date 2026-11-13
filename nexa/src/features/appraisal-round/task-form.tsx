@@ -197,7 +197,7 @@ export function TaskForm({
           <Link
             href={backHref}
             aria-label={`กลับไป${backLabel}`}
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/12 hover:bg-white/20"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/12 hover:bg-white/20"
           >
             <ChevronLeft className="size-5" aria-hidden="true" />
           </Link>

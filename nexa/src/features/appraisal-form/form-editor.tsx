@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
-import Link from "next/link";
+import { BackLink } from "@/components/shared/back-link";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
   ArrowUp,
-  ChevronLeft,
   CircleCheck,
   Copy,
   GripVertical,
@@ -449,12 +448,9 @@ function FormEditor({ form }: { form: FormDetail }) {
         aria-label="แบบประเมิน"
       >
         <div className="min-w-0 flex-1">
-          <Link
-            href="/appraisal/forms"
-            className="inline-flex min-h-8 items-center gap-1 text-[12.5px] text-white/70 hover:text-white"
-          >
-            <ChevronLeft className="size-4" aria-hidden="true" /> แบบประเมิน
-          </Link>
+          <BackLink href="/appraisal/forms" onHero>
+            แบบประเมิน
+          </BackLink>
           <div className="flex flex-wrap items-center gap-2.5">
             <input
               aria-label="ชื่อแบบประเมิน"

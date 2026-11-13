@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Printer, ArrowLeft } from "lucide-react";
+import { BackLink } from "@/components/shared/back-link";
+import { Printer, } from "lucide-react";
 import { formatCurrency, fullName } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { PayrollLineItem } from "./types";
@@ -90,9 +90,7 @@ export function PayslipDocument({
 
       {/* Toolbar (screen only) */}
       <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Link href={backHref} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-4" /> กลับ
-        </Link>
+        <BackLink href={backHref}>กลับ</BackLink>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-lg border border-border p-0.5">
             {PAPER_SIZES.map((p) => (
