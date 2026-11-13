@@ -184,6 +184,7 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: BarChart3,
     chipColor: "#0D9488",
     items: [
+      { label: "ภาพรวมบริษัท", href: "/reports/overview", icon: LayoutDashboard, permission: "report:export", ready: true },
       { label: "รายงานการเข้างาน", href: "/reports?view=attendance", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานการลา", href: "/reports?view=leave", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานประเมินผล", href: "/reports?view=performance", icon: BarChart3, permission: "report:read", ready: true },
