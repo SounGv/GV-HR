@@ -16,6 +16,7 @@ import {
 } from "./attendance-today-sections";
 import { AttendanceFollowRows, AttendanceHero } from "./attendance-hero";
 import type { TodayAttendance } from "./types";
+import { TodayStatusStrip } from "@/features/dashboard/today-status-strip";
 
 /** How often today's attendance numbers are read again while the page is in view. */
 export const TODAY_REFRESH_MS = 30_000;
@@ -149,6 +150,13 @@ export function LiveStatusTiles() {
 export function LiveAttentionCards() {
   const { data, departmentIds } = useLiveToday();
   return <AttendanceAttentionCards data={data} departmentIds={departmentIds} />;
+}
+
+/** หน้าหลัก one-line status with the stacked bar, kept current with the rest of the live numbers. */
+export function LiveTodayStatusLine({ links }: { links?: React.ReactNode }) {
+  const { data } = useLiveToday();
+  const c = data.counts;
+  return <TodayStatusStrip onTime={c.NORMAL} late={c.LATE} leave={c.ON_LEAVE} notYet={c.ABSENT + c.NOT_YET} links={links} />;
 }
 
 export function LiveDepartmentBreakdown() {

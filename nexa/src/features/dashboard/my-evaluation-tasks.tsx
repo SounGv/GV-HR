@@ -21,14 +21,16 @@ export async function MyEvaluationTasks({ companyId, session }: { companyId: str
     );
   }
   const todayIso = bangkokParts().dateUTC.toISOString().slice(0, 10);
-  const byRound = new Map<string, { name: string; endIso: string | null; left: number }>();
+  const byRound = new Map<string, { name: string; endIso: string | null; done: number; total: number }>();
   for (const r of rows) {
-    if (r.roundStatus !== "OPEN" || r.status === "SUBMITTED") continue;
-    const cur = byRound.get(r.roundId) ?? { name: r.roundName, endIso: r.endIso, left: 0 };
-    cur.left++;
+    if (r.roundStatus !== "OPEN") continue;
+    const cur = byRound.get(r.roundId) ?? { name: r.roundName, endIso: r.endIso, done: 0, total: 0 };
+    cur.total++;
+    if (r.status === "SUBMITTED") cur.done++;
     byRound.set(r.roundId, cur);
   }
-  const rounds = [...byRound.values()].sort((a, b) => (a.endIso ?? "9999").localeCompare(b.endIso ?? "9999"));
+  // Rounds with forms still to fill; a finished round drops off the home screen.
+  const rounds = [...byRound.values()].filter((r) => r.done < r.total).sort((a, b) => (a.endIso ?? "9999").localeCompare(b.endIso ?? "9999"));
 
   if (rounds.length === 0) {
     return (
@@ -56,8 +58,15 @@ export async function MyEvaluationTasks({ companyId, session }: { companyId: str
             </span>
             <span className="min-w-0 flex-1">
               <span className="block font-medium text-foreground">{r.name}</span>
-              <span className="block text-sm text-muted-foreground">
-                เหลือ <b className="tabular-nums text-foreground">{r.left}</b> คน
+              <span
+                className="mt-1.5 block h-2 overflow-hidden rounded-full bg-[var(--chart-muted-bar)]"
+                role="img"
+                aria-label={`ทำแล้ว ${r.done} จาก ${r.total} คน`}
+              >
+                <span className="block h-full rounded-full bg-[var(--series-highlight)]" style={{ width: `${(r.done / r.total) * 100}%` }} />
+              </span>
+              <span className="mt-1 block text-[13px] text-muted-foreground tabular-nums">
+                ทำแล้ว <b className="text-foreground">{r.done}</b> จาก {r.total} คน
               </span>
             </span>
             <span

@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/auth/rbac";
 import type { RequestStep } from "@/features/workflow/types";
-import { getRemainingBalance, isCompanyLeaveQuotaConfigured, isDailyCompensation } from "@/features/leave/service";
+import { getBalanceDays, isCompanyLeaveQuotaConfigured, isDailyCompensation } from "@/features/leave/service";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { bangkokParts } from "@/lib/datetime";
 
@@ -129,6 +129,8 @@ export interface LeaveBalanceSummary {
   type: string;
   label: string;
   remaining: number;
+  /** Days entitled this year (the bar's full length); 0 when there is no quota. */
+  total: number;
   /** False when `remaining` is just the historical system fallback (10/30/3)
    * because HR hasn't configured a real day-quota yet — see leave/service.ts. */
   configured: boolean;
@@ -169,10 +171,12 @@ export async function getMySnapshot(
   const daysConfigured = isDaily ? true : await isCompanyLeaveQuotaConfigured(companyId);
   const leaveBalances: LeaveBalanceSummary[] = [];
   for (const type of LEAVE_TYPES_FOR_SUMMARY) {
+    const days = await getBalanceDays(companyId, employeeId, type, year);
     leaveBalances.push({
       type,
       label: LEAVE_TYPE_LABEL[type],
-      remaining: await getRemainingBalance(companyId, employeeId, type, year),
+      remaining: days.remaining,
+      total: days.total,
       configured: daysConfigured,
     });
   }
@@ -476,4 +480,32 @@ export async function getDepartmentWatchlist(companyId: string, days = 30): Prom
     .filter((r) => r.absent + r.late > 0)
     .sort((a, b) => b.absent + b.late - (a.absent + a.late))
     .slice(0, 10);
+}
+
+export interface DepartmentOvertime {
+  department: string;
+  hours: number;
+}
+
+/**
+ * Approved OT hours this Bangkok calendar month, per department (company-wide;
+ * the company overview page that shows it is HR/finance-only). Departments are
+ * the employee's current one; people without one fall under "ไม่ระบุแผนก".
+ */
+export async function getOvertimeByDepartment(companyId: string): Promise<DepartmentOvertime[]> {
+  const bkk = bangkokParts();
+  const from = new Date(Date.UTC(bkk.year, bkk.month - 1, 1));
+  const to = new Date(Date.UTC(bkk.year, bkk.month, 1));
+  const rows = await prisma.overtimeRequest.findMany({
+    where: { companyId, deletedAt: null, status: "APPROVED", date: { gte: from, lt: to } },
+    select: { hours: true, employee: { select: { department: { select: { name: true } } } } },
+  });
+  const byDept = new Map<string, number>();
+  for (const r of rows) {
+    const name = r.employee.department?.name ?? "ไม่ระบุแผนก";
+    byDept.set(name, (byDept.get(name) ?? 0) + r.hours);
+  }
+  return [...byDept.entries()]
+    .map(([department, hours]) => ({ department, hours: Math.round(hours * 10) / 10 }))
+    .sort((a, b) => b.hours - a.hours || a.department.localeCompare(b.department, "th"));
 }

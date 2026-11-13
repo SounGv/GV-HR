@@ -21,6 +21,7 @@ import {
   LiveFollowRows,
   LiveStamp,
   LiveTodayProvider,
+  LiveTodayStatusLine,
 } from "@/features/attendance-status/live-today";
 import { FollowRowLoading } from "@/features/dashboard/follow-up";
 import { SectionHeading } from "@/components/shared/section-heading";
@@ -50,15 +51,37 @@ function LeaveBalanceTile({ balances, href }: { balances: LeaveBalanceSummary[];
           <LeaveIcon size={32} />
           <span className="truncate text-xs text-muted-foreground">วันลาคงเหลือ</span>
         </div>
-        <div className="mt-2 grid grid-cols-3 gap-1 text-center">
-          {balances.map((b) => (
-            <div key={b.type}>
-              <p className="text-base font-semibold tabular-nums text-foreground">
-                {b.configured ? b.remaining : "-"}
-              </p>
-              <p className="truncate text-[10px] text-muted-foreground">{b.label}</p>
-            </div>
-          ))}
+        {/* Remaining over entitled days as a bar; a type at a third or less turns amber with words (approved mock charts-placement-mock.html). */}
+        <div className="mt-2 grid grid-cols-3 gap-3">
+          {balances.map((b) => {
+            const show = b.configured && b.total > 0;
+            const low = show && b.remaining / b.total <= 1 / 3;
+            return (
+              <div key={b.type} className="min-w-0">
+                <p className="text-[13px] text-muted-foreground">{b.label}</p>
+                <p className="text-[22px] leading-snug font-bold tabular-nums text-foreground">
+                  {b.configured ? b.remaining : "-"}
+                  {show && <span className="ml-1 text-[12px] font-normal text-muted-foreground">จาก {b.total} วัน</span>}
+                </p>
+                {show && (
+                  <div
+                    className="mt-1 h-2 overflow-hidden rounded-full bg-[var(--chart-muted-bar)]"
+                    role="img"
+                    aria-label={`${b.label} เหลือ ${b.remaining} จาก ${b.total} วัน`}
+                  >
+                    <span
+                      className="block h-full rounded-full"
+                      style={{
+                        width: `${Math.min(100, (b.remaining / b.total) * 100)}%`,
+                        background: low ? "var(--status-late-dot)" : "var(--series-highlight)",
+                      }}
+                    />
+                  </div>
+                )}
+                {low && <p className="mt-1 text-[12px] text-status-late-fg">⚠ ใกล้หมด</p>}
+              </div>
+            );
+          })}
         </div>
       </Card>
     </Link>
@@ -161,6 +184,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const fmtClock = (iso: string | null) =>
     iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
 
+  // Links at the end of the status line, each only for people who can open the page behind it.
+  const statusLinks = (
+    <>
+      {canSeeAttendance && (
+        <Link href="/dashboard/attendance" className="font-semibold text-primary hover:underline">
+          ดูการเข้างานวันนี้
+        </Link>
+      )}
+      {canSeeOverview && (
+        <Link href="/reports/overview" className="font-semibold text-primary hover:underline">
+          ดูภาพรวมบริษัท
+        </Link>
+      )}
+    </>
+  );
+
   return (
     <>
       <MobileDashboardView name={name} mine={mine} actions={actions} />
@@ -242,48 +281,23 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* Today in one line; the detail and the charts are one click away. Managers' numbers are their own team. */}
-      {canSeeCompany && (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-border bg-card px-4 py-3 text-[15px]">
-          {attendanceToday && attendanceToday.total > 0 ? (
-            <>
-              <span>
-                วันนี้ลงเวลาแล้ว <b className="tabular-nums">{attendanceToday.scanned}</b> จาก{" "}
-                <b className="tabular-nums">{attendanceToday.total}</b> คน
-              </span>
-              <span>
-                สาย <b className="tabular-nums">{attendanceToday.counts.LATE}</b>
-              </span>
-              <span>
-                ลา <b className="tabular-nums">{attendanceToday.counts.ON_LEAVE}</b>
-              </span>
-            </>
-          ) : (
-            <>
-              <span>
-                วันนี้เข้างาน <b className="tabular-nums">{s?.presentToday ?? 0}</b> คน
-              </span>
-              <span>
-                สาย <b className="tabular-nums">{s?.lateToday ?? 0}</b>
-              </span>
-              <span>
-                ลา <b className="tabular-nums">{s?.onLeaveToday ?? 0}</b>
-              </span>
-            </>
-          )}
-          <span className="ml-auto flex flex-wrap gap-x-5 gap-y-1">
-            {canSeeAttendance && (
-              <Link href="/dashboard/attendance" className="font-semibold text-primary hover:underline">
-                ดูการเข้างานวันนี้
-              </Link>
-            )}
-            {canSeeOverview && (
-              <Link href="/reports/overview" className="font-semibold text-primary hover:underline">
-                ดูภาพรวมบริษัท
-              </Link>
-            )}
-          </span>
-        </div>
-      )}
+      {canSeeCompany &&
+        (attendanceToday ? (
+          <LiveTodayStatusLine links={statusLinks} />
+        ) : (
+          <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 rounded-2xl border border-border bg-card px-4 py-3 text-[15px]">
+            <span>
+              วันนี้เข้างาน <b className="tabular-nums">{s?.presentToday ?? 0}</b> คน
+            </span>
+            <span>
+              สาย <b className="tabular-nums">{s?.lateToday ?? 0}</b>
+            </span>
+            <span>
+              ลา <b className="tabular-nums">{s?.onLeaveToday ?? 0}</b>
+            </span>
+            <span className="ml-auto flex flex-wrap gap-x-5 gap-y-1">{statusLinks}</span>
+          </div>
+        ))}
 
       {mine && (
         <section className="space-y-3">

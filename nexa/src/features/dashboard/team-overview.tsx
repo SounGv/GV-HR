@@ -67,7 +67,7 @@ export function TeamOverview({
                 className="gv-grow h-full rounded-full"
                 style={{
                   flexGrow: t.count,
-                  background: t.type === "DAILY_WORKER" ? "#f59e0b" : "#0d9488",
+                  background: t.type === "DAILY_WORKER" ? "var(--status-notyet-dot)" : "var(--series-highlight)",
                 }}
               />
             ))}
@@ -83,7 +83,7 @@ export function TeamOverview({
                       <span
                         aria-hidden="true"
                         className="size-2 shrink-0 rounded-full"
-                        style={{ background: t.type === "DAILY_WORKER" ? "#f59e0b" : "#0d9488" }}
+                        style={{ background: t.type === "DAILY_WORKER" ? "var(--status-notyet-dot)" : "var(--series-highlight)" }}
                       />
                       {t.label}
                     </span>

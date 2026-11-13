@@ -26,7 +26,9 @@ import { DepartmentWatchCard, WatchlistCard } from "@/features/attendance-status
 import { DepartmentFilter } from "@/features/attendance-status/department-filter";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AttendanceRateLine } from "@/features/dashboard/dashboard-charts-lazy";
+import { AttendanceTrendChart } from "@/features/dashboard/attendance-trend-chart";
+import { EvaluationByDepartmentCard, OvertimeByDepartmentCard } from "@/features/dashboard/overview-sections";
+import { bangkokParts } from "@/lib/datetime";
 import { KpiMiniBars } from "@/features/dashboard/kpi-mini-bars";
 import { TeamOverview } from "@/features/dashboard/team-overview";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
@@ -239,6 +241,8 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
           }, 0) / attendanceTrend.length,
         )
       : 0;
+  const todayIso = bangkokParts().dateUTC.toISOString().slice(0, 10);
+  const trendDone = attendanceTrend.filter((d) => d.date !== todayIso);
   const lateSum = attendanceTrend.reduce((sum, d) => sum + d.late, 0);
   const leaveSum = attendanceTrend.reduce((sum, d) => sum + d.leave, 0);
   const absentSum = attendanceTrend.reduce((sum, d) => sum + d.absent, 0);
@@ -323,7 +327,7 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
           label="พนักงานทั้งหมด"
           value={s.headcount}
           unit="คน"
-          color="var(--flip7-sky)"
+          color="var(--series-highlight)"
           sub={
             s.newThisMonth > 0 ? (
               <span className="inline-flex items-center gap-0.5 text-success">
@@ -338,7 +342,7 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
               {employmentTypes.map((t) => (
                 <div
                   key={t.type}
-                  style={{ width: `${t.pct}%`, background: t.type === "DAILY_WORKER" ? "var(--flip7-gold)" : "var(--flip7-teal)" }}
+                  style={{ width: `${t.pct}%`, background: t.type === "DAILY_WORKER" ? "var(--status-notyet-dot)" : "var(--series-highlight)" }}
                 />
               ))}
             </div>
@@ -348,7 +352,7 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
           label="เข้างานวันนี้"
           value={s.presentToday}
           unit="คน"
-          color="var(--series-present)"
+          color="var(--series-highlight)"
           sub={`${s.attendanceRate}% ของพนักงาน`}
           miniBars={{
             data: attendanceTrend.map((p) => ({ label: p.label, value: p.present })),
@@ -370,7 +374,7 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
           label="ลาวันนี้"
           value={s.onLeaveToday}
           unit="คน"
-          color="var(--series-leave)"
+          color="var(--status-leave-dot)"
           sub="อนุมัติแล้ว"
           miniBars={{
             data: attendanceTrend.map((p) => ({ label: p.label, value: p.leave })),
@@ -381,7 +385,7 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
           label="OT วันนี้"
           value={s.otHoursToday}
           unit="ชม."
-          color="var(--series-ot)"
+          color="var(--series-highlight)"
           sub="รวมทั้งองค์กร"
           miniBars={{
             data: attendanceTrend.map((p) => ({ label: p.label, value: p.otHours })),
@@ -399,12 +403,29 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
       <Card>
         <CardHeader>
           <CardTitle>การเข้างาน 14 วันทำการล่าสุด</CardTitle>
-          <p className="text-xs text-muted-foreground">อัตราเข้างาน/มาสาย/ลา ต่อวัน เทียบเป็น %</p>
+          <p className="text-[13px] text-muted-foreground">
+            เส้นคือ % คนมาทำงาน แท่งคือจำนวนคนสาย สีขึ้นเฉพาะวันที่ต่างจากค่าเฉลี่ยชัดเจน ชี้ที่กราฟเพื่อดูตัวเลขแต่ละวัน
+          </p>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
             <div className="min-w-0 flex-1">
-              <AttendanceRateLine data={attendanceTrend} />
+              {/* Today is still filling in (shown live above), so the line stops at the last full day. */}
+              <AttendanceTrendChart data={trendDone} />
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <i className="inline-block h-[3px] w-4 rounded-full bg-[var(--series-highlight)]" aria-hidden="true" />% มาทำงาน (แกนซ้าย)
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <i className="inline-block size-2.5 rounded-full bg-[var(--status-absent-dot)]" aria-hidden="true" />ต่ำกว่าเฉลี่ยชัดเจน
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <i className="inline-block size-2.5 rounded-[3px] bg-[var(--chart-muted-bar)]" aria-hidden="true" />คนสาย (แกนขวา)
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <i className="inline-block size-2.5 rounded-[3px] bg-[var(--status-late-dot)]" aria-hidden="true" />สายมากกว่าปกติ
+                </span>
+              </div>
             </div>
             {!attendanceToday && (
             <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:w-[220px] lg:grid-cols-1">
@@ -417,7 +438,7 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
                 <span className="text-xl font-bold tabular-nums">{lateSum} ครั้ง</span>
               </div>
               <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
-                <span className="text-xs" style={{ color: "var(--series-leave)" }}>ลารวม</span>
+                <span className="text-xs text-muted-foreground">ลารวม</span>
                 <span className="text-xl font-bold tabular-nums">{leaveSum} ครั้ง</span>
               </div>
               <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
@@ -469,6 +490,16 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
           </CardContent>
         </Card>
         )}
+
+      {/* Evaluation progress and this month's OT, one row per department (approved mock charts-placement-mock.html). */}
+      <div className="grid items-start gap-[18px] lg:grid-cols-2">
+        <Suspense fallback={<Card><CardContent className="py-4 text-sm text-muted-foreground">กำลังโหลดความคืบหน้าประเมิน…</CardContent></Card>}>
+          <EvaluationByDepartmentCard companyId={user!.companyId} session={session} />
+        </Suspense>
+        <Suspense fallback={<Card><CardContent className="py-4 text-sm text-muted-foreground">กำลังโหลด OT เดือนนี้…</CardContent></Card>}>
+          <OvertimeByDepartmentCard companyId={user!.companyId} />
+        </Suspense>
+      </div>
 
       {/* ทีมงาน: who works here, by employment type and by department. */}
       {canSeeCompany && (

@@ -115,6 +115,23 @@ export async function isDailyCompensation(employeeId: string): Promise<boolean> 
   return emp?.compensationType === "DAILY";
 }
 
+/** Remaining and entitled days for a paid leave type this year — the company quota if no balance row exists yet. */
+export async function getBalanceDays(
+  companyId: string,
+  employeeId: string,
+  type: string,
+  year: number,
+): Promise<{ remaining: number; total: number }> {
+  const balance = await prisma.leaveBalance.findUnique({
+    where: { employeeId_year_type: { employeeId, year, type: type as never } },
+    select: { totalDays: true, usedDays: true },
+  });
+  if (balance) return { remaining: Math.max(0, balance.totalDays - balance.usedDays), total: Math.max(0, balance.totalDays) };
+  if (await isDailyCompensation(employeeId)) return { remaining: 0, total: 0 };
+  const quota = Math.max(0, (await getCompanyLeaveQuota(companyId))[type] ?? 0);
+  return { remaining: quota, total: quota };
+}
+
 /** Remaining days for a paid leave type this year — quota if no balance row exists yet. */
 export async function getRemainingBalance(
   companyId: string,
@@ -122,14 +139,7 @@ export async function getRemainingBalance(
   type: string,
   year: number,
 ): Promise<number> {
-  const balance = await prisma.leaveBalance.findUnique({
-    where: { employeeId_year_type: { employeeId, year, type: type as never } },
-    select: { totalDays: true, usedDays: true },
-  });
-  if (balance) return Math.max(0, balance.totalDays - balance.usedDays);
-  if (await isDailyCompensation(employeeId)) return 0;
-  const quota = await getCompanyLeaveQuota(companyId);
-  return Math.max(0, quota[type] ?? 0);
+  return (await getBalanceDays(companyId, employeeId, type, year)).remaining;
 }
 
 /** HR-configured hourly quota (hours/year) for the leave types that support it. */
