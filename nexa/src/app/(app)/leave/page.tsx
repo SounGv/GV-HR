@@ -42,7 +42,7 @@ export default async function LeavePage({
 
         <PageHeader title="การลาและ OT" description="ยื่นคำขอลา ดูโควตาวันลา และอนุมัติคำขอของทีม" />
 
-        <LeaveView defaultTab={isOverview ? "approvals" : "me"} />
+        <LeaveView defaultTab={isOverview ? "team" : "me"} />
 
       </div>
 

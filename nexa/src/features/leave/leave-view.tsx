@@ -43,7 +43,7 @@ function amountLabel(r: LeaveRequest) {
   return `${r.days} วัน`;
 }
 
-export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
+export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" | "team" }) {
   const { canAny, user } = useAuth();
   // An account with no employee record (e.g. a pure admin) has no requests of
   // its own; open on the team queue instead of an empty/error "mine" tab.
@@ -51,10 +51,11 @@ export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approval
   const canApprove = canAny(["leave:approve", "leave:manage"]);
 
   return (
-    <Tabs defaultValue={canApprove ? (hasEmployee ? defaultTab : "approvals") : "me"} className="space-y-4">
+    <Tabs defaultValue={canApprove ? (hasEmployee || defaultTab === "team" ? defaultTab : "approvals") : "me"} className="space-y-4">
       <TabsList>
         <TabsTrigger value="me">คำขอของฉัน</TabsTrigger>
         {canApprove && <TabsTrigger value="approvals">รออนุมัติ</TabsTrigger>}
+        {canApprove && <TabsTrigger value="team">ลาของทีม</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="me" className="space-y-5">
@@ -64,6 +65,12 @@ export function LeaveView({ defaultTab = "me" }: { defaultTab?: "me" | "approval
       {canApprove && (
         <TabsContent value="approvals" className="space-y-4">
           <Approvals />
+        </TabsContent>
+      )}
+
+      {canApprove && (
+        <TabsContent value="team" className="space-y-5">
+          <TeamLeave />
         </TabsContent>
       )}
     </Tabs>
@@ -218,5 +225,72 @@ function Approvals() {
         </Card>
       ))}
     </div>
+  );
+}
+
+const TEAM_PAST_DAYS = 30;
+
+/**
+ * Every approved or waiting leave of the people the caller approves for
+ * (company-wide for HR): today and later first, then the last
+ * {@link TEAM_PAST_DAYS} days. The home page's "ดูคำขอลาทั้งหมด" opens this
+ * tab; it used to open รออนุมัติ, which is empty once everything is approved.
+ */
+function TeamLeave() {
+  const { data, isLoading, isError, refetch } = useLeave("team");
+  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (isLoading) return <TableLoadingState rows={4} />;
+
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const since = new Date(Date.parse(today) - TEAM_PAST_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const live = (data?.data ?? []).filter((r) => r.status === "APPROVED" || r.status === "PENDING");
+  const upcoming = live
+    .filter((r) => r.endDate.slice(0, 10) >= today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const past = live
+    .filter((r) => r.endDate.slice(0, 10) < today && r.endDate.slice(0, 10) >= since)
+    .sort((a, b) => b.startDate.localeCompare(a.startDate));
+
+  if (upcoming.length === 0 && past.length === 0) {
+    return <EmptyState icon={CalendarDays} title="ยังไม่มีการลาของทีม" description={`การลาที่อนุมัติหรือรออนุมัติ ตั้งแต่ ${TEAM_PAST_DAYS} วันก่อนจนถึงล่วงหน้า จะแสดงที่นี่`} />;
+  }
+  return (
+    <>
+      <TeamLeaveList title={`วันนี้และล่วงหน้า (${upcoming.length})`} rows={upcoming} empty="ไม่มีใครลาวันนี้หรือล่วงหน้า" />
+      <TeamLeaveList title={`${TEAM_PAST_DAYS} วันที่ผ่านมา (${past.length})`} rows={past} empty={`ไม่มีการลาใน ${TEAM_PAST_DAYS} วันที่ผ่านมา`} />
+    </>
+  );
+}
+
+function TeamLeaveList({ title, rows, empty }: { title: string; rows: LeaveRequest[]; empty: string }) {
+  return (
+    <section className="space-y-2">
+      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        rows.map((r) => (
+          <Card key={r.id} className="p-0">
+            <Link href={`/leave/${r.id}`} className="flex min-h-11 items-center gap-3 p-4">
+              <Avatar className="size-9">
+                {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
+                <AvatarFallback className="bg-transparent p-0">
+                  <CharacterAvatar character={characterFor({ gender: r.employee.gender ?? null })} seed={r.employee.id} className="size-full" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium break-words text-foreground">{displayName(r.employee)}</span>
+                  <LeaveStatusBadge status={r.status} />
+                </div>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {LEAVE_TYPE_LABEL[r.type]} · {dateRange(r)} · {amountLabel(r)}
+                </p>
+              </div>
+            </Link>
+          </Card>
+        ))
+      )}
+    </section>
   );
 }
