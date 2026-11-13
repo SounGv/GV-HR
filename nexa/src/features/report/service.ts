@@ -409,10 +409,11 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         note: true,
         clockInBranchId: true,
         clockInDistance: true,
-        // Only used to know whether a photo exists — the image itself is
-        // served by /api/attendance/[id]/photo, not embedded in this result.
-        clockInPhotoUrl: true,
-        clockOutPhotoUrl: true,
+        // No clockInPhotoUrl / clockOutPhotoUrl here: each is an inline base64
+        // image (~260 KB). Over 30 days that was ~295 MB per query, the stream
+        // got cut mid-way and every cut left a pooled connection stuck
+        // "idle in transaction" until the pool ran out (2026-11-13 outage).
+        // Which rows have a photo is read below as ids only.
         updatedById: true,
         employee: {
           select: {
@@ -435,6 +436,29 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       ATTENDANCE_DAILY_RECORD_FETCH_LIMIT,
     );
     const recs = fetchCap.kept.map((x) => x.rec);
+    // Which kept rows have a photo, as ids only (the images stay in the database;
+    // /api/attendance/[id]/photo serves each one on its own).
+    const keptIds = recs.map((r) => r.id);
+    const inPhotoIds = new Set(
+      keptIds.length === 0
+        ? []
+        : (
+            await prisma.attendanceRecord.findMany({
+              where: { id: { in: keptIds }, clockInPhotoUrl: { not: null } },
+              select: { id: true },
+            })
+          ).map((r) => r.id),
+    );
+    const outPhotoIds = new Set(
+      keptIds.length === 0
+        ? []
+        : (
+            await prisma.attendanceRecord.findMany({
+              where: { id: { in: keptIds }, clockOutPhotoUrl: { not: null } },
+              select: { id: true },
+            })
+          ).map((r) => r.id),
+    );
     // Both internal-only callers that skip name resolution (see includeNames
     // on ReportQuery) also never read the "ที่ตั้ง" column, so the branch
     // lookup is skipped alongside it — one less query at the row counts this
@@ -566,8 +590,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         editor: r.updatedById ? editorNameById.get(r.updatedById) ?? "-" : "-",
         location: r.clockInBranchId ? branchName.get(r.clockInBranchId) ?? "-" : "-",
         distance: r.clockInDistance != null ? Math.round(r.clockInDistance) : "-",
-        clockInPhoto: r.clockInPhotoUrl ? photoUrlOf(r.id, "in", r.updatedAt) : "-",
-        clockOutPhoto: r.clockOutPhotoUrl ? photoUrlOf(r.id, "out", r.updatedAt) : "-",
+        clockInPhoto: inPhotoIds.has(r.id) ? photoUrlOf(r.id, "in", r.updatedAt) : "-",
+        clockOutPhoto: outPhotoIds.has(r.id) ? photoUrlOf(r.id, "out", r.updatedAt) : "-",
       };
     });
 
