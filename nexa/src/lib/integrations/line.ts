@@ -129,3 +129,55 @@ export function isLinkCodeText(text: string | undefined | null): boolean {
 export function shouldRegisterHrGroups(): boolean {
   return process.env.LINE_REGISTER_HR_GROUPS === "true";
 }
+
+let basicIdCache: { value: string | null; at: number } | null = null;
+
+/**
+ * The bot's basic id (e.g. "@409eeoji"), read from LINE's /v2/bot/info so the
+ * app never needs it as config. Remembered for a day per server instance.
+ * null when LINE is not configured or the call fails.
+ */
+export async function getLineBotBasicId(): Promise<string | null> {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  if (!token) return null;
+  if (basicIdCache && Date.now() - basicIdCache.at < 86_400_000) return basicIdCache.value;
+  try {
+    const res = await fetch("https://api.line.me/v2/bot/info", {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    const value = res.ok ? (((await res.json()) as { basicId?: string }).basicId ?? null) : null;
+    basicIdCache = { value, at: Date.now() };
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether this LINE user has the bot as a friend (only friends can get pushes).
+ * true / false from LINE's profile endpoint (404 = not a friend), null if unknown.
+ */
+export async function isLineFriend(lineUserId: string): Promise<boolean | null> {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch(`https://api.line.me/v2/bot/profile/${encodeURIComponent(lineUserId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) return true;
+    if (res.status === 404) return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Link that opens the bot's chat in the LINE app with `text` already typed, so
+ * the person only taps send. https://line.me/R/oaMessage/{basicId}/?{text}
+ */
+export function lineChatWithTextUrl(basicId: string, text: string): string {
+  return `https://line.me/R/oaMessage/${encodeURIComponent(basicId)}/?${encodeURIComponent(text)}`;
+}

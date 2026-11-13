@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { getLineBotBasicId, lineChatWithTextUrl } from "@/lib/integrations/line";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, NotFound } from "@/lib/api/errors";
@@ -104,7 +105,9 @@ export async function generateMyLineLinkCode(session: SessionUser) {
         where: { id: employeeId },
         data: { lineLinkCode: code, lineLinkCodeExpiresAt: expiresAt },
       });
-      return { code, expiresAt: expiresAt.toISOString() };
+      // Opens LINE on the bot's chat with the code typed in: one tap on send links the account.
+      const basicId = await getLineBotBasicId();
+      return { code, expiresAt: expiresAt.toISOString(), chatUrl: basicId ? lineChatWithTextUrl(basicId, code) : null };
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") continue; // code collision, retry
       throw err;

@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyLineSignature, replyLineMessage, isLinkCodeText, shouldRegisterHrGroups } from "@/lib/integrations/line";
+import { verifyLineSignature, replyLineMessage, isLinkCodeText, shouldRegisterHrGroups, isLineFriend } from "@/lib/integrations/line";
 
 export const runtime = "nodejs";
 
@@ -66,7 +66,14 @@ export async function POST(request: NextRequest) {
         data: { lineUserId, lineLinkCode: null, lineLinkCodeExpiresAt: null },
       });
       if (replyToken) {
-        await replyLineMessage(replyToken, "เชื่อมต่อบัญชี LINE สำเร็จ! ต่อจากนี้คุณจะได้รับการแจ้งเตือนจากระบบ GV One ทาง LINE ด้วย");
+        // Pushes only reach friends: someone who sent the code without adding the bot gets told so.
+        const friend = await isLineFriend(lineUserId);
+        await replyLineMessage(
+          replyToken,
+          friend === false
+            ? "เชื่อมต่อบัญชี LINE แล้ว ✓ กด \"เพิ่มเพื่อน\" ด้านบนของแชทนี้ด้วย ไม่อย่างนั้นจะไม่ได้รับการแจ้งเตือนจาก GV One"
+            : "เชื่อมต่อบัญชี LINE แล้ว ✓ ต่อจากนี้คุณจะได้รับการแจ้งเตือนจาก GV One ทาง LINE",
+        );
       }
       continue;
     }

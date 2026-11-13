@@ -13,10 +13,10 @@ import {
   ShieldAlert,
   Lock,
   MessageCircle,
-  RefreshCcw,
   Unlink,
 } from "lucide-react";
 import { toast } from "sonner";
+import QRCode from "qrcode";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -349,27 +349,46 @@ function ReadOnly({ label, value }: { label: string; value: string }) {
 }
 
 function LineConnect({ profile, onChange }: { profile: MyProfile; onChange: () => void }) {
-  const [code, setCode] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [link, setLink] = useState<{ code: string; expiresAt: string; chatUrl: string | null } | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
   const generateMut = useGenerateLineLinkCode();
   const unlinkMut = useUnlinkLine();
-
   const linked = !!profile.lineUserId;
+  const wasLinked = useRef(linked);
 
   async function generate() {
     try {
       const res = await generateMut.mutateAsync();
-      setCode(res.data.code);
-      setExpiresAt(res.data.expiresAt);
+      setLink(res.data);
+      setQr(res.data.chatUrl ? await QRCode.toDataURL(res.data.chatUrl, { margin: 1, width: 360 }) : null);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "สร้างรหัสไม่สำเร็จ");
+      toast.error(err instanceof ApiError ? err.message : "สร้างรหัสไม่สำเร็จ ลองใหม่อีกครั้ง");
     }
   }
+
+  // Ready before the tap, so "เชื่อมต่อ LINE" is a plain link straight into LINE
+  // (a link opened after waiting on the server is often blocked on iPhone).
+  useEffect(() => {
+    if (!linked && !link && !generateMut.isPending) void generate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linked]);
+
+  // While a code is out, look every 3 s whether the bot has linked it.
+  useEffect(() => {
+    if (linked || !link) return;
+    const t = setInterval(onChange, 3000);
+    return () => clearInterval(t);
+  }, [linked, link, onChange]);
+
+  useEffect(() => {
+    if (linked && !wasLinked.current) toast.success("เชื่อมต่อ LINE แล้ว จะได้รับการแจ้งเตือนทาง LINE ด้วย");
+    wasLinked.current = linked;
+  }, [linked]);
 
   async function unlink() {
     try {
       await unlinkMut.mutateAsync();
-      setCode(null);
+      setLink(null);
       toast.success("ยกเลิกการเชื่อมต่อ LINE แล้ว");
       onChange();
     } catch (err) {
@@ -379,8 +398,8 @@ function LineConnect({ profile, onChange }: { profile: MyProfile; onChange: () =
 
   if (linked) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-lg bg-success-muted px-3 py-2.5">
-        <p className="text-sm text-foreground">เชื่อมต่อ LINE แล้ว — คุณจะได้รับการแจ้งเตือนทาง LINE ด้วย</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-success-muted px-3 py-2.5">
+        <p className="text-sm text-foreground">✓ เชื่อมต่อ LINE แล้ว คุณจะได้รับการแจ้งเตือนทาง LINE ด้วย</p>
         <Button type="button" variant="outline" size="sm" onClick={unlink} disabled={unlinkMut.isPending}>
           {unlinkMut.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Unlink className="size-3.5" />}
           ยกเลิกการเชื่อมต่อ
@@ -389,28 +408,46 @@ function LineConnect({ profile, onChange }: { profile: MyProfile; onChange: () =
     );
   }
 
+  const expired = !!link && new Date(link.expiresAt).getTime() < Date.now();
+  if (!link || expired || !link.chatUrl) {
+    return (
+      <div className="space-y-2">
+        <Button type="button" onClick={generate} disabled={generateMut.isPending}>
+          {generateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
+          {expired ? "สร้างลิงก์เชื่อมต่อใหม่" : "เตรียมเชื่อมต่อ LINE"}
+        </Button>
+        {link && !link.chatUrl && (
+          <p className="text-sm text-muted-foreground">
+            เพิ่มเพื่อน LINE ของบริษัท แล้วส่งรหัส <b className="font-mono tracking-widest text-foreground">{link.code}</b> เป็นข้อความ
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      {code ? (
-        <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+      <a
+        href={link.chatUrl}
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#06C755] px-4 text-sm font-semibold text-white hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#06C755]"
+      >
+        <MessageCircle className="size-4" aria-hidden="true" />
+        เชื่อมต่อ LINE
+      </a>
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        กดแล้ว LINE จะเปิดแชทของบริษัทพร้อมรหัส <b className="font-mono tracking-widest text-foreground">{link.code}</b> ให้กด <b className="text-foreground">ส่ง</b> ครั้งเดียว
+        ถ้ายังไม่เคยเพิ่มเพื่อน ให้กดเพิ่มเพื่อนด้วย หน้านี้จะเปลี่ยนเป็น &quot;เชื่อมต่อแล้ว&quot; เอง
+      </p>
+      {qr && (
+        <div className="hidden items-center gap-4 rounded-lg border border-dashed border-border p-3 md:flex">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qr} alt="QR สำหรับเชื่อมต่อ LINE" className="size-32 rounded bg-white p-1" />
           <p className="text-sm text-muted-foreground">
-            เพิ่มเพื่อน LINE OA ของบริษัท แล้วส่งรหัสนี้เป็นข้อความ:
+            อยู่บนคอม: สแกน QR นี้ด้วยกล้องมือถือ LINE จะเปิดพร้อมรหัส แล้วกดส่ง
+            <br />
+            ใช้ได้ถึง {new Date(link.expiresAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.
           </p>
-          <p className="text-center font-mono text-2xl font-bold tracking-widest text-accent-foreground">{code}</p>
-          <p className="text-center text-xs text-muted-foreground">
-            หมดอายุ {expiresAt ? new Date(expiresAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : ""} น.
-          </p>
-          <div className="flex justify-center gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={generate} disabled={generateMut.isPending}>
-              <RefreshCcw className="size-3.5" /> สร้างรหัสใหม่
-            </Button>
-          </div>
         </div>
-      ) : (
-        <Button type="button" variant="outline" size="sm" onClick={generate} disabled={generateMut.isPending}>
-          {generateMut.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <MessageCircle className="size-3.5" />}
-          เชื่อมต่อ LINE
-        </Button>
       )}
     </div>
   );

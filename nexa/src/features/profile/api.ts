@@ -11,7 +11,7 @@ export function updateMyProfileApi(input: SelfProfileInput) {
 }
 
 export function generateLineLinkCode() {
-  return api.post<Envelope<{ code: string; expiresAt: string }>>("/api/profile/line/link-code");
+  return api.post<Envelope<{ code: string; expiresAt: string; chatUrl: string | null }>>("/api/profile/line/link-code");
 }
 
 export function unlinkLine() {
