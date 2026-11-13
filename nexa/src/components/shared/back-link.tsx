@@ -3,10 +3,10 @@ import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * The one "back to the parent page" control on a page. The desktop top bar no
- * longer has its own back arrow (it duplicated this one and went somewhere
- * else, 13 Nov 2026), so each page shows exactly one. 44px tall to meet the
- * GV One touch-target rule; `onHero` is for the dark teal page banners.
+ * A page's own "back" link, shown on phones only. On desktop the top bar's
+ * ย้อนกลับ button is the single back control (13 Nov 2026: pages showed two
+ * arrows going different places). 44px tall to meet the GV One touch-target
+ * rule; `onHero` is for the dark teal page banners.
  */
 export function BackLink({
   href,
@@ -23,6 +23,9 @@ export function BackLink({
 }) {
   const cls = cn(
     "-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium transition",
+    // A link to another page is covered by the top bar's ย้อนกลับ on desktop; a button
+    // (onClick) steps back inside the page itself, so it stays everywhere.
+    href && "md:hidden",
     onHero ? "text-white/85 hover:bg-white/12 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground",
     className,
   );

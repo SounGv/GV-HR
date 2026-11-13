@@ -366,7 +366,7 @@ function Hero({
         : "บันทึกอัตโนมัติเมื่อกดถัดไป";
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" aria-labelledby="round-wizard-title">
-      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-[12.5px] text-white/70">
+      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-[12.5px] text-white/70 md:hidden">
         <BackLink href="/appraisal/rounds" onHero>
           รอบประเมิน
         </BackLink>

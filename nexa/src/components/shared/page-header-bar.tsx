@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type Crumb = { label: string; href?: string };
@@ -12,7 +12,6 @@ export type Crumb = { label: string; href?: string };
  */
 export function PageHeaderBar({
   breadcrumbs,
-  backHref,
   title,
   description,
   status,
@@ -21,6 +20,7 @@ export function PageHeaderBar({
   className,
 }: {
   breadcrumbs?: Crumb[];
+  /** No longer drawn: on desktop the top bar's ย้อนกลับ is the back control. Kept so callers compile. */
   backHref?: string;
   title: React.ReactNode;
   description?: React.ReactNode;
@@ -67,15 +67,6 @@ export function PageHeaderBar({
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2.5">
-          {backHref && (
-            <Link
-              href={backHref}
-              aria-label="ย้อนกลับ"
-              className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            >
-              <ArrowLeft className="size-5" />
-            </Link>
-          )}
           <div className="min-w-0 space-y-0.5">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-heading truncate text-xl leading-snug font-bold text-foreground">
