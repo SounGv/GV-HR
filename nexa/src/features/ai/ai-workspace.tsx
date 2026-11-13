@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { VBot } from "@/components/shared/v-bot";
 import { cn } from "@/lib/utils";
 import { useChat } from "./hooks";
-import { playReplyChime } from "./reply-chime";
+import { playReplyChime, unlockReplyChime } from "./reply-chime";
 import { MarkdownLite } from "./markdown-lite";
 import { firstHeading, splitSummary, withoutFirstHeading } from "./reply-parts";
 import type { ChatMessage, ChatStep } from "./types";
@@ -86,6 +86,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   function submit(text: string, history: Turn[] = turns) {
     const q = text.trim();
     if (!q || chat.isPending) return;
+    unlockReplyChime();
     const next: Turn[] = [...history, { role: "user", content: q }];
     setTurns(next);
     setInput("");

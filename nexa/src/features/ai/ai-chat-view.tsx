@@ -8,7 +8,7 @@ import { MarkdownLite } from "./markdown-lite";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useChat } from "./hooks";
-import { playReplyChime } from "./reply-chime";
+import { playReplyChime, unlockReplyChime } from "./reply-chime";
 import type { ChatMessage, ChatStep } from "./types";
 
 const SUGGESTIONS = [
@@ -90,6 +90,7 @@ export function AiChatView({
   function submit(text: string) {
     const trimmed = text.trim();
     if (!trimmed || chat.isPending) return;
+    unlockReplyChime();
 
     const nextTurns: Turn[] = [...turns, { role: "user", content: trimmed }];
     setTurns(nextTurns);
