@@ -1,4 +1,5 @@
 import { hourlyUsage, remainingLeaveHours } from "./hour-pool";
+import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache";
 import { displayName } from "@/lib/format";
 import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -474,6 +475,8 @@ export async function decideLeave(
 
     return rec;
   });
+  // Drop the dashboard watch cache right after the write, before anything below can throw.
+  if (nextStatus === "APPROVED") refreshAttendanceWatch(companyId);
 
   await writeAudit({
     companyId,
@@ -581,6 +584,8 @@ export async function cancelLeave(
 
     return rec;
   });
+  // Drop the dashboard watch cache right after the write, before anything below can throw.
+  if (wasApproved) refreshAttendanceWatch(companyId);
 
   await writeAudit({
     companyId,

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { NotFound } from "@/lib/api/errors";
+import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { HolidayCreateInput, HolidayUpdateInput } from "./schema";
 
@@ -43,6 +44,7 @@ export async function createHoliday(
     data: { ...input, companyId, createdById: actor.sub, updatedById: actor.sub },
     select,
   });
+  refreshAttendanceWatch(companyId);
   await writeAudit({
     companyId,
     actorUserId: actor.sub,
@@ -73,6 +75,7 @@ export async function updateHoliday(
     data: { ...input, updatedById: actor.sub },
     select,
   });
+  refreshAttendanceWatch(companyId);
   await writeAudit({
     companyId,
     actorUserId: actor.sub,
@@ -98,6 +101,7 @@ export async function deleteHoliday(
   if (!existing) throw NotFound("ไม่พบวันหยุด");
 
   await prisma.holiday.update({ where: { id }, data: { deletedAt: new Date(), updatedById: actor.sub } });
+  refreshAttendanceWatch(companyId);
   await writeAudit({
     companyId,
     actorUserId: actor.sub,

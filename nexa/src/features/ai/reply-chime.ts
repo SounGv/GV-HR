@@ -24,9 +24,13 @@ function audioContext(): AudioContext | null {
 /** Call from the send button / Enter key handler, before any await. */
 export function unlockReplyChime(): void {
   try {
+    // Only inside a real click/key press; an auto-asked question (useEffect)
+    // would just create a locked context and a console warning.
+    const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
+    if (activation && !activation.isActive) return;
     const c = audioContext();
     if (!c) return;
-    if (c.state !== "running") void c.resume();
+    if (c.state !== "running") c.resume().catch(() => {});
     // A one-sample silent buffer: iOS only counts the context as unlocked once
     // something has actually been started inside the gesture.
     const src = c.createBufferSource();
@@ -61,8 +65,22 @@ export function playReplyChime(): void {
         osc.stop(now + at + 0.37);
       }
     };
-    if (c.state === "running") play();
-    else c.resume().then(play, () => {});
+    if (c.state === "running") {
+      play();
+      return;
+    }
+    // Still locked: try once, but give up after a moment. Otherwise resume()
+    // stays pending until some later tap and the chime would sound then, for
+    // no visible reason.
+    let gaveUp = false;
+    const timer = setTimeout(() => (gaveUp = true), 800);
+    c.resume().then(
+      () => {
+        clearTimeout(timer);
+        if (!gaveUp) play();
+      },
+      () => clearTimeout(timer),
+    );
   } catch {
     // No sound is fine; the answer is on screen either way.
   }

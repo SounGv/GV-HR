@@ -1,5 +1,6 @@
 import { displayName } from "@/lib/format";
 import { unstable_cache } from "next/cache";
+import { attendanceWatchTag } from "./watch-cache";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -273,7 +274,7 @@ export function loadAttendanceWatchCached(
   return unstable_cache(
     () => loadAttendanceWatch(companyId, session, departmentIds),
     ["attendance-watch", companyId, session.sub, [...departmentIds].sort().join(",")],
-    { revalidate: WATCH_CACHE_SECONDS },
+    { revalidate: WATCH_CACHE_SECONDS, tags: [attendanceWatchTag(companyId)] },
   )();
 }
 

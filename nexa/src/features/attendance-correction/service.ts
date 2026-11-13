@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
@@ -260,6 +261,7 @@ export async function decideAttendanceCorrection(
 
     return rec;
   });
+  if (nextStatus === "APPROVED") refreshAttendanceWatch(companyId);
 
   await writeAudit({
     companyId,

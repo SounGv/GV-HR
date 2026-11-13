@@ -6,6 +6,7 @@ import { estimateAmount, DEFAULT_MULTIPLIER, MIN_OT_MINUTES } from "@/features/o
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { attendanceImportRowSchema, type AttendanceImportRow } from "./schema";
 import type { ImportSummary } from "@/features/employee-import/schema";
+import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -205,5 +206,6 @@ export async function importAttendance(
     ...meta,
   });
 
+  if (created > 0) refreshAttendanceWatch(companyId);
   return { created, updated: 0, total: parsedRows.length, errors, warnings };
 }
