@@ -290,9 +290,16 @@
    height classes without needing `!important`. */
 @media (max-width: 767px) {
   [data-slot="button"][data-size="default"],
-  [data-slot="button"][data-size="lg"] {
+  [data-slot="button"][data-size="lg"],
+  [data-slot="button"][data-size="sm"] {
     height: auto;
     min-height: 44px;
+  }
+  [data-slot="button"][data-size="icon"],
+  [data-slot="button"][data-size="icon-sm"],
+  [data-slot="button"][data-size="icon-lg"] {
+    min-height: 44px;
+    min-width: 44px;
   }
   [data-slot="input"],
   [data-slot="select-trigger"][data-size="default"] {
@@ -337,7 +344,8 @@
 
   --border: #272b30;
   --input: #272b30;
-  --field-border: var(--input);
+  /* About 3:1 on the dark card; var(--input) was 1.15:1, so empty fields vanished. */
+  --field-border: #5a626b;
   --field-bg: transparent;
   --field-shadow: none;
   --card-shadow: none;

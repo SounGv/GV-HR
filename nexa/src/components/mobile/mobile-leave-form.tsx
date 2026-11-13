@@ -316,7 +316,7 @@ export function MobileLeaveForm() {
 
       <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-3.5">
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="mb-2.5 text-[13px] font-semibold text-foreground">ประเภทการลา</p>
+          <p className="mb-2.5 text-[15px] font-semibold text-foreground">ประเภทการลา</p>
           <div className="grid grid-cols-2 gap-2">
             {TYPE_ORDER.map((t) => {
               const selected = type === t;
@@ -347,18 +347,18 @@ export function MobileLeaveForm() {
                       : "border-border bg-card text-foreground",
                   )}
                 >
-                  <div className="text-[13px] font-semibold">{LEAVE_TYPE_LABEL[t]}</div>
-                  <div className="text-[11px] text-muted-foreground">{sub}</div>
+                  <div className="text-[15px] font-semibold">{LEAVE_TYPE_LABEL[t]}</div>
+                  <div className="text-[13px] text-muted-foreground">{sub}</div>
                 </button>
               );
             })}
           </div>
 
-          <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">ระยะเวลาลา</p>
-          <label className="block rounded-[10px] border border-border px-3 py-2.5">
-            <span className="block text-[10px] text-muted-foreground">เลือกระยะเวลา</span>
+          <p className="mb-2 mt-4 text-[15px] font-semibold text-foreground">ระยะเวลาลา</p>
+          <label className="block rounded-[10px] border border-[var(--field-border)] px-3 py-2.5">
+            <span className="block text-sm text-muted-foreground">เลือกระยะเวลา</span>
             <select
-              className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+              className="mt-0.5 w-full border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
               value={durationValue}
               onChange={(e) => onDurationChange(e.target.value)}
             >
@@ -377,13 +377,13 @@ export function MobileLeaveForm() {
 
           {durationValue === "FULL_DAY" ? (
             <>
-              <p className="mb-2 mt-3 text-[13px] font-semibold text-foreground">ช่วงวันที่ลา</p>
+              <p className="mb-2 mt-3 text-[15px] font-semibold text-foreground">ช่วงวันที่ลา</p>
               <div className="grid grid-cols-2 gap-2">
-                <label className="rounded-[10px] border border-border px-3 py-2.5">
-                  <span className="block text-[10px] text-muted-foreground">เริ่มลา</span>
+                <label className="rounded-[10px] border border-[var(--field-border)] px-3 py-2.5">
+                  <span className="block text-sm text-muted-foreground">เริ่มลา</span>
                   <input
                     type="date"
-                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
                     {...form.register("startDate", {
                       onChange: (e) => {
                         const next = e.target.value as string;
@@ -393,11 +393,11 @@ export function MobileLeaveForm() {
                     })}
                   />
                 </label>
-                <label className="rounded-[10px] border border-border px-3 py-2.5">
-                  <span className="block text-[10px] text-muted-foreground">ถึงวันที่</span>
+                <label className="rounded-[10px] border border-[var(--field-border)] px-3 py-2.5">
+                  <span className="block text-sm text-muted-foreground">ถึงวันที่</span>
                   <input
                     type="date"
-                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
                     {...form.register("endDate")}
                   />
                 </label>
@@ -405,12 +405,12 @@ export function MobileLeaveForm() {
             </>
           ) : (
             <>
-              <p className="mb-2 mt-3 text-[13px] font-semibold text-foreground">วันที่ลา</p>
-              <label className="block rounded-[10px] border border-border px-3 py-2.5">
-                <span className="block text-[10px] text-muted-foreground">วันที่</span>
+              <p className="mb-2 mt-3 text-[15px] font-semibold text-foreground">วันที่ลา</p>
+              <label className="block rounded-[10px] border border-[var(--field-border)] px-3 py-2.5">
+                <span className="block text-sm text-muted-foreground">วันที่</span>
                 <input
                   type="date"
-                  className="mt-0.5 w-full appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+                  className="mt-0.5 w-full appearance-none border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
                   {...form.register("startDate", {
                     onChange: (e) => form.setValue("endDate", e.target.value),
                   })}
@@ -421,11 +421,11 @@ export function MobileLeaveForm() {
 
           {isHourly && (
             <>
-              <p className="mb-2 mt-3 text-[13px] font-semibold text-foreground">เวลาเริ่ม</p>
-              <label className="block rounded-[10px] border border-border px-3 py-2.5">
-                <span className="block text-[10px] text-muted-foreground">เวลาเริ่ม (สิ้นสุด {endTime || "—"} น.)</span>
+              <p className="mb-2 mt-3 text-[15px] font-semibold text-foreground">เวลาเริ่ม</p>
+              <label className="block rounded-[10px] border border-[var(--field-border)] px-3 py-2.5">
+                <span className="block text-sm text-muted-foreground">เวลาเริ่ม (สิ้นสุด {endTime || "—"} น.)</span>
                 <TimeSelect
-                  className="mt-0.5 w-full border-0 bg-transparent p-0 text-[13px] font-semibold text-foreground outline-none"
+                  className="mt-0.5 w-full border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
                   {...form.register("startTime", {
                     onChange: (e) => {
                       const newStart = e.target.value as string;
@@ -438,18 +438,18 @@ export function MobileLeaveForm() {
             </>
           )}
 
-          <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">แนบไฟล์ประกอบ (ถ้ามี)</p>
+          <p className="mb-2 mt-4 text-[15px] font-semibold text-foreground">แนบไฟล์ประกอบ (ถ้ามี)</p>
           <FileAttachField
             value={form.watch("attachmentUrl")}
             onChange={(v) => form.setValue("attachmentUrl", v, { shouldValidate: true })}
             label="แนบใบรับรองแพทย์"
           />
 
-          <p className="mb-2 mt-4 text-[13px] font-semibold text-foreground">เหตุผล</p>
+          <p className="mb-2 mt-4 text-[15px] font-semibold text-foreground">เหตุผล</p>
           <textarea
             rows={3}
             placeholder="ระบุเหตุผลการลา"
-            className="min-h-[72px] w-full resize-none rounded-[10px] border border-border bg-transparent px-3 py-2.5 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="min-h-[72px] w-full resize-none rounded-[10px] border border-[var(--field-border)] bg-transparent px-3 py-2.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             {...form.register("reason")}
           />
 

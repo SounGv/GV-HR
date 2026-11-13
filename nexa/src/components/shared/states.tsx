@@ -39,7 +39,7 @@ export function EmptyState({
 /** Error state — request failed. */
 export function ErrorState({
   title = "โหลดข้อมูลไม่สำเร็จ",
-  description = "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+  description,
   onRetry,
   className,
 }: {
@@ -60,10 +60,15 @@ export function ErrorState({
       </div>
       <div className="space-y-1">
         <p className="font-medium text-foreground">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-sm text-muted-foreground">
+          {description ??
+            (onRetry
+              ? "ตรวจสัญญาณอินเทอร์เน็ต แล้วกด ลองใหม่ ถ้ายังไม่ได้ แจ้ง HR"
+              : "ตรวจสัญญาณอินเทอร์เน็ต แล้วเปิดหน้านี้ใหม่ ถ้ายังไม่ได้ แจ้ง HR")}
+        </p>
       </div>
       {onRetry && (
-        <Button variant="outline" size="sm" onClick={onRetry}>
+        <Button variant="outline" onClick={onRetry}>
           <RefreshCw className="size-4" />
           ลองใหม่
         </Button>

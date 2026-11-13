@@ -34,7 +34,7 @@ function fmtWorked(inIso: string | null | undefined, outIso: string | null | und
  * business logic, only a different presentation.
  */
 export function MobileCheckinCard() {
-  const { data, isLoading, refetch } = useToday();
+  const { data, isLoading, isError, refetch } = useToday();
   const [flowMode, setFlowMode] = useState<"in" | "out" | null>(null);
   const [now, setNow] = useState<Date | null>(null);
   const [gpsReady, setGpsReady] = useState(false);
@@ -73,7 +73,8 @@ export function MobileCheckinCard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasOut, isWfh, hasGeofence]);
 
-  const statusLabel = hasOut ? "ออกงานแล้ว" : hasIn ? "เข้างานแล้ว" : "พร้อมเข้างาน";
+  // Unknown when today could not load: never say "ready" for someone who may already be in.
+  const statusLabel = isError ? "ยังโหลดเวลาวันนี้ไม่ได้" : hasOut ? "ออกงานแล้ว" : hasIn ? "เข้างานแล้ว" : "พร้อมเข้างาน";
   const clockLabel = now
     ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Bangkok" }).format(now)
     : "--:--:--";
@@ -125,8 +126,16 @@ export function MobileCheckinCard() {
         <div className="relative mt-4 border-t border-dashed border-foreground/15 pt-4">
           {isLoading ? (
             <div className="h-13 w-full animate-pulse motion-reduce:animate-none rounded-2xl bg-card/60" />
+          ) : isError ? (
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl border border-destructive/40 bg-card text-base font-semibold text-destructive"
+            >
+              โหลดเวลาวันนี้ไม่สำเร็จ กดเพื่อลองใหม่
+            </button>
           ) : hasOut ? (
-            <div className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-success text-sm font-semibold text-white">
+            <div className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-success text-sm font-semibold text-success-foreground">
               <CheckCircle2 className="size-4.5" /> ลงเวลาครบแล้ววันนี้
             </div>
           ) : (
@@ -135,11 +144,11 @@ export function MobileCheckinCard() {
               onClick={() => setFlowMode(hasIn ? "out" : "in")}
               className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-gv-lime text-base font-semibold text-gv-deep-green shadow-sm active:scale-[0.99] active:brightness-95"
             >
-              <Camera className="size-5" /> {hasIn ? "เช็กเอาต์" : "เช็กอิน"}
+              <Camera className="size-5" /> {hasIn ? "ลงเวลาออกงาน" : "ลงเวลาเข้างาน"}
             </button>
           )}
-          {!hasOut && (
-            <p className="mt-2 flex items-center justify-center gap-1 text-center text-xs text-muted-foreground">
+          {!hasOut && !isError && (
+            <p className="mt-2 flex items-center justify-center gap-1 text-center text-sm text-muted-foreground">
               {isWfh ? (
                 "ทำงานจากที่บ้าน — ไม่ต้องถ่ายรูป/ตรวจตำแหน่ง"
               ) : (
