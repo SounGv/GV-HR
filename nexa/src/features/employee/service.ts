@@ -96,7 +96,8 @@ export async function listEmployees(companyId: string, query: EmployeeListQuery,
   const where: Prisma.EmployeeWhereInput = {
     companyId,
     deletedAt: null,
-    ...(scope ?? {}),
+    // The team limit goes inside AND: spreading it beside the search OR let the search's OR replace it.
+    ...(scope ? { AND: [scope] } : {}),
     ...(query.status ? { status: query.status } : {}),
     ...(query.departmentId ? { departmentId: { in: query.departmentId } } : {}),
     ...(query.employmentType ? { employmentType: query.employmentType } : {}),

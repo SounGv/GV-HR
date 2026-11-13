@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const session = await requirePermission("campaign:manage");
     const { id, participantId } = await params;
-    return ok(await getParticipantResult(session.companyId, id, participantId));
+    return ok(await getParticipantResult(session.companyId, id, participantId, session));
   } catch (err) {
     return handleApiError(err);
   }

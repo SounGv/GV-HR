@@ -277,10 +277,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const actions = await getActionCenter(user!.companyId, user!.employee?.id ?? null, user!.roles, user!.permissions);
   const canSeePay = can(user!.permissions, "payroll:create") || can(user!.permissions, "payroll:approve");
   const mine = user!.employee ? await getMySnapshot(user!.companyId, user!.employee.id, canSeePay) : null;
-  const attendanceTrend = await getAttendanceTrend(user!.companyId);
   const canSeeAttendance = can(user!.permissions, "attendance:approve") || can(user!.permissions, "attendance:manage");
+  // Company-wide numbers (who is late, which departments, headcount) are for HR,
+  // managers and finance, not for every employee (owner's decision, 2026-11-13).
+  const canSeeCompany = canSeeAttendance || can(user!.permissions, "report:read");
+  const attendanceTrend = canSeeCompany ? await getAttendanceTrend(user!.companyId) : [];
   // The old per-department watch list is only shown to people who do not get the new attendance section.
-  const departmentWatchlist = canSeeAttendance ? [] : await getDepartmentWatchlist(user!.companyId);
+  const departmentWatchlist = canSeeAttendance || !canSeeCompany ? [] : await getDepartmentWatchlist(user!.companyId);
 
   // Attendance overview (who is in, late, absent, on leave) — only for people
   // who can approve or manage attendance, and the server narrows it to their own
@@ -297,13 +300,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   };
   // People cards: each is read only for people with the matching permission, and
   // the data layer narrows them to the caller's own team unless company-wide.
-  const canSeeLeaves = can(user!.permissions, "leave:approve");
+  // approve = HR company-wide, manage = a manager's own team (the rows narrow to the team); same check as the sidebar badge.
+  const canSeeLeaves = can(user!.permissions, "leave:approve") || can(user!.permissions, "leave:manage");
   const canSeeProbation = can(user!.permissions, "employee:update") || can(user!.permissions, "leave:approve");
   const canSeeEvaluation =
     can(user!.permissions, "campaign:manage") ||
     can(user!.permissions, "campaign:update") ||
     can(user!.permissions, "campaign:approve");
-  const canSeeOvertime = can(user!.permissions, "overtime:approve");
+  const canSeeOvertime = can(user!.permissions, "overtime:approve") || can(user!.permissions, "overtime:manage");
   const canSeeMeetings = can(user!.permissions, "meeting:read");
   const showFollow = canSeeAttendance || canSeeOvertime || canSeeMeetings || canSeeLeaves || canSeeProbation || canSeeEvaluation;
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
@@ -368,6 +372,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* AI: one-line summary plus an ask box that opens the AI page with the question. */}
+      {canSeeCompany && (
       <section
         aria-label="สรุปวันนี้จาก AI"
         className="grid items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-card p-3 pr-3.5 shadow-[var(--card-shadow)] lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
@@ -419,6 +424,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </button>
         </form>
       </section>
+      )}
 
       {attendanceToday && <LiveHero />}
 
@@ -544,7 +550,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       )}
 
       {/* KPI cards (today) — for people without the attendance view; the strip above covers the rest. */}
-      {!attendanceToday && (
+      {canSeeCompany && !attendanceToday && (
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Kpi
           label="พนักงานทั้งหมด"
@@ -622,6 +628,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {/* Attendance rate line (dashboard-fix-3) — % of headcount per business
           day, plus a rolled-up summary alongside it. */}
+      {canSeeCompany && (
       <Card>
         <CardHeader>
           <CardTitle>การเข้างาน 14 วันทำการล่าสุด</CardTitle>
@@ -655,9 +662,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Department watch list for people without the live attendance view. */}
-        {!attendanceToday && (
+        {canSeeCompany && !attendanceToday && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -696,7 +704,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
 
       {/* ทีมงาน: who works here, by employment type and by department. */}
-      <TeamOverview headcount={s.headcount} employmentTypes={employmentTypes} departments={departmentRanked} />
+      {canSeeCompany && (
+        <TeamOverview headcount={s.headcount} employmentTypes={employmentTypes} departments={departmentRanked} />
+      )}
       </div>
       </LiveTodayProvider>
     </>

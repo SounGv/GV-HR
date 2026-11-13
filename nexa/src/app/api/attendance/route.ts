@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
     if (query.scope !== "me" && !canAny(session.perms, ["attendance:approve", "attendance:manage"])) {
       throw Forbidden("ไม่มีสิทธิ์ดูข้อมูลของผู้อื่น");
     }
+    // Company-wide is HR only: "attendance:manage" is a manager's own team (see config/permissions.ts).
+    if (query.scope === "all" && !canAny(session.perms, ["attendance:approve"])) {
+      throw Forbidden("ดูได้เฉพาะข้อมูลของทีมคุณ");
+    }
 
     const records = await listAttendance(session.companyId, session, query);
     return ok(records);

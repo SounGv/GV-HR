@@ -21,6 +21,7 @@ import {
   type RosterPerson,
 } from "./rules";
 import type { RoundUpdateInput } from "./schema";
+import { participantScope, viewableEmployeeIds } from "./viewer-scope";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -369,12 +370,13 @@ export async function listPublishedForms(companyId: string) {
 }
 
 /** Progress of a round that is open or closed: submitted / in progress / not started, overall and per rater type. */
-export async function getRoundProgress(companyId: string, id: string) {
+export async function getRoundProgress(companyId: string, id: string, session: AccessClaims) {
   const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
+  const scope = participantScope(await viewableEmployeeIds(companyId, session));
   const groups = await prisma.appraisalAssignment.groupBy({
     by: ["raterType", "status"],
-    where: { participant: { roundId: id } },
+    where: { participant: { roundId: id, ...scope } },
     _count: { _all: true },
   });
   const sum = (pred: (g: (typeof groups)[number]) => boolean) =>
@@ -655,11 +657,12 @@ export async function deleteRound(companyId: string, session: AccessClaims, id: 
 /* ───────────────────────────── Tracking and results ───────────────────────────── */
 
 /** "ตรวจเช็คการประเมิน": every person in the round with the status of each of their raters. */
-export async function getRoundMatrix(companyId: string, id: string) {
+export async function getRoundMatrix(companyId: string, id: string, session: AccessClaims) {
   const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
+  const scope = participantScope(await viewableEmployeeIds(companyId, session));
   const rows = await prisma.appraisalParticipant.findMany({
-    where: { roundId: id },
+    where: { roundId: id, ...scope },
     select: {
       id: true,
       departmentName: true,
@@ -709,9 +712,15 @@ export interface ParticipantResult {
  * Answers for one person, grouped by rater type. Only submitted answers are summarised, and nobody's
  * name is attached to what they wrote. Averages are plain means: no weighting, grade or overall score yet.
  */
-export async function getParticipantResult(companyId: string, roundId: string, participantId: string): Promise<ParticipantResult> {
+export async function getParticipantResult(
+  companyId: string,
+  roundId: string,
+  participantId: string,
+  session: AccessClaims,
+): Promise<ParticipantResult> {
+  const viewable = await viewableEmployeeIds(companyId, session);
   const p = await prisma.appraisalParticipant.findFirst({
-    where: { id: participantId, roundId, round: { companyId, deletedAt: null } },
+    where: { id: participantId, roundId, round: { companyId, deletedAt: null }, ...participantScope(viewable) },
     select: {
       id: true,
       departmentName: true,
@@ -761,11 +770,12 @@ export async function getParticipantResult(companyId: string, roundId: string, p
 }
 
 /** Submitted / total assignments per department of the people being evaluated, for the overview bars. */
-export async function getRoundDepartmentProgress(companyId: string, id: string) {
+export async function getRoundDepartmentProgress(companyId: string, id: string, session: AccessClaims) {
   const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
+  const scope = participantScope(await viewableEmployeeIds(companyId, session));
   const rows = await prisma.appraisalAssignment.findMany({
-    where: { participant: { roundId: id } },
+    where: { participant: { roundId: id, ...scope } },
     select: { status: true, participant: { select: { departmentName: true } } },
   });
   const byDept = new Map<string, { submitted: number; total: number }>();

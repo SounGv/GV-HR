@@ -18,6 +18,10 @@ export async function GET(req: NextRequest) {
     if (query.scope !== "me" && !canAny(session.perms, ["leave:approve", "leave:manage"])) {
       throw Forbidden("ไม่มีสิทธิ์ดูคำขอของผู้อื่น");
     }
+    // Company-wide is HR only: "leave:manage" is a manager's own team (see config/permissions.ts).
+    if (query.scope === "all" && !canAny(session.perms, ["leave:approve"])) {
+      throw Forbidden("ดูได้เฉพาะคำขอของทีมคุณ");
+    }
     const records = await listLeave(session.companyId, session, query);
     return ok(records);
   } catch (err) {

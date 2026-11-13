@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { participantScope, viewableEmployeeIds } from "./viewer-scope";
 import { createNotification } from "@/features/notification/service";
 import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions, type Answer, type SnapQuestion } from "./answers";
 import { pickForm, type RoundSnapshot } from "./form-snapshot";
@@ -225,11 +226,12 @@ export async function publishResults(companyId: string, session: AccessClaims, r
 
 /* ───────────────────────── HR table ───────────────────────── */
 
-export async function getRoundResults(companyId: string, roundId: string) {
+export async function getRoundResults(companyId: string, roundId: string, session: AccessClaims) {
   const round = await prisma.appraisalRound.findFirst({ where: { id: roundId, companyId, deletedAt: null }, select: { id: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
+  const scope = participantScope(await viewableEmployeeIds(companyId, session));
   const rows = await prisma.appraisalParticipant.findMany({
-    where: { roundId },
+    where: { roundId, ...scope },
     select: {
       id: true,
       departmentName: true,
