@@ -134,9 +134,11 @@ function MyRequests() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">คำขอของฉัน</h2>
-        <Button render={<Link href="/workflows/requests/new" />}>
-          <Send className="size-4" /> ส่งคำขอ
-        </Button>
+        {hasEmployee && (
+          <Button render={<Link href="/workflows/requests/new" />}>
+            <Send className="size-4" /> ส่งคำขอ
+          </Button>
+        )}
       </div>
       {!hasEmployee ? (
         <NoEmployeeState />

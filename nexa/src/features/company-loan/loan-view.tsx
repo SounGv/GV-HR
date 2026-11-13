@@ -74,9 +74,11 @@ function MyLoans() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติการกู้เงินบริษัท</h2>
-        <Button render={<Link href="/benefits/loans/new" />}>
-          <Plus className="size-4" /> ยื่นกู้เงินบริษัท
-        </Button>
+        {hasEmployee && (
+          <Button render={<Link href="/benefits/loans/new" />}>
+            <Plus className="size-4" /> ยื่นกู้เงินบริษัท
+          </Button>
+        )}
       </div>
 
       {!hasEmployee ? (

@@ -80,9 +80,11 @@ function MyRequests() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติคำขอแก้ไขเวลา</h2>
-        <Button render={<Link href="/attendance/corrections/new" />}>
-          <Plus className="size-4" /> แก้ไขเวลา
-        </Button>
+        {hasEmployee && (
+          <Button render={<Link href="/attendance/corrections/new" />}>
+            <Plus className="size-4" /> แก้ไขเวลา
+          </Button>
+        )}
       </div>
 
       {!hasEmployee ? (

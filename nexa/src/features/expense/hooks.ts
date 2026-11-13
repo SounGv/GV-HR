@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/auth-context";
 import {
   fetchExpenses,
   createExpense,
@@ -36,7 +37,10 @@ function useInvalidate() {
 
 export function useCreateExpense() {
   const invalidate = useInvalidate();
-  return useMutation({ mutationFn: (i: ExpenseFormValues) => createExpense(i), onSuccess: invalidate });
+  return useMutation({
+    mutationFn: (i: ExpenseFormValues) => createExpense(i),
+    onSuccess: invalidate,
+  });
 }
 
 export function useDecideExpense() {
@@ -64,9 +68,12 @@ export function useSubmitExpense() {
 }
 
 export function useMedicalSummary(year?: number) {
+  // Unlinked accounts (admin) have no medical allowance of their own: the route answers NO_EMPLOYEE.
+  const enabled = !!useAuth().user.employee;
   return useQuery({
     queryKey: expenseKeys.medicalSummary(year),
     queryFn: () => fetchMedicalSummary(year),
+    enabled,
   });
 }
 

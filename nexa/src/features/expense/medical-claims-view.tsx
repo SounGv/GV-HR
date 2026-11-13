@@ -100,9 +100,11 @@ function MyClaims() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติการเบิกค่ารักษาพยาบาล</h2>
-        <Button render={<Link href="/benefits/medical/new" />}>
-          <Plus className="size-4" /> ยื่นเบิกค่ารักษา
-        </Button>
+        {hasEmployee && (
+          <Button render={<Link href="/benefits/medical/new" />}>
+            <Plus className="size-4" /> ยื่นเบิกค่ารักษา
+          </Button>
+        )}
       </div>
 
       {!hasEmployee ? (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/auth-context";
 import {
   fetchLoans,
   fetchLoan,
@@ -29,7 +30,9 @@ export function useLoan(id: string) {
 }
 
 export function useLoanEligibility() {
-  return useQuery({ queryKey: loanKeys.eligibility, queryFn: fetchLoanEligibility });
+  // Unlinked accounts (admin) have no loan eligibility of their own: the route answers NO_EMPLOYEE.
+  const enabled = !!useAuth().user.employee;
+  return useQuery({ queryKey: loanKeys.eligibility, queryFn: fetchLoanEligibility, enabled });
 }
 
 function useInvalidate() {

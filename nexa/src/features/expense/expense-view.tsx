@@ -80,9 +80,11 @@ function MyClaims() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติการเบิกจ่าย</h2>
-        <Button render={<Link href="/expenses/new" />}>
-          <Plus className="size-4" /> ขอเบิกจ่าย
-        </Button>
+        {hasEmployee && (
+          <Button render={<Link href="/expenses/new" />}>
+            <Plus className="size-4" /> ขอเบิกจ่าย
+          </Button>
+        )}
       </div>
 
       {!hasEmployee ? (
