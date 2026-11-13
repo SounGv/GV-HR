@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { dataUrlFileOrHttpUrlSchema } from "@/lib/image-schema";
 import { HOURLY_LEAVE_TYPES, computeLeaveHours } from "./days";
+import { HOURS_PER_LEAVE_DAY } from "./hour-pool";
 
 export const LEAVE_TYPES = ["ANNUAL", "SICK", "PERSONAL", "UNPAID", "OTHER", "HOLIDAY_SWAP"] as const;
 export const LEAVE_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
@@ -69,6 +70,10 @@ export const leaveCreateSchema = z
   .refine(
     (d) => d.unit !== "HOUR" || !d.startTime || !d.endTime || d.endTime <= d.startTime || computeLeaveHours(d.startTime, d.endTime) >= 1,
     { message: "ลาเป็นชั่วโมงได้อย่างน้อย 1 ชั่วโมง", path: ["endTime"] },
+  )
+  .refine(
+    (d) => d.unit !== "HOUR" || !d.startTime || !d.endTime || d.endTime <= d.startTime || computeLeaveHours(d.startTime, d.endTime) <= HOURS_PER_LEAVE_DAY,
+    { message: `ลาเป็นชั่วโมงได้ไม่เกิน ${HOURS_PER_LEAVE_DAY} ชั่วโมง ถ้าลาทั้งวันให้เลือกเต็มวัน`, path: ["endTime"] },
   );
 export type LeaveCreateInput = z.infer<typeof leaveCreateSchema>;
 

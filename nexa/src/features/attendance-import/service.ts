@@ -77,6 +77,7 @@ export async function importAttendance(
 
   let created = 0;
   let otCreated = 0;
+  let otSkipped = 0;
   for (const r of parsedRows) {
     const employee = empByCode.get(r.employeeCode);
     if (!employee) {
@@ -142,7 +143,15 @@ export async function importAttendance(
     if (r.clockOut && workDate.getUTCDay() !== 6) {
       const [outH, outM] = r.clockOut.split(":").map(Number);
       const excessMinutes = outH * 60 + outM - shift.endMin;
-      if (excessMinutes >= MIN_OT_MINUTES) {
+      // Skip when the person already asked for OT that day, or it would be paid twice.
+      const existingOt =
+        excessMinutes >= MIN_OT_MINUTES
+          ? await prisma.overtimeRequest.count({
+              where: { companyId, employeeId: employee.id, date: workDate, deletedAt: null, status: { in: ["PENDING", "APPROVED"] } },
+            })
+          : 0;
+      if (existingOt > 0) otSkipped++;
+      if (excessMinutes >= MIN_OT_MINUTES && existingOt === 0) {
         const hours = Math.round((excessMinutes / 60) * 100) / 100;
         const estimated = estimateAmount(
           {
@@ -182,6 +191,9 @@ export async function importAttendance(
 
   if (otCreated > 0) {
     warnings.push(`สร้างคำขอ OT อัตโนมัติ ${otCreated} รายการ จากเวลาที่ลงออกเกินกะงาน (อนุมัติให้อัตโนมัติแล้ว)`);
+  }
+  if (otSkipped > 0) {
+    warnings.push(`ไม่ได้สร้าง OT อัตโนมัติ ${otSkipped} รายการ เพราะพนักงานขอ OT วันนั้นไว้แล้ว`);
   }
 
   await writeAudit({

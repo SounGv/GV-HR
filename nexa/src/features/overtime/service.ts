@@ -16,6 +16,7 @@ import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
 import { displayName } from "@/lib/format";
+import { timeRangesOverlap } from "@/features/leave/days";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -79,6 +80,21 @@ export async function createOvertime(
     if (overlap) throw BadRequest(overlap);
   }
   const dayOffNote = isDayOff ? " (ทำงานวันหยุด 2 เท่า)" : "";
+
+  // The same hours may not be asked for twice: both would be approved and paid.
+  // A range that runs past midnight is compared as clashing with anything that day.
+  const sameDay = await prisma.overtimeRequest.findMany({
+    where: { companyId, employeeId, date: input.date, deletedAt: null, status: { in: ["PENDING", "APPROVED"] } },
+    select: { startTime: true, endTime: true },
+  });
+  const wraps = (a: string, b: string) => b <= a;
+  const clash = sameDay.find(
+    (o) =>
+      wraps(o.startTime, o.endTime) ||
+      wraps(input.startTime, input.endTime) ||
+      timeRangesOverlap(input.startTime, input.endTime, o.startTime, o.endTime),
+  );
+  if (clash) throw BadRequest(`วันนั้นมีคำขอ OT ${clash.startTime}-${clash.endTime} น. อยู่แล้ว เลือกช่วงเวลาที่ไม่ซ้ำกัน`);
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },

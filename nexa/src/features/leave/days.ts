@@ -55,6 +55,29 @@ function parseTimeToMinutes(time: string): number {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
+/**
+ * Leave days of a request that fall inside a payroll period, Sundays skipped
+ * the same way computeLeaveDays counts them.
+ *
+ * @param start First day of the request.
+ * @param end Last day of the request.
+ * @param from First day of the period.
+ * @param toExclusive The day after the period.
+ * @returns Working days (Mon-Sat) of the request inside the period.
+ */
+export function leaveDaysWithin(start: Date, end: Date, from: Date, toExclusive: Date): number {
+  const clipStart = start < from ? from : start;
+  const lastInPeriod = new Date(toExclusive.getTime() - MS_PER_DAY);
+  const clipEnd = end > lastInPeriod ? lastInPeriod : end;
+  if (clipEnd < clipStart) return 0;
+  return computeLeaveDays(clipStart, clipEnd, false);
+}
+
+/** Whether two same-day "HH:mm" ranges share any minute (touching ends do not count). */
+export function timeRangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
+  return parseTimeToMinutes(aStart) < parseTimeToMinutes(bEnd) && parseTimeToMinutes(bStart) < parseTimeToMinutes(aEnd);
+}
+
 /** Hours between two "HH:mm" wall-clock times on the same day (e.g. "09:00"→"11:30" = 2.5). */
 export function computeLeaveHours(startTime: string, endTime: string): number {
   const minutes = parseTimeToMinutes(endTime) - parseTimeToMinutes(startTime);

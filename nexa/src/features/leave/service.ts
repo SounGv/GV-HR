@@ -12,7 +12,7 @@ import {
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { canTakeHourly, computeLeaveDays, computeLeaveHours, deductsBalance, isSunday, PAID_LEAVE_TYPES } from "./days";
+import { canTakeHourly, computeLeaveDays, computeLeaveHours, deductsBalance, isSunday, PAID_LEAVE_TYPES, timeRangesOverlap } from "./days";
 import { HALF_DAY_PERIOD_LABEL } from "./labels";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
@@ -221,6 +221,15 @@ export async function createLeave(
   });
   if (overlap) {
     throw BadRequest("คุณมีคำขอลาในช่วงวันที่นี้อยู่แล้ว กรุณาตรวจสอบหรือยกเลิกคำขอเดิมก่อนยื่นใหม่");
+  }
+  // Two hourly requests on the same day may not cover the same time, or the hours would be paid or deducted twice.
+  if (isHourly) {
+    const sameDay = await prisma.leaveRequest.findMany({
+      where: { companyId, employeeId, deletedAt: null, status: { in: ["PENDING", "APPROVED"] }, unit: "HOUR", startDate: input.startDate },
+      select: { startTime: true, endTime: true },
+    });
+    const clash = sameDay.find((r) => r.startTime && r.endTime && timeRangesOverlap(input.startTime!, input.endTime!, r.startTime, r.endTime));
+    if (clash) throw BadRequest(`วันนั้นมีคำขอลา ${clash.startTime}-${clash.endTime} น. อยู่แล้ว เลือกช่วงเวลาที่ไม่ซ้ำกัน`);
   }
 
   const requester = await prisma.employee.findFirst({

@@ -243,3 +243,39 @@ export function unpaidHourRate(emp: { compensationType: string; baseSalary: unkn
   if (emp.compensationType === "HOURLY") return Number(emp.hourlyRate ?? 0);
   return Number(emp.baseSalary ?? 0) / 30 / 8;
 }
+
+/** One approved hourly unpaid-leave request and that day's scans, for unpaidHoursCharged. */
+export interface UnpaidHourCase {
+  /** MONTHLY / DAILY / HOURLY. */
+  pay: string;
+  hours: number;
+  /** Leave day "YYYY-MM-DD" and Bangkok wall-clock "HH:mm" times. */
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  clockInAt: Date | null;
+  clockOutAt: Date | null;
+}
+
+const BANGKOK_OFFSET_MS = 7 * 3_600_000;
+const atBangkok = (date: string, time: string) => new Date(`${date}T${time}:00Z`).getTime() - BANGKOK_OFFSET_MS;
+
+/**
+ * How many hours of an approved hourly unpaid leave come off the pay.
+ *
+ * MONTHLY: all of them (the salary does not depend on scans).
+ * DAILY: all of them on a day with a clock-in (that day is paid in full);
+ * none on a day with no clock-in (the day is already unpaid).
+ * HOURLY: only the part of the leave that falls inside the clocked span,
+ * because pay already counts clocked hours only; leaving at 15:00 for a
+ * 15:00-17:00 leave means those hours were never paid.
+ */
+export function unpaidHoursCharged(c: UnpaidHourCase): number {
+  if (c.pay === "DAILY") return c.clockInAt ? c.hours : 0;
+  if (c.pay !== "HOURLY") return c.hours;
+  if (!c.clockInAt || !c.clockOutAt || !c.startTime || !c.endTime) return 0;
+  const start = Math.max(atBangkok(c.date, c.startTime), c.clockInAt.getTime());
+  const end = Math.min(atBangkok(c.date, c.endTime), c.clockOutAt.getTime());
+  return end > start ? Math.round(((end - start) / 3_600_000) * 100) / 100 : 0;
+}
+
