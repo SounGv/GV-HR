@@ -34,7 +34,7 @@ export async function MyEvaluationTasks({ companyId, session }: { companyId: str
 
   if (rounds.length === 0) {
     return (
-      <Card className="flex-row items-center gap-3 p-4">
+      <Card className="flex-1 flex-row items-center gap-3 p-4">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
           <ClipboardCheck className="size-5" aria-hidden="true" />
         </span>
@@ -44,7 +44,7 @@ export async function MyEvaluationTasks({ companyId, session }: { companyId: str
   }
 
   return (
-    <Card className="gap-0 py-1">
+    <Card className="flex-1 gap-0 py-1">
       {rounds.slice(0, 3).map((r) => {
         const due = dueText(r.endIso, todayIso);
         return (

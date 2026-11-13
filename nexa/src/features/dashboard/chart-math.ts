@@ -13,10 +13,10 @@ export interface TrendInput {
 
 export interface TrendDay {
   label: string;
-  /** % of people who came to work: present / (present + leave + absent), 0 when nobody is counted. */
-  rate: number;
+  /** People who clocked in that day. */
+  present: number;
   late: number;
-  /** Clearly below the period's average attendance: gets the red dot and its value. */
+  /** Clearly fewer people at work than the period's usual: gets the red dot and its value. */
   low: boolean;
   /** Clearly more late people than usual: gets the solid amber bar and its count. */
   lateHigh: boolean;
@@ -24,37 +24,46 @@ export interface TrendDay {
 
 export interface TrendStats {
   days: TrendDay[];
-  avgRate: number;
+  avgPresent: number;
   avgLate: number;
-  /** Index of the lowest-rate day among the low ones, or -1 when no day is low. */
+  /** Index of the day with the fewest people among the low ones, or -1 when no day is low. */
   worst: number;
 }
 
-/** How far below the average rate (percentage points) a day must be to count as "low". */
-export const LOW_RATE_GAP = 2.5;
+/** A day is "low" when it has this share fewer people than the average, and at least LOW_MIN_GAP people fewer. */
+export const LOW_SHARE = 0.1;
+export const LOW_MIN_GAP = 2;
 /** How many people above the average late count a day must be to count as "late high". */
 export const HIGH_LATE_GAP = 2;
 
 /**
  * Marks only the days that clearly differ from the period's own average, so a
- * quiet chart stays quiet. The thresholds are a design default, not a company
- * policy: swap them for HR's target once one is agreed.
+ * quiet chart stays quiet. Counts people who clocked in rather than a % of
+ * headcount: many staff never use the clock-in app, so a % of everyone reads
+ * as half the company missing. The thresholds are a design default, not a
+ * company policy: swap them for HR's target once one is agreed.
  */
 export function trendStats(points: TrendInput[]): TrendStats {
-  const days: TrendDay[] = points.map((p) => {
-    const counted = p.present + p.leave + p.absent;
-    return { label: p.label, rate: counted > 0 ? (p.present / counted) * 100 : 0, late: p.late, low: false, lateHigh: false };
-  });
+  const days: TrendDay[] = points.map((p) => ({ label: p.label, present: p.present, late: p.late, low: false, lateHigh: false }));
   const n = days.length;
-  const avgRate = n ? days.reduce((s, d) => s + d.rate, 0) / n : 0;
+  const avgPresent = n ? days.reduce((s, d) => s + d.present, 0) / n : 0;
   const avgLate = n ? days.reduce((s, d) => s + d.late, 0) / n : 0;
+  const lowGap = Math.max(LOW_MIN_GAP, avgPresent * LOW_SHARE);
   let worst = -1;
   days.forEach((d, i) => {
-    d.low = n > 1 && d.rate < avgRate - LOW_RATE_GAP;
+    d.low = n > 1 && d.present < avgPresent - lowGap;
     d.lateHigh = n > 1 && d.late > avgLate + HIGH_LATE_GAP;
-    if (d.low && (worst < 0 || d.rate < days[worst].rate)) worst = i;
+    if (d.low && (worst < 0 || d.present < days[worst].present)) worst = i;
   });
-  return { days, avgRate, avgLate, worst };
+  return { days, avgPresent, avgLate, worst };
+}
+
+/** A round axis top above `max`: 5, 10, 20, 25, 50 … steps so the ticks read cleanly. */
+export function niceCeiling(max: number): number {
+  if (max <= 5) return 5;
+  const pow = 10 ** Math.floor(Math.log10(max));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * pow >= max) return m * pow;
+  return 10 * pow;
 }
 
 /**

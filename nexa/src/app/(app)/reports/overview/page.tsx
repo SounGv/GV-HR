@@ -404,7 +404,7 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
         <CardHeader>
           <CardTitle>การเข้างาน 14 วันทำการล่าสุด</CardTitle>
           <p className="text-[13px] text-muted-foreground">
-            เส้นคือ % คนมาทำงาน แท่งคือจำนวนคนสาย สีขึ้นเฉพาะวันที่ต่างจากค่าเฉลี่ยชัดเจน ชี้ที่กราฟเพื่อดูตัวเลขแต่ละวัน
+            เส้นคือจำนวนคนที่ลงเวลาเข้างาน แท่งคือคนสาย สีขึ้นเฉพาะวันที่ต่างจากปกติชัดเจน ชี้ที่กราฟเพื่อดูตัวเลขแต่ละวัน
           </p>
         </CardHeader>
         <CardContent>
@@ -414,10 +414,10 @@ export default async function CompanyOverviewPage({ searchParams }: { searchPara
               <AttendanceTrendChart data={trendDone} />
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
-                  <i className="inline-block h-[3px] w-4 rounded-full bg-[var(--series-highlight)]" aria-hidden="true" />% มาทำงาน (แกนซ้าย)
+                  <i className="inline-block h-[3px] w-4 rounded-full bg-[var(--series-highlight)]" aria-hidden="true" />คนลงเวลาเข้างาน (แกนซ้าย)
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <i className="inline-block size-2.5 rounded-full bg-[var(--status-absent-dot)]" aria-hidden="true" />ต่ำกว่าเฉลี่ยชัดเจน
+                  <i className="inline-block size-2.5 rounded-full bg-[var(--status-absent-dot)]" aria-hidden="true" />คนน้อยกว่าปกติชัดเจน
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <i className="inline-block size-2.5 rounded-[3px] bg-[var(--chart-muted-bar)]" aria-hidden="true" />คนสาย (แกนขวา)

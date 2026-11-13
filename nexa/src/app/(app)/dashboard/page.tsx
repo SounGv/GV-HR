@@ -133,7 +133,6 @@ function greeting(): string {
   return "สวัสดีตอนเย็น";
 }
 
-
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ dept?: string }> }) {
@@ -184,6 +183,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const fmtClock = (iso: string | null) =>
     iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
 
+  const workCols = 1 + (user!.employee ? 1 : 0) + (showFollow ? 1 : 0);
   // Links at the end of the status line, each only for people who can open the page behind it.
   const statusLinks = (
     <>
@@ -225,14 +225,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
       </div>
 
-      {/* Row 1: the work waiting for this person, then today's status in one line (approved mock home-by-role-mock.html). */}
-      <div className="grid items-start gap-[22px] lg:grid-cols-2 xl:grid-cols-3">
-        <section aria-label="รอคุณอนุมัติ" className="gv-rise space-y-3" style={{ "--i": 1 } as React.CSSProperties}>
+
+      {/* Row 1: the work waiting for this person; columns follow how many boxes this person gets, and boxes share one height. */}
+      <div className={cn("grid items-stretch gap-[22px]", workCols === 2 && "lg:grid-cols-2", workCols === 3 && "lg:grid-cols-2 xl:grid-cols-3")}>
+        <section aria-label="รอคุณอนุมัติ" className="gv-rise flex flex-col gap-3" style={{ "--i": 1 } as React.CSSProperties}>
           <SectionHeading title="รอคุณอนุมัติ" />
           <ActionCenter data={actions} />
         </section>
         {user!.employee && (
-          <section aria-label="ประเมินที่ต้องทำ" className="gv-rise space-y-3" style={{ "--i": 2 } as React.CSSProperties}>
+          <section aria-label="ประเมินที่ต้องทำ" className="gv-rise flex flex-col gap-3" style={{ "--i": 2 } as React.CSSProperties}>
             <SectionHeading title="ประเมินที่ต้องทำ" />
             <Suspense fallback={<Card className="p-4 text-sm text-muted-foreground">กำลังโหลดงานประเมิน…</Card>}>
               <MyEvaluationTasks companyId={user!.companyId} session={session} />
@@ -240,10 +241,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </section>
         )}
         {showFollow && (
-          <section id="follow-up" aria-label="ต้องตามวันนี้" className="gv-rise scroll-mt-24 space-y-3" style={{ "--i": 3 } as React.CSSProperties}>
+          <section id="follow-up" aria-label="ต้องตามวันนี้" className="gv-rise flex scroll-mt-24 flex-col gap-3" style={{ "--i": 3 } as React.CSSProperties}>
             <SectionHeading title="ต้องตามวันนี้" />
             {/* Each row loads on its own; its order value keeps the most urgent on top whatever arrives first. */}
-            <Card className="@container gap-0 py-0 [&>*]:-mt-px">
+            <Card className="@container flex-1 gap-0 py-0 [&>*]:-mt-px">
               {attendanceToday && <LiveFollowRows />}
               {canSeeAttendance && (
                 <Suspense fallback={<FollowRowLoading order={3} />}>
@@ -280,7 +281,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
       </div>
 
-      {/* Today in one line; the detail and the charts are one click away. Managers' numbers are their own team. */}
+      {/* Today in one line with its bar, under the work (approved mock home-by-role-mock.html). */}
       {canSeeCompany &&
         (attendanceToday ? (
           <LiveTodayStatusLine links={statusLinks} />
