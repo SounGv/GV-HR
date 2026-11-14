@@ -48,7 +48,7 @@ function Frame({
   tag: string;
   unit: string;
   order: number;
-  people?: string[];
+  people?: (string | { name: string; avatarUrl?: string | null })[];
 }) {
   return (
     <FollowRow icon={icon} title={title} sub={hint} count={count} unit={unit} tone={tone} tag={tag} order={order} link={link} people={people}>
@@ -125,7 +125,7 @@ export function MissedScanOutCard({ data }: { data: MissedScans }) {
       icon={LogOut}
       title="ลืมสแกน"
       hint={`${data.days} วันล่าสุด · ไม่นับวันนี้ · ชั่วโมงยังผิดจนกว่าจะแก้เวลา`}
-      people={all.map((r) => r.name)}
+      people={all.map((r) => ({ name: r.name, avatarUrl: r.avatarUrl }))}
       count={all.length}
       tone={data.outBeforeIn.length ? "bad" : "warn"}
       tag="รอแก้เวลา"
@@ -160,7 +160,7 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
       icon={Timer}
       title="OT วันนี้"
       hint={`รวม ${hours} ชม.`}
-      people={rows.map((r) => r.name)}
+      people={rows.map((r) => ({ name: r.name, avatarUrl: r.avatarUrl }))}
       count={rows.length}
       tone={waiting ? "warn" : "info"}
       tag={waiting ? `รออนุมัติ ${waiting}` : "อนุมัติครบแล้ว"}

@@ -3,6 +3,7 @@ import type { ComponentType, ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { avatarInitials } from "@/lib/format";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 import { cn } from "@/lib/utils";
 
 /**
@@ -86,8 +87,8 @@ export function FollowRow({
   link?: { href: string; label: string };
   /** Number to show instead of `count` (e.g. "46.5"); the count still decides the tone. */
   display?: string;
-  /** Names behind the count; the first three are shown on the card. */
-  people?: string[];
+  /** Names behind the count; the first three are shown on the card. An entry can carry the photo address (`avatarUrl`) to show the photo instead of the initials. */
+  people?: (string | { name: string; avatarUrl?: string | null })[];
   /** Show `children` right on the card instead of behind "ดูรายละเอียด" (short lists). */
   open?: boolean;
 }) {
@@ -96,7 +97,14 @@ export function FollowRow({
     return <span hidden data-follow-clear={title} />;
   }
 
-  const names = [...new Set(people)];
+  // One entry per name (the first photo wins); a plain string has no photo.
+  const faces = new Map<string, string | null>();
+  for (const p of people) {
+    const name = typeof p === "string" ? p : p.name;
+    const photo = typeof p === "string" ? null : (p.avatarUrl ?? null);
+    if (!faces.has(name) || (!faces.get(name) && photo)) faces.set(name, photo);
+  }
+  const names = [...faces.keys()];
   return (
     <article
       data-follow-card
@@ -132,9 +140,13 @@ export function FollowRow({
         <ul className="relative flex flex-col">
           {names.slice(0, 3).map((n) => (
             <li key={n} className="flex min-h-9 items-center gap-2 border-t border-dashed border-border text-[13.5px] first:border-t-0">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-[#f0f9f7] text-[11px] font-bold text-[#0b4f4a] dark:bg-[#13201e] dark:text-[#99f6e4]">
-                {avatarInitials(n)}
-              </span>
+              {faces.get(n) ? (
+                <PersonAvatar name={n} src={faces.get(n)} className="size-7 border border-border text-[11px] font-bold" />
+              ) : (
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-[#f0f9f7] text-[11px] font-bold text-[#0b4f4a] dark:bg-[#13201e] dark:text-[#99f6e4]">
+                  {avatarInitials(n)}
+                </span>
+              )}
               <span className="min-w-0 font-medium break-words">{n}</span>
             </li>
           ))}
