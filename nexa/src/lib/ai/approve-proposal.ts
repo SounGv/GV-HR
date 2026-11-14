@@ -51,9 +51,18 @@ async function inspectOne(
   ref: ApproveRef,
   running: Map<string, number>,
   since?: Date,
+  /** Whether each person is inside the scope, so two requests from one person look it up once. */
+  scopeCache: Map<string, boolean> = new Map(),
 ): Promise<Inspected> {
   const companyId = session.companyId;
   const short = ref.id.slice(0, 8);
+  const inScope = async (employeeId: string) => {
+    const known = scopeCache.get(employeeId);
+    if (known !== undefined) return known;
+    const found = (await prisma.employee.count({ where: { id: employeeId, companyId, deletedAt: null, AND: [scopeWhere ?? {}] } })) > 0;
+    scopeCache.set(employeeId, found);
+    return found;
+  };
   if (!hasKindPermission(session, ref.kind)) return { ok: false, label: `คำขอ ${short}`, reason: WHY.noPermission };
 
   if (ref.kind === "leave") {
@@ -74,8 +83,7 @@ async function inspectOne(
     if (r.status !== "PENDING") return { ok: false, label, reason: WHY.notPending };
     if (r.employeeId === session.employeeId) return { ok: false, label, reason: WHY.own };
     if (!mayDecide(session, "leave", r.employee.managerId)) return { ok: false, label, reason: WHY.notTeam };
-    const inScope = await prisma.employee.count({ where: { id: r.employeeId, companyId, deletedAt: null, AND: [scopeWhere ?? {}] } });
-    if (inScope === 0) return { ok: false, label, reason: WHY.outOfScope };
+    if (!(await inScope(r.employeeId))) return { ok: false, label, reason: WHY.outOfScope };
     if (!isPaidType(r.type)) return { ok: false, label, reason: WHY.notQuotaLeave };
 
     const year = r.startDate.getUTCFullYear();
@@ -115,8 +123,7 @@ async function inspectOne(
   if (r.status !== "PENDING") return { ok: false, label, reason: WHY.notPending };
   if (r.employeeId === session.employeeId) return { ok: false, label, reason: WHY.own };
   if (!mayDecide(session, "correction", r.employee.managerId)) return { ok: false, label, reason: WHY.notTeam };
-  const inScope = await prisma.employee.count({ where: { id: r.employeeId, companyId, deletedAt: null, AND: [scopeWhere ?? {}] } });
-  if (inScope === 0) return { ok: false, label, reason: WHY.outOfScope };
+  if (!(await inScope(r.employeeId))) return { ok: false, label, reason: WHY.outOfScope };
   return {
     ok: true,
     label,
@@ -137,9 +144,10 @@ export async function prepareApproveProposal(
   const rows: ApproveRow[] = [];
   const skipped: string[] = [];
   const running = new Map<string, number>();
+  const scopeCache = new Map<string, boolean>();
   // Sequential: the pooled connection serves one query at a time.
   for (const ref of input.items) {
-    const r = await inspectOne(session, scopeWhere, ref, running);
+    const r = await inspectOne(session, scopeWhere, ref, running, undefined, scopeCache);
     if (r.ok) rows.push(r.row);
     else skipped.push(`${r.label}: ${r.reason}`);
   }
@@ -174,11 +182,12 @@ export async function confirmApproveProposal(
   if (items.length === 0 || items.length > 20) return { status: "refused", message: "การ์ดไม่ถูกต้อง ให้น้องวีบอทเตรียมใหม่" };
 
   const running = new Map<string, number>();
+  const scopeCache = new Map<string, boolean>();
   const approved: ApproveRef[] = [];
   let alreadyBefore = 0;
   for (let i = 0; i < items.length; i++) {
     const ref = items[i];
-    const r = await inspectOne(session, scopeWhere, ref, running, since);
+    const r = await inspectOne(session, scopeWhere, ref, running, since, scopeCache);
     if (!r.ok) return { status: "refused", message: stoppedText(approved.length + alreadyBefore, items.length, i + 1, r.label, r.reason) };
     if (r.approvedByMe) {
       alreadyBefore++;

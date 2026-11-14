@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { can, canAny } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { displayName } from "@/lib/format";
+import { employeeNameFilter } from "@/lib/ai/scope";
 import { getBalancesFor } from "@/features/leave/service";
 import { listLeave } from "@/features/leave/service";
 import { listOvertime } from "@/features/overtime/service";
@@ -75,21 +76,12 @@ export const READ_TOOLS: NexaTool[] = [
   },
 ];
 
-const nameOrCode = (q: string): Prisma.EmployeeWhereInput => ({
-  OR: [
-    { employeeCode: { equals: q, mode: "insensitive" } },
-    { firstName: { contains: q, mode: "insensitive" } },
-    { lastName: { contains: q, mode: "insensitive" } },
-    { nickname: { equals: q, mode: "insensitive" } },
-  ],
-});
-
 const dayOf = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : null);
 
 /** Finds people by name, nickname or code inside the asker's scope (AND, not spread: scopeWhere may be an OR filter). */
 async function findInScope(companyId: string, q: string, scopeWhere?: Prisma.EmployeeWhereInput) {
   return prisma.employee.findMany({
-    where: { companyId, deletedAt: null, AND: [scopeWhere ?? {}, nameOrCode(q)] },
+    where: { companyId, deletedAt: null, AND: [scopeWhere ?? {}, employeeNameFilter(q)] },
     select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true },
     take: 6,
   });

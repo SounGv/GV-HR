@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { employeeNameFilter } from "@/lib/ai/scope";
 import { can } from "@/lib/auth/rbac";
 import { signAiProposalToken, verifyAiProposalToken, type AccessClaims } from "@/lib/auth/jwt";
 import { writeAudit } from "@/lib/audit";
@@ -57,14 +58,7 @@ async function resolveRecipients(companyId: string, target: string, scopeWhere?:
       // AND, not spread: scopeWhere may itself be an `OR` filter (TEAM scope).
       AND: [
         scopeWhere ?? {},
-        {
-          OR: [
-            { employeeCode: { equals: target, mode: "insensitive" } },
-            { firstName: { contains: target, mode: "insensitive" } },
-            { lastName: { contains: target, mode: "insensitive" } },
-            { nickname: { equals: target, mode: "insensitive" } },
-          ],
-        },
+        employeeNameFilter(target),
       ],
     },
     select,

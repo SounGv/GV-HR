@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { signAiProposalToken, type AccessClaims } from "@/lib/auth/jwt";
 import { writeAudit } from "@/lib/audit";
 import { displayName } from "@/lib/format";
+import { employeeNameFilter } from "@/lib/ai/scope";
 import { PROPOSAL_TOOL_RESULT, type ConfirmOutcome, type ProposalCard, type ProposalPayload } from "@/features/ai/proposal";
 import {
   buildQuotaCard,
@@ -47,14 +48,7 @@ export async function prepareQuotaProposal(
         status: "ACTIVE",
         AND: [
           scopeWhere ?? {},
-          {
-            OR: [
-              { employeeCode: { equals: c.employee, mode: "insensitive" } },
-              { firstName: { contains: c.employee, mode: "insensitive" } },
-              { lastName: { contains: c.employee, mode: "insensitive" } },
-              { nickname: { equals: c.employee, mode: "insensitive" } },
-            ],
-          },
+          employeeNameFilter(c.employee),
         ],
       },
       select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true },

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { signAiProposalToken, type AccessClaims } from "@/lib/auth/jwt";
 import { writeAudit } from "@/lib/audit";
 import { displayName } from "@/lib/format";
+import { employeeNameFilter } from "@/lib/ai/scope";
 import { PROPOSAL_TOOL_RESULT, type ConfirmOutcome, type ProposalCard, type ProposalPayload } from "@/features/ai/proposal";
 import { buildShiftCard, checkSize, countKinds, expandDates, planRows, MAX_PEOPLE, type ShiftRow } from "@/features/ai/shift-proposal";
 
@@ -26,14 +27,7 @@ async function resolvePeople(
         status: { in: [...SCHEDULABLE] },
         AND: [
           scopeWhere ?? {},
-          {
-            OR: [
-              { employeeCode: { equals: q, mode: "insensitive" } },
-              { firstName: { contains: q, mode: "insensitive" } },
-              { lastName: { contains: q, mode: "insensitive" } },
-              { nickname: { equals: q, mode: "insensitive" } },
-            ],
-          },
+          employeeNameFilter(q),
         ],
       },
       select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true },

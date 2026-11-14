@@ -8,6 +8,8 @@ import { resolveAiAccess, employeeScopeWhere } from "@/lib/ai/scope";
 import { confirmProposal } from "@/lib/ai/proposals";
 
 export const runtime = "nodejs";
+// Approving up to 20 requests one by one is many small writes.
+export const maxDuration = 60;
 
 const bodySchema = z.object({ token: z.string().min(20).max(60000) });
 

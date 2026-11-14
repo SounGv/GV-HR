@@ -4,6 +4,18 @@ import { can } from "@/lib/auth/rbac";
 import { isCompanyWideEmployeeViewer } from "@/features/employee/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 
+/** Matches an employee by code, first name, last name (part of it) or exact nickname, ignoring case. Put it inside `AND`, beside the scope filter. */
+export function employeeNameFilter(q: string): Prisma.EmployeeWhereInput {
+  return {
+    OR: [
+      { employeeCode: { equals: q, mode: "insensitive" } },
+      { firstName: { contains: q, mode: "insensitive" } },
+      { lastName: { contains: q, mode: "insensitive" } },
+      { nickname: { equals: q, mode: "insensitive" } },
+    ],
+  };
+}
+
 /**
  * Who may attach files in the chat: HR and Finance (company-wide viewers) and anyone granted `ai:attach`
  * (HR can tick it for the Manager role). Everyone else can still chat.

@@ -10,8 +10,11 @@ import type { AnswerType } from "@/features/evaluation-template/types";
 
 type Meta = { ip?: string; userAgent?: string };
 
-/** Keeps the signed card small enough to travel back to the confirm call. */
-const MAX_DRAFT_JSON = 40_000;
+/**
+ * Keeps the signed card small enough to travel back to the confirm call (its body limit is 60,000 characters of
+ * token, which is about 4/3 of the payload in bytes). Counted in bytes: Thai letters are 3 bytes each.
+ */
+const MAX_DRAFT_BYTES = 36_000;
 
 const defaults = (t: string) => defaultOptionsFor(t as AnswerType) as DraftOption[] | undefined;
 
@@ -51,7 +54,7 @@ export async function prepareTemplateProposal(session: AccessClaims, raw: Record
   if (!result.ok) return { card: null, message: result.message };
   const problem = schemaProblem(result.draft);
   if (problem) return { card: null, message: problem };
-  if (JSON.stringify(result.draft).length > MAX_DRAFT_JSON) return { card: null, message: "แบบประเมินยาวเกินไป ให้ย่อคำถามหรือลดจำนวนข้อ" };
+  if (Buffer.byteLength(JSON.stringify(result.draft), "utf8") > MAX_DRAFT_BYTES) return { card: null, message: "แบบประเมินยาวเกินไป ให้ย่อคำถามหรือลดจำนวนข้อ" };
 
   const payload: ProposalPayload = {
     kind: "draft_evaluation_template",

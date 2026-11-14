@@ -17,6 +17,8 @@ import { REPORT_LABELS, type ReportType } from "@/features/report/schema";
 import type { ProposalCard } from "@/features/ai/proposal";
 
 export const runtime = "nodejs";
+// Up to 6 model steps plus the tools between them; the default limit is too short for a long answer.
+export const maxDuration = 60;
 
 const bodySchema = z.object({
   // Files for the last message only; sizes are checked again in buildAttachmentBlocks.
@@ -33,7 +35,8 @@ const bodySchema = z.object({
 });
 
 const MAX_STEPS = 6;
-const MAX_TOKENS = 2048;
+// Room for a whole evaluation form or a spreadsheet inside one tool call (a cut-off call is lost, not half-run).
+const MAX_TOKENS = 8192;
 
 /** Activity surfaced to the UI so the user sees how the AI grounded its answer. */
 type Step = { tool: string; detail: string; report?: { type: string; period?: string } };
@@ -98,6 +101,9 @@ export async function POST(request: NextRequest) {
     if (attachments && attachments.length > 0) {
       const built = buildAttachmentBlocks(attachments);
       if (!built.ok) throw BadRequest(built.message);
+      // Files are sent again at every step of the tool loop: cache them after the first.
+      const lastFileBlock = built.blocks[built.blocks.length - 1];
+      if (lastFileBlock) Object.assign(lastFileBlock, { cache_control: { type: "ephemeral" } });
       const last = messages[messages.length - 1];
       if (last?.role === "user" && typeof last.content === "string") {
         messages[messages.length - 1] = { role: "user", content: [...built.blocks, { type: "text", text: last.content }] };
@@ -113,10 +119,24 @@ export async function POST(request: NextRequest) {
         const response = await anthropic.messages.create({
           model: AI_MODEL,
           max_tokens: MAX_TOKENS,
-          system,
+          // The cache breakpoint covers the tool list and this prompt, which every step of the loop repeats.
+          system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
           tools: NEXA_TOOLS,
           messages,
         });
+
+        if (response.stop_reason === "max_tokens") {
+          // The answer (or a tool call) hit the limit and was cut: say so instead of showing half of it as if it were whole.
+          const partial = response.content
+            .filter((b): b is Anthropic.TextBlock => b.type === "text")
+            .map((b) => b.text)
+            .join("\n")
+            .trim();
+          reply = partial
+            ? `${partial}\n\n⚠️ คำตอบยาวเกินไปจึงถูกตัด ให้ขอทีละส่วน`
+            : "คำตอบยาวเกินไปจนถูกตัด ลองขอให้น้อยลง หรือแบ่งเป็นหลายส่วน";
+          break;
+        }
 
         if (response.stop_reason !== "tool_use") {
           reply = response.content
