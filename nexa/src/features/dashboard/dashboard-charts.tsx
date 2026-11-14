@@ -270,7 +270,9 @@ function rateDot(color: string, lastIndex: number) {
  * `absent`) — no service-layer change, no new field.
  */
 export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
-  const [hidden, setHidden] = React.useState<Record<string, boolean>>({});
+  // "ไม่มีบันทึก" (~60%, mostly people who don't use the app) starts hidden: shown, it forces a
+  // 0-100 axis and flattens the attendance curve. One tap on its legend brings it back.
+  const [hidden, setHidden] = React.useState<Record<string, boolean>>({ noRecordPct: true });
   const router = useRouter();
   /** Opens that day's attendance report (owner 14 Nov 2026: every point on the home page opens its detail). */
   function openDay(index: number | undefined) {
@@ -291,6 +293,14 @@ export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
   });
   const lastIndex = points.length - 1;
   const lastLabel = points[lastIndex].label;
+  // Y axis from the visible lines only, padded and rounded to 10s, never past 0-100.
+  const visibleValues = points.flatMap((pt) =>
+    RATE_SERIES.filter((s) => !hidden[s.key]).map((s) => pt[s.key as keyof RatePoint] as number),
+  );
+  // Every line switched off: keep the full 0-100 axis.
+  const yMax = visibleValues.length ? Math.min(100, Math.ceil((Math.max(...visibleValues) + 4) / 10) * 10) : 100;
+  const yMin = visibleValues.length ? Math.max(0, Math.floor((Math.min(...visibleValues) - 4) / 10) * 10) : 0;
+  const yTicks = Array.from({ length: Math.round((yMax - yMin) / 10) + 1 }, (_, i) => yMin + i * 10);
 
   return (
     <div className="space-y-2">
@@ -363,8 +373,9 @@ export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
             interval={0}
           />
           <YAxis
-            domain={[0, 100]}
-            ticks={[0, 25, 50, 75, 100]}
+            domain={[yMin, yMax]}
+            ticks={yTicks}
+            allowDataOverflow
             tickFormatter={(v) => `${v}%`}
             tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
             tickLine={false}

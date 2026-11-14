@@ -65,6 +65,7 @@ export function FollowRow({
   link,
   display,
   people = [],
+  open = false,
 }: {
   icon: IconType;
   title: string;
@@ -83,6 +84,8 @@ export function FollowRow({
   display?: string;
   /** Names behind the count; the first three are shown on the card. */
   people?: string[];
+  /** Show `children` right on the card instead of behind "ดูรายละเอียด" (short lists). */
+  open?: boolean;
 }) {
   if (count <= 0) {
     return (
@@ -112,9 +115,11 @@ export function FollowRow({
           <span className="mt-1 block text-[12px] text-muted-foreground">{unit}</span>
         </span>
       </div>
-      <span className={cn("relative inline-flex self-start rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold", TONE[tone].word)}>
-        {tone === "info" ? "i" : "!"} {tag}
-      </span>
+      {tag && (
+        <span className={cn("relative inline-flex self-start rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold", TONE[tone].word)}>
+          {tone === "info" ? "i" : "!"} {tag}
+        </span>
+      )}
       {names.length > 0 && (
         <ul className="relative flex flex-col">
           {names.slice(0, 3).map((n) => (
@@ -128,7 +133,8 @@ export function FollowRow({
           {names.length > 3 && <li className="pt-1 text-[12.5px] text-muted-foreground">และอีก {names.length - 3} คน</li>}
         </ul>
       )}
-      {children && (
+      {children && open && <div className="relative">{children}</div>}
+      {children && !open && (
         <details className="group relative">
           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1 text-[13.5px] font-semibold text-primary [&::-webkit-details-marker]:hidden">
             ดูรายละเอียด

@@ -110,12 +110,13 @@ export function ApprovalsFollowCard({ data }: { data: DashboardActions }) {
     <FollowRow
       icon={ClipboardCheck}
       title="คำขอรอคุณอนุมัติ"
-      sub={tiles.map((t) => `${t.label} ${data.approvals[t.key]}`).join(" · ")}
+      sub="กดแต่ละประเภทเพื่อไปอนุมัติ"
       count={total}
       unit="รายการ"
       tone="bad"
-      tag="รอคุณอนุมัติ"
+      tag=""
       order={1}
+      open
       link={{ href: "/requests?view=approvals", label: "ตรวจอนุมัติ" }}
     >
       <ul>
