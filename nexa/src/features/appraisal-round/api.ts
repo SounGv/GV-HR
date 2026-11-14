@@ -5,6 +5,7 @@ import type {
   HrAssignmentDetail,
   MyResult,
   ResultRow,
+  RoundReview,
   SettingsView,
   MatrixRow,
   ParticipantResult,
@@ -53,6 +54,7 @@ export const calculateRound = (id: string) =>
 export const approveResults = (id: string) => api.post<Envelope<{ approved: number }>>(`/api/appraisal-rounds/${id}/approve-results`, {});
 export const publishResults = (id: string) =>
   api.post<Envelope<{ published: number; notified: number }>>(`/api/appraisal-rounds/${id}/publish-results`, {});
+export const fetchRoundReview = (id: string) => api.get<Envelope<RoundReview>>(`/api/appraisal-rounds/${id}/review`);
 export const fetchRoundResults = (id: string) => api.get<Envelope<ResultRow[]>>(`/api/appraisal-rounds/${id}/results`);
 export const fetchMyResults = () => api.get<Envelope<MyResult[]>>("/api/appraisal-my-results");
 export const acknowledgeResult = (participantId: string) =>

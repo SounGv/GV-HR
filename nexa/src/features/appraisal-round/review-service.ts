@@ -1,0 +1,116 @@
+import { displayName } from "@/lib/format";
+import { prisma } from "@/lib/prisma";
+import { NotFound } from "@/lib/api/errors";
+import type { AccessClaims } from "@/lib/auth/jwt";
+import { participantScope, viewableEmployeeIds } from "./viewer-scope";
+import { getSettings } from "./results-service";
+import { pickForm, type RoundSnapshot } from "./form-snapshot";
+import { raterPercent, type PersonResult } from "./scoring";
+import type { Answer } from "./answers";
+import {
+  MANAGER_GAP_POINTS,
+  MIN_PEOPLE_PER_MANAGER,
+  SELF_GAP_POINTS,
+  bandsHighToLow,
+  gradeSpread,
+  personFlags,
+  summarizeManagers,
+} from "./review-rules";
+import type { ReviewPerson, RoundReview } from "./types";
+
+/**
+ * Everything the review page shows for one round, worked out from what is already stored. Read only: it never writes
+ * and never changes a score. Sequential queries (the connection pool has one slot).
+ *
+ * The caller must hold `campaign:approve` or `campaign:update`; the people are further limited to what
+ * `viewableEmployeeIds` allows, so an approver with a team scope sees only that team (and "company average" then
+ * means the average of those people).
+ */
+export async function getRoundReview(companyId: string, session: AccessClaims, roundId: string): Promise<RoundReview> {
+  const round = await prisma.appraisalRound.findFirst({
+    where: { id: roundId, companyId, deletedAt: null },
+    select: { name: true, status: true, formSnapshot: true },
+  });
+  if (!round) throw NotFound("ไม่พบรอบประเมิน");
+
+  const ids = await viewableEmployeeIds(companyId, session);
+  const settings = await getSettings(companyId);
+  const bands = bandsHighToLow(settings.bands);
+  const snapshot = round.formSnapshot as unknown as RoundSnapshot | null;
+
+  const participants = await prisma.appraisalParticipant.findMany({
+    where: { roundId, ...participantScope(ids) },
+    select: {
+      id: true,
+      formId: true,
+      departmentName: true,
+      resultStatus: true,
+      scorePercent: true,
+      grade: true,
+      scoreBreakdown: true,
+      employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
+      assignments: {
+        where: { status: "SUBMITTED", raterType: "MANAGER" },
+        select: { raterEmployeeId: true, answers: true, rater: { select: { firstName: true, lastName: true, nickname: true } } },
+      },
+    },
+    take: 2000,
+  });
+
+  const people: ReviewPerson[] = [];
+  const given = new Map<string, { name: string; percents: number[] }>();
+  for (const p of participants) {
+    // How generously each manager scored: the same question weights and calculation mode the result uses.
+    const form = pickForm(snapshot, p.formId);
+    if (form) {
+      for (const a of p.assignments) {
+        const pct = raterPercent(form.questions, "MANAGER", Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [], form.ratingMax, settings.calcMode);
+        if (pct === null) continue;
+        const entry = given.get(a.raterEmployeeId) ?? { name: displayName(a.rater), percents: [] };
+        entry.percents.push(pct);
+        given.set(a.raterEmployeeId, entry);
+      }
+    }
+    if (p.scorePercent === null || p.resultStatus === "NOT_CALCULATED") continue;
+    const types = (p.scoreBreakdown as unknown as PersonResult | null)?.types ?? [];
+    const percentOf = (t: string) => types.find((x) => x.raterType === t)?.percent ?? null;
+    const self = percentOf("SELF");
+    const manager = percentOf("MANAGER");
+    people.push({
+      participantId: p.id,
+      name: displayName(p.employee),
+      code: p.employee.employeeCode,
+      department: p.departmentName ?? "ไม่ระบุแผนก",
+      status: p.resultStatus,
+      self,
+      manager,
+      total: p.scorePercent,
+      grade: p.grade,
+      ...personFlags(self, manager, p.scorePercent, bands),
+    });
+  }
+  // The people who need a look come first, then by department and name.
+  people.sort((a, b) => Number(b.talk || b.nearEdge) - Number(a.talk || a.nearEdge) || a.department.localeCompare(b.department, "th") || a.name.localeCompare(b.name, "th"));
+
+  const departments = [...new Set(people.map((p) => p.department))].sort((a, b) => a.localeCompare(b, "th"));
+  const spreadOf = (rows: ReviewPerson[]) => gradeSpread(rows.map((r) => r.total), bands);
+
+  return {
+    roundName: round.name,
+    status: round.status,
+    total: participants.length,
+    calculated: people.length,
+    bands: bands.map((b) => b.label),
+    spread: {
+      ...spreadOf(people),
+      byDepartment: departments.map((department) => {
+        const rows = people.filter((p) => p.department === department);
+        return { department, total: rows.length, ...spreadOf(rows) };
+      }),
+    },
+    companyWide: ids === null,
+    managers: summarizeManagers([...given.entries()].map(([managerId, g]) => ({ managerId, name: g.name, percents: g.percents }))),
+    people,
+    thresholds: { managerGap: MANAGER_GAP_POINTS, selfGap: SELF_GAP_POINTS, minPeople: MIN_PEOPLE_PER_MANAGER },
+  };
+}

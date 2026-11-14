@@ -276,3 +276,49 @@ export interface MyResult {
 export interface HrAssignmentDetail extends TaskDetail {
   raterName: string;
 }
+
+/* ───────────────────────── review page (ทบทวนผล) ───────────────────────── */
+
+export interface ReviewPerson {
+  participantId: string;
+  name: string;
+  code: string;
+  department: string;
+  status: ResultStatus;
+  /** Percent given by the person themself and by their manager; null when that side has not answered. */
+  self: number | null;
+  manager: number | null;
+  total: number;
+  grade: string | null;
+  /** Self minus manager. */
+  gap: number | null;
+  /** Self is far above the manager's score. */
+  talk: boolean;
+  /** Total is within a point of a grade boundary. */
+  nearEdge: boolean;
+}
+
+export interface ReviewSpread {
+  counts: number[];
+  below: number;
+}
+
+export interface RoundReview {
+  roundName: string;
+  status: RoundStatus;
+  /** People in the round the viewer may see. */
+  total: number;
+  /** Of those, how many have a calculated result. */
+  calculated: number;
+  /** Grade labels from the highest threshold down; empty when HR has not set grade bands. */
+  bands: string[];
+  spread: ReviewSpread & { byDepartment: (ReviewSpread & { department: string; total: number })[] };
+  /** False when the viewer sees only the people under them, so "company" means "the people you can see". */
+  companyWide: boolean;
+  managers: {
+    rows: import("./review-rules").ManagerRow[];
+    companyAverage: number | null;
+  };
+  people: ReviewPerson[];
+  thresholds: { managerGap: number; selfGap: number; minPeople: number };
+}

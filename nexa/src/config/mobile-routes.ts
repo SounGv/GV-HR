@@ -114,6 +114,7 @@ const PATTERNS: RoutePattern[] = [
   { pattern: /^\/admin\/users\/[^/]+\/ai-access$/, meta: { title: "สิทธิ์ AI", backHref: "/admin" } },
   { pattern: /^\/appraisal\/forms\/[^/]+$/, meta: { title: "แก้ไขแบบประเมิน", backHref: "/appraisal/forms" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+\/fill\/[^/]+$/, meta: { title: "กรอกแทนผู้ประเมิน", backHref: "/appraisal/rounds" } },
+  { pattern: /^\/appraisal\/rounds\/[^/]+\/review$/, meta: { title: "ทบทวนผล", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+\/people\/[^/]+$/, meta: { title: "ผลรายคน", backHref: "/appraisal/rounds" } },
   { pattern: /^\/appraisal\/rounds\/[^/]+$/, meta: { title: "รอบประเมิน", backHref: "/appraisal/rounds" } },
   // Opened from the home card, a notification or the task list — go back to whichever it was.

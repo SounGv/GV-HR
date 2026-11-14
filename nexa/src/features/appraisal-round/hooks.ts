@@ -15,6 +15,7 @@ import {
   fetchHrAssignment,
   fetchMyResults,
   fetchRoundResults,
+  fetchRoundReview,
   fetchSettings,
   publishResults,
   saveHrAssignment,
@@ -130,6 +131,7 @@ export function useSaveSettings() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: saveSettings, onSuccess: () => qc.invalidateQueries({ queryKey: ["appraisal-settings"] }) });
 }
+export const useRoundReview = (id: string) => useQuery({ queryKey: ["appraisal-rounds", "review", id], queryFn: () => fetchRoundReview(id), retry: false });
 export const useRoundResults = (id: string, enabled: boolean) =>
   useQuery({ queryKey: ["appraisal-rounds", "results", id], queryFn: () => fetchRoundResults(id), enabled });
 export function useResultActions(id: string) {

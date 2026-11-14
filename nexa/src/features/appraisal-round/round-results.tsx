@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Calculator, Megaphone, ShieldCheck } from "lucide-react";
+import { Calculator, ClipboardCheck, Megaphone, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
@@ -70,6 +70,11 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
           <Button className="h-11 md:h-9" onClick={() => run("calculate")} disabled={act.calculate.isPending}>
             <Calculator className="size-4" /> คำนวณผล
           </Button>
+          {(can("campaign:approve") || can("campaign:update")) && counts("NOT_CALCULATED") < rows.length && (
+            <Link href={`/appraisal/rounds/${roundId}/review`} className={buttonVariants({ variant: "outline", className: "h-11 md:h-9" })}>
+              <ClipboardCheck className="size-4" /> ทบทวนผล
+            </Link>
+          )}
           {needsApproval && can("campaign:approve") && (
             <Button variant="outline" className="h-11 md:h-9" onClick={() => run("approve")} disabled={act.approve.isPending || counts("CALCULATED") === 0}>
               <ShieldCheck className="size-4" /> อนุมัติผลที่คำนวณแล้ว
