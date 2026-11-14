@@ -38,8 +38,12 @@ export type FollowOrder = number;
 
 type IconType = ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" }>;
 
-/** The board the cards sit on: they wrap. Cards with nothing today are not drawn (the ticker covers them). */
-export const FOLLOW_BOARD_CLASS = "flex flex-wrap items-stretch gap-3.5";
+/**
+ * The board the cards sit on: they wrap. Cards with nothing today are not drawn (the ticker covers them).
+ * `items-start`, not `stretch`: opening one card's list must not stretch its neighbours to the same height
+ * (owner, 14 Nov 2026: pressing one card opened all three).
+ */
+export const FOLLOW_BOARD_CLASS = "flex flex-wrap items-start gap-3.5";
 
 const CARD =
   "relative flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 overflow-hidden rounded-[20px] border border-border bg-card p-4 shadow-[0_2px_4px_rgba(11,40,37,.06),0_12px_28px_rgba(11,40,37,.10)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(11,40,37,.08),0_18px_36px_rgba(11,40,37,.14)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:shadow-[0_8px_24px_rgba(0,0,0,.45)]";
