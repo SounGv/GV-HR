@@ -121,6 +121,24 @@ export const NEXA_TOOLS: NexaTool[] = [
     },
   },
   {
+    name: "assign_shifts",
+    description:
+      "Prepare a shift assignment (ตั้งกะงาน): ONE existing shift for one or more employees on one or more dates. This only draws a confirmation card; the user presses confirm themselves and nothing is saved before that. Max 100 rows (people x dates) and 40 people per card. Give either `dates` (YYYY-MM-DD list) or `from`/`to`, and optionally `weekdays` (0=Sunday..6=Saturday) to limit a range, e.g. [1,2,3,4,5] for Monday to Friday. It only uses shifts that already exist and can replace a person's shift on a date (the card says so). Requires permission.",
+    input_schema: {
+      type: "object",
+      properties: {
+        employees: { type: "array", items: { type: "string" }, description: "employee names, nicknames or codes" },
+        shift: { type: "string", description: "name of an existing shift, e.g. กะเช้า" },
+        dates: { type: "array", items: { type: "string" }, description: "explicit dates YYYY-MM-DD" },
+        from: { type: "string", description: "range start YYYY-MM-DD (with `to`)" },
+        to: { type: "string", description: "range end YYYY-MM-DD, inclusive" },
+        weekdays: { type: "array", items: { type: "number" }, description: "limit a from/to range to these weekdays (0=Sunday)" },
+      },
+      required: ["employees", "shift"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "web_search",
     description:
       "Search the public internet. Use ONLY when the answer isn't available from the other tools (internal company data) — e.g. Thai labor law, government holiday announcements, market/industry benchmarks, or general HR knowledge not specific to this company. NEVER use this for questions about this company's own employees, attendance, leave, payroll, or announcements — those must come from the internal tools. When you use results from this tool, clearly tell the user the information is from the internet (not the company's internal system) and cite the source title/link.",
@@ -337,7 +355,8 @@ export async function executeTool(
       // Writes never run from here. They draw a confirmation card and the person
       // presses confirm (POST /api/ai/confirm), so a wrong guess by the model cannot reach anyone.
       case "send_notification":
-      case "create_announcement": {
+      case "create_announcement":
+      case "assign_shifts": {
         const { card, message } = await prepareProposal(session, name, input, scopeWhere);
         if (card) proposals?.push(card);
         return message;

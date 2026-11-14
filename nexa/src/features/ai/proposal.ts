@@ -5,9 +5,9 @@
  * (scripts/check-ai-proposal.mjs) and the same types serve the chat screens.
  */
 
-export type ProposalKind = "send_notification" | "create_announcement";
+export type ProposalKind = "send_notification" | "create_announcement" | "assign_shifts";
 
-export const PROPOSAL_KINDS: readonly ProposalKind[] = ["send_notification", "create_announcement"];
+export const PROPOSAL_KINDS: readonly ProposalKind[] = ["send_notification", "create_announcement", "assign_shifts"];
 
 /** Limits match the announcement form (features/announcement/schema.ts) so a card never promises what the page would refuse. */
 export const PROPOSAL_LIMITS = { title: 200, body: 5000 } as const;
@@ -17,12 +17,17 @@ export interface ProposalCard {
   /** Signed token; the confirm endpoint accepts nothing else. */
   token: string;
   kind: ProposalKind;
-  icon: "bell" | "megaphone";
+  icon: "bell" | "megaphone" | "calendar";
   /** Small label above the title, e.g. "ประกาศถึงทุกคน". */
   kindLabel: string;
   title: string;
   rows: { label: string; value: string }[];
-  preview: { title: string; body: string };
+  /** The text that will be sent or published; null for cards that show a table instead. */
+  preview: { title: string; body: string } | null;
+  /** A summary table (for example one line per person). */
+  table?: { head: string[]; rows: string[][] };
+  /** The full list behind a "ดูครบทั้ง N รายการ" fold. */
+  detail?: { label: string; head: string[]; rows: string[][] };
   /** One-line warning shown with a status icon, e.g. that sending cannot be undone. */
   note?: string;
   confirmLabel: string;
@@ -39,6 +44,8 @@ export interface ProposalPayload {
   target?: string;
   /** Recipients when the card was drawn; confirm refuses if it has changed since. */
   count?: number;
+  /** assign_shifts only: what the card promised, checked again before anything is written. */
+  shift?: { templateId: string; employeeIds: string[]; dates: string[]; changing: number; replaced: number };
 }
 
 export type ProposalInputCheck = { ok: true; title: string; body: string; target?: string } | { ok: false; message: string };

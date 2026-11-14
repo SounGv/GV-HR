@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Bell, CheckCircle2, Info, Loader2, Megaphone, TriangleAlert, XCircle } from "lucide-react";
+import { Bell, CalendarCheck, CheckCircle2, ChevronRight, Info, Loader2, Megaphone, TriangleAlert, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,35 @@ type State =
   | { phase: "done"; message: string; again: boolean }
   | { phase: "refused"; message: string }
   | { phase: "error"; message: string };
+
+function ProposalTable({ head, rows }: { head: string[]; rows: string[][] }) {
+  return (
+    <div className="max-h-72 overflow-auto rounded-lg border border-border">
+      <table className="w-full border-collapse text-[13.5px]">
+        <thead>
+          <tr className="bg-muted/60 text-left">
+            {head.map((h) => (
+              <th key={h} className="px-2.5 py-1.5 font-semibold">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="border-t border-border align-top">
+              {r.map((c, j) => (
+                <td key={j} className="px-2.5 py-1.5 break-words">
+                  {c}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 /** One card น้องวีบอท drew. The action runs only when the person presses the confirm button. */
 function ProposalCardView({ card }: { card: ProposalCard }) {
@@ -31,7 +60,7 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
     },
   });
 
-  const Icon = card.icon === "megaphone" ? Megaphone : Bell;
+  const Icon = card.icon === "megaphone" ? Megaphone : card.icon === "calendar" ? CalendarCheck : Bell;
 
   return (
     <section
@@ -58,10 +87,24 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
           ))}
         </dl>
 
-        <div className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
-          <p className="font-semibold break-words">{card.preview.title}</p>
-          <p className="mt-0.5 break-words whitespace-pre-wrap">{card.preview.body}</p>
-        </div>
+        {card.preview && (
+          <div className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
+            <p className="font-semibold break-words">{card.preview.title}</p>
+            <p className="mt-0.5 break-words whitespace-pre-wrap">{card.preview.body}</p>
+          </div>
+        )}
+
+        {card.table && <ProposalTable head={card.table.head} rows={card.table.rows} />}
+
+        {card.detail && (
+          <details className="group">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1 font-semibold text-primary [&::-webkit-details-marker]:hidden">
+              {card.detail.label}
+              <ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden="true" />
+            </summary>
+            <ProposalTable head={card.detail.head} rows={card.detail.rows} />
+          </details>
+        )}
 
         {card.note && state.phase === "idle" && (
           <p className="flex items-start gap-2 rounded-lg border border-status-late-border bg-status-late-bg px-3 py-2 text-status-late-fg">

@@ -9,7 +9,7 @@ import { confirmProposal } from "@/lib/ai/proposals";
 
 export const runtime = "nodejs";
 
-const bodySchema = z.object({ token: z.string().min(20).max(8000) });
+const bodySchema = z.object({ token: z.string().min(20).max(12000) });
 
 /**
  * The press of "ยืนยัน" on a card น้องวีบอท drew. The person's own session does

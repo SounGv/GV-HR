@@ -5,6 +5,7 @@ import { signAiProposalToken, verifyAiProposalToken, type AccessClaims } from "@
 import { writeAudit } from "@/lib/audit";
 import { displayName } from "@/lib/format";
 import { createAnnouncement } from "@/features/announcement/service";
+import { confirmShiftProposal, prepareShiftProposal } from "@/lib/ai/shift-proposal";
 import { shouldPushToLine } from "@/features/notification/line-policy";
 import {
   buildAnnouncementCard,
@@ -24,6 +25,7 @@ type Meta = { ip?: string; userAgent?: string };
 const NEED_PERM: Record<ProposalKind, string> = {
   send_notification: "notification:create",
   create_announcement: "announcement:create",
+  assign_shifts: "shift:create",
 };
 
 /** Everyone an announcement reaches, the same rule the publisher uses (features/announcement/service.ts). */
@@ -78,6 +80,7 @@ export async function prepareProposal(
   if (!can(session.perms, need)) {
     return { card: null, message: `ไม่ได้รับอนุญาต: ต้องมีสิทธิ์ ${need} จึงจะใช้เครื่องมือนี้ได้` };
   }
+  if (kind === "assign_shifts") return prepareShiftProposal(session, rawInput, scopeWhere);
   const input = checkProposalInput(kind, rawInput);
   if (!input.ok) return { card: null, message: input.message };
   const companyId = session.companyId;
@@ -111,12 +114,24 @@ function readPayload(raw: Record<string, unknown>): ProposalPayload | null {
   const kind = raw.kind;
   if (typeof kind !== "string" || !(PROPOSAL_KINDS as readonly string[]).includes(kind)) return null;
   if (typeof raw.title !== "string" || typeof raw.body !== "string") return null;
+  const sh = raw.shift as Record<string, unknown> | undefined;
+  const shift =
+    sh && typeof sh.templateId === "string" && Array.isArray(sh.employeeIds) && Array.isArray(sh.dates) && typeof sh.changing === "number" && typeof sh.replaced === "number"
+      ? {
+          templateId: sh.templateId,
+          employeeIds: sh.employeeIds.filter((x): x is string => typeof x === "string"),
+          dates: sh.dates.filter((x): x is string => typeof x === "string"),
+          changing: sh.changing,
+          replaced: sh.replaced,
+        }
+      : undefined;
   return {
     kind: kind as ProposalKind,
     title: raw.title,
     body: raw.body,
     target: typeof raw.target === "string" ? raw.target : undefined,
     count: typeof raw.count === "number" ? raw.count : undefined,
+    shift,
   };
 }
 
@@ -145,6 +160,8 @@ export async function confirmProposal(
 
   const companyId = session.companyId;
   const since = new Date(verified.iat * 1000);
+
+  if (p.kind === "assign_shifts") return confirmShiftProposal(session, p, scopeWhere, meta);
 
   if (p.kind === "send_notification") {
     const already = await prisma.notification.count({
