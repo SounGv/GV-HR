@@ -45,6 +45,7 @@ function buildSystemPrompt(companyName: string, userName: string, today: string)
     "4) สิทธิ์ — หากฟังก์ชันแจ้งว่าไม่ได้รับอนุญาต ให้บอกผู้ใช้อย่างสุภาพว่าไม่มีสิทธิ์ ไม่ต้องพยายามหลบเลี่ยง",
     "5) การประเมิน — เมื่อผู้ใช้ขอให้ตั้งแบบประเมิน ให้ใช้ get_employee_context เพื่อดึงฝ่าย/สายงาน/ตำแหน่งของบุคคลนั้น แล้วออกแบบเกณฑ์ให้ตรงกับหน้าที่จริง",
     "6) ค้นเว็บ — ใช้ web_search เฉพาะเมื่อคำถามไม่เกี่ยวกับข้อมูลภายในบริษัท (เช่น กฎหมายแรงงาน, วันหยุดราชการ, ความรู้ทั่วไปด้าน HR) ห้ามใช้ถามเรื่องพนักงาน/เวลาทำงาน/เงินเดือน/ประกาศของบริษัทนี้ เมื่อใช้ผลจาก web_search ต้องบอกผู้ใช้ชัดเจนว่าข้อมูลนี้มาจากอินเทอร์เน็ต ไม่ใช่จากระบบภายในบริษัท พร้อมระบุแหล่งที่มา (ชื่อเว็บไซต์/ลิงก์)",
+    "7) เช็คโควตา/คำขอ/กะ/ประเมิน — ใช้ get_leave_balance (โควตาวันลา), list_pending_approvals (คำขอที่รออนุมัติ), get_shift_schedule (ตารางกะ), get_evaluation_progress (ความคืบหน้ารอบประเมิน) ฟังก์ชันเหล่านี้อ่านอย่างเดียว ตอนนี้คุณยังอนุมัติ แก้โควตา หรือตั้งกะให้ไม่ได้ ถ้าผู้ใช้ขอ ให้บอกตรงๆ ว่าทำที่หน้าไหนในระบบ ห้ามบอกว่าทำให้แล้ว",
     "",
     "ตอบเป็นภาษาไทยกระชับ ชัดเจน มีตัวเลขและที่มาของข้อมูลเมื่อเกี่ยวข้อง",
     "",
@@ -159,6 +160,14 @@ function describeTool(name: string, input: unknown): string {
       return `เตรียมแจ้งเตือนถึง: ${String(i.target ?? "")}`;
     case "create_announcement":
       return `เตรียมประกาศ: ${String(i.title ?? "")}`;
+    case "get_leave_balance":
+      return `เช็คโควตาวันลา${i.employee ? `: ${String(i.employee)}` : ""}`;
+    case "list_pending_approvals":
+      return "ดึงคำขอที่รออนุมัติ";
+    case "get_shift_schedule":
+      return `ดึงตารางกะงาน${i.employee ? `: ${String(i.employee)}` : ""}`;
+    case "get_evaluation_progress":
+      return "ดึงความคืบหน้ารอบประเมิน";
     case "calculate_payroll":
       return `คำนวณเงินเดือน${i.employee ? `: ${String(i.employee)}` : ""}`;
     case "web_search":

@@ -6,6 +6,7 @@ import { getDashboardSummary } from "@/features/dashboard/service";
 import { getReport } from "@/features/report/service";
 import { REPORT_TYPES } from "@/features/report/schema";
 import { prepareProposal } from "@/lib/ai/proposals";
+import { executeReadTool, READ_TOOLS } from "@/lib/ai/read-tools";
 import type { ProposalCard } from "@/features/ai/proposal";
 import { computePayroll } from "@/features/payroll/calc";
 import { fullName } from "@/lib/format";
@@ -147,6 +148,7 @@ export const NEXA_TOOLS: NexaTool[] = [
       additionalProperties: false,
     },
   },
+  ...READ_TOOLS,
 ];
 
 /**
@@ -387,8 +389,10 @@ export async function executeTool(
         return JSON.stringify({ employee: who, currency: "THB", ...comp });
       }
 
-      default:
-        return `ไม่รู้จักเครื่องมือ: ${name}`;
+      default: {
+        const read = await executeReadTool(session, name, input, scopeWhere);
+        return read ?? `ไม่รู้จักเครื่องมือ: ${name}`;
+      }
     }
   } catch (err) {
     return `เกิดข้อผิดพลาดในการเรียกข้อมูล: ${err instanceof Error ? err.message : "unknown"}`;

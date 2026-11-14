@@ -641,7 +641,11 @@ export async function cancelLeave(
  * (it exists because a leave of that type was actually approved before).
  */
 export async function getBalances(companyId: string, session: AccessClaims, year?: number) {
-  const employeeId = requireEmployeeId(session);
+  return getBalancesFor(companyId, requireEmployeeId(session), year);
+}
+
+/** The same balances for any employee; the caller decides who may see them (the AI assistant checks its scope first). */
+export async function getBalancesFor(companyId: string, employeeId: string, year?: number) {
   const y = year ?? new Date().getFullYear();
   const rows = await prisma.leaveBalance.findMany({
     where: { companyId, employeeId, year: y },
