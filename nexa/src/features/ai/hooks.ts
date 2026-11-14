@@ -1,8 +1,8 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { sendChat, fetchAiAccess } from "./api";
-import type { AttachmentPayload, ChatMessage } from "./types";
+import { sendChat, fetchAiAccess, runQuick } from "./api";
+import type { AttachmentPayload, ChatMessage, QuickRequest } from "./types";
 
 export function useChat() {
   return useMutation({
@@ -23,4 +23,9 @@ export function useAiAccess() {
     queryFn: fetchAiAccess,
     staleTime: 60_000,
   });
+}
+
+/** The quick actions: answered from our own data with no AI, so they work while the AI service is down. */
+export function useQuick() {
+  return useMutation({ mutationFn: (request: QuickRequest) => runQuick(request) });
 }

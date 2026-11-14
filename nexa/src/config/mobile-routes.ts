@@ -26,6 +26,7 @@ export const MOBILE_CUSTOM_PATHS = new Set([
 // Pages that are a tab of the bottom bar (or open from the home quick menu) go back to the home page, not to the services list.
 const EXACT: Record<string, MobileRouteMeta> = {
   "/ai": { title: "AI Assistant", backHref: "/dashboard" },
+  "/ai/settings": { title: "ตั้งค่าน้องวีบอท", backHref: "/ai" },
   "/ai-evaluation": { title: "AI ประเมินผล", backHref: "/ai" },
   "/announcements": { title: "ประกาศและแจ้งเตือน", backHref: "/services" },
   "/announcements/new": { title: "สร้างประกาศ", backHref: "/announcements" },

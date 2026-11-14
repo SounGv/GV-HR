@@ -3,22 +3,40 @@ import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
 import * as XLSX from "xlsx";
 import { NextRequest } from "next/server";
+import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { prisma as real } from "@real/prisma";
 import { signAccessToken } from "@/lib/auth/jwt";
 import { POST as chat } from "@/app/api/ai/chat/route";
 import { POST as confirm } from "@/app/api/ai/confirm/route";
+import { POST as quick } from "@/app/api/ai/quick/route";
+import { GET as access } from "@/app/api/ai/access/route";
+import { getUsage } from "@/lib/ai/engine";
+import { ENGINE_NOTICE } from "@/features/ai/engine-state";
+import { LOCAL_SOURCE_LINE } from "@/features/ai/quick-actions";
+
+// Nothing may leave the building: no LINE push, no email, whatever the data says.
+for (const k of Object.keys(process.env)) if (k.startsWith("LINE_") || k.startsWith("RESEND") || k.startsWith("SMTP")) delete process.env[k];
+delete process.env.AI_MONTHLY_CAP;
 
 const g = globalThis as any;
 const COMPANY = "00000000-0000-0000-0000-000000000001";
 const b64 = (x: string | Uint8Array) => Buffer.from(x as never).toString("base64");
 
+class Rollback extends Error {}
 let adminId = "";
+// The audit log needs real users to point at (read only: nothing is written to the users table).
+let USER = "";
 async function asUser(perms: string[], opts: { sub?: string; roles?: string[]; employee?: boolean } = {}) {
-  g.__token = await signAccessToken({ sub: opts.sub ?? "e2e-user", companyId: COMPANY, email: null, username: null, roles: opts.roles ?? [], perms, employeeId: opts.employee === false ? undefined : adminId });
+  g.__token = await signAccessToken({ sub: opts.sub ?? USER, companyId: COMPANY, email: null, username: null, roles: opts.roles ?? [], perms, employeeId: opts.employee === false ? undefined : adminId });
 }
 async function call(handler: (r: NextRequest) => Promise<Response>, url: string, body: unknown) {
   const req = new NextRequest(`http://localhost${url}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   const res = await handler(req);
+  return { status: res.status, json: (await res.json()) as any };
+}
+async function getJson(handler: (r: NextRequest) => Promise<Response>, url: string) {
+  const res = await handler(new NextRequest(`http://localhost${url}`, { method: "GET" }));
   return { status: res.status, json: (await res.json()) as any };
 }
 const model = (...r: unknown[]) => { g.__script = [...r]; g.__calls = []; };
@@ -29,15 +47,20 @@ const toolResult = (callIndex: number) => g.__calls[callIndex].messages.at(-1).c
 
 async function counts() {
   return {
-    notifications: await prisma.notification.count(),
-    announcements: await prisma.announcement.count(),
-    templates: await prisma.evaluationTemplate.count(),
-    shifts: await prisma.shiftAssignment.count(),
-    balances: await prisma.leaveBalance.count(),
-    leave: await prisma.leaveRequest.count({ where: { status: "APPROVED" } }),
-    corrections: await prisma.attendanceCorrectionRequest.count({ where: { status: "APPROVED" } }),
+    notifications: await real.notification.count(),
+    announcements: await real.announcement.count(),
+    templates: await real.evaluationTemplate.count(),
+    shifts: await real.shiftAssignment.count(),
+    balances: await real.leaveBalance.count(),
+    leave: await real.leaveRequest.count({ where: { status: "APPROVED" } }),
+    corrections: await real.attendanceCorrectionRequest.count({ where: { status: "APPROVED" } }),
+    audit: await real.auditLog.count(),
   };
 }
+const noticeCount = (title: string) => prisma.notification.count({ where: { title } });
+const auditCount = (action: string) => prisma.auditLog.count({ where: { action } });
+/** Pretend the AI service went down this long ago, so the 5-minute wait is over without waiting. */
+const ageDownEvents = (minutes: number) => prisma.auditLog.updateMany({ where: { action: "ai.engine.down" }, data: { createdAt: new Date(Date.now() - minutes * 60000) } });
 
 const results: { name: string; ok: boolean; err?: string }[] = [];
 async function t(name: string, fn: () => Promise<void>) {
@@ -50,15 +73,23 @@ async function t(name: string, fn: () => Promise<void>) {
 }
 
 (async () => {
-  adminId = (await prisma.employee.findFirst({ where: { companyId: COMPANY, nickname: { equals: "Admin", mode: "insensitive" }, deletedAt: null }, select: { id: true } }))!.id;
+  const users = await real.user.findMany({ where: { companyId: COMPANY }, take: 1, select: { id: true } });
+  USER = users[0]!.id;
+  adminId = (await real.employee.findFirst({ where: { companyId: COMPANY, nickname: { equals: "Admin", mode: "insensitive" }, deletedAt: null }, select: { id: true } }))!.id;
   const before = await counts();
-  const activeCount = await prisma.employee.count({ where: { companyId: COMPANY, deletedAt: null, status: "ACTIVE" } });
+  const activeCount = await real.employee.count({ where: { companyId: COMPANY, deletedAt: null, status: "ACTIVE" } });
 
   // A small Excel file like the one HR would attach.
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["ชื่อ", "สาย (ครั้ง)"], ["สมชาย (ตัวอย่าง)", 5], ["สมหญิง (ตัวอย่าง)", 4]]), "ใบลงเวลา");
   const xlsxData = b64(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer);
 
+  try {
+  await real.$transaction(async (tx) => {
+  g.__tx = tx;
+  // Start from a clean engine history, so these tests do not depend on what the real database holds. All of this
+  // is inside the transaction that is thrown away at the end.
+  await tx.auditLog.deleteMany({ where: { action: { in: ["ai.engine.down", "ai.engine.up", "ai.cap", "ai.chat"] } } });
   await asUser(["*"], { roles: ["Super Admin"] });
 
   await t("1 attached Excel in, spreadsheet out: files, framing as data, cache, token room, tool loop", async () => {
@@ -171,7 +202,7 @@ async function t(name: string, fn: () => Promise<void>) {
   });
 
   await t("9 a person without the attach right cannot send files, and cannot write", async () => {
-    await asUser(["ai:read", "leave:read"], { sub: "plain-user" });
+    await asUser(["ai:read", "leave:read"]);
     model(say("x"));
     const r = await call(chat, "/api/ai/chat", ask("ดูไฟล์", [{ name: "a.txt", data: b64("hello") }]));
     assert.equal(r.status, 403);
@@ -199,12 +230,12 @@ async function t(name: string, fn: () => Promise<void>) {
     const tampered = await call(confirm, "/api/ai/confirm", { token: flipped });
     assert.equal(tampered.json.data.status, "refused");
 
-    await asUser(["*"], { sub: "someone-else", roles: ["Super Admin"] });
+    await asUser(["*"], { sub: randomUUID(), roles: ["Super Admin"] });
     const stranger = await call(confirm, "/api/ai/confirm", { token });
     assert.equal(stranger.json.data.status, "refused");
     assert.match(stranger.json.data.message, /ไม่ได้เตรียมไว้ให้บัญชีนี้/);
 
-    await asUser(["ai:read"], { sub: "e2e-user" });
+    await asUser(["ai:read"]);
     const lost = await call(confirm, "/api/ai/confirm", { token });
     assert.equal(lost.json.data.status, "refused");
     assert.match(lost.json.data.message, /ไม่มีสิทธิ์/);
@@ -226,21 +257,169 @@ async function t(name: string, fn: () => Promise<void>) {
     assert.deepEqual(r.json.data.steps.map((s: any) => s.tool), ["list_pending_approvals", "get_evaluation_progress"]);
   });
 
-  await t("12 when the AI service fails, the person is told the cause in Thai and nothing is half-done", async () => {
-    const credit = '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}';
-    model({ __fail: { status: 400, message: credit } });
-    const r = await call(chat, "/api/ai/chat", ask("วันนี้มาสายกี่คน"));
-    assert.equal(r.status, 200);
-    assert.match(r.json.data.reply, /เครดิต/);
-    assert.doesNotMatch(r.json.data.reply, /credit|Anthropic/i);
-    assert.equal(r.json.data.proposals.length, 0);
-    model({ __fail: { status: 401, message: "invalid x-api-key" } });
-    assert.match((await call(chat, "/api/ai/chat", ask("hi"))).json.data.reply, /รหัสเชื่อมต่อ/);
+  const adminHolders = await prisma.employee.count({
+    where: { companyId: COMPANY, deletedAt: null, user: { roles: { some: { role: { permissions: { some: { permission: { key: "employee:update" } } } } } } } },
+  });
+  const CREDIT = '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}';
+
+  await t("12 a busy or failing service says so in Thai and does NOT switch the mode", async () => {
     model({ __fail: { status: 529, message: "overloaded_error" } });
+    const busy = await call(chat, "/api/ai/chat", ask("hi"));
+    assert.match(busy.json.data.reply, /รอสักครู่/);
+    assert.equal(busy.json.data.engine, "ai");
+    model({ __fail: { status: 429, message: "rate_limit_error" } });
     assert.match((await call(chat, "/api/ai/chat", ask("hi"))).json.data.reply, /รอสักครู่/);
     model({ __fail: { status: 500, message: "boom" } });
-    assert.match((await call(chat, "/api/ai/chat", ask("hi"))).json.data.reply, /ลองถามใหม่อีกครั้ง/);
+    const other = await call(chat, "/api/ai/chat", ask("hi"));
+    assert.match(other.json.data.reply, /ลองถามใหม่อีกครั้ง/);
+    assert.equal(other.json.data.engine, "ai");
+    assert.equal(await auditCount("ai.engine.down"), 0, "none of these is a lasting failure");
+    model(say("ปกติ"));
+    assert.equal((await call(chat, "/api/ai/chat", ask("hi"))).json.data.engine, "ai", "the next question still goes to the AI");
   });
+
+  await t("13 credit runs out: this answer switches to the fallback, the admins are told once, later questions skip the AI", async () => {
+    const title = ENGINE_NOTICE.downCredit.title;
+    const n0 = await noticeCount(title);
+    model({ __fail: { status: 400, message: CREDIT } });
+    const r = await call(chat, "/api/ai/chat", ask("วันนี้มาสายกี่คน"));
+    assert.equal(r.status, 200);
+    assert.equal(r.json.data.engine, "fallback");
+    assert.equal(r.json.data.fallbackReason, "credit");
+    assert.match(r.json.data.reply, /เครดิต/);
+    assert.match(r.json.data.reply, /ปุ่มลัด/);
+    assert.doesNotMatch(r.json.data.reply, /credit|Anthropic/i);
+    assert.equal(r.json.data.proposals.length, 0);
+    assert.equal(await auditCount("ai.engine.down"), 1);
+    assert.equal((await noticeCount(title)) - n0, adminHolders, "every admin got exactly one notice");
+    // later questions: the model is not called at all, and nobody is told again
+    model(say("ต้องไม่ถูกเรียก"));
+    const again = await call(chat, "/api/ai/chat", ask("ถามอีกครั้ง"));
+    assert.equal(again.json.data.engine, "fallback");
+    assert.equal(again.json.data.fallbackReason, "credit");
+    assert.equal(g.__calls.length, 0, "no model call while the fallback is on");
+    assert.equal((await noticeCount(title)) - n0, adminHolders, "no second notice");
+    // the access endpoint tells the screen to start in fallback mode, and shows the settings link only to admins
+    const a = await getJson(access, "/api/ai/access");
+    assert.equal(a.json.data.engine.mode, "fallback");
+    assert.equal(a.json.data.engine.reason, "credit");
+    assert.equal(a.json.data.canManage, true);
+    await asUser(["ai:read"]);
+    const b = await getJson(access, "/api/ai/access");
+    assert.equal(b.json.data.canManage, false);
+    await asUser(["*"], { roles: ["Super Admin"] });
+  });
+
+  await t("14 after the wait the next question tries the AI again; if it answers, the admins are told once; if it fails, the key reason is kept", async () => {
+    // still failing, now for a bad key: no new notice (the service was already down)
+    await ageDownEvents(6);
+    const nKey = await noticeCount(ENGINE_NOTICE.downKey.title);
+    model({ __fail: { status: 401, message: "invalid x-api-key" } });
+    const k = await call(chat, "/api/ai/chat", ask("hi"));
+    assert.equal(k.json.data.engine, "fallback");
+    assert.equal(k.json.data.fallbackReason, "key");
+    assert.match(k.json.data.reply, /เชื่อมต่อไม่ได้/);
+    assert.equal(await noticeCount(ENGINE_NOTICE.downKey.title), nKey, "already down: no new notice");
+    // the service is back
+    await ageDownEvents(6);
+    const up = ENGINE_NOTICE.up.title;
+    const u0 = await noticeCount(up);
+    model(say("กลับมาแล้ว"));
+    const r = await call(chat, "/api/ai/chat", ask("ทดสอบ"));
+    assert.equal(r.json.data.engine, "ai");
+    assert.equal(r.json.data.reply, "กลับมาแล้ว");
+    assert.equal(await auditCount("ai.engine.up"), 1);
+    assert.equal((await noticeCount(up)) - u0, adminHolders);
+    model(say("ปกติ"));
+    await call(chat, "/api/ai/chat", ask("อีกข้อ"));
+    assert.equal((await noticeCount(up)) - u0, adminHolders, "the recovery notice is not repeated");
+    assert.equal((await getJson(access, "/api/ai/access")).json.data.engine.mode, "ai");
+  });
+
+  await t("15 the monthly cap: warns at 80% and 100% once each, then answers with the fallback without calling the AI", async () => {
+    const used = await getUsage(COMPANY);
+    process.env.AI_MONTHLY_CAP = String(used + 5);
+    try {
+      const n80 = await noticeCount(ENGINE_NOTICE.cap80.title);
+      const n100 = await noticeCount(ENGINE_NOTICE.cap100.title);
+      for (let i = 0; i < 5; i++) {
+        model(say(`ข้อ ${i}`));
+        const r = await call(chat, "/api/ai/chat", ask(`ข้อ ${i}`));
+        assert.equal(r.json.data.engine, "ai", `question ${i + 1} of 5 is still under the cap`);
+      }
+      assert.equal(await auditCount("ai.cap"), 2, "one 80% row and one 100% row");
+      assert.equal((await noticeCount(ENGINE_NOTICE.cap80.title)) - n80, adminHolders);
+      assert.equal((await noticeCount(ENGINE_NOTICE.cap100.title)) - n100, adminHolders);
+      model(say("ต้องไม่ถูกเรียก"));
+      const full = await call(chat, "/api/ai/chat", ask("ข้อที่หก"));
+      assert.equal(full.json.data.engine, "fallback");
+      assert.equal(full.json.data.fallbackReason, "cap");
+      assert.match(full.json.data.reply, /เพดาน/);
+      assert.equal(g.__calls.length, 0);
+      assert.equal(await auditCount("ai.cap"), 2, "being over the cap does not warn again");
+      const a = await getJson(access, "/api/ai/access");
+      assert.equal(a.json.data.engine.mode, "fallback");
+      assert.equal(a.json.data.engine.reason, "cap");
+      assert.equal(a.json.data.engine.cap, used + 5);
+    } finally {
+      delete process.env.AI_MONTHLY_CAP;
+    }
+    assert.equal((await getJson(access, "/api/ai/access")).json.data.engine.mode, "ai", "no cap again: the AI answers");
+  });
+
+  await t("16 quick actions answer from our own data with no AI and keep the same permissions", async () => {
+    model(say("ต้องไม่ถูกเรียก"));
+    for (const action of ["late_today", "absent_today", "pending_approvals", "shifts_week", "eval_progress"]) {
+      const r = await call(quick, "/api/ai/quick", { action });
+      assert.equal(r.status, 200, `${action}: ${JSON.stringify(r.json).slice(0, 200)}`);
+      assert.equal(r.json.data.ok, true, `${action}: ${JSON.stringify(r.json.data).slice(0, 160)}`);
+      assert.match(r.json.data.markdown, new RegExp(LOCAL_SOURCE_LINE.slice(0, 20)), action);
+    }
+    const quota = await call(quick, "/api/ai/quick", { action: "leave_quota", name: "Admin" });
+    assert.equal(quota.json.data.ok, true);
+    assert.match(quota.json.data.markdown, /โควตาวันลา/);
+    const noName = await call(quick, "/api/ai/quick", { action: "leave_quota" });
+    assert.equal(noName.json.data.ok, false);
+    assert.equal(noName.json.data.needs, "name");
+    assert.equal(g.__calls.length, 0, "not one model call for any quick action");
+
+    // writes still come back as a card, with nothing stored
+    const announcements = await prisma.announcement.count();
+    const notes = await prisma.notification.count();
+    const card = await call(quick, "/api/ai/quick", { action: "announce", title: "ทดสอบโหมดสำรอง", body: "เนื้อหา" });
+    assert.equal(card.json.data.ok, true);
+    assert.equal(card.json.data.proposals[0].kind, "create_announcement");
+    const bell = await call(quick, "/api/ai/quick", { action: "notify", title: "ทดสอบ", body: "เนื้อหา", target: "Admin" });
+    assert.equal(bell.json.data.proposals[0].kind, "send_notification");
+    assert.equal(await prisma.announcement.count(), announcements);
+    assert.equal(await prisma.notification.count(), notes);
+    const empty = await call(quick, "/api/ai/quick", { action: "announce", title: "", body: "" });
+    assert.equal(empty.json.data.ok, false);
+    const bad = await call(quick, "/api/ai/quick", { action: "delete_everything" });
+    assert.equal(bad.status, 422);
+
+    // a plain AI user may not write or read what their rights do not cover
+    await asUser(["ai:read", "leave:read"]);
+    const w = await call(quick, "/api/ai/quick", { action: "announce", title: "x", body: "y" });
+    assert.equal(w.json.data.ok, false);
+    assert.match(w.json.data.message, /ไม่ได้รับอนุญาต/);
+    const att = await call(quick, "/api/ai/quick", { action: "late_today" });
+    assert.equal(att.json.data.ok, false);
+    assert.match(att.json.data.message, /ไม่ได้รับอนุญาต/);
+    // no AI right at all, or not signed in
+    await asUser([]);
+    assert.equal((await call(quick, "/api/ai/quick", { action: "late_today" })).status, 403);
+    g.__token = undefined;
+    assert.equal((await call(quick, "/api/ai/quick", { action: "late_today" })).status, 401);
+    await asUser(["*"], { roles: ["Super Admin"] });
+  });
+
+  g.__tx = undefined;
+  throw new Rollback();
+  }, { timeout: 240_000, maxWait: 30_000 });
+  } catch (e) {
+    if (!(e instanceof Rollback)) throw e;
+  }
 
   const after = await counts();
   console.log(JSON.stringify({ before, after, unchanged: JSON.stringify(before) === JSON.stringify(after) }));

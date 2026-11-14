@@ -1,6 +1,8 @@
 import { requireSession } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
 import { canAttachFiles, resolveAiAccess } from "@/lib/ai/scope";
+import { can } from "@/lib/auth/rbac";
+import { engineStatus } from "@/lib/ai/engine";
 
 export const runtime = "nodejs";
 
@@ -16,7 +18,18 @@ export async function GET() {
   try {
     const session = await requireSession();
     const access = await resolveAiAccess(session);
-    return ok({ ...access, canAttach: access.allowed && canAttachFiles(session) });
+    const e = access.allowed ? await engineStatus(session.companyId) : null;
+    return ok({
+      ...access,
+      canAttach: access.allowed && canAttachFiles(session),
+      canManage: can(session.perms, "employee:update"),
+      engine: e && {
+        mode: e.decision.mode,
+        reason: e.decision.mode === "fallback" ? e.decision.reason : undefined,
+        used: e.used,
+        cap: e.cap,
+      },
+    });
   } catch (err) {
     return handleApiError(err);
   }

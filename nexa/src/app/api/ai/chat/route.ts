@@ -15,7 +15,9 @@ import { prisma } from "@/lib/prisma";
 import { loginIdentifier } from "@/lib/format";
 import { REPORT_LABELS, type ReportType } from "@/features/report/schema";
 import type { ProposalCard } from "@/features/ai/proposal";
-import { describeAiFailure } from "@/features/ai/ai-error";
+import { classifyAiFailure, describeAiFailure, isLastingFailure } from "@/features/ai/ai-error";
+import { FALLBACK_REPLY } from "@/features/ai/engine-state";
+import { engineStatus, markDown, markUp, recordChat } from "@/lib/ai/engine";
 
 export const runtime = "nodejs";
 // Up to 6 model steps plus the tools between them; the default limit is too short for a long answer.
@@ -85,7 +87,23 @@ export async function POST(request: NextRequest) {
           "น้องวีบอทยังไม่พร้อมใช้งาน แจ้ง HR ให้เปิดใช้ก่อน",
         steps: [] as Step[],
         proposals: [] as ProposalCard[],
+        engine: "fallback",
+        fallbackReason: "key",
         configured: false,
+      });
+    }
+
+    // Who answers: the AI service, or the built-in quick actions when it is down or this month's cap is used up.
+    const engine = await engineStatus(session.companyId);
+    if (engine.decision.mode === "fallback") {
+      return ok({
+        reply: FALLBACK_REPLY[engine.decision.reason],
+        steps: [] as Step[],
+        proposals: [] as ProposalCard[],
+        files: [] as OutFile[],
+        engine: "fallback",
+        fallbackReason: engine.decision.reason,
+        configured: true,
       });
     }
 
@@ -168,13 +186,22 @@ export async function POST(request: NextRequest) {
       }
 
       if (!reply) reply = "น้องวีบอทตอบคำถามนี้ไม่ได้ ลองถามให้สั้นลง หรือเปลี่ยนคำถาม";
-      return ok({ reply, steps, proposals, files, configured: true });
+      // Bookkeeping must never cost the person their answer.
+      await recordChat(session.companyId, session.sub, engine.used, engine.cap).catch((e) => console.error("[ai/chat] usage record failed:", e));
+      await markUp(session.companyId, engine.health).catch((e) => console.error("[ai/chat] recovery notice failed:", e));
+      return ok({ reply, steps, proposals, files, engine: "ai", configured: true });
     } catch (aiErr) {
       const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
       // The technical message goes to the server log; staff get a plain next step.
       console.error("[ai/chat] model call failed:", msg.slice(0, 600));
       const status = typeof (aiErr as { status?: unknown }).status === "number" ? (aiErr as { status: number }).status : undefined;
-      return ok({ reply: describeAiFailure(status, msg), steps, proposals, files, configured: true });
+      const kind = classifyAiFailure(status, msg);
+      if (isLastingFailure(kind)) {
+        // Credit or key: remember it so the quick actions answer from now on, and tell the administrators once.
+        await markDown(session.companyId, kind, engine.health).catch((e) => console.error("[ai/chat] down notice failed:", e));
+        return ok({ reply: FALLBACK_REPLY[kind], steps, proposals, files, engine: "fallback", fallbackReason: kind, configured: true });
+      }
+      return ok({ reply: describeAiFailure(status, msg), steps, proposals, files, engine: "ai", configured: true });
     }
   } catch (error) {
     return handleApiError(error);

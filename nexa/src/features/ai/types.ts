@@ -21,6 +21,9 @@ export interface ChatResponse {
   proposals?: ProposalCard[];
   /** Files the assistant made for download. */
   files?: OutFile[];
+  /** "fallback" when the quick actions answered or should be used from now on. */
+  engine?: "ai" | "fallback";
+  fallbackReason?: "credit" | "key" | "cap";
   configured: boolean;
 }
 
@@ -29,6 +32,10 @@ export interface AiAccess {
   scope: "TEAM" | "DEPARTMENT" | "COMPANY";
   /** Whether the chat box shows the attach button. */
   canAttach?: boolean;
+  /** Administrators (may edit employees): see the AI settings page. */
+  canManage?: boolean;
+  /** Who answers now: the AI service, or the built-in quick actions. */
+  engine?: { mode: "ai" | "fallback"; reason?: "credit" | "key" | "cap"; used: number; cap: number | null };
 }
 
 /** A file the assistant hands back; `data` is base64. */
@@ -43,3 +50,16 @@ export interface AttachmentPayload {
   name: string;
   data: string;
 }
+
+/** What the quick actions (no AI) are asked and what they answer. Mirrors src/lib/ai/quick.ts. */
+export interface QuickRequest {
+  action: "late_today" | "absent_today" | "pending_approvals" | "leave_quota" | "shifts_week" | "eval_progress" | "announce" | "notify";
+  name?: string;
+  title?: string;
+  body?: string;
+  target?: string;
+}
+
+export type QuickResponse =
+  | { ok: true; markdown: string; proposals: ProposalCard[] }
+  | { ok: false; message: string; needs?: "name" };

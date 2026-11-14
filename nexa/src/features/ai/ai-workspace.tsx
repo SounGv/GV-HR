@@ -22,14 +22,17 @@ import {
 import { toast } from "sonner";
 import { VBot } from "@/components/shared/v-bot";
 import { cn } from "@/lib/utils";
-import { useAiAccess, useChat } from "./hooks";
+import { useAiAccess, useChat, useQuick } from "./hooks";
+import { EngineBadge, FallbackBanner, QuickChips, QuickForm, useEngineMode } from "./fallback-ui";
+import { FALLBACK_NOT_UNDERSTOOD } from "./engine-state";
+import { parseQuickCommand } from "./quick-actions";
 import { ApiError } from "@/lib/api/client";
 import { AttachButton, AttachTray, FileDownloads, SentFiles, useAttachments } from "./attachments-ui";
 import { playReplyChime, unlockReplyChime } from "./reply-chime";
 import { MarkdownLite } from "./markdown-lite";
 import { firstHeading, splitSummary, withoutFirstHeading } from "./reply-parts";
 import { ProposalCards } from "./proposal-cards";
-import type { ChatMessage, ChatStep, OutFile, ProposalCard } from "./types";
+import type { ChatMessage, ChatStep, OutFile, ProposalCard, QuickRequest } from "./types";
 
 /** Ready-made questions for the empty result panel, grouped by what HR asks most. */
 const PROMPTS = [
@@ -85,20 +88,72 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   const chat = useChat();
   const attach = useAttachments();
   const access = useAiAccess();
-  const canAttach = access.data?.data.canAttach === true;
+  const engine = useEngineMode();
+  const quick = useQuick();
+  const [form, setForm] = useState<"announce" | "notify" | null>(null);
+  const fallback = engine.mode === "fallback";
+  // Reading files needs the AI, so the attach button waits for it to come back.
+  const canAttach = access.data?.data.canAttach === true && !fallback;
   const elapsed = useElapsed(chat.isPending);
   const scrollRef = useRef<HTMLDivElement>(null);
   const askedInitial = useRef(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [turns, chat.isPending]);
 
+  /** A quick action: answered from our own data with no AI. Writes still come back as a confirmation card. */
+  function runQuick(request: QuickRequest, label: string) {
+    if (quick.isPending) return;
+    setForm(null);
+    setInput("");
+    const next: Turn[] = [...turns.filter((t) => !t.failed), { role: "user", content: label }];
+    setTurns(next);
+    quick.mutate(request, {
+      onSuccess: (res) => {
+        const r = res.data;
+        setTurns((prev) => [...prev, { role: "assistant", content: r.ok ? r.markdown : r.message, proposals: r.ok ? r.proposals : undefined, question: label }]);
+        setSelected(next.length);
+        if (!r.ok && r.needs === "name") {
+          setInput("โควตาวันลาของ ");
+          inputRef.current?.focus();
+        }
+        playReplyChime();
+      },
+      onError: (err) => {
+        const message = err instanceof ApiError && err.status < 500 && err.status !== 401 ? err.message : "เชื่อมต่อไม่ได้ ตรวจสัญญาณอินเทอร์เน็ต แล้วลองใหม่";
+        setTurns((prev) => [...prev, { role: "assistant", content: message, question: label }]);
+      },
+    });
+  }
+
+  function pickName() {
+    setInput("โควตาวันลาของ ");
+    inputRef.current?.focus();
+  }
+
   async function submit(text: string, history: Turn[] = turns) {
     const hasFiles = canAttach && attach.files.length > 0;
     const q = text.trim() || (hasFiles ? "ช่วยดูไฟล์ที่แนบ แล้วสรุปให้" : "");
-    if (!q || chat.isPending) return;
+    if (!q || chat.isPending || quick.isPending) return;
     unlockReplyChime();
+
+    // In the fallback, a short command we understand is answered here with no AI; anything else still goes to the chat,
+    // which also lets the AI answer as soon as it is back.
+    if (fallback && !hasFiles) {
+      const cmd = parseQuickCommand(q);
+      if (cmd) {
+        if (cmd.action === "announce" || cmd.action === "notify") {
+          setForm(cmd.action);
+          setInput("");
+        } else {
+          runQuick({ action: cmd.action, ...(cmd.name ? { name: cmd.name } : {}) }, q);
+        }
+        return;
+      }
+    }
+    const wasFallback = fallback;
     let attachments: Awaited<ReturnType<typeof attach.toPayload>> = [];
     if (hasFiles) {
       try {
@@ -117,10 +172,13 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
     chat.mutate({ messages, attachments }, {
       onSuccess: (res) => {
         if (hasFiles) attach.clear();
+        engine.observe(res.data);
+        // The same fallback twice in a row: the person has read why, so just say this question needs the AI.
+        const reply = wasFallback && res.data.engine === "fallback" ? FALLBACK_NOT_UNDERSTOOD : res.data.reply;
         // The answer lands right after the question we just added, at index next.length.
         setTurns((prev) => [
           ...prev,
-          { role: "assistant", content: res.data.reply, steps: res.data.steps, proposals: res.data.proposals, outFiles: res.data.files, question: q, seconds: Math.round((Date.now() - started) / 1000) },
+          { role: "assistant", content: reply, steps: res.data.steps, proposals: res.data.proposals, outFiles: res.data.files, question: q, seconds: Math.round((Date.now() - started) / 1000) },
         ]);
         setSelected(next.length);
         playReplyChime();
@@ -207,13 +265,23 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             type="button"
             onClick={newChat}
             disabled={chat.isPending || turns.length === 0}
-            className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-border px-2.5 text-[12.5px] font-medium transition-colors hover:border-[#b9c2c9] disabled:opacity-50"
+            className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[10px] border border-border px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors hover:border-[#b9c2c9] disabled:opacity-50"
           >
             <Plus className="size-3.5" aria-hidden="true" /> แชทใหม่
           </button>
         </header>
 
+        <div className="flex items-center gap-2 border-b border-border px-4 py-1.5">
+          <EngineBadge mode={engine.mode} />
+          {access.data?.data.canManage && (
+            <Link href="/ai/settings" className="ml-auto inline-flex min-h-8 items-center text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">
+              ตั้งค่า
+            </Link>
+          )}
+        </div>
+
         <div ref={scrollRef} className="flex-1 space-y-3.5 overflow-y-auto p-4" aria-live="polite">
+          {fallback && <FallbackBanner reason={engine.reason} />}
           <div className="flex items-start gap-2">
             <VBot mood="hi" className="h-7 w-8" />
             <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13.5px] shadow-[var(--card-shadow)]">
@@ -251,6 +319,13 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             ),
           )}
 
+          {quick.isPending && (
+            <div className="flex items-start gap-2" role="status">
+              <VBot mood="think" className="h-7 w-8" />
+              <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13px] text-muted-foreground shadow-[var(--card-shadow)]">กำลังดึงข้อมูลจากระบบ…</p>
+            </div>
+          )}
+
           {chat.isPending && (
             <div className="flex items-start gap-2" role="status">
               <VBot mood="think" className="h-7 w-8" />
@@ -271,10 +346,21 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
           }}
           className="border-t border-border p-3"
         >
+          {fallback && (
+            <div className="mb-2 space-y-2">
+              {turns.length > 0 &&
+                (form ? (
+                  <QuickForm key={form} kind={form} busy={quick.isPending} onSubmit={runQuick} onCancel={() => setForm(null)} />
+                ) : (
+                  <QuickChips onRun={runQuick} onPickName={pickName} onOpenForm={setForm} disabled={quick.isPending} className="flex-nowrap overflow-x-auto pb-1" />
+                ))}
+            </div>
+          )}
           {canAttach && <AttachTray files={attach.files} errors={attach.errors} onRemove={attach.remove} />}
           <div className="flex items-end gap-1.5 rounded-[14px] border-[1.5px] border-[#cfd6dc] bg-card py-1.5 pr-1.5 pl-1.5 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15 dark:border-border">
             {canAttach ? <AttachButton onPick={attach.add} disabled={chat.isPending} className="size-9" /> : <span className="w-1.5 shrink-0" aria-hidden="true" />}
             <textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -286,13 +372,13 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               rows={1}
               maxLength={2000}
               aria-label="พิมพ์คำถามถึง AI Assistant"
-              placeholder="ถามเรื่องทีม เช่น ใครมาสายเกิน 3 ครั้งเดือนนี้"
+              placeholder={fallback ? "พิมพ์คำสั่งสั้น เช่น ใครมาสายวันนี้" : "ถามเรื่องทีม เช่น ใครมาสายเกิน 3 ครั้งเดือนนี้"}
               className="max-h-32 min-h-9 flex-1 resize-none bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground"
             />
             <button
               type="submit"
               aria-label="ส่งคำถาม"
-              disabled={chat.isPending || (!input.trim() && !(canAttach && attach.files.length > 0))}
+              disabled={chat.isPending || quick.isPending || (!input.trim() && !(canAttach && attach.files.length > 0))}
               className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#115e59] disabled:bg-muted disabled:text-muted-foreground"
             >
               <ArrowUp className="size-4" strokeWidth={2.4} />
@@ -388,6 +474,17 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               <h2 className="mt-2 text-[22px] leading-snug font-bold">วันนี้อยากรู้อะไรเรื่องทีม</h2>
               <p className="text-sm text-muted-foreground">เลือกคำถามด้านล่าง หรือพิมพ์ทางซ้าย ผมจะดึงข้อมูลจริงมาจัดเป็นตารางให้ที่นี่</p>
             </div>
+            {fallback ? (
+              <div className="mt-5 space-y-3">
+                {turns.length > 0 ? (
+                  <p className="text-center text-sm text-muted-foreground">กดคำตอบทางซ้ายเพื่อดูรายละเอียดที่นี่ หรือใช้ปุ่มลัดใต้ช่องพิมพ์</p>
+                ) : form ? (
+                  <QuickForm key={form} kind={form} busy={quick.isPending} onSubmit={runQuick} onCancel={() => setForm(null)} />
+                ) : (
+                  <QuickChips className="justify-center" onRun={runQuick} onPickName={pickName} onOpenForm={setForm} disabled={quick.isPending} />
+                )}
+              </div>
+            ) : (
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               {PROMPTS.map((p) => {
                 const Icon = p.icon;
@@ -409,6 +506,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                 );
               })}
             </div>
+            )}
           </div>
         )}
       </section>
