@@ -14,6 +14,7 @@ import {
   FileSpreadsheet,
   Loader2,
   LogOut,
+  MessageSquare,
   Plus,
   RotateCcw,
   UsersRound,
@@ -59,6 +60,65 @@ interface Turn {
   failed?: boolean;
 }
 
+/**
+ * How the workspace shares its width.
+ * normal: result centred at a readable width. wide: result fills its panel and the chat column gets narrower.
+ * full: the chat column folds into a slim rail so the result gets the whole workspace.
+ */
+type PanelWidth = "normal" | "wide" | "full";
+const PANEL_WIDTHS: { id: PanelWidth; label: string; hint: string; className: string }[] = [
+  { id: "normal", label: "ปกติ", hint: "ผลลัพธ์อยู่กลาง กว้างพอดีอ่าน", className: "max-w-[920px]" },
+  { id: "wide", label: "กว้าง", hint: "ผลลัพธ์ใช้พื้นที่ทั้งแผง ช่องแชทแคบลง", className: "max-w-none" },
+  { id: "full", label: "เต็มจอ", hint: "ซ่อนช่องแชท ให้ผลลัพธ์ใช้พื้นที่ทั้งหมด", className: "max-w-none" },
+];
+const PANEL_WIDTH_KEY = "gv-ai-panel-width";
+
+/** The chosen width, remembered per browser. Read after mount so the server and client render the same first frame. */
+function usePanelWidth(): [PanelWidth, (w: PanelWidth) => void] {
+  const [width, setWidth] = useState<PanelWidth>("normal");
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(PANEL_WIDTH_KEY);
+      if (saved === "normal" || saved === "wide" || saved === "full") setWidth(saved);
+    } catch {
+      // Storage can be blocked; the default width still works.
+    }
+  }, []);
+  const choose = (w: PanelWidth) => {
+    setWidth(w);
+    try {
+      window.localStorage.setItem(PANEL_WIDTH_KEY, w);
+    } catch {
+      // Not remembered, still applied for this visit.
+    }
+  };
+  return [width, choose];
+}
+
+/** Three-way width switch for the result panel. */
+function PanelWidthSwitch({ value, onChange }: { value: PanelWidth; onChange: (w: PanelWidth) => void }) {
+  return (
+    <div role="radiogroup" aria-label="ความกว้างของแผงผลลัพธ์" className="inline-flex items-center gap-0.5 rounded-[10px] border border-border bg-card p-0.5">
+      {PANEL_WIDTHS.map((w) => (
+        <button
+          key={w.id}
+          type="button"
+          role="radio"
+          aria-checked={value === w.id}
+          title={w.hint}
+          onClick={() => onChange(w.id)}
+          className={cn(
+            "h-7 rounded-lg px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors",
+            value === w.id ? "bg-[var(--flip7-teal-dark)] text-white" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {w.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Ticks once a second while `running`, so the wait shows progress instead of looking frozen. */
 function useElapsed(running: boolean): number {
   const [seconds, setSeconds] = useState(0);
@@ -85,6 +145,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [panelWidth, setPanelWidth] = usePanelWidth();
   const chat = useChat();
   const attach = useAttachments();
   const access = useAiAccess();
@@ -257,10 +318,35 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
     }
   }
 
+  // The chat folds away only while there is an answer to look at; with nothing selected the person still needs the input.
+  const chatFolded = panelWidth === "full" && answer !== null;
+  const widthClass = PANEL_WIDTHS.find((w) => w.id === panelWidth)?.className;
+
   return (
-    <div className="grid h-[calc(100dvh-8.5rem)] min-h-[560px] grid-cols-[minmax(340px,420px)_minmax(0,1fr)] overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]">
-      {/* Left: the conversation */}
-      <section aria-label="แชทกับ AI Assistant" className="flex min-h-0 flex-col border-r border-border">
+    <div
+      className={cn(
+        "grid h-[calc(100dvh-8.5rem)] min-h-[560px] overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]",
+        chatFolded ? "grid-cols-[56px_minmax(0,1fr)]" : panelWidth === "wide" ? "grid-cols-[minmax(300px,340px)_minmax(0,1fr)]" : "grid-cols-[minmax(340px,420px)_minmax(0,1fr)]",
+      )}
+    >
+      {chatFolded && (
+        <div className="flex flex-col items-center gap-2 border-r border-border py-3">
+          <button
+            type="button"
+            onClick={() => setPanelWidth("wide")}
+            aria-label="เปิดช่องแชท"
+            title="เปิดช่องแชท เพื่อถามต่อ"
+            className="flex size-10 items-center justify-center rounded-[10px] border border-border text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+          >
+            <MessageSquare className="size-[18px]" aria-hidden="true" />
+          </button>
+          {(chat.isPending || quick.isPending) && (
+            <Loader2 className="size-4 animate-spin text-muted-foreground motion-reduce:animate-[spin_2.5s_linear_infinite]" role="status" aria-label="กำลังดึงข้อมูล" />
+          )}
+        </div>
+      )}
+      {/* Left: the conversation (kept mounted when folded, so a half-typed question is not lost) */}
+      <section aria-label="แชทกับ AI Assistant" className={cn("flex min-h-0 flex-col border-r border-border", chatFolded && "hidden")}>
         <header className="flex items-center gap-2.5 border-b border-border px-4 py-3">
           <VBot mood={chat.isPending ? "think" : "ok"} className="h-8 w-9" />
           <div className="min-w-0">
@@ -396,8 +482,11 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
 
       {/* Right: the selected answer, laid out wide */}
       <section aria-label="ผลลัพธ์" className="min-w-0 overflow-y-auto bg-[linear-gradient(180deg,#eef3f3_0,var(--background)_220px)] px-6 py-5 dark:bg-none">
+        <div className="mb-3 flex justify-end">
+          <PanelWidthSwitch value={panelWidth} onChange={setPanelWidth} />
+        </div>
         {answer && answerParts ? (
-          <article className="mx-auto max-w-[920px] space-y-3">
+          <article className={cn("mx-auto space-y-3", widthClass)}>
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-0 flex-1">
                 <h2 className="text-xl leading-snug font-bold">{panelTitle}</h2>
@@ -466,7 +555,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             </div>
           </article>
         ) : chat.isPending ? (
-          <div className="grid h-full place-items-center text-center" role="status">
+          <div className="grid h-[calc(100%-2.875rem)] place-items-center text-center" role="status">
             <div>
               <VBot mood="think" full className="mx-auto h-[118px] w-[100px]" />
               <p className="mt-2 text-base font-semibold">กำลังหาคำตอบ</p>
@@ -474,7 +563,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             </div>
           </div>
         ) : (
-          <div className="mx-auto flex min-h-full max-w-[760px] flex-col justify-center py-4">
+          <div className="mx-auto flex min-h-[calc(100%-2.875rem)] max-w-[760px] flex-col justify-center py-4">
             <div className="text-center">
               <VBot mood="hi" full className="mx-auto h-[122px] w-[104px]" />
               <h2 className="mt-2 text-[22px] leading-snug font-bold">วันนี้อยากรู้อะไรเรื่องทีม</h2>
