@@ -113,51 +113,51 @@ export async function prepareProposal(
   return { card: buildAnnouncementCard(token, input, me ? displayName(me) : "คุณ", audience), message: PROPOSAL_TOOL_RESULT };
 }
 
+const asStrings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+const QUOTA_TYPES = ["ANNUAL", "SICK", "PERSONAL"] as const;
+
+function readShift(sh: Record<string, unknown> | undefined): ProposalPayload["shift"] {
+  if (!sh || typeof sh.templateId !== "string" || !Array.isArray(sh.employeeIds) || !Array.isArray(sh.dates)) return undefined;
+  if (typeof sh.changing !== "number" || typeof sh.replaced !== "number") return undefined;
+  return { templateId: sh.templateId, employeeIds: asStrings(sh.employeeIds), dates: asStrings(sh.dates), changing: sh.changing, replaced: sh.replaced };
+}
+
+function readApprove(ap: Record<string, unknown> | undefined): ProposalPayload["approve"] {
+  if (!ap || !Array.isArray(ap.items)) return undefined;
+  return {
+    items: (ap.items as unknown[]).flatMap((x) => {
+      const o = (x ?? {}) as Record<string, unknown>;
+      return (o.kind === "leave" || o.kind === "correction") && typeof o.id === "string" ? [{ kind: o.kind as "leave" | "correction", id: o.id }] : [];
+    }),
+  };
+}
+
+function readQuota(qo: Record<string, unknown> | undefined): ProposalPayload["quota"] {
+  if (!qo || typeof qo.year !== "number" || !Array.isArray(qo.items)) return undefined;
+  const items = (qo.items as unknown[]).flatMap((x) => {
+    const o = (x ?? {}) as Record<string, unknown>;
+    const type = (QUOTA_TYPES as readonly unknown[]).includes(o.type) ? (o.type as (typeof QUOTA_TYPES)[number]) : null;
+    return type && typeof o.employeeId === "string" && typeof o.before === "number" && typeof o.after === "number"
+      ? [{ employeeId: o.employeeId, type, before: o.before, after: o.after }]
+      : [];
+  });
+  return { year: qo.year, items };
+}
+
+/** Reads the payload a signed card carried back into its typed shape; null when it is not one of ours. */
 function readPayload(raw: Record<string, unknown>): ProposalPayload | null {
   const kind = raw.kind;
   if (typeof kind !== "string" || !(PROPOSAL_KINDS as readonly string[]).includes(kind)) return null;
   if (typeof raw.title !== "string" || typeof raw.body !== "string") return null;
-  const sh = raw.shift as Record<string, unknown> | undefined;
-  const shift =
-    sh && typeof sh.templateId === "string" && Array.isArray(sh.employeeIds) && Array.isArray(sh.dates) && typeof sh.changing === "number" && typeof sh.replaced === "number"
-      ? {
-          templateId: sh.templateId,
-          employeeIds: sh.employeeIds.filter((x): x is string => typeof x === "string"),
-          dates: sh.dates.filter((x): x is string => typeof x === "string"),
-          changing: sh.changing,
-          replaced: sh.replaced,
-        }
-      : undefined;
-  const ap = raw.approve as Record<string, unknown> | undefined;
-  const approve =
-    ap && Array.isArray(ap.items)
-      ? {
-          items: (ap.items as unknown[]).flatMap((x) => {
-            const o = (x ?? {}) as Record<string, unknown>;
-            return (o.kind === "leave" || o.kind === "correction") && typeof o.id === "string" ? [{ kind: o.kind as "leave" | "correction", id: o.id }] : [];
-          }),
-        }
-      : undefined;
   return {
     kind: kind as ProposalKind,
     title: raw.title,
     body: raw.body,
     target: typeof raw.target === "string" ? raw.target : undefined,
     count: typeof raw.count === "number" ? raw.count : undefined,
-    shift,
-    approve,
-    quota: (() => {
-      const qo = raw.quota as Record<string, unknown> | undefined;
-      if (!qo || typeof qo.year !== "number" || !Array.isArray(qo.items)) return undefined;
-      const items = (qo.items as unknown[]).flatMap((x) => {
-        const o = (x ?? {}) as Record<string, unknown>;
-        const okType = o.type === "ANNUAL" || o.type === "SICK" || o.type === "PERSONAL";
-        return okType && typeof o.employeeId === "string" && typeof o.before === "number" && typeof o.after === "number"
-          ? [{ employeeId: o.employeeId, type: o.type as "ANNUAL" | "SICK" | "PERSONAL", before: o.before, after: o.after }]
-          : [];
-      });
-      return { year: qo.year, items };
-    })(),
+    shift: readShift(raw.shift as Record<string, unknown> | undefined),
+    approve: readApprove(raw.approve as Record<string, unknown> | undefined),
+    quota: readQuota(raw.quota as Record<string, unknown> | undefined),
     template: raw.template && typeof raw.template === "object" ? (raw.template as Record<string, unknown>) : undefined,
   };
 }
@@ -194,13 +194,22 @@ export async function confirmProposal(
   if (p.kind === "adjust_leave_quota") return confirmQuotaProposal(session, p, scopeWhere, meta);
 
   if (p.kind === "send_notification") {
-    const already = await prisma.notification.count({
-      where: { companyId, createdById: session.sub, category: "ai", title: p.title, body: p.body, createdAt: { gte: since } },
-    });
-    if (already > 0) return { status: "already", message: `ส่งไปแล้วก่อนหน้านี้ ถึง ${already} คน ไม่ได้ส่งซ้ำ` };
-
     const recipients = await resolveRecipients(companyId, p.target ?? "", scopeWhere);
     if (recipients.length === 0) return { status: "refused", message: "ไม่พบผู้รับแล้ว ยังไม่มีอะไรถูกส่ง" };
+    // Already sent by an earlier press of THIS card: the same words, to these same people, after the card was drawn.
+    // (Two cards with the same words but different people must not block each other.)
+    const already = await prisma.notification.count({
+      where: {
+        companyId,
+        createdById: session.sub,
+        category: "ai",
+        title: p.title,
+        body: p.body,
+        createdAt: { gte: since },
+        employeeId: { in: recipients.map((r) => r.id) },
+      },
+    });
+    if (already >= recipients.length) return { status: "already", message: `ส่งไปแล้วก่อนหน้านี้ ถึง ${already} คน ไม่ได้ส่งซ้ำ` };
     if (recipients.length !== p.count) {
       return {
         status: "refused",
@@ -222,7 +231,15 @@ export async function confirmProposal(
       })),
     });
     const written = await prisma.notification.count({
-      where: { companyId, createdById: session.sub, category: "ai", title: p.title, body: p.body, createdAt: { gte: since } },
+      where: {
+        companyId,
+        createdById: session.sub,
+        category: "ai",
+        title: p.title,
+        body: p.body,
+        createdAt: { gte: since },
+        employeeId: { in: recipients.map((r) => r.id) },
+      },
     });
     await writeAudit({
       companyId,

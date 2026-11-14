@@ -88,6 +88,16 @@ const snapshot = async () => ({
           assert.equal(await audit("ai.send_notification"), 1);
         });
 
+        await t("W1b two cards with the same words but different people: sending one does not block the other", async () => {
+          const other = await prisma.employee.findFirst({ where: { companyId: COMPANY, deletedAt: null, status: "ACTIVE", id: { not: adminId } }, select: { id: true, employeeCode: true } });
+          const a = await draw("send_notification", { target: "Admin", title: "ข้อความซ้ำ", body: "เหมือนกัน" });
+          const b = await draw("send_notification", { target: other!.employeeCode, title: "ข้อความซ้ำ", body: "เหมือนกัน" });
+          assert.equal((await press(b.card)).status, "done", "card B first");
+          assert.equal((await press(a.card)).status, "done", "card A must still send to its own person");
+          assert.equal(await prisma.notification.count({ where: { title: "ข้อความซ้ำ", employeeId: { in: [adminId, other!.id] } } }), 2);
+          assert.equal((await press(a.card)).status, "already");
+        });
+
         await t("W2 announcement: confirm publishes, notifies everyone, repeat press does nothing", async () => {
           const notifBefore = await prisma.notification.count({ where: { category: "announcement" } });
           const { card } = await draw("create_announcement", { title: "ประกาศทดสอบ", body: "เนื้อหาทดสอบ" });
