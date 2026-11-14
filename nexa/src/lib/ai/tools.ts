@@ -139,6 +139,27 @@ export const NEXA_TOOLS: NexaTool[] = [
     },
   },
   {
+    name: "approve_requests",
+    description:
+      "Prepare the approval of pending leave requests (kind=leave) and attendance time corrections (kind=correction) by id; get the ids from list_pending_approvals first. This only draws a confirmation card; the user presses confirm themselves and nothing is approved before that. Max 20 per card. Approve only (rejecting needs a reason and is done on the request page). Overtime and unpaid leave are NOT supported because they change pay: tell the user to approve them on their own pages. The card skips requests that cannot be approved and says why. Requires approver permission; managers can only approve their own team.",
+    input_schema: {
+      type: "object",
+      properties: {
+        requests: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { kind: { type: "string", enum: ["leave", "correction"] }, id: { type: "string" } },
+            required: ["kind", "id"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["requests"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "web_search",
     description:
       "Search the public internet. Use ONLY when the answer isn't available from the other tools (internal company data) — e.g. Thai labor law, government holiday announcements, market/industry benchmarks, or general HR knowledge not specific to this company. NEVER use this for questions about this company's own employees, attendance, leave, payroll, or announcements — those must come from the internal tools. When you use results from this tool, clearly tell the user the information is from the internet (not the company's internal system) and cite the source title/link.",
@@ -356,7 +377,8 @@ export async function executeTool(
       // presses confirm (POST /api/ai/confirm), so a wrong guess by the model cannot reach anyone.
       case "send_notification":
       case "create_announcement":
-      case "assign_shifts": {
+      case "assign_shifts":
+      case "approve_requests": {
         const { card, message } = await prepareProposal(session, name, input, scopeWhere);
         if (card) proposals?.push(card);
         return message;

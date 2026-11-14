@@ -39,7 +39,7 @@ export const READ_TOOLS: NexaTool[] = [
   {
     name: "list_pending_approvals",
     description:
-      "List requests waiting for the asker's approval: leave (ลา), overtime (OT) and attendance time corrections (ขอแก้เวลา). HR sees all; a manager sees their own team. Read-only: this does not approve anything. Use for 'มีอะไรรออนุมัติบ้าง'.",
+      "List requests waiting for the asker's approval: leave (ลา), overtime (OT) and attendance time corrections (ขอแก้เวลา). HR sees all; a manager sees their own team. Read-only: this does not approve anything (use approve_requests with the ids for that). Use for 'มีอะไรรออนุมัติบ้าง'.",
     input_schema: {
       type: "object",
       properties: { kind: { type: "string", enum: ["all", "leave", "overtime", "correction"], description: "default all" } },
@@ -203,7 +203,7 @@ export async function executeReadTool(
       }
       if (Object.keys(out).length === 0 && denied.length > 0) return NO_PERM(denied[0]);
       if (denied.length > 0) out.notAllowed = denied;
-      out.note = `แสดงไม่เกิน ${LIMIT} รายการต่อประเภท (total คือจำนวนทั้งหมด) การอนุมัติทำที่หน้าคำขอ น้องวีบอทยังอนุมัติให้ไม่ได้`;
+      out.note = `แสดงไม่เกิน ${LIMIT} รายการต่อประเภท (total คือจำนวนทั้งหมด) ถ้าจะอนุมัติลา (kind=leave) หรือขอแก้เวลา (kind=correction) ให้ใช้ approve_requests ด้วย id ในรายการนี้ OT อนุมัติผ่านน้องวีบอทไม่ได้ ต้องทำที่หน้า OT`;
       return JSON.stringify(out);
     }
 

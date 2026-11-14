@@ -6,6 +6,7 @@ import { writeAudit } from "@/lib/audit";
 import { displayName } from "@/lib/format";
 import { createAnnouncement } from "@/features/announcement/service";
 import { confirmShiftProposal, prepareShiftProposal } from "@/lib/ai/shift-proposal";
+import { confirmApproveProposal, prepareApproveProposal } from "@/lib/ai/approve-proposal";
 import { shouldPushToLine } from "@/features/notification/line-policy";
 import {
   buildAnnouncementCard,
@@ -22,7 +23,8 @@ import {
 
 type Meta = { ip?: string; userAgent?: string };
 
-const NEED_PERM: Record<ProposalKind, string> = {
+/** One permission per kind; approve_requests checks leave and attendance approval itself, per request. */
+const NEED_PERM: Record<Exclude<ProposalKind, "approve_requests">, string> = {
   send_notification: "notification:create",
   create_announcement: "announcement:create",
   assign_shifts: "shift:create",
@@ -76,6 +78,7 @@ export async function prepareProposal(
   rawInput: Record<string, unknown>,
   scopeWhere?: Prisma.EmployeeWhereInput,
 ): Promise<{ card: ProposalCard | null; message: string }> {
+  if (kind === "approve_requests") return prepareApproveProposal(session, rawInput, scopeWhere);
   const need = NEED_PERM[kind];
   if (!can(session.perms, need)) {
     return { card: null, message: `ไม่ได้รับอนุญาต: ต้องมีสิทธิ์ ${need} จึงจะใช้เครื่องมือนี้ได้` };
@@ -125,6 +128,16 @@ function readPayload(raw: Record<string, unknown>): ProposalPayload | null {
           replaced: sh.replaced,
         }
       : undefined;
+  const ap = raw.approve as Record<string, unknown> | undefined;
+  const approve =
+    ap && Array.isArray(ap.items)
+      ? {
+          items: (ap.items as unknown[]).flatMap((x) => {
+            const o = (x ?? {}) as Record<string, unknown>;
+            return (o.kind === "leave" || o.kind === "correction") && typeof o.id === "string" ? [{ kind: o.kind as "leave" | "correction", id: o.id }] : [];
+          }),
+        }
+      : undefined;
   return {
     kind: kind as ProposalKind,
     title: raw.title,
@@ -132,6 +145,7 @@ function readPayload(raw: Record<string, unknown>): ProposalPayload | null {
     target: typeof raw.target === "string" ? raw.target : undefined,
     count: typeof raw.count === "number" ? raw.count : undefined,
     shift,
+    approve,
   };
 }
 
@@ -155,6 +169,7 @@ export async function confirmProposal(
   const p = readPayload(verified.payload);
   if (!p) return { status: "refused", message: "การ์ดไม่ถูกต้อง ให้น้องวีบอทเตรียมใหม่" };
 
+  if (p.kind === "approve_requests") return confirmApproveProposal(session, p, scopeWhere, new Date(verified.iat * 1000), meta);
   const need = NEED_PERM[p.kind];
   if (!can(session.perms, need)) return { status: "refused", message: `ไม่มีสิทธิ์ทำรายการนี้ (ต้องมี ${need}) ยังไม่มีอะไรถูกส่ง` };
 

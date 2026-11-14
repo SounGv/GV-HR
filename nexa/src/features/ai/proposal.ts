@@ -5,9 +5,9 @@
  * (scripts/check-ai-proposal.mjs) and the same types serve the chat screens.
  */
 
-export type ProposalKind = "send_notification" | "create_announcement" | "assign_shifts";
+export type ProposalKind = "send_notification" | "create_announcement" | "assign_shifts" | "approve_requests";
 
-export const PROPOSAL_KINDS: readonly ProposalKind[] = ["send_notification", "create_announcement", "assign_shifts"];
+export const PROPOSAL_KINDS: readonly ProposalKind[] = ["send_notification", "create_announcement", "assign_shifts", "approve_requests"];
 
 /** Limits match the announcement form (features/announcement/schema.ts) so a card never promises what the page would refuse. */
 export const PROPOSAL_LIMITS = { title: 200, body: 5000 } as const;
@@ -17,7 +17,7 @@ export interface ProposalCard {
   /** Signed token; the confirm endpoint accepts nothing else. */
   token: string;
   kind: ProposalKind;
-  icon: "bell" | "megaphone" | "calendar";
+  icon: "bell" | "megaphone" | "calendar" | "clipboard";
   /** Small label above the title, e.g. "ประกาศถึงทุกคน". */
   kindLabel: string;
   title: string;
@@ -28,6 +28,8 @@ export interface ProposalCard {
   table?: { head: string[]; rows: string[][] };
   /** The full list behind a "ดูครบทั้ง N รายการ" fold. */
   detail?: { label: string; head: string[]; rows: string[][] };
+  /** Items left out of the card, with the reason for each. */
+  skipped?: { title: string; items: string[] };
   /** One-line warning shown with a status icon, e.g. that sending cannot be undone. */
   note?: string;
   confirmLabel: string;
@@ -45,6 +47,8 @@ export interface ProposalPayload {
   /** Recipients when the card was drawn; confirm refuses if it has changed since. */
   count?: number;
   /** assign_shifts only: what the card promised, checked again before anything is written. */
+  /** approve_requests only: the requests the card listed, in order. */
+  approve?: { items: { kind: "leave" | "correction"; id: string }[] };
   shift?: { templateId: string; employeeIds: string[]; dates: string[]; changing: number; replaced: number };
 }
 

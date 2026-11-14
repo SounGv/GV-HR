@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Bell, CalendarCheck, CheckCircle2, ChevronRight, Info, Loader2, Megaphone, TriangleAlert, XCircle } from "lucide-react";
+import { Bell, CalendarCheck, CheckCircle2, ChevronRight, ClipboardCheck, Info, Loader2, Megaphone, TriangleAlert, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,7 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
     },
   });
 
-  const Icon = card.icon === "megaphone" ? Megaphone : card.icon === "calendar" ? CalendarCheck : Bell;
+  const Icon = card.icon === "megaphone" ? Megaphone : card.icon === "calendar" ? CalendarCheck : card.icon === "clipboard" ? ClipboardCheck : Bell;
 
   return (
     <section
@@ -95,6 +95,19 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
         )}
 
         {card.table && <ProposalTable head={card.table.head} rows={card.table.rows} />}
+
+        {card.skipped && (
+          <div className="text-[13.5px]">
+            <p className="font-semibold">{card.skipped.title}</p>
+            <ul className="mt-0.5 list-disc space-y-1 pl-5">
+              {card.skipped.items.map((t, i) => (
+                <li key={i} className="break-words">
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {card.detail && (
           <details className="group">
