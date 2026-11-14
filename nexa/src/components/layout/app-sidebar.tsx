@@ -225,19 +225,11 @@ export function AppSidebar() {
                     type="button"
                     onClick={() => toggle(group.label)}
                     aria-expanded={expanded}
-                    className="flex h-11 w-full items-center gap-3 rounded-xl px-2.5 text-[14.5px] font-semibold text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                    className={cn("flex h-11 w-full items-center gap-3 rounded-xl px-2.5 text-[14.5px] font-semibold text-sidebar-foreground transition-colors hover:bg-sidebar-accent", expanded && "bg-[color-mix(in_srgb,var(--gi-soft)_55%,transparent)] text-[var(--gi-deep)]")}
                   >
                     {/* The open group's icon fills teal so you can see where you are at a glance. */}
-                    <span
-                      className={cn(
-                        "flex size-[30px] shrink-0 items-center justify-center rounded-[9px] transition-colors",
-                        expanded
-                          ? "bg-[linear-gradient(150deg,#115e59,#0f766e_55%,#0d9488)] text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_4px_10px_-6px_rgba(15,118,110,.5)]"
-                          : "border border-sidebar-border bg-card text-[#0f766e] shadow-[0_1px_2px_rgba(19,21,22,.06)] dark:text-[#2dd4bf]",
-                      )}
-                    >
-                      <group.icon className="size-[17px]" strokeWidth={2.2} />
-                    </span>
+                    {/* Duotone group icon (group-icons.tsx); the open group's row tints teal instead of a filled chip. */}
+                    <group.icon className="size-[28px] shrink-0" />
                     <span className="flex-grow text-left">{group.label}</span>
                     <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
                   </button>

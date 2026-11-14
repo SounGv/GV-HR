@@ -537,8 +537,9 @@ export function ReportView() {
     setTypesState(typesFromUrl());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
-  const [from, setFrom] = useState<string>(firstOfMonth());
-  const [to, setTo] = useState<string>(todayStr());
+  // ?from=&to= lets other pages open one exact range (the home chart opens one day).
+  const [from, setFrom] = useState<string>(() => searchParams.get("from") ?? firstOfMonth());
+  const [to, setTo] = useState<string>(() => searchParams.get("to") ?? searchParams.get("from") ?? todayStr());
   const [departmentIds, setDepartmentIds] = useState<string[]>([]);
   const [employmentType, setEmploymentType] = useState<string>(ALL_TYPE);
   // Same deep-link convention as "view" above — the command palette's

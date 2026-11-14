@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, CalendarDays, CheckCircle2, GitBranch, PencilLine, ReceiptText, Zap } from "lucide-react";
+import { ArrowRight, CalendarClock, CalendarDays, CheckCircle2, ClipboardCheck, GitBranch, PencilLine, ReceiptText, Zap } from "lucide-react";
+import { FollowRow } from "./follow-up";
 import { cn } from "@/lib/utils";
 import type { DashboardActions } from "./service";
 
@@ -94,5 +95,66 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * "รอคุณอนุมัติ" as a card on the "ต้องตามวันนี้" board (owner-approved mock,
+ * 14 Nov 2026), so an empty approvals box no longer leaves a bare column: with
+ * nothing pending it becomes a "✓ … ไม่มีวันนี้" chip like the other cards.
+ */
+export function ApprovalsFollowCard({ data }: { data: DashboardActions }) {
+  const tiles = TILES.filter((t) => data.approvals[t.key] > 0);
+  const total = tiles.reduce((sum, t) => sum + data.approvals[t.key], 0);
+  return (
+    <FollowRow
+      icon={ClipboardCheck}
+      title="คำขอรอคุณอนุมัติ"
+      sub={tiles.map((t) => `${t.label} ${data.approvals[t.key]}`).join(" · ")}
+      count={total}
+      unit="รายการ"
+      tone="bad"
+      tag="รอคุณอนุมัติ"
+      order={1}
+      link={{ href: "/requests?view=approvals", label: "ตรวจอนุมัติ" }}
+    >
+      <ul>
+        {tiles.map((t) => {
+          const Icon = t.icon;
+          return (
+            <li key={t.key}>
+              <Link href={t.href} className="gv-row flex min-h-11 items-center gap-2.5 rounded-[10px] px-1 text-sm">
+                <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg border", t.tone)}>
+                  <Icon className="size-[15px]" aria-hidden="true" />
+                </span>
+                {t.label}
+                <span className="ml-auto text-[15px] font-semibold tabular-nums">{data.approvals[t.key]}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </FollowRow>
+  );
+}
+
+/** Today's shift and my own requests still waiting: the personal footer the approvals box used to carry. */
+export function MyWorkLine({ data }: { data: DashboardActions }) {
+  if (!data.shiftToday && data.myPending === 0) return null;
+  return (
+    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+      {data.shiftToday && (
+        <span className="inline-flex items-center gap-1.5">
+          <CalendarClock className="size-4 text-primary" aria-hidden="true" />
+          เวรวันนี้ <span className="font-medium text-foreground">{data.shiftToday.name}</span>
+          {data.shiftToday.startTime}–{data.shiftToday.endTime}
+        </span>
+      )}
+      {data.myPending > 0 && (
+        <Link href="/workflows" className="inline-flex min-h-9 items-center hover:text-foreground hover:underline">
+          คำขอของฉันที่รออนุมัติ <span className="ml-1 font-medium text-foreground tabular-nums">{data.myPending}</span>
+        </Link>
+      )}
+    </p>
   );
 }

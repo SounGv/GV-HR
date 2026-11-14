@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import {
   Area,
   AreaChart,
@@ -270,6 +271,12 @@ function rateDot(color: string, lastIndex: number) {
  */
 export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
   const [hidden, setHidden] = React.useState<Record<string, boolean>>({});
+  const router = useRouter();
+  /** Opens that day's attendance report (owner 14 Nov 2026: every point on the home page opens its detail). */
+  function openDay(index: number | undefined) {
+    const day = index == null ? undefined : data[index]?.date;
+    if (day) router.push(`/reports?view=attendance_daily&from=${day}&to=${day}`);
+  }
   if (data.length === 0) return <EmptyChart />;
 
   const points: RatePoint[] = data.map((d) => {
@@ -316,8 +323,22 @@ export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
         })}
       </div>
       <ResponsiveContainer width="100%" height={260}>
-        <ComposedChart data={points} margin={{ top: 20, right: 12, bottom: 4, left: -16 }}>
-          <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+        <ComposedChart
+          data={points}
+          margin={{ top: 20, right: 12, bottom: 4, left: -16 }}
+          onClick={(e) => openDay(typeof e?.activeTooltipIndex === "number" ? e.activeTooltipIndex : undefined)}
+          className="cursor-pointer"
+        >
+          <defs>
+            <linearGradient id="rate-present-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--series-present)" stopOpacity={0.32} />
+              <stop offset="100%" stopColor="var(--series-present)" stopOpacity={0} />
+            </linearGradient>
+            <filter id="rate-line-shadow" x="-5%" y="-30%" width="110%" height="160%">
+              <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="var(--series-present)" floodOpacity="0.28" />
+            </filter>
+          </defs>
+          <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 5" vertical={false} />
           <ReferenceArea x1={lastLabel} x2={lastLabel} fill="var(--series-highlight)" fillOpacity={0.07} />
           <XAxis
             dataKey="label"
@@ -357,10 +378,10 @@ export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
           />
           {!hidden.presentPct && (
             <Area
+              type="monotone"
               dataKey="presentPct"
               stroke="none"
-              fill="var(--series-present)"
-              fillOpacity={0.08}
+              fill="url(#rate-present-fill)"
               isAnimationActive={false}
             />
           )}
@@ -368,11 +389,15 @@ export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
             hidden[s.key] ? null : (
               <Line
                 key={s.key}
-                type="linear"
+                // Monotone cubic: smooth, passes through every real value and never bulges past it.
+                type="monotone"
                 dataKey={s.key}
                 name={s.label}
                 stroke={s.color}
-                strokeWidth={s.width}
+                strokeWidth={s.key === "presentPct" ? s.width + 1 : s.width}
+                strokeLinecap="round"
+                style={s.key === "presentPct" ? { filter: "url(#rate-line-shadow)" } : undefined}
+                activeDot={{ r: 6, strokeWidth: 2, stroke: "var(--card)" }}
                 strokeDasharray={s.dash}
                 dot={s.dot ? rateDot(s.color, lastIndex) : false}
                 isAnimationActive={false}

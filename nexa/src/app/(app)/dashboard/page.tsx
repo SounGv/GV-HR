@@ -13,7 +13,8 @@ import {
   getDepartmentWatchlist,
   type LeaveBalanceSummary,
 } from "@/features/dashboard/service";
-import { ActionCenter } from "@/features/dashboard/action-center";
+import { ApprovalsFollowCard, MyWorkLine } from "@/features/dashboard/action-center";
+import { FollowCount } from "@/features/dashboard/follow-count";
 import { MeetingsTodaySection, MissedScanOutSection, OvertimeTodaySection } from "@/features/dashboard-daily/daily-sections";
 import {
   loadAttendanceWatchCached,
@@ -27,7 +28,7 @@ import {
   LiveStamp,
   LiveTodayProvider,
 } from "@/features/attendance-status/live-today";
-import { FollowRowLoading } from "@/features/dashboard/follow-up";
+import { FOLLOW_BOARD_CLASS, FollowRowLoading } from "@/features/dashboard/follow-up";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { CountUp } from "@/components/shared/count-up";
 import { DepartmentWatchCard, WatchlistCard } from "@/features/attendance-status/attendance-watch-sections";
@@ -309,7 +310,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     can(user!.permissions, "campaign:approve");
   const canSeeOvertime = can(user!.permissions, "overtime:approve") || can(user!.permissions, "overtime:manage");
   const canSeeMeetings = can(user!.permissions, "meeting:read");
-  const showFollow = canSeeAttendance || canSeeOvertime || canSeeMeetings || canSeeLeaves || canSeeProbation || canSeeEvaluation;
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
   const departmentOptions = canSeeAttendance ? await listDepartmentOptions(user!.companyId) : [];
 
@@ -355,12 +355,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className="min-w-0">
-            <h1 className="font-heading text-[22px] leading-snug font-bold">
+            <h1 className="font-heading text-[26px] leading-snug font-bold">
               {greeting()}, {name}
             </h1>
             <p className="text-[13px] text-muted-foreground">
               {todayLabel()} · {user?.company?.name}
             </p>
+            {/* Counts the cards on the board below as they stream in (follow-count.tsx). */}
+            <div className="mt-2.5">
+              <FollowCount />
+            </div>
           </div>
         </div>
         {attendanceToday && (
@@ -428,83 +432,71 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {attendanceToday && <LiveHero />}
 
-      {/* What needs following up today (left) and what waits for my approval (right). */}
-      <div className={cn("grid items-start gap-[22px]", showFollow && "xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]")}>
-        {showFollow && (
-          <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-3">
-            <SectionHeading title="ต้องตามวันนี้" hint="เรียงจากเร่งด่วนที่สุด · กดแถวเพื่อดูรายชื่อ" />
-            {/* Each row loads on its own; its order value keeps the most urgent on top whatever arrives first. */}
-            <Card className="gv-rise @container gap-0 py-0 [&>*]:-mt-px" style={{ "--i": 2 } as React.CSSProperties}>
-              {attendanceToday && <LiveFollowRows />}
-              {canSeeAttendance && (
-                <Suspense fallback={<FollowRowLoading order={3} />}>
-                  <MissedScanOutSection companyId={user!.companyId} session={session} />
-                </Suspense>
-              )}
-              {canSeeOvertime && (
-                <Suspense fallback={<FollowRowLoading order={4} />}>
-                  <OvertimeTodaySection companyId={user!.companyId} session={session} />
-                </Suspense>
-              )}
-              {canSeeLeaves && (
-                <Suspense fallback={<FollowRowLoading order={5} />}>
-                  <UpcomingLeavesSection companyId={user!.companyId} session={session} />
-                </Suspense>
-              )}
-              {canSeeProbation && (
-                <Suspense fallback={<FollowRowLoading order={6} />}>
-                  <ProbationDueSection companyId={user!.companyId} session={session} />
-                </Suspense>
-              )}
-              {canSeeEvaluation && (
-                <Suspense fallback={<FollowRowLoading order={7} />}>
-                  <EvaluationProgressSection companyId={user!.companyId} session={session} />
-                </Suspense>
-              )}
-              {canSeeMeetings && (
-                <Suspense fallback={<FollowRowLoading order={8} />}>
-                  <MeetingsTodaySection companyId={user!.companyId} employeeId={user!.employee?.id} />
-                </Suspense>
-              )}
-            </Card>
-          </section>
-        )}
-
-        <div className="space-y-[22px]">
-          <section aria-label="รอคุณอนุมัติ" className="gv-rise space-y-3" style={{ "--i": 3 } as React.CSSProperties}>
-            <SectionHeading title="รอคุณอนุมัติ" hint="คำขอที่ส่งมาถึงคุณ" />
-            <ActionCenter data={actions} />
-          </section>
-
-          {/* My today — personal snapshot, not company aggregates. "เงินเดือนล่าสุด"
-              deliberately left out for now — HR wants to focus rollout on
-              attendance/leave and the evaluation system first. */}
-          {mine && (
-            <section className="space-y-3">
-              <SectionHeading title="ของฉันวันนี้" hint="เวลาเข้างาน วันลา และคะแนนของคุณ" />
-              <div className={cn("grid grid-cols-2 gap-3", !showFollow && "lg:grid-cols-3")}>
-                <MyTile
-                  icon={CheckInIcon}
-                  label="เวลาเข้างานวันนี้"
-                  value={fmtClock(mine.clockInAt) ?? "ยังไม่เช็คอิน"}
-                  sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
-                  href="/attendance"
-                />
-                <MyTile
-                  icon={StarIllustrationIcon}
-                  label="คะแนนให้กำลังใจ"
-                  value={`${mine.recognition.star + mine.recognition.award + mine.recognition.heart}`}
-                  sub={`+${mine.recognition.point} คะแนน`}
-                  href="/attendance"
-                />
-                <div className={cn("col-span-2", !showFollow && "lg:col-span-1")}>
-                  <LeaveBalanceTile balances={mine.leaveBalances} href="/leave" />
-                </div>
-              </div>
-            </section>
+      {/* "ต้องตามวันนี้" board (owner-approved mock, 14 Nov 2026): one card per thing to follow, the
+          most urgent first, approvals included; things with nothing today sink to chips at the end. */}
+      <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-3">
+        <SectionHeading title="ต้องตามวันนี้" hint="เรียงจากเร่งด่วนที่สุด · รวมคำขอที่รอคุณอนุมัติ · กดปุ่มในการ์ดเพื่อทำต่อ" />
+        <div className={FOLLOW_BOARD_CLASS}>
+          <ApprovalsFollowCard data={actions} />
+          {attendanceToday && <LiveFollowRows />}
+          {canSeeAttendance && (
+            <Suspense fallback={<FollowRowLoading order={3} />}>
+              <MissedScanOutSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeOvertime && (
+            <Suspense fallback={<FollowRowLoading order={4} />}>
+              <OvertimeTodaySection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeLeaves && (
+            <Suspense fallback={<FollowRowLoading order={5} />}>
+              <UpcomingLeavesSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeProbation && (
+            <Suspense fallback={<FollowRowLoading order={6} />}>
+              <ProbationDueSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeEvaluation && (
+            <Suspense fallback={<FollowRowLoading order={7} />}>
+              <EvaluationProgressSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeMeetings && (
+            <Suspense fallback={<FollowRowLoading order={8} />}>
+              <MeetingsTodaySection companyId={user!.companyId} employeeId={user!.employee?.id} />
+            </Suspense>
           )}
         </div>
-      </div>
+        <MyWorkLine data={actions} />
+      </section>
+
+      {mine && (
+        <section className="space-y-3">
+          <SectionHeading title="ของฉันวันนี้" hint="เวลาเข้างาน วันลา และคะแนนของคุณ" />
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <MyTile
+              icon={CheckInIcon}
+              label="เวลาเข้างานวันนี้"
+              value={fmtClock(mine.clockInAt) ?? "ยังไม่เช็คอิน"}
+              sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
+              href="/attendance"
+            />
+            <MyTile
+              icon={StarIllustrationIcon}
+              label="คะแนนให้กำลังใจ"
+              value={`${mine.recognition.star + mine.recognition.award + mine.recognition.heart}`}
+              sub={`+${mine.recognition.point} คะแนน`}
+              href="/attendance"
+            />
+            <div className="col-span-2 lg:col-span-1">
+              <LeaveBalanceTile balances={mine.leaveBalances} href="/leave" />
+            </div>
+          </div>
+        </section>
+      )}
 
       {attendanceToday && (
         <section aria-label="14 วันทำการล่าสุด" className="space-y-3">

@@ -109,6 +109,13 @@
 
 /* ───────────────── GV One — Light theme (Gadget Villa lime palette) ───────────────── */
 :root {
+  /* Menu-group icons (components/shared/group-icons.tsx): two teal tones. */
+  --gi-main: #0d9488;
+  --gi-soft: #ccfbf1;
+  --gi-deep: #0f766e;
+  --gi-hi: #5eead4;
+  --gi-line: #99d9d0;
+  --gi-paper: #ffffff;
   --radius: 0.75rem;
 
   /* Anuphan via next/font (see layout.tsx) is the single typeface for body and
@@ -314,6 +321,12 @@
    charcoal on a dark background, unlike in light mode where charcoal is
    the primary button color). */
 .dark {
+  --gi-main: #2dd4bf;
+  --gi-soft: #134e4a;
+  --gi-deep: #5eead4;
+  --gi-hi: #99f6e4;
+  --gi-line: #2a6f68;
+  --gi-paper: #0b1312;
   --background: #131516;
   --foreground: #e6e8ea;
   --card: #1b1e21;
@@ -513,17 +526,21 @@
    scrolling and hovering stay light on mid-range laptops. Un-layered on
    purpose so these beat the card's own bg/shadow utilities. */
 .theme-flip7 {
-  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06), 0 4px 10px -6px rgba(19, 21, 22, 0.16),
+  /* Owner-approved home depth (home-assistant-mock.html, 14 Nov 2026): raised white cards
+     on a teal-tinted ground with two soft glows, still blur-free. */
+  --card-shadow: 0 2px 4px rgba(11, 40, 37, 0.06), 0 12px 28px rgba(11, 40, 37, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --card-hover-border: #b9c2c9;
-  --row-hover: #f6f8f9;
-  --page-band: linear-gradient(180deg, #e9eef0 0, rgba(245, 246, 247, 0) 280px);
+  --row-hover: #f0f9f7;
+  --page-band: radial-gradient(1100px 500px at 85% -10%, rgba(13, 148, 136, 0.14), transparent 60%),
+    radial-gradient(800px 420px at -10% 35%, rgba(13, 148, 136, 0.1), transparent 60%),
+    linear-gradient(180deg, #f6faf9 0, #e9f1f0 100%);
 }
 .dark .theme-flip7 {
   --card-shadow: none;
   --card-hover-border: #3a4047;
   --row-hover: rgba(255, 255, 255, 0.04);
-  --page-band: none;
+  --page-band: radial-gradient(1100px 500px at 85% -10%, rgba(45, 212, 191, 0.08), transparent 60%);
 }
 .theme-flip7.gv-page-band {
   background: var(--page-band);
