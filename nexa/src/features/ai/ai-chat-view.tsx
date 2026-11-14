@@ -128,7 +128,7 @@ export function AiChatView({
       },
       onError: (err) => {
         // A refused file (too big, wrong kind, no permission) is the person's to fix: show why and give the message back.
-        if (err instanceof ApiError && (err.status === 400 || err.status === 403)) {
+        if (err instanceof ApiError && (err.status === 400 || err.status === 403 || err.status === 422)) {
           toast.error(err.message, { duration: 9000 });
           setTurns(before);
           setInput(text);

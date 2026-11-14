@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local MCP server connections (internal endpoints — this repo is public)
 .mcp.json
+
+# scratch output of scripts/e2e-ai
+.tmp-e2e/
