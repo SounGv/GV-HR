@@ -77,9 +77,10 @@ function readBoard(board: HTMLElement, announcement: { id: string; title: string
 }
 
 /**
- * The strip on the attendance hero (owner-approved mock, 14 Nov 2026): one message at
- * a time walks in slowly from the right behind น้องวีบอท, rests for five seconds, and
- * walks out to the left. Red = to do today, yellow = coming due, blue = announcements
+ * The strip on the attendance hero (owner-approved mock, 14 Nov 2026, and the walking
+ * mock he confirmed after): น้องวีบอท walks in alone from the right with no disc behind
+ * it, the message unfolds from it and rests for five seconds, then folds back and the
+ * bot walks out to the left. Red = to do today, yellow = coming due, blue = announcements
  * and leave, green = nothing pending. Every message has an icon and a word, so colour
  * is never the only signal. Hover, keyboard focus or the pause button stops it; with
  * "reduce motion" on it does not move, it only swaps the message every six seconds.
@@ -145,23 +146,30 @@ export function NewsTicker({ announcement }: { announcement: { id: string; title
     let dead = false;
     let anim: Animation | null = null;
     let timer: number | undefined;
-    let phase: "in" | "rest" | "out" = "in";
+    let foldTimer: number | undefined;
+    let phase: "in" | "rest" | "fold" | "out" = "in";
     let left = 0;
     let startedAt = 0;
     const next = () => {
       if (!dead) setIdx((i) => i + 1);
     };
-    const exit = () => {
-      timer = undefined;
-      if (reduce) return next();
+    const walkOut = () => {
+      foldTimer = undefined;
       phase = "out";
-      delete el.dataset.stand;
       anim = el.animate(
         [{ transform: `translate(${mid}px,-50%)` }, { transform: `translate(${-el.offsetWidth - 20}px,-50%)` }],
         { duration: 2600, easing: "ease-in", fill: "forwards" },
       );
       anim.onfinish = next;
       if (pausedRef.current) anim.pause();
+    };
+    // The message folds back into the bot first (CSS, 0.45s); then the bot walks off to the left.
+    const exit = () => {
+      timer = undefined;
+      if (reduce) return next();
+      phase = "fold";
+      delete el.dataset.stand;
+      foldTimer = window.setTimeout(walkOut, 500);
     };
     const rest = (ms: number) => {
       phase = "rest";
@@ -200,6 +208,7 @@ export function NewsTicker({ announcement }: { announcement: { id: string; title
     return () => {
       dead = true;
       if (timer !== undefined) window.clearTimeout(timer);
+      if (foldTimer !== undefined) window.clearTimeout(foldTimer);
       anim?.cancel();
       applyPause.current = null;
     };
@@ -224,28 +233,33 @@ export function NewsTicker({ announcement }: { announcement: { id: string; title
           <div
             key={`${idx}-${current.key}`}
             ref={itemRef}
-            className="ticker-item absolute top-1/2 left-0 flex max-w-[calc(100%-4px)] items-center gap-3 will-change-transform"
+            className="ticker-item absolute top-1/2 left-0 flex max-w-[calc(100%-4px)] items-center gap-1.5 will-change-transform"
             style={{ transform: "translate(110%,-50%)" }}
           >
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,.18)]">
-              <VBot mood="hi" className="ticker-walk size-9" />
+            {/* The bot walks out first, with no disc behind it; the glow and the floor shadow come from globals.css. */}
+            <span className="ticker-bot relative block h-[60px] w-[51px] shrink-0">
+              <span aria-hidden="true" className="ticker-floor absolute inset-x-2 -bottom-0.5 h-[7px] rounded-[50%] bg-black/30 blur-[2px]" />
+              <VBot mood="ok" full className="ticker-walk h-[60px] w-[51px] origin-bottom" />
             </span>
-            <Link
-              href={current.href}
-              tabIndex={-1}
-              className={cn(
-                "inline-flex min-h-12 min-w-0 items-center gap-3 rounded-full border-2 border-white/55 py-1 pr-5 pl-[7px] text-base leading-snug shadow-[0_3px_10px_rgba(0,0,0,.22)]",
-                PILL[current.tone].pill,
-                current.tone === "bad" && "ticker-pulse-on",
-              )}
-            >
-              <span className={cn("flex size-[34px] shrink-0 items-center justify-center rounded-full bg-white", PILL[current.tone].icon)}>
-                <current.icon className="size-5" strokeWidth={2.6} aria-hidden="true" />
-              </span>
-              <span className="font-bold">{current.word}</span>
-              <span aria-hidden="true" className="hidden h-[22px] w-0.5 shrink-0 rounded-sm bg-current opacity-40 sm:block" />
-              <span className="min-w-0 font-medium">{current.detail}</span>
-            </Link>
+            {/* The message unfolds from the bot when it stops and folds back before it walks off. */}
+            <div className="ticker-reveal min-w-0">
+              <Link
+                href={current.href}
+                tabIndex={-1}
+                className={cn(
+                  "inline-flex min-h-12 min-w-0 items-center gap-3 rounded-full border-2 border-white/55 py-1 pr-5 pl-[7px] text-base leading-snug shadow-[0_3px_10px_rgba(0,0,0,.22)]",
+                  PILL[current.tone].pill,
+                  current.tone === "bad" && "ticker-pulse-on",
+                )}
+              >
+                <span className={cn("flex size-[34px] shrink-0 items-center justify-center rounded-full bg-white", PILL[current.tone].icon)}>
+                  <current.icon className="size-5" strokeWidth={2.6} aria-hidden="true" />
+                </span>
+                <span className="font-bold">{current.word}</span>
+                <span aria-hidden="true" className="hidden h-[22px] w-0.5 shrink-0 rounded-sm bg-current opacity-40 sm:block" />
+                <span className="min-w-0 font-medium">{current.detail}</span>
+              </Link>
+            </div>
           </div>
         )}
       </div>

@@ -1131,12 +1131,27 @@ button.gv-glass:hover {
   html.gv-print-org .gv-otree-print * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
 
-/* News ticker (dashboard): the bot bobs while it walks and stands still when the
-   message rests, when paused, or when the device asks for less motion. */
+/* News ticker (dashboard): the bot walks out first with no disc behind it (a soft mint glow
+   keeps it readable on the dark band), its message unfolds from it when it stops, and folds
+   back before it walks off. It bobs while it walks and stands still when the message rests,
+   when paused, or when the device asks for less motion. */
 @keyframes gv-ticker-step {
   0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-3px) rotate(3deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
 }
+@keyframes gv-ticker-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.9; }
+  50% { transform: scaleX(0.82); opacity: 0.6; }
+}
+.ticker-bot svg { filter: drop-shadow(0 0 7px rgba(94, 234, 212, 0.55)); }
+.ticker-floor { animation: gv-ticker-shadow 0.5s ease-in-out infinite; }
+.ticker-item[data-stand] .ticker-floor,
+.ticker[data-paused] .ticker-floor { animation: none; }
+.ticker-reveal {
+  clip-path: inset(0 100% 0 0 round 999px);
+  transition: clip-path 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ticker-item[data-stand] .ticker-reveal { clip-path: inset(-6px -6px -6px -6px round 999px); }
 @keyframes gv-ticker-pulse {
   0%, 100% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22), 0 0 0 0 rgba(185, 28, 28, 0.5); }
   50% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22), 0 0 0 8px rgba(185, 28, 28, 0); }
@@ -1147,7 +1162,8 @@ button.gv-glass:hover {
 .ticker-item[data-stand] .ticker-pulse-on { animation: gv-ticker-pulse 1.6s ease-in-out infinite; }
 .ticker[data-paused] .ticker-pulse-on { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .ticker-walk, .ticker-pulse-on { animation: none !important; }
+  .ticker-walk, .ticker-floor, .ticker-pulse-on { animation: none !important; }
+  .ticker-reveal { transition: none; }
 }
 /* One น้องวีบอท per screen: while the ticker's bot is on the page, the sidebar card shows a sparkle instead. */
 .ai-shortcut-spark { display: none; }
