@@ -26,7 +26,8 @@ import { useChat } from "./hooks";
 import { playReplyChime, unlockReplyChime } from "./reply-chime";
 import { MarkdownLite } from "./markdown-lite";
 import { firstHeading, splitSummary, withoutFirstHeading } from "./reply-parts";
-import type { ChatMessage, ChatStep } from "./types";
+import { ProposalCards } from "./proposal-cards";
+import type { ChatMessage, ChatStep, ProposalCard } from "./types";
 
 /** Ready-made questions for the empty result panel, grouped by what HR asks most. */
 const PROMPTS = [
@@ -42,6 +43,7 @@ interface Turn {
   role: "user" | "assistant";
   content: string;
   steps?: ChatStep[];
+  proposals?: ProposalCard[];
   /** The question this answer replies to (assistant turns only). */
   question?: string;
   seconds?: number;
@@ -97,7 +99,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         // The answer lands right after the question we just added, at index next.length.
         setTurns((prev) => [
           ...prev,
-          { role: "assistant", content: res.data.reply, steps: res.data.steps, question: q, seconds: Math.round((Date.now() - started) / 1000) },
+          { role: "assistant", content: res.data.reply, steps: res.data.steps, proposals: res.data.proposals, question: q, seconds: Math.round((Date.now() - started) / 1000) },
         ]);
         setSelected(next.length);
         playReplyChime();
@@ -325,6 +327,8 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                 ))}
               </ul>
             )}
+
+            <ProposalCards cards={answer.proposals} />
 
             {answerParts.summary && answerParts.rest && (
               <MarkdownLite

@@ -89,6 +89,44 @@ export async function verifyRefreshToken(token: string): Promise<RefreshClaims |
   }
 }
 
+const AI_PROPOSAL_TTL_SECONDS = 600; // 10 min to read the card and press confirm
+
+/**
+ * Signed card for an action น้องวีบอท proposed (send a notification, publish an
+ * announcement). Bound to the person it was drawn for, with its own `purpose`
+ * so it can never be used as a login or MFA token. `iat` lets the confirm step
+ * tell "already done by an earlier press" from "new".
+ */
+export async function signAiProposalToken(userId: string, companyId: string, payload: Record<string, unknown>): Promise<string> {
+  return new SignJWT({ purpose: "ai-proposal", companyId, p: payload })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setSubject(userId)
+    .setExpirationTime(`${AI_PROPOSAL_TTL_SECONDS}s`)
+    .sign(accessSecret());
+}
+
+export async function verifyAiProposalToken(
+  token: string,
+): Promise<{ sub: string; companyId: string; iat: number; payload: Record<string, unknown> } | null> {
+  try {
+    const { payload } = await jwtVerify(token, accessSecret());
+    if (
+      payload.purpose !== "ai-proposal" ||
+      typeof payload.sub !== "string" ||
+      typeof payload.companyId !== "string" ||
+      typeof payload.iat !== "number" ||
+      typeof payload.p !== "object" ||
+      payload.p === null
+    ) {
+      return null;
+    }
+    return { sub: payload.sub, companyId: payload.companyId, iat: payload.iat, payload: payload.p as Record<string, unknown> };
+  } catch {
+    return null;
+  }
+}
+
 const MFA_TTL_SECONDS = 300; // 5 min — just long enough to read a code off an authenticator app
 
 /**

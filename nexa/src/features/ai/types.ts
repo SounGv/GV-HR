@@ -1,3 +1,7 @@
+import type { ProposalCard } from "./proposal";
+
+export type { ProposalCard, ConfirmOutcome } from "./proposal";
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -13,6 +17,8 @@ export interface ChatStep {
 export interface ChatResponse {
   reply: string;
   steps: ChatStep[];
+  /** Cards to confirm before anything is sent or published. */
+  proposals?: ProposalCard[];
   configured: boolean;
 }
 

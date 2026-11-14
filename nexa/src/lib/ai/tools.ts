@@ -5,8 +5,8 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { getDashboardSummary } from "@/features/dashboard/service";
 import { getReport } from "@/features/report/service";
 import { REPORT_TYPES } from "@/features/report/schema";
-import { createAnnouncement } from "@/features/announcement/service";
-import { createNotification } from "@/features/notification/service";
+import { prepareProposal } from "@/lib/ai/proposals";
+import type { ProposalCard } from "@/features/ai/proposal";
 import { computePayroll } from "@/features/payroll/calc";
 import { fullName } from "@/lib/format";
 
@@ -97,7 +97,7 @@ export const NEXA_TOOLS: NexaTool[] = [
   {
     name: "send_notification",
     description:
-      "Send an in-app notification to an employee (by name/code) or to everyone (target='all'). Use when the user asks to notify or message staff. Requires permission.",
+      "Prepare an in-app notification to an employee (by name/code/nickname) or to everyone (target='all'). This only draws a confirmation card; the user presses confirm themselves and nothing is sent before that. Use when the user asks to notify or message staff. Requires permission.",
     input_schema: {
       type: "object",
       properties: {
@@ -111,7 +111,7 @@ export const NEXA_TOOLS: NexaTool[] = [
   },
   {
     name: "create_announcement",
-    description: "Publish a company-wide announcement. Use when the user asks to post/announce something. Requires permission.",
+    description: "Prepare a company-wide announcement. This only draws a confirmation card; the user presses confirm themselves and nothing is published before that. Use when the user asks to post/announce something. Requires permission.",
     input_schema: {
       type: "object",
       properties: { title: { type: "string" }, body: { type: "string" } },
@@ -148,39 +148,6 @@ export const NEXA_TOOLS: NexaTool[] = [
     },
   },
 ];
-
-async function resolveEmployees(
-  companyId: string,
-  target: string,
-  scopeWhere?: Prisma.EmployeeWhereInput,
-) {
-  if (target.trim().toLowerCase() === "all") {
-    return prisma.employee.findMany({
-      where: { companyId, deletedAt: null, status: "ACTIVE", ...(scopeWhere ?? {}) },
-      select: { id: true },
-    });
-  }
-  return prisma.employee.findMany({
-    where: {
-      companyId,
-      deletedAt: null,
-      // AND (not spread) — scopeWhere may itself be an `OR` filter (TEAM
-      // scope), which a sibling `OR:` key here would silently overwrite.
-      AND: [
-        scopeWhere ?? {},
-        {
-          OR: [
-            { employeeCode: { equals: target, mode: "insensitive" } },
-            { firstName: { contains: target, mode: "insensitive" } },
-            { lastName: { contains: target, mode: "insensitive" } },
-          ],
-        },
-      ],
-    },
-    select: { id: true },
-    take: 50,
-  });
-}
 
 /**
  * Google Programmable Search (Custom Search JSON API) — real external web
@@ -222,6 +189,8 @@ export async function executeTool(
   rawInput: unknown,
   meta?: Meta,
   scopeWhere?: Prisma.EmployeeWhereInput,
+  /** Cards for writes the model asked for. They are shown to the person; nothing is sent until they confirm. */
+  proposals?: ProposalCard[],
 ): Promise<string> {
   const input = (rawInput ?? {}) as Record<string, unknown>;
   const companyId = session.companyId;
@@ -363,35 +332,13 @@ export async function executeTool(
         return JSON.stringify(anns);
       }
 
-      case "send_notification": {
-        if (!can(session.perms, "notification:create")) return deny("notification:create");
-        const targets = await resolveEmployees(companyId, String(input.target ?? ""), scopeWhere);
-        if (targets.length === 0) return "ไม่พบพนักงานปลายทาง";
-        for (const t of targets) {
-          await createNotification(
-            companyId,
-            t.id,
-            { title: String(input.title ?? ""), body: String(input.body ?? ""), category: "ai" },
-            session.sub,
-          );
-        }
-        return `ส่งการแจ้งเตือนถึง ${targets.length} คนเรียบร้อย`;
-      }
-
+      // Writes never run from here. They draw a confirmation card and the person
+      // presses confirm (POST /api/ai/confirm), so a wrong guess by the model cannot reach anyone.
+      case "send_notification":
       case "create_announcement": {
-        if (!can(session.perms, "announcement:create")) return deny("announcement:create");
-        const rec = await createAnnouncement(
-          companyId,
-          session,
-          {
-            title: String(input.title ?? ""),
-            body: String(input.body ?? ""),
-            pinned: false,
-            status: "PUBLISHED",
-          },
-          meta,
-        );
-        return `เผยแพร่ประกาศเรียบร้อย (id: ${rec.id})`;
+        const { card, message } = await prepareProposal(session, name, input, scopeWhere);
+        if (card) proposals?.push(card);
+        return message;
       }
 
       case "web_search": {

@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useChat } from "./hooks";
 import { playReplyChime, unlockReplyChime } from "./reply-chime";
-import type { ChatMessage, ChatStep } from "./types";
+import { ProposalCards } from "./proposal-cards";
+import type { ChatMessage, ChatStep, ProposalCard } from "./types";
 
 const SUGGESTIONS = [
   "วันนี้มาสายกี่คน",
@@ -22,6 +23,7 @@ interface Turn {
   role: "user" | "assistant";
   content: string;
   steps?: ChatStep[];
+  proposals?: ProposalCard[];
   /** The question this answer replies to (assistant turns only). */
   question?: string;
 }
@@ -99,7 +101,7 @@ export function AiChatView({
     const history: ChatMessage[] = nextTurns.map((t) => ({ role: t.role, content: t.content }));
     chat.mutate(history, {
       onSuccess: (res) => {
-        setTurns((prev) => [...prev, { role: "assistant", content: res.data.reply, steps: res.data.steps, question: trimmed }]);
+        setTurns((prev) => [...prev, { role: "assistant", content: res.data.reply, steps: res.data.steps, proposals: res.data.proposals, question: trimmed }]);
         playReplyChime();
       },
       onError: () => {
@@ -142,7 +144,7 @@ export function AiChatView({
         {turns.map((t, i) => (
           <div key={i} className={cn("flex items-end gap-2", t.role === "user" && "justify-end")}>
             {t.role === "assistant" && <BotAvatar />}
-            <div className={cn("max-w-[82%] space-y-1.5", t.role === "user" && "flex flex-col items-end")}>
+            <div className={cn("max-w-[82%] min-w-0 space-y-1.5", t.role === "user" && "flex flex-col items-end")}>
               {t.steps && t.steps.length > 0 && (
                 <ul className="flex flex-wrap gap-1.5" aria-label="แหล่งข้อมูลที่ใช้ตอบ">
                   {t.steps.map((step, si) => (
@@ -170,6 +172,7 @@ export function AiChatView({
               >
                 {t.role === "assistant" ? <MarkdownLite text={t.content} /> : t.content}
               </div>
+              {t.role === "assistant" && <ProposalCards cards={t.proposals} />}
               {t.role === "assistant" && <DownloadAnswer turn={t} />}
             </div>
           </div>

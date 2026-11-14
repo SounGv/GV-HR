@@ -11,6 +11,7 @@ import { resolveAiAccess, employeeScopeWhere } from "@/lib/ai/scope";
 import { prisma } from "@/lib/prisma";
 import { loginIdentifier } from "@/lib/format";
 import { REPORT_LABELS, type ReportType } from "@/features/report/schema";
+import type { ProposalCard } from "@/features/ai/proposal";
 
 export const runtime = "nodejs";
 
@@ -40,7 +41,7 @@ function buildSystemPrompt(companyName: string, userName: string, today: string)
     "หลักการทำงาน:",
     "1) ยึดข้อมูลจริงเสมอ — เมื่อผู้ใช้ถามเรื่องพนักงาน การขาด/ลา เงินเดือน OT ประเมินผล หรือประกาศ ให้เรียกใช้ฟังก์ชัน (function) เพื่อดึงข้อมูลจริงจากฐานข้อมูลของบริษัทก่อนตอบ ห้ามเดาหรือกุตัวเลขขึ้นเอง",
     "2) การคำนวณเงินเดือน ภาษี ประกันสังคม หรือเงินสุทธิ ให้ใช้ฟังก์ชัน calculate_payroll เท่านั้น ห้ามคำนวณเอง",
-    "3) การสั่งงาน — คุณสามารถส่งการแจ้งเตือน (send_notification) และเผยแพร่ประกาศ (create_announcement) ได้ ก่อนดำเนินการที่ส่งถึงคนจำนวนมากหรือเผยแพร่สาธารณะ ให้สรุปสิ่งที่จะทำและถามยืนยันจากผู้ใช้ก่อนหนึ่งครั้ง",
+    "3) การสั่งงาน — ส่งการแจ้งเตือน (send_notification) และเผยแพร่ประกาศ (create_announcement) ทำได้โดยเตรียมการ์ดยืนยันเท่านั้น ฟังก์ชันสองตัวนี้ไม่ได้ส่งหรือเผยแพร่จริง ผู้ใช้ต้องกดยืนยันในการ์ดเอง ดังนั้น: ถ้าผู้ใช้ให้ข้อมูลพอ (ผู้รับ หัวข้อ เนื้อหา) ให้เรียกฟังก์ชันทันที ไม่ต้องถามยืนยันเป็นข้อความก่อน; ถ้าขาดข้อมูลให้ถามเฉพาะที่ขาด; หลังเรียกให้ตอบสั้นๆ ว่าเตรียมให้แล้วและให้ตรวจการ์ดก่อนกดยืนยัน ห้ามพูดว่าส่งหรือเผยแพร่เสร็จแล้ว; เรียกครั้งละหนึ่งการ์ดต่อหนึ่งงาน; ห้ามแต่งข้อความเกินกว่าที่ผู้ใช้ขอ",
     "4) สิทธิ์ — หากฟังก์ชันแจ้งว่าไม่ได้รับอนุญาต ให้บอกผู้ใช้อย่างสุภาพว่าไม่มีสิทธิ์ ไม่ต้องพยายามหลบเลี่ยง",
     "5) การประเมิน — เมื่อผู้ใช้ขอให้ตั้งแบบประเมิน ให้ใช้ get_employee_context เพื่อดึงฝ่าย/สายงาน/ตำแหน่งของบุคคลนั้น แล้วออกแบบเกณฑ์ให้ตรงกับหน้าที่จริง",
     "6) ค้นเว็บ — ใช้ web_search เฉพาะเมื่อคำถามไม่เกี่ยวกับข้อมูลภายในบริษัท (เช่น กฎหมายแรงงาน, วันหยุดราชการ, ความรู้ทั่วไปด้าน HR) ห้ามใช้ถามเรื่องพนักงาน/เวลาทำงาน/เงินเดือน/ประกาศของบริษัทนี้ เมื่อใช้ผลจาก web_search ต้องบอกผู้ใช้ชัดเจนว่าข้อมูลนี้มาจากอินเทอร์เน็ต ไม่ใช่จากระบบภายในบริษัท พร้อมระบุแหล่งที่มา (ชื่อเว็บไซต์/ลิงก์)",
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
         reply:
           "น้องวีบอทยังไม่พร้อมใช้งาน แจ้ง HR ให้เปิดใช้ก่อน",
         steps: [] as Step[],
+        proposals: [] as ProposalCard[],
         configured: false,
       });
     }
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
     const messages: Anthropic.MessageParam[] = input.map((m) => ({ role: m.role, content: m.content }));
 
     const steps: Step[] = [];
+    const proposals: ProposalCard[] = [];
     let reply = "";
     try {
       for (let i = 0; i < MAX_STEPS; i++) {
@@ -120,19 +123,19 @@ export async function POST(request: NextRequest) {
               ? { report: { type: input.type, ...(typeof input.period === "string" ? { period: input.period } : {}) } }
               : {}),
           });
-          const out = await executeTool(session, block.name, block.input as Record<string, unknown>, meta, scopeWhere);
+          const out = await executeTool(session, block.name, block.input as Record<string, unknown>, meta, scopeWhere, proposals);
           toolResults.push({ type: "tool_result", tool_use_id: block.id, content: out });
         }
         messages.push({ role: "user", content: toolResults });
       }
 
       if (!reply) reply = "น้องวีบอทตอบคำถามนี้ไม่ได้ ลองถามให้สั้นลง หรือเปลี่ยนคำถาม";
-      return ok({ reply, steps, configured: true });
+      return ok({ reply, steps, proposals, configured: true });
     } catch (aiErr) {
       const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
       // The technical message goes to the server log; staff get a plain next step.
       console.error("[ai/chat] model call failed:", msg.slice(0, 600));
-      return ok({ reply: "น้องวีบอทตอบไม่ได้ตอนนี้ ลองถามใหม่อีกครั้ง ถ้ายังไม่ได้ให้แจ้ง HR", steps, configured: true });
+      return ok({ reply: "น้องวีบอทตอบไม่ได้ตอนนี้ ลองถามใหม่อีกครั้ง ถ้ายังไม่ได้ให้แจ้ง HR", steps, proposals, configured: true });
     }
   } catch (error) {
     return handleApiError(error);
@@ -153,9 +156,9 @@ function describeTool(name: string, input: unknown): string {
     case "list_recent_announcements":
       return "ดึงประกาศล่าสุด";
     case "send_notification":
-      return `ส่งแจ้งเตือนถึง: ${String(i.target ?? "")}`;
+      return `เตรียมแจ้งเตือนถึง: ${String(i.target ?? "")}`;
     case "create_announcement":
-      return `สร้างประกาศ: ${String(i.title ?? "")}`;
+      return `เตรียมประกาศ: ${String(i.title ?? "")}`;
     case "calculate_payroll":
       return `คำนวณเงินเดือน${i.employee ? `: ${String(i.employee)}` : ""}`;
     case "web_search":
