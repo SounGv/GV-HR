@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { loginIdentifier } from "@/lib/format";
 import { REPORT_LABELS, type ReportType } from "@/features/report/schema";
 import type { ProposalCard } from "@/features/ai/proposal";
+import { describeAiFailure } from "@/features/ai/ai-error";
 
 export const runtime = "nodejs";
 // Up to 6 model steps plus the tools between them; the default limit is too short for a long answer.
@@ -172,7 +173,8 @@ export async function POST(request: NextRequest) {
       const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
       // The technical message goes to the server log; staff get a plain next step.
       console.error("[ai/chat] model call failed:", msg.slice(0, 600));
-      return ok({ reply: "น้องวีบอทตอบไม่ได้ตอนนี้ ลองถามใหม่อีกครั้ง ถ้ายังไม่ได้ให้แจ้ง HR", steps, proposals, configured: true });
+      const status = typeof (aiErr as { status?: unknown }).status === "number" ? (aiErr as { status: number }).status : undefined;
+      return ok({ reply: describeAiFailure(status, msg), steps, proposals, files, configured: true });
     }
   } catch (error) {
     return handleApiError(error);

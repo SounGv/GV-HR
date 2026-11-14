@@ -226,6 +226,22 @@ async function t(name: string, fn: () => Promise<void>) {
     assert.deepEqual(r.json.data.steps.map((s: any) => s.tool), ["list_pending_approvals", "get_evaluation_progress"]);
   });
 
+  await t("12 when the AI service fails, the person is told the cause in Thai and nothing is half-done", async () => {
+    const credit = '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}';
+    model({ __fail: { status: 400, message: credit } });
+    const r = await call(chat, "/api/ai/chat", ask("วันนี้มาสายกี่คน"));
+    assert.equal(r.status, 200);
+    assert.match(r.json.data.reply, /เครดิต/);
+    assert.doesNotMatch(r.json.data.reply, /credit|Anthropic/i);
+    assert.equal(r.json.data.proposals.length, 0);
+    model({ __fail: { status: 401, message: "invalid x-api-key" } });
+    assert.match((await call(chat, "/api/ai/chat", ask("hi"))).json.data.reply, /รหัสเชื่อมต่อ/);
+    model({ __fail: { status: 529, message: "overloaded_error" } });
+    assert.match((await call(chat, "/api/ai/chat", ask("hi"))).json.data.reply, /รอสักครู่/);
+    model({ __fail: { status: 500, message: "boom" } });
+    assert.match((await call(chat, "/api/ai/chat", ask("hi"))).json.data.reply, /ลองถามใหม่อีกครั้ง/);
+  });
+
   const after = await counts();
   console.log(JSON.stringify({ before, after, unchanged: JSON.stringify(before) === JSON.stringify(after) }));
   for (const x of results) console.log(`${x.ok ? "PASS" : "FAIL"}  ${x.name}${x.err ? "\n      " + x.err : ""}`);

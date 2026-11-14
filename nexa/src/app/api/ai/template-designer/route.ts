@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { requirePermission } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
+import { friendlyAiError } from "@/lib/ai/ai-failure";
 import { BadRequest, NotFound } from "@/lib/api/errors";
 import { getAnthropic, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
 import { prisma } from "@/lib/prisma";
@@ -200,6 +201,6 @@ export async function POST(request: NextRequest) {
 
     return ok({ target: { scope, label }, draft, findings, configured: true });
   } catch (error) {
-    return handleApiError(error);
+    return handleApiError(friendlyAiError(error));
   }
 }

@@ -12,6 +12,8 @@ export function getAnthropic() {
         g.__calls.push(JSON.parse(JSON.stringify(params)));
         const next: Resp | undefined = g.__script.shift();
         if (!next) throw new Error("script ran out: the route asked the model more times than the test expected");
+        // A scripted failure of the AI service itself (its HTTP status and raw message).
+        if ((next as any).__fail) throw Object.assign(new Error((next as any).__fail.message), { status: (next as any).__fail.status });
         return next;
       },
     },
