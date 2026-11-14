@@ -36,10 +36,10 @@ import { CountUp } from "@/components/shared/count-up";
 import { DepartmentWatchCard, WatchlistCard } from "@/features/attendance-status/attendance-watch-sections";
 import { DepartmentFilter } from "@/features/attendance-status/department-filter";
 import {
-  EvaluationProgressSection,
   ProbationDueSection,
   UpcomingLeavesSection,
 } from "@/features/dashboard-people/people-sections";
+import { EvaluationOverviewSection } from "@/features/dashboard-people/evaluation-section";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AttendanceRateLine } from "@/features/dashboard/dashboard-charts-lazy";
@@ -462,11 +462,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <ProbationDueSection companyId={user!.companyId} session={session} />
             </Suspense>
           )}
-          {canSeeEvaluation && (
-            <Suspense fallback={<FollowRowLoading order={7} />}>
-              <EvaluationProgressSection companyId={user!.companyId} session={session} />
-            </Suspense>
-          )}
           {canSeeMeetings && (
             <Suspense fallback={<FollowRowLoading order={8} />}>
               <MeetingsTodaySection companyId={user!.companyId} employeeId={user!.employee?.id} />
@@ -475,6 +470,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
         <MyWorkLine data={actions} />
       </section>
+
+      {canSeeEvaluation && (
+        <Suspense
+          fallback={
+            <section aria-label="การประเมินผล" className="space-y-3">
+              <SectionHeading title="การประเมินผล" />
+              <div className="h-40 animate-pulse rounded-2xl border border-border bg-muted/40" />
+            </section>
+          }
+        >
+          <EvaluationOverviewSection companyId={user!.companyId} session={session} />
+        </Suspense>
+      )}
 
       {mine && (
         <section className="space-y-3">

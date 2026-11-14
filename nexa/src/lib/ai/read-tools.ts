@@ -11,6 +11,7 @@ import { listAttendanceCorrections } from "@/features/attendance-correction/serv
 import { listAssignments } from "@/features/shift/service";
 import { balanceLine, bangkokToday, clampRange, LEAVE_LABEL, percentDone } from "@/features/ai/read-summary";
 import type { NexaTool } from "@/lib/ai/tools";
+import { loadEvaluationOverview } from "@/features/dashboard-people/evaluation-overview";
 
 /**
  * Phase 1 of "น้องวีบอททำงานได้ทุกอย่าง": tools that only READ across modules
@@ -255,6 +256,33 @@ export async function executeReadTool(
         orderBy: { endDate: includeClosed ? "desc" : "asc" },
         take: includeClosed ? 3 : 5,
       });
+      // The evaluation system HR runs now (/appraisal): used when the older campaign tables have nothing to report.
+      if (campaigns.length === 0) {
+        const limitTo = scopeWhere
+          ? new Set((await prisma.employee.findMany({ where: { companyId, deletedAt: null, AND: [scopeWhere] }, select: { id: true } })).map((e) => e.id))
+          : undefined;
+        const overview = await loadEvaluationOverview(companyId, session, { limitTo });
+        const rounds = overview.open.filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase()));
+        if (rounds.length > 0) {
+          return JSON.stringify(
+            rounds.map((r) => ({
+              name: r.name,
+              status: "เปิดอยู่",
+              closes: r.endIso,
+              ...(r.daysLeft !== null ? { daysLeft: r.daysLeft } : {}),
+              participants: r.summary.people.total,
+              peopleDone: r.summary.people.done,
+              peopleWaiting: r.summary.people.pending,
+              evaluationsSubmitted: r.summary.forms.submitted,
+              evaluationsTotal: r.summary.forms.total,
+              percentDone: r.summary.forms.percentSubmitted,
+              resultsFinalized: 0,
+              byRaterType: r.summary.byRater.map((b) => ({ type: b.label, submitted: b.total - b.pending, total: b.total, percentDone: percentDone(b.total - b.pending, b.total) })),
+              stillToSubmit: r.summary.pendingPeople.map((p) => ({ about: p.name, department: p.department, waitingOn: p.waiting })),
+            })),
+          );
+        }
+      }
       if (campaigns.length === 0) return (includeClosed ? "ไม่พบรอบประเมิน" : "ไม่มีรอบประเมินที่เปิดอยู่ (ถ้าต้องการดูรอบที่ปิดแล้วให้ใช้ includeClosed)") + (q ? ` ที่ชื่อตรงกับ "${q}"` : "");
 
       const inScope: Prisma.EvaluationParticipantWhereInput = { employee: { AND: [scopeWhere ?? {}] } };

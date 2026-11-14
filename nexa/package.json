@@ -17,6 +17,7 @@
     "db:seed": "node ./node_modules/prisma/build/index.js db seed",
     "db:studio": "node ./node_modules/prisma/build/index.js studio",
     "db:reset": "node ./node_modules/prisma/build/index.js migrate reset",
+    "test:eval-overview": "node scripts/e2e-ai/build.mjs run-eval-overview && node --env-file=.env.local .tmp-e2e/run-eval-overview.cjs",
     "test:ai": "node scripts/e2e-ai/build.mjs run-chat && node --env-file=.env.local .tmp-e2e/run-chat.cjs && node scripts/e2e-ai/build.mjs run-writes && node --env-file=.env.local .tmp-e2e/run-writes.cjs"
   },
   "prisma": {

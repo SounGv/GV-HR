@@ -126,7 +126,7 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
     }
 
     case "eval_progress": {
-      const r = parse<{ name: string; status: string; closes: string | null; participants: number; evaluationsSubmitted: number; evaluationsTotal: number; percentDone: number; resultsFinalized: number }[]>(
+      const r = parse<{ name: string; closes: string | null; participants: number; peopleWaiting?: number; evaluationsSubmitted: number; evaluationsTotal: number; percentDone: number; resultsFinalized: number }[]>(
         await executeReadTool(session, "get_evaluation_progress", {}, scopeWhere),
       );
       // "No round is open" is an answer, not a refusal.
@@ -136,8 +136,13 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
         quickToMarkdown({
           text: "ความคืบหน้ารอบประเมินที่เปิดอยู่",
           table: {
-            head: ["รอบ", "ปิด", "ส่งแล้ว", "สรุปผลแล้ว"],
-            rows: r.data.map((c) => [c.name, dayText(c.closes), `${c.evaluationsSubmitted}/${c.evaluationsTotal} (${c.percentDone}%)`, `${c.resultsFinalized}/${c.participants} คน`]),
+            head: ["รอบ", "ปิด", "ส่งแล้ว", "คนที่ยังรอประเมิน"],
+            rows: r.data.map((c) => [
+              c.name,
+              dayText(c.closes),
+              `${c.evaluationsSubmitted}/${c.evaluationsTotal} (${c.percentDone}%)`,
+              c.peopleWaiting !== undefined ? `${c.peopleWaiting} จาก ${c.participants} คน` : `${c.participants - c.resultsFinalized} จาก ${c.participants} คน`,
+            ]),
           },
         }),
       );
