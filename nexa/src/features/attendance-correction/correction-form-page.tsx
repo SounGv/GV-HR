@@ -98,7 +98,7 @@ export function CorrectionFormPage() {
               <FormItem>
                 <FormLabel>วันที่ต้องการแก้ไข</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" max={new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" })} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

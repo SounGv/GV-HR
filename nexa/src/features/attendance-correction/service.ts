@@ -59,6 +59,13 @@ export async function createAttendanceCorrection(
 ) {
   const employeeId = requireEmployeeId(session);
 
+  // A future date can't be corrected yet. This also catches a Buddhist-era year typed into the
+  // date (2569-11-10 instead of 2026-11-10), which once landed an approved fix 543 years ahead
+  // and left the real day untouched (1015, 10 Nov 2026).
+  if (new Date(input.workDate) > bangkokParts().dateUTC) {
+    throw BadRequest("ขอแก้เวลาได้เฉพาะวันนี้หรือวันที่ผ่านมาแล้ว ตรวจปีให้เป็น ค.ศ. (เช่น 2026)");
+  }
+
   // Unlike leave, there was no guard against multiple PENDING correction
   // requests for the same day — a second approval for the same date would
   // silently clobber whatever the first one already wrote to AttendanceRecord
