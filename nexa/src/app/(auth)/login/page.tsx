@@ -8,7 +8,11 @@ import { Logo } from "@/components/shared/logo";
 import { VBot } from "@/components/shared/v-bot";
 import { isGoogleOAuthEnabled } from "@/lib/auth/google-oauth";
 
-export const metadata: Metadata = { title: { absolute: "เข้าสู่ระบบ · Gadget Villa" } };
+export const metadata: Metadata = {
+  title: { absolute: "เข้าสู่ระบบ GV One · ระบบบริหารงานบุคคลและเงินเดือน" },
+  description: "เข้าสู่ระบบ GV One เพื่อลงเวลา ขอลา ขอ OT และดูงานของคุณ",
+  alternates: { canonical: "/login" },
+};
 
 const FACTS = [
   { icon: ScanLine, text: "สแกนเข้างานตามพิกัดสาขา" },

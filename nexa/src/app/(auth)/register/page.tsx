@@ -5,7 +5,7 @@ import { AuthBrandPanel } from "@/features/auth/auth-brand-panel";
 import { RegisterForm } from "@/features/auth/register-form";
 import { MODULES } from "@/config/permissions";
 
-export const metadata: Metadata = { title: "สมัครใช้งาน" };
+export const metadata: Metadata = { title: "สมัครใช้งาน", alternates: { canonical: "/register" } };
 
 export default function RegisterPage() {
   return (

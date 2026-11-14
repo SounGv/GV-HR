@@ -24,12 +24,22 @@ const sansThai = Anuphan({
 
 export const metadata: Metadata = {
   metadataBase: new URL(appBaseUrl()),
+  // One name everywhere: the Vercel project is "gv-one", the brand is "GV One".
   title: {
-    default: "GV One People Platform",
+    default: "GV One · ระบบบริหารงานบุคคลและเงินเดือน",
     template: "%s · GV One",
   },
-  description: "GV One HR & Payroll Platform — ระบบบริหารงานบุคคลและเงินเดือนสำหรับองค์กร",
+  description: "GV One ระบบบริหารงานบุคคลและเงินเดือนสำหรับองค์กร ลงเวลา ลา OT ประเมินผล และเงินเดือนในที่เดียว",
   applicationName: "GV One",
+  openGraph: {
+    type: "website",
+    siteName: "GV One",
+    title: "GV One · ระบบบริหารงานบุคคลและเงินเดือน",
+    description: "ลงเวลา ลา OT ประเมินผล และเงินเดือนในที่เดียว",
+    locale: "th_TH",
+  },
+  // Search Console's "HTML tag" verification: paste the token into GOOGLE_SITE_VERIFICATION on Vercel.
+  verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -56,11 +66,24 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+/** Tells Google the site's name (shown above the result title). Static text only. */
+const SITE_NAME_JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "GV One",
+  alternateName: ["gv-one", "GV One HR"],
+  url: appBaseUrl(),
+  inLanguage: "th",
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th" suppressHydrationWarning className={sansThai.variable}>
+      <head>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: SITE_NAME_JSON_LD }} />
+      </head>
       <body className="font-sans">
         <AppProviders>{children}</AppProviders>
         <PwaRegister />
