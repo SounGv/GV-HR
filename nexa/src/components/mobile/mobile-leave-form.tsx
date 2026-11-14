@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { TimeSelect } from "@/components/shared/time-select";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "@/features/leave/schema";
-import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday } from "@/features/leave/days";
+import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday, needsMedicalCertificate, MEDICAL_CERT_MESSAGE } from "@/features/leave/days";
 import { remainingLeaveHours } from "@/features/leave/hour-pool";
 import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
 import { useBalances, useCreateLeave } from "@/features/leave/hooks";
@@ -189,10 +189,14 @@ export function MobileLeaveForm() {
     return map;
   }, [balanceData]);
 
+  const attachment = form.watch("attachmentUrl");
   const blockedMessage = useMemo(() => {
     // Monday to Saturday is the working week: a request that only covers a Sunday cannot be sent.
     if (isHourly ? !!start && isSunday(new Date(start)) : preview === 0) {
       return <>วันที่เลือกเป็นวันอาทิตย์ ซึ่งไม่ใช่วันทำงาน (นับวันลาจันทร์–เสาร์) กรุณาเลือกวันอื่น</>;
+    }
+    if (needsMedicalCertificate(type, isHourly ? "HOUR" : "DAY", preview) && !attachment) {
+      return <>{MEDICAL_CERT_MESSAGE}</>;
     }
     if (!preview || UNLIMITED_TYPES.includes(type) || type === "OTHER") return null;
     const bal = balanceMap.get(type);
@@ -221,7 +225,7 @@ export function MobileLeaveForm() {
       );
     }
     return null;
-  }, [preview, type, balanceMap, isHourly, start]);
+  }, [preview, type, balanceMap, isHourly, start, attachment]);
 
   /** Tells the person what is missing instead of the button silently doing nothing. */
   function onInvalid(errors: Partial<Record<keyof FormSchema, { message?: string }>>) {
@@ -438,7 +442,9 @@ export function MobileLeaveForm() {
             </>
           )}
 
-          <p className="mb-2 mt-4 text-[15px] font-semibold text-foreground">แนบไฟล์ประกอบ (ถ้ามี)</p>
+          <p className="mb-2 mt-4 text-[15px] font-semibold text-foreground">
+            {needsMedicalCertificate(type, isHourly ? "HOUR" : "DAY", preview) ? "แนบใบรับรองแพทย์ *" : "แนบไฟล์ประกอบ (ถ้ามี)"}
+          </p>
           <FileAttachField
             value={form.watch("attachmentUrl")}
             onChange={(v) => form.setValue("attachmentUrl", v, { shouldValidate: true })}

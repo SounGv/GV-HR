@@ -19,11 +19,11 @@ export function FollowCount() {
     return () => obs.disconnect();
   }, []);
   if (n === null) return null;
-  if (n === 0) return <p className="text-[15px] font-semibold text-[#15803d] dark:text-[#7ee2a3]">✓ วันนี้ไม่มีเรื่องที่ต้องตาม</p>;
+  if (n === 0) return <p className="text-[15px] font-semibold text-[#166534] dark:text-[#7ee2a3]">✓ วันนี้ไม่มีเรื่องที่ต้องตาม</p>;
   return (
     <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px] font-semibold">
       <span>
-        วันนี้มี <span className="text-[#0f766e] dark:text-[#5eead4]">{n} เรื่อง</span>ที่ควรดู
+        วันนี้มี <span className="text-[#0b4f4a] dark:text-[#5eead4]">{n} เรื่อง</span>ที่ควรดู
       </span>
       <a
         href="#follow-up"

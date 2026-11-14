@@ -32,7 +32,7 @@ import { ApiError } from "@/lib/api/client";
 import { MobileLeaveForm } from "@/components/mobile/mobile-leave-form";
 import { DesktopOnly } from "@/components/mobile/mobile-screen";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "./schema";
-import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday } from "./days";
+import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday, needsMedicalCertificate, MEDICAL_CERT_MESSAGE } from "./days";
 import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "./labels";
 import { useCreateLeave } from "./hooks";
 import { BalanceCards } from "./balance-cards";
@@ -174,7 +174,14 @@ export function LeaveFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [durationValue, start]);
 
+  const certRequired = needsMedicalCertificate(leaveType, isHourly ? "HOUR" : "DAY", preview);
+
   async function onSubmit(values: FormSchema) {
+    if (certRequired && !values.attachmentUrl) {
+      form.setError("attachmentUrl", { message: MEDICAL_CERT_MESSAGE });
+      toast.error(MEDICAL_CERT_MESSAGE);
+      return;
+    }
     try {
       await createMutation.mutateAsync(values);
       toast.success("ส่งคำขอลาเรียบร้อย");
@@ -358,7 +365,10 @@ export function LeaveFormPage() {
             name="attachmentUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>แนบไฟล์ประกอบ (ถ้ามี)</FormLabel>
+                <FormLabel>{certRequired ? "แนบใบรับรองแพทย์ *" : "แนบไฟล์ประกอบ (ถ้ามี)"}</FormLabel>
+                {certRequired && !field.value && (
+                  <p className="text-sm text-destructive">{MEDICAL_CERT_MESSAGE}</p>
+                )}
                 <FormControl>
                   <FileAttachField value={field.value} onChange={field.onChange} label="แนบใบรับรองแพทย์" />
                 </FormControl>

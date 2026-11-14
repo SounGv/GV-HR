@@ -30,7 +30,7 @@ const TONE: Record<FollowTone, { chip: string; word: string; num: string; wash: 
     num: "text-[#0b4f4a] dark:text-[#99f6e4]",
     wash: "from-[#f0f9f7] dark:from-[#13201e]",
   },
-  ok: { chip: "", word: "bg-[#e4f6ea] text-[#15803d] dark:bg-[#12301e] dark:text-[#7ee2a3]", num: "", wash: "" },
+  ok: { chip: "", word: "bg-[#e4f6ea] text-[#166534] dark:bg-[#12301e] dark:text-[#7ee2a3]", num: "", wash: "" },
 };
 
 /** Order the cards sit in (lower first), so the most urgent leads whatever loads first. */

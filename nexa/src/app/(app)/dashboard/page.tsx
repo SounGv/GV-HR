@@ -438,6 +438,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <SectionHeading title="ต้องตามวันนี้" hint="เรียงจากเร่งด่วนที่สุด · รวมคำขอที่รอคุณอนุมัติ · กดปุ่มในการ์ดเพื่อทำต่อ" />
         <div className={FOLLOW_BOARD_CLASS}>
           <ApprovalsFollowCard data={actions} />
+          {/* Line break before the "✓ … ไม่มีวันนี้" chips (they sit at order 100+). */}
+          <span aria-hidden="true" className="h-0 basis-full" style={{ order: 99 }} />
           {attendanceToday && <LiveFollowRows />}
           {canSeeAttendance && (
             <Suspense fallback={<FollowRowLoading order={3} />}>

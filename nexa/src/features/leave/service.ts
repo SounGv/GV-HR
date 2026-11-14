@@ -14,7 +14,7 @@ import {
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { canTakeHourly, computeLeaveDays, computeLeaveHours, deductsBalance, isSunday, PAID_LEAVE_TYPES, timeRangesOverlap } from "./days";
+import { canTakeHourly, computeLeaveDays, computeLeaveHours, deductsBalance, isSunday, PAID_LEAVE_TYPES, timeRangesOverlap, needsMedicalCertificate, MEDICAL_CERT_MESSAGE } from "./days";
 import { HALF_DAY_PERIOD_LABEL } from "./labels";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
@@ -175,6 +175,10 @@ export async function createLeave(
   // The working week is Monday to Saturday, so a request that only covers a Sunday has nothing to take leave for.
   if (isHourly ? isSunday(input.startDate) : days === 0) {
     throw BadRequest("วันที่เลือกเป็นวันอาทิตย์ ซึ่งไม่ใช่วันทำงาน (นับวันลาจันทร์–เสาร์) กรุณาเลือกวันอื่น");
+  }
+
+  if (needsMedicalCertificate(input.type, input.unit, days) && !input.attachmentUrl) {
+    throw BadRequest(MEDICAL_CERT_MESSAGE);
   }
 
   if (isHourly && !canTakeHourly(input.type)) {

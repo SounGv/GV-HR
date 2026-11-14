@@ -75,6 +75,28 @@ export function AttendanceHero({ data, departmentIds }: Props) {
   const follow = counts.ABSENT + counts.LATE;
   const open = data.isWorkingDay && total > 0;
 
+  // Nothing to count today (a weekend or holiday, or nobody uses the app in this scope):
+  // one slim line instead of a tall empty banner (owner, 14 Nov 2026: "โล่งเกินจำเป็น").
+  if (!open) {
+    return (
+      <section aria-label="การเข้างานวันนี้" className="gv-hero gv-rise flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
+        <span className="flex size-9 items-center justify-center rounded-[11px] border border-white/20 bg-white/10">
+          <Clock className="size-[18px]" aria-hidden="true" />
+        </span>
+        <b className="text-[16px]">การเข้างานวันนี้</b>
+        <span className="min-w-0 flex-1 text-[13.5px] text-white/85">
+          {!data.isWorkingDay ? <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</> : <>ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</>}
+        </span>
+        <Link
+          href="/reports?view=attendance_daily"
+          className="inline-flex min-h-10 items-center rounded-full border border-white/25 bg-white/10 px-4 text-[13px] font-semibold hover:bg-white/20"
+        >
+          ดูประวัติการเข้างาน ›
+        </Link>
+      </section>
+    );
+  }
+
   return (
     <section aria-label="การเข้างานวันนี้" className="gv-hero gv-rise grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
       <div className="min-w-0">

@@ -21,6 +21,20 @@ export function computeLeaveDays(start: Date, end: Date, halfDay: boolean): numb
   return count;
 }
 
+/** Sick leave longer than this many days in one request needs a medical certificate (owner, 14 Nov 2026). */
+export const MEDICAL_CERT_AFTER_DAYS = 2;
+
+/**
+ * Whether this request has to carry a medical certificate before it can be sent:
+ * sick leave of more than {@link MEDICAL_CERT_AFTER_DAYS} days in one request.
+ * Hourly sick leave is always within one day, so it never needs one.
+ */
+export function needsMedicalCertificate(type: string, unit: string | undefined, days: number | null): boolean {
+  return type === "SICK" && unit !== "HOUR" && days != null && days > MEDICAL_CERT_AFTER_DAYS;
+}
+
+export const MEDICAL_CERT_MESSAGE = `ลาป่วยเกิน ${MEDICAL_CERT_AFTER_DAYS} วัน ต้องแนบใบรับรองแพทย์ก่อนส่งคำขอ`;
+
 /** Paid leave types deduct from the annual balance; UNPAID/OTHER do not. */
 export function deductsBalance(type: string): boolean {
   return type === "ANNUAL" || type === "SICK" || type === "PERSONAL";
