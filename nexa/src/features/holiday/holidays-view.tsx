@@ -117,7 +117,7 @@ export function HolidaysView() {
                       <Link href={`/holidays/${h.id}`} className="flex min-w-0 flex-1 items-center gap-4">
                         <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
                           <span className="text-base font-semibold leading-none">{day}</span>
-                          <span className="text-[10px]">{weekday}</span>
+                          <span className="text-xs">{weekday}</span>
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="truncate font-medium text-foreground">{h.name}</div>
@@ -147,12 +147,14 @@ export function HolidaysView() {
                         </div>
                       </Link>
                       {(canEdit || canDelete) && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-3">
                           {canEdit && (
                             <Button
                               variant="ghost"
-                              size="icon-sm"
+                              size="icon"
+                              className="max-md:size-11"
                               aria-label="แก้ไข"
+                              title="แก้ไข"
                               render={<Link href={`/holidays/${h.id}/edit`} />}
                             >
                               <Pencil className="size-4" />
@@ -161,8 +163,10 @@ export function HolidaysView() {
                           {canDelete && (
                             <Button
                               variant="ghost"
-                              size="icon-sm"
+                              size="icon"
+                              className="max-md:size-11"
                               aria-label="ลบ"
+                              title="ลบ"
                               onClick={() => setDeleteTarget(h)}
                             >
                               <Trash2 className="size-4 text-destructive" />

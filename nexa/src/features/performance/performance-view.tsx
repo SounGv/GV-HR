@@ -4,14 +4,12 @@ import Link from "next/link";
 import {
   Plus,
   ClipboardCheck,
-  CalendarClock,
   Scale,
   Grid3x3,
   Users,
   Building2,
   BarChart3,
   Rocket,
-  ListChecks,
 } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,43 +41,25 @@ export function PerformanceView() {
   const { can } = useAuth();
   const canReview = can("performance:create");
   const canHrLevel = can("performance:approve");
-  const canCampaign = can("campaign:manage");
   const canCalibration = can("calibration:read");
   const canSuccession = can("succession:read");
   const canAnalytics = canHrLevel || canCalibration || canSuccession;
 
   return (
-    <Tabs defaultValue="assignments" className="space-y-4">
+    <Tabs defaultValue="results" className="space-y-4">
       <TabsList>
-        <TabsTrigger value="assignments">
-          <ListChecks className="size-3.5" /> งานที่ต้องประเมิน
-        </TabsTrigger>
         <TabsTrigger value="results">
           <ClipboardCheck className="size-3.5" /> ผลประเมิน
         </TabsTrigger>
         <TabsTrigger value="idp">
           <Rocket className="size-3.5" /> แผนพัฒนา (IDP)
         </TabsTrigger>
-        {canCampaign && (
-          <TabsTrigger value="manage">
-            <CalendarClock className="size-3.5" /> จัดการรอบประเมิน
-          </TabsTrigger>
-        )}
         {canAnalytics && (
           <TabsTrigger value="analytics">
             <BarChart3 className="size-3.5" /> วิเคราะห์บุคลากร
           </TabsTrigger>
         )}
       </TabsList>
-
-      <TabsContent value="assignments">
-        <MovedNotice
-          title="งานที่ต้องประเมิน ย้ายไปที่เมนูใหม่แล้ว"
-          description="รอบประเมินใหม่ส่งข้อความเข้ากล่องข้อความและ LINE แล้วทำแบบประเมินได้จากหน้า “งานประเมินของฉัน”"
-          href="/appraisal/tasks"
-          label="ไปที่งานประเมินของฉัน"
-        />
-      </TabsContent>
 
       <TabsContent value="results">
         <ResultsTab canReview={canReview} />
@@ -88,17 +68,6 @@ export function PerformanceView() {
       <TabsContent value="idp">
         <DevelopmentPlanView />
       </TabsContent>
-
-      {canCampaign && (
-        <TabsContent value="manage">
-          <MovedNotice
-            title="การจัดการรอบประเมิน ย้ายไปที่เมนูใหม่แล้ว"
-            description="สร้างแบบประเมิน สร้างรอบ เลือกคน จับคู่ผู้ประเมิน และดูความคืบหน้า ได้ที่เมนูประเมินใหม่"
-            href="/appraisal"
-            label="ไปที่ภาพรวมการประเมิน"
-          />
-        </TabsContent>
-      )}
 
       {canAnalytics && (
         <TabsContent value="analytics">
@@ -124,19 +93,6 @@ function ResultsTab({ canReview }: { canReview: boolean }) {
           <TeamReviews />
         </div>
       )}
-    </div>
-  );
-}
-
-/** The old round/assignment screens were replaced by the new evaluation menu; this points people there. */
-function MovedNotice({ title, description, href, label }: { title: string; description: string; href: string; label: string }) {
-  return (
-    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-      <h2 className="text-base font-semibold text-foreground">{title}</h2>
-      <p className="text-sm text-muted-foreground">{description}</p>
-      <Button className="h-11 md:h-9" render={<Link href={href} />}>
-        {label}
-      </Button>
     </div>
   );
 }

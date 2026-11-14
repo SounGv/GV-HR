@@ -30,7 +30,6 @@ import { RATER_LABEL, type TaskDetail } from "./types";
  * Saved automatically a moment after every change.
  */
 
-const LIME = "#CDEB03";
 const fmtDay = (iso: string | null) =>
   iso
     ? new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "long", timeZone: "UTC" }).format(
@@ -56,8 +55,8 @@ type Save = {
 
 /** Score chip colour: the lowest score warns, the highest is teal, the rest neutral (also used by the form builder). */
 export function scoreTone(score: number, max: number) {
-  if (score === 1) return "bg-[#fff7ed] text-[#c2410c] dark:bg-orange-500/15 dark:text-orange-300";
-  if (score === max) return "bg-[#ccfbf1] text-[#0f766e] dark:bg-teal-500/15 dark:text-teal-300";
+  if (score === 1) return "bg-status-absent-bg text-status-absent-fg";
+  if (score === max) return "bg-accent text-accent-foreground";
   return "bg-muted text-foreground";
 }
 
@@ -202,7 +201,7 @@ export function TaskForm({
             <ChevronLeft className="size-5" aria-hidden="true" />
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[15.5px] leading-snug font-bold">
+            <h1 className="truncate text-base leading-snug font-bold">
               ประเมิน {task.personName}
             </h1>
             <p className="truncate text-xs text-white/75">
@@ -214,21 +213,21 @@ export function TaskForm({
             <button
               type="button"
               onClick={saveNow}
-              className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[#fef2f2] px-2.5 text-[11.5px] font-bold text-[#b91c1c]"
+              className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-destructive-muted px-2.5 text-xs font-bold text-destructive"
             >
-              <span className="size-1.5 rounded-full bg-[#dc2626]" aria-hidden="true" />
+              <span className="size-1.5 rounded-full bg-destructive" aria-hidden="true" />
               ยังไม่บันทึก · ลองใหม่
             </button>
           ) : (
             !locked && (
               <span
-                className="flex shrink-0 items-center gap-1.5 text-[11px] text-white/80"
+                className="flex shrink-0 items-center gap-1.5 text-xs text-white/80"
                 aria-live="polite"
               >
                 <span
                   className={cn(
                     "size-1.5 rounded-full",
-                    save.isPending ? "bg-[#fde047]" : "bg-[#4ade80]",
+                    save.isPending ? "bg-status-late-dot" : "bg-status-normal-dot",
                   )}
                   aria-hidden="true"
                 />
@@ -255,7 +254,7 @@ export function TaskForm({
                   view === "q" && i === cur
                     ? "#fff"
                     : isAnswered(values[x.id])
-                      ? LIME
+                      ? "var(--on-hero-accent)"
                       : "rgba(255,255,255,.2)",
               }}
             />
@@ -287,22 +286,22 @@ export function TaskForm({
               className="size-14 shadow-[0_0_0_3px_var(--card)]"
             />
             <div className="min-w-0">
-              <p className="text-[17px] leading-snug font-bold break-words">{task.personName}</p>
+              <p className="text-base leading-snug font-bold break-words">{task.personName}</p>
               {task.personRole && (
-                <p className="text-muted-foreground text-[13px]">{task.personRole}</p>
+                <p className="text-muted-foreground text-sm">{task.personRole}</p>
               )}
               <p className="mt-1.5 flex flex-wrap gap-1.5">
-                <span className="rounded-full bg-[#ccfbf1] px-2.5 text-[11.5px] font-bold text-[#0f766e]">
+                <span className="rounded-full bg-accent px-2.5 text-xs font-bold text-primary">
                   {questions.length} หัวข้อ
                 </span>
-                <span className="rounded-full bg-[#ccfbf1] px-2.5 text-[11.5px] font-bold text-[#0f766e]">
+                <span className="rounded-full bg-accent px-2.5 text-xs font-bold text-primary">
                   ราว {Math.max(2, Math.ceil(questions.length * 0.6))} นาที
                 </span>
               </p>
             </div>
           </div>
           <div>
-            <h2 className="text-foreground/80 mb-2 px-0.5 text-[13px] font-bold">
+            <h2 className="text-foreground/80 mb-2 px-0.5 text-sm font-bold">
               คะแนนแต่ละระดับหมายถึง
             </h2>
             <ul className="border-border bg-card overflow-hidden rounded-[18px] border">
@@ -319,15 +318,15 @@ export function TaskForm({
                   >
                     {r.score}
                   </span>
-                  <span className="min-w-0 text-[13px]">
-                    <b className="block text-[13.5px]">{r.label}</b>
+                  <span className="min-w-0 text-sm">
+                    <b className="block text-sm">{r.label}</b>
                     {r.desc && <span className="text-muted-foreground">{r.desc}</span>}
                   </span>
                 </li>
               ))}
             </ul>
           </div>
-          <ul className="space-y-2 text-[13px]">
+          <ul className="space-y-2 text-sm">
             {[
               "ให้คะแนนจากสิ่งที่เห็นในรอบนี้ ไม่ใช่ความรู้สึกโดยรวม",
               ...(task.noteAtLowest
@@ -370,7 +369,7 @@ export function TaskForm({
         <div className="gv-rise space-y-3">
           <div>
             <h2 className="text-xl font-bold">{locked ? "คำตอบที่ส่งแล้ว" : "ตรวจทวนก่อนส่ง"}</h2>
-            {!locked && <p className="text-muted-foreground text-[13px]">กดหัวข้อเพื่อแก้</p>}
+            {!locked && <p className="text-muted-foreground text-sm">กดหัวข้อเพื่อแก้</p>}
           </div>
           <ul className="border-border bg-card overflow-hidden rounded-[18px] border">
             {questions.map((x, i) => {
@@ -408,7 +407,7 @@ export function TaskForm({
                         "flex size-8 shrink-0 items-center justify-center rounded-[10px] text-sm font-bold",
                         !done
                           ? x.required
-                            ? "border border-dashed border-[#fde68a] bg-[#fffbeb] text-[#b45309]"
+                            ? "border border-dashed border-status-late-border bg-status-late-bg text-status-late-fg"
                             : "border-border text-muted-foreground border border-dashed"
                           : x.answerType === "RATING"
                             ? scoreTone(v as number, task.ratingMax)
@@ -424,13 +423,13 @@ export function TaskForm({
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <b className="block text-[13.5px] leading-snug break-words">{x.text}</b>
+                      <b className="block text-sm leading-snug break-words">{x.text}</b>
                       <span
                         className={cn(
                           "block truncate text-xs",
                           (done && !noNote) || (!done && !x.required)
                             ? "text-muted-foreground"
-                            : "text-[#b45309]",
+                            : "text-status-late-fg",
                         )}
                       >
                         {!done
@@ -443,7 +442,7 @@ export function TaskForm({
                       </span>
                     </span>
                     {!locked && (
-                      <PencilLine className="size-4 shrink-0 text-[#0f766e]" aria-hidden="true" />
+                      <PencilLine className="size-4 shrink-0 text-primary" aria-hidden="true" />
                     )}
                   </button>
                 </li>
@@ -451,7 +450,7 @@ export function TaskForm({
             })}
           </ul>
           {!locked && missing.length > 0 && (
-            <p className="rounded-xl border border-[#fde68a] bg-[#fffbeb] px-3.5 py-2.5 text-[13px] text-[#92400e] dark:bg-amber-500/10 dark:text-amber-200">
+            <p className="rounded-xl border border-status-late-border bg-status-late-bg px-3.5 py-2.5 text-sm text-status-late-fg">
               ยังส่งไม่ได้ · {missing.join(", ")}
             </p>
           )}
@@ -468,8 +467,7 @@ export function TaskForm({
         <div className="mx-auto flex max-w-2xl items-center gap-2">
           {view === "start" && (
             <Button
-              className="h-12 flex-1 font-bold text-[#131516] hover:brightness-95"
-              style={{ background: LIME }}
+              className="h-12 flex-1 font-bold"
               onClick={() => go("q", firstOpen === -1 ? 0 : firstOpen)}
             >
               เริ่มประเมิน <ArrowRight className="size-4" aria-hidden="true" />
@@ -506,8 +504,7 @@ export function TaskForm({
                 <ArrowLeft className="size-4" aria-hidden="true" />
               </Button>
               <Button
-                className="h-12 flex-1 font-bold text-[#131516] hover:brightness-95"
-                style={{ background: LIME }}
+                className="h-12 flex-1 font-bold"
                 disabled={save.isPending || missing.length > 0}
                 onClick={() => setConfirm(true)}
               >
@@ -567,14 +564,14 @@ export function QuestionStep({
   return (
     <div className="gv-rise space-y-3.5">
       <div>
-        <span className="dark:bg-accent dark:text-primary inline-flex rounded-full bg-[#ccfbf1] px-2.5 py-0.5 text-[11.5px] font-bold text-[#0f766e] tabular-nums">
+        <span className="inline-flex rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-primary tabular-nums">
           ข้อ {index + 1} จาก {total}
           {q.section ? ` · ${q.section}` : ""}
           {!q.required && " · ไม่บังคับ"}
         </span>
         <h2 className="mt-2 text-xl leading-snug font-bold break-words">{q.text}</h2>
         {q.helpText && (
-          <p className="text-muted-foreground mt-1 text-[13px]">
+          <p className="text-muted-foreground mt-1 text-sm leading-relaxed whitespace-pre-line">
             <b className="text-foreground/80 font-semibold">ดูจาก:</b> {q.helpText}
           </p>
         )}
@@ -597,23 +594,23 @@ export function QuestionStep({
                   "bg-card flex w-full items-start gap-3 rounded-[18px] border-[1.5px] px-3.5 py-3 text-left transition-[border-color,box-shadow,transform] duration-200 active:scale-[0.985] disabled:opacity-60",
                   on
                     ? r.score === 1
-                      ? "border-[#ea580c] shadow-[0_0_0_3px_#ffedd5] dark:shadow-none"
-                      : "border-[#0f766e] shadow-[0_0_0_3px_#ccfbf1] dark:shadow-none"
-                    : "border-border hover:border-[#0d9488]/50",
+                      ? "border-destructive shadow-[0_0_0_3px_var(--status-absent-bg)] dark:shadow-none"
+                      : "border-primary shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
+                    : "border-border hover:border-ring/50",
                 )}
               >
                 <span
                   className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-[13px] text-[17px] font-bold",
+                    "flex size-10 shrink-0 items-center justify-center rounded-[13px] text-base font-bold",
                     scoreTone(r.score, ratingMax),
                   )}
                 >
                   {r.score}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <b className="block text-[15px] leading-snug">{r.label}</b>
+                  <b className="block text-base leading-snug">{r.label}</b>
                   {desc && (
-                    <span className="text-muted-foreground mt-0.5 block text-[12.5px] leading-relaxed">
+                    <span className="text-muted-foreground mt-0.5 block text-sm leading-relaxed">
                       {desc}
                     </span>
                   )}
@@ -624,9 +621,9 @@ export function QuestionStep({
                     "mt-0.5 size-[22px] shrink-0 rounded-full border-2 transition-[border-width]",
                     on
                       ? r.score === 1
-                        ? "border-[7px] border-[#ea580c]"
-                        : "border-[7px] border-[#0f766e]"
-                      : "border-[#c4ccd2]",
+                        ? "border-[7px] border-destructive"
+                        : "border-[7px] border-primary"
+                      : "border-muted-foreground/50",
                   )}
                 />
               </button>
@@ -639,15 +636,15 @@ export function QuestionStep({
         <label
           className={cn(
             "bg-card block rounded-2xl border px-3.5 py-2.5",
-            noteMissing ? "border-[#fdba74] bg-[#fffaf5] dark:bg-orange-500/10" : "border-border",
+            noteMissing ? "border-status-absent-border bg-status-absent-bg/50" : "border-border",
           )}
         >
-          <span className="text-foreground/80 flex justify-between gap-2 text-[12.5px] font-bold">
+          <span className="text-foreground/80 flex justify-between gap-2 text-sm font-bold">
             ตัวอย่างเหตุการณ์
             <span
               className={cn(
                 "font-semibold",
-                noteRequired ? "text-[#c2410c]" : "text-muted-foreground",
+                noteRequired ? "text-status-absent-fg" : "text-muted-foreground",
               )}
             >
               {noteRequired ? "จำเป็นเมื่อให้คะแนนนี้" : "ไม่บังคับ"}
@@ -693,7 +690,7 @@ export function QuestionStep({
                 }
                 className={cn(
                   "bg-card flex min-h-12 w-full items-center gap-3 rounded-2xl border-[1.5px] px-3.5 py-2 text-left text-sm transition-colors disabled:opacity-60",
-                  picked ? "bg-accent border-[#0f766e]" : "border-border",
+                  picked ? "bg-accent border-primary" : "border-border",
                 )}
               >
                 <span
@@ -702,7 +699,7 @@ export function QuestionStep({
                     "flex size-5 shrink-0 items-center justify-center border",
                     q.answerType === "CHOICE" ? "rounded-full" : "rounded-[5px]",
                     picked
-                      ? "border-[#0f766e] bg-[#0f766e] text-white"
+                      ? "border-primary bg-primary text-primary-foreground"
                       : "border-[color:var(--field-border)]",
                   )}
                 >

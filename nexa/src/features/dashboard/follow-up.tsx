@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ComponentType, ReactNode } from "react";
-import { Check, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { avatarInitials } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ export type FollowOrder = number;
 
 type IconType = ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" }>;
 
-/** The board the cards sit on: they wrap, and the "nothing today" chips sink to the end. */
+/** The board the cards sit on: they wrap. Cards with nothing today are not drawn (the ticker covers them). */
 export const FOLLOW_BOARD_CLASS = "flex flex-wrap items-stretch gap-3.5";
 
 const CARD =
@@ -49,7 +49,7 @@ const CARD =
  * 2026): the icon, title and a big number up top, the status word, the first
  * names, the full list behind "ดูรายชื่อทั้งหมด" (a native `<details>`, works
  * without JavaScript) and the page to act on as a 44px button. A card with
- * nothing to follow shrinks to a "✓ … ไม่มีวันนี้" chip at the end of the board.
+ * nothing to follow is not drawn; the news ticker lists it as "ไม่มีวันนี้".
  * Server- and client-safe (no hooks).
  */
 export function FollowRow({
@@ -88,19 +88,23 @@ export function FollowRow({
   open?: boolean;
 }) {
   if (count <= 0) {
-    return (
-      <span
-        style={{ order: 100 + order }}
-        className={cn("inline-flex min-h-9 flex-none items-center gap-1.5 self-center rounded-full px-3 text-[13px] font-semibold", TONE.ok.word)}
-      >
-        <Check className="size-3.5" aria-hidden="true" /> {title} ไม่มีวันนี้
-      </span>
-    );
+    // Not drawn: the news ticker on the hero reads this and says "ไม่มีวันนี้: …" once for all of them.
+    return <span hidden data-follow-clear={title} />;
   }
 
   const names = [...new Set(people)];
   return (
-    <article data-follow-card style={{ order }} aria-label={`${title} ${display ?? count} ${unit}`} className={CARD}>
+    <article
+      data-follow-card
+      data-follow-title={title}
+      data-follow-tone={tone}
+      data-follow-count={display ?? count}
+      data-follow-unit={unit}
+      data-follow-tag={tag}
+      data-follow-names={names.slice(0, 2).join(", ")}
+      data-follow-href={link?.href ?? "#follow-up"}
+      style={{ order }}
+      aria-label={`${title} ${display ?? count} ${unit}`} className={CARD}>
       <span aria-hidden="true" className={cn("pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b to-transparent", TONE[tone].wash)} />
       <div className="relative flex items-start gap-3">
         <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-[14px] ring-1 ring-inset shadow-[0_1px_2px_rgba(11,40,37,.08)]", TONE[tone].chip)}>

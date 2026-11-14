@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowDown, CalendarDays, Check, CircleCheck, CircleX, Clock, TriangleAlert, type LucideIcon } from "lucide-react";
 
@@ -14,6 +15,11 @@ interface Props {
   data: TodayAttendance;
   /** Department filter, carried into every link. */
   departmentIds: string[];
+}
+
+interface HeroProps extends Props {
+  /** The news ticker; shown inside the hero in both layouts. */
+  ticker?: ReactNode;
 }
 
 const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
@@ -68,7 +74,7 @@ function GlassTile({
  * follow-up list on the left; four glass tiles (late, absent, leave, on time)
  * on the right, each opening its list.
  */
-export function AttendanceHero({ data, departmentIds }: Props) {
+export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
   const { counts, total, scanned } = data;
   const late = data.people.filter((p) => p.status === "LATE");
   const worstLate = late.reduce((m, p) => Math.max(m, p.lateMinutes ?? 0), 0);
@@ -83,10 +89,13 @@ export function AttendanceHero({ data, departmentIds }: Props) {
         <span className="flex size-9 items-center justify-center rounded-[11px] border border-white/20 bg-white/10">
           <Clock className="size-[18px]" aria-hidden="true" />
         </span>
-        <b className="text-[16px]">การเข้างานวันนี้</b>
-        <span className="min-w-0 flex-1 text-[13.5px] text-white/85">
-          {!data.isWorkingDay ? <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</> : <>ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</>}
+        <span className="min-w-0 basis-52">
+          <b className="block text-[16px] leading-snug">การเข้างานวันนี้</b>
+          <span className="block text-sm leading-snug text-white/85">
+            {!data.isWorkingDay ? <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</> : <>ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</>}
+          </span>
         </span>
+        {ticker ? <div className="order-last min-w-0 basis-full lg:order-none lg:flex-1 lg:basis-0">{ticker}</div> : <span className="flex-1" />}
         <Link
           href="/reports?view=attendance_daily"
           className="inline-flex min-h-10 items-center rounded-full border border-white/25 bg-white/10 px-4 text-[13px] font-semibold hover:bg-white/20"
@@ -192,6 +201,7 @@ export function AttendanceHero({ data, departmentIds }: Props) {
           ดูประวัติการเข้างานย้อนหลังได้ที่เมนูเวลาทำงาน
         </div>
       )}
+      {ticker && <div className="min-w-0 lg:col-span-2">{ticker}</div>}
     </section>
   );
 }

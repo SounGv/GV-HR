@@ -284,7 +284,8 @@ function AiShortcut({ active, onClick }: { active: boolean; onClick: () => void 
         )}
       >
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-[inset_0_0_0_1px_#ccfbf1] group-data-[collapsible=icon]:size-8 dark:bg-background">
-          <VBot mood="hi" className="gv-wave size-8 group-data-[collapsible=icon]:size-6" />
+          <VBot mood="hi" className="ai-shortcut-bot gv-wave size-8 group-data-[collapsible=icon]:size-6" />
+          <Sparkles className="ai-shortcut-spark size-6 text-[#0d9488] group-data-[collapsible=icon]:size-5" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1 leading-tight group-data-[collapsible=icon]:hidden">
           <b className="block text-[14px] font-bold text-[#115e59] dark:text-foreground">AI Assistant</b>

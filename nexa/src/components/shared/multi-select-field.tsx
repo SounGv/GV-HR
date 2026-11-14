@@ -62,7 +62,7 @@ export function MultiSelectField({
 
   return (
     <div className={cn("space-y-1", className)}>
-      <label className="text-xs text-muted-foreground">{label}</label>
+      <label className="text-sm text-muted-foreground">{label}</label>
       <DropdownMenu
         open={open}
         onOpenChange={(next) => {

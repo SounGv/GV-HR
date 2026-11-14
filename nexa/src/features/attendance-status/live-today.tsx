@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useTransition } from "react";
+import { createContext, useContext, useEffect, useRef, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
@@ -125,9 +125,9 @@ export function LiveStatusBar() {
 }
 
 /** Dashboard hero: today's attendance on the dark teal surface with glass tiles. */
-export function LiveHero() {
+export function LiveHero({ ticker }: { ticker?: ReactNode }) {
   const { data, departmentIds } = useLiveToday();
-  return <AttendanceHero data={data} departmentIds={departmentIds} />;
+  return <AttendanceHero data={data} departmentIds={departmentIds} ticker={ticker} />;
 }
 
 /** The live absent / late rows at the top of "ต้องตามวันนี้". */

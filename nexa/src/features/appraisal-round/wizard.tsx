@@ -85,7 +85,6 @@ const CHECK_NAME = {
   raters: "ผู้ประเมิน",
   schedule: "กำหนดการและการแจ้ง",
 } as const;
-const LIME = "#CDEB03";
 
 const dayFmt = (opts: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("th-TH", { ...opts, timeZone: "UTC" });
@@ -295,7 +294,7 @@ export function Wizard({ round }: { round: RoundDetail }) {
           </Button>
           <span className="flex-1" />
           {step === 3 && !ready && !dirty && (
-            <span className="order-first w-full text-center text-[12.5px] font-semibold text-[#b45309] sm:order-none sm:w-auto">
+            <span className="order-first w-full text-center text-sm font-semibold text-status-late-fg sm:order-none sm:w-auto">
               ยังเปิดไม่ได้ · เหลือ {failing.length} ข้อ
             </span>
           )}
@@ -310,8 +309,7 @@ export function Wizard({ round }: { round: RoundDetail }) {
             </Button>
           ) : (
             <Button
-              className="h-11 px-5 font-bold text-[#131516] hover:brightness-95 md:h-10"
-              style={{ background: LIME }}
+              className="h-11 px-5 font-bold md:h-10"
               disabled={(!ready && !dirty) || open.isPending || save.isPending}
               onClick={askOpen}
             >
@@ -366,7 +364,7 @@ function Hero({
         : "บันทึกอัตโนมัติเมื่อกดถัดไป";
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" aria-labelledby="round-wizard-title">
-      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-[12.5px] text-white/70 md:hidden">
+      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-sm text-white/70 md:hidden">
         <BackLink href="/appraisal/rounds" onHero>
           รอบประเมิน
         </BackLink>
@@ -381,14 +379,14 @@ function Hero({
           {draft.name.trim() || round.name}
         </h1>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-xs font-bold">
-          <span className="size-1.5 rounded-full bg-[#fde047]" aria-hidden="true" /> ฉบับร่าง
+          <span className="size-1.5 rounded-full bg-status-late-dot" aria-hidden="true" /> ฉบับร่าง
         </span>
         <span
           className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/75"
           aria-live="polite"
         >
           <span
-            className={cn("size-1.5 rounded-full", dirty ? "bg-[#fde047]" : "bg-[#4ade80]")}
+            className={cn("size-1.5 rounded-full", dirty ? "bg-status-late-dot" : "bg-status-normal-dot")}
             aria-hidden="true"
           />
           {saveText}
@@ -425,21 +423,20 @@ function Hero({
                 <span className="h-[5px] overflow-hidden rounded-full bg-white/20">
                   <span
                     className="block h-full rounded-full transition-[width] duration-500"
-                    style={{ width: on || done ? "100%" : 0, background: on ? "#fff" : LIME }}
+                    style={{ width: on || done ? "100%" : 0, background: on ? "#fff" : "var(--on-hero-accent)" }}
                   />
                 </span>
                 <span
                   className={cn(
-                    "flex min-h-8 items-center gap-2 text-[13px] font-semibold",
+                    "flex min-h-8 items-center gap-2 text-sm font-semibold",
                     on ? "text-white" : "text-white/70",
                   )}
                 >
                   <span
                     className={cn(
-                      "flex size-[22px] shrink-0 items-center justify-center rounded-full text-[11.5px] font-bold",
-                      on ? "bg-white text-[#0f766e]" : done ? "text-[#131516]" : "bg-white/15",
+                      "flex size-[22px] shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                      on ? "bg-white text-primary" : done ? "bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]" : "bg-white/15",
                     )}
-                    style={done ? { background: LIME } : undefined}
                     aria-hidden="true"
                   >
                     {done ? <Check className="size-3.5" /> : i + 1}
@@ -468,11 +465,11 @@ function Tile({
 }) {
   return (
     <div className="gv-glass min-w-0 px-3.5 py-3">
-      <p className="text-[12px] leading-snug text-white/80">{label}</p>
+      <p className="text-xs leading-snug text-white/80">{label}</p>
       <p
         className={cn(
-          "mt-0.5 leading-tight font-bold tabular-nums",
-          small ? "pt-1 text-[17px] sm:text-[19px]" : "text-[24px] sm:text-[26px]",
+          "mt-0.5 leading-snug font-bold tabular-nums",
+          small ? "pt-1 text-base sm:text-xl" : "text-[24px] sm:text-[26px]",
         )}
       >
         {value}
@@ -507,7 +504,7 @@ function Readiness({
               cy="21"
               r="17"
               fill="none"
-              stroke={passed === total ? "#84cc16" : "#0d9488"}
+              stroke={passed === total ? "var(--success)" : "var(--ring)"}
               strokeWidth="5"
               strokeLinecap="round"
               strokeDasharray={`${(passed / total) * circ} ${circ}`}
@@ -532,8 +529,8 @@ function Readiness({
               >
                 <CheckDot ok={c.ok} />
                 <span className="min-w-0">
-                  <span className="block text-[13px] font-medium">{CHECK_NAME[c.key]}</span>
-                  <span className="text-muted-foreground block text-[11.5px] leading-snug">
+                  <span className="block text-sm font-medium">{CHECK_NAME[c.key]}</span>
+                  <span className="text-muted-foreground block text-xs leading-snug">
                     {c.ok ? "ครบแล้ว" : c.why}
                   </span>
                 </span>
@@ -542,8 +539,8 @@ function Readiness({
           ))}
         </ul>
       </Card>
-      <div className="rounded-[18px] border border-[#fde68a] bg-[linear-gradient(160deg,#fefce8,#fff)] p-4 text-[12.5px] leading-relaxed text-[#713f12] dark:bg-none dark:text-[#fde68a]">
-        <p className="mb-0.5 text-[13px] font-semibold">เคล็ดลับ</p>
+      <div className="rounded-[18px] border border-status-late-border bg-status-late-bg p-4 text-sm leading-relaxed text-status-late-fg">
+        <p className="mb-0.5 text-sm font-semibold">เคล็ดลับ</p>
         ตั้งวันเปิดรอบเป็นวันพรุ่งนี้ ระบบจะตั้งเวลาส่งให้ และยังกด “ยกเลิกการตั้งเวลา”
         กลับมาแก้ได้ก่อนข้อความออก
       </div>
@@ -557,15 +554,14 @@ function CheckDot({ ok, size = "sm" }: { ok: boolean; size?: "sm" | "md" }) {
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full font-bold",
         size === "md" ? "size-[26px]" : "size-5",
-        ok ? "text-[#131516]" : "border border-[#fde68a] bg-[#fffbeb] text-[#b45309]",
+        ok ? "bg-success text-success-foreground" : "border border-status-late-border bg-status-late-bg text-status-late-fg",
       )}
-      style={ok ? { background: LIME } : undefined}
       aria-label={ok ? "ผ่าน" : "ยังไม่ผ่าน"}
     >
       {ok ? (
         <Check className="size-3" aria-hidden="true" />
       ) : (
-        <span className="text-[11px]" aria-hidden="true">
+        <span className="text-xs" aria-hidden="true">
           !
         </span>
       )}
@@ -576,7 +572,7 @@ function CheckDot({ ok, size = "sm" }: { ok: boolean; size?: "sm" | "md" }) {
 /* ───────────────────────── step 1: set up ───────────────────────── */
 
 function Sub({ children }: { children: ReactNode }) {
-  return <h3 className="text-foreground/80 mt-6 mb-2.5 text-[13px] font-bold">{children}</h3>;
+  return <h3 className="text-foreground/80 mt-6 mb-2.5 text-sm font-bold">{children}</h3>;
 }
 
 function StepSetup({
@@ -604,7 +600,7 @@ function StepSetup({
             onChange={(e) => update({ name: e.target.value })}
           />
           {!draft.name.trim() && (
-            <span className="text-xs font-normal text-[#b45309]">กรุณาตั้งชื่อรอบ</span>
+            <span className="text-xs font-normal text-status-late-fg">กรุณาตั้งชื่อรอบ</span>
           )}
         </label>
         <div className="grid gap-1.5 text-sm font-medium">
@@ -647,7 +643,7 @@ function StepSetup({
             aria-invalid={badDates || undefined}
           />
           {badDates ? (
-            <span className="text-xs font-normal text-[#b45309]">วันปิดต้องไม่ก่อนวันเปิด</span>
+            <span className="text-xs font-normal text-status-late-fg">วันปิดต้องไม่ก่อนวันเปิด</span>
           ) : (
             days && (
               <span className="text-muted-foreground text-xs font-normal tabular-nums">
@@ -726,7 +722,7 @@ function Timeline({ start, end, remind }: { start: string; end: string; remind: 
         style={{
           left: `${50 / points.length}%`,
           right: `${50 / points.length}%`,
-          background: `linear-gradient(90deg, #0d9488 0 ${((points.length - 2) / (points.length - 1)) * 100}%, var(--border) 0)`,
+          background: `linear-gradient(90deg, var(--ring) 0 ${((points.length - 2) / (points.length - 1)) * 100}%, var(--border) 0)`,
         }}
         aria-hidden="true"
       />
@@ -739,13 +735,13 @@ function Timeline({ start, end, remind }: { start: string; end: string; remind: 
             <span
               className={cn(
                 "bg-card relative z-[1] block size-[15px] shrink-0 rounded-full border-[3px] sm:mx-auto",
-                p.later ? "border-dashed border-[#c4ccd2]" : "border-[#0d9488]",
+                p.later ? "border-dashed border-muted-foreground/50" : "border-ring",
               )}
               aria-hidden="true"
             />
             <span className="min-w-0">
-              <b className="block text-[13px] sm:mt-2">{p.when}</b>
-              <span className="text-muted-foreground block text-[11.5px] leading-snug">
+              <b className="block text-sm sm:mt-2">{p.when}</b>
+              <span className="text-muted-foreground block text-xs leading-snug">
                 {p.what}
               </span>
             </span>
@@ -851,10 +847,10 @@ function StepPeople({
               className={cn(
                 "rounded-2xl border-[1.5px] p-3.5 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
                 on
-                  ? "border-[#0d9488] bg-[linear-gradient(180deg,#f0fdfa,var(--card))] shadow-[0_0_0_3px_#ccfbf1] dark:shadow-none"
+                  ? "border-ring bg-[linear-gradient(180deg,var(--accent),var(--card))] shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
                   : some
-                    ? "bg-card border-[#0d9488]/60"
-                    : "border-border bg-card hover:border-[#0d9488]/50",
+                    ? "bg-card border-ring/60"
+                    : "border-border bg-card hover:border-ring/50",
               )}
             >
               <span className="flex items-start gap-2">
@@ -868,10 +864,10 @@ function StepPeople({
                   className={cn(
                     "flex size-[22px] shrink-0 items-center justify-center rounded-[7px] border-2",
                     on
-                      ? "border-[#0f766e] bg-[#0f766e] text-white"
+                      ? "border-primary bg-primary text-primary-foreground"
                       : some
-                        ? "border-[#0d9488] text-[#0d9488]"
-                        : "border-[#c4ccd2]",
+                        ? "border-ring text-ring"
+                        : "border-muted-foreground/50",
                   )}
                   aria-hidden="true"
                 >
@@ -927,18 +923,18 @@ function StepPeople({
         </Button>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-[#131516] px-4 py-3 text-white">
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-accent px-4 py-3 text-foreground">
         <span className="text-sm">
-          <b className="text-[22px] tabular-nums" style={{ color: LIME }}>
+          <b className="text-[22px] text-primary tabular-nums">
             {selected.size}
           </b>{" "}
           คนถูกเลือก
         </span>
-        <span className="min-w-0 truncate text-[13px] text-white/60">
+        <span className="min-w-0 truncate text-sm text-muted-foreground">
           {chosenDivs.map((d) => d.name).join(" · ") || "ยังไม่ได้เลือก"}
         </span>
         {noManager > 0 && (
-          <span className="ml-auto rounded-full bg-[#fde68a] px-2.5 py-px text-xs font-bold text-[#131516]">
+          <span className="ml-auto rounded-full bg-status-late-bg px-2.5 py-px text-xs font-bold text-status-late-fg">
             {noManager} คนยังไม่มีหัวหน้า
           </span>
         )}
@@ -1072,7 +1068,7 @@ function PeopleList({
                         {p.name} <span className="text-muted-foreground">{p.code}</span>
                       </span>
                       {!p.hasManager && (
-                        <span className="shrink-0 rounded-full bg-[#fffbeb] px-2 py-px text-[11px] font-semibold text-[#b45309]">
+                        <span className="shrink-0 rounded-full bg-status-late-bg px-2 py-px text-xs font-semibold text-status-late-fg">
                           ไม่มีหัวหน้า
                         </span>
                       )}
@@ -1126,7 +1122,7 @@ function PeopleList({
 function PresetDiagram({ level }: { level: number }) {
   const node = (x: number, y: number, label: string, on: boolean) => (
     <g>
-      <circle cx={x} cy={y} r="11" fill={on ? "#0f766e" : "var(--muted)"} />
+      <circle cx={x} cy={y} r="11" fill={on ? "var(--primary)" : "var(--muted)"} />
       <text
         x={x}
         y={y + 3.5}
@@ -1145,7 +1141,7 @@ function PresetDiagram({ level }: { level: number }) {
       y1={y1}
       x2={x2}
       y2={y2}
-      stroke={on ? "#0d9488" : "var(--border)"}
+      stroke={on ? "var(--ring)" : "var(--border)"}
       strokeWidth="2"
       markerEnd={on ? "url(#pd-ah)" : undefined}
     />
@@ -1162,7 +1158,7 @@ function PresetDiagram({ level }: { level: number }) {
           markerHeight="6"
           orient="auto"
         >
-          <path d="M0 0L8 4L0 8z" fill="#0d9488" />
+          <path d="M0 0L8 4L0 8z" fill="var(--ring)" />
         </marker>
       </defs>
       {arrow(80, 24, 80, 32, true)}
@@ -1173,15 +1169,15 @@ function PresetDiagram({ level }: { level: number }) {
       {node(28, 43, "เพื่อน", level >= 2)}
       {node(132, 43, "เพื่อน", level >= 2)}
       {node(80, 74, "ลูก", level >= 3)}
-      <circle cx="80" cy="45" r="12" fill={LIME} />
-      <text x="80" y="48.5" textAnchor="middle" fontSize="8.5" fontWeight="700" fill="#131516">
+      <circle cx="80" cy="45" r="12" fill="var(--primary)" />
+      <text x="80" y="48.5" textAnchor="middle" fontSize="8.5" fontWeight="700" fill="var(--primary-foreground)">
         คุณ
       </text>
       {level >= 1 && (
         <path
           d="M92 40c10-8 12 6 1 9"
           fill="none"
-          stroke="#0d9488"
+          stroke="var(--ring)"
           strokeWidth="2"
           markerEnd="url(#pd-ah)"
         />
@@ -1232,20 +1228,19 @@ function StepRaters({
             className={cn(
               "relative rounded-[18px] border-[1.5px] p-3.5 pb-3 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px disabled:cursor-wait",
               active === k
-                ? "border-[#0d9488] bg-[linear-gradient(180deg,#f0fdfa,var(--card))] shadow-[0_0_0_3px_#ccfbf1] dark:shadow-none"
-                : "border-border bg-card hover:border-[#0d9488]/50",
+                ? "border-ring bg-[linear-gradient(180deg,var(--accent),var(--card))] shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
+                : "border-border bg-card hover:border-ring/50",
             )}
           >
             {k === "90" && (
               <span
-                className="absolute top-3 right-3 rounded-full px-2 text-[10.5px] font-bold text-[#131516]"
-                style={{ background: LIME }}
+                className="absolute top-3 right-3 rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground"
               >
                 แนะนำรายเดือน
               </span>
             )}
             <span className="text-2xl font-bold tracking-tight">{k}°</span>
-            <span className="ml-1.5 text-[12.5px] font-bold text-[#0f766e] dark:text-[#5eead4]">
+            <span className="ml-1.5 text-sm font-bold text-primary">
               {PRESET_TEXT[k].name}
             </span>
             <PresetDiagram level={i} />
@@ -1257,7 +1252,7 @@ function StepRaters({
       </div>
 
       {draft.types.includes("PEER") && (
-        <p className="bg-muted text-muted-foreground mt-3 rounded-xl px-3.5 py-2.5 text-[12.5px]">
+        <p className="bg-muted text-muted-foreground mt-3 rounded-xl px-3.5 py-2.5 text-sm">
           เพื่อนร่วมงาน = คนที่มีหัวหน้าคนเดียวกัน ระบบเลือกให้คนละไม่เกิน {PEER_LIMIT} คน
         </p>
       )}
@@ -1274,7 +1269,7 @@ function StepRaters({
       )}
 
       {(overloaded.length > 0 || noPeers.length > 0) && (
-        <ul className="mt-3 space-y-1 text-[12.5px] text-[#b45309]">
+        <ul className="mt-3 space-y-1 text-sm text-status-late-fg">
           {overloaded.map((e) => (
             <li key={`o-${e.employeeId}`} className="flex gap-2">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" /> {e.name}{" "}
@@ -1298,18 +1293,18 @@ function StepRaters({
 
       {draft.types.length > 0 && (
         <details
-          className="dark:border-border mt-5 rounded-2xl border border-dashed border-[#cfd6dc] px-4 py-3"
+          className="mt-5 rounded-2xl border border-dashed border-muted-foreground/40 px-4 py-3"
           open={!total.ok}
         >
-          <summary className="flex min-h-9 cursor-pointer flex-wrap items-center gap-2 text-[13px] font-bold [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-9 cursor-pointer flex-wrap items-center gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden">
             น้ำหนักคะแนนแต่ละมุมมอง
-            <span className="rounded-md bg-[#ffedd5] px-1.5 text-[11px] font-bold text-[#7c2d12]">
+            <span className="rounded-md bg-status-absent-bg px-1.5 text-xs font-bold text-status-absent-fg">
               รอ HR ยืนยัน
             </span>
             <span
               className={cn(
                 "ml-auto text-xs font-semibold",
-                total.ok ? "text-[#15803d]" : "text-[#b45309]",
+                total.ok ? "text-success" : "text-status-late-fg",
               )}
             >
               {total.ok ? "รวม 100%" : `รวม ${total.total}% ต้องเป็น 100%`}
@@ -1345,7 +1340,7 @@ function StepRaters({
                     aria-hidden="true"
                   >
                     <span
-                      className="block h-full rounded-full bg-[#0d9488] transition-[width]"
+                      className="block h-full rounded-full bg-ring transition-[width]"
                       style={{ width: `${w}%` }}
                     />
                   </span>
@@ -1372,11 +1367,11 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
   return (
     <div className="border-border overflow-hidden rounded-2xl border">
       <div className="border-border bg-muted/60 flex flex-wrap items-center gap-2 border-b px-4 py-2.5">
-        <span className="rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-2.5 py-px text-xs font-bold text-[#15803d]">
+        <span className="rounded-full border border-status-normal-border bg-status-normal-bg px-2.5 py-px text-xs font-bold text-success">
           ✓ {ready} คนพร้อม
         </span>
         {missing.length > 0 && (
-          <span className="rounded-full border border-[#fde68a] bg-[#fffbeb] px-2.5 py-px text-xs font-bold text-[#b45309]">
+          <span className="rounded-full border border-status-late-border bg-status-late-bg px-2.5 py-px text-xs font-bold text-status-late-fg">
             {missing.length} คนยังไม่มีหัวหน้าประเมิน
           </span>
         )}
@@ -1385,9 +1380,9 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
         </span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-[13px]">
+        <table className="w-full min-w-[560px] text-sm">
           <thead>
-            <tr className="text-muted-foreground text-left text-[11.5px] font-bold">
+            <tr className="text-muted-foreground text-left text-xs font-bold">
               <th className="px-4 py-2 font-bold">ผู้ถูกประเมิน</th>
               <th className="px-4 py-2 font-bold">หัวหน้าประเมิน</th>
               {types.includes("SELF") && <th className="px-3 py-2 font-bold">ตนเอง</th>}
@@ -1403,7 +1398,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
                   key={r.employeeId}
                   className={cn(
                     "border-border border-t",
-                    bad && "bg-[#fffcf2] dark:bg-[#b45309]/10",
+                    bad && "bg-status-late-bg/60",
                   )}
                 >
                   <td className="px-4 py-2">
@@ -1411,7 +1406,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
                       <PersonAvatar name={r.name} gender={r.gender} seed={r.employeeId} />
                       <span className="min-w-0">
                         <span className="block leading-snug">{r.name}</span>
-                        <span className="text-muted-foreground block text-[11.5px]">
+                        <span className="text-muted-foreground block text-xs">
                           {r.department}
                         </span>
                       </span>
@@ -1430,7 +1425,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
                     ) : can("employee:update") ? (
                       <SetManager row={r} />
                     ) : (
-                      <span className="text-xs font-semibold text-[#b45309]">
+                      <span className="text-xs font-semibold text-status-late-fg">
                         ไม่มีหัวหน้า · ให้ HR ตั้งในผังองค์กร
                       </span>
                     )}
@@ -1454,7 +1449,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="border-border text-primary hover:bg-muted flex min-h-11 w-full items-center justify-center border-t text-[13px] font-semibold"
+          className="border-border text-primary hover:bg-muted flex min-h-11 w-full items-center justify-center border-t text-sm font-semibold"
         >
           ดูทั้งหมด {rows.length} คน
         </button>
@@ -1507,7 +1502,7 @@ function SetManager({ row }: { row: MatchRow }) {
     <>
       <Select value={pick ?? ""} onValueChange={(v) => setPick((v as string) || null)}>
         <SelectTrigger
-          className="bg-card h-10 w-full max-w-[240px] border-[1.5px] border-[#fde68a] text-[12.5px] font-semibold text-[#b45309]"
+          className="bg-card h-10 w-full max-w-[240px] border-[1.5px] border-status-late-border text-sm font-semibold text-status-late-fg"
           aria-label={`เลือกหัวหน้าให้ ${row.name}`}
         >
           <SelectValue placeholder="ไม่มีหัวหน้า · เลือก…" />
@@ -1567,11 +1562,11 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
               >
                 <CheckDot ok={c.ok} size="md" />
                 <span className="min-w-0 flex-1">
-                  <b className="block text-[13.5px]">{CHECK_NAME[c.key]}</b>
+                  <b className="block text-sm">{CHECK_NAME[c.key]}</b>
                   <span
                     className={cn(
                       "block text-xs break-words",
-                      c.ok ? "text-muted-foreground" : "text-[#b45309]",
+                      c.ok ? "text-muted-foreground" : "text-status-late-fg",
                     )}
                   >
                     {c.ok ? detail[c.key] : c.why}
@@ -1579,7 +1574,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
                 </span>
                 <Button
                   variant={c.ok ? "ghost" : "outline"}
-                  className="h-11 shrink-0 text-[#0f766e] md:h-9"
+                  className="h-11 shrink-0 text-primary md:h-9"
                   onClick={() => goTo(CHECK_STEP[c.key])}
                 >
                   {c.ok ? "แก้" : "ไปแก้"}
@@ -1588,7 +1583,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
             ))}
           </ul>
           {noManager.length > 0 && (
-            <p className="mt-3 flex gap-2 text-[12.5px] text-[#b45309]">
+            <p className="mt-3 flex gap-2 text-sm text-status-late-fg">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
               <span>
                 {noManager.length} คนจะไม่มีหัวหน้าประเมิน (มีแค่มุมมองอื่น):{" "}
@@ -1608,7 +1603,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
             </p>
           )}
           {inv.unreachable > 0 && (
-            <p className="mt-3 flex gap-2 text-[12.5px] text-[#b45309]">
+            <p className="mt-3 flex gap-2 text-sm text-status-late-fg">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
               ส่งไม่ถึง {inv.unreachable} คน (ยังไม่มีบัญชีเข้าใช้งาน):{" "}
               {inv.unreachableNames.slice(0, 5).join(", ")}
@@ -1620,7 +1615,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
               ระบบยังไม่ได้ตั้งค่า LINE จึงส่งในแอปอย่างเดียว
             </p>
           )}
-          <p className="bg-muted mt-3 flex gap-2.5 rounded-xl px-3.5 py-3 text-[12.5px] leading-relaxed">
+          <p className="bg-muted mt-3 flex gap-2.5 rounded-xl px-3.5 py-3 text-sm leading-relaxed">
             <Lock className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden="true" />
             เมื่อเปิดรอบ ระบบจำแผนกและตำแหน่งของทุกคน ณ วันนั้น และล็อกคำถามของแบบประเมินไว้
             ถ้าย้ายทีมหรือแก้แบบระหว่างรอบ ผลรอบนี้ยังนับตามเดิม
@@ -1636,28 +1631,28 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
 
         {/* What a rater receives: same title and body as sendInvitations(). */}
         <figure
-          className="mx-auto w-full max-w-[280px] rounded-[30px] bg-[#131516] p-2.5 shadow-[0_24px_44px_-22px_rgba(0,0,0,0.6)]"
+          className="mx-auto w-full max-w-[280px] rounded-[30px] bg-[var(--device-frame)] p-2.5 shadow-[0_24px_44px_-22px_rgba(0,0,0,0.6)]"
           aria-label="ตัวอย่างข้อความที่ผู้ประเมินได้รับ"
         >
-          <div className="min-h-[300px] rounded-[22px] bg-[#e6eef3] px-3 py-3.5 text-[#131516]">
-            <div className="mb-3 flex items-center gap-2 text-xs font-bold text-[#3a4248]">
+          <div className="min-h-[300px] rounded-[22px] bg-muted px-3 py-3.5 text-foreground">
+            <div className="mb-3 flex items-center gap-2 text-xs font-bold text-muted-foreground">
               <span
-                className="flex size-[26px] items-center justify-center rounded-full bg-[linear-gradient(150deg,#115e59,#0d9488)] text-[10.5px]"
-                style={{ color: LIME }}
+                className="flex size-[26px] items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--primary),var(--ring))] text-xs"
+                style={{ color: "var(--on-hero-accent)" }}
               >
                 GV
               </span>
               GV One HR{round.notifyLine && inv.lineConfigured ? " · LINE" : " · ในแอป"}
             </div>
-            <div className="rounded-[4px_16px_16px_16px] bg-white px-3 py-3 text-[12.5px] leading-relaxed shadow-sm">
-              <b className="mb-1 block text-[13px] break-words">ถึงรอบประเมิน: {round.name}</b>
+            <div className="rounded-[4px_16px_16px_16px] bg-white px-3 py-3 text-sm leading-relaxed shadow-sm">
+              <b className="mb-1 block text-sm break-words">ถึงรอบประเมิน: {round.name}</b>
               คุณมี {ex?.count ?? "–"} คนที่ต้องประเมิน
               {round.endIso ? ` ปิดรอบวันที่ ${fmtLong(round.endIso)}` : ""}
-              <span className="mt-2.5 block rounded-[10px] bg-[#0f766e] py-2 text-center font-bold text-white">
+              <span className="mt-2.5 block rounded-[10px] bg-primary py-2 text-center font-bold text-white">
                 เปิดงานประเมิน →
               </span>
             </div>
-            <figcaption className="mt-1.5 text-[10.5px] text-[#5e6670]">
+            <figcaption className="mt-1.5 text-xs text-muted-foreground">
               {round.startIso ? `${fmtShort(round.startIso)} · ` : ""}ตัวอย่าง
               {ex ? `: ข้อความถึง ${ex.name}` : ""}
             </figcaption>

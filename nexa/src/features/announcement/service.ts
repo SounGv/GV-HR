@@ -113,6 +113,16 @@ export async function listAnnouncements(
   });
 }
 
+/** The newest published announcement (pinned first) from the last 14 days, for the dashboard ticker; null when none. */
+export async function getLatestAnnouncement(companyId: string) {
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  return prisma.announcement.findFirst({
+    where: { companyId, deletedAt: null, status: "PUBLISHED", OR: [{ pinned: true }, { publishedAt: { gte: since } }] },
+    select: { id: true, title: true },
+    orderBy: [{ pinned: "desc" }, { publishedAt: "desc" }],
+  });
+}
+
 export async function getAnnouncement(companyId: string, id: string) {
   const announcement = await prisma.announcement.findFirst({
     where: { id, companyId, deletedAt: null },

@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import { useRef, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CalendarClock, Check, ClipboardList, FileText, Plus } from "lucide-react";
@@ -23,8 +23,6 @@ import { ROUND_STATUS_LABEL, type RoundListItem, type RoundStatus } from "./type
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 
-const LIME = "#CDEB03";
-const CHARCOAL = "#131516";
 const MAX_ROWS = 8;
 
 const fmtDate = (iso: string, withYear = false) =>
@@ -58,29 +56,40 @@ const ROUND_EDGE: Record<RoundStatus, string> = {
   OPEN: "var(--success)",
   SCHEDULED: "var(--warning)",
   DRAFT: "var(--warning)",
-  CLOSED: "#9ca3af",
+  CLOSED: "var(--status-notyet-dot)",
 };
 
 const FORM_LABEL: Record<FormStatus, string> = { DRAFT: "ฉบับร่าง", PUBLISHED: "ใช้งานอยู่", ARCHIVED: "เก็บแล้ว" };
 const FORM_TONE: Record<FormStatus, StatusTone> = { DRAFT: "warning", PUBLISHED: "success", ARCHIVED: "neutral" };
-const FORM_EDGE: Record<FormStatus, string> = { DRAFT: "var(--warning)", PUBLISHED: "var(--success)", ARCHIVED: "#9ca3af" };
+const FORM_EDGE: Record<FormStatus, string> = { DRAFT: "var(--warning)", PUBLISHED: "var(--success)", ARCHIVED: "var(--status-notyet-dot)" };
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties;
 
-/** Creates an empty draft round and opens it in the 5-step wizard (same flow as the rounds page). */
-function useStartNewRound() {
+/**
+ * Creates an empty draft round and opens it in the 5-step wizard; the overview and the rounds page share it.
+ * One round per click: the button stays locked until the wizard opens, because a second click while the
+ * page was still loading used to make a duplicate draft (two "รอบประเมินใหม่" 2 seconds apart, 13 Nov 2026).
+ */
+export function useStartNewRound() {
   const router = useRouter();
   const create = useCreateRound();
+  const busy = useRef(false);
   async function start() {
+    if (busy.current) return;
+    busy.current = true;
     try {
-      if (!window.confirm("สร้างรอบประเมินฉบับร่างใหม่? (ยังไม่ส่งถึงใคร จนกว่าจะเปิดรอบ)")) return;
+      if (!window.confirm("สร้างรอบประเมินฉบับร่างใหม่? (ยังไม่ส่งถึงใคร จนกว่าจะเปิดรอบ)")) {
+        busy.current = false;
+        return;
+      }
       const res = await create.mutateAsync("รอบประเมินใหม่");
       router.push(`/appraisal/rounds/${res.data.id}`);
     } catch (err) {
+      busy.current = false;
       toast.error(err instanceof ApiError ? err.message : "สร้างรอบไม่สำเร็จ");
     }
   }
-  return { start, pending: create.isPending };
+  return { start, pending: create.isPending || create.isSuccess };
 }
 
 /* ── header actions ─────────────────────────────────────────────────── */
@@ -105,7 +114,7 @@ export function OverviewActions({ className }: { className?: string }) {
 /** White pill used for the one next action inside the hero. */
 function HeroPill({ href, onClick, disabled, children }: { href?: string; onClick?: () => void; disabled?: boolean; children: ReactNode }) {
   const cls =
-    "inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-bold text-[#0f766e] transition-colors hover:bg-white/90 disabled:opacity-60 md:h-9";
+    "inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-4 text-sm font-bold text-[var(--on-hero-accent-fg)] transition-colors hover:bg-white/90 disabled:opacity-60 md:h-9";
   if (href) {
     return (
       <Link href={href} className={cls}>
@@ -124,7 +133,7 @@ function Eyebrow({ tone, children }: { tone: "waiting" | "open"; children: React
   return (
     <span
       className="inline-block rounded-full px-2.5 py-0.5 text-xs font-bold"
-      style={tone === "open" ? { background: LIME, color: CHARCOAL } : { background: "#fde047", color: "#3f2d00" }}
+      style={tone === "open" ? { background: "var(--on-hero-accent)", color: "var(--on-hero-accent-fg)" } : { background: "var(--status-late-bg)", color: "var(--status-late-fg)" }}
     >
       {children}
     </span>
@@ -135,21 +144,21 @@ type StepState = "done" | "now" | "later";
 
 const NOW_TILE: CSSProperties = {
   background: "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.09))",
-  borderColor: "rgba(205,235,3,0.6)",
-  boxShadow: "0 0 0 1px rgba(205,235,3,0.35), inset 0 1px 0 rgba(255,255,255,0.16)",
+  borderColor: "rgba(153,246,228,0.6)",
+  boxShadow: "0 0 0 1px rgba(153,246,228,0.35), inset 0 1px 0 rgba(255,255,255,0.16)",
 };
 
 function StepTile({ n, state, title, note, action }: { n: number; state: StepState; title: string; note: string; action?: ReactNode }) {
   return (
     <li className={cn("gv-glass grid content-start gap-1.5 px-4 py-3.5", state === "later" && "opacity-70")} style={state === "now" ? NOW_TILE : undefined}>
-      <div className="flex items-center gap-2.5 text-[14.5px] leading-snug font-bold">
+      <div className="flex items-center gap-2.5 text-sm leading-snug font-bold">
         <span
           className={cn(
-            "grid size-7 flex-none place-items-center rounded-full border text-[13px] font-bold",
+            "grid size-7 flex-none place-items-center rounded-full border text-sm font-bold",
             state === "later" && "border-white/25 bg-white/15",
-            state === "now" && "border-white bg-white text-[#0f766e]",
+            state === "now" && "border-white bg-white text-[var(--on-hero-accent-fg)]",
+            state === "done" && "border-[var(--on-hero-accent)] bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]",
           )}
-          style={state === "done" ? { background: LIME, borderColor: LIME, color: CHARCOAL } : undefined}
           aria-hidden
         >
           {state === "done" ? <Check className="size-4" strokeWidth={3} /> : n}
@@ -159,7 +168,7 @@ function StepTile({ n, state, title, note, action }: { n: number; state: StepSta
           <span className="sr-only">{state === "done" ? " (เสร็จแล้ว)" : state === "now" ? " (ขั้นปัจจุบัน)" : " (ขั้นถัดไป)"}</span>
         </span>
       </div>
-      <p className="text-[12.5px] leading-relaxed break-words text-white/80">{note}</p>
+      <p className="text-sm leading-relaxed break-words text-white/80">{note}</p>
       {action && <div className="mt-1">{action}</div>}
     </li>
   );
@@ -189,10 +198,10 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
 
   const sub =
     current === 1
-      ? "ตอนนี้อยู่ขั้นที่ 1 · ยังไม่มีแบบประเมิน"
+      ? "ขั้นที่ 1: ยังไม่มีแบบประเมิน เริ่มจากสร้างแบบก่อน"
       : current === 2
-        ? `ตอนนี้อยู่ขั้นที่ 2 · มีแบบประเมินฉบับร่าง ${drafts.length} แบบ ยังไม่มีแบบที่ยืนยันใช้`
-        : `ตอนนี้อยู่ขั้นที่ 3 · ยืนยันใช้แบบประเมินแล้ว ${publishedCount} แบบ พร้อมสร้างรอบ`;
+        ? `ขั้นที่ 2: มีแบบประเมินฉบับร่าง ${drafts.length} แบบ ยังไม่มีแบบที่ยืนยันใช้`
+        : `ขั้นที่ 3: ยืนยันใช้แบบประเมินแล้ว ${publishedCount} แบบ สร้างรอบได้เลย`;
 
   let step2Note = "กดยืนยันใช้ในหน้าแบบประเมิน แล้วจึงเลือกในรอบได้";
   let step2Action: ReactNode = null;
@@ -229,7 +238,7 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
       <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold sm:text-[26px]">
         เริ่มประเมินได้ใน 3 ขั้น
       </h2>
-      <p className="mt-0.5 text-[13.5px] leading-relaxed text-white/80">{sub}</p>
+      <p className="mt-0.5 text-sm leading-relaxed text-white/80">{sub}</p>
       <ol className="mt-4 grid gap-3 sm:grid-cols-3">
         <StepTile
           n={1}
@@ -248,8 +257,8 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
 function Kpi({ label, value, unit, children }: { label: string; value: ReactNode; unit?: string; children?: ReactNode }) {
   return (
     <div className="gv-glass min-w-0 px-4 py-3.5">
-      <p className="text-[13px] leading-snug font-semibold text-white/90">{label}</p>
-      <p className="mt-1 text-[26px] leading-tight font-bold tabular-nums sm:text-[28px]">
+      <p className="text-sm leading-snug font-semibold text-white/90">{label}</p>
+      <p className="mt-1 text-[26px] leading-snug font-bold tabular-nums sm:text-[28px]">
         {value}
         {unit && <span className="ml-1 text-xs font-medium text-white/75">{unit}</span>}
       </p>
@@ -274,7 +283,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
       <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold break-words sm:text-[26px]">
         {round.name}
       </h2>
-      <p className="mt-0.5 text-[13.5px] leading-relaxed break-words text-white/80">
+      <p className="mt-0.5 text-sm leading-relaxed break-words text-white/80">
         {round.formName && <>ใช้ &ldquo;{round.formName}&rdquo; · </>}
         {round.participantCount} คนที่ถูกประเมิน
         {others > 0 && ` · เปิดอยู่อีก ${others} รอบ (ดูด้านล่าง)`}
@@ -289,7 +298,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
             aria-valuenow={pct}
             className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15"
           >
-            <div className="gv-grow h-full rounded-full" style={{ width: `${pct}%`, background: LIME }} />
+            <div className="gv-grow h-full rounded-full" style={{ width: `${pct}%`, background: "var(--on-hero-accent)" }} />
           </div>
         </Kpi>
         <Kpi label="ยังไม่เริ่ม" value={p ? <CountUp value={p.pending} /> : dash} unit="งาน" />
@@ -336,11 +345,11 @@ function ListRow({
           <Icon className="size-4" />
         </span>
         <span className="min-w-0">
-          <span className="block text-[14.5px] leading-snug font-semibold break-words text-foreground">{title}</span>
-          <span className="block text-[12.5px] leading-relaxed text-muted-foreground tabular-nums">{meta}</span>
+          <span className="block text-sm leading-snug font-semibold break-words text-foreground">{title}</span>
+          <span className="block text-sm leading-relaxed text-muted-foreground tabular-nums">{meta}</span>
         </span>
         {chip}
-        <span className="hidden text-[13px] font-semibold whitespace-nowrap text-primary sm:inline">{linkText}</span>
+        <span className="hidden text-sm font-semibold whitespace-nowrap text-primary sm:inline">{linkText}</span>
       </Link>
     </li>
   );
@@ -348,7 +357,7 @@ function ListRow({
 
 function AllLink({ href }: { href: string }) {
   return (
-    <Link href={href} className="inline-flex h-11 items-center text-[13px] font-semibold text-primary hover:underline md:h-auto">
+    <Link href={href} className="inline-flex h-11 items-center text-sm font-semibold text-primary hover:underline md:h-9">
       ดูทั้งหมด →
     </Link>
   );
@@ -385,7 +394,7 @@ function RoundsSection({ rounds, hasPublished }: { rounds: RoundListItem[]; hasP
             ))}
           </ul>
           {rounds.length > MAX_ROWS && (
-            <p className="border-t border-border/70 px-5 py-2.5 text-[12.5px] text-muted-foreground">
+            <p className="border-t border-border/70 px-5 py-2.5 text-sm text-muted-foreground">
               แสดง {MAX_ROWS} จาก {rounds.length} รอบ
             </p>
           )}
@@ -412,7 +421,7 @@ function DepartmentSection({ round }: { round: RoundListItem }) {
           <ul aria-label={`ความคืบหน้ารายแผนก ${round.name}`}>
             {rows.map((d) => (
               <li key={d.department} className="border-t border-border/70 px-5 py-3 first:border-t-0">
-                <div className="flex items-baseline justify-between gap-3 text-[13.5px]">
+                <div className="flex items-baseline justify-between gap-3 text-sm">
                   <span className="min-w-0 font-semibold break-words">{d.department}</span>
                   <span className="flex-none text-muted-foreground tabular-nums">
                     {d.submitted}/{d.total} ({d.percent}%)

@@ -25,8 +25,8 @@ export function AppraisalManageTabs() {
   const { can } = useAuth();
   if (!can("campaign:manage") || !TABS.some((t) => t.href === pathname)) return null;
   return (
-    <nav aria-label="จัดการประเมิน" className="-mx-1 overflow-x-auto px-1">
-      <div className="inline-flex gap-1 rounded-xl border border-border bg-card p-1 shadow-[var(--card-shadow)]">
+    <nav aria-label="จัดการประเมิน">
+      <div className="flex w-full gap-1 rounded-xl border border-border bg-card p-1 shadow-[var(--card-shadow)] md:inline-flex md:w-auto">
         {TABS.map((t) => {
           const active = pathname === t.href;
           return (
@@ -35,9 +35,9 @@ export function AppraisalManageTabs() {
               href={t.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "inline-flex h-10 items-center rounded-[9px] px-4 text-[13.5px] font-semibold whitespace-nowrap transition-colors md:h-9",
+                "inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-[9px] px-1.5 text-sm font-semibold whitespace-nowrap transition-colors md:h-9 md:flex-none md:px-4",
                 active
-                  ? "bg-[#0f766e] text-white shadow-[0_1px_2px_rgba(15,118,110,0.2),0_6px_14px_-8px_rgba(15,118,110,0.6)]"
+                  ? "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,118,110,0.2),0_6px_14px_-8px_rgba(15,118,110,0.6)]"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >

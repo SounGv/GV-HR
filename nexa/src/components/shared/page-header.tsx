@@ -24,7 +24,7 @@ export function PageHeader({
         <h1 className="font-heading text-[22px] leading-snug font-bold text-foreground">
           {title}
         </h1>
-        {description && <p className="text-[13px] text-muted-foreground">{description}</p>}
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

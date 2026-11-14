@@ -148,7 +148,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
                         ค่าเฉลี่ย <b>{s.average ?? "-"}</b> <span className="text-muted-foreground">(จาก {s.count} คน)</span>
                       </p>
                       {s.count > 0 && (
-                        <ul className="grid gap-1 text-[13px]" aria-label="จำนวนคนต่อระดับคะแนน">
+                        <ul className="grid gap-1 text-sm" aria-label="จำนวนคนต่อระดับคะแนน">
                           {s.scores.map((x) => {
                             const desc = s.levelDescriptions?.find((l) => l.score === x.score)?.text;
                             return (
@@ -157,7 +157,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
                                   <b className="tabular-nums">{x.score}</b> {labelOf.get(x.score) ?? ""}
                                 </span>
                                 <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                                  <span className="block h-full rounded-full bg-[#0d9488]" style={{ width: `${s.count ? (x.count / s.count) * 100 : 0}%` }} />
+                                  <span className="block h-full rounded-full bg-ring" style={{ width: `${s.count ? (x.count / s.count) * 100 : 0}%` }} />
                                 </span>
                                 <span className="text-muted-foreground tabular-nums">{x.count} คน</span>
                               </li>

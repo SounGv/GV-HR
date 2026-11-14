@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, TriangleAlert } from "lucide-react";
+import { Check, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { ErrorState, TableLoadingState } from "@/components/shared/states";
@@ -39,10 +39,27 @@ function Choice<T extends string | number>({
             role="radio"
             aria-checked={value === o.v}
             onClick={() => onChange(o.v)}
-            className={cn("min-h-12 rounded-xl border px-3 py-2 text-left disabled:opacity-60", value === o.v ? "border-primary bg-accent" : "border-border bg-card")}
+            className={cn(
+              "flex min-h-12 items-start gap-2.5 rounded-xl border px-3 py-2 text-left disabled:opacity-60",
+              value === o.v ? "border-2 border-primary bg-accent" : "border-muted-foreground/30 bg-card hover:border-ring",
+            )}
           >
-            <span className="block text-sm font-semibold">{o.label}</span>
-            {o.hint && <span className="block text-sm text-muted-foreground">{o.hint}</span>}
+            <span
+              aria-hidden="true"
+              className={cn(
+                "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2",
+                value === o.v ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50",
+              )}
+            >
+              {value === o.v && <Check className="size-3" strokeWidth={3} />}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold">
+                {o.label}
+                {value === o.v && <span className="ml-1.5 text-xs font-semibold text-primary">✓ เลือกอยู่</span>}
+              </span>
+              {o.hint && <span className="block text-sm text-muted-foreground">{o.hint}</span>}
+            </span>
           </button>
         ))}
       </div>

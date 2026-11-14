@@ -116,6 +116,18 @@
   --gi-hi: #5eead4;
   --gi-line: #99d9d0;
   --gi-paper: #ffffff;
+  /* Marks and pill text on the dark teal hero (.gv-hero): same in light and dark mode,
+     since the hero is dark in both. Replaces the retired GV lime there. */
+  --on-hero-accent: #99f6e4;
+  --on-hero-accent-fg: #0b3b38;
+  /* A phone outline in previews (hardware, not theme). */
+  --device-frame: #131516;
+  /* News ticker pills on the dark hero: solid fill, white (or dark on yellow) text. */
+  --ticker-bad: #b91c1c;
+  --ticker-warn: #fbbf24;
+  --ticker-warn-fg: #3b2300;
+  --ticker-info: #1d4ed8;
+  --ticker-ok: #15803d;
   --radius: 0.75rem;
 
   /* Anuphan via next/font (see layout.tsx) is the single typeface for body and
@@ -1118,3 +1130,26 @@ button.gv-glass:hover {
   html.gv-print-org .gv-otree-board { overflow: visible; box-shadow: none; border: 0; }
   html.gv-print-org .gv-otree-print * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
+
+/* News ticker (dashboard): the bot bobs while it walks and stands still when the
+   message rests, when paused, or when the device asks for less motion. */
+@keyframes gv-ticker-step {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-3px) rotate(3deg); }
+}
+@keyframes gv-ticker-pulse {
+  0%, 100% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22), 0 0 0 0 rgba(185, 28, 28, 0.5); }
+  50% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22), 0 0 0 8px rgba(185, 28, 28, 0); }
+}
+.ticker-walk { animation: gv-ticker-step 0.5s ease-in-out infinite; }
+.ticker-item[data-stand] .ticker-walk,
+.ticker[data-paused] .ticker-walk { animation: none; }
+.ticker-item[data-stand] .ticker-pulse-on { animation: gv-ticker-pulse 1.6s ease-in-out infinite; }
+.ticker[data-paused] .ticker-pulse-on { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ticker-walk, .ticker-pulse-on { animation: none !important; }
+}
+/* One น้องวีบอท per screen: while the ticker's bot is on the page, the sidebar card shows a sparkle instead. */
+.ai-shortcut-spark { display: none; }
+body[data-ticker-bot] .ai-shortcut-bot { display: none; }
+body[data-ticker-bot] .ai-shortcut-spark { display: block; }

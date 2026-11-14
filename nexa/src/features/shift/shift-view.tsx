@@ -54,16 +54,17 @@ function shiftWeek(weekStart: string, deltaDays: number) {
 export function ShiftView() {
   const { can } = useAuth();
   const canAssign = can("shift:create");
+  const [tab, setTab] = useState("mine");
 
   return (
-    <Tabs defaultValue="mine" className="space-y-4">
+    <Tabs value={tab} onValueChange={(v) => setTab(String(v))} className="space-y-4">
       <TabsList>
         <TabsTrigger value="mine">ตารางของฉัน</TabsTrigger>
         <TabsTrigger value="swap">คำขอสลับเวร</TabsTrigger>
         {canAssign && <TabsTrigger value="roster">จัดตาราง</TabsTrigger>}
       </TabsList>
       <TabsContent value="mine">
-        <MyScheduleView />
+        <MyScheduleView onGoRoster={canAssign ? () => setTab("roster") : undefined} />
       </TabsContent>
       <TabsContent value="swap">
         <SwapRequestsView />
@@ -77,7 +78,7 @@ export function ShiftView() {
   );
 }
 
-function MyScheduleView() {
+function MyScheduleView({ onGoRoster }: { onGoRoster?: () => void }) {
   const hasEmployee = !!useAuth().user.employee;
   const today = toIsoLocal(new Date());
   const to = shiftWeek(today, 6);
@@ -90,7 +91,19 @@ function MyScheduleView() {
     return map;
   }, [data]);
 
-  if (!hasEmployee) return <NoEmployeeState />;
+  if (!hasEmployee) {
+    return (
+      <NoEmployeeState
+        action={
+          onGoRoster ? (
+            <Button variant="outline" onClick={onGoRoster}>
+              ไปที่จัดตาราง เพื่อจัดกะให้พนักงาน
+            </Button>
+          ) : undefined
+        }
+      />
+    );
+  }
   if (isError) return <ErrorState error={error} onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={4} />;
 
@@ -110,18 +123,18 @@ function MyScheduleView() {
           >
             <p className="text-sm font-medium text-foreground">
               {WEEKDAYS[new Date(`${d}T00:00:00Z`).getUTCDay()]} {d.slice(8)} {thaiMonth(d)}
-              {isToday && <span className="ml-1.5 text-xs text-primary">(วันนี้)</span>}
+              {isToday && <span className="ml-1.5 text-sm text-primary">(วันนี้)</span>}
             </p>
             <div className="flex items-center gap-2">
               {tpl ? (
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white"
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium text-white"
                   style={{ backgroundColor: tpl.color }}
                 >
                   {tpl.name} · {tpl.startTime}-{tpl.endTime}
                 </span>
               ) : (
-                <span className="text-xs text-muted-foreground">ไม่มีเวร</span>
+                <span className="text-sm text-muted-foreground">ไม่มีเวร</span>
               )}
               {cell && <RequestSwapButton assignment={cell} />}
             </div>
@@ -231,13 +244,13 @@ function SwapRequestRow({
           {req.requesterEmployee.firstName} {req.requesterEmployee.lastName} → {req.targetEmployee.firstName}{" "}
           {req.targetEmployee.lastName}
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {formatDate(req.assignment.date)} · {req.assignment.template.name}
           {req.reason && <> · {req.reason}</>}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", SWAP_STATUS_TONE[req.status])}>
+        <span className={cn("rounded-full px-2 py-0.5 text-sm font-medium", SWAP_STATUS_TONE[req.status])}>
           {SWAP_STATUS_LABEL[req.status]}
         </span>
         {children}
@@ -412,7 +425,7 @@ function RosterGrid() {
         {templates.map((t) => (
           <span
             key={t.id}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border py-1 pr-1 pl-2 text-xs"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border py-0.5 pr-0.5 pl-3 text-sm"
           >
             <span className="size-2.5 rounded-full" style={{ backgroundColor: t.color }} />
             <span className="font-medium">{t.name}</span>
@@ -422,25 +435,27 @@ function RosterGrid() {
             {canEditTpl && (
               <Link
                 href={`/shifts/templates/${t.id}/edit`}
-                className="ml-0.5 text-muted-foreground hover:text-foreground"
+                className="ml-0.5 inline-flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground max-md:size-11"
                 aria-label="แก้ไขกะ"
+                title="แก้ไขกะ"
               >
-                <Pencil className="size-3" />
+                <Pencil className="size-4" />
               </Link>
             )}
             {canDelTpl && (
               <button
-                className="text-muted-foreground hover:text-destructive"
+                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive-muted hover:text-destructive max-md:size-11"
                 onClick={() => setDelTpl(t)}
                 aria-label="ลบกะ"
+                title="ลบกะ"
               >
-                <Trash2 className="size-3" />
+                <Trash2 className="size-4" />
               </button>
             )}
           </span>
         ))}
         {canEditTpl && (
-          <Button variant="outline" size="sm" className="ml-auto h-7" render={<Link href="/shifts/templates/new" />}>
+          <Button variant="outline" size="sm" className="ml-auto h-9 max-md:h-11" render={<Link href="/shifts/templates/new" />}>
             <Plus className="size-3.5" /> สร้างกะ
           </Button>
         )}
@@ -466,15 +481,15 @@ function RosterGrid() {
         <TableLoadingState rows={6} />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full border-collapse text-[15px]">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="sticky left-0 z-10 min-w-40 bg-card px-3 py-2 text-left font-medium">
                   พนักงาน
                 </th>
                 {days.map((d) => (
-                  <th key={d} className="min-w-24 px-2 py-2 text-center font-medium">
-                    <div className="text-xs text-muted-foreground">
+                  <th key={d} className="min-w-28 px-2 py-2 text-center font-medium">
+                    <div className="text-sm text-muted-foreground">
                       {WEEKDAYS[new Date(`${d}T00:00:00Z`).getUTCDay()]}
                     </div>
                     <div>{d.slice(8)}</div>
@@ -487,7 +502,7 @@ function RosterGrid() {
                 <tr key={emp.id} className="border-b border-border last:border-0">
                   <td className="sticky left-0 z-10 bg-card px-3 py-2 font-medium">
                     {emp.firstName} {emp.lastName}
-                    <span className="ml-1 text-xs text-muted-foreground">({emp.employeeCode})</span>
+                    <span className="ml-1 text-sm text-muted-foreground">({emp.employeeCode})</span>
                   </td>
                   {days.map((d) => {
                     const cell = asgMap.get(`${emp.id}|${d}`);
@@ -500,7 +515,7 @@ function RosterGrid() {
                               render={
                                 <button
                                   className={cn(
-                                    "flex h-11 w-full items-center justify-center rounded-md border text-xs transition",
+                                    "flex min-h-11 w-full items-center justify-center rounded-md border px-1 py-1 text-sm leading-snug break-words transition",
                                     tpl
                                       ? "border-transparent font-medium text-white"
                                       : "border-dashed border-border text-muted-foreground hover:border-primary",
@@ -512,7 +527,7 @@ function RosterGrid() {
                               }
                             />
                             <PopoverContent align="center" className="w-48 p-1.5">
-                              <p className="px-2 py-1 text-xs text-muted-foreground">เลือกกะ</p>
+                              <p className="px-2 py-1 text-sm text-muted-foreground">เลือกกะ</p>
                               <div className="space-y-0.5">
                                 {templates.map((t) => (
                                   <button
@@ -522,13 +537,13 @@ function RosterGrid() {
                                   >
                                     <span className="size-2.5 rounded-full" style={{ backgroundColor: t.color }} />
                                     {t.name}
-                                    <span className="ml-auto text-xs text-muted-foreground">
+                                    <span className="ml-auto text-sm text-muted-foreground">
                                       {t.startTime}
                                     </span>
                                   </button>
                                 ))}
                                 {templates.length === 0 && (
-                                  <p className="px-2 py-1.5 text-xs text-muted-foreground">ยังไม่มีกะ</p>
+                                  <p className="px-2 py-1.5 text-sm text-muted-foreground">ยังไม่มีกะ</p>
                                 )}
                                 {cell && (
                                   <button
@@ -544,7 +559,7 @@ function RosterGrid() {
                         ) : (
                           <div
                             className={cn(
-                              "flex h-11 w-full items-center justify-center rounded-md text-xs",
+                              "flex min-h-11 w-full items-center justify-center rounded-md px-1 py-1 text-sm leading-snug break-words",
                               tpl ? "font-medium text-white" : "text-muted-foreground",
                             )}
                             style={tpl ? { backgroundColor: tpl.color } : undefined}

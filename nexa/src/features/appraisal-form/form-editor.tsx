@@ -70,7 +70,6 @@ import {
 
 const RATERS = Object.keys(RATER_LABEL) as RaterType[];
 const CHOICE = new Set<AnswerType>(["CHOICE", "MULTI_CHOICE"]);
-const LIME = "#CDEB03";
 const MAX_LEVELS = 5;
 const MIN_LEVELS = 2;
 /** Ready-made scales, lowest score first. */
@@ -461,14 +460,14 @@ function FormEditor({ form }: { form: FormDetail }) {
                 setName(e.target.value);
                 setDirty(true);
               }}
-              className="min-w-0 flex-1 border-0 border-b-[1.5px] border-dashed border-white/35 bg-transparent py-0.5 text-[22px] leading-snug font-bold text-white outline-none focus:border-[#CDEB03] disabled:border-transparent sm:min-w-[260px]"
+              className="min-w-0 flex-1 border-0 border-b-[1.5px] border-dashed border-white/35 bg-transparent py-0.5 text-[22px] leading-snug font-bold text-white outline-none focus:border-[var(--on-hero-accent)] disabled:border-transparent sm:min-w-[260px]"
             />
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-xs font-bold">
               <span
-                className={cn("size-1.5 rounded-full", locked ? "bg-[#4ade80]" : "bg-[#fde047]")}
+                className={cn("size-1.5 rounded-full", locked ? "bg-status-normal-dot" : "bg-status-late-dot")}
                 aria-hidden="true"
               />
-              {STATUS_LABEL[form.status]} · v{form.version}
+              {STATUS_LABEL[form.status]} · เวอร์ชัน {form.version}
             </span>
           </div>
         </div>
@@ -481,15 +480,15 @@ function FormEditor({ form }: { form: FormDetail }) {
             ] as const
           ).map(([k, v]) => (
             <div key={k} className="gv-glass min-w-[64px] px-3 py-2">
-              <dt className="text-[11.5px] text-white/80">{k}</dt>
-              <dd className="text-xl leading-tight font-bold tabular-nums">{v}</dd>
+              <dt className="text-xs text-white/80">{k}</dt>
+              <dd className="text-xl leading-snug font-bold tabular-nums">{v}</dd>
             </div>
           ))}
           <div className="gv-glass min-w-[84px] px-3 py-2">
-            <dt className="text-[11.5px] text-white/80">ความพร้อม</dt>
+            <dt className="text-xs text-white/80">ความพร้อม</dt>
             <dd
-              className="pt-0.5 text-[15px] leading-tight font-bold"
-              style={{ color: problems.length ? "#fde047" : undefined }}
+              className="pt-0.5 text-base leading-snug font-bold"
+              style={{ color: problems.length ? "var(--status-late-dot)" : undefined }}
             >
               {problems.length ? `ขาด ${problems.length}` : "พร้อม ✓"}
             </dd>
@@ -508,8 +507,7 @@ function FormEditor({ form }: { form: FormDetail }) {
               {save.isPending ? "กำลังบันทึก…" : dirty ? "บันทึกร่าง •" : "บันทึกร่าง"}
             </Button>
             <Button
-              className="h-11 flex-1 font-bold text-[#131516] hover:brightness-95"
-              style={{ background: LIME }}
+              className="h-11 flex-1 bg-white font-bold text-[var(--on-hero-accent-fg)] hover:bg-white/90"
               disabled={busy || problems.length > 0}
               title={problems.join(" · ")}
               onClick={() => setConfirmPublish(true)}
@@ -632,14 +630,14 @@ function FormEditor({ form }: { form: FormDetail }) {
                 </span>
               </label>
               <div className="border-border border-t pt-3">
-                <h3 className="mb-1.5 text-[13px] font-semibold">ความพร้อมก่อนยืนยันใช้</h3>
+                <h3 className="mb-1.5 text-sm font-semibold">ความพร้อมก่อนยืนยันใช้</h3>
                 {problems.length === 0 ? (
-                  <p className="flex items-center gap-2 text-sm text-[#15803d]">
+                  <p className="flex items-center gap-2 text-sm text-success">
                     <CircleCheck className="size-4" aria-hidden="true" /> พร้อมยืนยันใช้ (
                     {flat.length} หัวข้อ)
                   </p>
                 ) : (
-                  <ul className="space-y-1 text-[13px] text-[#b45309]">
+                  <ul className="space-y-1 text-sm text-status-late-fg">
                     {problems.map((p) => (
                       <li key={p} className="flex gap-2">
                         <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
@@ -772,7 +770,7 @@ function Outline({
         {canEdit && (
           <Button
             variant="outline"
-            className="ml-auto h-9 px-2.5 text-[12.5px]"
+            className="ml-auto h-9 px-2.5 text-sm"
             onClick={onAddSection}
           >
             <Plus className="size-4" aria-hidden="true" /> หมวด
@@ -783,7 +781,7 @@ function Outline({
         <div className="px-3 pb-2">
           <Button
             variant="outline"
-            className="h-10 w-full justify-start border-dashed text-[13px] text-[#0f766e]"
+            className="h-10 w-full justify-start border-dashed text-sm text-primary"
             onClick={onOpenBank}
           >
             <Library className="size-4" aria-hidden="true" /> หยิบจากคลังหัวข้อ
@@ -803,7 +801,7 @@ function Outline({
                   <Input
                     autoFocus
                     aria-label="ชื่อหมวด"
-                    className="h-8 text-[13px]"
+                    className="h-8 text-sm"
                     value={s.name}
                     maxLength={80}
                     onChange={(e) => onRenameSection(s.key, e.target.value)}
@@ -813,7 +811,7 @@ function Outline({
                 ) : (
                   <b
                     className={cn(
-                      "min-w-0 flex-1 truncate text-[13px]",
+                      "min-w-0 flex-1 truncate text-sm",
                       !s.name && "text-muted-foreground font-medium",
                     )}
                   >
@@ -821,7 +819,7 @@ function Outline({
                   </b>
                 )}
                 {sw > 0 && (
-                  <span className="shrink-0 rounded-full bg-[#ccfbf1] px-2 text-[11px] font-bold text-[#0f766e] tabular-nums">
+                  <span className="shrink-0 rounded-full bg-accent px-2 text-xs font-bold text-primary tabular-nums">
                     {pct}%
                   </span>
                 )}
@@ -849,7 +847,7 @@ function Outline({
                   aria-hidden="true"
                 >
                   <span
-                    className="block h-full rounded-full bg-[linear-gradient(90deg,#14b8a6,#0f766e)] transition-[width] duration-500"
+                    className="block h-full rounded-full bg-[linear-gradient(90deg,var(--ring),var(--primary))] transition-[width] duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -863,7 +861,7 @@ function Outline({
                 return (
                   <div key={q.uiKey} {...dropProps({ beforeKey: q.uiKey }, q.uiKey)}>
                     {over === q.uiKey && (
-                      <div className="mx-2 h-[3px] rounded bg-[#0d9488]" aria-hidden="true" />
+                      <div className="mx-2 h-[3px] rounded bg-ring" aria-hidden="true" />
                     )}
                     <button
                       type="button"
@@ -876,9 +874,9 @@ function Outline({
                       onClick={() => onSelect(q.uiKey)}
                       aria-current={sel === q.uiKey ? "true" : undefined}
                       className={cn(
-                        "flex min-h-10 w-full items-center gap-2 rounded-xl border-[1.5px] px-2 py-1.5 text-left text-[13px] transition-colors",
+                        "flex min-h-10 w-full items-center gap-2 rounded-xl border-[1.5px] px-2 py-1.5 text-left text-sm transition-colors",
                         sel === q.uiKey
-                          ? "dark:bg-accent border-[#99e6da] bg-[#f0fdfa]"
+                          ? "border-ring/40 bg-accent"
                           : "hover:bg-muted/60 border-transparent",
                         dragKey === q.uiKey && "opacity-40",
                       )}
@@ -891,8 +889,8 @@ function Outline({
                       )}
                       <span
                         className={cn(
-                          "flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[11px] font-bold tabular-nums",
-                          sel === q.uiKey ? "bg-[#0f766e] text-white" : "bg-muted",
+                          "flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-xs font-bold tabular-nums",
+                          sel === q.uiKey ? "bg-primary text-primary-foreground" : "bg-muted",
                         )}
                       >
                         {n}
@@ -907,7 +905,7 @@ function Outline({
                       </span>
                       {warn && (
                         <span
-                          className="size-1.5 shrink-0 rounded-full bg-[#d97706]"
+                          className="size-1.5 shrink-0 rounded-full bg-status-late-dot"
                           title="มีคำแนะนำ"
                           aria-label="มีคำแนะนำ"
                         />
@@ -919,12 +917,12 @@ function Outline({
               {canEdit && (
                 <div {...dropProps({ sectionKey: s.key }, `end-${s.key}`)}>
                   {over === `end-${s.key}` && (
-                    <div className="mx-2 h-[3px] rounded bg-[#0d9488]" aria-hidden="true" />
+                    <div className="mx-2 h-[3px] rounded bg-ring" aria-hidden="true" />
                   )}
                   <button
                     type="button"
                     onClick={() => onAddTopic(s.key)}
-                    className="border-border dark:text-primary dark:hover:bg-accent mt-0.5 flex min-h-9 w-full items-center gap-1.5 rounded-xl border-[1.5px] border-dashed px-2.5 text-[12.5px] font-semibold text-[#0f766e] hover:border-[#0d9488] hover:bg-[#f0fdfa]"
+                    className="border-border hover:bg-accent mt-0.5 flex min-h-9 w-full items-center gap-1.5 rounded-xl border-[1.5px] border-dashed px-2.5 text-sm font-semibold text-primary hover:border-ring hover:bg-accent"
                   >
                     <Plus className="size-3.5" aria-hidden="true" /> เพิ่มหัวข้อ
                     {s.name ? `ใน${s.name}` : ""}
@@ -961,7 +959,7 @@ function IconBtn({
       onClick={onClick}
       className={cn(
         "text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-30",
-        danger ? "hover:bg-[#fef2f2] hover:text-[#b91c1c]" : "hover:bg-muted hover:text-foreground",
+        danger ? "hover:bg-destructive-muted hover:text-destructive" : "hover:bg-muted hover:text-foreground",
       )}
     >
       {children}
@@ -1028,7 +1026,7 @@ function TopicEditor({
 
       <div className="space-y-4 p-5">
         <label className="block">
-          <span className="text-foreground/80 mb-1.5 block text-[12.5px] font-bold">
+          <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
             ชื่อหัวข้อ
           </span>
           <Input
@@ -1036,12 +1034,12 @@ function TopicEditor({
             disabled={!canEdit}
             maxLength={500}
             placeholder="เช่น ปริมาณและคุณภาพงาน"
-            className="h-12 text-[17px] font-bold"
+            className="h-12 text-base font-bold"
             onChange={(e) => onPatch({ text: e.target.value })}
           />
         </label>
         {parts.length >= 3 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-[12.5px] text-[#92400e] dark:bg-amber-500/10 dark:text-amber-200">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-status-late-border bg-status-late-bg px-3 py-2 text-sm text-status-late-fg">
             <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
             <span className="min-w-0 flex-1">
               หัวข้อนี้มีหลายเรื่องในข้อเดียว ถ้าคนเก่งเรื่องหนึ่งแต่อ่อนอีกเรื่องจะให้คะแนนยาก
@@ -1054,22 +1052,24 @@ function TopicEditor({
           </div>
         )}
         <label className="block">
-          <span className="text-foreground/80 mb-1.5 block text-[12.5px] font-bold">
+          <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
             ดูจากอะไร <span className="text-muted-foreground font-medium">(ไม่บังคับ)</span>
           </span>
-          <Input
+          {/* Several lines: HR writes 1. 2. 3. lists here, which a one-line box cut off. */}
+          <Textarea
             value={q.helpText}
             disabled={!canEdit}
             maxLength={500}
+            rows={3}
             placeholder="เช่น งานที่ส่ง ความถูกต้อง กำหนดส่ง"
-            className="h-11"
+            className="min-h-20 text-base leading-relaxed md:text-sm"
             onChange={(e) => onPatch({ helpText: e.target.value })}
           />
         </label>
 
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
           <div>
-            <span className="text-foreground/80 mb-1.5 block text-[12.5px] font-bold">
+            <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
               ประเภทคำตอบ
             </span>
             <div
@@ -1095,7 +1095,7 @@ function TopicEditor({
                     })
                   }
                   className={cn(
-                    "text-muted-foreground min-h-9 rounded-[9px] px-3 text-[12.5px] font-semibold disabled:opacity-60",
+                    "text-muted-foreground min-h-9 rounded-[9px] px-3 text-sm font-semibold disabled:opacity-60",
                     q.answerType === t && "bg-card text-foreground shadow-sm",
                   )}
                 >
@@ -1106,7 +1106,7 @@ function TopicEditor({
           </div>
           {q.answerType === "RATING" && (
             <div>
-              <span className="text-foreground/80 mb-1.5 block text-[12.5px] font-bold">
+              <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
                 น้ำหนัก
               </span>
               <div className="border-border inline-flex h-10 items-center overflow-hidden rounded-xl border-[1.5px]">
@@ -1143,7 +1143,7 @@ function TopicEditor({
         </div>
 
         <div>
-          <span className="text-foreground/80 mb-1.5 block text-[12.5px] font-bold">
+          <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
             ใครตอบหัวข้อนี้{" "}
             <span className="text-muted-foreground font-medium">(ไม่เลือก = ทุกคน)</span>
           </span>
@@ -1162,8 +1162,8 @@ function TopicEditor({
                     })
                   }
                   className={cn(
-                    "min-h-9 rounded-full border-[1.5px] px-3.5 text-[12.5px] font-semibold disabled:opacity-60",
-                    on ? "border-[#0f766e] bg-[#0f766e] text-white" : "border-border bg-card",
+                    "min-h-9 rounded-full border-[1.5px] px-3.5 text-sm font-semibold disabled:opacity-60",
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
                   )}
                 >
                   {RATER_LABEL[r]}
@@ -1175,7 +1175,7 @@ function TopicEditor({
 
         {q.answerType === "RATING" && (
           <div>
-            <span className="text-foreground/80 mb-1.5 block text-[12.5px] font-bold">
+            <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
               แต่ละคะแนนหมายถึงพฤติกรรมแบบไหน
             </span>
             <ul className="border-border overflow-hidden rounded-2xl border">
@@ -1186,13 +1186,13 @@ function TopicEditor({
                 >
                   <span
                     className={cn(
-                      "flex size-9 items-center justify-center rounded-[11px] text-[15px] font-bold",
+                      "flex size-9 items-center justify-center rounded-[11px] text-base font-bold",
                       scoreTone(l.score, labels.length),
                     )}
                   >
                     {l.score}
                   </span>
-                  <span className="pt-2 text-[13px] font-bold">{l.label}</span>
+                  <span className="pt-2 text-sm font-bold">{l.label}</span>
                   <Textarea
                     rows={1}
                     disabled={!canEdit}
@@ -1206,7 +1206,7 @@ function TopicEditor({
                           ? "เช่น งานล่าช้าหรือผิดบ่อย ต้องมีคนตามแก้"
                           : "เช่น ทำได้ครบตามเป้า ผิดพลาดน้อย"
                     }
-                    className="col-span-2 min-h-10 resize-y text-[13px] sm:col-span-1"
+                    className="col-span-2 min-h-10 resize-y text-sm sm:col-span-1"
                     onChange={(e) =>
                       onPatch({ levels: { ...q.levels, [l.score]: e.target.value } })
                     }
@@ -1222,7 +1222,7 @@ function TopicEditor({
 
         {CHOICE.has(q.answerType) && (
           <div className="space-y-2">
-            <span className="text-foreground/80 block text-[12.5px] font-bold">ตัวเลือก</span>
+            <span className="text-foreground/80 block text-sm font-bold">ตัวเลือก</span>
             {q.options.map((o, oi) => (
               <div key={o.value} className="flex items-center gap-2">
                 <Input
@@ -1305,7 +1305,7 @@ function ScaleCard({
               key={n}
               type="button"
               onClick={() => onPreset(n)}
-              className="border-border min-h-8 rounded-full border-[1.5px] px-3 text-xs font-semibold hover:border-[#0d9488]"
+              className="border-border min-h-8 rounded-full border-[1.5px] px-3 text-xs font-semibold hover:border-ring"
             >
               ชุด {n} ระดับ
             </button>
@@ -1315,8 +1315,8 @@ function ScaleCard({
             aria-pressed={usingSystem}
             onClick={onSystem}
             className={cn(
-              "min-h-8 rounded-full border-[1.5px] px-3 text-xs font-semibold hover:border-[#0d9488]",
-              usingSystem ? "border-[#0f766e] bg-[#f0fdfa] text-[#0f766e]" : "border-border",
+              "min-h-8 rounded-full border-[1.5px] px-3 text-xs font-semibold hover:border-ring",
+              usingSystem ? "border-primary bg-accent text-accent-foreground" : "border-border",
             )}
           >
             ชื่อเดิมของระบบ
@@ -1363,7 +1363,7 @@ function ScaleCard({
       {canEdit && (
         <Button
           variant="outline"
-          className="h-10 border-dashed text-[#0f766e]"
+          className="h-10 border-dashed text-primary"
           disabled={labels.length >= MAX_LEVELS}
           onClick={onAdd}
         >
@@ -1450,7 +1450,7 @@ function PhonePreview({
                 setManual(null);
               }}
               className={cn(
-                "min-h-8 rounded-full px-2.5 text-[11.5px] font-semibold",
+                "min-h-8 rounded-full px-2.5 text-xs font-semibold",
                 as === r && "bg-card shadow-sm",
               )}
             >
@@ -1459,11 +1459,11 @@ function PhonePreview({
           ))}
         </div>
       </div>
-      <div className="mx-auto w-full max-w-[330px] rounded-[34px] bg-[#131516] p-2 shadow-[0_24px_44px_-26px_rgba(11,59,56,0.6)]">
+      <div className="mx-auto w-full max-w-[330px] rounded-[34px] bg-[var(--device-frame)] p-2 shadow-[0_24px_44px_-26px_rgba(11,59,56,0.6)]">
         <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-[27px]">
-          <div className="sticky top-0 z-[1] bg-[linear-gradient(160deg,#0b3b38,#0f766e)] px-3.5 pt-3 pb-2.5 text-white">
-            <b className="block text-[12.5px]">ประเมิน วันชัย (ตัวอย่าง)</b>
-            <span className="block truncate text-[10.5px] text-white/75">
+          <div className="sticky top-0 z-[1] bg-[linear-gradient(160deg,var(--on-hero-accent-fg),var(--primary))] px-3.5 pt-3 pb-2.5 text-white">
+            <b className="block text-sm">ประเมิน วันชัย (ตัวอย่าง)</b>
+            <span className="block truncate text-xs text-white/75">
               {formName} · ในฐานะ{RATER_LABEL[as]}
             </span>
             <div className="mt-2 flex gap-[3px]" aria-hidden="true">
@@ -1588,7 +1588,7 @@ function BankPicker({
                 className={cn(
                   "min-h-8 shrink-0 rounded-full border-[1.5px] px-3 text-xs font-semibold whitespace-nowrap",
                   section === s
-                    ? "border-[#131516] bg-[#131516] text-white dark:border-white dark:bg-white dark:text-[#131516]"
+                    ? "border-foreground bg-foreground text-background"
                     : "border-border",
                 )}
               >
@@ -1622,7 +1622,7 @@ function BankPicker({
                   <p className="text-sm leading-snug font-semibold break-words">{b.text}</p>
                   <p className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-2 text-xs">
                     {b.section && (
-                      <span className="dark:text-primary font-semibold text-[#0f766e]">
+                      <span className="font-semibold text-primary">
                         {b.section}
                       </span>
                     )}

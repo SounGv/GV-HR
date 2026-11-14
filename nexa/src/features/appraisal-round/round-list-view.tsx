@@ -13,7 +13,8 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
-import { useCloneRound, useCreateRound, useDeleteRound, useRounds } from "./hooks";
+import { useCloneRound, useDeleteRound, useRounds } from "./hooks";
+import { useStartNewRound } from "./overview-view";
 import { ROUND_STATUS_LABEL, type RoundListItem, type RoundStatus } from "./types";
 
 const TONE: Record<RoundStatus, StatusTone> = { DRAFT: "warning", SCHEDULED: "info", OPEN: "success", CLOSED: "neutral" };
@@ -26,20 +27,11 @@ export function RoundListView() {
   const router = useRouter();
   const { can } = useAuth();
   const { data, isLoading, isError, refetch } = useRounds();
-  const create = useCreateRound();
+  const newRound = useStartNewRound();
   const remove = useDeleteRound();
   const clone = useCloneRound();
   const [target, setTarget] = useState<RoundListItem | null>(null);
   const rounds = data?.data ?? [];
-
-  async function startNew() {
-    try {
-      const res = await create.mutateAsync("รอบประเมินใหม่");
-      router.push(`/appraisal/rounds/${res.data.id}`);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "สร้างรอบไม่สำเร็จ");
-    }
-  }
 
   async function copyRound(r: RoundListItem) {
     try {
@@ -65,9 +57,9 @@ export function RoundListView() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">ทำตามขั้นตอน แบบ → คน → ผู้ประเมิน → กำหนดการ → ตรวจและเปิดรอบ</p>
+        <p className="text-sm text-muted-foreground">สร้างรอบใน 5 ขั้น: เลือกแบบประเมิน เลือกคน จับคู่ผู้ประเมิน ตั้งวันเปิดปิด แล้วตรวจและเปิดรอบ</p>
         {can("campaign:create") && (
-          <Button className="h-11 md:h-9" onClick={startNew} disabled={create.isPending}>
+          <Button className="h-11 md:h-9" onClick={newRound.start} disabled={newRound.pending}>
             <Plus className="size-4" /> สร้างรอบประเมิน
           </Button>
         )}
@@ -86,7 +78,7 @@ export function RoundListView() {
               <Link href={`/appraisal/rounds/${r.id}`} className="min-w-0 flex-1 hover:underline">
                 <span className="block text-sm font-semibold break-words text-foreground">{r.name}</span>
                 <span className="block text-sm text-muted-foreground">
-                  {r.formName} · {r.participantCount} คน · {fmt(r.startIso)} – {fmt(r.endIso)}
+                  {r.formName} · {r.participantCount} คน · {r.startIso || r.endIso ? `${fmt(r.startIso)} – ${fmt(r.endIso)}` : "ยังไม่กำหนดวัน"}
                   {r.total > 0 && ` · ส่งแล้ว ${r.submitted}/${r.total}`}
                 </span>
               </Link>

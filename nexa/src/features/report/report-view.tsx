@@ -367,7 +367,7 @@ function ReportSection({
                         key={gi}
                         colSpan={g.span}
                         className={cn(
-                          "h-9 text-center leading-tight whitespace-normal",
+                          "h-9 text-center leading-snug whitespace-normal",
                           g.group && "border-x border-border bg-muted/50 font-semibold text-foreground",
                           g.key === "code" && "sticky left-0 z-20 w-[72px] bg-card",
                           g.key === "name" && "sticky left-[72px] z-20 min-w-[160px] bg-card",
@@ -389,7 +389,7 @@ function ReportSection({
                       <TableHead
                         key={c.key}
                         className={cn(
-                          "leading-tight whitespace-normal",
+                          "leading-snug whitespace-normal",
                           c.key !== "code" && c.key !== "name" && "max-w-[120px]",
                           c.numeric && "text-right",
                           // "รหัส"/"ชื่อ-สกุล" pin to the left edge on every
@@ -661,18 +661,18 @@ export function ReportView() {
           {periodKind === "month" && (
             <>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">ตั้งแต่วันที่</label>
+                <label className="text-sm text-muted-foreground">ตั้งแต่วันที่</label>
                 <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="w-[160px]" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">ถึงวันที่</label>
+                <label className="text-sm text-muted-foreground">ถึงวันที่</label>
                 <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="w-[160px]" />
               </div>
             </>
           )}
           {periodKind === "year" && (
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">ปี</label>
+              <label className="text-sm text-muted-foreground">ปี</label>
               <Select value={String(selectedYear)} onValueChange={(v) => setYear(v ? Number(v) : YEAR_NOW)}>
                 <SelectTrigger className="min-w-[120px] w-auto max-w-[320px]">
                   <SelectValue />
@@ -704,7 +704,7 @@ export function ReportView() {
       <div className="flex flex-wrap items-end gap-3">
         <MultiSelectField label="แผนก" placeholder="ทุกแผนก" options={departmentOptions} selected={departmentIds} onChange={setDepartmentIds} />
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">ประเภทการจ้าง</label>
+          <label className="text-sm text-muted-foreground">ประเภทการจ้าง</label>
           <Select value={employmentType} onValueChange={(v) => setEmploymentType(v ?? ALL_TYPE)}>
             <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
               <SelectValue placeholder="ทุกประเภท" />

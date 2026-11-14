@@ -15,6 +15,8 @@ import {
 } from "@/features/dashboard/service";
 import { ApprovalsFollowCard, MyWorkLine } from "@/features/dashboard/action-center";
 import { FollowCount } from "@/features/dashboard/follow-count";
+import { NewsTicker } from "@/features/dashboard/news-ticker";
+import { getLatestAnnouncement } from "@/features/announcement/service";
 import { MeetingsTodaySection, MissedScanOutSection, OvertimeTodaySection } from "@/features/dashboard-daily/daily-sections";
 import {
   loadAttendanceWatchCached,
@@ -312,6 +314,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const canSeeMeetings = can(user!.permissions, "meeting:read");
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
   const departmentOptions = canSeeAttendance ? await listDepartmentOptions(user!.companyId) : [];
+  const latestAnnouncement = attendanceToday ? await getLatestAnnouncement(user!.companyId) : null;
 
   const name = user?.employee ? displayName(user.employee) : loginIdentifier(user ?? {});
   const fmtClock = (iso: string | null) =>
@@ -430,16 +433,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </section>
       )}
 
-      {attendanceToday && <LiveHero />}
+      {attendanceToday && <LiveHero ticker={<NewsTicker announcement={latestAnnouncement} />} />}
 
       {/* "ต้องตามวันนี้" board (owner-approved mock, 14 Nov 2026): one card per thing to follow, the
-          most urgent first, approvals included; things with nothing today sink to chips at the end. */}
+          most urgent first, approvals included; things with nothing today are left to the news ticker. */}
       <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-3">
         <SectionHeading title="ต้องตามวันนี้" hint="เรียงจากเร่งด่วนที่สุด · รวมคำขอที่รอคุณอนุมัติ · กดปุ่มในการ์ดเพื่อทำต่อ" />
         <div className={FOLLOW_BOARD_CLASS}>
           <ApprovalsFollowCard data={actions} />
-          {/* Line break before the "✓ … ไม่มีวันนี้" chips (they sit at order 100+). */}
-          <span aria-hidden="true" className="h-0 basis-full" style={{ order: 99 }} />
           {attendanceToday && <LiveFollowRows />}
           {canSeeAttendance && (
             <Suspense fallback={<FollowRowLoading order={3} />}>

@@ -72,7 +72,7 @@ export async function listRounds(companyId: string) {
       id: r.id,
       name: r.name,
       status: r.status,
-      formName: `${r.form.name} v${r.form.version}`,
+      formName: `${r.form.name} เวอร์ชัน ${r.form.version}`,
       startIso: r.startDate ? iso(r.startDate) : null,
       endIso: r.endDate ? iso(r.endDate) : null,
       participantCount: r._count.participants,
@@ -328,9 +328,9 @@ export async function getRound(companyId: string, id: string) {
     name: round.name,
     status: round.status,
     formId: round.formId,
-    formName: `${round.form.name} v${round.form.version}`,
+    formName: `${round.form.name} เวอร์ชัน ${round.form.version}`,
     participantForms: Object.fromEntries(round.participants.filter((p) => p.formId).map((p) => [p.employeeId, p.formId])),
-    formsUsed: usedForms.map((f) => ({ id: f.id, name: `${f.name} v${f.version}` })),
+    formsUsed: usedForms.map((f) => ({ id: f.id, name: `${f.name} เวอร์ชัน ${f.version}` })),
     raterTypes: types,
     perspectiveWeights: weights,
     startIso,
@@ -367,7 +367,7 @@ export async function listPublishedForms(companyId: string) {
     select: { id: true, name: true, version: true, _count: { select: { questions: true } } },
     orderBy: { publishedAt: "desc" },
   });
-  return forms.map((f) => ({ id: f.id, name: `${f.name} v${f.version}`, questionCount: f._count.questions }));
+  return forms.map((f) => ({ id: f.id, name: `${f.name} เวอร์ชัน ${f.version}`, questionCount: f._count.questions }));
 }
 
 /** Progress of a round that is open or closed: submitted / in progress / not started, overall and per rater type. */
