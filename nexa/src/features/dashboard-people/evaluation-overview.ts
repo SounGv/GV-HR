@@ -5,7 +5,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
 import { getSettings } from "@/features/appraisal-round/results-service";
 import { participantScope, viewableEmployeeIds } from "@/features/appraisal-round/viewer-scope";
-import { summarizeResults, summarizeRound, type ResultSummary, type RoundSummary } from "./evaluation-rules";
+import { compareAverages, summarizeResults, summarizeRound, type AverageChange, type ResultSummary, type RoundSummary } from "./evaluation-rules";
 
 /**
  * What the evaluation section of the home page shows, read from the appraisal rounds HR runs at /appraisal.
@@ -28,6 +28,8 @@ export interface ResultsCard extends ResultSummary {
   roundName: string;
   /** People in the round who have no approved result yet. */
   missing: number;
+  /** Against the round before this one that also has approved results; null when there is none. */
+  change: (AverageChange & { previousName: string }) | null;
   /** Only filled for people who may approve results. */
   top: ResultSummary["top"];
   showRanking: boolean;
@@ -123,7 +125,7 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
   let results: ResultsCard | null = null;
   const latest = await prisma.appraisalParticipant.findFirst({
     where: { round: { companyId, deletedAt: null }, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
-    orderBy: [{ round: { closedAt: "desc" } }, { round: { createdAt: "desc" } }],
+    orderBy: [{ round: { closedAt: { sort: "desc", nulls: "last" } } }, { round: { createdAt: "desc" } }],
     select: { roundId: true, round: { select: { name: true } } },
   });
   if (latest) {
@@ -144,12 +146,28 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
       })),
       [...settings.bands].sort((a, b) => b.minPercent - a.minPercent).map((b) => b.label),
     );
+    let change: ResultsCard["change"] = null;
+    if (summary) {
+      const before = await prisma.appraisalParticipant.findFirst({
+        where: { round: { companyId, deletedAt: null }, roundId: { not: latest.roundId }, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
+        orderBy: [{ round: { closedAt: { sort: "desc", nulls: "last" } } }, { round: { createdAt: "desc" } }],
+        select: { roundId: true, round: { select: { name: true } } },
+      });
+      if (before) {
+        const prev = await prisma.appraisalParticipant.aggregate({
+          where: { roundId: before.roundId, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
+          _avg: { scorePercent: true },
+        });
+        if (prev._avg.scorePercent !== null) change = { ...compareAverages(summary.average, Math.round(prev._avg.scorePercent * 10) / 10), previousName: before.round.name };
+      }
+    }
     if (summary) {
       results = {
         ...summary,
         roundId: latest.roundId,
         roundName: latest.round.name,
         missing: Math.max(0, everyone - summary.count),
+        change,
         top: canRank ? summary.top : [],
         showRanking: canRank,
         href: `/appraisal/rounds/${latest.roundId}`,

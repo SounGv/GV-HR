@@ -69,6 +69,10 @@ const snapshot = async () => ({
         await mk(closed.id, D, "คลัง", { resultStatus: "APPROVED", scorePercent: 70, grade: "B" });
         await mk(closed.id, E, "คลัง", { resultStatus: "CALCULATED", scorePercent: 50, grade: "C" });
 
+        const older = await tx.appraisalRound.create({ data: { companyId: COMPANY, name: "รอบทดสอบ ก่อนหน้า", formId: form.id, status: "CLOSED", closedAt: new Date(Date.now() - 2 * 86_400_000) } });
+        await mk(older.id, B, "ขาย", { resultStatus: "APPROVED", scorePercent: 80, grade: "B" });
+        await mk(older.id, C, "ขาย", { resultStatus: "APPROVED", scorePercent: 80, grade: "B" });
+
         const stale = await tx.appraisalRound.create({ data: { companyId: COMPANY, name: "รอบทดสอบ ยังไม่คำนวณ", formId: form.id, status: "CLOSED", closedAt: new Date(Date.now() - 86_400_000) } });
         await mk(stale.id, B, "ขาย");
 
@@ -119,6 +123,7 @@ const snapshot = async () => ({
           assert.deepEqual(res.grades, [{ label: "A", count: 2 }, { label: "B", count: 1 }]);
           assert.equal(res.showRanking, true);
           assert.deepEqual(res.top.map((x) => x.rank), [1, 1, 3]);
+          assert.deepEqual(res.change, { delta: 3.3, direction: "up", previousName: "รอบทดสอบ ก่อนหน้า" }, "83.3 now against 80 before");
         });
 
         await t("E5 a manager gets their team's average but never a ranking or other teams", async () => {
@@ -127,6 +132,7 @@ const snapshot = async () => ({
           assert.equal(res.count, 2);
           assert.equal(res.average, 90);
           assert.equal(res.showRanking, false);
+          assert.equal(res.change?.delta, 10, "the team's own average against the team's own average before");
           assert.deepEqual(res.top, []);
         });
 

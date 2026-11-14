@@ -1,7 +1,7 @@
 // Checks the numbers behind the evaluation section of the home page.
 // Run: node --experimental-strip-types scripts/check-evaluation-overview.mjs
 import assert from "node:assert/strict";
-import { isDone, summarizeResults, summarizeRound, waitingText } from "../src/features/dashboard-people/evaluation-rules.ts";
+import { compareAverages, isDone, summarizeResults, summarizeRound, waitingText } from "../src/features/dashboard-people/evaluation-rules.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -78,6 +78,13 @@ check("ranking shares a rank for equal scores and skips the next one, and stops 
 });
 check("no results means null, never a zero average", () => {
   assert.equal(summarizeResults([], []), null);
+});
+
+check("the change since the last round says up, down or same, with one decimal", () => {
+  assert.deepEqual(compareAverages(82.4, 80.6), { delta: 1.8, direction: "up" });
+  assert.deepEqual(compareAverages(78, 80.5), { delta: -2.5, direction: "down" });
+  assert.deepEqual(compareAverages(80, 80), { delta: 0, direction: "same" });
+  assert.equal(compareAverages(80.02, 80).direction, "same");
 });
 
 console.log(`\n${n} checks passed`);

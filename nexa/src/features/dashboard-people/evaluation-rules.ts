@@ -157,3 +157,15 @@ export function summarizeResults(rows: ResultRow[], gradeOrder: string[], topN =
 
   return { count: rows.length, average, grades, departments, top };
 }
+
+export interface AverageChange {
+  /** Points of percent, one decimal, current minus previous. */
+  delta: number;
+  direction: "up" | "down" | "same";
+}
+
+/** How the average moved since the previous approved round. A move under 0.05 point reads as "same". */
+export function compareAverages(current: number, previous: number): AverageChange {
+  const delta = round1(current - previous);
+  return { delta, direction: delta > 0 ? "up" : delta < 0 ? "down" : "same" };
+}

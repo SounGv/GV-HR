@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Clock, Lock, PenLine } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CheckCircle2, Clock, Lock, Minus, PenLine } from "lucide-react";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { cn } from "@/lib/utils";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -153,6 +153,13 @@ function ResultsView({ r }: { r: ResultsCard }) {
         <div>
           <dd className="text-[1.75rem] leading-snug font-bold tabular-nums">{r.average}%</dd>
           <dt className="text-sm text-muted-foreground">คะแนนเฉลี่ย</dt>
+          {r.change && (
+            <p className="mt-0.5 inline-flex items-center gap-1 text-sm font-semibold tabular-nums">
+              {r.change.direction === "up" ? <ArrowUpRight className="size-4 text-success" aria-hidden="true" /> : r.change.direction === "down" ? <ArrowDownRight className="size-4 text-status-late-fg" aria-hidden="true" /> : <Minus className="size-4" aria-hidden="true" />}
+              {r.change.direction === "up" ? `เพิ่มขึ้น ${r.change.delta} จุด` : r.change.direction === "down" ? `ลดลง ${Math.abs(r.change.delta)} จุด` : "เท่ารอบก่อน"}
+              <span className="font-normal text-muted-foreground"> เทียบ {r.change.previousName}</span>
+            </p>
+          )}
         </div>
         <div>
           <dd className="text-[1.75rem] leading-snug font-bold tabular-nums">{r.count}</dd>
