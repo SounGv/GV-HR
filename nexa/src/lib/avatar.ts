@@ -21,8 +21,17 @@ export function isAvatarPath(value: unknown): value is string {
  */
 export function avatarSrc(employeeId: string, stored: string | null | undefined): string | null | undefined {
   if (!stored || !stored.startsWith("data:")) return stored;
+  return avatarPathFromParts(employeeId, stored.length, stored.slice(-12));
+}
+
+/**
+ * The same short address as avatarSrc, built from just the stored value's length and its last 12
+ * characters. A database query can return those two small values instead of the whole photo
+ * (see avatar-server.ts), so a list of people never has to read every photo to show it.
+ */
+export function avatarPathFromParts(employeeId: string, length: number, tail: string): string {
   // The version changes when the photo changes, so a new photo is never served from the old cache entry.
-  const version = `${stored.length.toString(36)}${stored.slice(-12).replace(/[^A-Za-z0-9]/g, "")}`;
+  const version = `${length.toString(36)}${tail.replace(/[^A-Za-z0-9]/g, "")}`;
   return `/api/employees/${employeeId}/avatar?v=${version}`;
 }
 

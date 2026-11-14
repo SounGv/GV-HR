@@ -61,10 +61,10 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <p className="py-2 text-sm text-muted-foreground">{children}</p>;
 }
 
-function Person({ name, sub, tag, gender, seed }: { name: string; sub: string; tag?: React.ReactNode; gender?: string | null; seed?: string }) {
+function Person({ name, sub, tag, gender, seed, avatarUrl }: { name: string; sub: string; tag?: React.ReactNode; gender?: string | null; seed?: string; avatarUrl?: string | null }) {
   return (
     <li className="gv-row -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-      <PersonAvatar name={name} gender={gender} seed={seed} />
+      <PersonAvatar name={name} gender={gender} seed={seed} src={avatarUrl} />
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] leading-snug font-semibold break-words text-foreground">{name}</span>
         <span className="block text-xs text-muted-foreground tabular-nums">{sub}</span>
@@ -95,6 +95,7 @@ function ScanGroup({ label, why, bad, rows, sub }: { label: string; why: string;
             key={r.recordId}
             name={r.name}
             gender={r.gender}
+            avatarUrl={r.avatarUrl}
             seed={r.employeeId}
             sub={`${r.department} · ${sub(r)}`}
             tag={
@@ -176,6 +177,7 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
               key={r.requestId}
               name={r.name}
               gender={r.gender}
+              avatarUrl={r.avatarUrl}
               seed={r.employeeId}
               sub={`${r.startTime}–${r.endTime} น. · ${r.hours} ชม.`}
               tag={

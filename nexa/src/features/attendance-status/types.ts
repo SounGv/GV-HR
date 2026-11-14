@@ -2,8 +2,10 @@ import type { TodayStatus } from "./status-rules";
 
 export interface TodayPerson {
   employeeId: string;
-  /** MALE / FEMALE / OTHER / null — picks the character avatar. */
+  /** MALE / FEMALE / OTHER / null — picks the character avatar when there is no photo. */
   gender: string | null;
+  /** Short address of the person's photo (see lib/avatar-server.ts); null or missing = no photo. */
+  avatarUrl?: string | null;
   code: string;
   name: string;
   department: string;
@@ -41,6 +43,8 @@ export interface WatchPerson {
   code: string;
   /** MALE / FEMALE / OTHER / null — picks the character avatar (looked up after the report). */
   gender?: string | null;
+  /** Short address of the person's photo; null or missing = no photo. */
+  avatarUrl?: string | null;
   name: string;
   department: string;
   late: number;

@@ -45,6 +45,8 @@ export interface Candidate {
   department: string;
   hasManager: boolean;
   gender: string | null;
+  /** Short address of the photo; null = none. */
+  avatarUrl?: string | null;
 }
 
 export interface PublishedForm {
@@ -58,10 +60,12 @@ export interface MatchRow {
   employeeId: string;
   name: string;
   gender: string | null;
+  avatarUrl?: string | null;
   department: string;
   managerId: string | null;
   managerName: string | null;
   managerGender: string | null;
+  managerAvatarUrl?: string | null;
   self: boolean;
   peers: number;
   subs: number;
@@ -140,6 +144,8 @@ export interface TaskDetail {
   personCode: string;
   /** For the character avatar; null = not recorded. */
   personGender: string | null;
+  /** Short address of the person's photo; null = none. */
+  personAvatarUrl?: string | null;
   /** "position · department" at the time the round opened. */
   personRole: string | null;
   roundName: string;

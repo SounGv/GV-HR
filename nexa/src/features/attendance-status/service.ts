@@ -10,6 +10,7 @@ import { teamScopeFilter } from "@/features/employee/service";
 import { getReport } from "@/features/report/service";
 import { WORK_MODE_LABEL } from "@/features/attendance/status-badge";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
+import { avatarPaths } from "@/lib/avatar-server";
 import {
   WATCH_WINDOW_DAYS,
   classifyToday,
@@ -139,6 +140,8 @@ export async function loadTodayAttendance(
   const onLeave = new Set(leaves.map((l) => l.employeeId));
   const shiftMap = await resolveShiftMinutesBatch(companyId, today, tomorrow);
 
+  // Photos: one light lookup (length + tail of each stored photo), never the photos themselves.
+  const photos = await avatarPaths(checked.map((e) => e.id));
   const people: TodayPerson[] = checked.map((e) => {
     const rec = recordByEmployee.get(e.id);
     const clockInMin = rec?.clockInAt ? bangkokParts(rec.clockInAt).minutesOfDay : null;
@@ -154,6 +157,7 @@ export async function loadTodayAttendance(
     return {
       employeeId: e.id,
       gender: e.gender ?? null,
+      avatarUrl: photos.get(e.id) ?? null,
       code: e.employeeCode,
       name: displayName(e),
       department: e.department?.name ?? "ไม่มีแผนก",
@@ -237,10 +241,15 @@ export async function loadAttendanceWatch(
   if (people.length > 0) {
     const genders = await prisma.employee.findMany({
       where: { companyId, deletedAt: null, employeeCode: { in: people.map((p) => p.code) } },
-      select: { employeeCode: true, gender: true },
+      select: { id: true, employeeCode: true, gender: true },
     });
-    const byCode = new Map(genders.map((g) => [g.employeeCode, g.gender ?? null]));
-    for (const p of people) p.gender = byCode.get(p.code) ?? null;
+    const byCode = new Map(genders.map((g) => [g.employeeCode, g]));
+    const photos = await avatarPaths(genders.map((g) => g.id));
+    for (const p of people) {
+      const found = byCode.get(p.code);
+      p.gender = found?.gender ?? null;
+      p.avatarUrl = found ? (photos.get(found.id) ?? null) : null;
+    }
   }
 
   const departments: DepartmentWatch[] = [...deptStats.entries()]

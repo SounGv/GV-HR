@@ -1,4 +1,5 @@
 import { displayName } from "@/lib/format";
+import { avatarPaths } from "@/lib/avatar-server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -365,6 +366,7 @@ async function loadForHr(companyId: string, roundId: string, assignmentId: strin
       participant: {
         select: {
           formId: true,
+          employeeId: true,
           departmentName: true,
           positionName: true,
           employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true, gender: true } },
@@ -381,6 +383,7 @@ async function loadForHr(companyId: string, roundId: string, assignmentId: strin
 
 export async function getAssignmentForHr(companyId: string, roundId: string, assignmentId: string) {
   const { a, form } = await loadForHr(companyId, roundId, assignmentId);
+  const photos = await avatarPaths([a.participant.employeeId]);
   return {
     id: a.id,
     raterType: a.raterType,
@@ -388,6 +391,7 @@ export async function getAssignmentForHr(companyId: string, roundId: string, ass
     personName: displayName(a.participant.employee),
     personCode: a.participant.employee.employeeCode,
     personGender: a.participant.employee.gender ?? null,
+    personAvatarUrl: photos.get(a.participant.employeeId) ?? null,
     personRole: [a.participant.positionName, a.participant.departmentName].filter(Boolean).join(" · ") || null,
     roundName: a.participant.round.name,
     roundStatus: a.participant.round.status,

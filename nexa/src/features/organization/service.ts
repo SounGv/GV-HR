@@ -1,3 +1,4 @@
+import { avatarPaths } from "@/lib/avatar-server";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, NotFound } from "@/lib/api/errors";
@@ -70,6 +71,7 @@ export async function listOrgPeople(
     },
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
   });
+  const photos = await avatarPaths(rows.map((e) => e.id));
   return rows.map((e) => ({
     id: e.id,
     name: displayName(e),
@@ -78,6 +80,7 @@ export async function listOrgPeople(
     managerId: e.managerId,
     positionTitle: e.position?.title ?? null,
     gender: e.gender ?? null,
+    avatarUrl: photos.get(e.id) ?? null,
     // Follows ประเภทการจ้าง only, so moving someone to ประจำ updates the chart at once
     // (pay type can lag behind; the employee form warns while the two disagree).
     daily: e.employmentType === "DAILY_WORKER",

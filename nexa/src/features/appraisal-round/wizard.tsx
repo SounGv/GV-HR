@@ -886,6 +886,7 @@ function StepPeople({
                       name={p.name}
                       gender={p.gender}
                       seed={p.id}
+                      src={p.avatarUrl}
                       className="ring-card -ml-1.5 size-7 ring-2 first:ml-0"
                     />
                   ))}
@@ -1062,6 +1063,7 @@ function PeopleList({
                         name={p.name}
                         gender={p.gender}
                         seed={p.id}
+                        src={p.avatarUrl}
                         className="size-7"
                       />
                       <span className="min-w-0 flex-1 break-words">
@@ -1403,7 +1405,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
                 >
                   <td className="px-4 py-2">
                     <span className="flex items-center gap-2.5">
-                      <PersonAvatar name={r.name} gender={r.gender} seed={r.employeeId} />
+                      <PersonAvatar name={r.name} gender={r.gender} seed={r.employeeId} src={r.avatarUrl} />
                       <span className="min-w-0">
                         <span className="block leading-snug">{r.name}</span>
                         <span className="text-muted-foreground block text-xs">
@@ -1419,6 +1421,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
                           name={r.managerName ?? "-"}
                           gender={r.managerGender}
                           seed={r.managerId}
+                          src={r.managerAvatarUrl}
                         />
                         {r.managerName}
                       </span>

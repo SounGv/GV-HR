@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
 import { displayName } from "@/lib/format";
+import { avatarPaths } from "@/lib/avatar-server";
 import { teamScopeFilter } from "@/features/employee/service";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 
@@ -29,6 +30,8 @@ export interface MissedScanOut {
   recordId: string;
   employeeId: string;
   gender: string | null;
+  /** Short address of the photo; null = none. */
+  avatarUrl?: string | null;
   name: string;
   department: string;
   /** Bangkok calendar day of the shift (YYYY-MM-DD). */
@@ -109,18 +112,24 @@ export async function loadMissedScans(companyId: string, session: AccessClaims):
     else if (r.clockOutAt.getTime() < r.clockInAt.getTime()) out.outBeforeIn.push(row);
     else if (bkkMinutes(r.clockInAt) - shift.startMin >= LATE_FIRST_SCAN_MIN && !onLeave(r.employee.id, r.workDate)) out.lateFirstScan.push(row);
   }
-  return {
+  const shown = {
     days: out.days,
     noClockOut: out.noClockOut.slice(0, ROW_CAP),
     lateFirstScan: out.lateFirstScan.slice(0, ROW_CAP),
     outBeforeIn: out.outBeforeIn.slice(0, ROW_CAP),
   };
+  // Photos only for the rows that are shown: one light lookup, never the photos themselves.
+  const photos = await avatarPaths([...shown.noClockOut, ...shown.lateFirstScan, ...shown.outBeforeIn].map((r) => r.employeeId));
+  for (const r of [...shown.noClockOut, ...shown.lateFirstScan, ...shown.outBeforeIn]) r.avatarUrl = photos.get(r.employeeId) ?? null;
+  return shown;
 }
 
 export interface OvertimeToday {
   requestId: string;
   employeeId: string;
   gender: string | null;
+  /** Short address of the photo; null = none. */
+  avatarUrl?: string | null;
   name: string;
   department: string;
   startTime: string;
@@ -151,10 +160,12 @@ export async function loadOvertimeToday(companyId: string, session: AccessClaims
     orderBy: [{ startTime: "asc" }],
     take: ROW_CAP,
   });
+  const photos = await avatarPaths(rows.map((r) => r.employee.id));
   return rows.map((r) => ({
     requestId: r.id,
     employeeId: r.employee.id,
     gender: r.employee.gender ?? null,
+    avatarUrl: photos.get(r.employee.id) ?? null,
     name: displayName(r.employee),
     department: r.employee.department?.name ?? "ไม่ระบุแผนก",
     startTime: r.startTime,

@@ -1,4 +1,5 @@
 import { displayName } from "@/lib/format";
+import { avatarPaths } from "@/lib/avatar-server";
 import { requireEmployeeId } from "@/lib/auth/employee";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -99,6 +100,7 @@ export async function listCandidates(companyId: string) {
     },
     orderBy: [{ department: { name: "asc" } }, { employeeCode: "asc" }],
   });
+  const photos = await avatarPaths(rows.map((e) => e.id));
   return rows.map((e) => ({
     id: e.id,
     code: e.employeeCode,
@@ -107,6 +109,7 @@ export async function listCandidates(companyId: string) {
     department: e.department?.name ?? "ไม่ระบุแผนก",
     hasManager: !!e.managerId,
     gender: e.gender ?? null,
+    avatarUrl: photos.get(e.id) ?? null,
   }));
 }
 
@@ -304,6 +307,7 @@ export async function getRound(companyId: string, id: string) {
     else if (m.raterType === "PEER") row.peers++;
     else row.subs++;
   }
+  const photos = await avatarPaths([...participantIds, ...[...perPerson.values()].map((r) => r.managerId)]);
   const rows = participantIds.map((pid) => {
     const r = perPerson.get(pid)!;
     const e = rosterById.get(pid);
@@ -311,10 +315,12 @@ export async function getRound(companyId: string, id: string) {
       employeeId: pid,
       name: nameOf.get(pid) ?? "-",
       gender: e?.gender ?? null,
+      avatarUrl: photos.get(pid) ?? null,
       department: e?.department?.name ?? "ไม่ระบุแผนก",
       managerId: r.managerId,
       managerName: r.managerId ? (nameOf.get(r.managerId) ?? "-") : null,
       managerGender: r.managerId ? (rosterById.get(r.managerId)?.gender ?? null) : null,
+      managerAvatarUrl: r.managerId ? (photos.get(r.managerId) ?? null) : null,
       self: r.self,
       peers: r.peers,
       subs: r.subs,
@@ -842,6 +848,7 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
       participant: {
         select: {
           formId: true,
+          employeeId: true,
           employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true, gender: true } },
           departmentName: true,
           positionName: true,
@@ -861,6 +868,7 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
 
 export async function getMyAssignment(companyId: string, session: AccessClaims, id: string) {
   const { a, snap } = await loadMine(companyId, session, id);
+  const photos = await avatarPaths([a.participant.employeeId]);
   return {
     id: a.id,
     raterType: a.raterType,
@@ -868,6 +876,7 @@ export async function getMyAssignment(companyId: string, session: AccessClaims, 
     personName: fullName(a.participant.employee),
     personCode: a.participant.employee.employeeCode,
     personGender: a.participant.employee.gender ?? null,
+    personAvatarUrl: photos.get(a.participant.employeeId) ?? null,
     personRole: [a.participant.positionName, a.participant.departmentName].filter(Boolean).join(" · ") || null,
     roundName: a.participant.round.name,
     roundStatus: a.participant.round.status,

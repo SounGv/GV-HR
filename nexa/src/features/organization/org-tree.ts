@@ -53,6 +53,8 @@ export interface OrgPerson {
   positionTitle: string | null;
   /** MALE / FEMALE / OTHER / null — only for the avatar; the tree rules never read it. */
   gender?: string | null;
+  /** Short address of the photo; null or missing = none. */
+  avatarUrl?: string | null;
   /** Paid by the day (รายวัน): listed in the team card's own box. */
   daily?: boolean;
 }

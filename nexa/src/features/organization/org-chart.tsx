@@ -382,6 +382,7 @@ function DivisionCard({
               name={head.person.name}
               gender={head.person.gender ?? null}
               seed={head.person.id}
+              src={head.person.avatarUrl}
             />
             <small className="text-muted-foreground min-w-0 text-xs leading-tight">
               <b className="text-foreground block truncate text-[12.5px] font-semibold">
@@ -696,6 +697,7 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
       name={p.name}
       gender={p.gender ?? null}
       seed={p.id}
+      src={p.avatarUrl}
       className={top ? "size-11 text-sm" : undefined}
     />
   );
@@ -825,6 +827,7 @@ function MemberLink({ person, className }: { person: OrgPerson; className?: stri
         name={person.name}
         gender={person.gender ?? null}
         seed={person.id}
+        src={person.avatarUrl}
         className="size-[26px] text-[10.5px]"
       />
       <span className="min-w-0 leading-tight">

@@ -208,6 +208,7 @@ function TopCard({ node }: { node: PersonNode }) {
           name={p.name}
           gender={p.gender ?? null}
           seed={p.id}
+          src={p.avatarUrl}
           className="size-[52px] text-base"
         />
       </span>
@@ -232,6 +233,7 @@ function HeadCard({ lead, index }: { lead: TreeLead; index: number }) {
         name={p.name}
         gender={p.gender ?? null}
         seed={p.id}
+        src={p.avatarUrl}
         className="size-11 text-sm"
       />
       <span className="min-w-0">
@@ -294,6 +296,7 @@ function TeamCard({ team, index, direct }: { team: TreeTeam; index: number; dire
                   name={p.name}
                   gender={p.gender ?? null}
                   seed={p.id}
+                  src={p.avatarUrl}
                   className="size-5 text-[9px]"
                 />
                 <span className="truncate">{shortName(p)}</span>
@@ -317,6 +320,7 @@ function NameRow({ person, tag }: { person: OrgPerson; tag?: string }) {
         name={person.name}
         gender={person.gender ?? null}
         seed={person.id}
+        src={person.avatarUrl}
         className="size-[26px] text-[10.5px]"
       />
       <span className="min-w-0 flex-1 truncate">{person.name}</span>

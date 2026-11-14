@@ -282,6 +282,7 @@ export function TaskForm({
             <PersonAvatar
               name={task.personName}
               gender={task.personGender}
+              src={task.personAvatarUrl}
               seed={task.personCode}
               className="size-14 shadow-[0_0_0_3px_var(--card)]"
             />

@@ -135,7 +135,7 @@ export function ApprovalsDesk() {
                   key={key}
                   className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3.5 border-t border-[#eef1f3] px-4 py-3 transition-colors hover:bg-[#f6f8f9] dark:border-border dark:hover:bg-muted/40"
                 >
-                  <PersonAvatar name={name} gender={item.request.employee.gender ?? null} seed={item.request.employee.id} />
+                  <PersonAvatar name={name} gender={item.request.employee.gender ?? null} seed={item.request.employee.id} src={item.request.employee.avatarUrl} />
                   <Link href={detailHref(item)} className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="text-[13.5px] font-semibold text-foreground hover:underline">{name}</span>

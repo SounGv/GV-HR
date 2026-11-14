@@ -17,6 +17,8 @@ export interface OrgPersonRow {
   positionTitle: string | null;
   /** MALE / FEMALE / OTHER / null — picks the character avatar. */
   gender: string | null;
+  /** Short address of the photo; null = none. */
+  avatarUrl?: string | null;
   /** Paid by the day (รายวัน), for the org chart's daily box. */
   daily: boolean;
 }
