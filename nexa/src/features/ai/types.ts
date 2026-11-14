@@ -19,10 +19,27 @@ export interface ChatResponse {
   steps: ChatStep[];
   /** Cards to confirm before anything is sent or published. */
   proposals?: ProposalCard[];
+  /** Files the assistant made for download. */
+  files?: OutFile[];
   configured: boolean;
 }
 
 export interface AiAccess {
   allowed: boolean;
   scope: "TEAM" | "DEPARTMENT" | "COMPANY";
+  /** Whether the chat box shows the attach button. */
+  canAttach?: boolean;
+}
+
+/** A file the assistant hands back; `data` is base64. */
+export interface OutFile {
+  name: string;
+  mime: string;
+  data: string;
+}
+
+/** A file the person attached, as the browser sends it. */
+export interface AttachmentPayload {
+  name: string;
+  data: string;
 }

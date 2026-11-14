@@ -8,6 +8,7 @@ import { createAnnouncement } from "@/features/announcement/service";
 import { confirmShiftProposal, prepareShiftProposal } from "@/lib/ai/shift-proposal";
 import { confirmApproveProposal, prepareApproveProposal } from "@/lib/ai/approve-proposal";
 import { confirmTemplateProposal, prepareTemplateProposal } from "@/lib/ai/template-proposal";
+import { confirmQuotaProposal, prepareQuotaProposal } from "@/lib/ai/quota-proposal";
 import { shouldPushToLine } from "@/features/notification/line-policy";
 import {
   buildAnnouncementCard,
@@ -27,6 +28,7 @@ type Meta = { ip?: string; userAgent?: string };
 /** One permission per kind; approve_requests checks leave and attendance approval itself, per request. */
 const NEED_PERM: Record<Exclude<ProposalKind, "approve_requests">, string> = {
   draft_evaluation_template: "campaign:create",
+  adjust_leave_quota: "employee:update",
   send_notification: "notification:create",
   create_announcement: "announcement:create",
   assign_shifts: "shift:create",
@@ -87,6 +89,7 @@ export async function prepareProposal(
   }
   if (kind === "assign_shifts") return prepareShiftProposal(session, rawInput, scopeWhere);
   if (kind === "draft_evaluation_template") return prepareTemplateProposal(session, rawInput);
+  if (kind === "adjust_leave_quota") return prepareQuotaProposal(session, rawInput, scopeWhere);
   const input = checkProposalInput(kind, rawInput);
   if (!input.ok) return { card: null, message: input.message };
   const companyId = session.companyId;
@@ -149,6 +152,18 @@ function readPayload(raw: Record<string, unknown>): ProposalPayload | null {
     count: typeof raw.count === "number" ? raw.count : undefined,
     shift,
     approve,
+    quota: (() => {
+      const qo = raw.quota as Record<string, unknown> | undefined;
+      if (!qo || typeof qo.year !== "number" || !Array.isArray(qo.items)) return undefined;
+      const items = (qo.items as unknown[]).flatMap((x) => {
+        const o = (x ?? {}) as Record<string, unknown>;
+        const okType = o.type === "ANNUAL" || o.type === "SICK" || o.type === "PERSONAL";
+        return okType && typeof o.employeeId === "string" && typeof o.before === "number" && typeof o.after === "number"
+          ? [{ employeeId: o.employeeId, type: o.type as "ANNUAL" | "SICK" | "PERSONAL", before: o.before, after: o.after }]
+          : [];
+      });
+      return { year: qo.year, items };
+    })(),
     template: raw.template && typeof raw.template === "object" ? (raw.template as Record<string, unknown>) : undefined,
   };
 }
@@ -182,6 +197,7 @@ export async function confirmProposal(
 
   if (p.kind === "assign_shifts") return confirmShiftProposal(session, p, scopeWhere, meta);
   if (p.kind === "draft_evaluation_template") return confirmTemplateProposal(session, p, since, meta);
+  if (p.kind === "adjust_leave_quota") return confirmQuotaProposal(session, p, scopeWhere, meta);
 
   if (p.kind === "send_notification") {
     const already = await prisma.notification.count({

@@ -1,6 +1,6 @@
 import { requireSession } from "@/lib/auth/guard";
 import { ok, handleApiError } from "@/lib/api/response";
-import { resolveAiAccess } from "@/lib/ai/scope";
+import { canAttachFiles, resolveAiAccess } from "@/lib/ai/scope";
 
 export const runtime = "nodejs";
 
@@ -16,7 +16,7 @@ export async function GET() {
   try {
     const session = await requireSession();
     const access = await resolveAiAccess(session);
-    return ok(access);
+    return ok({ ...access, canAttach: access.allowed && canAttachFiles(session) });
   } catch (err) {
     return handleApiError(err);
   }

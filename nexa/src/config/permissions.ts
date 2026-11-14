@@ -64,7 +64,7 @@ export const MODULES = [
   { key: "report", label: "ศูนย์รายงาน", actions: ["read", "export"] },
   { key: "notification", label: "การแจ้งเตือน", actions: ["read", "create"] },
   { key: "announcement", label: "ประกาศ", actions: ["read", "create", "update", "delete"] },
-  { key: "ai", label: "AI Assistant", actions: ["read", "create"] },
+  { key: "ai", label: "AI Assistant", actions: ["read", "create", "attach"] },
   { key: "admin", label: "ผู้ดูแลระบบ", actions: ["read", "create", "update", "delete"] },
   { key: "developer", label: "Developer API", actions: ["read", "create", "update", "delete"] },
 ] as const;
@@ -174,6 +174,7 @@ export const ROLE_PRESETS: RolePreset[] = [
       "report:read",
       "announcement:read",
       "ai:read",
+      "ai:attach",
     ],
   },
   {

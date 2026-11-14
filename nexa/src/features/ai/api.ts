@@ -1,8 +1,8 @@
 import { api, type Envelope } from "@/lib/api/client";
-import type { AiAccess, ChatMessage, ChatResponse, ConfirmOutcome } from "./types";
+import type { AiAccess, AttachmentPayload, ChatMessage, ChatResponse, ConfirmOutcome } from "./types";
 
-export function sendChat(messages: ChatMessage[]) {
-  return api.post<Envelope<ChatResponse>>("/api/ai/chat", { messages });
+export function sendChat(messages: ChatMessage[], attachments?: AttachmentPayload[]) {
+  return api.post<Envelope<ChatResponse>>("/api/ai/chat", { messages, ...(attachments && attachments.length > 0 ? { attachments } : {}) });
 }
 
 export function fetchAiAccess() {

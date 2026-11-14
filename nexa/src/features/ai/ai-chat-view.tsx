@@ -7,10 +7,12 @@ import { VBot, type VBotMood } from "@/components/shared/v-bot";
 import { MarkdownLite } from "./markdown-lite";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useChat } from "./hooks";
+import { useAiAccess, useChat } from "./hooks";
+import { ApiError } from "@/lib/api/client";
+import { AttachButton, AttachTray, FileDownloads, SentFiles, useAttachments } from "./attachments-ui";
 import { playReplyChime, unlockReplyChime } from "./reply-chime";
 import { ProposalCards } from "./proposal-cards";
-import type { ChatMessage, ChatStep, ProposalCard } from "./types";
+import type { ChatMessage, ChatStep, OutFile, ProposalCard } from "./types";
 
 const SUGGESTIONS = [
   "วันนี้มาสายกี่คน",
@@ -24,6 +26,10 @@ interface Turn {
   content: string;
   steps?: ChatStep[];
   proposals?: ProposalCard[];
+  /** Files the assistant made for download. */
+  outFiles?: OutFile[];
+  /** Files attached to this question (user turns). */
+  files?: { name: string; size: number }[];
   /** The question this answer replies to (assistant turns only). */
   question?: string;
 }
@@ -73,6 +79,9 @@ export function AiChatView({
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const chat = useChat();
+  const attach = useAttachments();
+  const access = useAiAccess();
+  const canAttach = access.data?.data.canAttach === true;
   const scrollRef = useRef<HTMLDivElement>(null);
   const askedInitial = useRef(false);
 
@@ -89,22 +98,42 @@ export function AiChatView({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [turns, chat.isPending]);
 
-  function submit(text: string) {
-    const trimmed = text.trim();
+  async function submit(text: string) {
+    const hasFiles = canAttach && attach.files.length > 0;
+    const trimmed = text.trim() || (hasFiles ? "ช่วยดูไฟล์ที่แนบ แล้วสรุปให้" : "");
     if (!trimmed || chat.isPending) return;
     unlockReplyChime();
 
-    const nextTurns: Turn[] = [...turns, { role: "user", content: trimmed }];
+    let attachments: Awaited<ReturnType<typeof attach.toPayload>> = [];
+    if (hasFiles) {
+      try {
+        attachments = await attach.toPayload();
+      } catch {
+        toast.error("อ่านไฟล์ไม่ได้ ลองเลือกไฟล์ใหม่");
+        return;
+      }
+    }
+    const sentFiles = hasFiles ? attach.files.map((f) => ({ name: f.file.name, size: f.file.size })) : undefined;
+    const before = turns;
+    const nextTurns: Turn[] = [...turns, { role: "user", content: trimmed, files: sentFiles }];
     setTurns(nextTurns);
     setInput("");
 
     const history: ChatMessage[] = nextTurns.map((t) => ({ role: t.role, content: t.content }));
-    chat.mutate(history, {
+    chat.mutate({ messages: history, attachments }, {
       onSuccess: (res) => {
-        setTurns((prev) => [...prev, { role: "assistant", content: res.data.reply, steps: res.data.steps, proposals: res.data.proposals, question: trimmed }]);
+        if (hasFiles) attach.clear();
+        setTurns((prev) => [...prev, { role: "assistant", content: res.data.reply, steps: res.data.steps, proposals: res.data.proposals, outFiles: res.data.files, question: trimmed }]);
         playReplyChime();
       },
-      onError: () => {
+      onError: (err) => {
+        // A refused file (too big, wrong kind, no permission) is the person's to fix: show why and give the message back.
+        if (err instanceof ApiError && (err.status === 400 || err.status === 403)) {
+          toast.error(err.message, { duration: 9000 });
+          setTurns(before);
+          setInput(text);
+          return;
+        }
         setTurns((prev) => [
           ...prev,
           { role: "assistant", content: "เชื่อมต่อน้องวีบอทไม่ได้ ตรวจสัญญาณอินเทอร์เน็ต แล้วลองถามใหม่" },
@@ -171,8 +200,10 @@ export function AiChatView({
                 )}
               >
                 {t.role === "assistant" ? <MarkdownLite text={t.content} /> : t.content}
+                {t.role === "user" && <SentFiles files={t.files} />}
               </div>
               {t.role === "assistant" && <ProposalCards cards={t.proposals} />}
+              {t.role === "assistant" && <FileDownloads files={t.outFiles} />}
               {t.role === "assistant" && <DownloadAnswer turn={t} />}
             </div>
           </div>
@@ -198,20 +229,22 @@ export function AiChatView({
       </div>
 
       <div className="border-t border-border bg-card p-3">
+        {canAttach && <AttachTray files={attach.files} errors={attach.errors} onRemove={attach.remove} />}
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            submit(input);
+            void submit(input);
           }}
-          className="flex items-end gap-2 rounded-3xl border border-border bg-background p-1.5 pl-4 transition focus-within:border-[var(--chat-teal)] focus-within:ring-3 focus-within:ring-[var(--chat-teal)]/20"
+          className="flex items-end gap-2 rounded-3xl border border-border bg-background p-1.5 pl-1.5 transition focus-within:border-[var(--chat-teal)] focus-within:ring-3 focus-within:ring-[var(--chat-teal)]/20"
         >
+          {canAttach ? <AttachButton onPick={attach.add} disabled={chat.isPending} /> : <span className="w-2.5 shrink-0" aria-hidden="true" />}
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
-                submit(input);
+                void submit(input);
               }
             }}
             aria-label="ข้อความถึง AI Assistant"
@@ -222,7 +255,7 @@ export function AiChatView({
           <button
             type="submit"
             aria-label="ส่งข้อความ"
-            disabled={chat.isPending || !input.trim()}
+            disabled={chat.isPending || (!input.trim() && !(canAttach && attach.files.length > 0))}
             className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--chat-teal)] text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
           >
             <ArrowUp className="size-5" />

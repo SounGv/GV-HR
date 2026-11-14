@@ -5,9 +5,9 @@
  * (scripts/check-ai-proposal.mjs) and the same types serve the chat screens.
  */
 
-export type ProposalKind = "send_notification" | "create_announcement" | "assign_shifts" | "approve_requests" | "draft_evaluation_template";
+export type ProposalKind = "send_notification" | "create_announcement" | "assign_shifts" | "approve_requests" | "draft_evaluation_template" | "adjust_leave_quota";
 
-export const PROPOSAL_KINDS: readonly ProposalKind[] = ["send_notification", "create_announcement", "assign_shifts", "approve_requests", "draft_evaluation_template"];
+export const PROPOSAL_KINDS: readonly ProposalKind[] = ["send_notification", "create_announcement", "assign_shifts", "approve_requests", "draft_evaluation_template", "adjust_leave_quota"];
 
 /** Limits match the announcement form (features/announcement/schema.ts) so a card never promises what the page would refuse. */
 export const PROPOSAL_LIMITS = { title: 200, body: 5000 } as const;
@@ -47,6 +47,8 @@ export interface ProposalPayload {
   /** Recipients when the card was drawn; confirm refuses if it has changed since. */
   count?: number;
   /** assign_shifts only: what the card promised, checked again before anything is written. */
+  /** adjust_leave_quota only: what the card showed (year, and per person and type the entitlement before and after). */
+  quota?: { year: number; items: { employeeId: string; type: "ANNUAL" | "SICK" | "PERSONAL"; before: number; after: number }[] };
   /** draft_evaluation_template only: the cleaned draft the card showed. */
   template?: Record<string, unknown>;
   /** approve_requests only: the requests the card listed, in order. */

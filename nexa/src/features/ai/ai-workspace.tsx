@@ -22,12 +22,14 @@ import {
 import { toast } from "sonner";
 import { VBot } from "@/components/shared/v-bot";
 import { cn } from "@/lib/utils";
-import { useChat } from "./hooks";
+import { useAiAccess, useChat } from "./hooks";
+import { ApiError } from "@/lib/api/client";
+import { AttachButton, AttachTray, FileDownloads, SentFiles, useAttachments } from "./attachments-ui";
 import { playReplyChime, unlockReplyChime } from "./reply-chime";
 import { MarkdownLite } from "./markdown-lite";
 import { firstHeading, splitSummary, withoutFirstHeading } from "./reply-parts";
 import { ProposalCards } from "./proposal-cards";
-import type { ChatMessage, ChatStep, ProposalCard } from "./types";
+import type { ChatMessage, ChatStep, OutFile, ProposalCard } from "./types";
 
 /** Ready-made questions for the empty result panel, grouped by what HR asks most. */
 const PROMPTS = [
@@ -44,6 +46,10 @@ interface Turn {
   content: string;
   steps?: ChatStep[];
   proposals?: ProposalCard[];
+  /** Files the assistant made for download. */
+  outFiles?: OutFile[];
+  /** Files attached to this question (user turns). */
+  files?: { name: string; size: number }[];
   /** The question this answer replies to (assistant turns only). */
   question?: string;
   seconds?: number;
@@ -77,6 +83,9 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
   const chat = useChat();
+  const attach = useAttachments();
+  const access = useAiAccess();
+  const canAttach = access.data?.data.canAttach === true;
   const elapsed = useElapsed(chat.isPending);
   const scrollRef = useRef<HTMLDivElement>(null);
   const askedInitial = useRef(false);
@@ -85,26 +94,45 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [turns, chat.isPending]);
 
-  function submit(text: string, history: Turn[] = turns) {
-    const q = text.trim();
+  async function submit(text: string, history: Turn[] = turns) {
+    const hasFiles = canAttach && attach.files.length > 0;
+    const q = text.trim() || (hasFiles ? "ช่วยดูไฟล์ที่แนบ แล้วสรุปให้" : "");
     if (!q || chat.isPending) return;
     unlockReplyChime();
-    const next: Turn[] = [...history, { role: "user", content: q }];
+    let attachments: Awaited<ReturnType<typeof attach.toPayload>> = [];
+    if (hasFiles) {
+      try {
+        attachments = await attach.toPayload();
+      } catch {
+        toast.error("อ่านไฟล์ไม่ได้ ลองเลือกไฟล์ใหม่");
+        return;
+      }
+    }
+    const sentFiles = hasFiles ? attach.files.map((f) => ({ name: f.file.name, size: f.file.size })) : undefined;
+    const next: Turn[] = [...history, { role: "user", content: q, files: sentFiles }];
     setTurns(next);
     setInput("");
     const started = Date.now();
     const messages: ChatMessage[] = next.filter((t) => !t.failed).map((t) => ({ role: t.role, content: t.content }));
-    chat.mutate(messages, {
+    chat.mutate({ messages, attachments }, {
       onSuccess: (res) => {
+        if (hasFiles) attach.clear();
         // The answer lands right after the question we just added, at index next.length.
         setTurns((prev) => [
           ...prev,
-          { role: "assistant", content: res.data.reply, steps: res.data.steps, proposals: res.data.proposals, question: q, seconds: Math.round((Date.now() - started) / 1000) },
+          { role: "assistant", content: res.data.reply, steps: res.data.steps, proposals: res.data.proposals, outFiles: res.data.files, question: q, seconds: Math.round((Date.now() - started) / 1000) },
         ]);
         setSelected(next.length);
         playReplyChime();
       },
-      onError: () => {
+      onError: (err) => {
+        // A refused file (too big, wrong kind, no permission) is the person's to fix: show why and give the message back.
+        if (err instanceof ApiError && (err.status === 400 || err.status === 403)) {
+          toast.error(err.message, { duration: 9000 });
+          setTurns(history);
+          setInput(text);
+          return;
+        }
         setTurns((prev) => [...prev, { role: "assistant", content: "", question: q, failed: true }]);
         playReplyChime();
       },
@@ -200,6 +228,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                 className="ml-auto w-fit max-w-[85%] rounded-[16px_16px_4px_16px] bg-[var(--flip7-teal-dark)] px-3.5 py-2 text-[13.5px] break-words text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)]"
               >
                 {t.content}
+                <SentFiles files={t.files} />
               </p>
             ) : t.failed ? (
               <div key={i} className="flex items-start gap-2" role="alert">
@@ -238,18 +267,20 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            submit(input);
+            void submit(input);
           }}
           className="border-t border-border p-3"
         >
-          <div className="flex items-end gap-1.5 rounded-[14px] border-[1.5px] border-[#cfd6dc] bg-card py-1.5 pr-1.5 pl-3 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15 dark:border-border">
+          {canAttach && <AttachTray files={attach.files} errors={attach.errors} onRemove={attach.remove} />}
+          <div className="flex items-end gap-1.5 rounded-[14px] border-[1.5px] border-[#cfd6dc] bg-card py-1.5 pr-1.5 pl-1.5 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15 dark:border-border">
+            {canAttach ? <AttachButton onPick={attach.add} disabled={chat.isPending} className="size-9" /> : <span className="w-1.5 shrink-0" aria-hidden="true" />}
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
-                  submit(input);
+                  void submit(input);
                 }
               }}
               rows={1}
@@ -261,7 +292,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             <button
               type="submit"
               aria-label="ส่งคำถาม"
-              disabled={chat.isPending || !input.trim()}
+              disabled={chat.isPending || (!input.trim() && !(canAttach && attach.files.length > 0))}
               className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#115e59] disabled:bg-muted disabled:text-muted-foreground"
             >
               <ArrowUp className="size-4" strokeWidth={2.4} />
@@ -329,6 +360,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             )}
 
             <ProposalCards cards={answer.proposals} />
+            <FileDownloads files={answer.outFiles} />
 
             {answerParts.summary && answerParts.rest && (
               <MarkdownLite

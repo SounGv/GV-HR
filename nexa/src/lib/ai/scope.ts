@@ -4,6 +4,14 @@ import { can } from "@/lib/auth/rbac";
 import { isCompanyWideEmployeeViewer } from "@/features/employee/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 
+/**
+ * Who may attach files in the chat: HR and Finance (company-wide viewers) and anyone granted `ai:attach`
+ * (HR can tick it for the Manager role). Everyone else can still chat.
+ */
+export function canAttachFiles(session: AccessClaims): boolean {
+  return can(session.perms, "ai:attach") || isCompanyWideEmployeeViewer(session);
+}
+
 export type AiScope = "TEAM" | "DEPARTMENT" | "COMPANY";
 
 export interface AiAccess {

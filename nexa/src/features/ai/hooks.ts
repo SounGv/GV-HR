@@ -2,11 +2,11 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { sendChat, fetchAiAccess } from "./api";
-import type { ChatMessage } from "./types";
+import type { AttachmentPayload, ChatMessage } from "./types";
 
 export function useChat() {
   return useMutation({
-    mutationFn: (messages: ChatMessage[]) => sendChat(messages),
+    mutationFn: ({ messages, attachments }: { messages: ChatMessage[]; attachments?: AttachmentPayload[] }) => sendChat(messages, attachments),
   });
 }
 

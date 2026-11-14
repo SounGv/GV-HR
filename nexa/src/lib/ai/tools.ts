@@ -8,6 +8,8 @@ import { REPORT_TYPES } from "@/features/report/schema";
 import { prepareProposal } from "@/lib/ai/proposals";
 import { executeReadTool, READ_TOOLS } from "@/lib/ai/read-tools";
 import type { ProposalCard } from "@/features/ai/proposal";
+import { checkOutput, MAX_OUTPUT_FILES } from "@/features/ai/attachments";
+import { buildOutputFile, type OutFile } from "@/lib/ai/attachments-server";
 import { computePayroll } from "@/features/payroll/calc";
 import { fullName } from "@/lib/format";
 
@@ -203,6 +205,58 @@ export const NEXA_TOOLS: NexaTool[] = [
     },
   },
   {
+    name: "adjust_leave_quota",
+    description:
+      "Prepare a change to leave quotas (โควตาวันลา): for named employees, set how many days they are entitled to for a paid leave type (ANNUAL, SICK, PERSONAL) in a year. This only draws a confirmation card; the user presses confirm themselves and nothing changes before that. It sets the entitlement only and never touches days already used; it cannot set a total below days already used. HR only (employee:update). Max 100 entries per card. It cannot change the company-wide default quota policy (that is HR's decision on the company page): say so if asked. year is the Gregorian year (e.g. 2026); omit for this year.",
+    input_schema: {
+      type: "object",
+      properties: {
+        year: { type: "number" },
+        changes: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              employee: { type: "string", description: "employee name, nickname or code" },
+              type: { type: "string", enum: ["ANNUAL", "SICK", "PERSONAL"] },
+              totalDays: { type: "number", description: "new total entitlement in days (0-365, one decimal at most)" },
+            },
+            required: ["employee", "type", "totalDays"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["changes"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "create_file",
+    description:
+      "Make a spreadsheet file the user can download (xlsx with one or more sheets, or csv with one sheet), from tables you computed or summarised. Use it when the user asks for a file back, an Excel, or to export a result. The first row of each sheet is the header. Numbers should be numbers, not text. It only creates a download for the user; it changes nothing in the system. Max 3 files per reply and 20,000 cells per file. Say in your answer what the file contains.",
+    input_schema: {
+      type: "object",
+      properties: {
+        fileName: { type: "string", description: "file name without folders, e.g. late-summary" },
+        format: { type: "string", enum: ["xlsx", "csv"] },
+        sheets: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              rows: { type: "array", items: { type: "array", items: { type: ["string", "number", "boolean", "null"] } }, description: "rows of cells; first row is the header" },
+            },
+            required: ["name", "rows"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["fileName", "format", "sheets"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "web_search",
     description:
       "Search the public internet. Use ONLY when the answer isn't available from the other tools (internal company data) — e.g. Thai labor law, government holiday announcements, market/industry benchmarks, or general HR knowledge not specific to this company. NEVER use this for questions about this company's own employees, attendance, leave, payroll, or announcements — those must come from the internal tools. When you use results from this tool, clearly tell the user the information is from the internet (not the company's internal system) and cite the source title/link.",
@@ -275,6 +329,8 @@ export async function executeTool(
   scopeWhere?: Prisma.EmployeeWhereInput,
   /** Cards for writes the model asked for. They are shown to the person; nothing is sent until they confirm. */
   proposals?: ProposalCard[],
+  /** Files the assistant hands back; the chat route sends them to the browser. */
+  files?: OutFile[],
 ): Promise<string> {
   const input = (rawInput ?? {}) as Record<string, unknown>;
   const companyId = session.companyId;
@@ -422,10 +478,22 @@ export async function executeTool(
       case "create_announcement":
       case "assign_shifts":
       case "approve_requests":
-      case "draft_evaluation_template": {
+      case "draft_evaluation_template":
+      case "adjust_leave_quota": {
         const { card, message } = await prepareProposal(session, name, input, scopeWhere);
         if (card) proposals?.push(card);
         return message;
+      }
+
+      case "create_file": {
+        // Anyone in the chat may get a file back: it only builds a download and changes nothing.
+        if (!files) return "สร้างไฟล์ไม่ได้ในโหมดนี้";
+        if (files.length >= MAX_OUTPUT_FILES) return `สร้างไฟล์ได้ไม่เกิน ${MAX_OUTPUT_FILES} ไฟล์ต่อคำตอบ`;
+        const check = checkOutput(input);
+        if (!check.ok) return check.message;
+        const file = await buildOutputFile(check);
+        files.push(file);
+        return `สร้างไฟล์ ${file.name} แล้ว ผู้ใช้จะเห็นปุ่มดาวน์โหลดใต้คำตอบ ให้บอกสั้นๆ ว่าไฟล์มีอะไรบ้าง`;
       }
 
       case "web_search": {
