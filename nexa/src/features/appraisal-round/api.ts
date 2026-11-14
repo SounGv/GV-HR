@@ -50,10 +50,14 @@ export const fetchDepartmentProgress = (id: string) =>
 export const fetchSettings = () => api.get<Envelope<SettingsView>>("/api/appraisal-settings");
 export const saveSettings = (input: Omit<SettingsView, "configured">) => api.put<Envelope<SettingsView>>("/api/appraisal-settings", input);
 export const calculateRound = (id: string) =>
-  api.post<Envelope<{ calculated: number; noAnswers: number; kept: number }>>(`/api/appraisal-rounds/${id}/calculate`);
+  api.post<Envelope<{ calculated: number; noAnswers: number; kept: number; adjustedKept: number }>>(`/api/appraisal-rounds/${id}/calculate`);
 export const approveResults = (id: string) => api.post<Envelope<{ approved: number }>>(`/api/appraisal-rounds/${id}/approve-results`, {});
 export const publishResults = (id: string) =>
   api.post<Envelope<{ published: number; notified: number }>>(`/api/appraisal-rounds/${id}/publish-results`, {});
+export const adjustScore = (roundId: string, participantId: string, input: { scorePercent: number; reason: string }) =>
+  api.post<Envelope<{ scorePercent: number; grade: string | null }>>(`/api/appraisal-rounds/${roundId}/people/${participantId}/adjust`, input);
+export const revertAdjustment = (roundId: string, participantId: string, input: { reason: string }) =>
+  api.post<Envelope<{ scorePercent: number; grade: string | null }>>(`/api/appraisal-rounds/${roundId}/people/${participantId}/adjust/revert`, input);
 export const fetchRoundReview = (id: string) => api.get<Envelope<RoundReview>>(`/api/appraisal-rounds/${id}/review`);
 export const fetchRoundResults = (id: string) => api.get<Envelope<ResultRow[]>>(`/api/appraisal-rounds/${id}/results`);
 export const fetchMyResults = () => api.get<Envelope<MyResult[]>>("/api/appraisal-my-results");

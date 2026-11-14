@@ -7,12 +7,13 @@ import { ArrowRight, ClipboardCheck } from "lucide-react";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { ManagerStatus } from "./review-rules";
+import { AdjustDialog } from "./adjust-dialog";
 import { useRoundReview } from "./hooks";
-import { RESULT_STATUS_LABEL, type ReviewSpread } from "./types";
+import { RESULT_STATUS_LABEL, type ReviewPerson, type ReviewSpread } from "./types";
 
 const STEPS = ["คำนวณผล", "ทบทวนผล", "อนุมัติ", "ประกาศผล"] as const;
 
@@ -24,6 +25,7 @@ const MANAGER_CHIP: Record<ManagerStatus, { tone: StatusTone; label: string }> =
 };
 
 const signed = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}`;
+const when = (iso: string) => new Date(iso).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 /**
  * "ทบทวนผล": a read-only look at a round's calculated results before they are approved. It shows how grades are spread,
@@ -32,6 +34,7 @@ const signed = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}`;
 export function RoundReviewPage({ roundId }: { roundId: string }) {
   const { data, isLoading, isError, error, refetch } = useRoundReview(roundId);
   const [dept, setDept] = useState<string>("all");
+  const [target, setTarget] = useState<ReviewPerson | null>(null);
 
   if (isError) return <ErrorState error={error} onRetry={() => refetch()} />;
   if (isLoading || !data) return <TableLoadingState rows={4} />;
@@ -72,7 +75,11 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
             </li>
           ))}
         </ol>
-        <p className="rounded-xl bg-muted px-3 py-2 text-sm">หน้านี้ดูอย่างเดียว ไม่เปลี่ยนคะแนนหรือเกรดของใคร ใช้ตรวจก่อนไปอนุมัติผล</p>
+        <p className="rounded-xl bg-muted px-3 py-2 text-sm">
+          {r.canAdjust
+            ? `ใช้ตรวจก่อนไปอนุมัติผล HR ปรับคะแนนได้ไม่เกิน ${r.thresholds.maxAdjust} จุดจากคะแนนที่คำนวณได้ ต้องเขียนเหตุผลทุกครั้ง และพนักงานไม่เห็นประวัติการปรับ`
+            : "หน้านี้ดูอย่างเดียว ไม่เปลี่ยนคะแนนหรือเกรดของใคร ใช้ตรวจก่อนไปอนุมัติผล การปรับคะแนนทำได้เฉพาะ HR"}
+        </p>
       </Card>
 
       {r.calculated === 0 ? (
@@ -144,7 +151,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
             <div>
               <h2 className="text-base font-semibold">ค่าเฉลี่ยที่หัวหน้าแต่ละคนให้</h2>
               <p className="text-sm text-muted-foreground">
-                เทียบกับค่าเฉลี่ย{who} {r.managers.companyAverage ?? "-"}% ขึ้นคำเตือนเมื่อต่างเกิน {r.thresholds.managerGap} จุด (ค่าตั้งต้น รอ HR ยืนยัน) และไม่แสดงค่าของหัวหน้าที่ประเมินน้อยกว่า{" "}
+                เทียบกับค่าเฉลี่ย{who} {r.managers.companyAverage ?? "-"}% ขึ้นคำเตือนเมื่อต่างเกิน {r.thresholds.managerGap} จุด และไม่แสดงค่าของหัวหน้าที่ประเมินน้อยกว่า{" "}
                 {r.thresholds.minPeople} คน
               </p>
             </div>
@@ -198,6 +205,11 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
                     <th scope="col" className="px-2 py-2 text-left font-medium">เกรด</th>
                     <th scope="col" className="px-2 py-2 text-right font-medium">ช่องว่าง</th>
                     <th scope="col" className="px-3 py-2 text-left font-medium">ข้อสังเกต</th>
+                    {r.canAdjust && (
+                      <th scope="col" className="px-3 py-2 text-left font-medium">
+                        <span className="sr-only">ปรับคะแนน</span>
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -213,22 +225,67 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
                       </td>
                       <td className="px-2 py-2 text-right tabular-nums">{p.self ?? "-"}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{p.manager ?? "-"}</td>
-                      <td className="px-2 py-2 text-right font-semibold tabular-nums">{p.total}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">
+                        <span className="font-semibold">{p.total}</span>
+                        {p.adjusted && p.original !== null && <span className="block text-xs text-muted-foreground">คำนวณได้ {p.original}</span>}
+                      </td>
                       <td className="px-2 py-2">{p.grade ?? "-"}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{p.gap === null ? "-" : signed(p.gap)}</td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-1.5">
                           {p.talk && <StatusChip tone="warning" label="ควรคุย ตนเองสูงกว่าหัวหน้า" />}
                           {p.nearEdge && <StatusChip tone="info" label="ใกล้ขอบเกรด" />}
-                          {!p.talk && !p.nearEdge && <span className="text-muted-foreground">-</span>}
+                          {p.adjusted && <StatusChip tone="primary" label="HR ปรับแล้ว" />}
+                          {!p.talk && !p.nearEdge && !p.adjusted && <span className="text-muted-foreground">-</span>}
                         </div>
                       </td>
+                      {r.canAdjust && (
+                        <td className="px-3 py-2">
+                          {p.status === "CALCULATED" ? (
+                            <Button variant="outline" className="h-11 md:h-8" onClick={() => setTarget(p)}>
+                              ปรับคะแนน
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{p.status === "NOT_CALCULATED" ? "-" : "อนุมัติแล้ว ปรับไม่ได้"}</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </Card>
+
+          {(r.canAdjust || r.adjustments.length > 0) && (
+            <Card className="gap-3 p-4" aria-label="ประวัติการปรับคะแนน">
+              <div>
+                <h2 className="text-base font-semibold">ประวัติการปรับคะแนน</h2>
+                <p className="text-sm text-muted-foreground">เห็นเฉพาะ HR และผู้อนุมัติ พนักงานเห็นแค่คะแนนและเกรดสุดท้าย</p>
+              </div>
+              {r.adjustments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">ยังไม่มีการปรับคะแนนในรอบนี้ กด ปรับคะแนน ในตารางรายคนเพื่อเริ่ม</p>
+              ) : (
+                <ul className="space-y-2">
+                  {r.adjustments.map((a) => (
+                    <li key={a.id} className="rounded-xl border border-border px-3 py-2 text-sm">
+                      <p className="font-medium break-words">
+                        {a.name} {a.kind === "ADJUST" ? "ปรับคะแนน" : "ยกเลิกการปรับ"}
+                      </p>
+                      <p className="tabular-nums">
+                        จาก {a.fromPercent} เป็น {a.toPercent}
+                        {a.fromGrade !== a.toGrade && ` เกรดเปลี่ยนจาก ${a.fromGrade ?? "-"} เป็น ${a.toGrade ?? "-"}`}
+                      </p>
+                      <p className="break-words">เหตุผล {a.reason}</p>
+                      <p className="text-xs text-muted-foreground">
+                        โดย {a.byName} {when(a.createdAt)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
 
           <Card className="gap-2 p-4" aria-label="ขั้นต่อไป">
             <h2 className="text-base font-semibold">ขั้นต่อไป</h2>
@@ -241,6 +298,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
           </Card>
         </>
       )}
+      {r.canAdjust && <AdjustDialog roundId={roundId} person={target} onClose={() => setTarget(null)} />}
     </div>
   );
 }

@@ -16,6 +16,8 @@ import {
   fetchMyResults,
   fetchRoundResults,
   fetchRoundReview,
+  adjustScore,
+  revertAdjustment,
   fetchSettings,
   publishResults,
   saveHrAssignment,
@@ -130,6 +132,20 @@ export const useSettings = () => useQuery({ queryKey: ["appraisal-settings"], qu
 export function useSaveSettings() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: saveSettings, onSuccess: () => qc.invalidateQueries({ queryKey: ["appraisal-settings"] }) });
+}
+export function useAdjustScore(roundId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { participantId: string; scorePercent: number; reason: string }) => adjustScore(roundId, v.participantId, { scorePercent: v.scorePercent, reason: v.reason }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: appraisalRoundKeys.all }),
+  });
+}
+export function useRevertAdjustment(roundId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { participantId: string; reason: string }) => revertAdjustment(roundId, v.participantId, { reason: v.reason }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: appraisalRoundKeys.all }),
+  });
 }
 export const useRoundReview = (id: string) => useQuery({ queryKey: ["appraisal-rounds", "review", id], queryFn: () => fetchRoundReview(id), retry: false });
 export const useRoundResults = (id: string, enabled: boolean) =>

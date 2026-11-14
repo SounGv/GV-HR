@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { prisma as real } from "@real/prisma";
 import { getRoundReview } from "@/features/appraisal-round/review-service";
+import { applyPendingMigration } from "./pending-migration.mts";
 
 // The review page's numbers, against the real database but inside ONE transaction that is thrown away at the end:
 // rounds, people, answers and grade bands are made up here and never kept.
@@ -43,6 +44,7 @@ const snapshot = async () => ({
     await real.$transaction(
       async (tx) => {
         g.__tx = tx;
+        await applyPendingMigration(tx);
         // M1 is the line manager of the first three; the rest report to nobody we care about.
         for (const [i, id] of ids.entries()) await tx.employee.update({ where: { id }, data: { managerId: i >= 3 && i <= 5 ? M1 : null } });
         await tx.appraisalSettings.upsert({

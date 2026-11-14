@@ -2648,12 +2648,45 @@ model AppraisalParticipant {
   publishedAt    DateTime?
   acknowledgedAt DateTime?
 
+  // Set while HR's hand adjustment of the score stands (see AppraisalScoreAdjustment). Recalculating keeps
+  // an adjusted person as they are, and the limit on a change is always measured from the original.
+  adjustedAt           DateTime?
+  originalScorePercent Float?
+  originalGrade        String?
+
   assignments AppraisalAssignment[]
+  adjustments AppraisalScoreAdjustment[]
 
   @@unique([roundId, employeeId])
   @@index([employeeId])
   @@index([formId])
   @@map("appraisal_participants")
+}
+
+enum AppraisalAdjustmentKind {
+  ADJUST
+  REVERT
+}
+
+// Every hand adjustment of a calculated score (and every undo), kept for good so HR can say who changed what and why.
+// The employee never sees these rows; they see only the final score and grade.
+model AppraisalScoreAdjustment {
+  id            String               @id @default(uuid())
+  participantId String
+  participant   AppraisalParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  kind        AppraisalAdjustmentKind
+  fromPercent Float
+  toPercent   Float
+  fromGrade   String?
+  toGrade     String?
+  reason      String
+  byUserId    String?
+  byName      String
+  createdAt   DateTime @default(now())
+
+  @@index([participantId, createdAt])
+  @@map("appraisal_score_adjustments")
 }
 
 // One rater's job: "rate this person as their manager / peer / ...".

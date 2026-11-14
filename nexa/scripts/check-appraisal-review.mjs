@@ -79,7 +79,7 @@ check("a manager more than the gap above or below the company is flagged, within
     { managerId: "lo", name: "ต่ำ", percents: [40, 40, 40] },
   ]);
   const by = Object.fromEntries(rows.map((r) => [r.managerId, r]));
-  assert.equal(MANAGER_GAP_POINTS, 8);
+  assert.equal(MANAGER_GAP_POINTS, 10);
   assert.equal(by.hi.status, "high");
   assert.equal(by.lo.status, "low");
   assert.equal(by.mid1.status, "ok");
@@ -90,7 +90,7 @@ check("rows needing a look come first, hidden small groups last", () => {
     { managerId: "ok", name: "ปกติ", percents: [80, 80, 80, 80] },
     { managerId: "hi", name: "สูง", percents: [99, 99, 99] },
   ]);
-  // company average 87.1: "hi" is 11.9 above (warning), "ok" is 7.1 below (within the gap)
+  // company average 87.1: "hi" is 11.9 above (warning), "ok" is 7.1 below (within the gap of 10)
   assert.deepEqual(rows.map((r) => [r.managerId, r.status]), [["hi", "high"], ["ok", "ok"], ["few", "few"]]);
 });
 check("nobody rated gives no average and no rows, never a divide by zero", () => {

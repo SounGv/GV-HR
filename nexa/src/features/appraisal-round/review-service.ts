@@ -1,7 +1,9 @@
 import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { NotFound } from "@/lib/api/errors";
+import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { MAX_ADJUST_POINTS } from "./adjust-rules";
 import { participantScope, viewableEmployeeIds } from "./viewer-scope";
 import { getSettings } from "./results-service";
 import { pickForm, type RoundSnapshot } from "./form-snapshot";
@@ -48,6 +50,8 @@ export async function getRoundReview(companyId: string, session: AccessClaims, r
       scorePercent: true,
       grade: true,
       scoreBreakdown: true,
+      adjustedAt: true,
+      originalScorePercent: true,
       employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
       assignments: {
         where: { status: "SUBMITTED", raterType: "MANAGER" },
@@ -87,10 +91,31 @@ export async function getRoundReview(companyId: string, session: AccessClaims, r
       total: p.scorePercent,
       grade: p.grade,
       ...personFlags(self, manager, p.scorePercent, bands),
+      adjusted: p.adjustedAt !== null,
+      original: p.adjustedAt !== null ? p.originalScorePercent : null,
     });
   }
   // The people who need a look come first, then by department and name.
   people.sort((a, b) => Number(b.talk || b.nearEdge) - Number(a.talk || a.nearEdge) || a.department.localeCompare(b.department, "th") || a.name.localeCompare(b.name, "th"));
+
+  const history = await prisma.appraisalScoreAdjustment.findMany({
+    where: { participant: { roundId, ...participantScope(ids) } },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: {
+      id: true,
+      participantId: true,
+      kind: true,
+      fromPercent: true,
+      toPercent: true,
+      fromGrade: true,
+      toGrade: true,
+      reason: true,
+      byName: true,
+      createdAt: true,
+      participant: { select: { employee: { select: { firstName: true, lastName: true, nickname: true } } } },
+    },
+  });
 
   const departments = [...new Set(people.map((p) => p.department))].sort((a, b) => a.localeCompare(b, "th"));
   const spreadOf = (rows: ReviewPerson[]) => gradeSpread(rows.map((r) => r.total), bands);
@@ -111,6 +136,20 @@ export async function getRoundReview(companyId: string, session: AccessClaims, r
     companyWide: ids === null,
     managers: summarizeManagers([...given.entries()].map(([managerId, g]) => ({ managerId, name: g.name, percents: g.percents }))),
     people,
-    thresholds: { managerGap: MANAGER_GAP_POINTS, selfGap: SELF_GAP_POINTS, minPeople: MIN_PEOPLE_PER_MANAGER },
+    adjustments: history.map((h) => ({
+      id: h.id,
+      participantId: h.participantId,
+      name: displayName(h.participant.employee),
+      kind: h.kind,
+      fromPercent: h.fromPercent,
+      toPercent: h.toPercent,
+      fromGrade: h.fromGrade,
+      toGrade: h.toGrade,
+      reason: h.reason,
+      byName: h.byName,
+      createdAt: h.createdAt.toISOString(),
+    })),
+    canAdjust: can(session.perms, "campaign:update"),
+    thresholds: { managerGap: MANAGER_GAP_POINTS, selfGap: SELF_GAP_POINTS, minPeople: MIN_PEOPLE_PER_MANAGER, maxAdjust: MAX_ADJUST_POINTS },
   };
 }

@@ -117,14 +117,20 @@ export async function calculateRound(companyId: string, session: AccessClaims, r
 
   const participants = await prisma.appraisalParticipant.findMany({
     where: { roundId },
-    select: { id: true, formId: true, resultStatus: true, assignments: { where: { status: "SUBMITTED" }, select: { raterType: true, answers: true } } },
+    select: { id: true, formId: true, resultStatus: true, adjustedAt: true, assignments: { where: { status: "SUBMITTED" }, select: { raterType: true, answers: true } } },
   });
   let calculated = 0;
   let noAnswers = 0;
   let kept = 0;
+  let adjustedKept = 0;
   for (const p of participants) {
     if (p.resultStatus === "APPROVED" || p.resultStatus === "PUBLISHED" || p.resultStatus === "ACKNOWLEDGED") {
       kept++;
+      continue;
+    }
+    // HR changed this score by hand: keep it until HR undoes the adjustment, so a recalculation never drops it silently.
+    if (p.adjustedAt) {
+      adjustedKept++;
       continue;
     }
     const form = pickForm(snapshot, p.formId);
@@ -165,10 +171,10 @@ export async function calculateRound(companyId: string, session: AccessClaims, r
     action: "appraisal_round.calculate",
     entity: "AppraisalRound",
     entityId: roundId,
-    after: { calculated, noAnswers, kept, mode: settings.calcMode },
+    after: { calculated, noAnswers, kept, adjustedKept, mode: settings.calcMode },
     ...meta,
   });
-  return { calculated, noAnswers, kept };
+  return { calculated, noAnswers, kept, adjustedKept };
 }
 
 /* ───────────────────────── approve / publish ───────────────────────── */

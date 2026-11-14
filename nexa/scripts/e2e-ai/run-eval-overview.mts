@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { prisma as real } from "@real/prisma";
 import { loadEvaluationOverview } from "@/features/dashboard-people/evaluation-overview";
 import { executeReadTool } from "@/lib/ai/read-tools";
+import { applyPendingMigration } from "./pending-migration.mts";
 
 // The evaluation section of the home page, against the real database but inside ONE transaction that is thrown
 // away at the end: rounds, people and results are made up here and never kept.
@@ -40,6 +41,7 @@ const snapshot = async () => ({
     await real.$transaction(
       async (tx) => {
         g.__tx = tx;
+        await applyPendingMigration(tx);
         // A manages B and C; D and E report to nobody we care about.
         await tx.employee.update({ where: { id: A }, data: { managerId: null } });
         await tx.employee.update({ where: { id: B }, data: { managerId: A } });

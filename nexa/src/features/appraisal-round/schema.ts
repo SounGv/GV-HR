@@ -37,4 +37,10 @@ export const settingsSchema = z.object({
   ackDays: z.number().int().min(1).max(90).nullable(),
 });
 
+export const adjustSchema = z.object({
+  scorePercent: z.number().finite(),
+  reason: z.string().max(1000),
+});
+export const revertSchema = z.object({ reason: z.string().max(1000) });
+
 export const publishSchema = z.object({ participantIds: z.array(z.string().min(1)).max(2000).optional() });

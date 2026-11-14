@@ -34,7 +34,7 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
     try {
       if (kind === "calculate") {
         const r = (await act.calculate.mutateAsync()).data;
-        toast.success(`คำนวณแล้ว ${r.calculated} คน${r.noAnswers ? ` · ยังไม่มีคำตอบ ${r.noAnswers} คน` : ""}${r.kept ? ` · คงเดิม ${r.kept} คน (อนุมัติ/ประกาศแล้ว)` : ""}`);
+        toast.success(`คำนวณแล้ว ${r.calculated} คน${r.noAnswers ? ` · ยังไม่มีคำตอบ ${r.noAnswers} คน` : ""}${r.kept ? ` · คงเดิม ${r.kept} คน (อนุมัติ/ประกาศแล้ว)` : ""}${r.adjustedKept ? ` · คงคะแนนที่ HR ปรับไว้ ${r.adjustedKept} คน` : ""}`);
       } else if (kind === "approve") {
         toast.success(`อนุมัติแล้ว ${(await act.approve.mutateAsync()).data.approved} คน`);
       } else {

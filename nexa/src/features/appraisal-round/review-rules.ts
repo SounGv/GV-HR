@@ -6,8 +6,8 @@
  * can look before approving. The two warning gaps below are placeholders until HR confirms them.
  */
 
-/** A manager whose average differs from the company by more than this many points gets a "ควรตรวจ" warning. Placeholder, HR to confirm. */
-export const MANAGER_GAP_POINTS = 8;
+/** A manager whose average differs from the company by more than this many points gets a "ควรตรวจ" warning. Confirmed by the owner 15 Nov 2026 (start here, review after the first real round). */
+export const MANAGER_GAP_POINTS = 10;
 /** Self score above the manager's by at least this many points gets "ควรคุย". Placeholder, HR to confirm. */
 export const SELF_GAP_POINTS = 10;
 /** A manager who rated fewer people than this has no average shown (it would point at individuals). */

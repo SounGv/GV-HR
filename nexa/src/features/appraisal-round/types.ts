@@ -296,6 +296,23 @@ export interface ReviewPerson {
   talk: boolean;
   /** Total is within a point of a grade boundary. */
   nearEdge: boolean;
+  /** HR changed this score by hand; `original` is what the calculation gave. */
+  adjusted: boolean;
+  original: number | null;
+}
+
+export interface ReviewAdjustment {
+  id: string;
+  participantId: string;
+  name: string;
+  kind: "ADJUST" | "REVERT";
+  fromPercent: number;
+  toPercent: number;
+  fromGrade: string | null;
+  toGrade: string | null;
+  reason: string;
+  byName: string;
+  createdAt: string;
 }
 
 export interface ReviewSpread {
@@ -320,5 +337,9 @@ export interface RoundReview {
     companyAverage: number | null;
   };
   people: ReviewPerson[];
-  thresholds: { managerGap: number; selfGap: number; minPeople: number };
+  /** Latest changes first. Shown to HR and approvers, never to the employee. */
+  adjustments: ReviewAdjustment[];
+  /** HR only: may change a calculated score. */
+  canAdjust: boolean;
+  thresholds: { managerGap: number; selfGap: number; minPeople: number; maxAdjust: number };
 }
