@@ -29,13 +29,40 @@ export interface QuickCommand {
   action: QuickAction;
   /** The person named in "โควตา สมชาย". */
   name?: string;
+  /** What followed "ประกาศ" or "แจ้งเตือน", offered as the title of the form. */
+  title?: string;
 }
 
 const clean = (s: string) => s.replace(/\s+/g, " ").trim();
 
+/** Polite and filler words that do not change what is asked. Longest first, so "มีอะไร" goes before "มี". */
+const FILLERS = ["ถึงไหนแล้ว", "ถึงไหน", "แล้ว", "สัปดาห์นี้", "ทั้งหมด", "ตอนนี้", "วันนี้", "หรือเปล่า", "มีอะไร", "ขอดู", "กี่คน", "บ้าง", "ไหม", "เปล่า", "ครับ", "ค่ะ", "คะ", "นะ", "หน่อย", "เช็กดู", "เช็คดู", "เช็ก", "เช็ค", "ดู", "ใคร", "มี", "คำขอ", "รายการ", "การ", "ที่"];
+
+/** Exactly what is left once the filler words are gone. Anything else (a name, another topic) is not understood. */
+const CORES: Record<string, QuickAction> = {
+  มาสาย: "late_today",
+  สาย: "late_today",
+  ขาด: "absent_today",
+  ขาดงาน: "absent_today",
+  ไม่มา: "absent_today",
+  ไม่มาทำงาน: "absent_today",
+  รออนุมัติ: "pending_approvals",
+  รอฉันอนุมัติ: "pending_approvals",
+  ต้องอนุมัติ: "pending_approvals",
+  อนุมัติ: "pending_approvals",
+  ตารางกะ: "shifts_week",
+  กะ: "shifts_week",
+  กะงาน: "shifts_week",
+  ความคืบหน้ารอบประเมิน: "eval_progress",
+  ความคืบหน้าประเมิน: "eval_progress",
+  รอบประเมิน: "eval_progress",
+  ประเมิน: "eval_progress",
+};
+
 /**
  * Reads a short typed command. Only the phrasings below are understood: anything else returns null, never a guess,
- * so the fallback says it does not understand instead of answering the wrong question.
+ * so the fallback says it does not understand instead of answering the wrong question. A sentence that merely
+ * contains a keyword ("ใบลาของสมชายที่รออนุมัติ") is not a command.
  */
 export function parseQuickCommand(raw: string): QuickCommand | null {
   const t = clean(raw);
@@ -46,14 +73,15 @@ export function parseQuickCommand(raw: string): QuickCommand | null {
     const name = clean(quota[1] ?? "");
     return name ? { action: "leave_quota", name } : { action: "leave_quota" };
   }
-  if (/^(?:ส่ง|สร้าง|ลง)?ประกาศ/.test(t)) return { action: "announce" };
-  if (/^(?:ส่ง)?แจ้งเตือน/.test(t)) return { action: "notify" };
-  if (/มาสาย|สายวันนี้/.test(t)) return { action: "late_today" };
-  if (/ขาดงาน|ใครขาด|ขาดวันนี้|ไม่มาทำงาน|ไม่มาวันนี้/.test(t)) return { action: "absent_today" };
-  if (/รออนุมัติ|รอฉันอนุมัติ|ต้องอนุมัติ/.test(t)) return { action: "pending_approvals" };
-  if (/ตารางกะ|กะสัปดาห์|กะงาน|กะวันนี้|กะพรุ่งนี้/.test(t)) return { action: "shifts_week" };
-  if (/ความคืบหน้า.*ประเมิน|ประเมิน.*(?:คืบหน้า|ถึงไหน|ส่งแล้ว)|รอบประเมิน/.test(t)) return { action: "eval_progress" };
-  return null;
+  const announce = /^(?:ส่ง|สร้าง|ลง)?ประกาศ(?:\s+(.*))?$/.exec(t);
+  if (announce) return announce[1] ? { action: "announce", title: clean(announce[1]) } : { action: "announce" };
+  const notify = /^(?:ส่ง)?แจ้งเตือน(?:ทุกคน)?(?:\s+(.*))?$/.exec(t);
+  if (notify) return notify[1] ? { action: "notify", title: clean(notify[1]) } : { action: "notify" };
+
+  let core = t.replace(/\s+/g, "");
+  for (const f of FILLERS) core = core.split(f).join("");
+  const action = CORES[core];
+  return action ? { action } : null;
 }
 
 /** What a quick action returns, ready to show as an answer. */

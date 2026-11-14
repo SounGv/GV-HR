@@ -26,7 +26,7 @@ check("announcement and notification open their forms", () => {
   assert.equal(parseQuickCommand("ส่งประกาศ")?.action, "announce");
   assert.equal(parseQuickCommand("ประกาศ หยุดวันที่ 5")?.action, "announce");
   assert.equal(parseQuickCommand("ส่งแจ้งเตือน")?.action, "notify");
-  assert.equal(parseQuickCommand("แจ้งเตือนทุกคน")?.action, "notify");
+  assert.equal(parseQuickCommand("ส่งแจ้งเตือนทุกคน")?.action, "notify");
 });
 check("common ways of asking map to the same action", () => {
   assert.equal(parseQuickCommand("วันนี้ใครมาสายบ้าง")?.action, "late_today");
@@ -34,6 +34,16 @@ check("common ways of asking map to the same action", () => {
   assert.equal(parseQuickCommand("มีคำขอรออนุมัติไหม")?.action, "pending_approvals");
   assert.equal(parseQuickCommand("ดูตารางกะ")?.action, "shifts_week");
   assert.equal(parseQuickCommand("รอบประเมินถึงไหนแล้ว")?.action, "eval_progress");
+});
+check("typed text after the word is kept as the title of the form", () => {
+  assert.deepEqual(parseQuickCommand("ประกาศ หยุดวันที่ 5 ธ.ค."), { action: "announce", title: "หยุดวันที่ 5 ธ.ค." });
+  assert.deepEqual(parseQuickCommand("ส่งแจ้งเตือน ปิดระบบคืนนี้"), { action: "notify", title: "ปิดระบบคืนนี้" });
+  assert.deepEqual(parseQuickCommand("ส่งประกาศ"), { action: "announce" });
+});
+check("a sentence that only contains a keyword is not a command", () => {
+  for (const t of ["ใบลาของสมชายที่รออนุมัติ", "ใครไม่เคยมาสาย", "ประกาศนียบัตรของสมชาย", "ตารางกะของแผนกขาย", "ใครขาดงานบ่อยสุดเดือนนี้", "สรุปผลประเมินของสมหญิง"]) {
+    assert.equal(parseQuickCommand(t), null, t);
+  }
 });
 check("anything not understood returns null, never a guess", () => {
   for (const t of ["", "   ", "สวัสดี", "สรุป OT เดือนนี้ พร้อมค่าใช้จ่าย", "ปีนี้ใครลาเยอะสุด 5 อันดับ", "ก".repeat(200)]) {

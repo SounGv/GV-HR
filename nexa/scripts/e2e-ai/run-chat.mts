@@ -393,6 +393,9 @@ async function t(name: string, fn: () => Promise<void>) {
     assert.equal(bell.json.data.proposals[0].kind, "send_notification");
     assert.equal(await prisma.announcement.count(), announcements);
     assert.equal(await prisma.notification.count(), notes);
+    const noTarget = await call(quick, "/api/ai/quick", { action: "notify", title: "ทดสอบ", body: "เนื้อหา" });
+    assert.equal(noTarget.json.data.ok, false, "a notification with no recipient is never prepared");
+    assert.match(noTarget.json.data.message, /ระบุผู้รับ/);
     const empty = await call(quick, "/api/ai/quick", { action: "announce", title: "", body: "" });
     assert.equal(empty.json.data.ok, false);
     const bad = await call(quick, "/api/ai/quick", { action: "delete_everything" });
@@ -412,6 +415,23 @@ async function t(name: string, fn: () => Promise<void>) {
     g.__token = undefined;
     assert.equal((await call(quick, "/api/ai/quick", { action: "late_today" })).status, 401);
     await asUser(["*"], { roles: ["Super Admin"] });
+  });
+
+  await t("17 requests that fail or recover at the same moment still tell each admin only once", async () => {
+    await tx.auditLog.deleteMany({ where: { action: { in: ["ai.engine.down", "ai.engine.up", "ai.cap", "ai.chat"] } } });
+    const down = ENGINE_NOTICE.downCredit.title;
+    const up = ENGINE_NOTICE.up.title;
+    const d0 = await noticeCount(down);
+    const u0 = await noticeCount(up);
+    model({ __fail: { status: 400, message: CREDIT } }, { __fail: { status: 400, message: CREDIT } }, { __fail: { status: 400, message: CREDIT } });
+    const three = await Promise.all([1, 2, 3].map((i) => call(chat, "/api/ai/chat", ask(`พร้อมกัน ${i}`))));
+    assert.deepEqual(three.map((r) => r.json.data.engine), ["fallback", "fallback", "fallback"]);
+    assert.equal((await noticeCount(down)) - d0, adminHolders, "one notice per admin, not three");
+    await ageDownEvents(6);
+    model(say("ก"), say("ข"), say("ค"));
+    const back = await Promise.all([1, 2, 3].map((i) => call(chat, "/api/ai/chat", ask(`พร้อมกัน ${i}`))));
+    assert.deepEqual(back.map((r) => r.json.data.engine), ["ai", "ai", "ai"]);
+    assert.equal((await noticeCount(up)) - u0, adminHolders, "one recovery notice per admin, not three");
   });
 
   g.__tx = undefined;

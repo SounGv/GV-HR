@@ -2,7 +2,6 @@
 import assert from "node:assert/strict";
 import { prisma as real } from "@real/prisma";
 import { loadEvaluationOverview } from "@/features/dashboard-people/evaluation-overview";
-import { loadEvaluationProgress } from "@/features/dashboard-people/service";
 import { executeReadTool } from "@/lib/ai/read-tools";
 
 // The evaluation section of the home page, against the real database but inside ONE transaction that is thrown
@@ -150,12 +149,7 @@ const snapshot = async () => ({
           await tx.appraisalRound.updateMany({ where: { companyId: COMPANY, id: { in: [open.id, closed.id, stale.id] } }, data: { deletedAt: null } });
         });
 
-        await t("E8 the older follow-up row still works (AI quick action and tool read the same rounds)", async () => {
-          const p = await loadEvaluationProgress(COMPANY, claims(HR));
-          assert.ok(p.some((x) => x.id === open.id));
-        });
-
-        await t("E9 the AI tool and quick action read the same rounds, and never beyond the assistant's own scope", async () => {
+        await t("E8 the AI tool and quick action read the same rounds, and never beyond the assistant's own scope", async () => {
           const all = JSON.parse((await executeReadTool(claims(HR), "get_evaluation_progress", {}, undefined))!);
           const row = all.find((x: any) => x.name === "รอบทดสอบ เปิดอยู่");
           assert.ok(row);
@@ -167,6 +161,22 @@ const snapshot = async () => ({
           assert.equal(narrow.find((x: any) => x.name === "รอบทดสอบ เปิดอยู่").participants, 2);
           // without the right the tool refuses
           assert.match((await executeReadTool(claims(["leave:read"]), "get_evaluation_progress", {}, undefined))!, /ไม่ได้รับอนุญาต/);
+        });
+
+        await t("E9 asking for closed rounds shows them too, marked closed", async () => {
+          const only = JSON.parse((await executeReadTool(claims(HR), "get_evaluation_progress", {}, undefined))!);
+          assert.equal(only.some((x: any) => x.status === "ปิดแล้ว"), false, "closed rounds only when asked");
+          const all = JSON.parse((await executeReadTool(claims(HR), "get_evaluation_progress", { includeClosed: true }, undefined))!);
+          const closedRow = all.find((x: any) => x.name === "รอบทดสอบ ปิดแล้ว");
+          assert.ok(closedRow, "the closed round is listed");
+          assert.equal(closedRow.status, "ปิดแล้ว");
+          assert.ok(all.some((x: any) => x.name === "รอบทดสอบ เปิดอยู่" && x.status === "เปิดอยู่"));
+        });
+
+        await t("E10 HR who is also someone's manager still gets their own forms to fill in", async () => {
+          const o = await loadEvaluationOverview(COMPANY, claims(HR, A));
+          assert.equal(o.companyWide, true);
+          assert.deepEqual(o.myTasks.filter((x) => x.roundId === open.id).map((x) => x.status).sort(), ["PENDING", "SUBMITTED"]);
         });
 
         g.__tx = undefined;

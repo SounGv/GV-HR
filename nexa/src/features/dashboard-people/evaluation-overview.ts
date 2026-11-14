@@ -16,6 +16,8 @@ import { compareAverages, summarizeResults, summarizeRound, type AverageChange, 
 export interface OpenRound {
   id: string;
   name: string;
+  /** True for a round that has already closed (only when asked for). */
+  closed?: boolean;
   /** Bangkok calendar day the round closes, or null when no end date was set. */
   endIso: string | null;
   daysLeft: number | null;
@@ -65,18 +67,27 @@ function dayDiff(from: Date, to: Date): number {
  * @param opts.limitTo narrows the people further (the AI Assistant passes the people its own access scope allows),
  *   so a wider role can never show more through the assistant than it is allowed to.
  */
-export async function loadEvaluationOverview(companyId: string, session: AccessClaims, opts: { limitTo?: Set<string> } = {}): Promise<EvaluationOverview> {
+export async function loadEvaluationOverview(companyId: string, session: AccessClaims, opts: { limitTo?: Set<string>; includeClosed?: boolean } = {}): Promise<EvaluationOverview> {
   let ids = await viewableEmployeeIds(companyId, session);
   if (opts.limitTo) ids = ids ? new Set([...ids].filter((id) => opts.limitTo!.has(id))) : opts.limitTo;
   const scope = participantScope(ids);
   const today = bangkokParts().dateUTC;
 
-  const rounds = await prisma.appraisalRound.findMany({
+  const openRounds = await prisma.appraisalRound.findMany({
     where: { companyId, deletedAt: null, status: "OPEN" },
     select: { id: true, name: true, endDate: true },
     orderBy: [{ endDate: "asc" }, { createdAt: "asc" }],
     take: MAX_OPEN_ROUNDS,
   });
+  const closedRounds = opts.includeClosed
+    ? await prisma.appraisalRound.findMany({
+        where: { companyId, deletedAt: null, status: "CLOSED" },
+        select: { id: true, name: true, endDate: true },
+        orderBy: [{ closedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
+        take: 3,
+      })
+    : [];
+  const rounds = [...openRounds.map((r) => ({ ...r, closed: false })), ...closedRounds.map((r) => ({ ...r, closed: true }))];
 
   const open: OpenRound[] = [];
   const myTasks: MyTeamTask[] = [];
@@ -94,6 +105,7 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
     open.push({
       id: r.id,
       name: r.name,
+      ...(r.closed ? { closed: true } : {}),
       endIso: end ? end.toISOString().slice(0, 10) : null,
       daysLeft: end ? dayDiff(today, end) : null,
       summary: summarizeRound(
@@ -107,7 +119,7 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
       href: `/appraisal/rounds/${r.id}`,
     });
     // The forms this person has to fill in for people under them (a manager's own queue).
-    if (ids && session.employeeId) {
+    if (session.employeeId && !r.closed) {
       for (const p of participants) {
         for (const a of p.assignments) {
           if (a.raterEmployeeId === session.employeeId && a.raterType === "MANAGER") {

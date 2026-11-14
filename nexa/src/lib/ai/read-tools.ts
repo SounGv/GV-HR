@@ -261,13 +261,13 @@ export async function executeReadTool(
         const limitTo = scopeWhere
           ? new Set((await prisma.employee.findMany({ where: { companyId, deletedAt: null, AND: [scopeWhere] }, select: { id: true } })).map((e) => e.id))
           : undefined;
-        const overview = await loadEvaluationOverview(companyId, session, { limitTo });
+        const overview = await loadEvaluationOverview(companyId, session, { limitTo, includeClosed });
         const rounds = overview.open.filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase()));
         if (rounds.length > 0) {
           return JSON.stringify(
             rounds.map((r) => ({
               name: r.name,
-              status: "เปิดอยู่",
+              status: r.closed ? "ปิดแล้ว" : "เปิดอยู่",
               closes: r.endIso,
               ...(r.daysLeft !== null ? { daysLeft: r.daysLeft } : {}),
               participants: r.summary.people.total,

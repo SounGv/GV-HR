@@ -91,7 +91,12 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   const engine = useEngineMode();
   const quick = useQuick();
   const [form, setForm] = useState<"announce" | "notify" | null>(null);
+  const [formTitle, setFormTitle] = useState("");
   const fallback = engine.mode === "fallback";
+  const clearFiles = attach.clear;
+  useEffect(() => {
+    if (fallback) clearFiles();
+  }, [fallback, clearFiles]);
   // Reading files needs the AI, so the attach button waits for it to come back.
   const canAttach = access.data?.data.canAttach === true && !fallback;
   const elapsed = useElapsed(chat.isPending);
@@ -145,6 +150,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
       const cmd = parseQuickCommand(q);
       if (cmd) {
         if (cmd.action === "announce" || cmd.action === "notify") {
+          setFormTitle(cmd.title ?? "");
           setForm(cmd.action);
           setInput("");
         } else {
@@ -350,9 +356,9 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             <div className="mb-2 space-y-2">
               {turns.length > 0 &&
                 (form ? (
-                  <QuickForm key={form} kind={form} busy={quick.isPending} onSubmit={runQuick} onCancel={() => setForm(null)} />
+                  <QuickForm key={form} kind={form} initialTitle={formTitle} busy={quick.isPending} onSubmit={runQuick} onCancel={() => setForm(null)} />
                 ) : (
-                  <QuickChips onRun={runQuick} onPickName={pickName} onOpenForm={setForm} disabled={quick.isPending} className="flex-nowrap overflow-x-auto pb-1" />
+                  <QuickChips onRun={runQuick} onPickName={pickName} onOpenForm={(k) => { setFormTitle(""); setForm(k); }} disabled={quick.isPending} className="flex-nowrap overflow-x-auto pb-1" />
                 ))}
             </div>
           )}
@@ -479,9 +485,9 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                 {turns.length > 0 ? (
                   <p className="text-center text-sm text-muted-foreground">กดคำตอบทางซ้ายเพื่อดูรายละเอียดที่นี่ หรือใช้ปุ่มลัดใต้ช่องพิมพ์</p>
                 ) : form ? (
-                  <QuickForm key={form} kind={form} busy={quick.isPending} onSubmit={runQuick} onCancel={() => setForm(null)} />
+                  <QuickForm key={form} kind={form} initialTitle={formTitle} busy={quick.isPending} onSubmit={runQuick} onCancel={() => setForm(null)} />
                 ) : (
-                  <QuickChips className="justify-center" onRun={runQuick} onPickName={pickName} onOpenForm={setForm} disabled={quick.isPending} />
+                  <QuickChips className="justify-center" onRun={runQuick} onPickName={pickName} onOpenForm={(k) => { setFormTitle(""); setForm(k); }} disabled={quick.isPending} />
                 )}
               </div>
             ) : (

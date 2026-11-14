@@ -87,7 +87,12 @@ export function AiChatView({
   const engine = useEngineMode();
   const quick = useQuick();
   const [form, setForm] = useState<"announce" | "notify" | null>(null);
+  const [formTitle, setFormTitle] = useState("");
   const fallback = engine.mode === "fallback";
+  const clearFiles = attach.clear;
+  useEffect(() => {
+    if (fallback) clearFiles();
+  }, [fallback, clearFiles]);
   // Reading files needs the AI, so the attach button waits for it to come back.
   const canAttach = access.data?.data.canAttach === true && !fallback;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -147,6 +152,7 @@ export function AiChatView({
       const cmd = parseQuickCommand(trimmed);
       if (cmd) {
         if (cmd.action === "announce" || cmd.action === "notify") {
+          setFormTitle(cmd.title ?? "");
           setForm(cmd.action);
           setInput("");
         } else {
@@ -219,7 +225,7 @@ export function AiChatView({
               </>
             )}
             {fallback ? (
-              <QuickChips className="justify-center" onRun={runQuick} onPickName={pickName} onOpenForm={setForm} disabled={quick.isPending} />
+              <QuickChips className="justify-center" onRun={runQuick} onPickName={pickName} onOpenForm={(k) => { setFormTitle(""); setForm(k); }} disabled={quick.isPending} />
             ) : (
             <div className="flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.map((s) => (
@@ -306,9 +312,9 @@ export function AiChatView({
         {fallback && (
           <div className="mb-2 space-y-2">
             {form ? (
-              <QuickForm key={form} kind={form} busy={quick.isPending} onSubmit={runQuick} onCancel={() => setForm(null)} />
+              <QuickForm key={form} kind={form} initialTitle={formTitle} busy={quick.isPending} onSubmit={runQuick} onCancel={() => setForm(null)} />
             ) : (
-              turns.length > 0 && <QuickChips onRun={runQuick} onPickName={pickName} onOpenForm={setForm} disabled={quick.isPending} className="flex-nowrap overflow-x-auto pb-1" />
+              turns.length > 0 && <QuickChips onRun={runQuick} onPickName={pickName} onOpenForm={(k) => { setFormTitle(""); setForm(k); }} disabled={quick.isPending} className="flex-nowrap overflow-x-auto pb-1" />
             )}
           </div>
         )}

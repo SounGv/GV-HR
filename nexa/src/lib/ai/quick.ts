@@ -151,10 +151,11 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
     case "announce":
     case "notify": {
       const announce = input.action === "announce";
+      if (!announce && !input.target?.trim()) return refused("ระบุผู้รับก่อน พิมพ์ชื่อพนักงาน หรือเลือกส่งถึงทุกคน");
       const { card, message } = await prepareProposal(
         session,
         announce ? "create_announcement" : "send_notification",
-        { title: input.title ?? "", body: input.body ?? "", ...(announce ? {} : { target: input.target?.trim() || "all" }) },
+        { title: input.title ?? "", body: input.body ?? "", ...(announce ? {} : { target: input.target!.trim() }) },
         scopeWhere,
       );
       if (!card) return refused(message);

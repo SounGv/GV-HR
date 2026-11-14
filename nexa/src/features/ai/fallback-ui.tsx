@@ -115,19 +115,23 @@ export function QuickChips({
 /** Announcement or notification written by hand. It only prepares the confirmation card; nothing is sent here. */
 export function QuickForm({
   kind,
+  initialTitle = "",
   busy,
   onSubmit,
   onCancel,
 }: {
   kind: QuickAction & ("announce" | "notify");
+  initialTitle?: string;
   busy?: boolean;
   onSubmit: (request: QuickRequest, label: string) => void;
   onCancel: () => void;
 }) {
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle);
   const [body, setBody] = useState("");
   const [target, setTarget] = useState("");
-  const ready = title.trim().length > 0 && body.trim().length > 0;
+  const [everyone, setEveryone] = useState(false);
+  // A notification goes to nobody until the person names someone or says everyone: the widest audience is never a default.
+  const ready = title.trim().length > 0 && body.trim().length > 0 && (kind === "announce" || everyone || target.trim().length > 0);
   const field =
     "w-full rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground outline-none placeholder:text-muted-foreground focus:border-[var(--chat-teal)] focus:ring-3 focus:ring-[var(--chat-teal)]/20 md:text-sm";
   return (
@@ -136,7 +140,7 @@ export function QuickForm({
         e.preventDefault();
         if (!ready || busy) return;
         onSubmit(
-          { action: kind, title: title.trim(), body: body.trim(), ...(kind === "notify" ? { target: target.trim() || "all" } : {}) },
+          { action: kind, title: title.trim(), body: body.trim(), ...(kind === "notify" ? { target: everyone ? "all" : target.trim() } : {}) },
           `${FORM_LABEL[kind]}: ${title.trim()}`,
         );
       }}
@@ -149,10 +153,16 @@ export function QuickForm({
         </button>
       </div>
       {kind === "notify" && (
-        <label className="block space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">ถึงใคร</span>
-          <input aria-label="ถึงใคร" value={target} onChange={(e) => setTarget(e.target.value)} maxLength={100} placeholder="เว้นว่างคือทุกคน หรือพิมพ์ชื่อพนักงาน" className={field} />
-        </label>
+        <div className="space-y-1">
+          <label className="block space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">ถึงใคร</span>
+            <input aria-label="ถึงใคร" value={target} onChange={(e) => setTarget(e.target.value)} disabled={everyone} maxLength={100} placeholder="พิมพ์ชื่อหรือรหัสพนักงาน" className={cn(field, "disabled:opacity-50")} />
+          </label>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={everyone} onChange={(e) => setEveryone(e.target.checked)} className="size-5" />
+            ส่งถึงทุกคน
+          </label>
+        </div>
       )}
       <label className="block space-y-1">
         <span className="text-xs font-medium text-muted-foreground">หัวข้อ</span>

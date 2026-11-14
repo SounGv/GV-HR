@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, ChevronRight, ClipboardCheck, UserCheck } from "lucide-react";
+import { CalendarClock, UserCheck } from "lucide-react";
 import { FollowRow, FollowRowFailed } from "@/features/dashboard/follow-up";
 
 import { STATUS_META } from "@/features/attendance-status/status-meta";
@@ -8,10 +8,8 @@ import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { cn } from "@/lib/utils";
 import {
-  loadEvaluationProgress,
   loadProbationDue,
   loadUpcomingLeaves,
-  type CampaignProgress,
   type LeavePerson,
   type ProbationDue,
   type UpcomingLeaves,
@@ -149,80 +147,6 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
   );
 }
 
-function ProgressRow({ label, tally }: { label: string; tally: CampaignProgress["overall"] }) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-baseline justify-between gap-2 text-sm">
-        <span className="text-foreground">{label}</span>
-        <span className="text-muted-foreground tabular-nums">
-          ส่งแล้ว {tally.submitted}/{tally.total} ({tally.percent}%)
-        </span>
-      </div>
-      <div
-        role="progressbar"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={tally.percent}
-        className="h-2 overflow-hidden rounded-full bg-muted"
-      >
-        <div className="h-full rounded-full bg-[var(--flip7-teal-dark)]" style={{ width: `${tally.percent}%` }} />
-      </div>
-      <p className="text-xs text-muted-foreground tabular-nums">
-        กำลังทำ {tally.inProgress} · ยังไม่เริ่ม {tally.pending}
-      </p>
-    </div>
-  );
-}
-
-/** "ต้องตามวันนี้" row: evaluation answers still owed in open rounds; opens to each round's progress. */
-export function EvaluationProgressCard({ campaigns }: { campaigns: CampaignProgress[] }) {
-  const owed = campaigns.reduce((n, c) => n + (c.overall.total - c.overall.submitted), 0);
-  const overdue = campaigns.some((c) => c.daysLeft < 0 && c.overall.total > c.overall.submitted);
-  return (
-    <FollowRow
-      icon={ClipboardCheck}
-      title="ประเมินค้างส่ง"
-      sub={campaigns.map((c) => `${c.name} ส่งแล้ว ${c.overall.percent}%`).join(" · ")}
-      count={owed}
-      unit="งาน"
-      tone={overdue ? "bad" : "warn"}
-      tag={overdue ? "เลยกำหนด" : "ค้างส่ง"}
-      order={7}
-    >
-      <div className="space-y-5">
-      {campaigns.map((c) => (
-        <section key={c.id} aria-label={c.name} className="space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold break-words text-foreground">
-              {c.name} <span className="font-normal text-muted-foreground">({c.cycle})</span>
-            </h3>
-            <p className={cn("text-sm", c.daysLeft < 0 ? "font-semibold text-status-late-fg" : "text-muted-foreground")}>
-              ปิดรอบ {fmtDay(c.endIso)} ·{" "}
-              {c.daysLeft < 0 ? `เลยกำหนด ${-c.daysLeft} วัน` : c.daysLeft === 0 ? "ครบวันนี้" : `อีก ${c.daysLeft} วัน`}
-            </p>
-          </div>
-          {c.overall.total === 0 ? (
-            <p className="text-sm text-muted-foreground">ไม่มีแบบประเมินของคนในทีมที่คุณดูแลในรอบนี้</p>
-          ) : (
-            <div className="space-y-3">
-              <ProgressRow label="ทั้งหมด" tally={c.overall} />
-              {c.byRater.length > 1 && c.byRater.map((r) => <ProgressRow key={r.raterType} label={r.label} tally={r.tally} />)}
-            </div>
-          )}
-          <Link
-            href={c.href}
-            className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline"
-          >
-            ดูรายละเอียดรอบนี้ <ChevronRight className="size-4" aria-hidden="true" />
-          </Link>
-        </section>
-      ))}
-      </div>
-    </FollowRow>
-  );
-}
-
 /** Async wrappers for `<Suspense>`: each card loads and fails on its own, so one slow or broken query never blanks the dashboard. */
 export async function UpcomingLeavesSection({ companyId, session }: { companyId: string; session: AccessClaims }) {
   try {
@@ -237,13 +161,5 @@ export async function ProbationDueSection({ companyId, session }: { companyId: s
     return <ProbationDueCard data={await loadProbationDue(companyId, session)} canCreateRound={can(session.perms, "campaign:create")} />;
   } catch {
     return <FollowRowFailed icon={UserCheck} title="ครบทดลองงาน" what="รายชื่อคนใกล้ครบทดลองงาน" order={6} />;
-  }
-}
-
-export async function EvaluationProgressSection({ companyId, session }: { companyId: string; session: AccessClaims }) {
-  try {
-    return <EvaluationProgressCard campaigns={await loadEvaluationProgress(companyId, session)} />;
-  } catch {
-    return <FollowRowFailed icon={ClipboardCheck} title="ประเมินผลที่ยังค้าง" what="ความคืบหน้าการประเมิน" order={7} />;
   }
 }
