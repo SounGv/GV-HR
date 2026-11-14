@@ -5,9 +5,9 @@
  * (scripts/check-ai-proposal.mjs) and the same types serve the chat screens.
  */
 
-export type ProposalKind = "send_notification" | "create_announcement" | "assign_shifts" | "approve_requests";
+export type ProposalKind = "send_notification" | "create_announcement" | "assign_shifts" | "approve_requests" | "draft_evaluation_template";
 
-export const PROPOSAL_KINDS: readonly ProposalKind[] = ["send_notification", "create_announcement", "assign_shifts", "approve_requests"];
+export const PROPOSAL_KINDS: readonly ProposalKind[] = ["send_notification", "create_announcement", "assign_shifts", "approve_requests", "draft_evaluation_template"];
 
 /** Limits match the announcement form (features/announcement/schema.ts) so a card never promises what the page would refuse. */
 export const PROPOSAL_LIMITS = { title: 200, body: 5000 } as const;
@@ -17,7 +17,7 @@ export interface ProposalCard {
   /** Signed token; the confirm endpoint accepts nothing else. */
   token: string;
   kind: ProposalKind;
-  icon: "bell" | "megaphone" | "calendar" | "clipboard";
+  icon: "bell" | "megaphone" | "calendar" | "clipboard" | "form";
   /** Small label above the title, e.g. "ประกาศถึงทุกคน". */
   kindLabel: string;
   title: string;
@@ -47,6 +47,8 @@ export interface ProposalPayload {
   /** Recipients when the card was drawn; confirm refuses if it has changed since. */
   count?: number;
   /** assign_shifts only: what the card promised, checked again before anything is written. */
+  /** draft_evaluation_template only: the cleaned draft the card showed. */
+  template?: Record<string, unknown>;
   /** approve_requests only: the requests the card listed, in order. */
   approve?: { items: { kind: "leave" | "correction"; id: string }[] };
   shift?: { templateId: string; employeeIds: string[]; dates: string[]; changing: number; replaced: number };
@@ -128,6 +130,6 @@ export const PROPOSAL_TOOL_RESULT =
   "ให้ตอบสั้นๆ ว่าเตรียมให้แล้ว ให้ตรวจข้อความและกดยืนยันในการ์ด ห้ามบอกว่าส่งหรือเผยแพร่เสร็จแล้ว และห้ามถามยืนยันซ้ำเป็นข้อความ";
 
 export type ConfirmOutcome =
-  | { status: "done"; message: string }
+  | { status: "done"; message: string; /** A page to open next, e.g. the new draft form. */ href?: string; hrefLabel?: string }
   | { status: "already"; message: string }
   | { status: "refused"; message: string };

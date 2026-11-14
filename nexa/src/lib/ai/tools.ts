@@ -160,6 +160,49 @@ export const NEXA_TOOLS: NexaTool[] = [
     },
   },
   {
+    name: "draft_evaluation_template",
+    description:
+      "Prepare a DRAFT evaluation form (แบบประเมิน): sections of questions with an answer type and weight. This only draws a confirmation card; the user presses confirm themselves and a DRAFT form is saved. It is never published, never tied to an evaluation round, and never changes grade bands, rater weights or anything about pay: tell the user HR must check the weights and scales on the form page before publishing. Ask the user first what role or department is evaluated, what to measure and who rates, if that is not clear. Max 6 sections, 8 questions per section, 40 in total. answerType: NUMERIC (scale 1-5 by default), YES_NO, LETTER (A-D by default), CHOICE (needs options with label and score), LONG_TEXT or SHORT_TEXT (not scored). Weights are whole-number percentages of the total score and must add up to 100 across scored questions; leave weight out of every question to split evenly. Requires permission.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        description: { type: "string" },
+        evaluationType: { type: "string", description: "short label such as annual or probation, in Thai" },
+        rationale: { type: "string", description: "one or two sentences on why the form is built this way" },
+        sections: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              questions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    text: { type: "string" },
+                    helpText: { type: "string" },
+                    answerType: { type: "string", enum: ["NUMERIC", "YES_NO", "LETTER", "CHOICE", "LONG_TEXT", "SHORT_TEXT"] },
+                    options: { type: "array", items: { type: "object", properties: { label: { type: "string" }, score: { type: "number" } }, required: ["label", "score"], additionalProperties: false } },
+                    weight: { type: "number", description: "whole number percent of the total score" },
+                    required: { type: "boolean" },
+                  },
+                  required: ["text", "answerType"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["name", "questions"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["name", "sections"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "web_search",
     description:
       "Search the public internet. Use ONLY when the answer isn't available from the other tools (internal company data) — e.g. Thai labor law, government holiday announcements, market/industry benchmarks, or general HR knowledge not specific to this company. NEVER use this for questions about this company's own employees, attendance, leave, payroll, or announcements — those must come from the internal tools. When you use results from this tool, clearly tell the user the information is from the internet (not the company's internal system) and cite the source title/link.",
@@ -378,7 +421,8 @@ export async function executeTool(
       case "send_notification":
       case "create_announcement":
       case "assign_shifts":
-      case "approve_requests": {
+      case "approve_requests":
+      case "draft_evaluation_template": {
         const { card, message } = await prepareProposal(session, name, input, scopeWhere);
         if (card) proposals?.push(card);
         return message;

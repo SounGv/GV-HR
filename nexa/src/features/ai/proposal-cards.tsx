@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Bell, CalendarCheck, CheckCircle2, ChevronRight, ClipboardCheck, Info, Loader2, Megaphone, TriangleAlert, XCircle } from "lucide-react";
+import { Bell, CalendarCheck, CheckCircle2, ChevronRight, ClipboardCheck, ClipboardList, Info, Loader2, Megaphone, TriangleAlert, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,7 @@ import type { ProposalCard } from "./types";
 type State =
   | { phase: "idle" }
   | { phase: "cancelled" }
-  | { phase: "done"; message: string; again: boolean }
+  | { phase: "done"; message: string; again: boolean; href?: string; hrefLabel?: string }
   | { phase: "refused"; message: string }
   | { phase: "error"; message: string };
 
@@ -52,7 +53,7 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
     mutationFn: () => confirmProposal(card.token),
     onSuccess: (res) => {
       const o = res.data;
-      setState(o.status === "refused" ? { phase: "refused", message: o.message } : { phase: "done", message: o.message, again: o.status === "already" });
+      setState(o.status === "refused" ? { phase: "refused", message: o.message } : { phase: "done", message: o.message, again: o.status === "already", ...(o.status === "done" && o.href ? { href: o.href, hrefLabel: o.hrefLabel } : {}) });
     },
     onError: (err) => {
       const message = err instanceof ApiError && err.status < 500 && err.status !== 401 ? err.message : "เชื่อมต่อไม่ได้ ตรวจสัญญาณอินเทอร์เน็ต แล้วกดยืนยันอีกครั้ง ถ้าไม่แน่ใจว่าส่งไปหรือยัง ให้ดูในหน้าประกาศหรือแจ้งเตือนก่อน";
@@ -60,7 +61,7 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
     },
   });
 
-  const Icon = card.icon === "megaphone" ? Megaphone : card.icon === "calendar" ? CalendarCheck : card.icon === "clipboard" ? ClipboardCheck : Bell;
+  const Icon = card.icon === "megaphone" ? Megaphone : card.icon === "calendar" ? CalendarCheck : card.icon === "clipboard" ? ClipboardCheck : card.icon === "form" ? ClipboardList : Bell;
 
   return (
     <section
@@ -166,7 +167,19 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
             {state.phase === "done" && state.message}
             {state.phase === "refused" && state.message}
             {state.phase === "cancelled" && "ยกเลิกแล้ว ไม่มีอะไรถูกส่งหรือเปลี่ยน"}
-            {state.phase === "done" && !state.again && <small className="block text-xs font-normal">บันทึกประวัติการทำรายการแล้ว</small>}
+            {state.phase === "done" && !state.again && (
+              <small className="block text-xs font-normal">
+                บันทึกประวัติการทำรายการแล้ว
+                {state.href && (
+                  <>
+                    {" "}
+                    <Link href={state.href} className="font-semibold underline underline-offset-2">
+                      {state.hrefLabel ?? "เปิดดู"}
+                    </Link>
+                  </>
+                )}
+              </small>
+            )}
           </span>
         </p>
       )}

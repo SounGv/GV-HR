@@ -7,6 +7,7 @@ import { displayName } from "@/lib/format";
 import { createAnnouncement } from "@/features/announcement/service";
 import { confirmShiftProposal, prepareShiftProposal } from "@/lib/ai/shift-proposal";
 import { confirmApproveProposal, prepareApproveProposal } from "@/lib/ai/approve-proposal";
+import { confirmTemplateProposal, prepareTemplateProposal } from "@/lib/ai/template-proposal";
 import { shouldPushToLine } from "@/features/notification/line-policy";
 import {
   buildAnnouncementCard,
@@ -25,6 +26,7 @@ type Meta = { ip?: string; userAgent?: string };
 
 /** One permission per kind; approve_requests checks leave and attendance approval itself, per request. */
 const NEED_PERM: Record<Exclude<ProposalKind, "approve_requests">, string> = {
+  draft_evaluation_template: "campaign:create",
   send_notification: "notification:create",
   create_announcement: "announcement:create",
   assign_shifts: "shift:create",
@@ -84,6 +86,7 @@ export async function prepareProposal(
     return { card: null, message: `ไม่ได้รับอนุญาต: ต้องมีสิทธิ์ ${need} จึงจะใช้เครื่องมือนี้ได้` };
   }
   if (kind === "assign_shifts") return prepareShiftProposal(session, rawInput, scopeWhere);
+  if (kind === "draft_evaluation_template") return prepareTemplateProposal(session, rawInput);
   const input = checkProposalInput(kind, rawInput);
   if (!input.ok) return { card: null, message: input.message };
   const companyId = session.companyId;
@@ -146,6 +149,7 @@ function readPayload(raw: Record<string, unknown>): ProposalPayload | null {
     count: typeof raw.count === "number" ? raw.count : undefined,
     shift,
     approve,
+    template: raw.template && typeof raw.template === "object" ? (raw.template as Record<string, unknown>) : undefined,
   };
 }
 
@@ -177,6 +181,7 @@ export async function confirmProposal(
   const since = new Date(verified.iat * 1000);
 
   if (p.kind === "assign_shifts") return confirmShiftProposal(session, p, scopeWhere, meta);
+  if (p.kind === "draft_evaluation_template") return confirmTemplateProposal(session, p, since, meta);
 
   if (p.kind === "send_notification") {
     const already = await prisma.notification.count({
