@@ -9,14 +9,13 @@ import { participantScope, viewableEmployeeIds } from "./viewer-scope";
 import { createNotification } from "@/features/notification/service";
 import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions, type Answer, type SnapQuestion } from "./answers";
 import { pickForm, type RoundSnapshot } from "./form-snapshot";
+import { ANON_MIN, NAMED_TYPES } from "./imported-comments";
 import { bandsProblem, computeResult, type Band, type CalcMode, type PersonResult } from "./scoring";
 
 type Meta = { ip?: string; userAgent?: string };
 
-/** A group of peers or subordinates is only shown on its own once at least this many have answered, so nobody can be identified. */
-export const ANON_MIN = 3;
-/** These are the people who can be identified whatever the group size (they are one person by definition). */
-const NAMED_TYPES = new Set(["SELF", "MANAGER"]);
+// The anonymity rule lives in imported-comments.ts so the comments copied from another system follow the same numbers.
+export { ANON_MIN };
 
 export interface AppraisalSettingsView {
   configured: boolean;

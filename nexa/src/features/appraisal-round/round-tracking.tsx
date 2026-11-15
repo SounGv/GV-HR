@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CircleCheck, Clock, ListChecks, PencilLine } from "lucide-react";
+import { CircleCheck, Clock, EyeOff, ListChecks, MessageSquareText, PencilLine } from "lucide-react";
 
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
@@ -11,6 +11,8 @@ import { Card } from "@/components/ui/card";
 import { rubricFor } from "@/features/appraisal-form/rating-labels";
 import { cn } from "@/lib/utils";
 import { useParticipantResult, useRoundMatrix } from "./hooks";
+import { ANON_MIN } from "./imported-comments";
+import type { RaterType } from "./rules";
 import { ASSIGNMENT_STATUS_LABEL, RATER_LABEL, RESULT_STATUS_LABEL, type AssignmentStatus } from "./types";
 
 const STATUS_ICON = { SUBMITTED: CircleCheck, IN_PROGRESS: PencilLine, PENDING: Clock } as const;
@@ -136,7 +138,34 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
           </>
         )}
       </Card>
-      {r.groups.length === 0 && <EmptyState icon={ListChecks} title="ยังไม่มีผู้ประเมิน" description="รอบนี้ยังไม่มีงานประเมินของคนนี้" />}
+      {r.importedComments && (
+        <Card className="gap-3 p-4" aria-label="ข้อความจากผู้ประเมิน">
+          <h2 className="flex flex-wrap items-center gap-x-2 text-base font-semibold">
+            <MessageSquareText className="size-5" aria-hidden="true" /> ข้อความจากผู้ประเมิน
+            <span className="text-sm font-normal text-muted-foreground">
+              {RATER_LABEL[r.importedComments.raterType as RaterType]} {r.importedComments.raters > 0 ? `${r.importedComments.raters} คน` : ""}
+            </span>
+          </h2>
+          <p className="text-sm text-muted-foreground">นำเข้าจาก Favpo ไม่ระบุว่าใครเขียน และไม่ได้อยู่ในคะแนนที่คำนวณ</p>
+          {r.importedComments.hidden ? (
+            <p className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm">
+              <EyeOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span>
+                มี {r.importedComments.hiddenCount} ข้อความ แต่ผู้ประเมินกลุ่มนี้มีไม่ถึง {ANON_MIN} คน จึงยังไม่แสดงเพื่อไม่ให้รู้ว่าใครเขียน HR ดูได้ทั้งหมด
+              </span>
+            </p>
+          ) : (
+            <ul className="space-y-1.5 text-sm">
+              {r.importedComments.texts.map((t, k) => (
+                <li key={k} className="rounded-lg border border-border px-3 py-2 break-words whitespace-pre-wrap">
+                  {t}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+      {r.groups.length === 0 && !r.importedComments && <EmptyState icon={ListChecks} title="ยังไม่มีผู้ประเมิน" description="รอบนี้ยังไม่มีงานประเมินของคนนี้" />}
       {r.groups.map((g) => (
         <Card key={g.raterType} className="gap-3 p-4">
           <h2 className="text-base font-semibold">

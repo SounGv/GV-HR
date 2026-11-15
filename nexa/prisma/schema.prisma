@@ -2704,6 +2704,9 @@ model AppraisalParticipant {
   originalScorePercent Float?
   originalGrade        String?
 
+  // Written comments copied from another system for a round that has no answer sheets (see imported-comments.ts). Not tied to who wrote them.
+  importedComments Json?
+
   assignments AppraisalAssignment[]
   adjustments AppraisalScoreAdjustment[]
 

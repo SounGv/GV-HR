@@ -19,6 +19,7 @@
     "db:reset": "node ./node_modules/prisma/build/index.js migrate reset",
     "test:recurrence": "node scripts/e2e-ai/build.mjs run-recurrence && node --env-file=.env.local .tmp-e2e/run-recurrence.cjs",
     "check:ui": "node scripts/check-ui-invariants.mjs",
+    "check:imported-comments": "node --experimental-strip-types scripts/check-imported-comments.mjs",
     "test:devplan": "node scripts/e2e-ai/build.mjs run-devplan && node --env-file=.env.local .tmp-e2e/run-devplan.cjs",
     "test:adjust": "node scripts/e2e-ai/build.mjs run-adjust && node --env-file=.env.local .tmp-e2e/run-adjust.cjs",
     "test:refresh": "node scripts/e2e-ai/build.mjs run-refresh && node --env-file=.env.local .tmp-e2e/run-refresh.cjs",

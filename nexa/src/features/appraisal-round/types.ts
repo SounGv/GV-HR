@@ -1,4 +1,5 @@
 import type { SnapQuestion } from "./answers";
+import type { CommentsView } from "./imported-comments";
 import type { RaterType } from "./rules";
 
 export type { RaterType, SnapQuestion };
@@ -231,6 +232,8 @@ export interface ParticipantResult {
     adjustedFrom: number | null;
     types: { raterType: RaterType; raters: number; percent: number; weightUsed: number }[];
   };
+  /** Comments copied from another system for a round with no answer sheets; null when there are none. Already filtered for this viewer. */
+  importedComments: CommentsView | null;
 }
 
 export interface DepartmentProgress {

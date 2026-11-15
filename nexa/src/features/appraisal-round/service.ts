@@ -29,6 +29,7 @@ import {
 import type { RoundUpdateInput } from "./schema";
 import { makeDueRecurringRounds } from "./recurrence-service";
 import { participantScope, viewableEmployeeIds } from "./viewer-scope";
+import { commentsFor, parseImportedComments, type CommentsView } from "./imported-comments";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -786,6 +787,8 @@ export interface ParticipantResult {
     adjustedFrom: number | null;
     types: { raterType: string; raters: number; percent: number; weightUsed: number }[];
   };
+  /** Comments copied from another system for a round with no answer sheets; null when there are none. Already filtered for this viewer. */
+  importedComments: CommentsView | null;
 }
 
 /**
@@ -813,6 +816,7 @@ export async function getParticipantResult(
       scoreBreakdown: true,
       adjustedAt: true,
       originalScorePercent: true,
+      importedComments: true,
       round: { select: { name: true, status: true, formSnapshot: true } },
       assignments: { select: { raterType: true, status: true, answers: true, submittedAt: true }, orderBy: { submittedAt: "asc" } },
     },
@@ -839,6 +843,7 @@ export async function getParticipantResult(
       adjustedFrom: p.adjustedAt && can(session.perms, "campaign:update") ? p.originalScorePercent : null,
       types: ((p.scoreBreakdown as unknown as { types?: { raterType: string; raters: number; percent: number; weightUsed: number }[] } | null)?.types ?? []),
     },
+    importedComments: commentsFor(parseImportedComments(p.importedComments), can(session.perms, "campaign:update")),
     groups: types.map((t) => {
       const mine = p.assignments.filter((a) => a.raterType === t);
       const done = mine.filter((a) => a.status === "SUBMITTED");
