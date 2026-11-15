@@ -37,6 +37,7 @@ import { useDepartments, useSaveOrgMoves } from "@/features/organization/hooks";
 import { buildCompanyTree } from "@/features/organization/org-tree";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { RaterPairsPanel } from "./rater-editor";
 import {
   appraisalRoundKeys,
   useCandidates,
@@ -1270,7 +1271,7 @@ function StepRaters({
           {overloaded.map((e) => (
             <li key={`o-${e.employeeId}`} className="flex gap-2">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" /> {e.name}{" "}
-              ต้องประเมิน {e.detail} คน มากเกินไป ลองแบ่งให้หัวหน้าทีมย่อย
+              ต้องประเมิน {e.detail} คน มากกว่าปกติ ถ้าตั้งใจไว้แล้วเปิดรอบได้เลย หรือลองแบ่งให้หัวหน้าทีมย่อย
             </li>
           ))}
           {noPeers.length > 0 && (
@@ -1287,6 +1288,8 @@ function StepRaters({
           )}
         </ul>
       )}
+
+      {typesSaved.length > 0 && m.rows.length > 0 && <RaterPairsPanel round={round} />}
 
       {draft.types.length > 0 && (
         <details

@@ -121,6 +121,105 @@ export function matchRaters(
   return { matches, exceptions };
 }
 
+/** What HR set by hand on top of the org-chart matching: pairs to add and pairs to take out. `participantId` is the person being rated. */
+export interface RaterPairOverrides {
+  add: Match[];
+  remove: Match[];
+}
+
+const pairKey = (m: Match) => `${m.participantId}|${m.raterId}|${m.raterType}`;
+
+/** A well-formed overrides object from whatever was stored (anything else means "nothing set by hand"). */
+export function readOverrides(raw: unknown): RaterPairOverrides {
+  const list = (v: unknown): Match[] =>
+    Array.isArray(v)
+      ? v.filter(
+          (x): x is Match =>
+            !!x &&
+            typeof x === "object" &&
+            typeof (x as Match).participantId === "string" &&
+            typeof (x as Match).raterId === "string" &&
+            RATER_TYPES.includes((x as Match).raterType),
+        )
+      : [];
+  const o = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return { add: list(o.add), remove: list(o.remove) };
+}
+
+/** The overrides after HR adds one pair: if it had been taken out it comes back, otherwise it is added once. */
+export function addPair(ov: RaterPairOverrides, m: Match): RaterPairOverrides {
+  const k = pairKey(m);
+  if (ov.remove.some((x) => pairKey(x) === k)) return { add: ov.add, remove: ov.remove.filter((x) => pairKey(x) !== k) };
+  if (ov.add.some((x) => pairKey(x) === k)) return ov;
+  return { add: [...ov.add, m], remove: ov.remove };
+}
+
+/** The overrides after HR removes one rater: a hand-set one is simply dropped, an automatic one is recorded as taken out. */
+export function removePair(ov: RaterPairOverrides, m: Match): RaterPairOverrides {
+  const k = pairKey(m);
+  if (ov.add.some((x) => pairKey(x) === k)) return { add: ov.add.filter((x) => pairKey(x) !== k), remove: ov.remove };
+  if (ov.remove.some((x) => pairKey(x) === k)) return ov;
+  return { add: ov.add, remove: [...ov.remove, m] };
+}
+
+export interface OverrideContext {
+  participantIds: readonly string[];
+  roster: readonly RosterPerson[];
+  types: readonly RaterType[];
+}
+
+/**
+ * Puts HR's hand-set pairs on top of the automatic matching. Removing wins over the automatic list; adding is ignored
+ * (and counted) when it cannot apply: the person is not in the round, the rater is not an active employee, the type is
+ * not one the round uses, someone rates themself under a type other than SELF, or SELF is set for another person.
+ * The exceptions are worked out again from the final list, so a person HR gave a rater to is no longer "without a rater".
+ */
+export function applyRaterOverrides(
+  auto: MatchResult,
+  overrides: RaterPairOverrides | null | undefined,
+  ctx: OverrideContext,
+): MatchResult & { ignored: number } {
+  const removeKeys = new Set((overrides?.remove ?? []).map(pairKey));
+  const people = new Map(ctx.roster.map((p) => [p.id, p]));
+  const inRound = new Set(ctx.participantIds);
+  const matches = auto.matches.filter((m) => !removeKeys.has(pairKey(m)));
+  const seen = new Set(matches.map(pairKey));
+  let ignored = 0;
+  for (const m of overrides?.add ?? []) {
+    const rater = people.get(m.raterId);
+    const valid =
+      inRound.has(m.participantId) &&
+      !!rater?.active &&
+      ctx.types.includes(m.raterType) &&
+      (m.raterType === "SELF" ? m.raterId === m.participantId : m.raterId !== m.participantId);
+    if (!valid) {
+      ignored++;
+      continue;
+    }
+    if (removeKeys.has(pairKey(m)) || seen.has(pairKey(m))) continue;
+    seen.add(pairKey(m));
+    matches.push(m);
+  }
+
+  const exceptions: MatchException[] = [];
+  const byPerson = new Map<string, Match[]>();
+  for (const m of matches) {
+    const list = byPerson.get(m.participantId);
+    if (list) list.push(m);
+    else byPerson.set(m.participantId, [m]);
+  }
+  for (const pid of ctx.participantIds) {
+    const mine = byPerson.get(pid) ?? [];
+    if (ctx.types.includes("MANAGER") && !mine.some((m) => m.raterType === "MANAGER")) exceptions.push({ kind: "NO_MANAGER", employeeId: pid });
+    if (ctx.types.includes("PEER") && !mine.some((m) => m.raterType === "PEER")) exceptions.push({ kind: "NO_PEERS", employeeId: pid });
+    if (mine.length === 0) exceptions.push({ kind: "NO_RATER", employeeId: pid });
+  }
+  const load = new Map<string, number>();
+  for (const m of matches) if (m.raterId !== m.participantId) load.set(m.raterId, (load.get(m.raterId) ?? 0) + 1);
+  for (const [raterId, n] of load) if (n > MAX_LOAD) exceptions.push({ kind: "OVERLOADED", employeeId: raterId, detail: n });
+  return { matches, exceptions, ignored };
+}
+
 /** Selected perspectives must total 100. Returns the total and whether it is valid. */
 export function perspectiveTotal(types: readonly RaterType[], weights: Partial<Record<RaterType, number>>) {
   const total = types.reduce((sum, t) => sum + (weights[t] ?? 0), 0);

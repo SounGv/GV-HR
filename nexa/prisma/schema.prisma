@@ -2597,6 +2597,8 @@ model AppraisalRound {
   raterTypes AppraisalRaterType[] @default([])
   // Weight of each perspective, e.g. { "MANAGER": 70, "SELF": 30 }. Placeholder until HR confirms.
   perspectiveWeights Json?
+  // Rater pairs HR set by hand on top of the org-chart matching: { add: [{participantId, raterId, raterType}], remove: [...] } (employee ids).
+  raterPairs         Json?
 
   startDate DateTime? @db.Date
   endDate   DateTime? @db.Date

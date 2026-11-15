@@ -66,6 +66,10 @@ export interface MatchRow {
   managerName: string | null;
   managerGender: string | null;
   managerAvatarUrl?: string | null;
+  /** How many MANAGER-type raters (more than one when HR added raters by hand). */
+  managers: number;
+  /** Every rater of this person after the org chart and the hand-set pairs are put together. */
+  raters: { id: string; name: string; type: RaterType; manual: boolean }[];
   self: boolean;
   peers: number;
   subs: number;
@@ -88,6 +92,11 @@ export interface RoundDetail {
   formsUsed: { id: string; name: string }[];
   raterTypes: RaterType[];
   perspectiveWeights: Partial<Record<RaterType, number>>;
+  /** Pairs HR set by hand on top of the org-chart matching (employee ids). */
+  overrides: {
+    add: { participantId: string; raterId: string; raterType: RaterType }[];
+    remove: { participantId: string; raterId: string; raterType: RaterType }[];
+  };
   startIso: string | null;
   endIso: string | null;
   remind: boolean;
@@ -101,6 +110,7 @@ export interface RoundDetail {
     exceptions: { kind: "NO_MANAGER" | "NO_PEERS" | "NO_RATER" | "OVERLOADED"; employeeId: string; name: string; detail: number | null }[];
     /** Different people who will get an invitation. */
     raterCount: number;
+    manual: { added: number; removed: number; ignored: number };
     rows: MatchRow[];
   };
   invitations: {
@@ -173,6 +183,8 @@ export interface RoundSavePayload {
   remind?: boolean;
   notifyLine?: boolean;
   participantIds?: string[];
+  /** Rater pairs set by hand on top of the org-chart matching; null clears them. */
+  raterPairs?: { add: { participantId: string; raterId: string; raterType: RaterType }[]; remove: { participantId: string; raterId: string; raterType: RaterType }[] } | null;
 }
 
 export interface MatrixRow {

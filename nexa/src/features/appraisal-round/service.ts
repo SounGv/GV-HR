@@ -1,7 +1,7 @@
 import { displayName } from "@/lib/format";
 import { avatarPaths } from "@/lib/avatar-server";
 import { requireEmployeeId } from "@/lib/auth/employee";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, NotFound } from "@/lib/api/errors";
@@ -14,12 +14,15 @@ import { loadProbationDue } from "@/features/dashboard-people/service";
 import { formsInUse, pickForm, type RoundSnapshot } from "./form-snapshot";
 import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions, type Answer, type QuestionSummary, type SnapQuestion } from "./answers";
 import {
+  applyRaterOverrides,
   matchRaters,
   planInvitations,
+  readOverrides,
   roundChecks,
   sendMode,
   shouldRemind,
   type Match,
+  type RaterPairOverrides,
   type RaterType,
   type RosterPerson,
 } from "./rules";
@@ -147,6 +150,21 @@ async function loadDraft(companyId: string, id: string) {
   return round;
 }
 
+/** Keeps only pairs between real people of this company, once each; nothing left means "nothing set by hand" (null). */
+async function cleanPairs(companyId: string, raw: unknown): Promise<RaterPairOverrides | null> {
+  const ov = readOverrides(raw);
+  const ids = [...new Set([...ov.add, ...ov.remove].flatMap((m) => [m.participantId, m.raterId]))];
+  if (ids.length === 0) return null;
+  const found = new Set(
+    (await prisma.employee.findMany({ where: { id: { in: ids }, companyId, deletedAt: null }, select: { id: true } })).map((e) => e.id),
+  );
+  const tidy = (list: Match[]) => [
+    ...new Map(list.filter((m) => found.has(m.participantId) && found.has(m.raterId)).map((m) => [`${m.participantId}|${m.raterId}|${m.raterType}`, m])).values(),
+  ];
+  const out = { add: tidy(ov.add), remove: tidy(ov.remove) };
+  return out.add.length || out.remove.length ? out : null;
+}
+
 export async function updateRound(companyId: string, session: AccessClaims, id: string, input: RoundUpdateInput, meta?: Meta) {
   const round = await loadDraft(companyId, id);
   if (round.status !== "DRAFT") throw BadRequest("รอบนี้เปิดแล้ว แก้ไขไม่ได้");
@@ -215,7 +233,37 @@ export async function updateRound(companyId: string, session: AccessClaims, id: 
     }
   }
 
-  await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_round.update", entity: "AppraisalRound", entityId: id, ...meta });
+  let pairsAfter: { add: number; remove: number } | undefined;
+  if (input.raterPairs !== undefined) {
+    const clean = await cleanPairs(companyId, input.raterPairs);
+    await prisma.appraisalRound.update({ where: { id }, data: { raterPairs: clean ? (clean as unknown as Prisma.InputJsonValue) : Prisma.DbNull } });
+    pairsAfter = { add: clean?.add.length ?? 0, remove: clean?.remove.length ?? 0 };
+  } else if (input.participantIds) {
+    // People taken out of the round take their hand-set pairs with them, so nothing invisible is left behind.
+    const row = await prisma.appraisalRound.findUnique({ where: { id }, select: { raterPairs: true } });
+    const cur = readOverrides(row?.raterPairs);
+    if (cur.add.length || cur.remove.length) {
+      const stay = new Set((await prisma.appraisalParticipant.findMany({ where: { roundId: id }, select: { employeeId: true } })).map((p) => p.employeeId));
+      const next = { add: cur.add.filter((m) => stay.has(m.participantId)), remove: cur.remove.filter((m) => stay.has(m.participantId)) };
+      if (next.add.length !== cur.add.length || next.remove.length !== cur.remove.length) {
+        await prisma.appraisalRound.update({
+          where: { id },
+          data: { raterPairs: next.add.length || next.remove.length ? (next as unknown as Prisma.InputJsonValue) : Prisma.DbNull },
+        });
+        pairsAfter = { add: next.add.length, remove: next.remove.length };
+      }
+    }
+  }
+
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "appraisal_round.update",
+    entity: "AppraisalRound",
+    entityId: id,
+    ...(pairsAfter ? { after: { raterPairs: pairsAfter } } : {}),
+    ...meta,
+  });
   return { id };
 }
 
@@ -249,6 +297,7 @@ export async function getRound(companyId: string, id: string) {
       form: { select: { name: true, version: true, status: true } },
       raterTypes: true,
       perspectiveWeights: true,
+      raterPairs: true,
       startDate: true,
       endDate: true,
       remind: true,
@@ -274,7 +323,10 @@ export async function getRound(companyId: string, id: string) {
   const weights = asWeights(round.perspectiveWeights);
 
   const people: RosterPerson[] = roster.map((e) => ({ id: e.id, managerId: e.managerId, active: e.status === "ACTIVE" }));
-  const match = matchRaters(participantIds, people, types);
+  // The org chart decides first; what HR set by hand is put on top (see applyRaterOverrides).
+  const overrides = readOverrides(round.raterPairs);
+  const match = applyRaterOverrides(matchRaters(participantIds, people, types), overrides, { participantIds, roster: people, types });
+  const manualKeys = new Set(overrides.add.map((m) => `${m.participantId}|${m.raterId}|${m.raterType}`));
   const withoutRater = match.exceptions.filter((e) => e.kind === "NO_RATER").length;
 
   const reachable = new Set(roster.filter((e) => e.userId).map((e) => e.id));
@@ -299,13 +351,19 @@ export async function getRound(companyId: string, id: string) {
 
   // One row per person for the wizard's "who rates whom" table.
   const rosterById = new Map(roster.map((e) => [e.id, e]));
-  const perPerson = new Map<string, { managerId: string | null; self: boolean; peers: number; subs: number }>();
-  for (const pid of participantIds) perPerson.set(pid, { managerId: null, self: false, peers: 0, subs: 0 });
+  const perPerson = new Map<
+    string,
+    { managerId: string | null; managers: number; self: boolean; peers: number; subs: number; raters: { id: string; name: string; type: RaterType; manual: boolean }[] }
+  >();
+  for (const pid of participantIds) perPerson.set(pid, { managerId: null, managers: 0, self: false, peers: 0, subs: 0, raters: [] });
   for (const m of match.matches) {
     const row = perPerson.get(m.participantId);
     if (!row) continue;
-    if (m.raterType === "MANAGER") row.managerId = m.raterId;
-    else if (m.raterType === "SELF") row.self = true;
+    row.raters.push({ id: m.raterId, name: nameOf.get(m.raterId) ?? "-", type: m.raterType, manual: manualKeys.has(`${m.participantId}|${m.raterId}|${m.raterType}`) });
+    if (m.raterType === "MANAGER") {
+      row.managerId ??= m.raterId;
+      row.managers++;
+    } else if (m.raterType === "SELF") row.self = true;
     else if (m.raterType === "PEER") row.peers++;
     else row.subs++;
   }
@@ -323,6 +381,8 @@ export async function getRound(companyId: string, id: string) {
       managerName: r.managerId ? (nameOf.get(r.managerId) ?? "-") : null,
       managerGender: r.managerId ? (rosterById.get(r.managerId)?.gender ?? null) : null,
       managerAvatarUrl: r.managerId ? (photos.get(r.managerId) ?? null) : null,
+      managers: r.managers,
+      raters: r.raters,
       self: r.self,
       peers: r.peers,
       subs: r.subs,
@@ -341,6 +401,7 @@ export async function getRound(companyId: string, id: string) {
     formsUsed: usedForms.map((f) => ({ id: f.id, name: `${f.name} เวอร์ชัน ${f.version}` })),
     raterTypes: types,
     perspectiveWeights: weights,
+    overrides,
     startIso,
     endIso,
     remind: round.remind,
@@ -353,6 +414,8 @@ export async function getRound(companyId: string, id: string) {
       byType: Object.fromEntries(byType),
       exceptions: match.exceptions.map((e) => ({ kind: e.kind, employeeId: e.employeeId, name: nameOf.get(e.employeeId) ?? "-", detail: e.detail ?? null })),
       raterCount: plan.lines.length,
+      /** Pairs HR set by hand: how many were added, taken out, and how many could not apply (left the company, type no longer used). */
+      manual: { added: overrides.add.length, removed: overrides.remove.length, ignored: match.ignored },
       rows,
     },
     invitations: {
@@ -442,7 +505,11 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
 
   const roster = await loadRoster(companyId);
   const people: RosterPerson[] = roster.map((e) => ({ id: e.id, managerId: e.managerId, active: e.status === "ACTIVE" }));
-  const { matches } = matchRaters(detail.participantIds, people, detail.raterTypes);
+  const { matches } = applyRaterOverrides(matchRaters(detail.participantIds, people, detail.raterTypes), detail.overrides, {
+    participantIds: detail.participantIds,
+    roster: people,
+    types: detail.raterTypes,
+  });
 
   const participants = await prisma.appraisalParticipant.findMany({ where: { roundId: id }, select: { id: true, employeeId: true } });
   const pidByEmployee = new Map(participants.map((p) => [p.employeeId, p.id]));
@@ -555,6 +622,7 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
       name: true,
       raterTypes: true,
       perspectiveWeights: true,
+      raterPairs: true,
       remind: true,
       notifyLine: true,
       form: { select: { id: true, lineageId: true, status: true } },
@@ -600,6 +668,7 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
       formId: published.id,
       raterTypes: src.raterTypes,
       perspectiveWeights: (src.perspectiveWeights ?? undefined) as Prisma.InputJsonValue | undefined,
+      raterPairs: (src.raterPairs ?? undefined) as Prisma.InputJsonValue | undefined,
       remind: src.remind,
       notifyLine: src.notifyLine,
       createdById: session.sub,
