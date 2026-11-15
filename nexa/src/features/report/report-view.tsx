@@ -4,7 +4,7 @@ import { displayName } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Download, FileSpreadsheet, Printer, TriangleAlert } from "lucide-react";
+import { BarChart3, Download, FileSpreadsheet, ListFilter, Printer, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -39,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageActions } from "@/components/layout/page-chrome";
 import { MultiSelectField, type MultiSelectOption } from "@/components/shared/multi-select-field";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
@@ -234,6 +235,8 @@ function ReportSection({
   onOpenPhoto: (photo: PhotoPreview) => void;
 }) {
   const [showExtraColumns, setShowExtraColumns] = useState(false);
+  // Charts start hidden so the table is the first thing on screen; the button shows them.
+  const [showChart, setShowChart] = useState(false);
   const isMobile = useIsMobile();
   // Leave report only: whose year to show in the side panel.
   const [leaveTarget, setLeaveTarget] = useState<LeaveSheetTarget | null>(null);
@@ -282,6 +285,7 @@ function ReportSection({
   // Daily attendance report: a focused default set of columns (extras behind a
   // toggle). Every other report shows its columns as the service sent them.
   const isDaily = type === "attendance_daily";
+  const hasChart = !!result && ((result.summary?.length ?? 0) > 0 || (result.secondarySummary?.length ?? 0) > 0);
   const displayColumns: DisplayColumn[] = result
     ? isDaily
       ? buildDailyColumns(result.columns, showExtraColumns)
@@ -302,6 +306,11 @@ function ReportSection({
               onClick={() => setShowExtraColumns((v) => !v)}
             >
               {showExtraColumns ? "ซ่อนคอลัมน์เพิ่ม" : `แสดงคอลัมน์เพิ่ม (${DAILY_EXTRA_COUNT})`}
+            </Button>
+          )}
+          {hasChart && (
+            <Button variant="outline" size="sm" className="h-11 md:h-8" aria-pressed={showChart} onClick={() => setShowChart((v) => !v)}>
+              <BarChart3 className="size-4" aria-hidden="true" /> {showChart ? "ซ่อนกราฟ" : "แสดงกราฟ"}
             </Button>
           )}
           {canExport && (
@@ -337,10 +346,10 @@ function ReportSection({
         </div>
       )}
 
-      {result && result.summary && result.summary.length > 0 && (
+      {showChart && result && result.summary && result.summary.length > 0 && (
         <ReportSummaryChart data={result.summary} label={result.summaryLabel} unit={result.summaryUnit} />
       )}
-      {result && result.secondarySummary && result.secondarySummary.length > 0 && (
+      {showChart && result && result.secondarySummary && result.secondarySummary.length > 0 && (
         <ReportSummaryChart
           data={result.secondarySummary}
           label={result.secondarySummaryLabel}
@@ -558,6 +567,21 @@ export function ReportView() {
   const [branchIds, setBranchIds] = useState<string[]>([]);
   const [costCenterIds, setCostCenterIds] = useState<string[]>([]);
   const [photoPreview, setPhotoPreview] = useState<PhotoPreview | null>(null);
+  // The five narrowing filters live behind one button; the panel opens by itself when a link arrives with one already set.
+  const activeFilterCount =
+    (departmentIds.length ? 1 : 0) +
+    (employmentType !== ALL_TYPE ? 1 : 0) +
+    (employeeIds.length ? 1 : 0) +
+    (branchIds.length ? 1 : 0) +
+    (costCenterIds.length ? 1 : 0);
+  const [filtersOpen, setFiltersOpen] = useState(() => !!initialEmployeeId);
+  function clearFilters() {
+    setDepartmentIds([]);
+    setEmploymentType(ALL_TYPE);
+    setEmployeeIds([]);
+    setBranchIds([]);
+    setCostCenterIds([]);
+  }
 
   // Every selected report type shares one period control — if they disagree
   // on "month" vs "year" vs "none" this just goes with the first type's kind,
@@ -646,8 +670,21 @@ export function ReportView() {
   const costCenterOptions: MultiSelectOption[] = costCenters.map((c) => ({ value: c.id, label: c.name }));
   const reportTypeOptions: MultiSelectOption[] = visibleReportTypes.map((t) => ({ value: t, label: REPORT_LABELS[t] }));
 
+  const reportButtons = (
+    <>
+      {canExport && types.length > 1 && (
+        <Button variant="outline" onClick={exportAllExcel} disabled={!anyResult}>
+          <Download className="size-4" /> ส่งออกทั้งหมด (Excel)
+        </Button>
+      )}
+      <Button variant="outline" onClick={() => window.print()} disabled={!anyResult}>
+        <Printer className="size-4" /> พิมพ์
+      </Button>
+    </>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-2">
           <MultiSelectField
@@ -690,18 +727,27 @@ export function ReportView() {
         </div>
 
         <div className="flex items-center gap-2 print:hidden">
-          {canExport && types.length > 1 && (
-            <Button variant="outline" onClick={exportAllExcel} disabled={!anyResult}>
-              <Download className="size-4" /> ส่งออกทั้งหมด (Excel)
+          <Button
+            variant="outline"
+            aria-expanded={filtersOpen}
+            aria-controls="report-filters"
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
+            <ListFilter className="size-4" aria-hidden="true" />
+            {activeFilterCount > 0 ? `ตัวกรอง (${activeFilterCount})` : "ตัวกรอง"}
+          </Button>
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" onClick={clearFilters}>
+              ล้างตัวกรอง
             </Button>
           )}
-          <Button variant="outline" onClick={() => window.print()} disabled={!anyResult}>
-            <Printer className="size-4" /> พิมพ์
-          </Button>
+          {/* On a computer these two go up into the band beside the tabs; phones keep them here. */}
+          <div className="flex items-center gap-2 md:hidden">{reportButtons}</div>
+          <PageActions>{reportButtons}</PageActions>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div id="report-filters" hidden={!filtersOpen} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-3 print:hidden">
         <MultiSelectField label="แผนก" placeholder="ทุกแผนก" options={departmentOptions} selected={departmentIds} onChange={setDepartmentIds} />
         <div className="space-y-1">
           <label className="text-sm text-muted-foreground">ประเภทการจ้าง</label>

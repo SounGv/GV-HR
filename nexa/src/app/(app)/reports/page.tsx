@@ -21,13 +21,8 @@ export default async function ReportsPage({ searchParams }: Props) {
   const title = REPORT_LABELS[resolveView(view)];
 
   return (
-    <div className="space-y-6">
-      <PageHeaderBar
-        breadcrumbs={[{ label: "รายงานและสื่อสาร" }, { label: title }]}
-        title={title}
-        description="สรุปข้อมูลจากทุกโมดูล พร้อมส่งออกเป็น CSV"
-        sticky={false}
-      />
+    <div className="space-y-4">
+      <PageHeaderBar title={title} />
       <ReportView />
     </div>
   );

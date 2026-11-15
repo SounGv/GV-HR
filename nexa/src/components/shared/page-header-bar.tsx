@@ -1,15 +1,11 @@
-import { Fragment } from "react";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { StickyBar } from "./sticky-bar";
+import { PageChromePublisher, type Crumb } from "@/components/layout/page-chrome";
 
-export type Crumb = { label: string; href?: string };
+export type { Crumb };
 
 /**
- * Sticky enterprise page header: breadcrumb · back · title · status · actions.
- * Pins directly under the 64px topbar. Full-bleed via negative margins that
- * cancel the `main` padding (p-4 / md:p-6). Use on detail/create/edit pages.
+ * A detail or report page's path, title, status and main buttons. On a computer they are drawn in the band at the top of
+ * the screen (components/layout/section-band.tsx), not in a bar of their own, so only one header ever sticks. The
+ * description is no longer shown. The title is kept for printing, which the band is not part of.
  */
 export function PageHeaderBar({
   breadcrumbs,
@@ -17,72 +13,25 @@ export function PageHeaderBar({
   description,
   status,
   actions,
-  sticky = true,
-  className,
 }: {
   breadcrumbs?: Crumb[];
-  /** No longer drawn: on desktop the top bar's ย้อนกลับ is the back control. Kept so callers compile. */
+  /** Kept so existing callers compile; the band has the back button. */
   backHref?: string;
   title: React.ReactNode;
   description?: React.ReactNode;
   status?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Kept so existing callers compile; there is one sticky band for every page now. */
   sticky?: boolean;
   className?: string;
 }) {
   return (
-    <StickyBar
-      publish={sticky}
-      className={cn(
-        // Opaque bg-background, not the old bg-background/80 + backdrop-blur-xl:
-        // this bar sticks right at the sidebar's left edge (md:top-16, same
-        // corner as the topbar above it), and that blur showed up as a torn
-        // seam artifact while scrolling — see app-topbar.tsx for the same fix.
-        "-mx-4 hidden border-b border-border/70 bg-background px-4 py-3 md:-mx-6 md:block md:px-6",
-        // Forces this sticky bar onto its own GPU compositing layer — without
-        // it, fast scrolling can leave Chromium's stale paint of whatever was
-        // behind the bar showing through/around it for a frame or two (a
-        // repaint-during-fast-scroll bug on `position: sticky`, reported live
-        // on both this bar and the sidebar's own scroll area).
-        sticky && "md:sticky md:top-16 md:z-20 md:[will-change:transform]",
-        className,
-      )}
-    >
-      {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav
-          aria-label="เส้นทางนำทาง"
-          className="mb-1.5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground"
-        >
-          {breadcrumbs.map((c, i) => (
-            <Fragment key={`${c.label}-${i}`}>
-              {i > 0 && <ChevronRight className="size-3 shrink-0 opacity-60" aria-hidden />}
-              {c.href ? (
-                <Link href={c.href} className="transition hover:text-foreground">
-                  {c.label}
-                </Link>
-              ) : (
-                <span className="text-foreground">{c.label}</span>
-              )}
-            </Fragment>
-          ))}
-        </nav>
-      )}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="min-w-0 space-y-0.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-heading truncate text-xl leading-snug font-bold text-foreground">
-                {title}
-              </h1>
-              {status}
-            </div>
-            {description && (
-              <p className="truncate text-sm text-muted-foreground">{description}</p>
-            )}
-          </div>
-        </div>
-        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
-      </div>
-    </StickyBar>
+    <PageChromePublisher
+      title={title}
+      description={typeof description === "string" ? description : undefined}
+      crumbs={breadcrumbs}
+      status={status}
+      actions={actions}
+    />
   );
 }

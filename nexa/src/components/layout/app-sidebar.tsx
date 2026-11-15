@@ -18,14 +18,11 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NAV_GROUPS, type NavItem } from "@/config/navigation";
+import { bestMatchHref } from "@/config/section-tabs";
+import { useNavBadges } from "./use-nav-badges";
 import { useAuth } from "@/features/auth/auth-context";
 import { useAiAccess } from "@/features/ai/hooks";
 import { useAiPanel } from "@/features/ai/ai-panel-context";
-import { useLeave } from "@/features/leave/hooks";
-import { useOvertime } from "@/features/overtime/hooks";
-import { useAttendanceCorrections } from "@/features/attendance-correction/hooks";
-import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
-import { useNotifications } from "@/features/notification/hooks";
 import { ApiError } from "@/lib/api/client";
 import { useMenuPrefs } from "@/features/menu-prefs/hooks";
 import { SidebarEditor } from "@/features/menu-prefs/sidebar-editor";
@@ -38,7 +35,7 @@ import { VBot } from "@/components/shared/v-bot";
 export function AppSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { can, canAny, logout } = useAuth();
+  const { can, logout } = useAuth();
   const { data: aiAccess } = useAiAccess();
   const { toggle: toggleAiPanel, open: aiPanelOpen } = useAiPanel();
 
@@ -48,30 +45,8 @@ export function AppSidebar() {
   const canSee = (permission: string) =>
     can(permission) || (permission === "ai:read" && !!aiAccess?.data.allowed);
 
-  // Live sidebar badges — same data sources already powering the mobile
-  // bottom nav's badges, just surfaced here too (a first for desktop).
-  const canApproveLeave = canAny(["leave:approve", "leave:manage"]);
-  const canApproveOt = canAny(["overtime:approve", "overtime:manage"]);
-  const leavePendingQ = useLeave("team", "PENDING", { enabled: canApproveLeave });
-  const otPendingQ = useOvertime("team", "PENDING", { enabled: canApproveOt });
-  const canApproveCorrection = canAny(["attendance:approve", "attendance:manage"]);
-  const correctionPendingQ = useAttendanceCorrections("team", "PENDING", { enabled: canApproveCorrection });
-  const pendingApprovals =
-    (leavePendingQ.data?.data.length ?? 0) +
-    (otPendingQ.data?.data.length ?? 0) +
-    (correctionPendingQ.data?.data.length ?? 0);
-
-  const pendingReviews = useMyPendingAppraisalTasks().items.length;
-
-  const notificationsQ = useNotifications();
-  const unreadNotifications = notificationsQ.data?.data.unread ?? 0;
-
-  const badgeValue = (key: NavItem["badgeKey"]): number => {
-    if (key === "pendingApprovals") return pendingApprovals;
-    if (key === "pendingReviews") return pendingReviews;
-    if (key === "unreadNotifications") return unreadNotifications;
-    return 0;
-  };
+  // Live counts beside menu entries (shared with the tab row on every page).
+  const badgeValue = useNavBadges();
 
   // Two sibling nav items can share a URL prefix without one being a detail
   // page of the other — e.g. "/attendance" (เข้างาน/ออกงาน) and
@@ -87,19 +62,11 @@ export function AppSidebar() {
   // point per query key that's present with an equal value in the current
   // URL — a href whose query doesn't match the current one is excluded
   // outright, so "/reports" bare only wins when no "view" is selected at all.
-  const allHrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
-  const bestMatch = allHrefs
-    .map((href) => {
-      const url = new URL(href, "http://x");
-      const path = url.pathname;
-      const query = [...url.searchParams.entries()];
-      const pathMatches = pathname === path || pathname.startsWith(`${path}/`);
-      const queryMatches = query.every(([key, value]) => searchParams.get(key) === value);
-      if (!pathMatches || !queryMatches) return null;
-      return { href, score: path.length * 10 + query.length };
-    })
-    .filter((m): m is { href: string; score: number } => m !== null)
-    .sort((a, b) => b.score - a.score)[0]?.href;
+  const bestMatch = bestMatchHref(
+    pathname,
+    searchParams,
+    NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href)),
+  );
   const isActive = (href: string) => href === bestMatch;
   const groupHasActive = (labels: { href: string }[]) => labels.some((i) => isActive(i.href));
 

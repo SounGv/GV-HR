@@ -1,36 +1,20 @@
-import { cn } from "@/lib/utils";
-import { StickyBar } from "./sticky-bar";
+import { PageChromePublisher } from "@/components/layout/page-chrome";
 
-/** Consistent page title block with optional description + right-aligned actions. */
+/**
+ * A page's title and main buttons. On a computer they are not drawn here: they go up into the band at the top of the
+ * screen (components/layout/section-band.tsx), next to the group's tabs, so the page starts with its work. The
+ * description is no longer shown (it repeated the menu name); phones have their own header.
+ */
 export function PageHeader({
   title,
   description,
   actions,
-  className,
 }: {
   title: string;
   description?: string;
   actions?: React.ReactNode;
+  /** Kept so existing callers compile; the header takes no space in the page any more. */
   className?: string;
 }) {
-  return (
-    <StickyBar
-      className={cn(
-        "hidden flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:flex",
-        // Pinned under the top bar. Padding is fixed (not added only when stuck) so the
-        // bar never changes height mid-scroll; the -mx cancel main's md:p-6.
-        "md:sticky md:top-16 md:z-20 md:-mx-6 md:border-b md:border-transparent md:px-6 md:py-1.5 md:[will-change:transform]",
-        "md:data-[stuck]:border-border/70 md:data-[stuck]:bg-background",
-        className,
-      )}
-    >
-      <div className="space-y-0.5">
-        <h1 className="font-heading text-[22px] leading-snug font-bold text-foreground">
-          {title}
-        </h1>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
-      </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
-    </StickyBar>
-  );
+  return <PageChromePublisher title={title} description={description} actions={actions} />;
 }

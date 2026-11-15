@@ -8,6 +8,7 @@ import { Plus, Download, Loader2, Search, ChevronLeft, ChevronRight } from "luci
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/shared/data-table";
+import { PageActions } from "@/components/layout/page-chrome";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -65,7 +66,15 @@ async function fetchAllEmployees(query: EmployeeQuery): Promise<EmployeeListItem
 const PAGE_SIZE = 20;
 const ALL = "ALL";
 
-export function EmployeeTable() {
+export interface EmployeeSummary {
+  headcount: number;
+  active: number;
+  onLeave: number;
+  newThisMonth: number;
+}
+
+/** @param summary Headline numbers, shown as one line in the filter row on a computer (phones have their own line above). */
+export function EmployeeTable({ summary }: { summary?: EmployeeSummary } = {}) {
   const router = useRouter();
   // Render only the layout that fits, so avatars are not loaded twice.
   const isMobile = useIsMobile();
@@ -246,13 +255,31 @@ export function EmployeeTable() {
       </Button>
     ) : null;
 
+  // On a computer the two buttons sit in the band at the top of the screen, beside the group's tabs.
   const filters = (
     <>
       {departmentFilter()}
       {statusSelect("min-w-[160px] w-auto max-w-[320px]")}
       {employmentSelect("min-w-[160px] w-auto max-w-[320px]")}
-      {exportButton()}
-      {addButton()}
+      {summary && (
+        <dl className="ml-2 hidden items-baseline gap-4 text-sm whitespace-nowrap text-muted-foreground lg:flex">
+          {[
+            ["ทั้งหมด", summary.headcount],
+            ["ปฏิบัติงาน", summary.active],
+            ["ลางาน", summary.onLeave],
+            ["เข้าใหม่เดือนนี้", summary.newThisMonth],
+          ].map(([label, value]) => (
+            <div key={label} className="flex items-baseline gap-1">
+              <dt>{label}</dt>
+              <dd className="font-semibold text-foreground tabular-nums">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <PageActions>
+        {exportButton()}
+        {addButton()}
+      </PageActions>
     </>
   );
 
