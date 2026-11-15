@@ -237,7 +237,7 @@ const ATTENTION: { status: TodayStatus; empty: string }[] = [
 export function personLine(p: TodayPerson, status: TodayStatus): string {
   if (status === "LATE") return `เข้า ${p.clockIn} น. · สาย ${p.lateMinutes ?? 0} นาที`;
   if (status === "ABSENT") return `ยังไม่สแกน · กะเริ่ม ${p.shiftStart} น.`;
-  return "ลางานทั้งวัน";
+  return p.leaveType ? `${p.leaveType}ทั้งวัน` : "ลางานทั้งวัน";
 }
 
 /** D. Three short lists (absent, late, leave) with up to five people each. */

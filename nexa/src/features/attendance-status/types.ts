@@ -19,6 +19,8 @@ export interface TodayPerson {
   lateMinutes: number | null;
   /** Work mode label (office / WFH / outside) when scanned. */
   workMode: string | null;
+  /** Leave type(s) such as "ลาป่วย" when the person is on leave today, else null. */
+  leaveType: string | null;
 }
 
 export interface TodayAttendance {

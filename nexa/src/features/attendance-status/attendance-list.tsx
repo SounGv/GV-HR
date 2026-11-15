@@ -56,7 +56,7 @@ function detailOf(p: TodayPerson): string {
     case "NOT_YET":
       return `กะเริ่ม ${p.shiftStart} น.`;
     default:
-      return "ลางานทั้งวัน";
+      return p.leaveType ? `${p.leaveType}ทั้งวัน` : "ลางานทั้งวัน";
   }
 }
 

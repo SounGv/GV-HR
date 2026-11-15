@@ -135,9 +135,17 @@ export async function loadTodayAttendance(
       endDate: { gte: today },
       employee: scope,
     },
-    select: { employeeId: true },
+    select: { employeeId: true, type: true },
   });
   const onLeave = new Set(leaves.map((l) => l.employeeId));
+  // Leave type shown beside the name; a person with two overlapping requests shows each type once.
+  const leaveTypeByEmployee = new Map<string, string[]>();
+  for (const l of leaves) {
+    const label = LEAVE_TYPE_LABEL[l.type] ?? l.type;
+    const list = leaveTypeByEmployee.get(l.employeeId) ?? [];
+    if (!list.includes(label)) list.push(label);
+    leaveTypeByEmployee.set(l.employeeId, list);
+  }
   const shiftMap = await resolveShiftMinutesBatch(companyId, today, tomorrow);
 
   // Photos: one light lookup (length + tail of each stored photo), never the photos themselves.
@@ -167,6 +175,7 @@ export async function loadTodayAttendance(
       shiftStart: hhmm(shift.startMin),
       lateMinutes: status === "LATE" && clockInMin != null ? clockInMin - shift.startMin : null,
       workMode: rec?.clockInAt ? (WORK_MODE_LABEL[rec.workMode] ?? null) : null,
+      leaveType: status === "ON_LEAVE" ? (leaveTypeByEmployee.get(e.id)?.join(" / ") ?? null) : null,
     };
   });
 
