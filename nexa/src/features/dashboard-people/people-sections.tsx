@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarClock, UserCheck } from "lucide-react";
 import { FollowRow, FollowRowFailed } from "@/features/dashboard/follow-up";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 
 import { STATUS_META } from "@/features/attendance-status/status-meta";
 import { ProbationRoundButton } from "@/features/appraisal-round/probation-round-button";
@@ -39,9 +40,12 @@ function LeaveGroup({ title, people, empty }: { title: string; people: LeavePers
         <ul className="divide-y divide-border">
           {people.slice(0, SHOWN).map((p) => (
             <li key={p.requestId} className="gv-row -mx-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg px-2 py-2">
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
-                <span className="block text-sm text-muted-foreground">{p.department}</span>
+              <span className="flex min-w-0 items-center gap-2.5">
+                <PersonAvatar name={p.name} gender={p.gender} seed={p.employeeId} src={p.avatarUrl} className="size-8" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
+                  <span className="block text-sm text-muted-foreground">{p.department}</span>
+                </span>
               </span>
               <span className="flex flex-col items-end gap-0.5 text-right">
                 <span
@@ -71,7 +75,7 @@ export function UpcomingLeavesCard({ data }: { data: UpcomingLeaves }) {
       icon={CalendarClock}
       title={`ลา ${data.lookaheadDays} วันข้างหน้า`}
       sub={`วันนี้ ${data.today.length} · เร็วๆ นี้ ${data.soon.length} คน`}
-      people={[...data.today, ...data.soon].map((p) => p.name)}
+      people={[...data.today, ...data.soon].map((p) => ({ id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender }))}
       count={count}
       unit="คน"
       tone="info"
@@ -96,7 +100,7 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
       icon={UserCheck}
       title="ครบทดลองงาน"
       sub="ประเมินให้เสร็จก่อนวันที่ 120"
-      people={data.people.map((p) => p.name)}
+      people={data.people.map((p) => ({ id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender }))}
       count={data.people.length}
       unit="คน"
       tone={soonest !== null && soonest <= 7 ? "bad" : "warn"}
@@ -114,11 +118,14 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
                   href={`/employees/${p.employeeId}`}
                   className="flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 hover:bg-muted/50"
                 >
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
-                    <span className="block text-sm text-muted-foreground">
-                      {p.department} · ครบ {fmtDay(p.deadlineIso)}
-                      {p.source === "day120" ? " (วันที่ 120)" : ""}
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <PersonAvatar name={p.name} gender={p.gender} seed={p.employeeId} src={p.avatarUrl} className="size-8" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {p.department} · ครบ {fmtDay(p.deadlineIso)}
+                        {p.source === "day120" ? " (วันที่ 120)" : ""}
+                      </span>
                     </span>
                   </span>
                   <span

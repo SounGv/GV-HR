@@ -40,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageActions } from "@/components/layout/page-chrome";
+import { RowFace } from "./row-face";
 import { MultiSelectField, type MultiSelectOption } from "@/components/shared/multi-select-field";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
@@ -447,17 +448,25 @@ function ReportSection({
                             {c.photo ? (
                               <PhotoCell url={row[c.key]} onOpen={onOpenPhoto} title={photo?.title} lines={photo?.lines} />
                             ) : type === "leave" && c.key === "name" ? (
-                              <button
-                                type="button"
-                                onClick={() => setLeaveTarget({ code: String(row.code), name: String(row.name) })}
-                                className="min-h-8 text-left font-medium text-primary underline-offset-2 hover:underline"
-                              >
-                                {row.name}
-                              </button>
+                              <span className="flex items-center gap-2">
+                                <RowFace row={row} />
+                                <button
+                                  type="button"
+                                  onClick={() => setLeaveTarget({ code: String(row.code), name: String(row.name) })}
+                                  className="min-h-8 text-left font-medium text-primary underline-offset-2 hover:underline"
+                                >
+                                  {row.name}
+                                </button>
+                              </span>
                             ) : isDaily && c.key === "status" ? (
                               <ReportStatusBadge statusKey={String(row.statusKey ?? "")} fallback={row.status} />
                             ) : isDaily && c.key === "note" ? (
                               <ReportNoteCell row={row} value={row.note} />
+                            ) : c.key === "name" && row._empId ? (
+                              <span className="flex items-center gap-2">
+                                <RowFace row={row} />
+                                {fmtNum(c.value ? c.value(row) : row[c.key])}
+                              </span>
                             ) : (
                               fmtNum(c.value ? c.value(row) : row[c.key])
                             )}

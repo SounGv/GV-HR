@@ -1,4 +1,5 @@
 import { type NextRequest } from "next/server";
+import { attachFaces } from "@/features/report/faces";
 import { requirePermission } from "@/lib/auth/guard";
 import { can } from "@/lib/auth/rbac";
 import { Forbidden } from "@/lib/api/errors";
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
       ...query,
       employeeWhere: teamScopeFilter(session) ?? undefined,
     });
-    return ok(result);
+    return ok(await attachFaces(session.companyId, result));
   } catch (err) {
     return handleApiError(err);
   }

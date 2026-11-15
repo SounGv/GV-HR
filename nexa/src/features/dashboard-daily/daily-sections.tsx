@@ -125,7 +125,7 @@ export function MissedScanOutCard({ data }: { data: MissedScans }) {
       icon={LogOut}
       title="ลืมสแกน"
       hint={`${data.days} วันล่าสุด · ไม่นับวันนี้ · ชั่วโมงยังผิดจนกว่าจะแก้เวลา`}
-      people={all.map((r) => ({ name: r.name, avatarUrl: r.avatarUrl }))}
+      people={all.map((r) => ({ id: r.employeeId, name: r.name, avatarUrl: r.avatarUrl, gender: r.gender }))}
       count={all.length}
       tone={data.outBeforeIn.length ? "bad" : "warn"}
       tag="รอแก้เวลา"
@@ -160,7 +160,7 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
       icon={Timer}
       title="OT วันนี้"
       hint={`รวม ${hours} ชม.`}
-      people={rows.map((r) => ({ name: r.name, avatarUrl: r.avatarUrl }))}
+      people={rows.map((r) => ({ id: r.employeeId, name: r.name, avatarUrl: r.avatarUrl, gender: r.gender }))}
       count={rows.length}
       tone={waiting ? "warn" : "info"}
       tag={waiting ? `รออนุมัติ ${waiting}` : "อนุมัติครบแล้ว"}

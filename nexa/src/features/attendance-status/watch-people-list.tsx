@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/states";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 import { EmployeeAttendanceSheet, type SheetTarget } from "./employee-attendance-sheet";
 import { WatchTags } from "./attendance-watch-sections";
 import type { WatchPerson } from "./types";
@@ -22,10 +23,13 @@ export function WatchPeopleList({ people, empty }: { people: WatchPerson[]; empt
               onClick={() => setTarget({ code: p.code, name: p.name, department: p.department })}
               className="flex min-h-14 w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-muted/50"
             >
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
-                <span className="block text-sm text-muted-foreground">
-                  {p.code} · {p.department}
+              <span className="flex min-w-0 items-center gap-2.5">
+                <PersonAvatar name={p.name} gender={p.gender ?? null} seed={p.employeeId ?? p.code} src={p.avatarUrl} className="size-9" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold break-words text-foreground">{p.name}</span>
+                  <span className="block text-sm text-muted-foreground">
+                    {p.code} · {p.department}
+                  </span>
                 </span>
               </span>
               <WatchTags person={p} />

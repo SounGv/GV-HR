@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
+import { avatarSrc } from "@/lib/avatar";
 import { EmployeeStatusBadge } from "@/features/employee/status-badge";
 import { EMPLOYMENT_LABEL, GENDER_LABEL, MARITAL_LABEL } from "@/features/employee/labels";
 import { EmployeeDocumentList } from "@/features/employee-document/employee-document-list";
@@ -107,7 +108,7 @@ export default async function EmployeeDetailPage({
       <Card>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <Avatar className="size-16">
-            {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={name} />}
+            {employee.avatarUrl && <AvatarImage src={avatarSrc(employee.id, employee.avatarUrl) ?? undefined} alt={name} />}
             <AvatarFallback className="bg-transparent p-0">
               <CharacterAvatar character={characterFor({ gender: employee.gender ?? null })} seed={employee.id} className="size-full" />
             </AvatarFallback>

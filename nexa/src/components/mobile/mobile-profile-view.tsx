@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
@@ -59,12 +60,12 @@ export function MobileProfileView() {
           className="mx-auto mb-2.5 flex size-16 items-center justify-center overflow-hidden rounded-full bg-primary"
           aria-label="แก้ไขรูปโปรไฟล์"
         >
-          {user.employee?.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.employee.avatarUrl} alt={nameLabel} className="size-full object-cover" />
-          ) : (
-            <CharacterAvatar character={characterFor(user.employee)} className="size-full" />
-          )}
+          <Avatar className="size-full">
+            {user.employee?.avatarUrl && <AvatarImage src={user.employee.avatarUrl} alt={nameLabel} />}
+            <AvatarFallback className="bg-transparent p-0">
+              <CharacterAvatar character={characterFor(user.employee)} seed={user.employee?.id} className="size-full" />
+            </AvatarFallback>
+          </Avatar>
         </a>
         <p className="text-[15px] font-bold text-foreground">{nameLabel}</p>
         <p className="text-xs text-muted-foreground">{subtitle}</p>

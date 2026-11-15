@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/states";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { EmployeeAttendanceSheet, type SheetTarget } from "./employee-attendance-sheet";
@@ -159,7 +160,8 @@ export function AttendanceList({ people, status }: { people: TodayPerson[]; stat
                 )}
               >
                 <span className="flex items-start justify-between gap-3">
-                  <span className="min-w-0">
+                  <PersonAvatar name={p.name} gender={p.gender} seed={p.employeeId} src={p.avatarUrl} className="size-10" />
+                  <span className="min-w-0 flex-1">
                     <span className="block text-base font-semibold break-words text-foreground">{p.name}</span>
                     <span className="block text-sm text-muted-foreground">
                       {p.code} · {p.department}
@@ -196,10 +198,13 @@ export function AttendanceList({ people, status }: { people: TodayPerson[]; stat
                           e.stopPropagation();
                           open(p);
                         }}
-                        className="min-h-11 text-left"
+                        className="flex min-h-11 items-center gap-2.5 text-left"
                       >
-                        <span className="block font-semibold text-foreground">{p.name}</span>
-                        <span className="block text-xs text-muted-foreground">{p.code}</span>
+                        <PersonAvatar name={p.name} gender={p.gender} seed={p.employeeId} src={p.avatarUrl} className="size-8" />
+                        <span className="min-w-0">
+                          <span className="block font-semibold text-foreground">{p.name}</span>
+                          <span className="block text-xs text-muted-foreground">{p.code}</span>
+                        </span>
                       </button>
                     </TableCell>
                     <TableCell className="text-sm">{p.department}</TableCell>

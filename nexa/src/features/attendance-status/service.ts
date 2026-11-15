@@ -247,6 +247,7 @@ export async function loadAttendanceWatch(
     const photos = await avatarPaths(genders.map((g) => g.id));
     for (const p of people) {
       const found = byCode.get(p.code);
+      p.employeeId = found?.id;
       p.gender = found?.gender ?? null;
       p.avatarUrl = found ? (photos.get(found.id) ?? null) : null;
     }

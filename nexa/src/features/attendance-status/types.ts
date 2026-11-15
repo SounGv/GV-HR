@@ -41,6 +41,8 @@ export interface TodayAttendance {
 
 export interface WatchPerson {
   code: string;
+  /** Seeds the character avatar so a person looks the same on every screen. */
+  employeeId?: string;
   /** MALE / FEMALE / OTHER / null — picks the character avatar (looked up after the report). */
   gender?: string | null;
   /** Short address of the person's photo; null or missing = no photo. */

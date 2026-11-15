@@ -1,4 +1,5 @@
 import { displayName } from "@/lib/format";
+import { faces } from "@/lib/avatar-server";
 import { prisma } from "@/lib/prisma";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
@@ -22,6 +23,10 @@ const fullName = (e: { firstName: string; lastName: string; nickname: string | n
 
 export interface LeavePerson {
   requestId: string;
+  employeeId: string;
+  /** Photo address and gender for the picture; the character is drawn when there is no photo. */
+  avatarUrl: string | null;
+  gender: string | null;
   code: string;
   name: string;
   department: string;
@@ -65,7 +70,7 @@ export async function loadUpcomingLeaves(companyId: string, session: AccessClaim
       unit: true,
       hours: true,
       employee: {
-        select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
+        select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
       },
     },
     orderBy: [{ startDate: "asc" }, { createdAt: "asc" }],
@@ -73,11 +78,15 @@ export async function loadUpcomingLeaves(companyId: string, session: AccessClaim
   });
 
   const result: UpcomingLeaves = { todayIso: iso(today), lookaheadDays: LEAVE_LOOKAHEAD_DAYS, today: [], soon: [] };
+  const face = await faces(rows.map((r) => r.employee.id));
   for (const r of rows) {
     const bucket = leaveBucket(r.startDate, r.endDate, today);
     if (!bucket) continue;
     result[bucket].push({
       requestId: r.id,
+      employeeId: r.employee.id,
+      avatarUrl: face.get(r.employee.id)?.avatarUrl ?? null,
+      gender: face.get(r.employee.id)?.gender ?? null,
       code: r.employee.employeeCode,
       name: fullName(r.employee),
       department: r.employee.department?.name ?? "ไม่ระบุแผนก",
@@ -93,6 +102,8 @@ export async function loadUpcomingLeaves(companyId: string, session: AccessClaim
 
 export interface ProbationPerson {
   employeeId: string;
+  avatarUrl: string | null;
+  gender: string | null;
   code: string;
   name: string;
   department: string;
@@ -153,6 +164,7 @@ export async function loadProbationDue(companyId: string, session: AccessClaims)
   });
 
   const people: ProbationPerson[] = [];
+  const face = await faces(rows.map((e) => e.id));
   for (const e of rows) {
     const deadline = probationDeadline(
       e.hireDate ? bangkokDay(e.hireDate) : null,
@@ -162,6 +174,8 @@ export async function loadProbationDue(companyId: string, session: AccessClaims)
     if (!deadline || daysLeft === null) continue;
     people.push({
       employeeId: e.id,
+      avatarUrl: face.get(e.id)?.avatarUrl ?? null,
+      gender: face.get(e.id)?.gender ?? null,
       code: e.employeeCode,
       name: fullName(e),
       department: e.department?.name ?? "ไม่ระบุแผนก",

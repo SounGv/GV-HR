@@ -237,7 +237,7 @@ export function AttendanceFollowRows({ data, departmentIds }: Props) {
             tone={r.tone}
             tag={r.tag}
             order={r.order}
-            people={sorted.map((p) => ({ name: p.name, avatarUrl: p.avatarUrl }))}
+            people={sorted.map((p) => ({ id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender }))}
             link={{ href: attendanceListHref(r.status, departmentIds), label: `ดูทั้งหมด ${all.length} คน` }}
           >
             <ul>

@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { PhotoCell, type PhotoPreview } from "./report-photo-cell";
 import { ReportStatusBadge, dailyCardClass, dailyPhotoPreview, type DisplayColumn } from "./attendance-row-style";
 import { cn } from "@/lib/utils";
+import { RowFace } from "./row-face";
 import { columnLabel, type ReportResult } from "./types";
 
 // Naive but low-risk: report status text is always Thai and drawn from a
@@ -71,6 +72,7 @@ export function ReportMobileCards({
             <div className={cn("space-y-1 border-b border-border bg-muted/40 px-4 py-3", tone.header)}>
               {headerCols.length > 0 && (
                 <div className="flex items-center justify-between gap-2">
+                  <RowFace row={row} className="size-9" />
                   {headerCols.map((c) =>
                     c.key === "name" && onOpenName ? (
                       <button

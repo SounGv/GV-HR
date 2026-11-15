@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
@@ -184,12 +185,12 @@ export function ProfileDrawer() {
           <div ref={handleRef} className="border-b border-border bg-gv-pale-green/40 p-5 pt-8">
             <div className="flex items-center gap-3">
               <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tone-profile-bg text-tone-profile-fg ring-2 ring-card">
-                {user.employee?.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.employee.avatarUrl} alt={nameLabel} className="size-full object-cover" />
-                ) : (
-                  <CharacterAvatar character={characterFor(user.employee)} className="size-full" />
-                )}
+                <Avatar className="size-full">
+                  {user.employee?.avatarUrl && <AvatarImage src={user.employee.avatarUrl} alt={nameLabel} />}
+                  <AvatarFallback className="bg-transparent p-0">
+                    <CharacterAvatar character={characterFor(user.employee)} seed={user.employee?.id} className="size-full" />
+                  </AvatarFallback>
+                </Avatar>
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-lg font-bold text-foreground">{nameLabel}</p>

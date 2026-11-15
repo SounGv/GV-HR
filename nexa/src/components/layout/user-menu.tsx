@@ -21,7 +21,7 @@ export function UserMenu() {
       <Avatar className="size-8">
         {emp?.avatarUrl && <AvatarImage src={emp.avatarUrl} alt={name} />}
         <AvatarFallback className="bg-transparent p-0">
-          <CharacterAvatar character={characterFor(emp)} className="size-full" />
+          <CharacterAvatar character={characterFor(emp)} seed={emp?.id} className="size-full" />
         </AvatarFallback>
       </Avatar>
       <span className="hidden text-left sm:block">
