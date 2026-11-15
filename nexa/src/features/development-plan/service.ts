@@ -201,7 +201,7 @@ export async function updateItem(
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.method !== undefined ? { method: input.method } : {}),
       ...(input.targetDate !== undefined ? { targetDate: input.targetDate } : {}),
-      ...(input.status !== undefined ? { status: input.status, completedAt: input.status === "COMPLETED" ? new Date() : undefined } : {}),
+      ...(input.status !== undefined ? { status: input.status, completedAt: input.status === "COMPLETED" ? new Date() : null } : {}),
       ...(input.problemDescription !== undefined ? { problemDescription: input.problemDescription } : {}),
       ...(input.startDate !== undefined ? { startDate: input.startDate } : {}),
       ...(input.followUpDate !== undefined ? { followUpDate: input.followUpDate } : {}),
@@ -225,14 +225,10 @@ export async function updateItem(
 
 export async function addProgressNote(companyId: string, session: AccessClaims, itemId: string, note: string, meta?: Meta) {
   const item = await requireOwnItem(companyId, session, itemId);
-  const existing = await prisma.developmentItem.findUnique({ where: { id: itemId }, select: { progressNotes: true } });
-  const notes = (existing?.progressNotes as unknown as { at: string; note: string }[] | null) ?? [];
-  notes.push({ at: new Date().toISOString(), note });
-
-  await prisma.developmentItem.update({
-    where: { id: itemId },
-    data: { progressNotes: notes as unknown as Prisma.InputJsonValue },
-  });
+  // Appended inside the database in one statement, so two notes written at the same moment both stay
+  // (reading the list, adding in memory and writing it back would let the second write drop the first).
+  const entry = JSON.stringify([{ at: new Date().toISOString(), note }]);
+  await prisma.$executeRaw`UPDATE "development_items" SET "progressNotes" = COALESCE("progressNotes", '[]'::jsonb) || ${entry}::jsonb WHERE "id" = ${itemId}`;
 
   await writeAudit({
     companyId,

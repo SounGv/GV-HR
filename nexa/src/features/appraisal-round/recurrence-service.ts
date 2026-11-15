@@ -144,72 +144,78 @@ const isDuplicate = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequest
  * @param today Bangkok calendar day, "YYYY-MM-DD" (a parameter so tests can pick the day).
  */
 export async function makeDueRecurringRounds(today: string = todayIso()) {
-  const summary = { made: 0, nudged: 0, skipped: 0 };
+  const summary = { made: 0, nudged: 0, skipped: 0, failed: 0 };
   const setups = await prisma.appraisalRecurrence.findMany({
     where: { enabled: true, deletedAt: null },
     select: { id: true, companyId: true, name: true, frequency: true, openDay: true, closeDay: true, formId: true, preset: true, departmentNames: true },
   });
 
   for (const r of setups) {
-    for (const occ of dueOccurrences(today, r)) {
-      const name = roundName(r.name, occ);
-      // Includes rounds HR deleted: a deleted draft is a decision, not something to remake tomorrow.
-      const existing = await prisma.appraisalRound.findFirst({ where: { recurrenceId: r.id, periodKey: occ.periodKey }, select: { id: true, status: true, deletedAt: true } });
-      if (existing) {
-        if (!existing.deletedAt && existing.status === "DRAFT" && today === occ.startIso) {
-          await tellHr(r.companyId, existing.id, "ถึงวันเปิดรอบแล้ว รอ HR กดเปิด", `${name} ถึงวันเปิดแล้ว (${fmtDay(occ.startIso)}) ตรวจรายชื่อและผู้ประเมิน แล้วกดเปิดรอบ`);
-          summary.nudged++;
+    try {
+      for (const occ of dueOccurrences(today, r)) {
+        const name = roundName(r.name, occ);
+        // Includes rounds HR deleted: a deleted draft is a decision, not something to remake tomorrow.
+        const existing = await prisma.appraisalRound.findFirst({ where: { recurrenceId: r.id, periodKey: occ.periodKey }, select: { id: true, status: true, deletedAt: true } });
+        if (existing) {
+          if (!existing.deletedAt && existing.status === "DRAFT" && today === occ.startIso) {
+            await tellHr(r.companyId, existing.id, "ถึงวันเปิดรอบแล้ว รอ HR กดเปิด", `${name} ถึงวันเปิดแล้ว (${fmtDay(occ.startIso)}) ตรวจรายชื่อและผู้ประเมิน แล้วกดเปิดรอบ`);
+            summary.nudged++;
+          }
+          continue;
         }
-        continue;
-      }
-      const form = await usableForm(r.companyId, r.formId);
-      if (!form) {
-        summary.skipped++;
-        if (today === occ.draftFromIso || today === occ.startIso) {
-          await tellHr(r.companyId, null, "สร้างรอบอัตโนมัติไม่ได้", `${name} สร้างไม่ได้ เพราะแบบประเมินที่เลือกไว้ไม่ได้ใช้งานแล้วและยังไม่มีเวอร์ชันใหม่ที่ยืนยันใช้ ตั้งแบบประเมินใหม่ที่หน้ารอบอัตโนมัติ`);
+        const form = await usableForm(r.companyId, r.formId);
+        if (!form) {
+          summary.skipped++;
+          if (today === occ.draftFromIso || today === occ.startIso) {
+            await tellHr(r.companyId, null, "สร้างรอบอัตโนมัติไม่ได้", `${name} สร้างไม่ได้ เพราะแบบประเมินที่เลือกไว้ไม่ได้ใช้งานแล้วและยังไม่มีเวอร์ชันใหม่ที่ยืนยันใช้ ตั้งแบบประเมินใหม่ที่หน้ารอบอัตโนมัติ`);
+          }
+          continue;
         }
-        continue;
-      }
-      const people = await prisma.employee.findMany({
-        where: { companyId: r.companyId, deletedAt: null, status: "ACTIVE", ...(r.departmentNames.length ? { department: { name: { in: r.departmentNames } } } : {}) },
-        select: { id: true, department: { select: { name: true } }, position: { select: { title: true } } },
-      });
-      if (people.length === 0) {
-        summary.skipped++;
-        continue;
-      }
-      const preset = r.preset as PresetKey;
-      let roundId: string;
-      try {
-        const created = await prisma.appraisalRound.create({
-          data: {
-            companyId: r.companyId,
-            name,
-            formId: form.id,
-            raterTypes: [...PRESETS[preset]],
-            perspectiveWeights: PRESET_WEIGHTS[preset] as Prisma.InputJsonValue,
-            startDate: asDate(occ.startIso),
-            endDate: asDate(occ.endIso),
-            recurrenceId: r.id,
-            periodKey: occ.periodKey,
-            participants: { create: people.map((p) => ({ employeeId: p.id, departmentName: p.department?.name ?? null, positionName: p.position?.title ?? null })) },
-          },
-          select: { id: true },
+        const people = await prisma.employee.findMany({
+          where: { companyId: r.companyId, deletedAt: null, status: "ACTIVE", ...(r.departmentNames.length ? { department: { name: { in: r.departmentNames } } } : {}) },
+          select: { id: true, department: { select: { name: true } }, position: { select: { title: true } } },
         });
-        roundId = created.id;
-      } catch (e) {
-        if (isDuplicate(e)) continue; // another run made it a moment ago
-        throw e;
+        if (people.length === 0) {
+          summary.skipped++;
+          continue;
+        }
+        const preset = r.preset as PresetKey;
+        let roundId: string;
+        try {
+          const created = await prisma.appraisalRound.create({
+            data: {
+              companyId: r.companyId,
+              name,
+              formId: form.id,
+              raterTypes: [...PRESETS[preset]],
+              perspectiveWeights: PRESET_WEIGHTS[preset] as Prisma.InputJsonValue,
+              startDate: asDate(occ.startIso),
+              endDate: asDate(occ.endIso),
+              recurrenceId: r.id,
+              periodKey: occ.periodKey,
+              participants: { create: people.map((p) => ({ employeeId: p.id, departmentName: p.department?.name ?? null, positionName: p.position?.title ?? null })) },
+            },
+            select: { id: true },
+          });
+          roundId = created.id;
+        } catch (e) {
+          if (isDuplicate(e)) continue; // another run made it a moment ago
+          throw e;
+        }
+        await writeAudit({
+          companyId: r.companyId,
+          action: "appraisal_round.auto_create",
+          entity: "AppraisalRound",
+          entityId: roundId,
+          after: { recurrenceId: r.id, periodKey: occ.periodKey, name, participants: people.length },
+        });
+        await tellHr(r.companyId, roundId, "ร่างรอบประเมินพร้อมให้ตรวจ", `${name} เปิดวันที่ ${fmtDay(occ.startIso)} มี ${people.length} คน ตรวจรายชื่อและผู้ประเมิน แล้วกดเปิดรอบ ระบบไม่เปิดให้เอง`);
+        summary.made++;
       }
-      await writeAudit({
-        companyId: r.companyId,
-        action: "appraisal_round.auto_create",
-        entity: "AppraisalRound",
-        entityId: roundId,
-        after: { recurrenceId: r.id, periodKey: occ.periodKey, name, participants: people.length },
-      });
-      await tellHr(r.companyId, roundId, "ร่างรอบประเมินพร้อมให้ตรวจ", `${name} เปิดวันที่ ${fmtDay(occ.startIso)} มี ${people.length} คน ตรวจรายชื่อและผู้ประเมิน แล้วกดเปิดรอบ ระบบไม่เปิดให้เอง`);
-      summary.made++;
+    } catch (e) {
+      // One broken setup (or company) must not stop the others; it is retried tomorrow.
+      summary.failed++;
+      console.error("recurring round failed for setup", r.id, e);
     }
   }
   return summary;

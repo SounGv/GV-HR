@@ -74,7 +74,7 @@ const refused = (msg: RegExp) => (e: unknown) => msg.test(String((e as Error)?.m
 
         await t("K3 the day before the draft window nothing is made", async () => {
           const r = await makeDueRecurringRounds("2026-11-27");
-          assert.deepEqual(r, { made: 0, nudged: 0, skipped: 0 });
+          assert.deepEqual(r, { made: 0, nudged: 0, skipped: 0, failed: 0 });
           assert.equal(await tx.appraisalRound.count({ where: { recurrenceId: main } }), 0);
         });
 
@@ -174,6 +174,16 @@ const refused = (msg: RegExp) => (e: unknown) => msg.test(String((e as Error)?.m
           assert.equal(await notes("สร้างรอบอัตโนมัติไม่ได้"), holders, "told on the first day of the window");
           await makeDueRecurringRounds("2027-03-30");
           assert.equal(await notes("สร้างรอบอัตโนมัติไม่ได้"), holders, "not again the next day");
+        });
+
+        await t("K13 a setup that fails does not stop the others, and the whole job still sends invitations", async () => {
+          // A setup with an unknown preset throws while its round is made; a healthy one is due the same day.
+          const bad = await tx.appraisalRecurrence.create({ data: { companyId: COMPANY, name: "พัง {เดือน}", frequency: "MONTHLY", openDay: 1, closeDay: 7, formId: form.id, preset: "bogus", departmentNames: [] } });
+          const good = await tx.appraisalRecurrence.create({ data: { companyId: COMPANY, name: "ปกติ {เดือน}", frequency: "MONTHLY", openDay: 1, closeDay: 7, formId: form.id, preset: "90", departmentNames: [] } });
+          const r = await makeDueRecurringRounds("2027-04-28");
+          assert.ok(r.failed >= 1, "the broken setup is counted, not thrown");
+          assert.equal(await tx.appraisalRound.count({ where: { recurrenceId: bad.id } }), 0);
+          assert.equal(await tx.appraisalRound.count({ where: { recurrenceId: good.id } }), 1, "the healthy setup still made its draft");
         });
 
         g.__tx = undefined;

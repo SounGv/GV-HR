@@ -18,6 +18,7 @@
     "db:studio": "node ./node_modules/prisma/build/index.js studio",
     "db:reset": "node ./node_modules/prisma/build/index.js migrate reset",
     "test:recurrence": "node scripts/e2e-ai/build.mjs run-recurrence && node --env-file=.env.local .tmp-e2e/run-recurrence.cjs",
+    "test:devplan": "node scripts/e2e-ai/build.mjs run-devplan && node --env-file=.env.local .tmp-e2e/run-devplan.cjs",
     "test:adjust": "node scripts/e2e-ai/build.mjs run-adjust && node --env-file=.env.local .tmp-e2e/run-adjust.cjs",
     "test:review": "node scripts/e2e-ai/build.mjs run-review && node --env-file=.env.local .tmp-e2e/run-review.cjs",
     "test:eval-overview": "node scripts/e2e-ai/build.mjs run-eval-overview && node --env-file=.env.local .tmp-e2e/run-eval-overview.cjs",

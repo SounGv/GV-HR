@@ -109,7 +109,7 @@ function parse(path: string): Row[] {
       checks.push({ name, ok: false, err: String(e?.message ?? e).split("\n").slice(0, 4).join(" | ") });
     }
   };
-  let created: { roundIds: string[]; formId?: string } = { roundIds: [] };
+  const created: { roundIds: string[]; formId?: string } = { roundIds: [] };
 
   const body = async (tx: any) => {
     g.__tx = tx;

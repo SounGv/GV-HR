@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 export type Crumb = { label: string; href?: string };
@@ -55,14 +55,18 @@ export const useSlotSetter = () => useContext(SetSlot);
 export function PageChromePublisher({ title, description, subtitle, crumbs, status, actions }: Chrome & { actions?: React.ReactNode }) {
   const set = useContext(SetChrome);
   const slot = useContext(Slot);
+  // Client pages pass a new breadcrumb array on every render; compare by content so an unchanged path does not re-publish
+  // (and re-draw the whole band) each time, for example on every keystroke in a form.
+  const crumbsKey = JSON.stringify(crumbs ?? null);
+  const stableCrumbs = useMemo(() => (JSON.parse(crumbsKey) as Crumb[] | null) ?? undefined, [crumbsKey]);
 
   // Leaving the page clears what it published.
   useEffect(() => () => set?.(null), [set]);
   // Publishes again whenever the page's header changes (a header drawn by a client page may pass new objects each render;
   // that only re-draws the band, never this component, because the writer context is stable).
   useEffect(() => {
-    set?.({ title, description, subtitle, crumbs, status });
-  }, [set, title, description, subtitle, crumbs, status]);
+    set?.({ title, description, subtitle, crumbs: stableCrumbs, status });
+  }, [set, title, description, subtitle, stableCrumbs, status]);
 
   return (
     <>

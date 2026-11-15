@@ -64,28 +64,27 @@ export async function checkMissedScans(): Promise<{ checked: number; flagged: nu
     checked += employees.length;
 
     const twoWeeksBefore = new Date(yesterday.getTime() - 14 * 86_400_000);
-    const [records, approvedLeaves, recentActivity] = await Promise.all([
-      prisma.attendanceRecord.findMany({
-        where: { companyId: company.id, deletedAt: null, workDate: yesterday },
-        select: { employeeId: true, clockInAt: true, clockOutAt: true },
-      }),
-      prisma.leaveRequest.findMany({
-        where: { companyId: company.id, deletedAt: null, status: "APPROVED", startDate: { lte: yesterday }, endDate: { gte: yesterday } },
-        select: { employeeId: true },
-      }),
-      // Real adoption of self-service clock-in is uneven — most employees
-      // here have never once used it. Flagging "no scan at all" company-wide
-      // would mean re-flagging the same 80-ish never-onboarded people every
-      // single day forever, which trains everyone to ignore the alert. Only
-      // employees with a recent record (last 14 days) are treated as active
-      // app users whose sudden gap is actually notable; everyone else is
-      // left out of this specific check (still covered by the separate
-      // "no clock-out" check, which only fires for whoever DID clock in).
-      prisma.attendanceRecord.groupBy({
-        by: ["employeeId"],
-        where: { companyId: company.id, deletedAt: null, workDate: { gte: twoWeeksBefore, lt: yesterday } },
-      }),
-    ]);
+    // Sequential, not Promise.all — connection_limit=1.
+    const records = await prisma.attendanceRecord.findMany({
+      where: { companyId: company.id, deletedAt: null, workDate: yesterday },
+      select: { employeeId: true, clockInAt: true, clockOutAt: true },
+    });
+    const approvedLeaves = await prisma.leaveRequest.findMany({
+      where: { companyId: company.id, deletedAt: null, status: "APPROVED", startDate: { lte: yesterday }, endDate: { gte: yesterday } },
+      select: { employeeId: true },
+    });
+    // Real adoption of self-service clock-in is uneven — most employees
+    // here have never once used it. Flagging "no scan at all" company-wide
+    // would mean re-flagging the same 80-ish never-onboarded people every
+    // single day forever, which trains everyone to ignore the alert. Only
+    // employees with a recent record (last 14 days) are treated as active
+    // app users whose sudden gap is actually notable; everyone else is
+    // left out of this specific check (still covered by the separate
+    // "no clock-out" check, which only fires for whoever DID clock in).
+    const recentActivity = await prisma.attendanceRecord.groupBy({
+      by: ["employeeId"],
+      where: { companyId: company.id, deletedAt: null, workDate: { gte: twoWeeksBefore, lt: yesterday } },
+    });
     const recordByEmployee = new Map(records.map((r) => [r.employeeId, r]));
     const onLeave = new Set(approvedLeaves.map((l) => l.employeeId));
     const recentlyActive = new Set(recentActivity.map((r) => r.employeeId));

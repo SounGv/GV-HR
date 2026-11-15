@@ -995,12 +995,19 @@ export async function remindAll(companyId: string, session: AccessClaims, id: st
  */
 export async function runRoundJobs() {
   const todayIso = iso(bangkokParts().dateUTC);
-  const summary = { opened: 0, invitationsSent: 0, reminded: 0, draftsMade: 0, draftsNudged: 0 };
+  const summary = { opened: 0, invitationsSent: 0, reminded: 0, draftsMade: 0, draftsNudged: 0, draftsFailed: 0 };
 
   // Recurring rounds first: a draft made today shows up in HR's bell this morning.
-  const drafts = await makeDueRecurringRounds(todayIso);
-  summary.draftsMade = drafts.made;
-  summary.draftsNudged = drafts.nudged;
+  // A failure here must not stop the invitations and reminders below, which people are waiting for.
+  try {
+    const drafts = await makeDueRecurringRounds(todayIso);
+    summary.draftsMade = drafts.made;
+    summary.draftsNudged = drafts.nudged;
+    summary.draftsFailed = drafts.failed;
+  } catch (e) {
+    summary.draftsFailed++;
+    console.error("recurring rounds step failed", e);
+  }
 
   const due = await prisma.appraisalRound.findMany({
     where: { deletedAt: null, status: "SCHEDULED", startDate: { lte: new Date(`${todayIso}T00:00:00Z`) } },
