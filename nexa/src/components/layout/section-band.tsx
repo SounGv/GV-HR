@@ -51,7 +51,6 @@ export function SectionBand() {
   const isHome = pathname === HOME_PATH;
   const hasTabs = section.tabs.length > 0;
   const title = chrome?.title ?? section.title;
-  const isTabPage = section.tabs.some((t) => new URL(t.href, "http://x").pathname === pathname);
   const crumbs: BandCrumb[] =
     chrome?.crumbs && chrome.crumbs.length > 0
       ? chrome.crumbs
@@ -81,8 +80,9 @@ export function SectionBand() {
     <header ref={rootRef} className="border-b border-border bg-card print:hidden">
       <div className="flex h-12 items-center gap-2 px-3 sm:px-4">
         <SidebarTrigger className="-ml-1 size-10" />
-        {/* A list or tab page has no back button (the tabs are the way around); a detail page goes back to where the person came from. */}
-        {!isHome && !isTabPage && (
+        {/* The one back control on a computer, on every page but home (as the old top bar had it): back to the page the person
+            came from, or home when this is where they started. */}
+        {!isHome && (
           <button
             type="button"
             onClick={() => router.push(previousOf(readTrail()) ?? HOME_PATH)}
@@ -113,6 +113,11 @@ export function SectionBand() {
           {/* A page without a title of its own yet (still loading) shows the menu's name; this keeps the heading a real h1. */}
           {crumbs.length === 0 && <h1 className="sr-only">GV One</h1>}
         </nav>
+        {chrome?.subtitle && (
+          <span className="hidden min-w-0 truncate border-l border-border pl-3 text-sm text-muted-foreground lg:inline" title={chrome.subtitle}>
+            {chrome.subtitle}
+          </span>
+        )}
         {chrome?.status && <span className="shrink-0">{chrome.status}</span>}
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           {!hasTabs && <div ref={setSlot ?? undefined} className="flex items-center gap-2 pr-2" />}

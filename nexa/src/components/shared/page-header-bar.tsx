@@ -5,7 +5,8 @@ export type { Crumb };
 /**
  * A detail or report page's path, title, status and main buttons. On a computer they are drawn in the band at the top of
  * the screen (components/layout/section-band.tsx), not in a bar of their own, so only one header ever sticks. The
- * description is no longer shown. The title is kept for printing, which the band is not part of.
+ * description, which on these pages says what the page is about (employee code and leave type, an author), is drawn
+ * after the title. The title is kept for printing, which the band is not part of.
  */
 export function PageHeaderBar({
   breadcrumbs,
@@ -29,6 +30,7 @@ export function PageHeaderBar({
     <PageChromePublisher
       title={title}
       description={typeof description === "string" ? description : undefined}
+      subtitle={typeof description === "string" ? description : undefined}
       crumbs={breadcrumbs}
       status={status}
       actions={actions}
