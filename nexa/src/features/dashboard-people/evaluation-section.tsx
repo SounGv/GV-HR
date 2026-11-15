@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, CheckCircle2, Clock, Lock, Minus, PenLine } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CheckCircle2, CircleAlert, Clock, Lock, Minus, Pencil, PenLine } from "lucide-react";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { cn } from "@/lib/utils";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { can } from "@/lib/auth/rbac";
 import { loadEvaluationOverview, type EvaluationOverview, type OpenRound, type ResultsCard } from "./evaluation-overview";
 
 const CARD = "rounded-2xl border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5";
@@ -231,6 +233,173 @@ function ResultsView({ r }: { r: ResultsCard }) {
   );
 }
 
+/** A status word with its icon, never colour alone. */
+function StatusPill({ tone, icon: Icon, children }: { tone: "warn" | "info"; icon: typeof Clock; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
+        tone === "warn" ? "border border-status-late-border bg-status-late-bg text-status-late-fg" : "bg-info/10 text-info",
+      )}
+    >
+      <Icon className="size-3.5" aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
+/** HR's own queue: the evaluation steps only HR can do. One line when there is nothing to do, so the page stays short. */
+export function HrWorkCard({ o }: { o: EvaluationOverview }) {
+  const rows: { key: string; title: string; sub: string; pill: React.ReactNode; href: string; action: string }[] = [];
+  for (const r of o.awaitingReview) {
+    rows.push({ key: `review-${r.id}`, title: r.name, sub: "คำนวณผลแล้ว รอทบทวนและอนุมัติ", pill: <StatusPill tone="warn" icon={CircleAlert}>รอทบทวน</StatusPill>, href: r.href, action: "ทบทวนผล" });
+  }
+  if (o.awaitingCalculation) {
+    rows.push({ key: "calc", title: o.awaitingCalculation.name, sub: "ปิดรอบแล้ว ยังไม่คำนวณผล", pill: <StatusPill tone="warn" icon={CircleAlert}>รอคำนวณ</StatusPill>, href: o.awaitingCalculation.href, action: "ไปคำนวณผล" });
+  }
+  for (const d of o.drafts) {
+    rows.push({
+      key: `draft-${d.id}`,
+      title: d.name,
+      sub: d.startIso ? `ฉบับร่าง กำหนดเปิด ${fmtDay(d.startIso)} กดเปิดเมื่อตรวจรายชื่อเสร็จ` : "ฉบับร่าง ยังไม่ได้เปิด กดเปิดเมื่อตรวจรายชื่อเสร็จ",
+      pill: <StatusPill tone="info" icon={Pencil}>ฉบับร่าง</StatusPill>,
+      href: d.href,
+      action: "ตรวจและเปิดรอบ",
+    });
+  }
+  const more = Math.max(0, o.draftCount - o.drafts.length);
+  return (
+    <article className={CARD} aria-label="งานประเมินที่รอ HR">
+      <h3 className="text-base leading-snug font-semibold">
+        รอคุณทำ {rows.length > 0 && <span className="font-normal text-muted-foreground tabular-nums">({rows.length} เรื่อง)</span>}
+      </h3>
+      {rows.length === 0 ? (
+        <p className="mt-1 flex items-start gap-2 text-sm text-muted-foreground">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-hidden="true" />
+          ตอนนี้ไม่มีงานประเมินรอคุณ รอบที่ปิดแล้วหรือฉบับร่างใหม่จะขึ้นที่นี่
+        </p>
+      ) : (
+        <ul className="mt-2 divide-y divide-border">
+          {rows.map((r) => (
+            <li key={r.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5">
+              <span className="min-w-0 flex-[1_1_14rem]">
+                <span className="block text-sm leading-snug font-semibold break-words">{r.title}</span>
+                <span className="block text-xs leading-snug text-muted-foreground">{r.sub}</span>
+              </span>
+              <span className="flex flex-wrap items-center gap-2">
+                {r.pill}
+                <Link href={r.href} className={BTN}>
+                  {r.action}
+                </Link>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {more > 0 && <p className="mt-1 text-xs text-muted-foreground">และฉบับร่างอีก {more} รอบ ดูที่หน้าประเมินผล</p>}
+    </article>
+  );
+}
+
+/** An open round in short: progress, the department with the most still waiting, and the three people waiting longest. */
+export function HrOpenRound({ round, faces }: { round: OpenRound; faces: EvaluationOverview["faces"] }) {
+  const s = round.summary;
+  const worst = [...s.byDepartment].filter((d) => d.pending > 0).sort((a, b) => b.pending - a.pending)[0];
+  const top = s.pendingPeople.slice(0, 3);
+  return (
+    <article className={CARD} aria-label={round.name}>
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-base leading-snug font-semibold break-words">{round.name}</h3>
+        <DaysLeft round={round} />
+      </div>
+      <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
+        <div>
+          <dd className="text-[1.75rem] leading-snug font-bold tabular-nums">{s.forms.percentSubmitted}%</dd>
+          <dt className="text-sm text-muted-foreground tabular-nums">
+            ส่งแล้ว {s.forms.submitted} จาก {s.forms.total} ใบ
+          </dt>
+        </div>
+        <div>
+          <dd className="text-[1.75rem] leading-snug font-bold tabular-nums">{s.people.pending}</dd>
+          <dt className="text-sm text-muted-foreground">คนที่ยังรอประเมิน จาก {s.people.total} คน</dt>
+        </div>
+      </dl>
+      {s.forms.total > 0 && (
+        <>
+          <div className="mt-2 flex h-3.5 overflow-hidden rounded-full bg-muted" role="img" aria-label={`ส่งแล้ว ${s.forms.submitted} กำลังทำ ${s.forms.inProgress} ยังไม่เริ่ม ${s.forms.notStarted} จากทั้งหมด ${s.forms.total} ใบ`}>
+            <span className="h-full bg-primary" style={{ width: `${(s.forms.submitted / s.forms.total) * 100}%` }} />
+            <span className="h-full bg-primary/45" style={{ width: `${(s.forms.inProgress / s.forms.total) * 100}%` }} />
+          </div>
+          <p className="mt-1.5 flex flex-wrap gap-x-4 text-xs text-muted-foreground tabular-nums">
+            <span>ส่งแล้ว {s.forms.submitted}</span>
+            <span>กำลังทำ {s.forms.inProgress}</span>
+            <span>ยังไม่เริ่ม {s.forms.notStarted}</span>
+          </p>
+        </>
+      )}
+      {worst && s.byDepartment.length > 1 && (
+        <p className="mt-3 rounded-xl bg-accent px-3 py-2 text-sm text-accent-foreground">
+          แผนกที่ค้างมากสุด: <b>{worst.department}</b> ค้าง {worst.pending} จาก {worst.total} คน ระบบเตือนผู้ประเมินให้ทุกวัน
+        </p>
+      )}
+      {top.length > 0 && (
+        <section aria-label="คนที่ค้างนานสุด" className="mt-3">
+          <h4 className="text-sm font-semibold">ค้างนานสุด {top.length} คน</h4>
+          <ul className="divide-y divide-border">
+            {top.map((p) => (
+              <li key={p.employeeId} className="flex items-center gap-3 py-2">
+                <PersonAvatar name={p.name} gender={faces[p.employeeId]?.gender ?? null} seed={p.employeeId} src={faces[p.employeeId]?.photo ?? null} className="size-8 border border-border text-[11px] font-bold" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm leading-snug font-semibold break-words">{p.name}</span>
+                  <span className="block text-xs leading-snug text-muted-foreground">{p.department}</span>
+                </span>
+                <span className="text-right text-xs text-muted-foreground">
+                  <span className="block">รอ: {p.waiting}</span>
+                  <span className="block tabular-nums">
+                    ส่งแล้ว {p.submitted}/{p.total}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <div className="mt-4">
+        <Link href={round.href} className={BTN}>
+          ดูคนที่ยังไม่ประเมินทั้งหมด
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+/** The latest approved round on one line; the grade spread, department averages and ranking live on the round page. */
+export function HrResultsLine({ r }: { r: ResultsCard }) {
+  const change = r.change
+    ? r.change.direction === "up"
+      ? `เพิ่มขึ้น ${r.change.delta} จุด`
+      : r.change.direction === "down"
+        ? `ลดลง ${Math.abs(r.change.delta)} จุด`
+        : "เท่ารอบก่อน"
+    : null;
+  return (
+    <article className={cn(CARD, "flex flex-wrap items-center justify-between gap-3")} aria-label={`ผลประเมิน ${r.roundName}`}>
+      <p className="min-w-0 flex-[1_1_16rem] text-sm leading-snug">
+        <span className="font-semibold break-words">รอบก่อน: {r.roundName}</span> ผลครบ {r.count} คน{r.missing > 0 ? ` (อีก ${r.missing} คนยังไม่มีผล)` : ""} ค่าเฉลี่ย <span className="tabular-nums">{r.average}%</span>
+        {change ? ` ${change}` : ""}
+      </p>
+      <span className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-success-muted px-2.5 py-0.5 text-xs font-semibold text-success">
+          <CheckCircle2 className="size-3.5" aria-hidden="true" /> อนุมัติผลแล้ว
+        </span>
+        <Link href={r.href} className={BTN}>
+          ดูผลและรายงาน
+        </Link>
+      </span>
+    </article>
+  );
+}
+
 function MyTasks({ o }: { o: EvaluationOverview }) {
   if (o.myTasks.length === 0) return null;
   const waiting = o.myTasks.filter((t) => t.status !== "SUBMITTED");
@@ -277,7 +446,32 @@ export async function EvaluationOverviewSection({ companyId, session }: { compan
   }
 
   const nothing = o.open.length === 0 && !o.results && !o.awaitingCalculation;
+  // HR sees the work first and the numbers short; managers keep the team view below.
+  const hrView = o.companyWide && (can(session.perms, "campaign:update") || can(session.perms, "campaign:approve"));
   const hint = o.companyWide ? "รอบที่เปิดอยู่ เรียงจากใกล้ปิดที่สุด" : "เฉพาะลูกทีมของคุณ";
+
+  if (hrView) {
+    return (
+      <section id="evaluation" aria-label="การประเมินผล" className="scroll-mt-24 space-y-3">
+        <SectionHeading title="การประเมินผล" hint="เรียงจากงานที่รอคุณก่อน" />
+        <div className="grid gap-3">
+          <HrWorkCard o={o} />
+          {o.open.map((r) => (
+            <HrOpenRound key={r.id} round={r} faces={o.faces} />
+          ))}
+          {o.open.length === 0 && (
+            <article className={cn(CARD, "flex flex-wrap items-center justify-between gap-3")}>
+              <p className="text-sm text-muted-foreground">ยังไม่มีรอบประเมินที่เปิดอยู่ เมื่อเปิดรอบ ความคืบหน้าจะขึ้นที่นี่</p>
+              <Link href="/appraisal" className={BTN}>
+                ไปที่หน้าประเมินผล
+              </Link>
+            </article>
+          )}
+          {o.results && <HrResultsLine r={o.results} />}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="evaluation" aria-label="การประเมินผล" className="scroll-mt-24 space-y-3">

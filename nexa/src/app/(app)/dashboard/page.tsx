@@ -40,6 +40,7 @@ import {
   UpcomingLeavesSection,
 } from "@/features/dashboard-people/people-sections";
 import { EvaluationOverviewSection } from "@/features/dashboard-people/evaluation-section";
+import { DueSoonSection } from "@/features/dashboard-people/due-soon-section";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AttendanceRateLine } from "@/features/dashboard/dashboard-charts-lazy";
@@ -310,6 +311,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     can(user!.permissions, "campaign:manage") ||
     can(user!.permissions, "campaign:update") ||
     can(user!.permissions, "campaign:approve");
+  const canSeeDueSoon = can(user!.permissions, "employee:update") || can(user!.permissions, "holiday:create");
   const canSeeOvertime = can(user!.permissions, "overtime:approve") || can(user!.permissions, "overtime:manage");
   const canSeeMeetings = can(user!.permissions, "meeting:read");
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
@@ -470,6 +472,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
         <MyWorkLine data={actions} />
       </section>
+
+      {canSeeDueSoon && (
+        <Suspense fallback={null}>
+          <DueSoonSection companyId={user!.companyId} session={session} />
+        </Suspense>
+      )}
 
       {canSeeEvaluation && (
         <Suspense

@@ -1,5 +1,6 @@
 import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { avatarPaths } from "@/lib/avatar-server";
 import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
@@ -52,12 +53,20 @@ export interface EvaluationOverview {
   /** The latest closed round that nobody has calculated yet (HR only). */
   awaitingCalculation: { id: string; name: string; href: string } | null;
   draftCount: number;
+  /** Rounds HR still has to check before they can open them (the daily job makes recurring ones as drafts). */
+  drafts: { id: string; name: string; startIso: string | null; href: string }[];
+  /** Closed rounds with calculated results that are not all approved yet, newest first (HR and approvers only). */
+  awaitingReview: { id: string; name: string; href: string }[];
+  /** Photo and gender of the people listed as waiting, so the lists can show their faces; keyed by employee id. */
+  faces: Record<string, { photo: string | null; gender: string | null }>;
   /** Forms the viewer must fill in for their team, in open rounds. */
   myTasks: MyTeamTask[];
 }
 
 const APPROVED = ["APPROVED", "PUBLISHED", "ACKNOWLEDGED"] as const;
 const MAX_OPEN_ROUNDS = 3;
+const MAX_DRAFTS = 3;
+const MAX_REVIEW = 3;
 
 function dayDiff(from: Date, to: Date): number {
   return Math.round((to.getTime() - from.getTime()) / 86_400_000);
@@ -199,6 +208,41 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
   }
 
   const draftCount = isHr ? await prisma.appraisalRound.count({ where: { companyId, deletedAt: null, status: "DRAFT" } }) : 0;
+  const drafts: EvaluationOverview["drafts"] = [];
+  if (isHr && draftCount > 0) {
+    const rows = await prisma.appraisalRound.findMany({
+      where: { companyId, deletedAt: null, status: "DRAFT" },
+      select: { id: true, name: true, startDate: true },
+      orderBy: [{ startDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
+      take: MAX_DRAFTS,
+    });
+    for (const d of rows) {
+      drafts.push({ id: d.id, name: d.name, startIso: d.startDate ? bangkokParts(d.startDate).dateUTC.toISOString().slice(0, 10) : null, href: `/appraisal/rounds/${d.id}` });
+    }
+  }
 
-  return { companyWide: ids === null, open, results, awaitingCalculation, draftCount, myTasks };
+  // Calculated but not all approved: the review page is where HR adjusts and approves (HR and approvers).
+  const awaitingReview: EvaluationOverview["awaitingReview"] = [];
+  if (isHr || canRank) {
+    const toReview = await prisma.appraisalRound.findMany({
+      where: { companyId, deletedAt: null, status: "CLOSED", participants: { some: { resultStatus: "CALCULATED" } } },
+      orderBy: { closedAt: { sort: "desc", nulls: "last" } },
+      select: { id: true, name: true },
+      take: MAX_REVIEW,
+    });
+    for (const r of toReview) awaitingReview.push({ id: r.id, name: r.name, href: `/appraisal/rounds/${r.id}/review` });
+  }
+
+  // Faces for the few people the compact card lists as waiting (the first open round's top of the list).
+  const faces: EvaluationOverview["faces"] = {};
+  const shown = (open.find((r) => !r.closed)?.summary.pendingPeople ?? []).slice(0, 3).map((p) => p.employeeId);
+  if (shown.length > 0) {
+    const [photos, people] = [
+      await avatarPaths(shown),
+      await prisma.employee.findMany({ where: { id: { in: shown } }, select: { id: true, gender: true } }),
+    ];
+    for (const e of people) faces[e.id] = { photo: photos.get(e.id) ?? null, gender: e.gender ?? null };
+  }
+
+  return { companyWide: ids === null, open, results, awaitingCalculation, draftCount, drafts, awaitingReview, faces, myTasks };
 }
