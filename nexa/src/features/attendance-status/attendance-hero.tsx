@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowDown, CalendarDays, Check, CircleCheck, CircleX, Clock, TriangleAlert, type LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+import { ArrowDown, Check, Clock, TriangleAlert } from "lucide-react";
+import { GvAbsentIcon, GvCheckinIcon, GvLateIcon, GvLeaveIcon, type GvIconProps } from "@/components/shared/gv-icons";
 
 import { CountUp } from "@/components/shared/count-up";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { FollowRow } from "@/features/dashboard/follow-up";
-import { cn } from "@/lib/utils";
 import { StatusRing, personLine } from "./attendance-today-sections";
 import { attendanceListHref } from "./status-meta";
 import type { TodayStatus } from "./status-rules";
@@ -28,7 +29,6 @@ const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 
 function GlassTile({
   href,
   icon: Icon,
-  chip,
   label,
   value,
   unit,
@@ -37,8 +37,7 @@ function GlassTile({
   i,
 }: {
   href: string;
-  icon: LucideIcon;
-  chip: string;
+  icon: ComponentType<GvIconProps>;
   label: string;
   value: number;
   unit: string;
@@ -49,8 +48,8 @@ function GlassTile({
   return (
     <Link href={href} className="gv-glass gv-rise block px-4 py-3.5" style={{ "--i": i + 1 } as React.CSSProperties}>
       <span className="flex items-center gap-2 text-[13px] font-semibold text-white/90">
-        <span className={cn("flex size-6 items-center justify-center rounded-[7px]", chip)}>
-          <Icon className="size-3.5" aria-hidden="true" />
+        <span className="flex size-7 items-center justify-center rounded-[9px] bg-white/15 text-white ring-1 ring-white/25 ring-inset">
+          <Icon className="size-[18px]" aria-hidden="true" />
         </span>
         {label}
       </span>
@@ -157,8 +156,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
           <GlassTile
             i={0}
             href={attendanceListHref("LATE", departmentIds)}
-            icon={Clock}
-            chip="bg-[#fde68a] text-[#78350f]"
+            icon={GvLateIcon}
             label="มาสาย"
             value={counts.LATE}
             unit="คน"
@@ -167,8 +165,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
           <GlassTile
             i={1}
             href={attendanceListHref("ABSENT", departmentIds)}
-            icon={CircleX}
-            chip="bg-[#fecaca] text-[#7f1d1d]"
+            icon={GvAbsentIcon}
             label="ขาดงาน"
             value={counts.ABSENT}
             unit="คน"
@@ -177,8 +174,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
           <GlassTile
             i={2}
             href={attendanceListHref("ON_LEAVE", departmentIds)}
-            icon={CalendarDays}
-            chip="bg-[#bfdbfe] text-[#1e3a8a]"
+            icon={GvLeaveIcon}
             label="ลางาน"
             value={counts.ON_LEAVE}
             unit="คน"
@@ -187,8 +183,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
           <GlassTile
             i={3}
             href={attendanceListHref("NORMAL", departmentIds)}
-            icon={CircleCheck}
-            chip="bg-[#d9f99d] text-[#365314]"
+            icon={GvCheckinIcon}
             label="มาตรงเวลา"
             value={counts.NORMAL}
             unit={`คน · ${pct(counts.NORMAL, total)}%`}
@@ -206,9 +201,9 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
   );
 }
 
-const LIVE_ROWS: { status: TodayStatus; icon: LucideIcon; title: string; tone: "bad" | "warn"; tag: string; order: number; empty: string }[] = [
-  { status: "ABSENT", icon: CircleX, title: "ขาดงาน", tone: "bad", tag: "ต้องโทรตาม", order: 1, empty: "ยังไม่สแกนและไม่มีใบลา" },
-  { status: "LATE", icon: Clock, title: "มาสาย", tone: "warn", tag: "สายวันนี้", order: 2, empty: "วันนี้ยังไม่มีคนมาสาย" },
+const LIVE_ROWS: { status: TodayStatus; icon: ComponentType<GvIconProps>; title: string; tone: "bad" | "warn"; tag: string; order: number; empty: string }[] = [
+  { status: "ABSENT", icon: GvAbsentIcon, title: "ขาดงาน", tone: "bad", tag: "ต้องโทรตาม", order: 1, empty: "ยังไม่สแกนและไม่มีใบลา" },
+  { status: "LATE", icon: GvLateIcon, title: "มาสาย", tone: "warn", tag: "สายวันนี้", order: 2, empty: "วันนี้ยังไม่มีคนมาสาย" },
 ];
 
 /** The two live rows (absent, late) at the top of "ต้องตามวันนี้"; they refresh with the hero. */

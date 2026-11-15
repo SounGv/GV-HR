@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Suspense, type ReactNode } from "react";
+import { Suspense, type ComponentType, type ReactNode } from "react";
 import Link from "next/link";
 import { MobileDashboardView } from "@/components/mobile/mobile-dashboard-view";
-import { ArrowUp, ArrowUpRight, CalendarDays, CircleCheck, CircleX, Clock, Sparkles, TriangleAlert, Users, Zap } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Sparkles, TriangleAlert } from "lucide-react";
+import { GvAbsentIcon, GvCheckinIcon, GvLateIcon, GvLeaveIcon, GvMeetingIcon, GvOtIcon, type GvIconProps } from "@/components/shared/gv-icons";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { can } from "@/lib/auth/rbac";
 import {
@@ -203,7 +204,7 @@ function StripCell({
   unit,
   sub,
 }: {
-  icon: typeof Clock;
+  icon: ComponentType<GvIconProps>;
   label: string;
   value: number;
   decimals?: number;
@@ -522,18 +523,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <SectionHeading title="14 วันทำการล่าสุด" hint="ยอดรวมจากการเข้างานย้อนหลัง และ OT ของวันนี้" />
           <Card className="grid grid-cols-3 gap-0 py-0 lg:grid-cols-6">
             <StripCell
-              icon={Users}
+              icon={GvMeetingIcon}
               label="พนักงานทั้งหมด"
               value={s.headcount}
               unit="คน"
               sub={s.newThisMonth > 0 ? <span className="text-success">+{s.newThisMonth} เดือนนี้</span> : undefined}
             />
-            <StripCell icon={CircleCheck} label="เข้างานเฉลี่ย" value={avgAttendanceRate} unit="%" />
-            <StripCell icon={Clock} label="มาสายรวม" value={lateSum} unit="ครั้ง" />
-            <StripCell icon={CalendarDays} label="ลารวม" value={leaveSum} unit="ครั้ง" />
-            <StripCell icon={CircleX} label="ไม่มีบันทึกเวลา" value={absentSum} unit="คน-วัน" />
+            <StripCell icon={GvCheckinIcon} label="เข้างานเฉลี่ย" value={avgAttendanceRate} unit="%" />
+            <StripCell icon={GvLateIcon} label="มาสายรวม" value={lateSum} unit="ครั้ง" />
+            <StripCell icon={GvLeaveIcon} label="ลารวม" value={leaveSum} unit="ครั้ง" />
+            <StripCell icon={GvAbsentIcon} label="ไม่มีบันทึกเวลา" value={absentSum} unit="คน-วัน" />
             <StripCell
-              icon={Zap}
+              icon={GvOtIcon}
               label="OT วันนี้"
               value={s.otHoursToday}
               decimals={Number.isInteger(s.otHoursToday) ? 0 : 1}

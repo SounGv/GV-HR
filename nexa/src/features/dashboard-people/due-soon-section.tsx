@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock } from "lucide-react";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { GvHolidayIcon, GvIconTile, GvYearSetupIcon } from "@/components/shared/gv-icons";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/auth/rbac";
 import { bangkokParts } from "@/lib/datetime";
@@ -54,9 +55,12 @@ export function DueSoonList({ items }: { items: DueSoonItem[] }) {
         <ul className="divide-y divide-border">
           {items.map((it) => (
             <li key={it.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5 first:pt-0 last:pb-0">
-              <span className="min-w-0 flex-[1_1_16rem]">
-                <span className="block text-sm leading-snug font-semibold break-words">{it.title}</span>
-                <span className="block text-xs leading-snug text-muted-foreground">{it.sub}</span>
+              <span className="flex min-w-0 flex-[1_1_16rem] items-center gap-3">
+                <GvIconTile icon={it.key === "holidays" ? GvHolidayIcon : GvYearSetupIcon} status="warn" />
+                <span className="min-w-0">
+                  <span className="block text-sm leading-snug font-semibold break-words">{it.title}</span>
+                  <span className="block text-xs leading-snug text-muted-foreground">{it.sub}</span>
+                </span>
               </span>
               <span className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-status-late-fg">

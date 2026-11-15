@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { CalendarDays, LogOut, Timer } from "lucide-react";
+import type { ComponentType } from "react";
+import { GvMeetingIcon, GvOtIcon, GvScanIcon, type GvIconProps } from "@/components/shared/gv-icons";
 
 import { FollowRow, FollowRowFailed } from "@/features/dashboard/follow-up";
 import { STATUS_META } from "@/features/attendance-status/status-meta";
@@ -38,7 +39,7 @@ function Frame({
   order,
   people,
 }: {
-  icon: typeof Timer;
+  icon: ComponentType<GvIconProps>;
   title: string;
   hint: string;
   count: number;
@@ -122,7 +123,7 @@ export function MissedScanOutCard({ data }: { data: MissedScans }) {
   const hours = LATE_FIRST_SCAN_MIN / 60;
   return (
     <Frame
-      icon={LogOut}
+      icon={GvScanIcon}
       title="ลืมสแกน"
       hint={`${data.days} วันล่าสุด · ไม่นับวันนี้ · ชั่วโมงยังผิดจนกว่าจะแก้เวลา`}
       people={all.map((r) => ({ id: r.employeeId, name: r.name, avatarUrl: r.avatarUrl, gender: r.gender }))}
@@ -157,7 +158,7 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
   const waiting = rows.filter((r) => r.status !== "APPROVED").length;
   return (
     <Frame
-      icon={Timer}
+      icon={GvOtIcon}
       title="OT วันนี้"
       hint={`รวม ${hours} ชม.`}
       people={rows.map((r) => ({ id: r.employeeId, name: r.name, avatarUrl: r.avatarUrl, gender: r.gender }))}
@@ -203,7 +204,7 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
 export function MeetingsTodayCard({ rows }: { rows: MeetingToday[] }) {
   return (
     <Frame
-      icon={CalendarDays}
+      icon={GvMeetingIcon}
       title="ประชุมวันนี้"
       hint={rows[0]?.title ?? ""}
       count={rows.length}
@@ -239,7 +240,7 @@ export async function MissedScanOutSection({ companyId, session }: { companyId: 
   try {
     return <MissedScanOutCard data={await loadMissedScans(companyId, session)} />;
   } catch {
-    return <FollowRowFailed icon={LogOut} title="ลืมสแกน" what="รายชื่อคนลืมสแกน" order={3} />;
+    return <FollowRowFailed icon={GvScanIcon} title="ลืมสแกน" what="รายชื่อคนลืมสแกน" order={3} />;
   }
 }
 
@@ -247,7 +248,7 @@ export async function OvertimeTodaySection({ companyId, session }: { companyId: 
   try {
     return <OvertimeTodayCard rows={await loadOvertimeToday(companyId, session)} />;
   } catch {
-    return <FollowRowFailed icon={Timer} title="OT วันนี้" what="OT วันนี้" order={4} />;
+    return <FollowRowFailed icon={GvOtIcon} title="OT วันนี้" what="OT วันนี้" order={4} />;
   }
 }
 
@@ -255,6 +256,6 @@ export async function MeetingsTodaySection({ companyId, employeeId }: { companyI
   try {
     return <MeetingsTodayCard rows={await loadMeetingsToday(companyId, employeeId)} />;
   } catch {
-    return <FollowRowFailed icon={CalendarDays} title="นัดประชุมวันนี้" what="นัดประชุมวันนี้" order={8} />;
+    return <FollowRowFailed icon={GvMeetingIcon} title="นัดประชุมวันนี้" what="นัดประชุมวันนี้" order={8} />;
   }
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, UserCheck } from "lucide-react";
+import { GvLeaveIcon, GvProbationIcon } from "@/components/shared/gv-icons";
 import { FollowRow, FollowRowFailed } from "@/features/dashboard/follow-up";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 
@@ -72,7 +72,7 @@ export function UpcomingLeavesCard({ data }: { data: UpcomingLeaves }) {
   const count = data.today.length + data.soon.length;
   return (
     <FollowRow
-      icon={CalendarClock}
+      icon={GvLeaveIcon}
       title={`ลา ${data.lookaheadDays} วันข้างหน้า`}
       sub={`วันนี้ ${data.today.length} · เร็วๆ นี้ ${data.soon.length} คน`}
       people={[...data.today, ...data.soon].map((p) => ({ id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender }))}
@@ -97,7 +97,7 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
   const soonest = data.people.reduce<number | null>((m, p) => (m === null || p.daysLeft < m ? p.daysLeft : m), null);
   return (
     <FollowRow
-      icon={UserCheck}
+      icon={GvProbationIcon}
       title="ครบทดลองงาน"
       sub="ประเมินให้เสร็จก่อนวันที่ 120"
       people={data.people.map((p) => ({ id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender }))}
@@ -159,7 +159,7 @@ export async function UpcomingLeavesSection({ companyId, session }: { companyId:
   try {
     return <UpcomingLeavesCard data={await loadUpcomingLeaves(companyId, session)} />;
   } catch {
-    return <FollowRowFailed icon={CalendarClock} title="ลาวันนี้และวันข้างหน้า" what="รายชื่อคนลา" order={5} />;
+    return <FollowRowFailed icon={GvLeaveIcon} title="ลาวันนี้และวันข้างหน้า" what="รายชื่อคนลา" order={5} />;
   }
 }
 
@@ -167,6 +167,6 @@ export async function ProbationDueSection({ companyId, session }: { companyId: s
   try {
     return <ProbationDueCard data={await loadProbationDue(companyId, session)} canCreateRound={can(session.perms, "campaign:create")} />;
   } catch {
-    return <FollowRowFailed icon={UserCheck} title="ครบทดลองงาน" what="รายชื่อคนใกล้ครบทดลองงาน" order={6} />;
+    return <FollowRowFailed icon={GvProbationIcon} title="ครบทดลองงาน" what="รายชื่อคนใกล้ครบทดลองงาน" order={6} />;
   }
 }

@@ -1,24 +1,23 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, CalendarDays, CheckCircle2, ClipboardCheck, GitBranch, PencilLine, ReceiptText, Zap } from "lucide-react";
+import type { ComponentType } from "react";
+import { ArrowRight, CalendarClock, CheckCircle2 } from "lucide-react";
+import { GvApprovalsIcon, GvCorrectionIcon, GvExpenseIcon, GvIconTile, GvLeaveIcon, GvOtIcon, GvWorkflowIcon, type GvIconProps } from "@/components/shared/gv-icons";
 import { FollowRow } from "./follow-up";
-import { cn } from "@/lib/utils";
 import type { DashboardActions } from "./service";
 
 interface ApprovalTile {
   key: keyof DashboardActions["approvals"];
   label: string;
   href: string;
-  icon: typeof ReceiptText;
-  /** Chip colours: background, border, icon. */
-  tone: string;
+  icon: ComponentType<GvIconProps>;
 }
 
 const TILES: ApprovalTile[] = [
-  { key: "leave", label: "การลา", href: "/leave?view=overview", icon: CalendarDays, tone: "border-status-leave-border bg-status-leave-bg text-status-leave-fg" },
-  { key: "overtime", label: "OT", href: "/overtime?view=overview", icon: Zap, tone: "border-violet-200 bg-violet-50 text-violet-700" },
-  { key: "correction", label: "แก้ไขเวลาเข้า-ออก", href: "/attendance/corrections", icon: PencilLine, tone: "border-teal-100 bg-teal-50 text-teal-700" },
-  { key: "expense", label: "เบิกจ่าย", href: "/expenses", icon: ReceiptText, tone: "border-amber-200 bg-amber-50 text-amber-700" },
-  { key: "workflow", label: "คำขออนุมัติอื่นๆ", href: "/workflows", icon: GitBranch, tone: "border-slate-200 bg-slate-50 text-slate-700" },
+  { key: "leave", label: "การลา", href: "/leave?view=overview", icon: GvLeaveIcon },
+  { key: "overtime", label: "OT", href: "/overtime?view=overview", icon: GvOtIcon },
+  { key: "correction", label: "แก้ไขเวลาเข้า-ออก", href: "/attendance/corrections", icon: GvCorrectionIcon },
+  { key: "expense", label: "เบิกจ่าย", href: "/expenses", icon: GvExpenseIcon },
+  { key: "workflow", label: "คำขออนุมัติอื่นๆ", href: "/workflows", icon: GvWorkflowIcon },
 ];
 
 /**
@@ -57,9 +56,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
               return (
                 <li key={t.key}>
                   <Link href={t.href} className="gv-row flex items-center gap-2.5 rounded-[10px] px-2 py-1.5 text-sm">
-                    <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg border", t.tone)}>
-                      <Icon className="size-[15px]" aria-hidden="true" />
-                    </span>
+                    <GvIconTile icon={Icon} className="size-8 rounded-[10px]" iconClassName="size-5" />
                     {t.label}
                     <span className="ml-auto text-[15px] font-semibold tabular-nums">{data.approvals[t.key]}</span>
                   </Link>
@@ -108,7 +105,7 @@ export function ApprovalsFollowCard({ data }: { data: DashboardActions }) {
   const total = tiles.reduce((sum, t) => sum + data.approvals[t.key], 0);
   return (
     <FollowRow
-      icon={ClipboardCheck}
+      icon={GvApprovalsIcon}
       title="คำขอรอคุณอนุมัติ"
       sub="กดแต่ละประเภทเพื่อไปอนุมัติ"
       count={total}
@@ -125,9 +122,7 @@ export function ApprovalsFollowCard({ data }: { data: DashboardActions }) {
           return (
             <li key={t.key}>
               <Link href={t.href} className="gv-row flex min-h-11 items-center gap-2.5 rounded-[10px] px-1 text-sm">
-                <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg border", t.tone)}>
-                  <Icon className="size-[15px]" aria-hidden="true" />
-                </span>
+                <GvIconTile icon={Icon} className="size-8 rounded-[10px]" iconClassName="size-5" />
                 {t.label}
                 <span className="ml-auto text-[15px] font-semibold tabular-nums">{data.approvals[t.key]}</span>
               </Link>

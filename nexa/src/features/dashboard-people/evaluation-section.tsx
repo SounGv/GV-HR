@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, CheckCircle2, CircleAlert, Clock, Lock, Minus, Pencil, PenLine } from "lucide-react";
 import { PersonAvatar } from "@/components/shared/person-avatar";
+import { GvCalcIcon, GvDraftIcon, GvEvaluationIcon, GvIconTile, type GvIconProps, type GvStatus } from "@/components/shared/gv-icons";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { cn } from "@/lib/utils";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -250,12 +251,12 @@ function StatusPill({ tone, icon: Icon, children }: { tone: "warn" | "info"; ico
 
 /** HR's own queue: the evaluation steps only HR can do. One line when there is nothing to do, so the page stays short. */
 export function HrWorkCard({ o }: { o: EvaluationOverview }) {
-  const rows: { key: string; title: string; sub: string; pill: React.ReactNode; href: string; action: string }[] = [];
+  const rows: { key: string; title: string; sub: string; pill: React.ReactNode; href: string; action: string; icon: React.ComponentType<GvIconProps>; status: GvStatus }[] = [];
   for (const r of o.awaitingReview) {
-    rows.push({ key: `review-${r.id}`, title: r.name, sub: "คำนวณผลแล้ว รอทบทวนและอนุมัติ", pill: <StatusPill tone="warn" icon={CircleAlert}>รอทบทวน</StatusPill>, href: r.href, action: "ทบทวนผล" });
+    rows.push({ key: `review-${r.id}`, title: r.name, sub: "คำนวณผลแล้ว รอทบทวนและอนุมัติ", pill: <StatusPill tone="warn" icon={CircleAlert}>รอทบทวน</StatusPill>, href: r.href, action: "ทบทวนผล", icon: GvEvaluationIcon, status: "warn" });
   }
   if (o.awaitingCalculation) {
-    rows.push({ key: "calc", title: o.awaitingCalculation.name, sub: "ปิดรอบแล้ว ยังไม่คำนวณผล", pill: <StatusPill tone="warn" icon={CircleAlert}>รอคำนวณ</StatusPill>, href: o.awaitingCalculation.href, action: "ไปคำนวณผล" });
+    rows.push({ key: "calc", title: o.awaitingCalculation.name, sub: "ปิดรอบแล้ว ยังไม่คำนวณผล", pill: <StatusPill tone="warn" icon={CircleAlert}>รอคำนวณ</StatusPill>, href: o.awaitingCalculation.href, action: "ไปคำนวณผล", icon: GvCalcIcon, status: "warn" });
   }
   for (const d of o.drafts) {
     rows.push({
@@ -265,6 +266,8 @@ export function HrWorkCard({ o }: { o: EvaluationOverview }) {
       pill: <StatusPill tone="info" icon={Pencil}>ฉบับร่าง</StatusPill>,
       href: d.href,
       action: "ตรวจและเปิดรอบ",
+      icon: GvDraftIcon,
+      status: "info",
     });
   }
   const more = Math.max(0, o.draftCount - o.drafts.length);
@@ -282,9 +285,12 @@ export function HrWorkCard({ o }: { o: EvaluationOverview }) {
         <ul className="mt-2 divide-y divide-border">
           {rows.map((r) => (
             <li key={r.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5">
-              <span className="min-w-0 flex-[1_1_14rem]">
-                <span className="block text-sm leading-snug font-semibold break-words">{r.title}</span>
-                <span className="block text-xs leading-snug text-muted-foreground">{r.sub}</span>
+              <span className="flex min-w-0 flex-[1_1_14rem] items-center gap-3">
+                <GvIconTile icon={r.icon} status={r.status} />
+                <span className="min-w-0">
+                  <span className="block text-sm leading-snug font-semibold break-words">{r.title}</span>
+                  <span className="block text-xs leading-snug text-muted-foreground">{r.sub}</span>
+                </span>
               </span>
               <span className="flex flex-wrap items-center gap-2">
                 {r.pill}
@@ -308,7 +314,8 @@ export function HrOpenRound({ round, faces }: { round: OpenRound; faces: Evaluat
   const top = s.pendingPeople.slice(0, 3);
   return (
     <article className={CARD} aria-label={round.name}>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <GvIconTile icon={GvEvaluationIcon} />
         <h3 className="text-base leading-snug font-semibold break-words">{round.name}</h3>
         <DaysLeft round={round} />
       </div>

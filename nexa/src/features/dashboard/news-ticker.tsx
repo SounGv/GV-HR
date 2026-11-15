@@ -2,21 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardCheck,
-  Clock,
-  Megaphone,
-  Pause,
-  Play,
-  TriangleAlert,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import type { ComponentType } from "react";
 
 import { VBot } from "@/components/shared/v-bot";
+import {
+  GvAbsentIcon,
+  GvAnnounceIcon,
+  GvApprovalsIcon,
+  GvCheckinIcon,
+  GvEvaluationIcon,
+  GvLateIcon,
+  GvLeaveIcon,
+  GvMeetingIcon,
+  GvOtIcon,
+  GvProbationIcon,
+  GvScanIcon,
+  type GvIconProps,
+} from "@/components/shared/gv-icons";
 import { cn } from "@/lib/utils";
 
 type Tone = "bad" | "warn" | "info" | "ok";
@@ -24,7 +27,7 @@ type Tone = "bad" | "warn" | "info" | "ok";
 interface Item {
   key: string;
   tone: Tone;
-  icon: LucideIcon;
+  icon: ComponentType<GvIconProps>;
   word: string;
   detail: string;
   href: string;
@@ -40,12 +43,18 @@ const PILL: Record<Tone, { pill: string; icon: string }> = {
   ok: { pill: "bg-[var(--ticker-ok)] text-white", icon: "text-[var(--ticker-ok)]" },
 };
 
-function iconFor(title: string): LucideIcon {
-  if (/ขาด|ลืม/.test(title)) return TriangleAlert;
-  if (/อนุมัติ|ประเมิน/.test(title)) return ClipboardCheck;
-  if (/ลา|ประชุม/.test(title)) return Users;
-  if (/สาย|OT|ทดลอง|ครบ/.test(title)) return Clock;
-  return TriangleAlert;
+/** The same icon the card on the board uses for that thing, so the ticker and the card read as one. */
+function iconFor(title: string): ComponentType<GvIconProps> {
+  if (/ลืม/.test(title)) return GvScanIcon;
+  if (/ขาด/.test(title)) return GvAbsentIcon;
+  if (/ประเมิน/.test(title)) return GvEvaluationIcon;
+  if (/อนุมัติ/.test(title)) return GvApprovalsIcon;
+  if (/ประชุม/.test(title)) return GvMeetingIcon;
+  if (/ลา/.test(title)) return GvLeaveIcon;
+  if (/OT/.test(title)) return GvOtIcon;
+  if (/สาย/.test(title)) return GvLateIcon;
+  if (/ทดลอง|ครบ/.test(title)) return GvProbationIcon;
+  return GvApprovalsIcon;
 }
 
 /** Reads the "ต้องตามวันนี้" board (its cards stream in one by one, like FollowCount) and turns it into messages. */
@@ -67,11 +76,11 @@ function readBoard(board: HTMLElement, announcement: { id: string; title: string
   });
   items.sort((a, b) => RANK[a.tone] - RANK[b.tone]);
   if (announcement) {
-    items.push({ key: `ann-${announcement.id}`, tone: "info", icon: Megaphone, word: "ประกาศ", detail: announcement.title, href: `/announcements/${announcement.id}` });
+    items.push({ key: `ann-${announcement.id}`, tone: "info", icon: GvAnnounceIcon, word: "ประกาศ", detail: announcement.title, href: `/announcements/${announcement.id}` });
   }
   const clears = [...board.querySelectorAll<HTMLElement>("[data-follow-clear]")].map((el) => el.dataset.followClear ?? "").filter(Boolean);
   if (clears.length > 0) {
-    items.push({ key: "clear", tone: "ok", icon: Check, word: "ไม่มีวันนี้", detail: clears.join(", "), href: "#follow-up" });
+    items.push({ key: "clear", tone: "ok", icon: GvCheckinIcon, word: "ไม่มีวันนี้", detail: clears.join(", "), href: "#follow-up" });
   }
   return items;
 }

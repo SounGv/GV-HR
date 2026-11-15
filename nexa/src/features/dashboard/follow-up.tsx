@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ComponentType, ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
+import { GvIconTile } from "@/components/shared/gv-icons";
 
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { cn } from "@/lib/utils";
@@ -11,26 +12,23 @@ import { cn } from "@/lib/utils";
  */
 export type FollowTone = "bad" | "warn" | "info" | "ok";
 
-const TONE: Record<FollowTone, { chip: string; word: string; num: string; wash: string }> = {
+const TONE: Record<FollowTone, { word: string; num: string; wash: string }> = {
   bad: {
-    chip: "bg-[#fef2f2] text-[#b91c1c] ring-[#fecaca] dark:bg-[#3a1513] dark:text-[#fca5a0] dark:ring-[#6e2522]",
     word: "bg-[#fef2f2] text-[#b91c1c] dark:bg-[#3a1513] dark:text-[#fca5a0]",
     num: "text-[#b91c1c] dark:text-[#fca5a0]",
     wash: "from-[#fef2f2] dark:from-[#3a1513]/60",
   },
   warn: {
-    chip: "bg-[#fffbeb] text-[#b45309] ring-[#fde68a] dark:bg-[#3a2a10] dark:text-[#f6b45c] dark:ring-[#6b4e12]",
     word: "bg-[#fffbeb] text-[#a9500a] dark:bg-[#3a2a10] dark:text-[#f6b45c]",
     num: "text-[#0b4f4a] dark:text-[#99f6e4]",
     wash: "from-[#f0f9f7] dark:from-[#13201e]",
   },
   info: {
-    chip: "bg-[#eff6ff] text-[#1d4ed8] ring-[#bfdbfe] dark:bg-[#13243a] dark:text-[#9cc3f2] dark:ring-[#24405f]",
     word: "bg-[#eff6ff] text-[#1d4ed8] dark:bg-[#13243a] dark:text-[#9cc3f2]",
     num: "text-[#0b4f4a] dark:text-[#99f6e4]",
     wash: "from-[#f0f9f7] dark:from-[#13201e]",
   },
-  ok: { chip: "", word: "bg-[#e4f6ea] text-[#166534] dark:bg-[#12301e] dark:text-[#7ee2a3]", num: "", wash: "" },
+  ok: { word: "bg-[#e4f6ea] text-[#166534] dark:bg-[#12301e] dark:text-[#7ee2a3]", num: "", wash: "" },
 };
 
 /** Order the cards sit in (lower first), so the most urgent leads whatever loads first. */
@@ -121,9 +119,7 @@ export function FollowRow({
       aria-label={`${title} ${display ?? count} ${unit}`} className={CARD}>
       <span aria-hidden="true" className={cn("pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b to-transparent", TONE[tone].wash)} />
       <div className="relative flex items-start gap-3">
-        <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-[14px] ring-1 ring-inset shadow-[0_1px_2px_rgba(11,40,37,.08)]", TONE[tone].chip)}>
-          <Icon className="size-5" aria-hidden="true" />
-        </span>
+        <GvIconTile icon={Icon} status={tone} />
         <span className="min-w-0 flex-1 pt-0.5">
           <span className="block text-[15.5px] leading-snug font-semibold text-foreground">{title}</span>
           {sub && <span className="block text-[12.5px] leading-snug text-muted-foreground">{sub}</span>}
