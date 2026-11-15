@@ -6,7 +6,7 @@ import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { AttendanceStatusTabs } from "@/features/attendance-status/attendance-status-tabs";
 import { DepartmentFilter } from "@/features/attendance-status/department-filter";
-import { listDepartmentOptions, loadAttendanceWatch } from "@/features/attendance-status/service";
+import { listDepartmentOptions, loadAttendanceWatchCached } from "@/features/attendance-status/service";
 import { watchListHref } from "@/features/attendance-status/status-meta";
 import {
   WATCH_ABSENT_DAYS,
@@ -45,7 +45,8 @@ export default async function AttendanceWatchPage({
   let watch;
   let departments;
   try {
-    watch = await loadAttendanceWatch(session.companyId, session, deptIds);
+    // The same remembered list the dashboard card uses (it drops when a leave or correction changes a past day).
+    watch = await loadAttendanceWatchCached(session.companyId, session, deptIds);
     departments = await listDepartmentOptions(session.companyId);
   } catch {
     return (

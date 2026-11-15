@@ -5,6 +5,7 @@ import { CalendarDays, Clock3, FileText, UserRound } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
+import { NoAccessRequest } from "@/components/shared/no-access-request";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { PersonFace } from "@/components/shared/person-face";
 import { AttachmentLink } from "@/components/shared/attachment-link";
@@ -22,8 +23,11 @@ export default async function LeaveDetailPage({ params }: { params: Promise<{ id
 
   const request = await getLeave(session.companyId, session, id).catch((e) => {
     if (e instanceof AppError && e.status === 404) notFound();
+    if (e instanceof AppError && e.status === 403) return null;
     throw e;
   });
+  // Reached from an old link or a notification for someone else's request: say so plainly, not an error page.
+  if (!request) return <NoAccessRequest what="คำขอลา" listHref="/leave" listLabel="กลับไปประวัติการลา" />;
 
   const employeeName = displayName(request.employee);
   const isHourly = request.unit === "HOUR";

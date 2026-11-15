@@ -5,6 +5,7 @@ import { Clock3, UserRound } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
+import { NoAccessRequest } from "@/components/shared/no-access-request";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { PersonFace } from "@/components/shared/person-face";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,8 +23,11 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
 
   const request = await getOvertime(session.companyId, session, id).catch((e) => {
     if (e instanceof AppError && e.status === 404) notFound();
+    if (e instanceof AppError && e.status === 403) return null;
     throw e;
   });
+  // Reached from an old link or a notification for someone else's request: say so plainly, not an error page.
+  if (!request) return <NoAccessRequest what="คำขอ OT" listHref="/overtime" listLabel="กลับไปรายการ OT" />;
 
   const employeeName = displayName(request.employee);
 

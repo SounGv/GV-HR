@@ -83,6 +83,8 @@ export function WatchlistCard({ data, departmentIds }: WatchProps) {
         {data.people.length > 6 && (
           <Link
             href={watchListHref("all", departmentIds)}
+            // The full list is a heavy page to build; open it on click, not when the link scrolls into view.
+            prefetch={false}
             className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline"
           >
             ดูทั้งหมด {data.people.length} คน <ChevronRight className="size-4" aria-hidden="true" />

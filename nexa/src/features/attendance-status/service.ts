@@ -271,19 +271,41 @@ export async function loadAttendanceWatch(
 const WATCH_CACHE_SECONDS = 300;
 
 /**
- * `loadAttendanceWatch` remembered for a few minutes, separately for each user
- * and department filter (it follows that user's team scope, so it is never
- * shared between people). It rebuilds the whole 30-day daily report, which was
- * the slowest part of opening the dashboard.
+ * Who the cached watch list belongs to. It follows the viewer's team scope, so the key must change when the scope
+ * does: everyone who sees the whole company shares one entry ("company"), and a manager whose view is limited to the
+ * people under them gets their own. Keying on every user (as before) rebuilt the same company-wide 30-day report once
+ * per person, and again for all of them every time a leave was approved and the tag dropped the cache (13 to 15 Nov 2026:
+ * database connections closed, pool timeouts, out-of-memory kills on the dashboard).
+ */
+export function watchCacheScope(session: AccessClaims): string {
+  return teamScopeFilter(session) === null ? "company" : `team:${session.sub}`;
+}
+
+/** Builds in progress on this server instance, so a burst of views after the cache drops runs the report once. */
+const watchBuilds = new Map<string, Promise<AttendanceWatch>>();
+
+function buildOnce(key: string, build: () => Promise<AttendanceWatch>): Promise<AttendanceWatch> {
+  const running = watchBuilds.get(key);
+  if (running) return running;
+  const started = build().finally(() => watchBuilds.delete(key));
+  watchBuilds.set(key, started);
+  return started;
+}
+
+/**
+ * `loadAttendanceWatch` remembered for a few minutes, once per viewing scope and department filter (see
+ * `watchCacheScope`). It rebuilds the whole 30-day daily report, which was the slowest part of opening the dashboard.
  */
 export function loadAttendanceWatchCached(
   companyId: string,
   session: AccessClaims,
   departmentIds: string[] = [],
 ): Promise<AttendanceWatch> {
+  const scope = watchCacheScope(session);
+  const depts = [...departmentIds].sort().join(",");
   return unstable_cache(
-    () => loadAttendanceWatch(companyId, session, departmentIds),
-    ["attendance-watch", companyId, session.sub, [...departmentIds].sort().join(",")],
+    () => buildOnce(`${companyId}|${scope}|${depts}`, () => loadAttendanceWatch(companyId, session, departmentIds)),
+    ["attendance-watch", companyId, scope, depts],
     { revalidate: WATCH_CACHE_SECONDS, tags: [attendanceWatchTag(companyId)] },
   )();
 }
