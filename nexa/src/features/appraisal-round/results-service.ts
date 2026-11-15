@@ -117,7 +117,7 @@ export async function calculateRound(companyId: string, session: AccessClaims, r
 
   const participants = await prisma.appraisalParticipant.findMany({
     where: { roundId },
-    select: { id: true, formId: true, resultStatus: true, adjustedAt: true, assignments: { where: { status: "SUBMITTED" }, select: { raterType: true, answers: true } } },
+    select: { id: true, formId: true, resultStatus: true, adjustedAt: true, scoreBreakdown: true, assignments: { where: { status: "SUBMITTED" }, select: { raterType: true, answers: true } } },
   });
   let calculated = 0;
   let noAnswers = 0;
@@ -125,6 +125,11 @@ export async function calculateRound(companyId: string, session: AccessClaims, r
   let adjustedKept = 0;
   for (const p of participants) {
     if (p.resultStatus === "APPROVED" || p.resultStatus === "PUBLISHED" || p.resultStatus === "ACKNOWLEDGED") {
+      kept++;
+      continue;
+    }
+    // Brought in from another system (Favpo): there are no submitted answers here to work the score out from again.
+    if ((p.scoreBreakdown as { source?: string } | null)?.source === "favpo-import") {
       kept++;
       continue;
     }
