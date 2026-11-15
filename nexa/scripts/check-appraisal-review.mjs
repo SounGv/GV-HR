@@ -2,8 +2,10 @@
 // Run: node --experimental-strip-types scripts/check-appraisal-review.mjs
 import assert from "node:assert/strict";
 import {
+  CEILING_MIN_PEOPLE,
   MANAGER_GAP_POINTS,
   MIN_PEOPLE_PER_MANAGER,
+  ceilingSummary,
   gradeSpread,
   nearBandEdge,
   personFlags,
@@ -96,6 +98,14 @@ check("rows needing a look come first, hidden small groups last", () => {
 check("nobody rated gives no average and no rows, never a divide by zero", () => {
   assert.deepEqual(summarizeManagers([]), { rows: [], companyAverage: null });
   assert.deepEqual(summarizeManagers([{ managerId: "x", name: "ว่าง", percents: [] }]).rows, []);
+});
+check("the ceiling warning needs enough people and most of them at 100, and works without grade bands", () => {
+  assert.deepEqual(ceilingSummary([100, 100, 100, 90, 80, 70]), { count: 3, total: 6, flag: true }); // exactly half
+  assert.equal(ceilingSummary([100, 100, 90, 80, 70, 60]).flag, false); // a third
+  assert.equal(ceilingSummary([100, 100, 100, 100]).flag, false); // fewer than CEILING_MIN_PEOPLE people: too few to say
+  assert.equal(CEILING_MIN_PEOPLE, 5);
+  assert.deepEqual(ceilingSummary([]), { count: 0, total: 0, flag: false }); // nobody scored: no divide by zero
+  assert.equal(ceilingSummary([99.99, 100]).count, 1); // 99.99 is not the top
 });
 
 console.log(`\n${n} checks passed`);

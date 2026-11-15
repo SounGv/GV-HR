@@ -15,7 +15,33 @@ export const MIN_PEOPLE_PER_MANAGER = 3;
 /** A score this close to a grade boundary (either side) is flagged, since a small change moves the grade. */
 export const NEAR_EDGE_POINTS = 1;
 
+/** At least this many people must be scored before "many at the top score" is worth saying (a handful of 100s is normal). */
+export const CEILING_MIN_PEOPLE = 5;
+/** Share of people at the top score from which the review page warns that scores bunch at the ceiling. Warning only. */
+export const CEILING_SHARE = 0.5;
+
 const r1 = (n: number) => Math.round(n * 10) / 10;
+
+export interface CeilingSummary {
+  /** People at the top score (100% by default). */
+  count: number;
+  total: number;
+  /** True when enough people were scored and at least CEILING_SHARE of them are at the top, so scores cannot tell people apart. */
+  flag: boolean;
+}
+
+/**
+ * How many people sit at the top score. Informational: it never changes a score or a grade, and it does not depend on
+ * grade bands being set, so it also works before HR has chosen any.
+ *
+ * @param percents each scored person's total, 0 to 100.
+ * @param top the score counted as the ceiling.
+ */
+export function ceilingSummary(percents: readonly number[], top = 100): CeilingSummary {
+  const count = percents.filter((p) => p >= top).length;
+  const total = percents.length;
+  return { count, total, flag: total >= CEILING_MIN_PEOPLE && count / total >= CEILING_SHARE };
+}
 
 export interface BandLike {
   label: string;

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
-import { useCloseRound, useRemindRound, useRound, useRoundProgress, useUnscheduleRound } from "./hooks";
+import { useCloseRound, useRemindRound, useRound, useRoundProgress, useRoundResults, useUnscheduleRound } from "./hooks";
 import { RoundMatrix } from "./round-tracking";
 import { RoundResults } from "./round-results";
 import { Wizard } from "./wizard";
@@ -50,6 +50,9 @@ function RoundOverview({ round }: { round: RoundDetail }) {
   const { can } = useAuth();
   const live = round.status === "OPEN" || round.status === "CLOSED";
   const progress = useRoundProgress(round.id, live);
+  // Rounds brought in from Favpo have scores but no tasks: say so instead of "0 of 0 (0%)".
+  const results = useRoundResults(round.id, live);
+  const imported = (results.data?.data.length ?? 0) > 0 && results.data!.data.every((r) => r.imported);
   const remind = useRemindRound(round.id);
   const close = useCloseRound(round.id);
   const unschedule = useUnscheduleRound(round.id);
@@ -120,7 +123,11 @@ function RoundOverview({ round }: { round: RoundDetail }) {
       {live && (
         <Card className="gap-3 p-4" aria-label="ความคืบหน้า">
           <h2 className="text-base font-semibold">ความคืบหน้า</h2>
-          {!p ? (
+          {imported ? (
+            <p className="text-sm text-muted-foreground">
+              นำเข้าจาก Favpo: มีเฉพาะคะแนนรวมของแต่ละคน ไม่มีงานประเมินรายข้อในระบบนี้ จึงไม่มีความคืบหน้าให้ติดตาม
+            </p>
+          ) : !p ? (
             <p className="text-sm text-muted-foreground">กำลังโหลด…</p>
           ) : (
             <>

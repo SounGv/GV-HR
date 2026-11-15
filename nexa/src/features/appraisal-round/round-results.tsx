@@ -28,6 +28,8 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
   const cfg = settings.data?.data;
   const needsApproval = (cfg?.approvalLevels ?? 0) >= 1;
   const counts = (s: ResultStatus) => rows.filter((r) => r.status === s).length;
+  // Every score was brought in from Favpo: there are no answers to calculate from, so the calculate button would do nothing.
+  const allImported = rows.length > 0 && rows.every((r) => r.imported);
   const canPublishNow = status === "CLOSED" && (needsApproval ? counts("APPROVED") : counts("CALCULATED")) > 0;
 
   async function run(kind: "calculate" | "approve" | "publish") {
@@ -62,14 +64,19 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
       {cfg && !cfg.configured && (
         <p className="rounded-xl bg-muted px-3 py-2 text-sm">ยังไม่ได้ตั้งค่าวิธีคิดคะแนน คำนวณได้ด้วยค่าเริ่มต้น (ถ่วงน้ำหนัก ไม่มีเกรด) ควรตั้งค่าก่อนประกาศผล</p>
       )}
+      {allImported && (
+        <p className="rounded-xl bg-muted px-3 py-2 text-sm">นำเข้าจาก Favpo: มีเฉพาะคะแนนรวมของแต่ละคน ไม่มีเกรดและไม่ต้องคำนวณซ้ำ ไปที่ทบทวนผลเพื่อดูการกระจายคะแนน</p>
+      )}
       <p className="text-sm tabular-nums text-muted-foreground">
         ยังไม่คำนวณ {counts("NOT_CALCULATED")} · คำนวณแล้ว {counts("CALCULATED")} · อนุมัติแล้ว {counts("APPROVED")} · ประกาศแล้ว {counts("PUBLISHED") + counts("ACKNOWLEDGED")}
       </p>
       {can("campaign:update") && (
         <div className="flex flex-wrap gap-2">
-          <Button className="h-11 md:h-9" onClick={() => run("calculate")} disabled={act.calculate.isPending}>
-            <Calculator className="size-4" /> คำนวณผล
-          </Button>
+          {!allImported && (
+            <Button className="h-11 md:h-9" onClick={() => run("calculate")} disabled={act.calculate.isPending}>
+              <Calculator className="size-4" /> คำนวณผล
+            </Button>
+          )}
           {(can("campaign:approve") || can("campaign:update")) && counts("NOT_CALCULATED") < rows.length && (
             <Link href={`/appraisal/rounds/${roundId}/review`} className={buttonVariants({ variant: "outline", className: "h-11 md:h-9" })}>
               <ClipboardCheck className="size-4" /> ทบทวนผล

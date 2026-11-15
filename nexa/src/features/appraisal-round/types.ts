@@ -257,6 +257,8 @@ export interface ResultRow {
   scorePercent: number | null;
   overallScore: number | null;
   grade: string | null;
+  /** Brought in from Favpo: only the person's total exists, there are no answers behind it. */
+  imported: boolean;
 }
 
 export interface MyResult {
@@ -360,6 +362,10 @@ export interface RoundReview {
   total: number;
   /** Of those, how many have a calculated result. */
   calculated: number;
+  /** Every calculated result was brought in from Favpo, so there is no self/manager split to show. */
+  imported: boolean;
+  /** How many sit at the top score; `flag` when most do. */
+  ceiling: { count: number; total: number; flag: boolean };
   /** Grade labels from the highest threshold down; empty when HR has not set grade bands. */
   bands: string[];
   spread: ReviewSpread & { byDepartment: (ReviewSpread & { department: string; total: number })[] };

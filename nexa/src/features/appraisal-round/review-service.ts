@@ -17,6 +17,7 @@ import {
   gradeSpread,
   personFlags,
   summarizeManagers,
+  ceilingSummary,
 } from "./review-rules";
 import type { ReviewPerson, RoundReview } from "./types";
 
@@ -62,6 +63,7 @@ export async function getRoundReview(companyId: string, session: AccessClaims, r
   });
 
   const people: ReviewPerson[] = [];
+  let importedPeople = 0;
   const given = new Map<string, { name: string; percents: number[] }>();
   for (const p of participants) {
     // How generously each manager scored: the same question weights and calculation mode the result uses.
@@ -76,6 +78,7 @@ export async function getRoundReview(companyId: string, session: AccessClaims, r
       }
     }
     if (p.scorePercent === null || p.resultStatus === "NOT_CALCULATED") continue;
+    if ((p.scoreBreakdown as { source?: string } | null)?.source === "favpo-import") importedPeople++;
     const types = (p.scoreBreakdown as unknown as PersonResult | null)?.types ?? [];
     const percentOf = (t: string) => types.find((x) => x.raterType === t)?.percent ?? null;
     const self = percentOf("SELF");
@@ -125,6 +128,8 @@ export async function getRoundReview(companyId: string, session: AccessClaims, r
     status: round.status,
     total: participants.length,
     calculated: people.length,
+    imported: people.length > 0 && importedPeople === people.length,
+    ceiling: ceilingSummary(people.map((p) => p.total)),
     bands: bands.map((b) => b.label),
     spread: {
       ...spreadOf(people),

@@ -251,6 +251,7 @@ export async function getRoundResults(companyId: string, roundId: string, sessio
       scorePercent: true,
       overallScore: true,
       grade: true,
+      scoreBreakdown: true,
       employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
     },
     orderBy: { employee: { employeeCode: "asc" } },
@@ -265,6 +266,7 @@ export async function getRoundResults(companyId: string, roundId: string, sessio
     scorePercent: r.scorePercent,
     overallScore: r.overallScore,
     grade: r.grade,
+    imported: (r.scoreBreakdown as { source?: string } | null)?.source === "favpo-import",
   }));
 }
 

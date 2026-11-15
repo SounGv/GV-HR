@@ -57,7 +57,7 @@ export function RoundListView() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">สร้างรอบใน 5 ขั้น: เลือกแบบประเมิน เลือกคน จับคู่ผู้ประเมิน ตั้งวันเปิดปิด แล้วตรวจและเปิดรอบ</p>
+        <p className="text-sm text-muted-foreground">สร้างรอบใน 4 ขั้น: ตั้งรอบ (แบบประเมินและวันเปิดปิด) เลือกคน จับคู่ผู้ประเมิน แล้วตรวจและเปิดรอบ</p>
         <div className="flex flex-wrap gap-2">
           {can("campaign:update") && (
             <Link href="/appraisal/recurring" className={buttonVariants({ variant: "outline", className: "h-11 md:h-9" })}>

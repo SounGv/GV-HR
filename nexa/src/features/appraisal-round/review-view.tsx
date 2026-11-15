@@ -82,6 +82,12 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
         </p>
       </Card>
 
+      {r.imported && (
+        <p className="rounded-xl bg-muted px-3 py-2 text-sm">
+          รอบนี้นำเข้าจาก Favpo มีเฉพาะคะแนนรวมของแต่ละคน ไม่มีคะแนนแยกตนเองกับหัวหน้า และไม่มีค่าเฉลี่ยของหัวหน้า จึงซ่อนส่วนนั้นไว้
+        </p>
+      )}
+
       {r.calculated === 0 ? (
         <EmptyState
           icon={ClipboardCheck}
@@ -97,6 +103,14 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
         <>
           <Card className="gap-3 p-4" aria-label="การกระจายเกรด">
             <h2 className="text-base font-semibold">การกระจายเกรด</h2>
+            {r.ceiling.flag && (
+              <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted px-3 py-2 text-sm">
+                <StatusChip tone="warning" label="คะแนนกระจุกที่เต็ม" />
+                <span className="tabular-nums">
+                  {r.ceiling.count} จาก {r.ceiling.total} คนได้ 100% ({pct(r.ceiling.count, r.ceiling.total)}%) จึงแยกคนที่ทำได้ดีกว่ากันไม่ได้ ดูรายคนด้านล่างก่อนอนุมัติ
+                </span>
+              </div>
+            )}
             {r.bands.length === 0 ? (
               <p className="rounded-xl bg-muted px-3 py-2 text-sm">
                 ยังไม่ได้ตั้งเกณฑ์เกรด จึงยังนับการกระจายไม่ได้{" "}
@@ -147,6 +161,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
             )}
           </Card>
 
+          {!r.imported && (
           <Card className="gap-3 p-4" aria-label="ค่าเฉลี่ยที่หัวหน้าแต่ละคนให้">
             <div>
               <h2 className="text-base font-semibold">ค่าเฉลี่ยที่หัวหน้าแต่ละคนให้</h2>
@@ -186,6 +201,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
               </div>
             )}
           </Card>
+          )}
 
           <Card className="gap-3 p-4" aria-label="รายคน">
             <div>
@@ -199,11 +215,11 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
                 <thead className="bg-muted/50 text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-3 py-2 text-left font-medium">ชื่อ</th>
-                    <th scope="col" className="px-2 py-2 text-right font-medium">ตนเอง (%)</th>
-                    <th scope="col" className="px-2 py-2 text-right font-medium">หัวหน้า (%)</th>
+                    {!r.imported && <th scope="col" className="px-2 py-2 text-right font-medium">ตนเอง (%)</th>}
+                    {!r.imported && <th scope="col" className="px-2 py-2 text-right font-medium">หัวหน้า (%)</th>}
                     <th scope="col" className="px-2 py-2 text-right font-medium">รวม (%)</th>
                     <th scope="col" className="px-2 py-2 text-left font-medium">เกรด</th>
-                    <th scope="col" className="px-2 py-2 text-right font-medium">ช่องว่าง</th>
+                    {!r.imported && <th scope="col" className="px-2 py-2 text-right font-medium">ช่องว่าง</th>}
                     <th scope="col" className="px-3 py-2 text-left font-medium">ข้อสังเกต</th>
                     {r.canAdjust && (
                       <th scope="col" className="px-3 py-2 text-left font-medium">
@@ -223,14 +239,14 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
                           {p.department} · {RESULT_STATUS_LABEL[p.status]}
                         </span>
                       </td>
-                      <td className="px-2 py-2 text-right tabular-nums">{p.self ?? "-"}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{p.manager ?? "-"}</td>
+                      {!r.imported && <td className="px-2 py-2 text-right tabular-nums">{p.self ?? "-"}</td>}
+                      {!r.imported && <td className="px-2 py-2 text-right tabular-nums">{p.manager ?? "-"}</td>}
                       <td className="px-2 py-2 text-right tabular-nums">
                         <span className="font-semibold">{p.total}</span>
                         {p.adjusted && p.original !== null && <span className="block text-xs text-muted-foreground">คำนวณได้ {p.original}</span>}
                       </td>
                       <td className="px-2 py-2">{p.grade ?? "-"}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{p.gap === null ? "-" : signed(p.gap)}</td>
+                      {!r.imported && <td className="px-2 py-2 text-right tabular-nums">{p.gap === null ? "-" : signed(p.gap)}</td>}
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-1.5">
                           {p.talk && <StatusChip tone="warning" label="ควรคุย ตนเองสูงกว่าหัวหน้า" />}

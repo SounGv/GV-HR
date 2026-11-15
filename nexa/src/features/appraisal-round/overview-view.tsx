@@ -236,7 +236,7 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
     <section className="gv-hero gv-rise p-5 sm:p-6" style={rise(0)} aria-labelledby="appraisal-hero-title">
       <Eyebrow tone="waiting">ยังไม่มีรอบที่เปิดอยู่</Eyebrow>
       <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold sm:text-[26px]">
-        เริ่มประเมินได้ใน 3 ขั้น
+        เตรียมให้พร้อมใน 3 ขั้น
       </h2>
       <p className="mt-0.5 text-sm leading-relaxed text-white/80">{sub}</p>
       <ol className="mt-4 grid gap-3 sm:grid-cols-3">
