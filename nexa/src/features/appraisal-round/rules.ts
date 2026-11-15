@@ -17,6 +17,14 @@ export const PRESETS: Record<"90" | "180" | "270" | "360", readonly RaterType[]>
   "360": ["MANAGER", "SELF", "PEER", "SUBORDINATE"],
 };
 
+/** Starting weights per preset; placeholders until HR confirms the real ones. Shared by the round wizard and recurring rounds. */
+export const PRESET_WEIGHTS: Record<"90" | "180" | "270" | "360", Partial<Record<RaterType, number>>> = {
+  "90": { MANAGER: 100 },
+  "180": { MANAGER: 70, SELF: 30 },
+  "270": { MANAGER: 50, SELF: 25, PEER: 25 },
+  "360": { MANAGER: 40, SELF: 20, PEER: 20, SUBORDINATE: 20 },
+};
+
 /** Peers picked automatically for one person: colleagues under the same manager, at most this many. */
 export const PEER_LIMIT = 5;
 /** A rater with more than this many people to rate is flagged for HR to look at. */

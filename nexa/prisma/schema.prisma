@@ -395,6 +395,7 @@ model Company {
   evaluationTemplates         EvaluationTemplate[]
   appraisalForms              AppraisalForm[]
   appraisalRounds             AppraisalRound[]
+  appraisalRecurrences        AppraisalRecurrence[]
   appraisalSettings           AppraisalSettings?
   appraisalKpiProfiles        AppraisalKpiProfile[]
   successionPlans             SuccessionPlan[]
@@ -2506,6 +2507,7 @@ model AppraisalForm {
 
   questions AppraisalQuestion[]
   rounds    AppraisalRound[]
+  recurrences AppraisalRecurrence[]
   participants AppraisalParticipant[]
 
   @@unique([lineageId, version])
@@ -2612,10 +2614,56 @@ model AppraisalRound {
   updatedById String?
   deletedAt   DateTime?
 
+  // Set when the daily job made this round from a recurring setup (AppraisalRecurrence) for one period, e.g. "2026-11".
+  // The pair is unique, so a job that runs twice can never make the same round twice.
+  recurrenceId String?
+  recurrence   AppraisalRecurrence? @relation(fields: [recurrenceId], references: [id], onDelete: SetNull)
+  periodKey    String?
+
   participants AppraisalParticipant[]
 
+  @@unique([recurrenceId, periodKey])
   @@index([companyId, status])
   @@map("appraisal_rounds")
+}
+
+enum AppraisalRecurrenceFrequency {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// "Make this round for me every month": the daily job creates a DRAFT round a few days before each one is due and tells HR,
+// who check the people and press open. It never opens a round by itself (owner's decision, 15 Nov 2026).
+model AppraisalRecurrence {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Round name with {เดือน} {ไตรมาส} {ปี} filled from the period being evaluated.
+  name      String
+  frequency AppraisalRecurrenceFrequency @default(MONTHLY)
+  // The round opens on openDay and closes on closeDay (1-28) of the month it starts in.
+  openDay   Int
+  closeDay  Int
+  formId    String
+  form      AppraisalForm @relation(fields: [formId], references: [id])
+  // Who rates: "90" manager, "180" + self, "270" + peers, "360" + subordinates (same presets as the round wizard).
+  preset    String
+  // Empty means every active employee; otherwise only people in these departments.
+  departmentNames String[] @default([])
+  enabled   Boolean @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  updatedById String?
+  deletedAt   DateTime?
+
+  rounds AppraisalRound[]
+
+  @@index([companyId, enabled])
+  @@map("appraisal_recurrences")
 }
 
 // One person being evaluated in a round.

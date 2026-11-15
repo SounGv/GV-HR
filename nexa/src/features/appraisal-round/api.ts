@@ -5,6 +5,8 @@ import type {
   HrAssignmentDetail,
   MyResult,
   ResultRow,
+  RecurrenceBody,
+  RecurrenceItem,
   RoundReview,
   SettingsView,
   MatrixRow,
@@ -58,6 +60,10 @@ export const adjustScore = (roundId: string, participantId: string, input: { sco
   api.post<Envelope<{ scorePercent: number; grade: string | null }>>(`/api/appraisal-rounds/${roundId}/people/${participantId}/adjust`, input);
 export const revertAdjustment = (roundId: string, participantId: string, input: { reason: string }) =>
   api.post<Envelope<{ scorePercent: number; grade: string | null }>>(`/api/appraisal-rounds/${roundId}/people/${participantId}/adjust/revert`, input);
+export const fetchRecurrences = () => api.get<Envelope<RecurrenceItem[]>>("/api/appraisal-recurrences");
+export const createRecurrence = (body: RecurrenceBody) => api.post<Envelope<{ id: string }>>("/api/appraisal-recurrences", body);
+export const updateRecurrence = (id: string, body: RecurrenceBody) => api.put<Envelope<{ id: string }>>(`/api/appraisal-recurrences/${id}`, body);
+export const deleteRecurrence = (id: string) => api.del<Envelope<{ id: string }>>(`/api/appraisal-recurrences/${id}`);
 export const fetchRoundReview = (id: string) => api.get<Envelope<RoundReview>>(`/api/appraisal-rounds/${id}/review`);
 export const fetchRoundResults = (id: string) => api.get<Envelope<ResultRow[]>>(`/api/appraisal-rounds/${id}/results`);
 export const fetchMyResults = () => api.get<Envelope<MyResult[]>>("/api/appraisal-my-results");

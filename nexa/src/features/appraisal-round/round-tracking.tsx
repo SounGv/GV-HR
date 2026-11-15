@@ -6,6 +6,7 @@ import { CircleCheck, Clock, ListChecks, PencilLine } from "lucide-react";
 
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { StatusChip } from "@/components/shared/status-chip";
 import { Card } from "@/components/ui/card";
 import { rubricFor } from "@/features/appraisal-form/rating-labels";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,14 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
             <p className="text-2xl font-bold tabular-nums">
               {r.result.scorePercent}% {r.result.grade && <span className="text-base font-semibold">· {r.result.grade}</span>}
             </p>
+            {r.result.adjustedFrom !== null && (
+              <p className="text-sm">
+                <StatusChip tone="primary" label="HR ปรับแล้ว" /> คะแนนที่คำนวณได้ {r.result.adjustedFrom}% ดูประวัติที่{" "}
+                <Link href={`/appraisal/rounds/${roundId}/review`} className="font-semibold text-primary underline-offset-2 hover:underline">
+                  หน้าทบทวนผล
+                </Link>
+              </p>
+            )}
             {r.result.types.length > 0 && (
               <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground tabular-nums">
                 {r.result.types.map((t) => (

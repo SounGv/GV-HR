@@ -87,6 +87,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/appraisal/kpi": { title: "KPI Profile", backHref: "/services" },
   "/appraisal/my-results": { title: "ผลประเมินของฉัน", backHref: "/services", preferHistory: true },
   "/appraisal/rounds": { title: "รอบประเมิน", backHref: "/services" },
+  "/appraisal/recurring": { title: "รอบอัตโนมัติ", backHref: "/appraisal/rounds" },
   "/appraisal/tasks": { title: "งานประเมินของฉัน", backHref: "/dashboard" },
   "/performance/new": { title: "สร้างรอบประเมิน", backHref: "/performance" },
   "/performance/competencies": { title: "สมรรถนะ", backHref: "/performance" },

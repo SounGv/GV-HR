@@ -16,6 +16,10 @@ import {
   fetchMyResults,
   fetchRoundResults,
   fetchRoundReview,
+  fetchRecurrences,
+  createRecurrence,
+  updateRecurrence,
+  deleteRecurrence,
   adjustScore,
   revertAdjustment,
   fetchSettings,
@@ -146,6 +150,16 @@ export function useRevertAdjustment(roundId: string) {
     mutationFn: (v: { participantId: string; reason: string }) => revertAdjustment(roundId, v.participantId, { reason: v.reason }),
     onSuccess: () => qc.invalidateQueries({ queryKey: appraisalRoundKeys.all }),
   });
+}
+export const useRecurrences = () => useQuery({ queryKey: ["appraisal-recurrences"], queryFn: fetchRecurrences, retry: false });
+export function useRecurrenceActions() {
+  const qc = useQueryClient();
+  const done = () => qc.invalidateQueries({ queryKey: ["appraisal-recurrences"] });
+  return {
+    create: useMutation({ mutationFn: createRecurrence, onSuccess: done }),
+    update: useMutation({ mutationFn: (v: { id: string; body: Parameters<typeof updateRecurrence>[1] }) => updateRecurrence(v.id, v.body), onSuccess: done }),
+    remove: useMutation({ mutationFn: deleteRecurrence, onSuccess: done }),
+  };
 }
 export const useRoundReview = (id: string) => useQuery({ queryKey: ["appraisal-rounds", "review", id], queryFn: () => fetchRoundReview(id), retry: false });
 export const useRoundResults = (id: string, enabled: boolean) =>

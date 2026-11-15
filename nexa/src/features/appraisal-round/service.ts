@@ -7,6 +7,7 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
+import { can } from "@/lib/auth/rbac";
 import { isLineConfigured } from "@/lib/integrations/line";
 import { createNotification } from "@/features/notification/service";
 import { loadProbationDue } from "@/features/dashboard-people/service";
@@ -23,6 +24,7 @@ import {
   type RosterPerson,
 } from "./rules";
 import type { RoundUpdateInput } from "./schema";
+import { makeDueRecurringRounds } from "./recurrence-service";
 import { participantScope, viewableEmployeeIds } from "./viewer-scope";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -711,6 +713,8 @@ export interface ParticipantResult {
     scorePercent: number | null;
     overallScore: number | null;
     grade: string | null;
+    /** What the calculation gave when HR changed the score by hand; only HR are told, never managers or the employee. */
+    adjustedFrom: number | null;
     types: { raterType: string; raters: number; percent: number; weightUsed: number }[];
   };
 }
@@ -738,6 +742,8 @@ export async function getParticipantResult(
       overallScore: true,
       grade: true,
       scoreBreakdown: true,
+      adjustedAt: true,
+      originalScorePercent: true,
       round: { select: { name: true, status: true, formSnapshot: true } },
       assignments: { select: { raterType: true, status: true, answers: true, submittedAt: true }, orderBy: { submittedAt: "asc" } },
     },
@@ -761,6 +767,7 @@ export async function getParticipantResult(
       scorePercent: p.scorePercent,
       overallScore: p.overallScore,
       grade: p.grade,
+      adjustedFrom: p.adjustedAt && can(session.perms, "campaign:update") ? p.originalScorePercent : null,
       types: ((p.scoreBreakdown as unknown as { types?: { raterType: string; raters: number; percent: number; weightUsed: number }[] } | null)?.types ?? []),
     },
     groups: types.map((t) => {
@@ -988,7 +995,12 @@ export async function remindAll(companyId: string, session: AccessClaims, id: st
  */
 export async function runRoundJobs() {
   const todayIso = iso(bangkokParts().dateUTC);
-  const summary = { opened: 0, invitationsSent: 0, reminded: 0 };
+  const summary = { opened: 0, invitationsSent: 0, reminded: 0, draftsMade: 0, draftsNudged: 0 };
+
+  // Recurring rounds first: a draft made today shows up in HR's bell this morning.
+  const drafts = await makeDueRecurringRounds(todayIso);
+  summary.draftsMade = drafts.made;
+  summary.draftsNudged = drafts.nudged;
 
   const due = await prisma.appraisalRound.findMany({
     where: { deletedAt: null, status: "SCHEDULED", startDate: { lte: new Date(`${todayIso}T00:00:00Z`) } },

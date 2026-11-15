@@ -49,6 +49,7 @@ import {
   PRESETS,
   perspectiveTotal,
   RATER_TYPES,
+  PRESET_WEIGHTS,
   REMIND_BEFORE_DAYS,
   type RaterType,
 } from "./rules";
@@ -71,13 +72,7 @@ const PRESET_TEXT: Record<PresetKey, { name: string; hint: string }> = {
   "270": { name: "+ เพื่อน", hint: `เพิ่มเพื่อนที่มีหัวหน้าคนเดียวกัน (สูงสุด ${PEER_LIMIT} คน)` },
   "360": { name: "+ ลูกน้อง", hint: "ลูกทีมประเมินหัวหน้าด้วย เหมาะกับรอบปี" },
 };
-/** Starting weights per preset; placeholders until HR confirms the real ones. */
-const DEFAULT_WEIGHTS: Record<PresetKey, Partial<Record<RaterType, number>>> = {
-  "90": { MANAGER: 100 },
-  "180": { MANAGER: 70, SELF: 30 },
-  "270": { MANAGER: 50, SELF: 25, PEER: 25 },
-  "360": { MANAGER: 40, SELF: 20, PEER: 20, SUBORDINATE: 20 },
-};
+const DEFAULT_WEIGHTS = PRESET_WEIGHTS;
 const CHECK_STEP = { form: 0, people: 1, raters: 2, schedule: 0 } as const;
 const CHECK_NAME = {
   form: "แบบประเมิน",

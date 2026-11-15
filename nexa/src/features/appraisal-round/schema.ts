@@ -37,6 +37,18 @@ export const settingsSchema = z.object({
   ackDays: z.number().int().min(1).max(90).nullable(),
 });
 
+export const recurrenceSchema = z.object({
+  name: z.string().trim().min(1, "ใส่ชื่อรอบ").max(200),
+  frequency: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]),
+  openDay: z.number().int(),
+  closeDay: z.number().int(),
+  formId: z.string().min(1, "เลือกแบบประเมิน"),
+  preset: z.enum(["90", "180", "270", "360"]),
+  departmentNames: z.array(z.string().max(200)).max(100).default([]),
+  enabled: z.boolean().optional(),
+});
+export type RecurrenceInput = z.infer<typeof recurrenceSchema>;
+
 export const adjustSchema = z.object({
   scorePercent: z.number().finite(),
   reason: z.string().max(1000),

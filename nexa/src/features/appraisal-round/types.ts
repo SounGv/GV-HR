@@ -215,6 +215,8 @@ export interface ParticipantResult {
     scorePercent: number | null;
     overallScore: number | null;
     grade: string | null;
+    /** Set only for HR when the score was changed by hand: what the calculation gave. */
+    adjustedFrom: number | null;
     types: { raterType: RaterType; raters: number; percent: number; weightUsed: number }[];
   };
 }
@@ -276,6 +278,37 @@ export interface MyResult {
 export interface HrAssignmentDetail extends TaskDetail {
   raterName: string;
 }
+
+/* ───────────────────────── recurring rounds ───────────────────────── */
+
+export interface RecurrenceItem {
+  id: string;
+  name: string;
+  frequency: "MONTHLY" | "QUARTERLY" | "YEARLY";
+  openDay: number;
+  closeDay: number;
+  formId: string;
+  formName: string;
+  preset: string;
+  /** Empty means every active employee. */
+  departmentNames: string[];
+  enabled: boolean;
+  /** The next rounds the job will make, with the name each will get. */
+  upcoming: { periodKey: string; name: string; startIso: string; endIso: string }[];
+  roundsMade: number;
+  lastRound: { id: string; name: string; status: RoundStatus } | null;
+}
+
+export type RecurrenceBody = {
+  name: string;
+  frequency: RecurrenceItem["frequency"];
+  openDay: number;
+  closeDay: number;
+  formId: string;
+  preset: string;
+  departmentNames: string[];
+  enabled?: boolean;
+};
 
 /* ───────────────────────── review page (ทบทวนผล) ───────────────────────── */
 

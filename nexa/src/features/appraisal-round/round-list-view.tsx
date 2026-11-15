@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Copy, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, ClipboardList, Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
@@ -58,11 +58,18 @@ export function RoundListView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">สร้างรอบใน 5 ขั้น: เลือกแบบประเมิน เลือกคน จับคู่ผู้ประเมิน ตั้งวันเปิดปิด แล้วตรวจและเปิดรอบ</p>
-        {can("campaign:create") && (
-          <Button className="h-11 md:h-9" onClick={newRound.start} disabled={newRound.pending}>
-            <Plus className="size-4" /> สร้างรอบประเมิน
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {can("campaign:update") && (
+            <Link href="/appraisal/recurring" className={buttonVariants({ variant: "outline", className: "h-11 md:h-9" })}>
+              <CalendarClock className="size-4" /> รอบอัตโนมัติ
+            </Link>
+          )}
+          {can("campaign:create") && (
+            <Button className="h-11 md:h-9" onClick={newRound.start} disabled={newRound.pending}>
+              <Plus className="size-4" /> สร้างรอบประเมิน
+            </Button>
+          )}
+        </div>
       </div>
 
       {isError ? (
