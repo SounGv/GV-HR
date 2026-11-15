@@ -33,6 +33,7 @@ import { playReplyChime, unlockReplyChime } from "./reply-chime";
 import { MarkdownLite } from "./markdown-lite";
 import { firstHeading, splitSummary, withoutFirstHeading } from "./reply-parts";
 import { ProposalCards } from "./proposal-cards";
+import { beginPointerDrag } from "./pointer-drag";
 import type { ChatMessage, ChatStep, OutFile, ProposalCard, QuickRequest } from "./types";
 
 /** Ready-made questions for the empty result panel, grouped by what HR asks most. */
@@ -95,6 +96,35 @@ function usePanelWidth(): [PanelWidth, (w: PanelWidth) => void] {
   return [width, choose];
 }
 
+const CHAT_WIDTH_KEY = "gv-ai-chat-width";
+const CHAT_MIN = 300;
+/** Room the result panel always keeps, so the chat can be pulled wide but never swallow the answer. */
+const RESULT_MIN = 360;
+const CHAT_KEY_STEP = 24;
+
+/** The chat column width the person dragged to (null = the preset widths), remembered per browser and read after mount. */
+function useChatWidth(): [number | null, (w: number | null) => void] {
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    try {
+      const saved = Number(window.localStorage.getItem(CHAT_WIDTH_KEY));
+      if (Number.isFinite(saved) && saved >= CHAT_MIN) setWidth(saved);
+    } catch {
+      // Storage can be blocked; the preset width still works.
+    }
+  }, []);
+  const choose = (w: number | null) => {
+    setWidth(w);
+    try {
+      if (w === null) window.localStorage.removeItem(CHAT_WIDTH_KEY);
+      else window.localStorage.setItem(CHAT_WIDTH_KEY, String(w));
+    } catch {
+      // Not remembered, still applied for this visit.
+    }
+  };
+  return [width, choose];
+}
+
 /** Three-way width switch for the result panel. */
 function PanelWidthSwitch({ value, onChange }: { value: PanelWidth; onChange: (w: PanelWidth) => void }) {
   return (
@@ -146,6 +176,9 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [panelWidth, setPanelWidth] = usePanelWidth();
+  const [chatWidth, setChatWidth] = useChatWidth();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const chatSectionRef = useRef<HTMLElement>(null);
   const chat = useChat();
   const attach = useAttachments();
   const access = useAiAccess();
@@ -324,9 +357,17 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
 
   return (
     <div
+      ref={gridRef}
+      style={!chatFolded && chatWidth !== null ? { gridTemplateColumns: `${chatWidth}px minmax(0,1fr)` } : undefined}
       className={cn(
         "grid h-[calc(100dvh-8.5rem)] min-h-[560px] overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]",
-        chatFolded ? "grid-cols-[56px_minmax(0,1fr)]" : panelWidth === "wide" ? "grid-cols-[minmax(300px,340px)_minmax(0,1fr)]" : "grid-cols-[minmax(340px,420px)_minmax(0,1fr)]",
+        chatFolded
+          ? "grid-cols-[56px_minmax(0,1fr)]"
+          : chatWidth !== null
+            ? ""
+            : panelWidth === "wide"
+              ? "grid-cols-[minmax(300px,340px)_minmax(0,1fr)]"
+              : "grid-cols-[minmax(340px,420px)_minmax(0,1fr)]",
       )}
     >
       {chatFolded && (
@@ -346,7 +387,48 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         </div>
       )}
       {/* Left: the conversation (kept mounted when folded, so a half-typed question is not lost) */}
-      <section aria-label="แชทกับ AI Assistant" className={cn("flex min-h-0 flex-col border-r border-border", chatFolded && "hidden")}>
+      <section ref={chatSectionRef} aria-label="แชทกับ AI Assistant" className={cn("relative flex min-h-0 flex-col border-r border-border", chatFolded && "hidden")}>
+        {/* Drag this edge to make the chat column wider or narrower; arrow keys also work and double click puts it back. */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="ปรับความกว้างของช่องแชท"
+          aria-valuemin={CHAT_MIN}
+          aria-valuenow={chatWidth ?? undefined}
+          tabIndex={0}
+          title="ลากเพื่อปรับความกว้างช่องแชท ดับเบิลคลิกเพื่อคืนขนาดเดิม"
+          onPointerDown={(e) => {
+            const startW = chatSectionRef.current?.getBoundingClientRect().width ?? CHAT_MIN;
+            const maxW = Math.max(CHAT_MIN, (gridRef.current?.getBoundingClientRect().width ?? 1200) - RESULT_MIN);
+            let next = startW;
+            beginPointerDrag(
+              e,
+              "ew-resize",
+              (dx) => {
+                next = Math.round(Math.min(Math.max(startW + dx, CHAT_MIN), maxW));
+                if (gridRef.current) gridRef.current.style.gridTemplateColumns = `${next}px minmax(0,1fr)`;
+              },
+              () => setChatWidth(next),
+            );
+          }}
+          onDoubleClick={() => setChatWidth(null)}
+          onKeyDown={(e) => {
+            const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+            if (e.key === "Home") {
+              e.preventDefault();
+              setChatWidth(null);
+              return;
+            }
+            if (dir === 0) return;
+            e.preventDefault();
+            const cur = chatSectionRef.current?.getBoundingClientRect().width ?? CHAT_MIN;
+            const maxW = Math.max(CHAT_MIN, (gridRef.current?.getBoundingClientRect().width ?? 1200) - RESULT_MIN);
+            setChatWidth(Math.round(Math.min(Math.max(cur + dir * CHAT_KEY_STEP, CHAT_MIN), maxW)));
+          }}
+          className="group absolute inset-y-0 -right-1 z-10 w-2.5 cursor-ew-resize touch-none outline-none focus-visible:bg-ring/30"
+        >
+          <span className="absolute top-1/2 left-1 h-14 w-1 -translate-y-1/2 rounded-full bg-muted-foreground/40 transition-colors group-hover:bg-primary group-focus-visible:bg-primary" aria-hidden="true" />
+        </div>
         <header className="flex items-center gap-2.5 border-b border-border px-4 py-3">
           <VBot mood={chat.isPending ? "think" : "ok"} className="h-8 w-9" />
           <div className="min-w-0">
@@ -483,7 +565,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
       {/* Right: the selected answer, laid out wide */}
       <section aria-label="ผลลัพธ์" className="min-w-0 overflow-y-auto bg-[linear-gradient(180deg,#eef3f3_0,var(--background)_220px)] px-6 py-5 dark:bg-none">
         <div className="mb-3 flex justify-end">
-          <PanelWidthSwitch value={panelWidth} onChange={setPanelWidth} />
+          <PanelWidthSwitch value={panelWidth} onChange={(w) => { setChatWidth(null); setPanelWidth(w); }} />
         </div>
         {answer && answerParts ? (
           <article className={cn("mx-auto space-y-3", widthClass)}>
