@@ -75,6 +75,7 @@ import {
 } from "./attendance-row-style";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { columnLabel, type ReportColumn, type ReportResult } from "./types";
+import { EvaluationReportOverview } from "./evaluation-report-overview";
 import { LeaveEmployeeSheet, type LeaveSheetTarget } from "./leave-employee-sheet";
 
 const ALL_TYPE = "ALL";
@@ -357,6 +358,7 @@ function ReportSection({
           unit={result.secondarySummaryUnit}
         />
       )}
+      {result?.evaluation && <EvaluationReportOverview rounds={result.evaluation.rounds} />}
 
       {isError ? (
         <ErrorState onRetry={refetch} />

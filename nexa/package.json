@@ -23,6 +23,7 @@
     "test:adjust": "node scripts/e2e-ai/build.mjs run-adjust && node --env-file=.env.local .tmp-e2e/run-adjust.cjs",
     "test:refresh": "node scripts/e2e-ai/build.mjs run-refresh && node --env-file=.env.local .tmp-e2e/run-refresh.cjs",
     "test:rater-pairs": "node scripts/e2e-ai/build.mjs run-rater-pairs && node --env-file=.env.local .tmp-e2e/run-rater-pairs.cjs",
+    "test:report-insights": "node scripts/e2e-ai/build.mjs run-report-insights && node --env-file=.env.local .tmp-e2e/run-report-insights.cjs",
     "test:review": "node scripts/e2e-ai/build.mjs run-review && node --env-file=.env.local .tmp-e2e/run-review.cjs",
     "test:eval-overview": "node scripts/e2e-ai/build.mjs run-eval-overview && node --env-file=.env.local .tmp-e2e/run-eval-overview.cjs",
     "test:ai": "node scripts/e2e-ai/build.mjs run-chat && node --env-file=.env.local .tmp-e2e/run-chat.cjs && node scripts/e2e-ai/build.mjs run-writes && node --env-file=.env.local .tmp-e2e/run-writes.cjs"

@@ -12,7 +12,9 @@ import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { bangkokParts, lateOrPresent } from "@/lib/datetime";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
+import type { ReportResult, ReportSummaryDatum } from "./types";
 import { capRowsByDay, laterDate } from "./daily-cap";
+import { summarizeRound, type ScoredPerson } from "./result-insights";
 
 const GOAL_STATUS_LABEL: Record<string, string> = {
   NOT_STARTED: "ยังไม่เริ่ม",
@@ -21,39 +23,6 @@ const GOAL_STATUS_LABEL: Record<string, string> = {
   COMPLETED: "สำเร็จแล้ว",
   CANCELLED: "ยกเลิก",
 };
-
-export interface ReportColumn {
-  key: string;
-  label: string;
-  numeric?: boolean;
-  /** Heading shared by neighbouring columns (mirrors ./types). */
-  group?: string;
-  /** Cell value is an image URL (or "-") — rendered as a clickable thumbnail. */
-  photo?: boolean;
-}
-export interface ReportSummaryDatum {
-  label: string;
-  value: number;
-}
-export interface ReportResult {
-  title: string;
-  period: string | null;
-  columns: ReportColumn[];
-  rows: Record<string, string | number>[];
-  summary?: ReportSummaryDatum[];
-  summaryLabel?: string;
-  summaryUnit?: string;
-  /** Second chart, currently only populated by the payroll report (SSO/withholding-tax totals to remit). */
-  secondarySummary?: ReportSummaryDatum[];
-  secondarySummaryLabel?: string;
-  secondarySummaryUnit?: string;
-  /** Totals/averages line shown under the table, replacing the generic "รวม N รายการ" when set. */
-  footnote?: string;
-  /** Calendar year the report covers (leave report only). */
-  year?: number;
-  /** Set when the report had more rows than it can return: it is complete only from this day on (YYYY-MM-DD). */
-  truncatedFrom?: string;
-}
 
 /** Rolls a per-department accumulator map into the chart-ready summary array, sorted by value desc. */
 function toSummary(map: Map<string, number>): ReportSummaryDatum[] {
@@ -1324,11 +1293,23 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         scorePercent: true,
         grade: true,
         resultStatus: true,
-        round: { select: { name: true } },
+        departmentName: true,
+        round: { select: { id: true, name: true, startDate: true } },
         employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true } },
       },
       orderBy: [{ employee: { employeeCode: "asc" } }, { calculatedAt: "desc" }],
     });
+    // The overview above the table: the same approved/published rows, grouped by round (newest first).
+    const groups = new Map<string, { name: string; start: Date | null; people: ScoredPerson[] }>();
+    for (const p of appraised) {
+      if (p.scorePercent == null) continue;
+      const g = groups.get(p.round.id) ?? { name: p.round.name, start: p.round.startDate, people: [] };
+      g.people.push({ code: p.employee.employeeCode, name: displayName(p.employee), department: p.departmentName ?? "ไม่ระบุแผนก", percent: p.scorePercent });
+      groups.set(p.round.id, g);
+    }
+    const evaluationRounds = [...groups.entries()]
+      .sort(([, a], [, b]) => (b.start?.getTime() ?? 0) - (a.start?.getTime() ?? 0) || a.name.localeCompare(b.name, "th"))
+      .map(([id, g]) => summarizeRound(id, g.name, g.people));
     // Say why a calculated round is not listed yet, instead of leaving HR to think the report is cut off.
     const waiting = await prisma.appraisalParticipant.count({
       where: { round: { companyId, deletedAt: null }, resultStatus: "CALCULATED", ...deptRel },
@@ -1337,6 +1318,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     return {
       title,
       period: null,
+      evaluation: evaluationRounds.length ? { rounds: evaluationRounds } : undefined,
       footnote: `รวม ${listed} รายการ แสดงเฉพาะผลที่อนุมัติหรือประกาศแล้ว${waiting > 0 ? ` (ยังมีผลที่คำนวณแล้วรออนุมัติอีก ${waiting} คน จะแสดงที่นี่เมื่ออนุมัติ)` : ""}`,
       columns: [
         { key: "code", label: "รหัส" },

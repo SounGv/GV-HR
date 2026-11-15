@@ -1,3 +1,5 @@
+import type { RoundInsight } from "./result-insights";
+
 export interface ReportColumn {
   key: string;
   label: string;
@@ -35,6 +37,8 @@ export interface ReportResult {
   year?: number;
   /** Set when the report had more rows than it can return: it is complete only from this day on (YYYY-MM-DD). */
   truncatedFrom?: string;
+  /** Evaluation report only: per round, the spread, top and bottom lists and department summary shown above the table. */
+  evaluation?: { rounds: RoundInsight[] };
 }
 
 /** Full name of a column outside the grouped table: "ลาป่วย สิทธิ์ (วัน)". */
