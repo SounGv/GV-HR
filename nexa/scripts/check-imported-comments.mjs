@@ -1,7 +1,7 @@
 // Checks who may read comments copied from Favpo: the anonymity rule and the safe reading of stored JSON.
 // Run: node --experimental-strip-types scripts/check-imported-comments.mjs
 import assert from "node:assert/strict";
-import { ANON_MIN, commentsFor, parseImportedComments } from "../src/features/appraisal-round/imported-comments.ts";
+import { ANON_MIN, commentsFor, holdsBackTexts, parseImportedComments } from "../src/features/appraisal-round/imported-comments.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -64,6 +64,15 @@ check("a missing rater count counts as zero, so an upward group is held back rat
   const p = parseImportedComments({ raterType: "SUBORDINATE", texts: ["ก"] });
   assert.equal(p.raters, 0);
   assert.equal(commentsFor(p, false).hidden, true);
+});
+
+check("live answers: a small group of peers or subordinates has its texts held back from managers, never from HR", () => {
+  assert.equal(holdsBackTexts("SUBORDINATE", ANON_MIN - 1, false), true);
+  assert.equal(holdsBackTexts("PEER", 1, false), true);
+  assert.equal(holdsBackTexts("SUBORDINATE", ANON_MIN, false), false);
+  assert.equal(holdsBackTexts("SUBORDINATE", 1, true), false);
+  assert.equal(holdsBackTexts("MANAGER", 1, false), false);
+  assert.equal(holdsBackTexts("SELF", 1, false), false);
 });
 
 console.log(`\n${n} checks passed`);

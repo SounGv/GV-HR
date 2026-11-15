@@ -20,6 +20,8 @@ export interface ImportedComments {
 }
 
 export interface CommentsView {
+  /** Where the comments were copied from, e.g. "favpo". */
+  source: string;
   raterType: string;
   raters: number;
   /** Empty when hidden. */
@@ -41,6 +43,14 @@ export function parseImportedComments(raw: unknown): ImportedComments | null {
 }
 
 /**
+ * True when the written answers of a live group must be held back from this viewer: a small group of peers or subordinates
+ * whose texts would point at their author. HR see everything; managers and employees follow the same numbers as the imported comments.
+ */
+export function holdsBackTexts(raterType: string, answered: number, isHr: boolean): boolean {
+  return !isHr && !NAMED_TYPES.has(raterType) && answered < ANON_MIN;
+}
+
+/**
  * What a viewer may read. HR (who can open every result already and could read the same comments in the source system) see
  * everything; anyone else sees a group of peers or subordinates only when at least `ANON_MIN` of them rated.
  */
@@ -48,5 +58,5 @@ export function commentsFor(c: ImportedComments | null, isHr: boolean): Comments
   if (!c) return null;
   const named = NAMED_TYPES.has(c.raterType);
   const show = isHr || named || c.raters >= ANON_MIN;
-  return { raterType: c.raterType, raters: c.raters, texts: show ? c.texts : [], hidden: !show, hiddenCount: show ? 0 : c.texts.length };
+  return { source: c.source, raterType: c.raterType, raters: c.raters, texts: show ? c.texts : [], hidden: !show, hiddenCount: show ? 0 : c.texts.length };
 }

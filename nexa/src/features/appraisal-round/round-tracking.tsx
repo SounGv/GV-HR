@@ -146,7 +146,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
               {RATER_LABEL[r.importedComments.raterType as RaterType]} {r.importedComments.raters > 0 ? `${r.importedComments.raters} คน` : ""}
             </span>
           </h2>
-          <p className="text-sm text-muted-foreground">นำเข้าจาก Favpo ไม่ระบุว่าใครเขียน และไม่ได้อยู่ในคะแนนที่คำนวณ</p>
+          <p className="text-sm text-muted-foreground">นำเข้าจาก{r.importedComments.source === "favpo" ? " Favpo" : "ระบบเดิม"} ไม่ระบุว่าใครเขียน และไม่ได้อยู่ในคะแนนที่คำนวณ</p>
           {r.importedComments.hidden ? (
             <p className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm">
               <EyeOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -171,6 +171,12 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
           <h2 className="text-base font-semibold">
             {RATER_LABEL[g.raterType]} <span className="text-sm font-normal text-muted-foreground tabular-nums">ส่งแล้ว {g.submitted} จาก {g.total} คน</span>
           </h2>
+          {g.textsHeld && g.submitted > 0 && (
+            <p className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm">
+              <EyeOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span>ผู้ประเมินกลุ่มนี้ส่งแล้วไม่ถึง {ANON_MIN} คน จึงยังไม่แสดงข้อความที่เขียน เพื่อไม่ให้รู้ว่าใครเขียน HR ดูได้ทั้งหมด</span>
+            </p>
+          )}
           {g.submitted === 0 ? (
             <p className="text-sm text-muted-foreground">ยังไม่มีผู้ประเมินกลุ่มนี้ส่งผล</p>
           ) : (

@@ -222,7 +222,7 @@ export interface ParticipantResult {
   ratingMax: number;
   /** Score names frozen with the round; null = system names. */
   ratingLabels: unknown;
-  groups: { raterType: RaterType; total: number; submitted: number; summary: QuestionSummary[] }[];
+  groups: { raterType: RaterType; total: number; submitted: number; /** True when written answers are held back because too few people answered. */ textsHeld: boolean; summary: QuestionSummary[] }[];
   result: {
     status: ResultStatus;
     scorePercent: number | null;

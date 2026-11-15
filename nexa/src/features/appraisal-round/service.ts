@@ -29,7 +29,7 @@ import {
 import type { RoundUpdateInput } from "./schema";
 import { makeDueRecurringRounds } from "./recurrence-service";
 import { participantScope, viewableEmployeeIds } from "./viewer-scope";
-import { commentsFor, parseImportedComments, type CommentsView } from "./imported-comments";
+import { commentsFor, holdsBackTexts, parseImportedComments, type CommentsView } from "./imported-comments";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -777,7 +777,7 @@ export interface ParticipantResult {
   roundStatus: string;
   ratingMax: number;
   ratingLabels: unknown;
-  groups: { raterType: string; total: number; submitted: number; summary: QuestionSummary[] }[];
+  groups: { raterType: string; total: number; submitted: number; /** True when written answers are held back because too few people answered. */ textsHeld: boolean; summary: QuestionSummary[] }[];
   result: {
     status: string;
     scorePercent: number | null;
@@ -847,11 +847,15 @@ export async function getParticipantResult(
     groups: types.map((t) => {
       const mine = p.assignments.filter((a) => a.raterType === t);
       const done = mine.filter((a) => a.status === "SUBMITTED");
+      const textsHeld = holdsBackTexts(t, done.length, can(session.perms, "campaign:update"));
+      const summary = summarizeAnswers(questions, t, done.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [])), ratingMax);
       return {
         raterType: t,
         total: mine.length,
         submitted: done.length,
-        summary: summarizeAnswers(questions, t, done.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [])), ratingMax),
+        textsHeld,
+        // Scores stay (they are plain counts); what people wrote is dropped before it leaves the server.
+        summary: textsHeld ? summary.map((s) => ({ ...s, texts: [], notes: [] })) : summary,
       };
     }),
   };

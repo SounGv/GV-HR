@@ -14,8 +14,6 @@ import { bandsProblem, computeResult, type Band, type CalcMode, type PersonResul
 
 type Meta = { ip?: string; userAgent?: string };
 
-// The anonymity rule lives in imported-comments.ts so the comments copied from another system follow the same numbers.
-export { ANON_MIN };
 
 export interface AppraisalSettingsView {
   configured: boolean;
