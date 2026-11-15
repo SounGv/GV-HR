@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StickyBar } from "./sticky-bar";
 
 export type Crumb = { label: string; href?: string };
 
@@ -30,7 +31,8 @@ export function PageHeaderBar({
   className?: string;
 }) {
   return (
-    <div
+    <StickyBar
+      publish={sticky}
       className={cn(
         // Opaque bg-background, not the old bg-background/80 + backdrop-blur-xl:
         // this bar sticks right at the sidebar's left edge (md:top-16, same
@@ -81,6 +83,6 @@ export function PageHeaderBar({
         </div>
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
       </div>
-    </div>
+    </StickyBar>
   );
 }

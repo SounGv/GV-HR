@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger, stickyTabsRow } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
@@ -188,7 +189,7 @@ export function EmployeeForm({
     <Form {...form}>
       <form id={formId} onSubmit={form.handleSubmit(submit)}>
         <Tabs defaultValue="personal" className="gap-6">
-          <div className="overflow-x-auto">
+          <div className={cn("overflow-x-auto bg-background", stickyTabsRow)}>
             <TabsList variant="line" className="h-auto flex-nowrap">
               <TabsTrigger value="personal">ข้อมูลส่วนตัว</TabsTrigger>
               <TabsTrigger value="employment">การจ้างงาน</TabsTrigger>
