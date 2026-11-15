@@ -6,6 +6,7 @@ import { CalendarDays, Coins, FileText, UserRound } from "lucide-react";
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { PersonFace } from "@/components/shared/person-face";
 import { AttachmentLink } from "@/components/shared/attachment-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate, displayName } from "@/lib/format";
@@ -30,6 +31,7 @@ export default async function ExpenseDetailPage({ params }: { params: Promise<{ 
       <PageHeaderBar
         breadcrumbs={[{ label: "เบิกจ่าย", href: "/expenses" }, { label: claim.title }]}
         backHref="/expenses"
+        leading={<PersonFace employeeId={claim.employee.id} name={employeeName} />}
         title={claim.title}
         description={`${claim.employee.employeeCode} · ${EXPENSE_CATEGORY_LABEL[claim.category]}`}
         status={<ExpenseStatusBadge status={claim.status} />}

@@ -12,6 +12,7 @@ export function PageHeaderBar({
   breadcrumbs,
   title,
   description,
+  leading,
   status,
   actions,
 }: {
@@ -20,6 +21,8 @@ export function PageHeaderBar({
   backHref?: string;
   title: React.ReactNode;
   description?: React.ReactNode;
+  /** The picture of the person the page is about (PersonFace), drawn before the title. */
+  leading?: React.ReactNode;
   status?: React.ReactNode;
   actions?: React.ReactNode;
   /** Kept so existing callers compile; there is one sticky band for every page now. */
@@ -31,6 +34,7 @@ export function PageHeaderBar({
       title={title}
       description={typeof description === "string" ? description : undefined}
       subtitle={typeof description === "string" ? description : undefined}
+      leading={leading}
       crumbs={breadcrumbs}
       status={status}
       actions={actions}

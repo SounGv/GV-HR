@@ -7,6 +7,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { PersonFace } from "@/components/shared/person-face";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, displayName } from "@/lib/format";
@@ -33,6 +34,7 @@ export default async function PerformanceDetailPage({ params }: { params: Promis
       <PageHeaderBar
         breadcrumbs={[{ label: "ประเมินผล", href: "/performance" }, { label: review.cycle }]}
         backHref="/performance"
+        leading={<PersonFace employeeId={review.employee.id} name={employeeName} />}
         title={review.cycle}
         description={employeeName}
         status={

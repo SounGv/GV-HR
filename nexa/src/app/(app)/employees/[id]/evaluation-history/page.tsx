@@ -4,6 +4,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { getEmployee } from "@/features/employee/service";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { PersonFace } from "@/components/shared/person-face";
 import { EvaluationHistoryView } from "@/features/campaign/evaluation-history-view";
 import { displayName } from "@/lib/format";
 
@@ -24,6 +25,7 @@ export default async function EmployeeEvaluationHistoryPage({ params }: { params
       <PageHeaderBar
         breadcrumbs={[{ label: "พนักงาน", href: "/employees" }, { label: name, href: `/employees/${employee.id}` }, { label: "ประวัติการประเมิน" }]}
         backHref={`/employees/${employee.id}`}
+        leading={<PersonFace employeeId={employee.id} name={name} />}
         title="ประวัติการประเมิน"
         description={name}
       />

@@ -11,6 +11,8 @@ export interface Chrome {
   description?: string;
   /** Facts about the thing the page is about ("1001 · ลาป่วย"), drawn after the title. Detail pages only. */
   subtitle?: string;
+  /** Drawn before the title: the picture of the person the page is about. */
+  leading?: React.ReactNode;
   crumbs?: Crumb[];
   status?: React.ReactNode;
 }
@@ -52,7 +54,7 @@ export const useSlotSetter = () => useContext(SetSlot);
  * Rendered by PageHeader and PageHeaderBar. Publishes the title, path and status, and draws `actions` into the band.
  * Also keeps a title for printing (the band is not printed). Draws nothing else.
  */
-export function PageChromePublisher({ title, description, subtitle, crumbs, status, actions }: Chrome & { actions?: React.ReactNode }) {
+export function PageChromePublisher({ title, description, subtitle, leading, crumbs, status, actions }: Chrome & { actions?: React.ReactNode }) {
   const set = useContext(SetChrome);
   const slot = useContext(Slot);
   // Client pages pass a new breadcrumb array on every render; compare by content so an unchanged path does not re-publish
@@ -65,8 +67,8 @@ export function PageChromePublisher({ title, description, subtitle, crumbs, stat
   // Publishes again whenever the page's header changes (a header drawn by a client page may pass new objects each render;
   // that only re-draws the band, never this component, because the writer context is stable).
   useEffect(() => {
-    set?.({ title, description, subtitle, crumbs: stableCrumbs, status });
-  }, [set, title, description, subtitle, stableCrumbs, status]);
+    set?.({ title, description, subtitle, leading, crumbs: stableCrumbs, status });
+  }, [set, title, description, subtitle, leading, stableCrumbs, status]);
 
   return (
     <>

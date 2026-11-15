@@ -92,6 +92,7 @@ export function SectionBand() {
             ย้อนกลับ
           </button>
         )}
+        {chrome?.leading && <span className="shrink-0">{chrome.leading}</span>}
         <nav aria-label="เส้นทางนำทาง" className="flex min-w-0 items-center gap-1 text-sm">
           {crumbs.map((c, i) => {
             const last = i === crumbs.length - 1;

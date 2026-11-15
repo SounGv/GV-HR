@@ -5,6 +5,7 @@ import { BadgeCheck, CalendarDays, Printer, ReceiptText, UserRound } from "lucid
 
 import { requirePageAnyPermission } from "@/lib/auth/page-guard";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { PersonFace } from "@/components/shared/person-face";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, displayName } from "@/lib/format";
@@ -34,6 +35,7 @@ export default async function PayrollDetailPage({ params }: { params: Promise<{ 
       <PageHeaderBar
         breadcrumbs={[{ label: "เงินเดือน", href: "/payroll" }, { label: record.periodLabel }]}
         backHref="/payroll"
+        leading={<PersonFace employeeId={record.employee.id} name={employeeName} />}
         title={record.periodLabel}
         description={`${record.employee.employeeCode} · ${employeeName}`}
         status={<PayrollStatusBadge status={record.status} />}

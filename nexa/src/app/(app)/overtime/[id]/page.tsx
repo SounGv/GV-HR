@@ -6,6 +6,7 @@ import { Clock3, UserRound } from "lucide-react";
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { PersonFace } from "@/components/shared/person-face";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, displayName } from "@/lib/format";
 import { getOvertime } from "@/features/overtime/service";
@@ -44,6 +45,7 @@ export default async function OvertimeDetailPage({ params }: { params: Promise<{
       <PageHeaderBar
         breadcrumbs={[{ label: "ล่วงเวลา (OT)", href: "/overtime" }, { label: employeeName }]}
         backHref="/overtime"
+        leading={<PersonFace employeeId={request.employee.id} name={employeeName} />}
         title={employeeName}
         description={`${request.employee.employeeCode} · ${request.hours} ชั่วโมง`}
         status={<LeaveStatusBadge status={request.status} />}

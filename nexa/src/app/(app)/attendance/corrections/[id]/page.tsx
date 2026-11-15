@@ -6,6 +6,7 @@ import { Clock3, FileText, UserRound } from "lucide-react";
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { AppError } from "@/lib/api/errors";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { PersonFace } from "@/components/shared/person-face";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, displayName } from "@/lib/format";
 import { getAttendanceCorrection } from "@/features/attendance-correction/service";
@@ -45,6 +46,7 @@ export default async function AttendanceCorrectionDetailPage({ params }: { param
       <PageHeaderBar
         breadcrumbs={[{ label: "แก้ไขเวลาเข้า-ออกงาน", href: "/attendance/corrections" }, { label: employeeName }]}
         backHref="/attendance/corrections"
+        leading={<PersonFace employeeId={request.employee.id} name={employeeName} />}
         title={employeeName}
         description={`${request.employee.employeeCode} · ${formatDate(request.workDate)}`}
         status={<LeaveStatusBadge status={request.status} />}

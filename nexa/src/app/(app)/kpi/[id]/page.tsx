@@ -6,6 +6,7 @@ import { CalendarDays, FileText, Plus, Target, TrendingUp, UserRound } from "luc
 import { requirePagePermission } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/rbac";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
+import { PersonFace } from "@/components/shared/person-face";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
@@ -61,6 +62,7 @@ export default async function KpiDetailPage({ params }: { params: Promise<{ id: 
       <PageHeaderBar
         breadcrumbs={[{ label: "KPI", href: "/kpi" }, { label: goal.title }]}
         backHref="/kpi"
+        leading={<PersonFace employeeId={goal.employee.id} name={employeeName} />}
         title={goal.title}
         description={`${GOAL_TYPE_LABEL[goal.type]} · ${goal.cycle}`}
         status={<GoalStatusBadge status={effectiveStatus} />}
