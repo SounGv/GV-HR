@@ -11,7 +11,7 @@ export default async function BranchesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="สาขา (Branches)"
+        title="สาขา"
         description="จัดการสาขาขององค์กร — ที่อยู่ ผู้ติดต่อ และพื้นที่เช็คอิน"
       />
       <BranchView />

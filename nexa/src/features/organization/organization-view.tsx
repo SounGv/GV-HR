@@ -103,7 +103,7 @@ export function OrganizationView() {
               <Building2 className="size-4 shrink-0 text-primary" />
             )}
             <span className={depth === 0 ? "font-medium" : ""}>{node.name}</span>
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
               {node.code}
             </span>
             {node.employeeCount > 0 && (
@@ -217,7 +217,7 @@ export function OrganizationView() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{p.title}</span>
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
                       {levelLabel(p.level)}
                     </span>
                   </div>

@@ -159,7 +159,7 @@ function LeaveBalanceTile({ balances, href }: { balances: LeaveBalanceSummary[];
               <p className="text-base font-semibold tabular-nums text-foreground">
                 {b.configured ? b.remaining : "-"}
               </p>
-              <p className="truncate text-[10px] text-muted-foreground">{b.label}</p>
+              <p className="truncate text-xs text-muted-foreground">{b.label}</p>
             </div>
           ))}
         </div>
@@ -421,7 +421,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             name="q"
             required
             maxLength={500}
-            aria-label="ถาม AI Assistant"
+            aria-label="ถามน้องวีบอท"
             placeholder="ถาม AI เช่น ใครมาสายเกิน 3 ครั้งเดือนนี้"
             className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
           />

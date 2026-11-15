@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { requirePagePermission } from "@/lib/auth/page-guard";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { NoEmployeeState } from "@/components/shared/states";
 import { PageHeader } from "@/components/shared/page-header";
 import { MobileAttendanceView } from "@/components/mobile/mobile-attendance-view";
 import { ClockCard } from "@/features/attendance/clock-card";
@@ -11,6 +13,16 @@ export const metadata: Metadata = { title: "เวลาเข้า-ออก�
 
 export default async function AttendancePage() {
   await requirePagePermission("attendance:read");
+  // An account with no employee record has no clock-in of its own: say so, rather than showing two failed loads.
+  const user = await getCurrentUser();
+  if (!user?.employee) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="ลงเวลาทำงาน" description="ลงเวลาเข้า-ออกงาน และดูประวัติเวลาทำงานของคุณ" />
+        <NoEmployeeState description="จึงไม่มีการลงเวลาของตัวเอง ดูการเข้างานของทุกคนได้ที่หน้าหลักและเมนูรายงาน ถ้าต้องลงเวลา ให้ HR ผูกบัญชีกับข้อมูลพนักงานก่อน" />
+      </div>
+    );
+  }
 
   return (
     <>

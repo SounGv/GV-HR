@@ -217,7 +217,7 @@ function TopCard({ node }: { node: PersonNode }) {
         <small className="block truncate text-[12.5px] text-white/80">
           {p.positionTitle ?? "หัวหน้าฝ่าย"}
         </small>
-        <span className="mt-1 inline-block rounded-md bg-[#CDEB03] px-2 text-[11px] font-bold text-[#131516] tabular-nums">
+        <span className="mt-1 inline-block rounded-md bg-[#CDEB03] px-2 text-xs font-bold text-[#131516] tabular-nums">
           ดูแล {node.under} คน
         </span>
       </span>
@@ -260,12 +260,12 @@ function TeamCard({ team, index, direct }: { team: TreeTeam; index: number; dire
         <span className="min-w-0">
           <b className="block truncate text-sm leading-tight">{team.name}</b>
           {direct ? (
-            <small className="text-muted-foreground block text-[11px]">ขึ้นตรงกับหัวหน้าฝ่าย</small>
+            <small className="text-muted-foreground block text-xs">ขึ้นตรงกับหัวหน้าฝ่าย</small>
           ) : (
             team.code && <span className="ot-code">{team.code}</span>
           )}
         </span>
-        <span className="text-muted-foreground ml-auto text-right text-[11px] leading-tight">
+        <span className="text-muted-foreground ml-auto text-right text-xs leading-snug">
           <b className="text-foreground block text-lg tabular-nums">{team.count}</b>คน
         </span>
       </div>
@@ -297,7 +297,7 @@ function TeamCard({ team, index, direct }: { team: TreeTeam; index: number; dire
                   gender={p.gender ?? null}
                   seed={p.id}
                   src={p.avatarUrl}
-                  className="size-5 text-[9px]"
+                  className="size-6 text-xs"
                 />
                 <span className="truncate">{shortName(p)}</span>
               </Link>

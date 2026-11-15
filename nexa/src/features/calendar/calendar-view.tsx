@@ -174,7 +174,7 @@ export function CalendarView() {
                 <span key={status} className="flex items-center gap-1 text-xs text-muted-foreground">
                   <span
                     className={cn(
-                      "flex size-4 items-center justify-center rounded-full text-[9px] font-bold",
+                      "flex size-5 items-center justify-center rounded-full text-xs font-bold",
                       MY_STATUS_BADGE[status].className,
                     )}
                   >
@@ -208,7 +208,7 @@ export function CalendarView() {
                         {status && (
                           <span
                             className={cn(
-                              "absolute top-1 right-1 flex size-4 items-center justify-center rounded-full text-[9px] font-bold",
+                              "absolute top-1 right-1 flex size-5 items-center justify-center rounded-full text-xs font-bold",
                               MY_STATUS_BADGE[status].className,
                             )}
                             title={MY_STATUS_LEGEND.find((l) => l.status === status)?.label}
@@ -229,13 +229,13 @@ export function CalendarView() {
                           {dayItems.slice(0, 2).map((it) => (
                             <span
                               key={it.id}
-                              className={cn("truncate rounded px-1 text-[10px] leading-tight", SOURCE_STYLE[it.source])}
+                              className={cn("truncate rounded px-1 text-xs leading-snug", SOURCE_STYLE[it.source])}
                             >
                               {it.title}
                             </span>
                           ))}
                           {dayItems.length > 2 && (
-                            <span className="px-1 text-[10px] text-muted-foreground">
+                            <span className="px-1 text-xs text-muted-foreground">
                               +{dayItems.length - 2}
                             </span>
                           )}

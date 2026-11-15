@@ -11,7 +11,7 @@ export default async function CostCentersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ศูนย์ต้นทุน (Cost Center)"
+        title="ศูนย์ต้นทุน"
         description="จัดกลุ่มพนักงานตามงบประมาณ/หน่วยต้นทุน สำหรับการวิเคราะห์ค่าใช้จ่าย"
       />
       <CostCenterView />

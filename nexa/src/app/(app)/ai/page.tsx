@@ -3,7 +3,7 @@ import { requireAiPageAccess } from "@/lib/auth/page-guard";
 import { AiChatView } from "@/features/ai/ai-chat-view";
 import { AiWorkspace } from "@/features/ai/ai-workspace";
 
-export const metadata: Metadata = { title: "AI Assistant" };
+export const metadata: Metadata = { title: "น้องวีบอท" };
 
 type Props = { searchParams: Promise<{ q?: string }> };
 

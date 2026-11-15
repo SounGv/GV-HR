@@ -11,7 +11,7 @@ export default async function ImportCenterPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ศูนย์นำเข้าข้อมูล (Import Center)"
+        title="ศูนย์นำเข้าข้อมูล"
         description="อัปโหลด CSV เพื่อเพิ่ม/อัปเดตข้อมูลเป็นชุด พร้อมตรวจสอบและตัวอย่างก่อนนำเข้าจริงทุกครั้ง"
       />
       <ImportHub />

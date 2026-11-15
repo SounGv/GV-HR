@@ -884,6 +884,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   }
 
   if (query.type === "leave") {
+    // People who were deleted (test accounts, ex-staff) are not part of the company's leave summary, whatever balance rows they kept.
+    const liveRel = { employee: { ...employeeFilter, deletedAt: null } };
     const year = start.getUTCFullYear();
     const yearStart = new Date(Date.UTC(year, 0, 1));
     const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
@@ -895,7 +897,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // from this report despite being real, trackable leave.
     // Sequential, not Promise.all — connection_limit=1.
     const bals = await prisma.leaveBalance.findMany({
-      where: { companyId, year, ...deptRel },
+      where: { companyId, year, ...liveRel },
       select: {
         type: true,
         totalDays: true,
@@ -913,7 +915,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         type: { in: ["UNPAID", "OTHER", "HOLIDAY_SWAP"] },
         startDate: { lt: yearEnd },
         endDate: { gte: yearStart },
-        ...deptRel,
+        ...liveRel,
       },
       select: {
         type: true,
@@ -968,7 +970,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         status: "PENDING",
         startDate: { lt: yearEnd },
         endDate: { gte: yearStart },
-        ...deptRel,
+        ...liveRel,
       },
       select: {
         days: true,
@@ -1327,9 +1329,15 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       },
       orderBy: [{ employee: { employeeCode: "asc" } }, { calculatedAt: "desc" }],
     });
+    // Say why a calculated round is not listed yet, instead of leaving HR to think the report is cut off.
+    const waiting = await prisma.appraisalParticipant.count({
+      where: { round: { companyId, deletedAt: null }, resultStatus: "CALCULATED", ...deptRel },
+    });
+    const listed = appraised.length + participants.length + reviews.length;
     return {
       title,
       period: null,
+      footnote: `รวม ${listed} รายการ แสดงเฉพาะผลที่อนุมัติหรือประกาศแล้ว${waiting > 0 ? ` (ยังมีผลที่คำนวณแล้วรออนุมัติอีก ${waiting} คน จะแสดงที่นี่เมื่ออนุมัติ)` : ""}`,
       columns: [
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },

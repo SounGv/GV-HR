@@ -25,7 +25,7 @@ export function KpiMiniBars({
   const allZero = data.every((d) => d.value === 0);
   if (allZero) {
     return (
-      <div className="flex h-[34px] items-center justify-center rounded-md bg-surface-muted px-2 text-center text-[10px] leading-tight text-muted-foreground">
+      <div className="flex h-[34px] items-center justify-center rounded-md bg-surface-muted px-2 text-center text-xs leading-snug text-muted-foreground">
         {emptyLabel}
       </div>
     );
@@ -49,7 +49,7 @@ export function KpiMiniBars({
           );
         })}
       </div>
-      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+      <div className="mt-1 flex justify-between text-xs text-muted-foreground">
         <span>{data[0].label}</span>
         <span>วันนี้</span>
       </div>

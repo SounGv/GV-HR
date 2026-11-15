@@ -241,7 +241,7 @@ function AiShortcut({ active, onClick }: { active: boolean; onClick: () => void 
         type="button"
         onClick={onClick}
         aria-pressed={active}
-        aria-label="เปิด AI Assistant"
+        aria-label="เปิดน้องวีบอท"
         className={cn(
           "relative flex w-full items-center gap-2.5 rounded-2xl border border-[#99f6e4] bg-[linear-gradient(135deg,#f0fdfa,#ecfeff_60%,#f7fee7)] p-2 pr-3 text-left",
           "shadow-[0_1px_2px_rgba(15,118,110,0.08),0_8px_18px_-12px_rgba(15,118,110,0.45)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
@@ -254,9 +254,9 @@ function AiShortcut({ active, onClick }: { active: boolean; onClick: () => void 
           <VBot mood="hi" className="ai-shortcut-bot gv-wave size-8 group-data-[collapsible=icon]:size-6" />
           <Sparkles className="ai-shortcut-spark size-6 text-[#0d9488] group-data-[collapsible=icon]:size-5" aria-hidden="true" />
         </span>
-        <span className="min-w-0 flex-1 leading-tight group-data-[collapsible=icon]:hidden">
-          <b className="block text-[14px] font-bold text-[#115e59] dark:text-foreground">AI Assistant</b>
-          <span className="block truncate text-[11.5px] text-muted-foreground">ถามน้องวีบอทได้เลย</span>
+        <span className="min-w-0 flex-1 leading-snug group-data-[collapsible=icon]:hidden">
+          <b className="block text-[14px] font-bold text-[#115e59] dark:text-foreground">น้องวีบอท</b>
+          <span className="block truncate text-xs text-muted-foreground">ถามได้ทุกเรื่องงาน HR</span>
         </span>
         <Sparkles className="size-4 shrink-0 text-[#0d9488] group-data-[collapsible=icon]:hidden" aria-hidden="true" />
       </button>
@@ -309,7 +309,7 @@ function NexaHeaderLogo() {
           <span className="min-w-0 leading-tight">
             <b className="flex items-center gap-1.5 text-[20px] leading-[1.15] font-bold tracking-[-0.02em] whitespace-nowrap text-foreground">
               GV One
-              <span className="rounded-[5px] bg-[#CDEB03] px-1.5 py-px text-[10.5px] leading-[1.4] font-bold tracking-[0.02em] text-[#131516] shadow-[0_2px_6px_-2px_rgba(132,152,0,0.6)]">
+              <span className="rounded-[5px] bg-[#CDEB03] px-1.5 py-px text-xs leading-[1.4] font-bold tracking-[0.02em] text-[#131516] shadow-[0_2px_6px_-2px_rgba(132,152,0,0.6)]">
                 HR
               </span>
             </b>

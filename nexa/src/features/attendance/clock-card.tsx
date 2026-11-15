@@ -784,9 +784,9 @@ function GpsStatusChip({
 
   if (status === "denied") {
     return (
-      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning">
+      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-white/90">
         <span className="flex items-center gap-2">
-          <ShieldAlert className="size-3.5 shrink-0" /> ยังไม่อนุญาตตำแหน่ง — เปิดสิทธิ์เข้าถึงตำแหน่งในตั้งค่าเบราว์เซอร์
+          <ShieldAlert className="size-3.5 shrink-0 text-warning" /> ยังไม่อนุญาตตำแหน่ง — เปิดสิทธิ์เข้าถึงตำแหน่งในตั้งค่าเบราว์เซอร์
         </span>
         <button type="button" onClick={onRetry} className="shrink-0 font-medium underline-offset-2 hover:underline">
           ลองใหม่
@@ -797,9 +797,9 @@ function GpsStatusChip({
 
   if (status === "error") {
     return (
-      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning">
+      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-white/90">
         <span className="flex items-center gap-2">
-          <AlertTriangle className="size-3.5 shrink-0" /> ระบุตำแหน่งไม่ได้ · ลองใหม่{errorMsg ? ` (${errorMsg})` : ""}
+          <AlertTriangle className="size-3.5 shrink-0 text-warning" /> ระบุตำแหน่งไม่ได้ · ลองใหม่{errorMsg ? ` (${errorMsg})` : ""}
         </span>
         <button type="button" onClick={onRetry} className="shrink-0 font-medium underline-offset-2 hover:underline">
           ลองใหม่

@@ -5,7 +5,7 @@ import { getUser } from "@/features/admin/service";
 import { AiAccessFormPage } from "@/features/admin/ai-access-form-page";
 import { AppError } from "@/lib/api/errors";
 
-export const metadata: Metadata = { title: "สิทธิ์ AI Assistant" };
+export const metadata: Metadata = { title: "สิทธิ์น้องวีบอท" };
 
 export default async function UserAiAccessPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePagePermission("admin:update");

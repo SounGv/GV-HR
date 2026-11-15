@@ -11,7 +11,7 @@ export default async function GeofenceSettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ตั้งค่าพื้นที่เช็คอิน (Geofence)"
+        title="ตั้งค่าพื้นที่เช็คอิน"
         description="กำหนดพิกัดและรัศมีของแต่ละสาขา เพื่อบังคับให้เช็คอินได้เฉพาะในพื้นที่"
       />
       <GeofenceSettings />

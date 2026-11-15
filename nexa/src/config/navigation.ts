@@ -83,7 +83,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", ready: true },
-      { label: "AI Assistant", href: "/ai", icon: Bot, permission: "ai:read", ready: true, opensAiPanel: true, featured: true },
+      { label: "น้องวีบอท", href: "/ai", icon: Bot, permission: "ai:read", ready: true, opensAiPanel: true, featured: true },
       {
         label: "แจ้งเตือน",
         href: "/notifications",
@@ -115,7 +115,7 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: GvLeaveIcon,
     chipColor: "#0D9488",
     items: [
-      { label: "คำขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read", ready: true },
+      { label: "ขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read", ready: true },
       {
         label: "คำขอรออนุมัติ",
         href: "/requests?view=approvals",

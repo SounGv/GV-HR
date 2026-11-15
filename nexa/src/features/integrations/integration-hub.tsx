@@ -64,13 +64,10 @@ export function IntegrationHub() {
             <Plug className="size-6 text-primary" />
           </span>
           <div className="space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-              Adapter Pattern
-            </p>
+            <p className="text-xs font-medium text-slate-300">เชื่อมต่อแบบเดียวกันทุกระบบ</p>
             <p className="max-w-2xl text-sm leading-relaxed text-slate-200">
-              ทุกระบบภายนอกเชื่อมผ่าน <b className="text-white">Interface มาตรฐานเดียว</b> —
-              เปลี่ยน ERP หรือผู้ให้บริการในอนาคตได้โดย
-              <b className="text-white"> ไม่ต้องแก้ Business Logic</b> ของโมดูลใดเลย
+              ทุกระบบภายนอกเชื่อมผ่าน<b className="text-white">ช่องทางมาตรฐานเดียว</b> จึงเปลี่ยนระบบบัญชีหรือผู้ให้บริการในอนาคต
+              <b className="text-white"> โดยไม่ต้องแก้โมดูลอื่นเลย</b>
             </p>
           </div>
         </div>
