@@ -51,6 +51,26 @@ export interface RotateResult {
   remember: boolean;
 }
 
+/** How long after a rotation the old token is still accepted once more (two requests racing on one cookie). */
+export const ROTATION_GRACE_MS = 10_000;
+
+/**
+ * True when this revoked token was revoked by a rotation seconds ago, as opposed to a logout, a session the user
+ * ended, or an old token someone kept. A rotation always issues the successor in the same moment, so a token of the
+ * same user created right around the revocation is the proof; a logout leaves no such token.
+ */
+async function rotatedJustNow(row: { id: string; userId: string; revokedAt: Date | null }, meta?: { ip?: string; userAgent?: string }): Promise<boolean> {
+  if (!row.revokedAt) return false;
+  const revokedMs = row.revokedAt.getTime();
+  if (Date.now() - revokedMs > ROTATION_GRACE_MS) return false;
+  const successor = await prisma.refreshToken.findFirst({
+    // Made for the same client that is asking now (address and browser), so a login on another device a moment later does not count.
+    where: { userId: row.userId, id: { not: row.id }, createdIp: meta?.ip ?? null, userAgent: meta?.userAgent ?? null, createdAt: { gte: new Date(revokedMs - 2_000), lte: new Date(revokedMs + 5_000) } },
+    select: { id: true },
+  });
+  return successor !== null;
+}
+
 /**
  * Validate + rotate. Returns null when the token is invalid, unknown, expired,
  * or already revoked (reuse). On detected reuse we revoke the whole family for
@@ -67,6 +87,13 @@ export async function rotateRefreshToken(
   if (!row || row.tokenHash !== hashToken(rawToken)) return null;
 
   if (row.revokedAt) {
+    // Two requests that carry the same cookie can both reach the server within moments (a page reload while a
+    // background call refreshes, two tabs, the app reopening): the second one holds a token the first just rotated.
+    // That is not theft, so inside a short window it is given a fresh token instead of signing the user out everywhere.
+    if (await rotatedJustNow(row, meta)) {
+      const next = await issueRefreshToken(row.userId, meta, claims.remember);
+      return { userId: row.userId, token: next.token, jti: next.jti, remember: claims.remember };
+    }
     // Reuse of an already-rotated token → revoke everything for this user.
     await revokeAllForUser(row.userId);
     return null;

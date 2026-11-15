@@ -21,6 +21,7 @@
     "check:ui": "node scripts/check-ui-invariants.mjs",
     "test:devplan": "node scripts/e2e-ai/build.mjs run-devplan && node --env-file=.env.local .tmp-e2e/run-devplan.cjs",
     "test:adjust": "node scripts/e2e-ai/build.mjs run-adjust && node --env-file=.env.local .tmp-e2e/run-adjust.cjs",
+    "test:refresh": "node scripts/e2e-ai/build.mjs run-refresh && node --env-file=.env.local .tmp-e2e/run-refresh.cjs",
     "test:review": "node scripts/e2e-ai/build.mjs run-review && node --env-file=.env.local .tmp-e2e/run-review.cjs",
     "test:eval-overview": "node scripts/e2e-ai/build.mjs run-eval-overview && node --env-file=.env.local .tmp-e2e/run-eval-overview.cjs",
     "test:ai": "node scripts/e2e-ai/build.mjs run-chat && node --env-file=.env.local .tmp-e2e/run-chat.cjs && node scripts/e2e-ai/build.mjs run-writes && node --env-file=.env.local .tmp-e2e/run-writes.cjs"
