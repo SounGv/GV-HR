@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ComponentType } from "react";
-import { OverviewGroupIcon, TimeGroupIcon, LeaveGroupIcon, PeopleGroupIcon, AppraisalGroupIcon, MoneyGroupIcon, ReportGroupIcon, DataGroupIcon, SystemGroupIcon } from "@/components/shared/group-icons";
+import { GvHomeIcon, GvTimeIcon, GvLeaveIcon, GvPeopleIcon, GvEvaluationIcon, GvMoneyIcon, GvReportIcon, GvDataIcon, GvSystemIcon, type GvIconProps } from "@/components/shared/gv-icons";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -64,7 +64,7 @@ export interface NavGroup {
   label: string;
   /** Group-header icon chip — redesign spec: each group reads at a glance by
    * its own color instead of every row sharing one plain treatment. */
-  icon: ComponentType<{ className?: string; strokeWidth?: number | string }>;
+  icon: ComponentType<GvIconProps>;
   chipColor: string;
   items: NavItem[];
 }
@@ -78,7 +78,7 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ภาพรวม",
-    icon: OverviewGroupIcon,
+    icon: GvHomeIcon,
     chipColor: "#0D9488",
     items: [
       { label: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
@@ -100,7 +100,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "เวลาทำงาน",
-    icon: TimeGroupIcon,
+    icon: GvTimeIcon,
     chipColor: "#0D9488",
     items: [
       { label: "เข้างาน / ออกงาน", href: "/attendance", icon: ScanLine, permission: "attendance:read", ready: true },
@@ -112,7 +112,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "การลาและคำขอ",
-    icon: LeaveGroupIcon,
+    icon: GvLeaveIcon,
     chipColor: "#0D9488",
     items: [
       { label: "คำขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read", ready: true },
@@ -132,7 +132,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "พนักงาน",
-    icon: PeopleGroupIcon,
+    icon: GvPeopleIcon,
     chipColor: "#0D9488",
     items: [
       { label: "รายชื่อพนักงาน", href: "/employees", icon: UsersRound, permission: "employee:read", ready: true },
@@ -145,7 +145,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "ประเมินและพัฒนา",
-    icon: AppraisalGroupIcon,
+    icon: GvEvaluationIcon,
     chipColor: "#0D9488",
     items: [
       // Kept to four (2026-11-11, the menu had 11 and confused people): the two
@@ -166,7 +166,7 @@ export const NAV_GROUPS: NavGroup[] = [
     // Re-add { label: "เงินเดือนและสลิป", href: "/payroll", icon: Wallet,
     // permission: "payroll:read", ready: true } here when ready.
     label: "เบิกจ่าย",
-    icon: MoneyGroupIcon,
+    icon: GvMoneyIcon,
     chipColor: "#0D9488",
     items: [
       { label: "เบิกจ่ายทั่วไป", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
@@ -178,7 +178,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "รายงานและสื่อสาร",
-    icon: ReportGroupIcon,
+    icon: GvReportIcon,
     chipColor: "#0D9488",
     items: [
       { label: "รายงานการเข้างาน", href: "/reports?view=attendance", icon: BarChart3, permission: "report:read", ready: true },
@@ -191,7 +191,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "ข้อมูลระบบ",
-    icon: DataGroupIcon,
+    icon: GvDataIcon,
     chipColor: "#0D9488",
     items: [
       { label: "นำเข้าข้อมูล", href: "/import", icon: Upload, permission: "employee:create", ready: true },
@@ -200,7 +200,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "ระบบ",
-    icon: SystemGroupIcon,
+    icon: GvSystemIcon,
     chipColor: "#0D9488",
     items: [
       { label: "ข้อมูลบริษัท", href: "/company", icon: Building2, permission: "admin:read", ready: true },

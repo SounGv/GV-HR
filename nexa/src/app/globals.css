@@ -109,7 +109,7 @@
 
 /* ───────────────── GV One — Light theme (Gadget Villa lime palette) ───────────────── */
 :root {
-  /* Menu-group icons (components/shared/group-icons.tsx): two teal tones. */
+  /* Menu-group tokens (--gi-soft tints the open group row in app-sidebar.tsx). */
   --gi-main: #0d9488;
   --gi-soft: #ccfbf1;
   --gi-deep: #0f766e;

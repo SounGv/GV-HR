@@ -30,6 +30,7 @@ import { EMPTY_MENU_PREFS, isDefaultMenuPrefs, isHidden, orderMenu, type MenuPre
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
 import { VBot } from "@/components/shared/v-bot";
+import { GvIconTile } from "@/components/shared/gv-icons";
 
 
 export function AppSidebar() {
@@ -192,11 +193,10 @@ export function AppSidebar() {
                     type="button"
                     onClick={() => toggle(group.label)}
                     aria-expanded={expanded}
-                    className={cn("flex h-11 w-full items-center gap-3 rounded-xl px-2.5 text-[14.5px] font-semibold text-sidebar-foreground transition-colors hover:bg-sidebar-accent", expanded && "bg-[color-mix(in_srgb,var(--gi-soft)_55%,transparent)] text-[var(--gi-deep)]")}
+                    className={cn("flex h-11 w-full items-center gap-3 rounded-xl px-2.5 text-[14.5px] font-semibold text-sidebar-foreground transition-colors hover:bg-sidebar-accent", expanded && "bg-primary/20 text-sidebar-foreground")}
                   >
-                    {/* The open group's icon fills teal so you can see where you are at a glance. */}
-                    {/* Duotone group icon (group-icons.tsx); the open group's row tints teal instead of a filled chip. */}
-                    <group.icon className="size-[28px] shrink-0" />
+                    {/* Same icon set as the home page (gv-icons.tsx); the open group's tile fills solid teal so you can see where you are. */}
+                    <GvIconTile icon={group.icon} className={cn("size-9 rounded-xl", expanded && "bg-primary text-primary-foreground ring-0")} iconClassName="size-[22px]" />
                     <span className="flex-grow text-left">{group.label}</span>
                     <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
                   </button>

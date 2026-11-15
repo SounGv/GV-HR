@@ -34,7 +34,14 @@ export type GvIconName =
   | "announce"
   | "draft"
   | "calc"
-  | "checkin";
+  | "checkin"
+  | "home"
+  | "time"
+  | "people"
+  | "money"
+  | "report"
+  | "data"
+  | "system";
 
 const ICONS: Record<GvIconName, Part[]> = {
   approvals: [rect("dl", 5, 4.5, 14, 16.5, 3), rect("dl", 9, 2.5, 6, 4, 1.6), p("l", "M9 14l2.2 2.2L15.2 12")],
@@ -60,6 +67,14 @@ const ICONS: Record<GvIconName, Part[]> = {
   draft: [p("dl", "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"), p("l", "M14 3v5h5M9 13h6M9 17h4")],
   calc: [rect("dl", 5, 3, 14, 18, 3), rect("l", 8, 6, 8, 3, 1), p("dot", "M9 13h.01M12 13h.01M15 13h.01M9 17h.01M12 17h.01M15 17h.01")],
   checkin: [circle("dl", 12, 12, 9), p("l", "M8.2 12.4l2.7 2.7 5-5.4")],
+  // Menu-group icons (left sidebar): one per group, drawn in the same style as the dashboard icons.
+  home: [p("dl", "M4 11l8-7 8 7v8.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5z"), p("l", "M10 21v-6h4v6")],
+  time: [circle("dl", 12, 12, 9), p("l", "M12 7v5l3.5 2")],
+  people: [rect("dl", 3, 5, 18, 14, 3), circle("l", 9, 11, 2), p("l", "M5.8 16c.6-1.6 1.8-2.4 3.2-2.4s2.6.8 3.2 2.4M14.5 10.5h4M14.5 14h3")],
+  money: [rect("dl", 2.5, 6, 19, 12, 3), circle("l", 12, 12, 2.6), p("dot", "M6 12h.01M18 12h.01")],
+  report: [rect("dl", 3.5, 3.5, 17, 17, 3), p("l", "M8 16v-4M12 16V8M16 16v-6")],
+  data: [p("dl", "M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"), p("l", "M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3")],
+  system: [p("l", "M4 7h8M18 7h2M4 17h2M12 17h8"), circle("dl", 15, 7, 2.6), circle("dl", 9, 17, 2.6)],
 };
 
 const STROKE = { strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -114,6 +129,13 @@ export const GvAnnounceIcon = make("announce");
 export const GvDraftIcon = make("draft");
 export const GvCalcIcon = make("calc");
 export const GvCheckinIcon = make("checkin");
+export const GvHomeIcon = make("home");
+export const GvTimeIcon = make("time");
+export const GvPeopleIcon = make("people");
+export const GvMoneyIcon = make("money");
+export const GvReportIcon = make("report");
+export const GvDataIcon = make("data");
+export const GvSystemIcon = make("system");
 
 export type GvStatus = "bad" | "warn" | "info" | "ok";
 
