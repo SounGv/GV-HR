@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { StatusChip } from "@/components/shared/status-chip";
 import { Card } from "@/components/ui/card";
 import { rubricFor } from "@/features/appraisal-form/rating-labels";
+import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useParticipantResult, useRoundMatrix } from "./hooks";
 import { ANON_MIN } from "./imported-comments";
@@ -70,6 +71,8 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
                       <Icon className="size-3.5" aria-hidden="true" />
                       {RATER_LABEL[a.raterType]}
                       {a.raterType === "SELF" ? "" : ` · ${a.raterName}`} · {ASSIGNMENT_STATUS_LABEL[a.status]}
+                      {a.submittedAt && ` ${formatDate(a.submittedAt)}`}
+                      {a.percent !== null && <span className="tabular-nums"> · ได้ {a.percent}%</span>}
                       {canFill && a.status !== "SUBMITTED" && (
                         <Link href={`/appraisal/rounds/${roundId}/fill/${a.id}`} className="ml-1 font-bold underline underline-offset-2">
                           กรอกแทน

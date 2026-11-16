@@ -193,7 +193,8 @@ export interface MatrixRow {
   name: string;
   code: string;
   department: string;
-  assignments: { id: string; raterType: RaterType; status: AssignmentStatus; raterName: string }[];
+  /** `submittedAt` (ISO date) and `percent` are filled for HR only, and only once the sheet is submitted. */
+  assignments: { id: string; raterType: RaterType; status: AssignmentStatus; raterName: string; submittedAt: string | null; percent: number | null }[];
 }
 
 export interface QuestionSummary {

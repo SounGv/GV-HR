@@ -30,6 +30,7 @@ import type { RoundUpdateInput } from "./schema";
 import { makeDueRecurringRounds } from "./recurrence-service";
 import { participantScope, viewableEmployeeIds } from "./viewer-scope";
 import { commentsFor, holdsBackTexts, parseImportedComments, type CommentsView } from "./imported-comments";
+import { sheetPercent } from "./rater-sheet";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -737,17 +738,20 @@ export async function deleteRound(companyId: string, session: AccessClaims, id: 
 
 /** "ตรวจเช็คการประเมิน": every person in the round with the status of each of their raters. */
 export async function getRoundMatrix(companyId: string, id: string, session: AccessClaims) {
-  const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
+  const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true, formSnapshot: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
   const scope = participantScope(await viewableEmployeeIds(companyId, session));
+  // The date and the score of each rater's sheet are for HR only: a manager sees who has finished, not what each person gave.
+  const isHr = can(session.perms, "campaign:update");
   const rows = await prisma.appraisalParticipant.findMany({
     where: { roundId: id, ...scope },
     select: {
       id: true,
+      formId: true,
       departmentName: true,
       employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
       assignments: {
-        select: { id: true, raterType: true, status: true, rater: { select: { firstName: true, lastName: true, nickname: true } } },
+        select: { id: true, raterType: true, status: true, submittedAt: true, ...(isHr ? { answers: true } : {}), rater: { select: { firstName: true, lastName: true, nickname: true } } },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -759,12 +763,17 @@ export async function getRoundMatrix(companyId: string, id: string, session: Acc
     name: fullName(p.employee),
     code: p.employee.employeeCode,
     department: p.departmentName ?? "ไม่ระบุแผนก",
-    assignments: p.assignments.map((a) => ({
-      id: a.id,
-      raterType: a.raterType,
-      status: a.status,
-      raterName: fullName(a.rater),
-    })),
+    assignments: p.assignments.map((a) => {
+      const form = isHr ? pickForm(round.formSnapshot as unknown as RoundSnapshot | null, p.formId) : null;
+      return {
+        id: a.id,
+        raterType: a.raterType,
+        status: a.status,
+        raterName: fullName(a.rater),
+        submittedAt: isHr && a.status === "SUBMITTED" && a.submittedAt ? iso(a.submittedAt) : null,
+        percent: form && a.status === "SUBMITTED" ? sheetPercent((a as { answers?: unknown }).answers, form.questions ?? [], form.ratingMax ?? 5) : null,
+      };
+    }),
   }));
 }
 
