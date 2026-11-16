@@ -1374,3 +1374,6 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 }
 /* Map tiles in dark mode: invert and tint so the map does not glare. */
 .dark .gv-tiles img { filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.92); }
+
+/* The tab bar sits over scrolling content, so its glass is firmer than the other glass surfaces: text behind it must not read through. */
+.gv-lg-nav { background: var(--lg-glass-strong); }

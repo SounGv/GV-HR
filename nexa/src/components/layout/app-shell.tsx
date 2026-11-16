@@ -46,7 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="hidden md:sticky md:top-[env(safe-area-inset-top)] md:z-30 md:block">
               <SectionBand />
             </div>
-            <main className="gv-main min-w-0 flex-1 pb-28 md:space-y-6 md:px-6 md:pt-3 md:pb-6">
+            <main className="gv-main min-w-0 flex-1 pb-36 md:space-y-6 md:px-6 md:pt-3 md:pb-6">
               <Suspense fallback={children}>
                 <MobileContentWrapper>{children}</MobileContentWrapper>
               </Suspense>
