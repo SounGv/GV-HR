@@ -18,6 +18,8 @@ import type { ProposalCard } from "@/features/ai/proposal";
 import { classifyAiFailure, describeAiFailure, isLastingFailure } from "@/features/ai/ai-error";
 import { FALLBACK_REPLY } from "@/features/ai/engine-state";
 import { engineStatus, markDown, markUp, recordChat } from "@/lib/ai/engine";
+import { askBackup, isBackupConfigured } from "@/lib/ai/groq";
+import { backupQuestion, backupReply } from "@/features/ai/backup-ai";
 
 export const runtime = "nodejs";
 // Up to 6 model steps plus the tools between them; the default limit is too short for a long answer.
@@ -36,6 +38,17 @@ const bodySchema = z.object({
     .min(1)
     .max(40),
 });
+
+/**
+ * The free backup AI's answer to the newest question, or null when it is off, a file is attached, or the call failed.
+ * It sees no company data and no tools; see backup-ai.ts.
+ */
+async function backupAnswer(messages: { role: "user" | "assistant"; content: string }[], hasAttachments: boolean): Promise<string | null> {
+  if (!isBackupConfigured()) return null;
+  const question = backupQuestion({ messages, hasAttachments });
+  if (!question) return null;
+  return backupReply(await askBackup(question));
+}
 
 const MAX_STEPS = 6;
 // Room for a whole evaluation form or a spreadsheet inside one tool call (a cut-off call is lost, not half-run).
@@ -96,8 +109,10 @@ export async function POST(request: NextRequest) {
     // Who answers: the AI service, or the built-in quick actions when it is down or this month's cap is used up.
     const engine = await engineStatus(session.companyId);
     if (engine.decision.mode === "fallback") {
+      const backup = await backupAnswer(input, !!attachments && attachments.length > 0);
       return ok({
-        reply: FALLBACK_REPLY[engine.decision.reason],
+        reply: backup ?? FALLBACK_REPLY[engine.decision.reason],
+        backup: backup !== null,
         steps: [] as Step[],
         proposals: [] as ProposalCard[],
         files: [] as OutFile[],
@@ -199,7 +214,8 @@ export async function POST(request: NextRequest) {
       if (isLastingFailure(kind)) {
         // Credit or key: remember it so the quick actions answer from now on, and tell the administrators once.
         await markDown(session.companyId, kind, engine.health).catch((e) => console.error("[ai/chat] down notice failed:", e));
-        return ok({ reply: FALLBACK_REPLY[kind], steps, proposals, files, engine: "fallback", fallbackReason: kind, configured: true });
+        const backup = await backupAnswer(input, !!attachments && attachments.length > 0);
+        return ok({ reply: backup ?? FALLBACK_REPLY[kind], backup: backup !== null, steps, proposals, files, engine: "fallback", fallbackReason: kind, configured: true });
       }
       return ok({ reply: describeAiFailure(status, msg), steps, proposals, files, engine: "ai", configured: true });
     }

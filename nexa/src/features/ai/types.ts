@@ -24,6 +24,8 @@ export interface ChatResponse {
   /** "fallback" when the quick actions answered or should be used from now on. */
   engine?: "ai" | "fallback";
   fallbackReason?: "credit" | "key" | "cap";
+  /** True when the reply came from the free backup AI (no company data) instead of the quick buttons. */
+  backup?: boolean;
   configured: boolean;
 }
 

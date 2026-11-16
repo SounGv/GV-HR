@@ -274,7 +274,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         if (hasFiles) attach.clear();
         engine.observe(res.data);
         // The same fallback twice in a row: the person has read why, so just say this question needs the AI.
-        const reply = wasFallback && res.data.engine === "fallback" ? FALLBACK_NOT_UNDERSTOOD : res.data.reply;
+        const reply = wasFallback && res.data.engine === "fallback" && !res.data.backup ? FALLBACK_NOT_UNDERSTOOD : res.data.reply;
         // The answer lands right after the question we just added, at index next.length.
         setTurns((prev) => [
           ...prev,
