@@ -18,7 +18,7 @@ export function MobileActionFooter({
       <div aria-hidden="true" className="h-40 shrink-0 md:hidden" />
       <div
         className={cn(
-          "fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 border-t border-border bg-card px-4 py-3 md:hidden",
+          "gv-foot fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 border-t border-border bg-card px-4 py-3 md:hidden",
           className,
         )}
       >

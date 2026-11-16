@@ -1174,8 +1174,8 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
    Real blur only on the page header, the floating tab bar and the round buttons; cards are near-solid white so their text keeps 4.5:1 and
    mid-range Android phones stay smooth. Without backdrop-filter, or with "reduce transparency", the glass turns into a solid surface. */
 :root {
-  /* Space the floating tab bar takes at the bottom of a phone (14px gap + 68px bar + a little air); bars pinned above it use this. */
-  --gv-tabbar: 6.25rem;
+  /* Space the floating tab bar takes at the bottom of a phone (14px gap + 68px bar, plus 2px); bars pinned above it use this. */
+  --gv-tabbar: 5.25rem;
   --lg-glass: rgba(255, 255, 255, 0.62);
   --lg-glass-strong: rgba(255, 255, 255, 0.82);
   --lg-card: rgba(255, 255, 255, 0.9);
@@ -1379,6 +1379,18 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 
 /* The tab bar sits over scrolling content, so its glass is firmer than the other glass surfaces: text behind it must not read through. */
 .gv-lg-nav { background: var(--lg-glass-strong); }
+/* A bar pinned just above the floating tab bar also backs the strip beneath it (down to the screen edge), so scrolling content never shows between the bar and the tabs. */
+@media (max-width: 767px) {
+  .gv-foot::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    height: calc(var(--gv-tabbar) + env(safe-area-inset-bottom));
+    background: inherit;
+    pointer-events: none;
+  }
+}
 
 /* Phone forms: plain fields (native selects, date and time boxes, text boxes) copied with `h-8` were 32px tall, too small to tap. Fields
    inside a table row stay compact. */
