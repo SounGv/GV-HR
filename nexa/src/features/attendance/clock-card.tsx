@@ -382,7 +382,7 @@ export function ClockCard() {
         type="button"
         onClick={() => refetch()}
         aria-label="รีเฟรช"
-        className="absolute top-5 right-5 flex size-9 items-center justify-center rounded-full bg-white/10 text-white/90 transition hover:bg-white/20 hover:text-white"
+        className="absolute top-5 right-5 flex size-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 hover:text-white"
       >
         <RotateCcw className="size-4" />
       </button>
@@ -784,7 +784,7 @@ function GpsStatusChip({
 
   if (status === "denied") {
     return (
-      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-white/90">
+      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-white">
         <span className="flex items-center gap-2">
           <ShieldAlert className="size-3.5 shrink-0 text-warning" /> ยังไม่อนุญาตตำแหน่ง — เปิดสิทธิ์เข้าถึงตำแหน่งในตั้งค่าเบราว์เซอร์
         </span>
@@ -797,7 +797,7 @@ function GpsStatusChip({
 
   if (status === "error") {
     return (
-      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-white/90">
+      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-white">
         <span className="flex items-center gap-2">
           <AlertTriangle className="size-3.5 shrink-0 text-warning" /> ระบุตำแหน่งไม่ได้ · ลองใหม่{errorMsg ? ` (${errorMsg})` : ""}
         </span>

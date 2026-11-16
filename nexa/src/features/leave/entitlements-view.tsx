@@ -124,7 +124,7 @@ export function EntitlementsView() {
                 <tr key={r.employeeId}>
                   <th scope="row" className="sticky left-0 min-w-[200px] bg-card px-3 py-2 text-left font-medium">
                     {r.name}
-                    <span className="block text-xs font-normal text-muted-foreground">
+                    <span className="block text-xs font-medium text-muted-foreground">
                       {r.code} · {r.department}
                     </span>
                   </th>

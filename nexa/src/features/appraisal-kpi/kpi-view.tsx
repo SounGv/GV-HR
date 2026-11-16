@@ -318,7 +318,7 @@ function RunPanel({ profile }: { profile: KpiProfileView }) {
                 {result.rows.map((r) => (
                   <tr key={r.code}>
                     <th scope="row" className="px-3 py-2 text-left font-medium">
-                      {r.name} <span className="font-normal text-muted-foreground">{r.code}</span>
+                      {r.name} <span className="font-medium text-muted-foreground">{r.code}</span>
                     </th>
                     {r.parts.map((p) => (
                       <td key={p.metric} className="px-2 py-2 text-right tabular-nums">{p.value}</td>

@@ -168,7 +168,7 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
             {state.phase === "refused" && state.message}
             {state.phase === "cancelled" && "ยกเลิกแล้ว ไม่มีอะไรถูกส่งหรือเปลี่ยน"}
             {state.phase === "done" && !state.again && (
-              <small className="block text-xs font-normal">
+              <small className="block text-xs font-medium">
                 บันทึกประวัติการทำรายการแล้ว
                 {state.href && (
                   <>

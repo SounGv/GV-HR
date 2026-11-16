@@ -416,7 +416,7 @@ function ReportSection({
                         {unitMatch ? (
                           <>
                             {unitMatch[1]}
-                            <span className="block text-xs font-normal text-muted-foreground">({unitMatch[2]})</span>
+                            <span className="block text-xs font-medium text-muted-foreground">({unitMatch[2]})</span>
                           </>
                         ) : (
                           c.label

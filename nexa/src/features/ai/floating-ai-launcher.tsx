@@ -166,13 +166,13 @@ export function AiChatPanel() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm leading-tight font-semibold">AI Assistant</p>
-          <p className="text-xs leading-tight text-white/90">น้องวีบอท · ตอบจากข้อมูลจริง</p>
+          <p className="text-xs leading-tight text-white">น้องวีบอท · ตอบจากข้อมูลจริง</p>
         </div>
         <button
           type="button"
           onClick={closePanel}
           aria-label="ปิด AI Assistant"
-          className="flex size-11 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15 hover:text-white md:size-9"
+          className="flex size-11 items-center justify-center rounded-full text-white transition hover:bg-white/15 hover:text-white md:size-9"
         >
           <X className="size-5" />
         </button>

@@ -204,7 +204,7 @@ export function TaskForm({
             <h1 className="truncate text-base leading-snug font-bold">
               ประเมิน {task.personName}
             </h1>
-            <p className="truncate text-xs text-white/90">
+            <p className="truncate text-xs text-white">
               {task.roundName} · ในฐานะ{RATER_LABEL[task.raterType]}
               {task.endIso ? ` · ปิด ${fmtDay(task.endIso)}` : ""}
             </p>
@@ -221,7 +221,7 @@ export function TaskForm({
           ) : (
             !locked && (
               <span
-                className="flex shrink-0 items-center gap-1.5 text-xs text-white/90"
+                className="flex shrink-0 items-center gap-1.5 text-xs text-white"
                 aria-live="polite"
               >
                 <span
@@ -302,7 +302,7 @@ export function TaskForm({
             </div>
           </div>
           <div>
-            <h2 className="text-foreground/80 mb-2 px-0.5 text-sm font-bold">
+            <h2 className="text-foreground mb-2 px-0.5 text-sm font-bold">
               คะแนนแต่ละระดับหมายถึง
             </h2>
             <ul className="border-border bg-card overflow-hidden rounded-[18px] border">
@@ -573,7 +573,7 @@ export function QuestionStep({
         <h2 className="mt-2 text-xl leading-snug font-bold break-words">{q.text}</h2>
         {q.helpText && (
           <p className="text-muted-foreground mt-1 text-sm leading-relaxed whitespace-pre-line">
-            <b className="text-foreground/80 font-semibold">ดูจาก:</b> {q.helpText}
+            <b className="text-foreground font-semibold">ดูจาก:</b> {q.helpText}
           </p>
         )}
       </div>
@@ -640,7 +640,7 @@ export function QuestionStep({
             noteMissing ? "border-status-absent-border bg-status-absent-bg/50" : "border-border",
           )}
         >
-          <span className="text-foreground/80 flex justify-between gap-2 text-sm font-bold">
+          <span className="text-foreground flex justify-between gap-2 text-sm font-bold">
             ตัวอย่างเหตุการณ์
             <span
               className={cn(

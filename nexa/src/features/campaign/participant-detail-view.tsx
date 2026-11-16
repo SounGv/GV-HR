@@ -267,7 +267,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
               <p className="text-2xl font-semibold text-foreground">
                 {participant.scorePercent.toFixed(1)}%
                 {participant.rawScore != null && participant.maxScore != null && (
-                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                  <span className="ml-1.5 text-sm font-medium text-muted-foreground">
                     (อ้างอิงคำตอบหลัก {participant.rawScore.toFixed(1)}/{participant.maxScore.toFixed(1)} คะแนนดิบ · {participant.questionCount} ข้อ · ผู้ประเมิน {participant.evaluatorCount} คน)
                   </span>
                 )}
@@ -744,7 +744,7 @@ function ResponseCard({
             </Avatar>
             <span className="min-w-0">
               <span className="block truncate text-base font-semibold text-foreground">{raterName ?? title}</span>
-              <span className="block text-sm font-normal text-muted-foreground">{title}</span>
+              <span className="block text-sm font-medium text-muted-foreground">{title}</span>
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-2">

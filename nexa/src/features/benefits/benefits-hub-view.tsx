@@ -40,7 +40,7 @@ export function BenefitsHubView() {
         ) : (
           <div>
             <p className="text-3xl font-bold text-foreground">
-              {medical.cap.toLocaleString()} <span className="text-base font-normal text-muted-foreground">บาท</span>
+              {medical.cap.toLocaleString()} <span className="text-base font-medium text-muted-foreground">บาท</span>
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               ใช้ไปแล้ว {medical.approved.toLocaleString()} บาท
@@ -76,7 +76,7 @@ export function BenefitsHubView() {
         ) : (
           <div>
             <p className="text-3xl font-bold text-foreground">
-              สูงสุด {loan.maxLoanAmount.toLocaleString()} <span className="text-base font-normal text-muted-foreground">บาท</span>
+              สูงสุด {loan.maxLoanAmount.toLocaleString()} <span className="text-base font-medium text-muted-foreground">บาท</span>
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               สถานะ: <span className="font-medium text-foreground">{loan.eligible ? "มีสิทธิ์" : "ยังไม่มีสิทธิ์"}</span>

@@ -158,7 +158,7 @@
   --secondary: #e0f5f2;
   --secondary-foreground: #0f766e;
   --muted: #eceef0;
-  --muted-foreground: #5e6670;
+  --muted-foreground: #4d555e;
   --accent: #e0f5f2;
   --accent-foreground: #0f766e;
   /* AI chat: one teal for the header, your bubbles and the send button (white text on it is 5.5:1 in both themes). */
@@ -460,6 +460,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Anuphan at 400 reads thin in Thai at 12 to 14px on every screen; 500 is the weight body text and tables use (owner: text looked faint across the site). */
+    font-weight: 500;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -561,7 +563,7 @@
     radial-gradient(800px 420px at -10% 35%, rgba(13, 148, 136, 0.08), transparent 60%),
     linear-gradient(180deg, #f8fbfb 0, #eff6f5 100%);
   /* Grey text sits straight on this tinted ground: one step darker keeps it at 4.5:1 or more. */
-  --muted-foreground: #4f5861;
+  --muted-foreground: #444c55;
 }
 .dark .theme-flip7 {
   /* The light-mode rule above darkens grey text for the pale ground; in dark mode that left it at 2.5:1 on the home and attendance pages. */

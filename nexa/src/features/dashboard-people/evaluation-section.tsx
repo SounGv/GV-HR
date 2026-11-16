@@ -113,7 +113,7 @@ function OpenRoundCard({ round, companyWide }: { round: OpenRound; companyWide: 
       {s.pendingPeople.length > 0 && (
         <section aria-label="คนที่ยังรอประเมิน" className="mt-4 space-y-1">
           <h4 className="text-sm font-semibold">
-            คนที่ยังรอประเมิน <span className="font-normal text-muted-foreground">(เรียงจากค้างมากที่สุด)</span>
+            คนที่ยังรอประเมิน <span className="font-medium text-muted-foreground">(เรียงจากค้างมากที่สุด)</span>
           </h4>
           <ul className="divide-y divide-border">
             {s.pendingPeople.map((p) => (
@@ -161,7 +161,7 @@ function ResultsView({ r }: { r: ResultsCard }) {
             <p className="mt-0.5 inline-flex items-center gap-1 text-sm font-semibold tabular-nums">
               {r.change.direction === "up" ? <ArrowUpRight className="size-4 text-success" aria-hidden="true" /> : r.change.direction === "down" ? <ArrowDownRight className="size-4 text-status-late-fg" aria-hidden="true" /> : <Minus className="size-4" aria-hidden="true" />}
               {r.change.direction === "up" ? `เพิ่มขึ้น ${r.change.delta} จุด` : r.change.direction === "down" ? `ลดลง ${Math.abs(r.change.delta)} จุด` : "เท่ารอบก่อน"}
-              <span className="font-normal text-muted-foreground"> เทียบ {r.change.previousName}</span>
+              <span className="font-medium text-muted-foreground"> เทียบ {r.change.previousName}</span>
             </p>
           )}
         </div>
@@ -275,7 +275,7 @@ export function HrWorkCard({ o }: { o: EvaluationOverview }) {
   return (
     <article className={CARD} aria-label="งานประเมินที่รอ HR">
       <h3 className="text-base leading-snug font-semibold">
-        รอคุณทำ {rows.length > 0 && <span className="font-normal text-muted-foreground tabular-nums">({rows.length} เรื่อง)</span>}
+        รอคุณทำ {rows.length > 0 && <span className="font-medium text-muted-foreground tabular-nums">({rows.length} เรื่อง)</span>}
       </h3>
       {rows.length === 0 ? (
         <p className="mt-1 flex items-start gap-2 text-sm text-muted-foreground">

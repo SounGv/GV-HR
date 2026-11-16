@@ -615,7 +615,7 @@ export function TopicsAndQuestionsBuilder({
               type="button"
               title={tpl.description}
               onClick={() => (isBlankDraft ? applyQuickStart(tpl.id) : setPendingQuickStart(tpl.id))}
-              className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground/80 hover:bg-muted"
+              className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               {tpl.name}
             </button>

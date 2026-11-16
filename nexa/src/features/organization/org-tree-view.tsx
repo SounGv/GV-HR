@@ -214,7 +214,7 @@ function TopCard({ node }: { node: PersonNode }) {
       </span>
       <span className="min-w-0">
         <b className="block truncate text-[18px] leading-snug">{p.name}</b>
-        <small className="block truncate text-[12.5px] text-white/90">
+        <small className="block truncate text-[12.5px] text-white">
           {p.positionTitle ?? "หัวหน้าฝ่าย"}
         </small>
         <span className="mt-1 inline-block rounded-md bg-[#CDEB03] px-2 text-xs font-bold text-[#131516] tabular-nums">

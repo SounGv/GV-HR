@@ -381,7 +381,7 @@ export function EmployeeTable({ summary }: { summary?: EmployeeSummary } = {}) {
                     <div className="min-w-0 flex-1">
                       <p className="text-base font-semibold break-words text-foreground">
                         {fullName(e.firstName, e.lastName)}
-                        {e.nickname && <span className="font-normal text-muted-foreground"> ({e.nickname})</span>}
+                        {e.nickname && <span className="font-medium text-muted-foreground"> ({e.nickname})</span>}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {e.employeeCode} · {e.department?.name ?? "ไม่มีแผนก"}

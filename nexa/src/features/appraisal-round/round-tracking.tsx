@@ -117,7 +117,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
         <Card className="gap-3 p-4" aria-label="ความเห็นของผู้ประเมินแต่ละคน">
           <h2 className="flex flex-wrap items-center gap-x-2 text-base font-semibold">
             <MessageSquareText className="size-5" aria-hidden="true" /> ความเห็นของผู้ประเมินแต่ละคน
-            <span className="text-sm font-normal text-muted-foreground tabular-nums">{r.namedComments.length} ใบ</span>
+            <span className="text-sm font-medium text-muted-foreground tabular-nums">{r.namedComments.length} ใบ</span>
           </h2>
           <ul className="space-y-2">
             {r.namedComments.map((c) => (
@@ -175,7 +175,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
         <Card className="gap-3 p-4" aria-label="ข้อความจากผู้ประเมิน">
           <h2 className="flex flex-wrap items-center gap-x-2 text-base font-semibold">
             <MessageSquareText className="size-5" aria-hidden="true" /> ข้อความจากผู้ประเมิน
-            <span className="text-sm font-normal text-muted-foreground">
+            <span className="text-sm font-medium text-muted-foreground">
               {RATER_LABEL[r.importedComments.raterType as RaterType]} {r.importedComments.raters > 0 ? `${r.importedComments.raters} คน` : ""}
             </span>
           </h2>
@@ -202,7 +202,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
       {r.groups.map((g) => (
         <Card key={g.raterType} className="gap-3 p-4">
           <h2 className="text-base font-semibold">
-            {RATER_LABEL[g.raterType]} <span className="text-sm font-normal text-muted-foreground tabular-nums">ส่งแล้ว {g.submitted} จาก {g.total} คน</span>
+            {RATER_LABEL[g.raterType]} <span className="text-sm font-medium text-muted-foreground tabular-nums">ส่งแล้ว {g.submitted} จาก {g.total} คน</span>
           </h2>
           {g.textsHeld && g.submitted > 0 && (
             <p className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm">

@@ -119,7 +119,7 @@ export function OvertimeFormPage() {
               >
                 <span>
                   {dayOffWhy ? "วันหยุด" : "วันทำงาน"}
-                  {dayOffWhy && <span className="font-normal text-muted-foreground"> · {dayOffWhy}</span>}
+                  {dayOffWhy && <span className="font-medium text-muted-foreground"> · {dayOffWhy}</span>}
                 </span>
                 <span className="tabular-nums">×{rate}</span>
               </p>

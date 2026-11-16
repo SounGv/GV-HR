@@ -360,7 +360,7 @@ function Hero({
         : "บันทึกอัตโนมัติเมื่อกดถัดไป";
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" aria-labelledby="round-wizard-title">
-      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-sm text-white/90 md:hidden">
+      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-sm text-white md:hidden">
         <BackLink href="/appraisal/rounds" onHero>
           รอบประเมิน
         </BackLink>
@@ -378,7 +378,7 @@ function Hero({
           <span className="size-1.5 rounded-full bg-status-late-dot" aria-hidden="true" /> ฉบับร่าง
         </span>
         <span
-          className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/90"
+          className="ml-auto inline-flex items-center gap-1.5 text-xs text-white"
           aria-live="polite"
         >
           <span
@@ -425,7 +425,7 @@ function Hero({
                 <span
                   className={cn(
                     "flex min-h-8 items-center gap-2 text-sm font-semibold",
-                    on ? "text-white" : "text-white/90",
+                    on ? "text-white" : "text-white",
                   )}
                 >
                   <span
@@ -461,7 +461,7 @@ function Tile({
 }) {
   return (
     <div className="gv-glass min-w-0 px-3.5 py-3">
-      <p className="text-xs leading-snug text-white/90">{label}</p>
+      <p className="text-xs leading-snug text-white">{label}</p>
       <p
         className={cn(
           "mt-0.5 leading-snug font-bold tabular-nums",
@@ -469,7 +469,7 @@ function Tile({
         )}
       >
         {value}
-        {unit && <span className="ml-1 text-xs font-medium text-white/90">{unit}</span>}
+        {unit && <span className="ml-1 text-xs font-medium text-white">{unit}</span>}
       </p>
     </div>
   );
@@ -568,7 +568,7 @@ function CheckDot({ ok, size = "sm" }: { ok: boolean; size?: "sm" | "md" }) {
 /* ───────────────────────── step 1: set up ───────────────────────── */
 
 function Sub({ children }: { children: ReactNode }) {
-  return <h3 className="text-foreground/80 mt-6 mb-2.5 text-sm font-bold">{children}</h3>;
+  return <h3 className="text-foreground mt-6 mb-2.5 text-sm font-bold">{children}</h3>;
 }
 
 function StepSetup({
@@ -596,7 +596,7 @@ function StepSetup({
             onChange={(e) => update({ name: e.target.value })}
           />
           {!draft.name.trim() && (
-            <span className="text-xs font-normal text-status-late-fg">กรุณาตั้งชื่อรอบ</span>
+            <span className="text-xs font-medium text-status-late-fg">กรุณาตั้งชื่อรอบ</span>
           )}
         </label>
         <div className="grid gap-1.5 text-sm font-medium">
@@ -613,7 +613,7 @@ function StepSetup({
               ))}
             </SelectContent>
           </Select>
-          <span className="text-muted-foreground text-xs font-normal">
+          <span className="text-muted-foreground text-xs font-medium">
             เลือกได้เฉพาะแบบที่ยืนยันใช้แล้ว ·{" "}
             <Link href="/appraisal/forms" className="text-primary font-semibold hover:underline">
               ไปหน้าแบบประเมิน
@@ -639,10 +639,10 @@ function StepSetup({
             aria-invalid={badDates || undefined}
           />
           {badDates ? (
-            <span className="text-xs font-normal text-status-late-fg">วันปิดต้องไม่ก่อนวันเปิด</span>
+            <span className="text-xs font-medium text-status-late-fg">วันปิดต้องไม่ก่อนวันเปิด</span>
           ) : (
             days && (
-              <span className="text-muted-foreground text-xs font-normal tabular-nums">
+              <span className="text-muted-foreground text-xs font-medium tabular-nums">
                 {days} วัน
               </span>
             )
@@ -990,7 +990,7 @@ function PeopleList({
           aria-hidden="true"
         />
         ดูรายชื่อ เลือกรายคน{formList.length > 1 ? " หรือใช้แบบอื่นบางแผนก" : ""}
-        <span className="text-muted-foreground ml-auto text-xs font-normal tabular-nums">
+        <span className="text-muted-foreground ml-auto text-xs font-medium tabular-nums">
           {selected.size} จาก {people.length} คน
         </span>
       </summary>
@@ -1021,7 +1021,7 @@ function PeopleList({
                   <label className="flex min-h-11 flex-1 items-center gap-3 text-sm font-semibold md:min-h-9">
                     <Checkbox checked={all} onCheckedChange={(c) => toggle(ids, c === true)} />
                     {dept}{" "}
-                    <span className="text-muted-foreground font-normal">({list.length} คน)</span>
+                    <span className="text-muted-foreground font-medium">({list.length} คน)</span>
                   </label>
                   {chosen.length > 0 && formList.length > 1 && (
                     <Select

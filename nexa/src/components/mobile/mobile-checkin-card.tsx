@@ -116,7 +116,7 @@ export function MobileCheckinCard() {
               <div>
                 <p className="text-xs text-muted-foreground">ระยะห่างจากที่ทำงาน</p>
                 <p className="mt-0.5 text-xl font-semibold tabular-nums">
-                  {Math.round(distance!).toLocaleString()} <span className="text-xs font-normal text-muted-foreground">เมตร</span>
+                  {Math.round(distance!).toLocaleString()} <span className="text-xs font-medium text-muted-foreground">เมตร</span>
                 </p>
               </div>
             )}

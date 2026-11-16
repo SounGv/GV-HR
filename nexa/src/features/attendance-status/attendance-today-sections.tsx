@@ -118,7 +118,7 @@ export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
     <section className="gv-teal-surface rounded-2xl p-5">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-white/90">การเข้างานวันนี้ · ข้อมูล ณ {data.asOf} น.</p>
+          <p className="text-sm text-white">การเข้างานวันนี้ · ข้อมูล ณ {data.asOf} น.</p>
           <p className="mt-1 text-[19px] leading-snug font-bold">
             สแกนเข้างานแล้ว <span className="tabular-nums">{scanned}</span> จาก{" "}
             <span className="tabular-nums">{total}</span> คน
@@ -336,7 +336,7 @@ export function DepartmentBreakdownCard({ data, departmentIds }: SectionProps) {
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 rounded-lg hover:bg-muted/40 md:col-span-4 md:grid-cols-subgrid"
               >
                 <span className="min-w-0 text-sm font-semibold break-words text-foreground">
-                  {d.name} <span className="font-normal text-muted-foreground">({d.total} คน)</span>
+                  {d.name} <span className="font-medium text-muted-foreground">({d.total} คน)</span>
                 </span>
                 <SegmentLine counts={d.counts} className="order-3 col-span-2 h-2.5 md:order-none md:col-span-1" />
                 <span className="text-right text-xs text-muted-foreground tabular-nums">

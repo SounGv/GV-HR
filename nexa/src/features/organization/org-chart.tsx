@@ -326,7 +326,7 @@ function CompanyView({
               </span>
               <span className="min-w-0">
                 <b className="block truncate text-[15px] leading-snug">{companyName ?? "องค์กร"}</b>
-                <small className="text-xs text-white/90 tabular-nums">
+                <small className="text-xs text-white tabular-nums">
                   {tree.total} คน · {realDivisions} ฝ่าย
                 </small>
               </span>
@@ -561,7 +561,7 @@ function DivisionView({
       >
         <div className="min-w-0">
           <h2 className="text-[22px] leading-snug font-bold sm:text-2xl">{division.name}</h2>
-          <p className="mt-0.5 text-[13px] text-white/90">
+          <p className="mt-0.5 text-[13px] text-white">
             {division.isOther
               ? "รวมฝ่ายเล็กที่ไม่มีแผนกย่อย · สายบังคับบัญชาจาก “หัวหน้า” ในข้อมูลพนักงาน"
               : "ผังสายบังคับบัญชาจาก “หัวหน้า” ที่ตั้งไว้ในข้อมูลพนักงาน"}
@@ -677,7 +677,7 @@ function DivisionView({
 function HeroStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="gv-glass min-w-0 px-3 py-2.5 sm:min-w-[96px] sm:px-4">
-      <small className="block truncate text-xs text-white/90">{label}</small>
+      <small className="block truncate text-xs text-white">{label}</small>
       <b className="block text-2xl leading-tight tabular-nums">{value}</b>
     </div>
   );

@@ -26,7 +26,7 @@ export function BackLink({
     // A link to another page is covered by the top bar's ย้อนกลับ on desktop; a button
     // (onClick) steps back inside the page itself, so it stays everywhere.
     href && "md:hidden",
-    onHero ? "text-white/90 hover:bg-white/12 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+    onHero ? "text-white hover:bg-white/12 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground",
     className,
   );
   const body = (

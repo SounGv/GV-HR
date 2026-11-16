@@ -443,7 +443,7 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
       <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="absolute inset-0 size-full object-cover" />
 
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-4 pt-14 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
-        <p className="mb-3 text-center text-sm text-white/90">ตรวจรูปให้ชัดก่อนยืนยัน</p>
+        <p className="mb-3 text-center text-sm text-white">ตรวจรูปให้ชัดก่อนยืนยัน</p>
         <div className="flex gap-3">
           <button
             type="button"
@@ -618,7 +618,7 @@ function SuccessStep({
           <CheckCircle2 className="size-9" />
         </div>
         <p className="mt-4 text-lg font-semibold">{mode === "in" ? "ลงเวลาเข้างานแล้ว" : "ลงเวลาออกงานแล้ว"}</p>
-        <p className="mt-1 text-sm text-white/90">
+        <p className="mt-1 text-sm text-white">
           {fmtTime(time)} น. · {fmtDate()}
         </p>
         {isLate && (

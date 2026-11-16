@@ -83,7 +83,7 @@ function GlassTile({
 }) {
   return (
     <Link href={href} className="gv-glass gv-rise block px-4 py-3.5" style={{ "--i": i + 1 } as React.CSSProperties}>
-      <span className="flex items-center gap-2 text-[13px] font-semibold text-white/90">
+      <span className="flex items-center gap-2 text-[13px] font-semibold text-white">
         <span className={`flex size-8 items-center justify-center rounded-[10px] ring-1 ring-inset ${TILE_TONE[tone]}`}>
           <Icon className="size-5" aria-hidden="true" />
         </span>
@@ -91,15 +91,15 @@ function GlassTile({
       </span>
       <span className="mt-1.5 block text-[30px] leading-tight font-bold tabular-nums">
         <CountUp value={value} />
-        <span className="ml-1 text-xs font-medium text-white/90">{unit}</span>
+        <span className="ml-1 text-xs font-medium text-white">{unit}</span>
       </span>
       {bar !== undefined && (
         <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white/15" aria-hidden="true">
           <span className="gv-grow block h-full rounded-full bg-[var(--on-hero-accent)]" style={{ width: `${bar}%` }} />
         </span>
       )}
-      {line && <span className="mt-1 block text-xs text-white/90">{line}</span>}
-      {spark && spark.length > 1 && <MiniSpark values={spark} className="mt-1 h-6 w-full text-white/90" />}
+      {line && <span className="mt-1 block text-xs text-white">{line}</span>}
+      {spark && spark.length > 1 && <MiniSpark values={spark} className="mt-1 h-6 w-full text-white" />}
     </Link>
   );
 }
@@ -128,7 +128,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
         </span>
         <span className="min-w-0 basis-52">
           <b className="block text-[16px] leading-snug">การเข้างานวันนี้</b>
-          <span className="block text-sm leading-snug text-white/90">
+          <span className="block text-sm leading-snug text-white">
             {data.weekendActivity && data.weekendActivity.scanned + data.weekendActivity.onLeave > 0 ? (
               <>
                 วันเสาร์ ยังไม่มีตารางว่าใครต้องมา จึงไม่นับขาดงาน สแกนเข้างานแล้ว <b className="tabular-nums">{data.weekendActivity.scanned}</b> คน สาย{" "}
@@ -162,7 +162,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
           <span className="rounded-full bg-[#fde047] px-2.5 py-0.5 text-xs font-bold text-[#3f2d00]">ข้อมูล ณ {data.asOf} น.</span>
         </div>
         <h2 className="mt-4 text-[30px] leading-tight font-bold">การเข้างานวันนี้</h2>
-        <p className="mt-1 text-[13.5px] text-white/90">
+        <p className="mt-1 text-[13.5px] text-white">
           {!data.isWorkingDay ? (
             <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</>
           ) : total === 0 ? (
@@ -274,7 +274,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
           />
         </div>
       ) : (
-        <div className="gv-glass self-center px-5 py-6 text-sm text-white/90">
+        <div className="gv-glass self-center px-5 py-6 text-sm text-white">
           ดูประวัติการเข้างานย้อนหลังได้ที่เมนูเวลาทำงาน
         </div>
       )}

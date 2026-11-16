@@ -168,7 +168,7 @@ function StepTile({ n, state, title, note, action }: { n: number; state: StepSta
           <span className="sr-only">{state === "done" ? " (เสร็จแล้ว)" : state === "now" ? " (ขั้นปัจจุบัน)" : " (ขั้นถัดไป)"}</span>
         </span>
       </div>
-      <p className="text-sm leading-relaxed break-words text-white/90">{note}</p>
+      <p className="text-sm leading-relaxed break-words text-white">{note}</p>
       {action && <div className="mt-1">{action}</div>}
     </li>
   );
@@ -243,7 +243,7 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
       <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold sm:text-[26px]">
         เตรียมให้พร้อมใน 3 ขั้น
       </h2>
-      <p className="mt-0.5 text-sm leading-relaxed text-white/90">{sub}</p>
+      <p className="mt-0.5 text-sm leading-relaxed text-white">{sub}</p>
       <ol className="mt-4 grid gap-3 sm:grid-cols-3">
         <StepTile
           n={1}
@@ -262,10 +262,10 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
 function Kpi({ label, value, unit, children }: { label: string; value: ReactNode; unit?: string; children?: ReactNode }) {
   return (
     <div className="gv-glass min-w-0 px-4 py-3.5">
-      <p className="text-sm leading-snug font-semibold text-white/90">{label}</p>
+      <p className="text-sm leading-snug font-semibold text-white">{label}</p>
       <p className="mt-1 text-[26px] leading-snug font-bold tabular-nums sm:text-[28px]">
         {value}
-        {unit && <span className="ml-1 text-xs font-medium text-white/90">{unit}</span>}
+        {unit && <span className="ml-1 text-xs font-medium text-white">{unit}</span>}
       </p>
       {children}
     </div>
@@ -280,7 +280,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
   const total = p?.total ?? round.total;
   const pct = total > 0 ? Math.round((submitted / total) * 100) : 0;
   const left = round.endIso ? daysUntil(round.endIso) : null;
-  const dash = <span className="text-white/90">–</span>;
+  const dash = <span className="text-white">–</span>;
 
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" style={rise(0)} aria-labelledby="appraisal-hero-title">
@@ -288,7 +288,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
       <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold break-words sm:text-[26px]">
         {round.name}
       </h2>
-      <p className="mt-0.5 text-sm leading-relaxed break-words text-white/90">
+      <p className="mt-0.5 text-sm leading-relaxed break-words text-white">
         {round.formName && <>ใช้ &ldquo;{round.formName}&rdquo; · </>}
         {round.participantCount} คนที่ถูกประเมิน
         {others > 0 && ` · เปิดอยู่อีก ${others} รอบ (ดูด้านล่าง)`}

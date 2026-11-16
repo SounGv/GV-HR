@@ -285,7 +285,7 @@ export function NewsTicker({ announcement }: { announcement: { id: string; title
             ))}
           </ul>
           <div className="flex shrink-0 items-center gap-1.5 text-white">
-            <span className="hidden min-w-9 text-center text-xs tabular-nums text-white/90 xl:block">
+            <span className="hidden min-w-9 text-center text-xs tabular-nums text-white xl:block">
               {(idx % len) + 1}/{len}
             </span>
             <TickerButton label="ข้อความก่อนหน้า" onClick={() => go(-1)} className="hidden xl:inline-flex">

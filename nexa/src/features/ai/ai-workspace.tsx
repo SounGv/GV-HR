@@ -714,7 +714,7 @@ function AnswerBubble({ turn, active, onShow }: { turn: Turn; active: boolean; o
           >
             <Database className="size-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate">{firstHeading(turn.content) ?? "ดูรายละเอียด"}</span>
-            <span className="ml-auto shrink-0 text-[11.5px] font-normal">{active ? "แสดงอยู่ทางขวา" : "ดูทางขวา"}</span>
+            <span className="ml-auto shrink-0 text-[11.5px] font-medium">{active ? "แสดงอยู่ทางขวา" : "ดูทางขวา"}</span>
           </button>
         )}
       </div>

@@ -97,9 +97,9 @@ export function ChangePasswordForm() {
         </span>
         <div>
           <h2 className="text-[22px] leading-tight font-bold">เปลี่ยนรหัสผ่าน</h2>
-          <p className="mt-1 text-[13.5px] leading-relaxed text-white/90">ตั้งรหัสใหม่ที่เดาได้ยาก และไม่ใช้ซ้ำกับเว็บอื่น</p>
+          <p className="mt-1 text-[13.5px] leading-relaxed text-white">ตั้งรหัสใหม่ที่เดาได้ยาก และไม่ใช้ซ้ำกับเว็บอื่น</p>
         </div>
-        <p className="gv-glass mt-auto flex items-start gap-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-white/90">
+        <p className="gv-glass mt-auto flex items-start gap-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-white">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#CDEB03]" aria-hidden="true" />
           หลังเปลี่ยนแล้ว อุปกรณ์อื่นที่เคยเข้าสู่ระบบไว้จะถูกออกจากระบบทั้งหมด ยกเว้นเครื่องนี้
         </p>

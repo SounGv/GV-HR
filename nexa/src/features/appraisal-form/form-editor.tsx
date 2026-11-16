@@ -480,12 +480,12 @@ function FormEditor({ form }: { form: FormDetail }) {
             ] as const
           ).map(([k, v]) => (
             <div key={k} className="gv-glass min-w-[64px] px-3 py-2">
-              <dt className="text-xs text-white/90">{k}</dt>
+              <dt className="text-xs text-white">{k}</dt>
               <dd className="text-xl leading-snug font-bold tabular-nums">{v}</dd>
             </div>
           ))}
           <div className="gv-glass min-w-[84px] px-3 py-2">
-            <dt className="text-xs text-white/90">ความพร้อม</dt>
+            <dt className="text-xs text-white">ความพร้อม</dt>
             <dd
               className="pt-0.5 text-base leading-snug font-bold"
               style={{ color: problems.length ? "var(--status-late-dot)" : undefined }}
@@ -1026,7 +1026,7 @@ function TopicEditor({
 
       <div className="space-y-4 p-5">
         <label className="block">
-          <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
+          <span className="text-foreground mb-1.5 block text-sm font-bold">
             ชื่อหัวข้อ
           </span>
           <Input
@@ -1052,7 +1052,7 @@ function TopicEditor({
           </div>
         )}
         <label className="block">
-          <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
+          <span className="text-foreground mb-1.5 block text-sm font-bold">
             ดูจากอะไร <span className="text-muted-foreground font-medium">(ไม่บังคับ)</span>
           </span>
           {/* Several lines: HR writes 1. 2. 3. lists here, which a one-line box cut off. */}
@@ -1069,7 +1069,7 @@ function TopicEditor({
 
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
           <div>
-            <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
+            <span className="text-foreground mb-1.5 block text-sm font-bold">
               ประเภทคำตอบ
             </span>
             <div
@@ -1106,7 +1106,7 @@ function TopicEditor({
           </div>
           {q.answerType === "RATING" && (
             <div>
-              <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
+              <span className="text-foreground mb-1.5 block text-sm font-bold">
                 น้ำหนัก
               </span>
               <div className="border-border inline-flex h-10 items-center overflow-hidden rounded-xl border-[1.5px]">
@@ -1143,7 +1143,7 @@ function TopicEditor({
         </div>
 
         <div>
-          <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
+          <span className="text-foreground mb-1.5 block text-sm font-bold">
             ใครตอบหัวข้อนี้{" "}
             <span className="text-muted-foreground font-medium">(ไม่เลือก = ทุกคน)</span>
           </span>
@@ -1175,7 +1175,7 @@ function TopicEditor({
 
         {q.answerType === "RATING" && (
           <div>
-            <span className="text-foreground/80 mb-1.5 block text-sm font-bold">
+            <span className="text-foreground mb-1.5 block text-sm font-bold">
               แต่ละคะแนนหมายถึงพฤติกรรมแบบไหน
             </span>
             <ul className="border-border overflow-hidden rounded-2xl border">
@@ -1222,7 +1222,7 @@ function TopicEditor({
 
         {CHOICE.has(q.answerType) && (
           <div className="space-y-2">
-            <span className="text-foreground/80 block text-sm font-bold">ตัวเลือก</span>
+            <span className="text-foreground block text-sm font-bold">ตัวเลือก</span>
             {q.options.map((o, oi) => (
               <div key={o.value} className="flex items-center gap-2">
                 <Input
@@ -1463,7 +1463,7 @@ function PhonePreview({
         <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-[27px]">
           <div className="sticky top-0 z-[1] bg-[linear-gradient(160deg,var(--on-hero-accent-fg),var(--primary))] px-3.5 pt-3 pb-2.5 text-white">
             <b className="block text-sm">ประเมิน วันชัย (ตัวอย่าง)</b>
-            <span className="block truncate text-xs text-white/90">
+            <span className="block truncate text-xs text-white">
               {formName} · ในฐานะ{RATER_LABEL[as]}
             </span>
             <div className="mt-2 flex gap-[3px]" aria-hidden="true">

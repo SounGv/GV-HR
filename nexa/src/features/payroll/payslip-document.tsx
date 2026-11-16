@@ -223,7 +223,7 @@ export function PayslipDocument({
         <div className={cn("mt-4 flex items-center justify-between rounded-lg bg-slate-900 text-white print:bg-slate-900", paper.compact ? "px-3 py-2" : "px-5 py-4")}>
           <span className="font-medium">เงินเดือนสุทธิ (Net Pay)</span>
           <span className="text-xl font-bold tabular-nums">
-            {HIDE_AMOUNTS ? <span className="text-base font-normal text-slate-500 italic">{HIDDEN_AMOUNT}</span> : formatCurrency(slip.net)}
+            {HIDE_AMOUNTS ? <span className="text-base font-medium text-slate-500 italic">{HIDDEN_AMOUNT}</span> : formatCurrency(slip.net)}
           </span>
         </div>
 

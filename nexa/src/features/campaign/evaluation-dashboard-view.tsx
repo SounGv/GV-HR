@@ -339,7 +339,7 @@ function KpiCard({
     <Card className="gap-1 p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={`text-xl font-semibold tabular-nums ${toneClass}`}>
-        {value} {unit && <span className="text-xs font-normal text-muted-foreground">{unit}</span>}
+        {value} {unit && <span className="text-xs font-medium text-muted-foreground">{unit}</span>}
       </p>
       {sub && <p className="truncate text-xs text-muted-foreground">{sub}</p>}
     </Card>

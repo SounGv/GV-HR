@@ -182,7 +182,7 @@ export function FileDownloads({ files }: { files: OutFile[] | undefined }) {
         >
           <Download className="size-[18px] shrink-0 text-status-normal-fg" aria-hidden="true" />
           <span className="break-all">{f.name}</span>
-          <span className="text-xs font-normal whitespace-nowrap text-muted-foreground">{sizeText(Math.round((f.data.length * 3) / 4))}</span>
+          <span className="text-xs font-medium whitespace-nowrap text-muted-foreground">{sizeText(Math.round((f.data.length * 3) / 4))}</span>
         </button>
       ))}
     </div>
