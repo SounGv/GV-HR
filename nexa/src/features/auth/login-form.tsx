@@ -123,7 +123,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           placeholder="123456"
           value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value)}
-          className="h-12 rounded-xl border-[#d7dce1] shadow-[inset_0_1px_2px_rgba(19,21,22,0.04)] !bg-white text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[#0d9488] focus-visible:!bg-[var(--login-surface)] focus-visible:ring-[#0d9488]/15"
+          className="h-[52px] rounded-full border-[1.5px] border-[var(--lg-field)] !bg-[var(--lg-in)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[#0d9488] focus-visible:ring-[#0d9488]/25"
         />
         <LoginButton type="submit" loading={submitting} disabled={!mfaCode}>
           ยืนยัน
@@ -186,7 +186,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           control={form.control}
           name="rememberMe"
           render={({ field }) => (
-            <label className="flex items-center gap-2 text-sm text-[var(--login-text-secondary)]">
+            <label className="flex min-h-11 items-center gap-2.5 text-sm text-[var(--login-text-secondary)]">
               <Checkbox
                 checked={field.value}
                 onCheckedChange={(checked) => field.onChange(checked === true)}
@@ -198,7 +198,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
         {formError && (
           <p
             role="alert"
-            className="flex items-start gap-2 rounded-[12px] border border-[var(--login-error)] px-3.5 py-3 text-sm font-medium text-[var(--login-error)]"
+            className="flex items-start gap-2.5 rounded-[18px] border border-[var(--login-error)]/40 bg-[var(--login-error)]/10 px-3.5 py-3 text-sm font-semibold text-[var(--login-error)]"
           >
             <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             {formError}
@@ -219,7 +219,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
               type="button"
               variant="outline"
               size="lg"
-              className="h-12 w-full rounded-xl border-[var(--login-border)] !bg-[var(--login-surface)] !text-[var(--login-text-primary)]"
+              className="h-[50px] w-full rounded-full border-[var(--lg-field)] !bg-[var(--lg-in)] !text-[var(--login-text-primary)]"
               render={<a href="/api/auth/google" />}
             >
               <GoogleIcon className="size-4" /> เข้าสู่ระบบด้วย Google

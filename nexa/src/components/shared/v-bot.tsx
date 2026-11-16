@@ -129,10 +129,10 @@ export function VBot({ mood = "ok", full = false, className }: { mood?: VBotMood
             strokeLinejoin="round"
           />
           {mood === "hi" ? (
-            <>
+            <g className="vbot-arm">
               <path d="M37 100L22 82" stroke={TEAL_DARK} strokeWidth="8" strokeLinecap="round" />
               <circle cx="20" cy="79" r="6" fill="#2dd4bf" />
-            </>
+            </g>
           ) : (
             <path d="M37 100L27 116" stroke={TEAL_DARK} strokeWidth="8" strokeLinecap="round" />
           )}

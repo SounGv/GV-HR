@@ -18,12 +18,12 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, React.ComponentP
     return (
       <div>
         <div className="relative">
-          <Lock className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--login-text-secondary)]" />
+          <Lock className="pointer-events-none absolute top-1/2 left-4.5 size-4 -translate-y-1/2 text-[var(--login-text-secondary)]" />
           <Input
             ref={ref}
             type={visible ? "text" : "password"}
             className={cn(
-              "h-12 rounded-xl border-[#d7dce1] shadow-[inset_0_1px_2px_rgba(19,21,22,0.04)] !bg-white pr-11 pl-11 text-[15px] text-[var(--login-text-primary)] placeholder:text-[var(--login-text-secondary)] focus-visible:border-[#0d9488] focus-visible:!bg-[var(--login-surface)] focus-visible:ring-[#0d9488]/15",
+              "h-[52px] rounded-full border-[1.5px] border-[var(--lg-field)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] !bg-[var(--lg-in)] pr-12 pl-12 text-base text-[var(--login-text-primary)] placeholder:text-[var(--login-text-secondary)] focus-visible:border-[#0d9488] focus-visible:ring-[#0d9488]/25",
               className,
             )}
             {...props}
@@ -43,7 +43,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, React.ComponentP
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            className="absolute top-1/2 right-3.5 -translate-y-1/2 text-[var(--login-text-secondary)] hover:text-[var(--login-text-primary)]"
+            className="absolute top-1/2 right-4.5 -translate-y-1/2 text-[var(--login-text-secondary)] hover:text-[var(--login-text-primary)]"
             aria-label={visible ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
             tabIndex={-1}
           >

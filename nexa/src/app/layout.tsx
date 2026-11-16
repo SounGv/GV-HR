@@ -3,6 +3,7 @@ import { Anuphan } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { appBaseUrl } from "@/lib/app-url";
 
 /** The one app-wide typeface (mobile and desktop alike), for body and
@@ -87,6 +88,7 @@ export default function RootLayout({
       <body className="font-sans">
         <AppProviders>{children}</AppProviders>
         <PwaRegister />
+        <InstallPrompt />
       </body>
     </html>
   );

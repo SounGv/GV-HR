@@ -802,65 +802,12 @@ button.gv-glass:hover {
   }
 }
 
-/* ── Login hero (2026-11, login-motion-mock.html) ──
-   Light comes from plain radial gradients (no blur filter) and only
-   transform animates, so the drift is GPU-cheap; reduced motion holds still. */
-.login-glow {
-  position: absolute;
-  pointer-events: none;
-  border-radius: 50%;
-}
-.login-glow-a {
-  width: 900px;
-  height: 900px;
-  left: -200px;
-  top: -420px;
-  background: radial-gradient(closest-side, rgba(13, 148, 136, 0.55), rgba(13, 148, 136, 0));
-  animation: login-drift 14s ease-in-out infinite alternate;
-}
-.login-glow-b {
-  width: 700px;
-  height: 700px;
-  right: -260px;
-  bottom: -320px;
-  background: radial-gradient(closest-side, rgba(45, 212, 191, 0.22), rgba(45, 212, 191, 0));
-  animation: login-drift 18s ease-in-out infinite alternate-reverse;
-}
-@keyframes login-drift {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(60px, 40px, 0); }
-}
-/* The dial draws itself once (check mark after the arc), then a dot keeps orbiting like a second hand. */
-.login-dial-arc {
-  stroke-dashoffset: 72;
-  animation: login-draw 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
-}
-.login-dial-check {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  animation: login-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
-}
-.login-dial-orbit {
-  transform-box: view-box;
-  transform-origin: 210px 210px;
-  animation: login-orbit 60s linear infinite;
-}
-@keyframes login-draw {
-  to { stroke-dashoffset: 0; }
-}
-@keyframes login-orbit {
-  to { transform: rotate(360deg); }
-}
 .login-page ::selection {
   background: #ccfbf1;
   color: #134e4a;
 }
 .login-page input {
   caret-color: #0d9488;
-}
-@media (prefers-reduced-motion: reduce) {
-  .login-glow, .login-dial-orbit { animation: none; }
-  .login-dial-arc, .login-dial-check { animation: none; stroke-dashoffset: 0; }
 }
 
 /* ── Sidebar, light mode (2026-11, sidebar-options-mock.html option C) ──
@@ -1328,4 +1275,81 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
     box-shadow: var(--lg-shadow), var(--lg-hi);
   }
   .gv-m [data-slot="tabs-trigger"] { border-radius: 999px; }
+}
+
+/* ───────── Sign-in: minimal liquid glass (approved mock, 17 Nov 2026) ───────── */
+:root {
+  --lg-in: rgba(255, 255, 255, 0.8);
+  --lg-field: #8c969e;
+}
+.dark {
+  --lg-in: rgba(255, 255, 255, 0.07);
+  --lg-field: #7f8a93;
+}
+.dark .gv-login-scope {
+  --login-text-primary: #e8ebed;
+  --login-text-secondary: #b8bec4;
+  --login-link: #2dd4bf;
+  --login-link-hover: #5eead4;
+  --login-border: rgba(255, 255, 255, 0.2);
+  --login-surface: rgba(255, 255, 255, 0.1);
+  --login-error: #ff8a78;
+}
+.gv-login-bg { background: linear-gradient(180deg, #e4f5f1, #f4f7f8); }
+.dark .gv-login-bg { background: linear-gradient(180deg, #0e1b1a, #0f1213); }
+.gv-orb { position: absolute; border-radius: 9999px; pointer-events: none; will-change: transform; animation: gv-orb-drift 22s ease-in-out infinite alternate; }
+.gv-orb-a { width: 420px; height: 420px; left: -120px; top: -100px; background: radial-gradient(circle at 35% 35%, rgba(20, 184, 166, 0.55), transparent 68%); }
+.gv-orb-b { width: 480px; height: 480px; right: -160px; bottom: -140px; background: radial-gradient(circle at 40% 40%, rgba(110, 231, 183, 0.5), transparent 68%); animation-duration: 28s; animation-delay: -8s; }
+.gv-orb-c { width: 300px; height: 300px; right: 12%; top: 8%; background: radial-gradient(circle at 40% 40%, rgba(125, 211, 252, 0.42), transparent 68%); animation-duration: 34s; animation-delay: -14s; }
+.dark .gv-orb-a { background: radial-gradient(circle at 35% 35%, rgba(20, 184, 166, 0.32), transparent 68%); }
+.dark .gv-orb-b { background: radial-gradient(circle at 40% 40%, rgba(45, 212, 191, 0.2), transparent 68%); }
+.dark .gv-orb-c { background: radial-gradient(circle at 40% 40%, rgba(56, 189, 248, 0.16), transparent 68%); }
+@keyframes gv-orb-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(40px, 30px, 0) scale(1.08); }
+  100% { transform: translate3d(-20px, 50px, 0) scale(0.96); }
+}
+.gv-login-card {
+  position: relative;
+  border-radius: 30px;
+  background: var(--lg-glass);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  border: 1px solid var(--lg-edge);
+  box-shadow: 0 24px 60px rgba(15, 70, 64, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(255, 255, 255, 0.25), inset 0 0 40px rgba(255, 255, 255, 0.16);
+}
+.dark .gv-login-card { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.05); }
+.gv-login-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(120% 60% at 20% -10%, rgba(255, 255, 255, 0.55), transparent 55%);
+}
+.dark .gv-login-card::before { background: radial-gradient(120% 60% at 20% -10%, rgba(255, 255, 255, 0.12), transparent 55%); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gv-login-card { background: var(--lg-glass-strong); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .gv-login-card { background: var(--lg-glass-strong); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+/* น้องวีบอท peeking over the card: it bobs, waves and blinks. */
+.gv-login-bot { animation: gv-bob 4.5s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes gv-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.gv-login-bot .vbot-arm { transform-origin: 37px 100px; animation: gv-wave 2.4s ease-in-out infinite; }
+@keyframes gv-wave { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-12deg); } 80% { transform: rotate(4deg); } }
+.gv-login-bubble {
+  background: var(--lg-glass);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  border: 1px solid var(--lg-edge);
+  box-shadow: 0 8px 22px rgba(15, 70, 64, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  animation: gv-bob 5.5s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+.dark .gv-login-bot svg { filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px rgba(45, 212, 191, 0.25)); }
+.gv-login-bot svg { filter: drop-shadow(0 10px 14px rgba(10, 60, 56, 0.28)); }
+@media (prefers-reduced-motion: reduce) {
+  .gv-orb, .gv-login-bot, .gv-login-bot .vbot-arm, .gv-login-bubble { animation: none; }
 }

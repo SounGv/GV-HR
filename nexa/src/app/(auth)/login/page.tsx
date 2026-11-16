@@ -1,9 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { CalendarDays, ScanLine, Sparkles } from "lucide-react";
 import { LoginForm } from "@/features/auth/login-form";
-import { LoginClock } from "@/features/auth/login-clock";
-import { LoginDial } from "@/features/auth/login-dial";
 import { Logo } from "@/components/shared/logo";
 import { VBot } from "@/components/shared/v-bot";
 import { isGoogleOAuthEnabled } from "@/lib/auth/google-oauth";
@@ -14,93 +11,53 @@ export const metadata: Metadata = {
   alternates: { canonical: "/login" },
 };
 
-const FACTS = [
-  { icon: ScanLine, text: "สแกนเข้างานตามพิกัดสาขา" },
-  { icon: CalendarDays, text: "ขอลาและ OT ให้หัวหน้าอนุมัติในแอป" },
-  { icon: Sparkles, text: "น้องวีบอทสรุปข้อมูลให้หัวหน้าและ HR" },
-];
-
 /**
- * Sign-in. The hero says what GV One is with its own mark drawn large: a
- * clock that checks you in, with น้องวีบอท in front. Light is plain radial
- * gradients (no blur) and only transform / stroke-dashoffset animate, so it
- * stays cheap on mid-range phones. On a phone the hero shrinks to a short
- * header and the form comes first.
+ * Sign-in, minimal liquid glass (mock approved 17 Nov 2026): one glass card on a soft green ground, น้องวีบอท waving over its top edge.
+ * Only the card and the greeting bubble blur; the three glows move with transform alone, so it stays cheap on mid-range phones and
+ * stops moving when the device asks for less motion.
  */
 export default function LoginPage() {
   return (
-    <div className="login-page flex min-h-dvh flex-col bg-[#0b1414] lg:grid lg:grid-cols-[minmax(0,1.3fr)_minmax(460px,0.7fr)]">
-      <section className="relative overflow-hidden px-5 pt-[calc(env(safe-area-inset-top)+0.875rem)] pb-10 text-white sm:px-10 sm:pt-[calc(env(safe-area-inset-top)+1.5rem)] sm:pb-16 lg:flex lg:flex-col lg:px-14 lg:py-10">
-        <span aria-hidden="true" className="login-glow login-glow-a" />
-        <span aria-hidden="true" className="login-glow login-glow-b" />
+    <div className="login-page gv-login-bg gv-login-scope relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-[18px] pt-[calc(env(safe-area-inset-top)+7rem)] pb-[calc(env(safe-area-inset-bottom)+4rem)] sm:pt-40">
+      <span aria-hidden="true" className="gv-orb gv-orb-a" />
+      <span aria-hidden="true" className="gv-orb gv-orb-b" />
+      <span aria-hidden="true" className="gv-orb gv-orb-c" />
 
-        <div className="relative flex items-center gap-3">
-          <Logo size={64} className="h-auto w-10 sm:w-16" />
-          <span className="leading-tight">
-            <b className="block text-sm sm:text-[15px]">GV One HR</b>
-            <span className="text-xs text-[#9fb3b1]">Gadget Villa</span>
+      <div className="relative z-10 w-full max-w-[400px]">
+        {/* Behind the card: only the head and the waving hand show above it, the rest is seen blurred through the glass. */}
+        <div aria-hidden="true" className="pointer-events-none absolute right-[18px] bottom-[calc(100%-26px)] z-0 sm:right-[22px]">
+          <span className="gv-login-bubble absolute right-[104px] bottom-[calc(100%-28px)] rounded-full px-3.5 py-1.5 text-[13px] font-semibold whitespace-nowrap text-[var(--login-text-primary)] sm:right-[130px] sm:text-sm">
+            สวัสดี มาเริ่มงานกันเลย
           </span>
+          <div className="gv-login-bot">
+            <VBot mood="hi" full className="h-auto w-[112px] sm:w-[150px]" />
+          </div>
         </div>
 
-        <div className="relative flex items-center gap-10 pt-3 sm:pt-7 lg:my-auto lg:py-10">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-end justify-between gap-4">
-              <h1 className="text-[22px] leading-[1.25] font-bold tracking-[-0.01em] text-balance text-white sm:text-[44px] xl:text-[60px]">
-                ทุกเรื่องของทีม
-                <span className="mt-1 block">
-                  อยู่ใน{" "}
-                  {/* Padding in em so the tone mark on "ที่" stays inside the pill at every size. */}
-                  <span className="inline-block rounded-[0.24em] bg-[#CDEB03] px-[0.3em] pt-[0.18em] pb-[0.1em] leading-[1.2] whitespace-nowrap text-[#131516] shadow-[0_10px_24px_-12px_rgba(205,235,3,0.6)]">
-                    ที่เดียว
-                  </span>
-                </span>
-              </h1>
-              <VBot mood="hi" full className="h-[64px] w-[54px] shrink-0 sm:h-[104px] sm:w-[88px] lg:hidden" />
-            </div>
-            <p className="mt-5 hidden max-w-[460px] text-[15.5px] leading-relaxed text-[#a9bcba] sm:block xl:text-[17px]">
-              ลงเวลาเข้างาน ขอลา ขอ OT และดูผลประเมิน จากมือถือหรือคอมพิวเตอร์ ด้วยบัญชีเดียว
-            </p>
-            <ul className="mt-8 hidden space-y-3 lg:block">
-              {FACTS.map((f) => {
-                const Icon = f.icon;
-                return (
-                  <li key={f.text} className="flex items-center gap-3 text-[14.5px] text-[#d5e3e1]">
-                    <span className="flex size-8 items-center justify-center rounded-[10px] bg-white/[0.06] ring-1 ring-white/10">
-                      <Icon className="size-4 text-[#2dd4bf]" aria-hidden="true" />
-                    </span>
-                    {f.text}
-                  </li>
-                );
-              })}
-            </ul>
+        <div className="gv-login-card relative z-10 px-5 pt-6 pb-5 sm:px-[26px] sm:pt-7">
+          <div className="mb-4 flex items-center gap-3">
+            <Logo size={52} className="h-auto w-[52px]" />
+            <span className="leading-tight">
+              <b className="block text-[17px] text-[var(--login-text-primary)]">GV One</b>
+              <span className="text-xs text-[var(--login-text-secondary)]">Gadget Villa</span>
+            </span>
           </div>
-          <LoginDial className="hidden w-[min(40%,420px)] shrink-0 xl:block" />
-          <VBot mood="hi" full className="hidden h-[170px] w-[146px] shrink-0 lg:block xl:hidden" />
-        </div>
-
-        <p className="relative hidden gap-4 text-xs text-[#6f8583] lg:flex">
-          <span>© {new Date().getFullYear()} Gadget Villa</span>
-          <span>ข้อมูลของคุณเห็นเฉพาะคนที่มีสิทธิ์</span>
-        </p>
-      </section>
-
-      <section className="relative z-10 flex flex-1 justify-center bg-white px-5 pt-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] max-lg:-mt-7 max-lg:shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.6)] max-lg:rounded-t-[26px] sm:pt-8 sm:pb-10 lg:items-center lg:bg-[radial-gradient(110%_55%_at_100%_0,#e3f5f1_0,rgba(246,247,243,0)_60%),var(--login-page-bg)] lg:px-10">
-        <div className="w-full max-w-[400px]">
-          <div className="hidden sm:block">
-            <LoginClock />
-          </div>
-          <h2 className="text-[20px] sm:mt-3 leading-tight font-bold text-[var(--login-text-primary)] sm:text-[28px]">ยินดีต้อนรับกลับ</h2>
-          <p className="mt-1 text-sm text-[var(--login-text-secondary)] sm:text-[15px]">เข้าสู่ระบบด้วยอีเมลหรือชื่อผู้ใช้ของคุณ</p>
-          <div className="pt-4 sm:pt-6">
+          <h1 className="text-2xl leading-snug font-bold text-[var(--login-text-primary)] sm:text-[26px]">ยินดีต้อนรับกลับ</h1>
+          <p className="mt-0.5 text-sm text-[var(--login-text-secondary)]">เข้าสู่ระบบด้วยอีเมลหรือชื่อผู้ใช้ของคุณ</p>
+          <div className="pt-4">
             <Suspense fallback={<div className="h-64" />}>
               <LoginForm googleEnabled={isGoogleOAuthEnabled()} />
             </Suspense>
           </div>
-          <p className="mt-8 hidden border-t border-[var(--login-card-border)] pt-4 text-[12.5px] sm:block text-[var(--login-text-secondary)]">
+          <p className="mt-4 border-t border-[var(--login-text-secondary)]/20 pt-3 text-center text-xs text-[var(--login-text-secondary)]">
             ลืมรหัสหรือเข้าระบบไม่ได้ ติดต่อฝ่ายบุคคลของบริษัท
           </p>
         </div>
-      </section>
+      </div>
+
+      <p className="absolute bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] left-0 right-0 z-10 px-4 text-center text-[13px] text-[var(--login-text-secondary)]">
+        ลงเวลา ขอลา ขอ OT และดูผลประเมิน ในที่เดียว
+      </p>
     </div>
   );
 }

@@ -7,13 +7,13 @@ export const LoginInput = React.forwardRef<HTMLInputElement, React.ComponentProp
   function LoginInput({ icon, className, ...props }, ref) {
     return (
       <div className="relative">
-        <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--login-text-secondary)]">
+        <span className="pointer-events-none absolute top-1/2 left-4.5 -translate-y-1/2 text-[var(--login-text-secondary)]">
           {icon}
         </span>
         <Input
           ref={ref}
           className={cn(
-            "h-12 rounded-xl border-[#d7dce1] shadow-[inset_0_1px_2px_rgba(19,21,22,0.04)] !bg-white pl-11 text-[15px] text-[var(--login-text-primary)] placeholder:text-[var(--login-text-secondary)] focus-visible:border-[#0d9488] focus-visible:!bg-[var(--login-surface)] focus-visible:ring-[#0d9488]/15",
+            "h-[52px] rounded-full border-[1.5px] border-[var(--lg-field)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] !bg-[var(--lg-in)] pl-12 text-base text-[var(--login-text-primary)] placeholder:text-[var(--login-text-secondary)] focus-visible:border-[#0d9488] focus-visible:ring-[#0d9488]/25",
             className,
           )}
           {...props}
