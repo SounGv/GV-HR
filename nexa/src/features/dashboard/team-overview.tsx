@@ -18,6 +18,21 @@ function employmentTypeIcon(type: string) {
   return type === "DAILY_WORKER" ? DailyWorkerIcon : PeopleIcon;
 }
 
+/** A row that opens a list: highlighted on hover with a small arrow, a keyboard focus ring; plain when there is nowhere it may go. */
+function RowLink({ href, label, className, children }: { href?: string; label: string; className?: string; children: React.ReactNode }) {
+  if (!href) return <div className={className}>{children}</div>;
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className={cn(className, "gv-row group relative -mx-2 rounded-lg px-2 pr-6 focus-visible:outline-2 focus-visible:outline-primary")}
+    >
+      {children}
+      <ArrowRight className="text-primary absolute top-1/2 right-0.5 size-3.5 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true" />
+    </Link>
+  );
+}
+
 /**
  * Dashboard "ทีมงาน" section: employment types as one split bar with a
  * row per type, and departments as a ranked two-column list with thin bars
@@ -28,10 +43,13 @@ export function TeamOverview({
   headcount,
   employmentTypes,
   departments,
+  canOpenEmployees = false,
 }: {
   headcount: number;
   employmentTypes: EmploymentTypeRow[];
-  departments: { name: string; count: number }[];
+  departments: { id?: string | null; name: string; count: number }[];
+  /** The viewer may open the employee list and the org pages (employee:read); without it the rows stay plain text. */
+  canOpenEmployees?: boolean;
 }) {
   return (
     <section aria-label="ทีมงาน" className="space-y-3">
@@ -76,7 +94,8 @@ export function TeamOverview({
             {employmentTypes.map((t) => {
               const Icon = employmentTypeIcon(t.type);
               return (
-                <li key={t.type} className="flex items-center gap-3 py-3">
+                <li key={t.type}>
+                  <RowLink href={canOpenEmployees ? `/employees?status=ACTIVE&employmentType=${encodeURIComponent(t.type)}` : undefined} label={`${t.label} ${t.count} คน ดูรายชื่อ`} className="flex items-center gap-3 py-3">
                   <Icon size={34} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2 text-sm font-medium">
@@ -92,6 +111,7 @@ export function TeamOverview({
                   <span className="bg-muted text-muted-foreground w-11 rounded-full px-2 py-0.5 text-center text-[11.5px] font-semibold tabular-nums">
                     {t.pct}%
                   </span>
+                  </RowLink>
                 </li>
               );
             })}
@@ -112,11 +132,14 @@ export function TeamOverview({
               const max = Math.max(...departments.map((r) => r.count), 1);
               const top = i < 3;
               const share = headcount > 0 ? Math.round((d.count / headcount) * 100) : 0;
+              // A real department opens the employee list filtered to it; the folded "อื่นๆ" row opens the department page.
+              const target = !canOpenEmployees ? undefined : d.id ? `/employees?status=ACTIVE&departmentId=${d.id}` : d.name === "อื่นๆ" ? "/organization?tab=departments" : undefined;
               return (
                 <li
-                  key={d.name}
-                  className="dark:border-border border-b border-[#eef1f3] py-2.5 last:border-b-0 sm:[&:nth-last-child(2):nth-child(odd)]:border-b-0"
+                  key={d.id ?? d.name}
+                  className="dark:border-border border-b border-[#eef1f3] last:border-b-0 sm:[&:nth-last-child(2):nth-child(odd)]:border-b-0"
                 >
+                  <RowLink href={target} label={`${d.name} ${d.count} คน ดูรายชื่อ`} className="block py-2.5">
                   <div className="flex items-baseline gap-2.5">
                     <span
                       className={cn(
@@ -148,6 +171,7 @@ export function TeamOverview({
                       }}
                     />
                   </div>
+                  </RowLink>
                 </li>
               );
             })}

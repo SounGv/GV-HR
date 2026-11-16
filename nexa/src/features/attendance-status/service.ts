@@ -334,9 +334,13 @@ export async function loadAttendanceWatch(
     }
   }
 
+  // The report rows carry the department name only; one lookup gives each row its id for the link.
+  const deptRows = deptStats.size ? await prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { id: true, name: true } }) : [];
+  const deptIdByName = new Map(deptRows.map((x) => [x.name, x.id]));
   const departments: DepartmentWatch[] = [...deptStats.entries()]
     .map(([department, d]) => ({
       department,
+      departmentId: deptIdByName.get(department) ?? null,
       people: d.codes.size,
       late: d.late,
       absent: d.absent,

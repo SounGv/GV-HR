@@ -592,7 +592,7 @@ function FormEditor({ form }: { form: FormDetail }) {
           )}
         </Card>
 
-        <aside className="grid gap-4 lg:col-span-2 lg:grid-cols-2 2xl:sticky 2xl:top-4 2xl:col-span-1 2xl:grid-cols-1">
+        <aside className="grid gap-4 lg:col-span-2 lg:grid-cols-2 2xl:sticky 2xl:top-[calc(var(--gv-band-h,5.75rem)+1rem)] 2xl:col-span-1 2xl:grid-cols-1">
           <div className="grid content-start gap-4">
             <ScaleCard
               labels={labels}
@@ -762,7 +762,7 @@ function Outline({
       : {};
 
   return (
-    <Card className="gap-0 rounded-[20px] p-0 lg:sticky lg:top-4" aria-label="โครงแบบประเมิน">
+    <Card className="gap-0 rounded-[20px] p-0 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]" aria-label="โครงแบบประเมิน">
       <div className="flex items-center gap-2 px-4 pt-4 pb-2">
         <h2 className="gv-bar-heading flex items-center gap-2 text-sm font-semibold">
           โครงแบบประเมิน

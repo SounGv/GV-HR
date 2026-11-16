@@ -21,7 +21,7 @@ export function CopyTemplateButton({ id, label }: { id: string; label: string })
     }
   }
   return (
-    <Button type="button" className="h-11 w-full justify-start px-4 text-sm font-semibold shadow-md md:h-11" disabled={clone.isPending} onClick={copy}>
+    <Button type="button" className="h-11 w-full justify-start px-4 text-sm font-semibold shadow-[0_1px_0_rgb(255_255_255/0.25)_inset,0_6px_14px_-4px_rgb(15_118_110/0.6)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_1px_0_rgb(255_255_255/0.25)_inset,0_12px_20px_-6px_rgb(15_118_110/0.7)] active:translate-y-px motion-reduce:transition-none motion-reduce:hover:transform-none md:h-11" disabled={clone.isPending} onClick={copy}>
       {clone.isPending ? "กำลังสร้างรอบ…" : label}
     </Button>
   );

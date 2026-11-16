@@ -217,7 +217,7 @@ export interface DashboardSummary {
   onLeaveToday: number;
   otHoursToday: number;
   attendanceRate: number; // % of active present today
-  byDepartment: { name: string; count: number }[];
+  byDepartment: { id: string | null; name: string; count: number }[];
   byStatus: { status: string; count: number }[];
   byEmploymentType: { type: string; count: number }[];
 }
@@ -308,6 +308,7 @@ export async function getDashboardSummary(
     attendanceRate,
     byDepartment: byDeptRaw
       .map((r) => ({
+        id: r.departmentId ?? null,
         name: r.departmentId ? (deptName.get(r.departmentId) ?? "ไม่ระบุ") : "ไม่ระบุ",
         count: r._count._all,
       }))

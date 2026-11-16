@@ -674,7 +674,7 @@ export function TopicsAndQuestionsBuilder({
           </Button>
         </div>
 
-        <div className="lg:sticky lg:top-4">
+        <div className="lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]">
           <div className="rounded-xl border border-border bg-card p-4">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ตัวอย่างหน้าจอผู้ประเมิน</span>
             <div className="mt-3">

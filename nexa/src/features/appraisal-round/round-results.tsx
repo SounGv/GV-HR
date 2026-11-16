@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Calculator, ClipboardCheck, Megaphone, ShieldCheck } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Calculator, ClipboardCheck, Megaphone, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -11,6 +12,7 @@ import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/auth-context";
+import { bandKeyOf, bandLabel } from "@/features/dashboard-people/evaluation-rules";
 import { ApiError } from "@/lib/api/client";
 import { useResultActions, useRoundResults, useSettings } from "./hooks";
 import { RESULT_STATUS_LABEL, type ResultStatus, type RoundStatus } from "./types";
@@ -25,6 +27,10 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
   const act = useResultActions(roundId);
   const [confirmPublish, setConfirmPublish] = useState(false);
   const rows = results.data?.data ?? [];
+  // The home page's score rows open this page with ?band=… so only the people in that score band are listed.
+  const bandParam = useSearchParams().get("band");
+  const band = bandLabel(bandParam) ? bandParam : null;
+  const shownRows = band ? rows.filter((r) => r.scorePercent !== null && bandKeyOf(r.scorePercent) === band) : rows;
   const cfg = settings.data?.data;
   const needsApproval = (cfg?.approvalLevels ?? 0) >= 1;
   const counts = (s: ResultStatus) => rows.filter((r) => r.status === s).length;
@@ -93,7 +99,18 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
         </div>
       )}
       {status !== "CLOSED" && <p className="text-xs text-muted-foreground">ประกาศผลได้เมื่อปิดรอบแล้ว (คำนวณดูระหว่างรอบได้)</p>}
-      {rows.length > 0 && (
+      {band && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-sm" role="status">
+          <span>
+            แสดงเฉพาะคะแนน <b>{bandLabel(band)}</b> · <b className="tabular-nums">{shownRows.length}</b> จาก {rows.length} คน
+          </span>
+          <Link href={`/appraisal/rounds/${roundId}`} className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-lg px-3 font-semibold text-primary hover:underline md:min-h-9">
+            <X className="size-4" aria-hidden="true" /> ล้างตัวกรอง
+          </Link>
+        </div>
+      )}
+      {band && shownRows.length === 0 && <p className="text-sm text-muted-foreground">ไม่มีใครอยู่ในช่วงคะแนนนี้</p>}
+      {shownRows.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-muted-foreground">
@@ -105,7 +122,7 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.map((r) => (
+              {shownRows.map((r) => (
                 <tr key={r.participantId}>
                   <td className="px-3 py-2">
                     <Link href={`/appraisal/rounds/${roundId}/people/${r.participantId}`} className="font-medium hover:underline">

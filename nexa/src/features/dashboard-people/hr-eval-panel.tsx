@@ -9,8 +9,9 @@ import { ScoreGauge } from "./score-gauge";
 
 /** HR's evaluation panel on the home page: three number tiles, the score spread of the latest results, and the templates to copy. */
 
-const CARD = "rounded-2xl border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5";
-const LIFT = "transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:transform-none";
+// Same glass look and rise on hover as the rest of the home page (see .gv-panel in globals.css).
+const CARD = "gv-panel rounded-2xl border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5";
+const LIFT = "gv-panel-lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 const fmtDay = (iso: string) => new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
 /** Round names carry how they were made; on the home page only what the round is matters. */
@@ -72,16 +73,24 @@ export function HrEvalTiles({ o }: { o: EvaluationOverview }) {
   );
 }
 
+/** Each score row opens the round's results with only the people in that band (?band=…), so the number can be checked against names. */
 function SpreadBars({ b }: { b: RoundResultBoard }) {
   return (
-    <ul className="mt-2 space-y-1 text-left">
+    <ul className="mt-2 space-y-0.5 text-left">
       {b.spread.map((s) => (
-        <li key={s.label} className="grid grid-cols-[4.6rem_1fr_3.6rem] items-center gap-2 text-sm">
-          <span>{s.label}</span>
-          <span className="h-3 overflow-hidden rounded-full bg-muted shadow-inner" aria-hidden="true">
-            <span className="block h-full rounded-full bg-gradient-to-r from-primary to-primary/70" style={{ width: `${b.total > 0 ? Math.round((s.count / b.total) * 100) : 0}%` }} />
-          </span>
-          <span className="text-right text-muted-foreground tabular-nums">{s.count} คน</span>
+        <li key={s.key}>
+          <Link
+            href={`${b.href}?band=${s.key}`}
+            aria-label={`คะแนน ${s.label} ${s.count} คน ดูรายชื่อ`}
+            className="gv-row group grid min-h-9 grid-cols-[4.2rem_1fr_3.4rem_1rem] items-center gap-2 rounded-lg px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <span>{s.label}</span>
+            <span className="h-3 overflow-hidden rounded-full bg-muted shadow-inner" aria-hidden="true">
+              <span className="block h-full rounded-full bg-gradient-to-r from-primary to-primary/70" style={{ width: `${b.total > 0 ? Math.round((s.count / b.total) * 100) : 0}%` }} />
+            </span>
+            <span className="text-right text-muted-foreground tabular-nums">{s.count} คน</span>
+            <ChevronRight className="size-4 text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true" />
+          </Link>
         </li>
       ))}
     </ul>
@@ -106,11 +115,16 @@ export function ResultsBoardCard({ board }: { board: RoundResultBoard[] }) {
       <div className={cn("mt-2 grid gap-4", board.length > 1 && "sm:grid-cols-2")}>
         {board.map((b) => (
           <section key={b.roundId} aria-label={shortName(b.roundName)} className="text-center">
-            <p className="text-sm font-semibold break-words">{shortName(b.roundName)}</p>
-            <p className="text-sm text-muted-foreground tabular-nums">
-              {b.atTop} จาก {b.total} คน
-            </p>
-            <ScoreGauge percent={b.total > 0 ? Math.round((b.atTop / b.total) * 100) : 0} caption="ได้เต็ม 100%" />
+            <Link href={b.href} aria-label={`ดูผลทั้งรอบ ${shortName(b.roundName)}`} className={cn("block rounded-2xl p-2", LIFT, "hover:bg-primary/5")}>
+              <span className="block text-sm font-semibold break-words">{shortName(b.roundName)}</span>
+              <span className="block text-sm text-muted-foreground tabular-nums">
+                {b.atTop} จาก {b.total} คน
+              </span>
+              <ScoreGauge percent={b.total > 0 ? Math.round((b.atTop / b.total) * 100) : 0} caption="ได้เต็ม 100%" />
+              <span className="flex items-center justify-center gap-1 text-sm font-bold text-primary">
+                ดูผลทั้งรอบ <ChevronRight className="size-4" aria-hidden="true" />
+              </span>
+            </Link>
             <SpreadBars b={b} />
           </section>
         ))}

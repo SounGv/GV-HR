@@ -490,7 +490,7 @@ function Readiness({
   const total = round.checks.length;
   const circ = 2 * Math.PI * 17;
   return (
-    <aside className="grid gap-3 lg:sticky lg:top-20" aria-label="ความพร้อมก่อนเปิดรอบ">
+    <aside className="grid gap-3 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]" aria-label="ความพร้อมก่อนเปิดรอบ">
       <Card className="gap-3 rounded-[22px] p-4">
         <div className="flex items-center gap-3">
           <svg viewBox="0 0 42 42" className="size-[42px] shrink-0" aria-hidden="true">

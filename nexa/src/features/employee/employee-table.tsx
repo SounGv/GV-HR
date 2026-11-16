@@ -91,8 +91,15 @@ export function EmployeeTable({ summary }: { summary?: EmployeeSummary } = {}) {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [departmentIds, setDepartmentIds] = useState<string[]>([]);
-  const [status, setStatus] = useState<string>(ALL);
+  // The home page's department rows open this list with ?departmentId=… (repeatable); anything that is not an id is ignored.
+  const [departmentIds, setDepartmentIds] = useState<string[]>(() =>
+    searchParams.getAll("departmentId").filter((v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)),
+  );
+  // The home page counts people who work here now, so its links open the list on "ทำงานอยู่" (?status=ACTIVE) and the numbers match.
+  const [status, setStatus] = useState<string>(() => {
+    const v = searchParams.get("status");
+    return v && (EMPLOYEE_STATUSES as readonly string[]).includes(v) ? v : ALL;
+  });
   const [employmentType, setEmploymentType] = useState<string>(
     () => searchParams.get("employmentType") ?? ALL,
   );

@@ -1,7 +1,7 @@
 // Checks the numbers behind the evaluation section of the home page.
 // Run: node --experimental-strip-types scripts/check-evaluation-overview.mjs
 import assert from "node:assert/strict";
-import { compareAverages, daysBetweenIso, isDone, sameRaterTypes, scoreSpread, summarizeResults, summarizeRound, waitingText } from "../src/features/dashboard-people/evaluation-rules.ts";
+import { bandKeyOf, bandLabel, compareAverages, daysBetweenIso, isDone, sameRaterTypes, scoreSpread, summarizeResults, summarizeRound, waitingText } from "../src/features/dashboard-people/evaluation-rules.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -105,6 +105,24 @@ check("days between two dates, and nothing when one is missing", () => {
   assert.equal(daysBetweenIso("2026-11-16", "2026-11-16"), 0);
   assert.equal(daysBetweenIso(null, "2026-11-16"), null);
   assert.equal(daysBetweenIso("2026-11-08", null), null);
+});
+
+// The score rows on the home page link to the results page with ?band=<key>; the page filters by the same key.
+check("every band has a distinct key and the key of a score matches the row it is counted in", () => {
+  const spread = scoreSpread([100, 95, 85, 75, 65, 10]);
+  assert.deepEqual(spread.map((b) => b.key), ["100", "90", "80", "70", "60", "lt60"]);
+  assert.equal(new Set(spread.map((b) => b.key)).size, 6);
+  for (const [p, k] of [[100, "100"], [99.99, "90"], [90, "90"], [89.9, "80"], [70, "70"], [60, "60"], [59.9, "lt60"], [0, "lt60"], [-5, "lt60"], [120, "100"]]) assert.equal(bandKeyOf(p), k, `score ${p}`);
+});
+check("filtering a list by band key gives exactly the count the spread shows", () => {
+  const scores = [100, 100, 99, 95, 90, 89, 80, 79.5, 70, 61, 60, 59, 0];
+  for (const b of scoreSpread(scores)) assert.equal(scores.filter((p) => bandKeyOf(p) === b.key).length, b.count);
+});
+check("a made-up band key filters nothing (label is null)", () => {
+  assert.equal(bandLabel("90"), "90-99");
+  assert.equal(bandLabel("lt60"), "ต่ำกว่า 60");
+  assert.equal(bandLabel("zzz"), null);
+  assert.equal(bandLabel(null), null);
 });
 
 console.log(`\n${n} checks passed`);

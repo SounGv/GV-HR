@@ -205,6 +205,7 @@ function StripCell({
   unit,
   sub,
   spark,
+  href,
 }: {
   icon: ComponentType<GvIconProps>;
   label: string;
@@ -214,9 +215,12 @@ function StripCell({
   sub?: ReactNode;
   /** The last days of this number, drawn as a small line under it. */
   spark?: number[];
+  /** Where the cell opens. Left out when the viewer may not open that page, so nothing leads to a "no access" screen. */
+  href?: string;
 }) {
-  return (
-    <div className="border-border px-[18px] py-3.5 not-first:border-l max-lg:[&:nth-child(4)]:border-l-0 max-lg:[&:nth-child(n+4)]:border-t">
+  const edge = "border-border px-[18px] py-3.5 not-first:border-l max-lg:[&:nth-child(4)]:border-l-0 max-lg:[&:nth-child(n+4)]:border-t";
+  const body = (
+    <>
       <p className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
         <Icon className="size-3.5" aria-hidden="true" /> {label}
       </p>
@@ -225,7 +229,18 @@ function StripCell({
       </p>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
       {spark && spark.length > 1 && <MiniSpark values={spark} className="mt-1 h-6 w-full text-primary/70" />}
-    </div>
+    </>
+  );
+  if (!href) return <div className={edge}>{body}</div>;
+  return (
+    <Link
+      href={href}
+      aria-label={`${label} ${value} ${unit} ดูรายละเอียด`}
+      className={`${edge} gv-panel-lift group relative block rounded-xl hover:z-10 hover:bg-card focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary`}
+    >
+      {body}
+      <ArrowUpRight className="absolute top-3 right-3 size-4 text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true" />
+    </Link>
   );
 }
 
@@ -319,6 +334,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     can(user!.permissions, "campaign:approve");
   const canSeeDueSoon = can(user!.permissions, "employee:update") || can(user!.permissions, "holiday:create");
   const canSeeOvertime = can(user!.permissions, "overtime:approve") || can(user!.permissions, "overtime:manage");
+  // Where the 14-day strip cells open: each only for people who may open that page (same keys as the menu).
+  const stripLink = {
+    employees: can(user!.permissions, "employee:read") ? "/employees?status=ACTIVE" : undefined,
+    reportAttendance: can(user!.permissions, "report:read") ? "/reports?view=attendance" : undefined,
+    reportDaily: can(user!.permissions, "report:read") ? "/reports?view=attendance_daily" : undefined,
+    reportLeave: can(user!.permissions, "report:read") ? "/reports?view=leave" : undefined,
+    overtime: can(user!.permissions, "overtime:read") ? "/overtime" : undefined,
+  };
   const canSeeMeetings = can(user!.permissions, "meeting:read");
   const attendanceToday = canSeeAttendance ? await loadTodayAttendance(user!.companyId, session, deptIds) : null;
   const departmentOptions = canSeeAttendance ? await listDepartmentOptions(user!.companyId) : [];
@@ -540,17 +563,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <StripCell
               icon={GvMeetingIcon}
               label="พนักงานทั้งหมด"
+              href={stripLink.employees}
               value={s.headcount}
               unit="คน"
               sub={s.newThisMonth > 0 ? <span className="text-success">+{s.newThisMonth} เดือนนี้</span> : undefined}
             />
-            <StripCell icon={GvCheckinIcon} label="เข้างานเฉลี่ย" value={avgAttendanceRate} unit="%" sub="เทียบพนักงานทั้งหมด" spark={attendanceTrend.map((p) => p.present)} />
-            <StripCell icon={GvLateIcon} label="มาสายรวม" value={lateSum} unit="ครั้ง" spark={attendanceTrend.map((p) => p.late)} />
-            <StripCell icon={GvLeaveIcon} label="ลารวม" value={leaveSum} unit="ครั้ง" spark={attendanceTrend.map((p) => p.leave)} />
-            <StripCell icon={GvAbsentIcon} label="ไม่มีบันทึกเวลา" value={absentSum} unit="คน-วัน" sub="รวมคนที่ไม่ใช้แอปสแกน" spark={attendanceTrend.map((p) => p.absent)} />
+            <StripCell icon={GvCheckinIcon} label="เข้างานเฉลี่ย" href={stripLink.reportAttendance} value={avgAttendanceRate} unit="%" sub="เทียบพนักงานทั้งหมด" spark={attendanceTrend.map((p) => p.present)} />
+            <StripCell icon={GvLateIcon} label="มาสายรวม" href={stripLink.reportDaily} value={lateSum} unit="ครั้ง" spark={attendanceTrend.map((p) => p.late)} />
+            <StripCell icon={GvLeaveIcon} label="ลารวม" href={stripLink.reportLeave} value={leaveSum} unit="ครั้ง" spark={attendanceTrend.map((p) => p.leave)} />
+            <StripCell icon={GvAbsentIcon} label="ไม่มีบันทึกเวลา" href={stripLink.reportDaily} value={absentSum} unit="คน-วัน" sub="รวมคนที่ไม่ใช้แอปสแกน" spark={attendanceTrend.map((p) => p.absent)} />
             <StripCell
               icon={GvOtIcon}
               label="OT วันนี้"
+              href={stripLink.overtime}
               value={s.otHoursToday}
               decimals={Number.isInteger(s.otHoursToday) ? 0 : 1}
               unit="ชม."
@@ -732,7 +757,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {/* ทีมงาน: who works here, by employment type and by department. */}
       {canSeeCompany && (
-        <TeamOverview headcount={s.headcount} employmentTypes={employmentTypes} departments={departmentRanked} />
+        <TeamOverview headcount={s.headcount} employmentTypes={employmentTypes} departments={departmentRanked} canOpenEmployees={can(user!.permissions, "employee:read")} />
       )}
       </div>
       </LiveTodayProvider>

@@ -1,4 +1,6 @@
 export interface DeptDatum {
+  /** The department the row stands for; null or missing for "ไม่ระบุ" and for the folded "อื่นๆ" row. */
+  id?: string | null;
   name: string;
   count: number;
 }

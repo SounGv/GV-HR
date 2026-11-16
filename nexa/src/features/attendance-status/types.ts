@@ -71,6 +71,8 @@ export interface WatchPerson {
 
 export interface DepartmentWatch {
   department: string;
+  /** The department's id so its row can open the list narrowed to it; null when no department has that name. */
+  departmentId?: string | null;
   people: number;
   late: number;
   absent: number;

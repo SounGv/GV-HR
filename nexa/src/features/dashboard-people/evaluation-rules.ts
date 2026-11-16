@@ -181,19 +181,32 @@ export function sameRaterTypes(a: readonly string[], b: readonly string[]): bool
 }
 
 export interface SpreadBand {
+  /** Short code used in the address of the results page (?band=…). */
+  key: string;
   label: string;
   count: number;
 }
 
 /** Fixed bands for the home page's score spread. They only count people; they are not grade bands HR has set. */
-const SPREAD_EDGES: { label: string; from: number }[] = [
-  { label: "100", from: 100 },
-  { label: "90-99", from: 90 },
-  { label: "80-89", from: 80 },
-  { label: "70-79", from: 70 },
-  { label: "60-69", from: 60 },
-  { label: "ต่ำกว่า 60", from: 0 },
+const SPREAD_EDGES: { key: string; label: string; from: number }[] = [
+  { key: "100", label: "100", from: 100 },
+  { key: "90", label: "90-99", from: 90 },
+  { key: "80", label: "80-89", from: 80 },
+  { key: "70", label: "70-79", from: 70 },
+  { key: "60", label: "60-69", from: 60 },
+  { key: "lt60", label: "ต่ำกว่า 60", from: 0 },
 ];
+
+/** The band a score falls in; a score below zero or above 100 still lands in the lowest or highest band. */
+export function bandKeyOf(percent: number): string {
+  const e = SPREAD_EDGES.find((x) => percent >= x.from);
+  return (e ?? SPREAD_EDGES[SPREAD_EDGES.length - 1]!).key;
+}
+
+/** The label of a band key, or null when the key is not one of the bands (so a made-up address filters nothing). */
+export function bandLabel(key: string | null | undefined): string | null {
+  return SPREAD_EDGES.find((x) => x.key === key)?.label ?? null;
+}
 
 /** How many people fall in each band, highest first; every person lands in exactly one band. */
 export function scoreSpread(percents: readonly number[]): SpreadBand[] {
@@ -202,7 +215,7 @@ export function scoreSpread(percents: readonly number[]): SpreadBand[] {
     const i = SPREAD_EDGES.findIndex((e) => p >= e.from);
     counts[i === -1 ? SPREAD_EDGES.length - 1 : i]!++;
   }
-  return SPREAD_EDGES.map((e, i) => ({ label: e.label, count: counts[i]! }));
+  return SPREAD_EDGES.map((e, i) => ({ key: e.key, label: e.label, count: counts[i]! }));
 }
 
 /** Days from `from` to `to` as whole days (0 = the same day), or null when either date is missing. */
