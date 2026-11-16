@@ -143,7 +143,7 @@ export function SectionBand() {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "relative flex shrink-0 items-center gap-1.5 px-3.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                    active ? "text-primary" : "text-[color:var(--muted-strong)] hover:bg-muted/60 hover:text-foreground",
                   )}
                 >
                   {t.label}

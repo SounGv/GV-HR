@@ -131,7 +131,7 @@ export function AppSidebar() {
             "h-9 text-[14px] [&_svg]:size-4",
             active
               ? "data-active:bg-sidebar-primary data-active:font-semibold data-active:text-sidebar-primary-foreground data-active:shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)] data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
-              : "text-sidebar-foreground/85 hover:text-sidebar-foreground",
+              : "font-medium text-sidebar-foreground hover:text-sidebar-foreground",
           )}
           render={
             item.isLogout ? (
@@ -198,7 +198,7 @@ export function AppSidebar() {
                     {/* Same icon set as the home page (gv-icons.tsx); the open group's tile fills solid teal so you can see where you are. */}
                     <GvIconTile icon={group.icon} className={cn("size-9 rounded-xl", expanded && "bg-primary text-primary-foreground ring-0")} iconClassName="size-[22px]" />
                     <span className="flex-grow text-left">{group.label}</span>
-                    <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
+                    <ChevronDown className={cn("size-4 shrink-0 text-[color:var(--muted-strong)] transition-transform", expanded && "rotate-180")} />
                   </button>
                   {expanded && (
                     <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 w-auto border-l-2 border-sidebar-border pl-3">
