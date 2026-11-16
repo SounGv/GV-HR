@@ -110,8 +110,37 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
       />
       <p className="rounded-xl bg-muted px-4 py-3 text-sm">
         สรุปคำตอบที่ส่งแล้ว แยกตามมุมมองผู้ประเมิน เป็นค่าเฉลี่ยธรรมดา ยังไม่ถ่วงน้ำหนักและยังไม่มีเกรด (รอ HR ยืนยันสูตร)
-        ข้อความที่ผู้ประเมินเขียนแสดงโดยไม่ระบุชื่อ
+        {r.namedComments ? "ข้อความที่ผู้ประเมินเขียนอยู่ในการ์ดความเห็นของผู้ประเมินแต่ละคน พร้อมชื่อผู้เขียน (เห็นเฉพาะ HR)" : "ข้อความที่ผู้ประเมินเขียนแสดงโดยไม่ระบุชื่อ"}
       </p>
+      {r.namedComments && r.namedComments.length > 0 && (
+        <Card className="gap-3 p-4" aria-label="ความเห็นของผู้ประเมินแต่ละคน">
+          <h2 className="flex flex-wrap items-center gap-x-2 text-base font-semibold">
+            <MessageSquareText className="size-5" aria-hidden="true" /> ความเห็นของผู้ประเมินแต่ละคน
+            <span className="text-sm font-normal text-muted-foreground tabular-nums">{r.namedComments.length} ใบ</span>
+          </h2>
+          <ul className="space-y-2">
+            {r.namedComments.map((c) => (
+              <li key={c.assignmentId} className="space-y-1.5 rounded-lg border border-border px-3 py-2">
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  <span className="font-semibold break-words">{c.raterName}</span>
+                  <span className="text-muted-foreground">ประเมิน {r.name}</span>
+                  <span className="rounded-md bg-muted px-1.5 text-xs font-medium">{RATER_LABEL[c.raterType]}</span>
+                  {c.score !== null && <span className="rounded-md bg-muted px-1.5 text-xs font-bold tabular-nums">ให้ {c.score}/{r.ratingMax}</span>}
+                  {c.submittedAt && <span className="text-xs text-muted-foreground tabular-nums">{formatDate(c.submittedAt)}</span>}
+                </p>
+                {c.texts.map((t, k) => (
+                  <p key={k} className="text-sm break-words whitespace-pre-wrap">
+                    {t}
+                  </p>
+                ))}
+                <Link href={`/appraisal/rounds/${roundId}/fill/${c.assignmentId}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-2 hover:underline md:min-h-8">
+                  เปิดใบประเมินของคนนี้
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       <Card className="gap-1 p-4" aria-label="คะแนนรวม">
         {r.result.status === "NOT_CALCULATED" || r.result.scorePercent == null ? (
           <p className="text-sm text-muted-foreground">ยังไม่ได้คำนวณคะแนน (กดคำนวณผลที่หน้ารอบ)</p>
@@ -236,7 +265,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
                       ))}
                     </ul>
                   )}
-                  {s.texts.length > 0 && (
+                  {s.texts.length > 0 && !r.namedComments && (
                     <ul className="space-y-1.5 text-sm">
                       {s.texts.map((t, k) => (
                         <li key={k} className="rounded-lg border border-border px-3 py-2 break-words whitespace-pre-wrap">

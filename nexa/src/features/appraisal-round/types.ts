@@ -237,6 +237,8 @@ export interface ParticipantResult {
   };
   /** Comments copied from another system for a round with no answer sheets; null when there are none. Already filtered for this viewer. */
   importedComments: CommentsView | null;
+  /** HR only (null for everyone else): each submitted sheet that has written text, with the rater's name. */
+  namedComments: { assignmentId: string; raterType: RaterType; raterName: string; score: number | null; submittedAt: Date | string | null; texts: string[] }[] | null;
 }
 
 export interface DepartmentProgress {

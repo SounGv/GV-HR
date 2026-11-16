@@ -804,11 +804,13 @@ export interface ParticipantResult {
   };
   /** Comments copied from another system for a round with no answer sheets; null when there are none. Already filtered for this viewer. */
   importedComments: CommentsView | null;
+  /** HR only (null for everyone else): each submitted sheet that has written text, with the rater's name. */
+  namedComments: { assignmentId: string; raterType: string; raterName: string; score: number | null; submittedAt: Date | null; texts: string[] }[] | null;
 }
 
 /**
  * Answers for one person, grouped by rater type. Only submitted answers are summarised, and nobody's
- * name is attached to what they wrote. Averages are plain means: no weighting, grade or overall score yet.
+ * name is attached to what they wrote, except in `namedComments`, which only HR receive. Averages are plain means: no weighting, grade or overall score yet.
  */
 export async function getParticipantResult(
   companyId: string,
@@ -833,7 +835,10 @@ export async function getParticipantResult(
       originalScorePercent: true,
       importedComments: true,
       round: { select: { name: true, status: true, formSnapshot: true } },
-      assignments: { select: { raterType: true, status: true, answers: true, submittedAt: true }, orderBy: { submittedAt: "asc" } },
+      assignments: {
+        select: { id: true, raterType: true, status: true, answers: true, submittedAt: true, rater: { select: { firstName: true, lastName: true, nickname: true } } },
+        orderBy: { submittedAt: "asc" },
+      },
     },
   });
   if (!p) throw NotFound("ไม่พบข้อมูล");
@@ -841,6 +846,22 @@ export async function getParticipantResult(
   const questions = (form?.questions ?? []) as SnapQuestion[];
   const ratingMax = form?.ratingMax ?? 5;
   const types = [...new Set(p.assignments.map((a) => a.raterType))];
+  const isHr = can(session.perms, "campaign:update");
+  const ratingIds = new Set(questions.filter((q) => q.answerType === "RATING").map((q) => q.id));
+  const textIds = new Set(questions.filter((q) => q.answerType === "SHORT_TEXT" || q.answerType === "PARAGRAPH").map((q) => q.id));
+  // Who wrote what: only HR get names (the same people can already open each rater's sheet from the tracking table).
+  const namedComments = isHr
+    ? p.assignments
+        .filter((a) => a.status === "SUBMITTED")
+        .flatMap((a) => {
+          const answers = Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [];
+          const texts = answers.filter((x) => textIds.has(x.questionId) && typeof x.value === "string" && x.value.trim()).map((x) => (x.value as string).trim());
+          if (texts.length === 0) return [];
+          const scores = answers.filter((x) => ratingIds.has(x.questionId) && typeof x.value === "number").map((x) => x.value as number);
+          const score = scores.length ? Math.round((scores.reduce((t, v) => t + v, 0) / scores.length) * 10) / 10 : null;
+          return [{ assignmentId: a.id, raterType: a.raterType, raterName: fullName(a.rater), score, submittedAt: a.submittedAt, texts }];
+        })
+    : null;
   return {
     participantId: p.id,
     name: fullName(p.employee),
@@ -855,14 +876,15 @@ export async function getParticipantResult(
       scorePercent: p.scorePercent,
       overallScore: p.overallScore,
       grade: p.grade,
-      adjustedFrom: p.adjustedAt && can(session.perms, "campaign:update") ? p.originalScorePercent : null,
+      adjustedFrom: p.adjustedAt && isHr ? p.originalScorePercent : null,
       types: ((p.scoreBreakdown as unknown as { types?: { raterType: string; raters: number; percent: number; weightUsed: number }[] } | null)?.types ?? []),
     },
-    importedComments: commentsFor(parseImportedComments(p.importedComments), can(session.perms, "campaign:update")),
+    importedComments: commentsFor(parseImportedComments(p.importedComments), isHr),
+    namedComments,
     groups: types.map((t) => {
       const mine = p.assignments.filter((a) => a.raterType === t);
       const done = mine.filter((a) => a.status === "SUBMITTED");
-      const textsHeld = holdsBackTexts(t, done.length, can(session.perms, "campaign:update"));
+      const textsHeld = holdsBackTexts(t, done.length, isHr);
       const summary = summarizeAnswers(questions, t, done.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [])), ratingMax);
       return {
         raterType: t,
