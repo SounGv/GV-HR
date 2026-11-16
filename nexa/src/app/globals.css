@@ -1291,6 +1291,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   --lg-in: rgba(255, 255, 255, 0.07);
   --lg-field: #7f8a93;
 }
+@media (max-width: 1023.98px) {
 .dark .gv-login-scope {
   --login-text-primary: #e8ebed;
   --login-text-secondary: #b8bec4;
@@ -1299,6 +1300,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   --login-border: rgba(255, 255, 255, 0.2);
   --login-surface: rgba(255, 255, 255, 0.1);
   --login-error: #ff8a78;
+}
 }
 .gv-login-bg { background: linear-gradient(180deg, #e4f5f1, #f4f7f8); }
 .dark .gv-login-bg { background: linear-gradient(180deg, #0e1b1a, #0f1213); }
@@ -1403,4 +1405,87 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   .gv-m [data-slot="dropdown-menu-trigger"]:not(table *) {
     min-height: 44px;
   }
+}
+
+/* ── Login hero (2026-11, login-motion-mock.html, back on the website layout from 1024px up) ──
+   Light comes from plain radial gradients (no blur filter) and only
+   transform animates, so the drift is GPU-cheap; reduced motion holds still. */
+.login-glow {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+.login-glow-a {
+  width: 900px;
+  height: 900px;
+  left: -200px;
+  top: -420px;
+  background: radial-gradient(closest-side, rgba(13, 148, 136, 0.55), rgba(13, 148, 136, 0));
+  animation: login-drift 14s ease-in-out infinite alternate;
+}
+.login-glow-b {
+  width: 700px;
+  height: 700px;
+  right: -260px;
+  bottom: -320px;
+  background: radial-gradient(closest-side, rgba(45, 212, 191, 0.22), rgba(45, 212, 191, 0));
+  animation: login-drift 18s ease-in-out infinite alternate-reverse;
+}
+@keyframes login-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(60px, 40px, 0); }
+}
+/* The dial draws itself once (check mark after the arc), then a dot keeps orbiting like a second hand. */
+.login-dial-arc {
+  stroke-dashoffset: 72;
+  animation: login-draw 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+.login-dial-check {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: login-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+}
+.login-dial-orbit {
+  transform-box: view-box;
+  transform-origin: 210px 210px;
+  animation: login-orbit 60s linear infinite;
+}
+@keyframes login-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes login-orbit {
+  to { transform: rotate(360deg); }
+}
+
+/* Website layout (1024px and up): the dark hero + clock on the left, a flat light panel on the right; the glass card, orbs and phone ground are switched off. */
+@media (min-width: 1024px) {
+  .gv-login-bg, .dark .gv-login-bg { background: #0b1414; }
+  .gv-orb { display: none; }
+  .gv-login-card, .dark .gv-login-card {
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .gv-login-card::before { display: none; }
+  /* The panel is light in every theme: the page tokens are fixed here instead of following the dark theme. */
+  .gv-login-panel, .dark .gv-login-panel {
+    --login-text-primary: #131516;
+    --login-text-secondary: #5e6670;
+    --login-link: #0f766e;
+    --login-link-hover: #115e59;
+    --login-border: #d4d9df;
+    --login-surface: #ffffff;
+    --login-error: #c62828;
+    --lg-field: #8c969e;
+    --lg-in: rgba(255, 255, 255, 0.8);
+    color-scheme: light;
+    background: radial-gradient(110% 55% at 100% 0, #e3f5f1 0, rgba(246, 247, 243, 0) 60%), #f6f7f3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-glow, .login-dial-orbit { animation: none; }
+  .login-dial-arc, .login-dial-check { animation: none; stroke-dashoffset: 0; }
 }
