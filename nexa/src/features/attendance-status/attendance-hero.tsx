@@ -90,7 +90,7 @@ function GlassTile({
       </span>
       {bar !== undefined && (
         <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white/15" aria-hidden="true">
-          <span className="gv-grow block h-full rounded-full bg-[#CDEB03]" style={{ width: `${bar}%` }} />
+          <span className="gv-grow block h-full rounded-full bg-[var(--on-hero-accent)]" style={{ width: `${bar}%` }} />
         </span>
       )}
       {line && <span className="mt-1 block text-xs text-white/75">{line}</span>}
@@ -195,7 +195,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
                 <ArrowDown className="size-4" aria-hidden="true" />
               </a>
             ) : (
-              <span className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#CDEB03] px-4 text-[13.5px] font-bold text-[#131516]">
+              <span className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--on-hero-accent)] px-4 text-[13.5px] font-bold text-[var(--on-hero-accent-fg)]">
                 <Check className="size-4" aria-hidden="true" />
                 ยังไม่มีคนขาดหรือสาย
               </span>

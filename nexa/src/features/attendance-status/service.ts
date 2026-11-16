@@ -176,7 +176,8 @@ export async function loadTodayAttendance(
   for (const l of leaves) {
     if (l.halfDay) noteFor(l.employeeId, `${LEAVE_TYPE_LABEL[l.type] ?? l.type}ครึ่งวัน${l.halfDayPeriod === "MORNING" ? "เช้า" : l.halfDayPeriod === "AFTERNOON" ? "บ่าย" : ""}`);
   }
-  for (const l of hourLeaves) {
+  // Earliest first, so the note reads in clock order whatever order the requests were made in.
+  for (const l of [...hourLeaves].sort((a, b) => (hhmmToMin(a.startTime) ?? 0) - (hhmmToMin(b.startTime) ?? 0))) {
     if (l.startTime && l.endTime) noteFor(l.employeeId, `${LEAVE_TYPE_LABEL[l.type] ?? l.type} ${l.startTime}-${l.endTime}`);
   }
   const hourRangesByEmployee = new Map<string, HourRange[]>();
