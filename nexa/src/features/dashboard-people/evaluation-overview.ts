@@ -6,7 +6,8 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { bangkokParts } from "@/lib/datetime";
 import { getSettings } from "@/features/appraisal-round/results-service";
 import { participantScope, viewableEmployeeIds } from "@/features/appraisal-round/viewer-scope";
-import { compareAverages, summarizeResults, summarizeRound, type AverageChange, type ResultSummary, type RoundSummary } from "./evaluation-rules";
+import { ceilingSummary } from "@/features/appraisal-round/review-rules";
+import { compareAverages, daysBetweenIso, sameRaterTypes, scoreSpread, summarizeResults, summarizeRound, type AverageChange, type ResultSummary, type RoundSummary, type SpreadBand } from "./evaluation-rules";
 
 /**
  * What the evaluation section of the home page shows, read from the appraisal rounds HR runs at /appraisal.
@@ -39,6 +40,18 @@ export interface ResultsCard extends ResultSummary {
   href: string;
 }
 
+/** One approved round in short for HR: how the scores spread, and whether they bunch at the top. */
+export interface RoundResultBoard {
+  roundId: string;
+  roundName: string;
+  total: number;
+  atTop: number;
+  /** Half or more of the people are at the top score, so scores cannot tell people apart. */
+  ceiling: boolean;
+  spread: SpreadBand[];
+  href: string;
+}
+
 export interface MyTeamTask {
   assignmentId: string;
   roundId: string;
@@ -61,12 +74,19 @@ export interface EvaluationOverview {
   faces: Record<string, { photo: string | null; gender: string | null }>;
   /** Forms the viewer must fill in for their team, in open rounds. */
   myTasks: MyTeamTask[];
+  /** Templates HR copies to open a round (HR only); they are not work waiting. */
+  templates: { id: string; name: string; href: string }[];
+  /** The most recent closed round and how many days ago it ended (HR only). */
+  lastClosed: { name: string; endIso: string; daysAgo: number } | null;
+  /** The latest approved round and any other approved round that closed within a month of it, newest first. */
+  resultsBoard: RoundResultBoard[];
 }
 
 const APPROVED = ["APPROVED", "PUBLISHED", "ACKNOWLEDGED"] as const;
 const MAX_OPEN_ROUNDS = 3;
 const MAX_DRAFTS = 3;
 const MAX_REVIEW = 3;
+const BOARD_WINDOW_DAYS = 31;
 
 function dayDiff(from: Date, to: Date): number {
   return Math.round((to.getTime() - from.getTime()) / 86_400_000);
@@ -147,7 +167,7 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
   const latest = await prisma.appraisalParticipant.findFirst({
     where: { round: { companyId, deletedAt: null }, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
     orderBy: [{ round: { closedAt: { sort: "desc", nulls: "last" } } }, { round: { createdAt: "desc" } }],
-    select: { roundId: true, round: { select: { name: true } } },
+    select: { roundId: true, round: { select: { name: true, raterTypes: true, closedAt: true } } },
   });
   if (latest) {
     const rows = await prisma.appraisalParticipant.findMany({
@@ -169,17 +189,20 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
     );
     let change: ResultsCard["change"] = null;
     if (summary) {
-      const before = await prisma.appraisalParticipant.findFirst({
-        where: { round: { companyId, deletedAt: null }, roundId: { not: latest.roundId }, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
-        orderBy: [{ round: { closedAt: { sort: "desc", nulls: "last" } } }, { round: { createdAt: "desc" } }],
-        select: { roundId: true, round: { select: { name: true } } },
+      // Only against an earlier round where the same kind of people rate: managers rating staff is not staff rating managers.
+      const earlier = await prisma.appraisalRound.findMany({
+        where: { companyId, deletedAt: null, id: { not: latest.roundId }, participants: { some: { resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope } } },
+        orderBy: [{ closedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
+        select: { id: true, name: true, raterTypes: true },
+        take: 8,
       });
+      const before = earlier.find((r) => sameRaterTypes(r.raterTypes, latest.round.raterTypes));
       if (before) {
         const prev = await prisma.appraisalParticipant.aggregate({
-          where: { roundId: before.roundId, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
+          where: { roundId: before.id, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
           _avg: { scorePercent: true },
         });
-        if (prev._avg.scorePercent !== null) change = { ...compareAverages(summary.average, Math.round(prev._avg.scorePercent * 10) / 10), previousName: before.round.name };
+        if (prev._avg.scorePercent !== null) change = { ...compareAverages(summary.average, Math.round(prev._avg.scorePercent * 10) / 10), previousName: before.name };
       }
     }
     if (summary) {
@@ -207,11 +230,11 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
     if (closed) awaitingCalculation = { id: closed.id, name: closed.name, href: `/appraisal/rounds/${closed.id}` };
   }
 
-  const draftCount = isHr ? await prisma.appraisalRound.count({ where: { companyId, deletedAt: null, status: "DRAFT" } }) : 0;
+  const draftCount = isHr ? await prisma.appraisalRound.count({ where: { companyId, deletedAt: null, status: "DRAFT", isTemplate: false } }) : 0;
   const drafts: EvaluationOverview["drafts"] = [];
   if (isHr && draftCount > 0) {
     const rows = await prisma.appraisalRound.findMany({
-      where: { companyId, deletedAt: null, status: "DRAFT" },
+      where: { companyId, deletedAt: null, status: "DRAFT", isTemplate: false },
       select: { id: true, name: true, startDate: true },
       orderBy: [{ startDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
       take: MAX_DRAFTS,
@@ -244,5 +267,62 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
     for (const e of people) faces[e.id] = { photo: photos.get(e.id) ?? null, gender: e.gender ?? null };
   }
 
-  return { companyWide: ids === null, open, results, awaitingCalculation, draftCount, drafts, awaitingReview, faces, myTasks };
+  // HR only: the templates to copy, and how long since the last round ended.
+  const templates: EvaluationOverview["templates"] = [];
+  let lastClosed: EvaluationOverview["lastClosed"] = null;
+  if (isHr) {
+    const tpl = await prisma.appraisalRound.findMany({
+      where: { companyId, deletedAt: null, status: "DRAFT", isTemplate: true },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, name: true },
+      take: 4,
+    });
+    for (const t of tpl) templates.push({ id: t.id, name: t.name.replace(/^แม่แบบ\s*/, ""), href: `/appraisal/rounds/${t.id}` });
+    const last = await prisma.appraisalRound.findFirst({
+      where: { companyId, deletedAt: null, status: "CLOSED", isTemplate: false },
+      orderBy: { closedAt: { sort: "desc", nulls: "last" } },
+      select: { name: true, endDate: true, closedAt: true },
+    });
+    const lastEnd = last ? (last.endDate ?? last.closedAt) : null;
+    if (last && lastEnd) {
+      const endIso = bangkokParts(lastEnd).dateUTC.toISOString().slice(0, 10);
+      const daysAgo = daysBetweenIso(endIso, today.toISOString().slice(0, 10));
+      if (daysAgo !== null) lastClosed = { name: last.name, endIso, daysAgo };
+    }
+  }
+
+  // The score spread of the latest approved round and of any other approved round that closed within a month of it
+  // (a monthly cycle has one round per direction), so HR sees them side by side.
+  // Only HR's panel shows it, so nobody else pays for the extra queries.
+  const resultsBoard: RoundResultBoard[] = [];
+  if (latest && isHr) {
+    const latestClosed = latest.round.closedAt;
+    const near = latestClosed
+      ? await prisma.appraisalRound.findMany({
+          where: {
+            companyId,
+            deletedAt: null,
+            id: { not: latest.roundId },
+            closedAt: { gte: new Date(latestClosed.getTime() - BOARD_WINDOW_DAYS * 86_400_000), lte: new Date(latestClosed.getTime() + BOARD_WINDOW_DAYS * 86_400_000) },
+            participants: { some: { resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope } },
+          },
+          orderBy: [{ closedAt: "desc" }, { createdAt: "desc" }],
+          select: { id: true, name: true },
+          take: 1,
+        })
+      : [];
+    for (const r of [{ id: latest.roundId, name: latest.round.name }, ...near]) {
+      const rows = await prisma.appraisalParticipant.findMany({
+        where: { roundId: r.id, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
+        select: { scorePercent: true },
+        take: 2000,
+      });
+      const percents = rows.map((x) => x.scorePercent as number);
+      if (percents.length === 0) continue;
+      const c = ceilingSummary(percents);
+      resultsBoard.push({ roundId: r.id, roundName: r.name, total: c.total, atTop: c.count, ceiling: c.flag, spread: scoreSpread(percents), href: `/appraisal/rounds/${r.id}` });
+    }
+  }
+
+  return { companyWide: ids === null, open, results, awaitingCalculation, draftCount, drafts, awaitingReview, faces, myTasks, templates, lastClosed, resultsBoard };
 }

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
 import { loadEvaluationOverview, type EvaluationOverview, type OpenRound, type ResultsCard } from "./evaluation-overview";
+import { HrEvalTiles, ResultsBoardCard, TemplateCard } from "./hr-eval-panel";
 
 const CARD = "rounded-2xl border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5";
 const BTN = "inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent";
@@ -460,21 +461,19 @@ export async function EvaluationOverviewSection({ companyId, session }: { compan
   if (hrView) {
     return (
       <section id="evaluation" aria-label="การประเมินผล" className="scroll-mt-24 space-y-3">
-        <SectionHeading title="การประเมินผล" hint="เรียงจากงานที่รอคุณก่อน" />
-        <div className="grid gap-3">
-          <HrWorkCard o={o} />
+        <SectionHeading title="การประเมินผล" hint="เห็นเฉพาะ HR" />
+        <div className="space-y-3 rounded-[28px] border border-border bg-gradient-to-b from-card to-muted/50 p-3 shadow-[var(--card-shadow)] sm:p-5">
+          <HrEvalTiles o={o} />
+          {o.awaitingReview.length + (o.awaitingCalculation ? 1 : 0) + o.drafts.length > 0 && <HrWorkCard o={o} />}
           {o.open.map((r) => (
             <HrOpenRound key={r.id} round={r} faces={o.faces} />
           ))}
-          {o.open.length === 0 && (
-            <article className={cn(CARD, "flex flex-wrap items-center justify-between gap-3")}>
-              <p className="text-sm text-muted-foreground">ยังไม่มีรอบประเมินที่เปิดอยู่ เมื่อเปิดรอบ ความคืบหน้าจะขึ้นที่นี่</p>
-              <Link href="/appraisal" className={BTN}>
-                ไปที่หน้าประเมินผล
-              </Link>
-            </article>
-          )}
-          {o.results && <HrResultsLine r={o.results} />}
+          <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
+            <ResultsBoardCard board={o.resultsBoard} />
+            <div className={o.resultsBoard.length === 0 ? "lg:col-span-2" : undefined}>
+              <TemplateCard templates={o.templates} />
+            </div>
+          </div>
         </div>
       </section>
     );

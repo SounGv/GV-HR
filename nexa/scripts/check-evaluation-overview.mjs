@@ -1,7 +1,7 @@
 // Checks the numbers behind the evaluation section of the home page.
 // Run: node --experimental-strip-types scripts/check-evaluation-overview.mjs
 import assert from "node:assert/strict";
-import { compareAverages, isDone, summarizeResults, summarizeRound, waitingText } from "../src/features/dashboard-people/evaluation-rules.ts";
+import { compareAverages, daysBetweenIso, isDone, sameRaterTypes, scoreSpread, summarizeResults, summarizeRound, waitingText } from "../src/features/dashboard-people/evaluation-rules.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -85,6 +85,26 @@ check("the change since the last round says up, down or same, with one decimal",
   assert.deepEqual(compareAverages(78, 80.5), { delta: -2.5, direction: "down" });
   assert.deepEqual(compareAverages(80, 80), { delta: 0, direction: "same" });
   assert.equal(compareAverages(80.02, 80).direction, "same");
+});
+
+check("two rounds are comparable only when the same kind of people rate, in any order", () => {
+  assert.equal(sameRaterTypes(["MANAGER"], ["MANAGER"]), true);
+  assert.equal(sameRaterTypes(["SELF", "MANAGER"], ["MANAGER", "SELF"]), true);
+  assert.equal(sameRaterTypes(["MANAGER"], ["SUBORDINATE"]), false, "staff rating managers is not managers rating staff");
+  assert.equal(sameRaterTypes(["MANAGER"], ["MANAGER", "SELF"]), false);
+  assert.equal(sameRaterTypes([], []), true);
+});
+check("the score spread puts every person in exactly one band, highest first, 100 on its own", () => {
+  const s = scoreSpread([100, 100, 99.99, 90, 85, 70, 66.67, 59.9, 0]);
+  assert.deepEqual(s.map((b) => [b.label, b.count]), [["100", 2], ["90-99", 2], ["80-89", 1], ["70-79", 1], ["60-69", 1], ["ต่ำกว่า 60", 2]]);
+  assert.equal(s.reduce((a, b) => a + b.count, 0), 9);
+  assert.equal(scoreSpread([]).every((b) => b.count === 0), true);
+});
+check("days between two dates, and nothing when one is missing", () => {
+  assert.equal(daysBetweenIso("2026-11-08", "2026-11-16"), 8);
+  assert.equal(daysBetweenIso("2026-11-16", "2026-11-16"), 0);
+  assert.equal(daysBetweenIso(null, "2026-11-16"), null);
+  assert.equal(daysBetweenIso("2026-11-08", null), null);
 });
 
 console.log(`\n${n} checks passed`);

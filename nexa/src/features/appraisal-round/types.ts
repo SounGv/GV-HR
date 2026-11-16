@@ -30,6 +30,8 @@ export interface RoundListItem {
   id: string;
   name: string;
   status: RoundStatus;
+  /** A draft kept only to be copied each month; it is never opened itself. */
+  isTemplate: boolean;
   formName: string;
   startIso: string | null;
   endIso: string | null;

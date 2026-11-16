@@ -169,3 +169,44 @@ export function compareAverages(current: number, previous: number): AverageChang
   const delta = round1(current - previous);
   return { delta, direction: delta > 0 ? "up" : delta < 0 ? "down" : "same" };
 }
+
+/**
+ * True when two rounds ask the same kind of people to rate, so their averages can be compared. A round where managers rate staff
+ * and one where staff rate managers are different groups; comparing them is not "against the round before".
+ */
+export function sameRaterTypes(a: readonly string[], b: readonly string[]): boolean {
+  const x = [...a].sort();
+  const y = [...b].sort();
+  return x.length === y.length && x.every((t, i) => t === y[i]);
+}
+
+export interface SpreadBand {
+  label: string;
+  count: number;
+}
+
+/** Fixed bands for the home page's score spread. They only count people; they are not grade bands HR has set. */
+const SPREAD_EDGES: { label: string; from: number }[] = [
+  { label: "100", from: 100 },
+  { label: "90-99", from: 90 },
+  { label: "80-89", from: 80 },
+  { label: "70-79", from: 70 },
+  { label: "60-69", from: 60 },
+  { label: "ต่ำกว่า 60", from: 0 },
+];
+
+/** How many people fall in each band, highest first; every person lands in exactly one band. */
+export function scoreSpread(percents: readonly number[]): SpreadBand[] {
+  const counts = SPREAD_EDGES.map(() => 0);
+  for (const p of percents) {
+    const i = SPREAD_EDGES.findIndex((e) => p >= e.from);
+    counts[i === -1 ? SPREAD_EDGES.length - 1 : i]!++;
+  }
+  return SPREAD_EDGES.map((e, i) => ({ label: e.label, count: counts[i]! }));
+}
+
+/** Days from `from` to `to` as whole days (0 = the same day), or null when either date is missing. */
+export function daysBetweenIso(fromIso: string | null, toIso: string | null): number | null {
+  if (!fromIso || !toIso) return null;
+  return Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000);
+}

@@ -54,6 +54,7 @@ export async function listRounds(companyId: string) {
       status: true,
       startDate: true,
       endDate: true,
+      isTemplate: true,
       form: { select: { name: true, version: true } },
       _count: { select: { participants: true } },
     },
@@ -80,6 +81,7 @@ export async function listRounds(companyId: string) {
       id: r.id,
       name: r.name,
       status: r.status,
+      isTemplate: r.isTemplate,
       formName: `${r.form.name} เวอร์ชัน ${r.form.version}`,
       startIso: r.startDate ? iso(r.startDate) : null,
       endIso: r.endDate ? iso(r.endDate) : null,
@@ -467,6 +469,8 @@ export async function getRoundProgress(companyId: string, id: string, session: A
 export async function openRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
   const detail = await getRound(companyId, id);
   if (detail.status !== "DRAFT") throw BadRequest("รอบนี้เปิดแล้ว");
+  const flag = await prisma.appraisalRound.findFirst({ where: { id, companyId }, select: { isTemplate: true } });
+  if (flag?.isTemplate) throw BadRequest("แม่แบบเปิดรอบโดยตรงไม่ได้ กดคัดลอกเป็นรอบใหม่ก่อน แล้วตั้งวันที่และเปิดรอบที่คัดลอก");
   const failed = detail.checks.filter((c) => !c.ok);
   if (failed.length) throw BadRequest(`ยังเปิดรอบไม่ได้: ${failed.map((c) => c.why).join(" · ")}`);
 
@@ -622,6 +626,7 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
     where: { id, companyId, deletedAt: null },
     select: {
       name: true,
+      isTemplate: true,
       raterTypes: true,
       perspectiveWeights: true,
       raterPairs: true,
@@ -666,7 +671,8 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
   const created = await prisma.appraisalRound.create({
     data: {
       companyId,
-      name: `${src.name} (สำเนา)`,
+      // A copy of a template is an ordinary draft, named without the word "แม่แบบ" so it reads as a round.
+      name: src.isTemplate ? src.name.replace(/^แม่แบบs*/, "") : `${src.name} (สำเนา)`,
       formId: published.id,
       raterTypes: src.raterTypes,
       perspectiveWeights: (src.perspectiveWeights ?? undefined) as Prisma.InputJsonValue | undefined,

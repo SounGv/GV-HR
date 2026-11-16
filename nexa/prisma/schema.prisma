@@ -2599,6 +2599,9 @@ model AppraisalRound {
   perspectiveWeights Json?
   // Rater pairs HR set by hand on top of the org-chart matching: { add: [{participantId, raterId, raterType}], remove: [...] } (employee ids).
   raterPairs         Json?
+  // A template is a draft that is only ever copied (its raters and pairs are reused each month), never opened itself. It is not
+  // counted as work waiting for HR. A copy is an ordinary draft.
+  isTemplate         Boolean  @default(false)
 
   startDate DateTime? @db.Date
   endDate   DateTime? @db.Date

@@ -90,7 +90,7 @@ export function RoundListView() {
                 </span>
               </Link>
               <div className="flex items-center gap-2">
-                <StatusChip tone={TONE[r.status]} label={ROUND_STATUS_LABEL[r.status]} />
+                {r.isTemplate ? <StatusChip tone="info" label="แม่แบบ" /> : <StatusChip tone={TONE[r.status]} label={ROUND_STATUS_LABEL[r.status]} />}
                 {can("campaign:create") && (
                   <Button variant="ghost" size="icon" className="size-11 md:size-9" aria-label={`สร้างรอบใหม่จาก ${r.name}`} disabled={clone.isPending} onClick={() => copyRound(r)}>
                     <Copy className="size-4" />
