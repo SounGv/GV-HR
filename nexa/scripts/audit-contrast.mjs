@@ -18,8 +18,7 @@ const over = (fg, bg, a) => fg.map((v, i) => v * a + bg[i] * (1 - a));
 function block(selector) {
   const out = {};
   const re = new RegExp("(?:^|\\n)" + selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\{", "g");
-  let m;
-  while ((m = re.exec(css))) {
+  while (re.exec(css)) {
     let i = re.lastIndex, depth = 1;
     while (i < css.length && depth) { if (css[i] === "{") depth++; else if (css[i] === "}") depth--; i++; }
     for (const t of css.slice(re.lastIndex, i).matchAll(/--([a-z0-9-]+):\s*(#[0-9a-fA-F]{3,6})\s*;/g)) out[t[1]] = t[2];
@@ -55,7 +54,7 @@ for (const [themeName, theme] of [["สว่าง", light], ["มืด", dark
 }
 
 // ---------- B. colours written in code
-const walk = (d, o = []) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); e.isDirectory() ? walk(p, o) : o.push(p); } return o; };
+const walk = (d, o = []) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p, o); else o.push(p); } return o; };
 const files = walk(path.join(ROOT, "src")).filter((f) => /\.tsx$/.test(f));
 const PAL = { gray: { 300: "#d1d5db", 400: "#9ca3af", 500: "#6b7280" }, slate: { 300: "#cbd5e1", 400: "#94a3b8", 500: "#64748b" }, zinc: { 300: "#d4d4d8", 400: "#a1a1aa", 500: "#71717a" }, neutral: { 300: "#d4d4d4", 400: "#a3a3a3", 500: "#737373" }, stone: { 300: "#d6d3d1", 400: "#a8a29e", 500: "#78716c" } };
 const WHITE = [255, 255, 255];

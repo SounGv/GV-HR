@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- read-only audit of late / absent / leave across the places that decide them */
+ 
 // Read-only. For each working day of the last 45 days and each person who uses the clock-in app, decide late / absent / leave the
 // way the home page, the daily report and payroll each do, and list where they disagree or where leave and attendance clash.
 // Prints counts and a few samples by employee code and date only (no names). Writes nothing.

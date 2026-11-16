@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- read-only audit of leave request data */
+ 
 // Read-only. Looks for leave requests whose data does not add up: overlaps, wrong day counts, hours that do not match the times,
 // requests waiting too long. Prints counts and a few samples by employee code and date only. Writes nothing.
 import { prisma as real } from "@real/prisma";

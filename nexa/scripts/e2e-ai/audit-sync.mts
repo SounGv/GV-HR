@@ -68,7 +68,6 @@ type Line = { ok: boolean; name: string; detail?: string };
 
   // S6 org chart integrity
   const emps = await real.employee.findMany({ where: { companyId: COMPANY, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } }, select: { id: true, employeeCode: true, managerId: true } });
-  const ids = new Set(emps.map((e) => e.id));
   const allEmps = await real.employee.findMany({ where: { companyId: COMPANY }, select: { id: true, status: true, deletedAt: true } });
   const inactive = new Set(allEmps.filter((e) => e.deletedAt || !["ACTIVE", "ON_LEAVE"].includes(e.status)).map((e) => e.id));
   const toInactive = emps.filter((e) => e.managerId && inactive.has(e.managerId)).map((e) => e.employeeCode);
