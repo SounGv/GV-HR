@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, Camera, CheckCircle2, Home, MapPinned, ShieldCheck } from "lucide-react";
+import { Building2, Camera, CheckCircle2, Home, MapPinned, ShieldCheck, UserRoundX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
+import { useAuth } from "@/features/auth/auth-context";
 import { useToday } from "@/features/attendance/hooks";
 import { WORK_MODE_LABEL } from "@/features/attendance/status-badge";
 import { MobileCheckinFlow } from "./mobile-checkin-flow";
@@ -34,6 +35,25 @@ function fmtWorked(inIso: string | null | undefined, outIso: string | null | und
  * business logic, only a different presentation.
  */
 export function MobileCheckinCard() {
+  const { user } = useAuth();
+  // An account with no employee record has no clock-in of its own; say so instead of showing a failed load.
+  if (!user.employee) {
+    return (
+      <section role="status" className="gv-lg-card flex items-start gap-3 p-4 text-foreground">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
+          <UserRoundX className="size-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-base font-bold">บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">จึงไม่มีการลงเวลาของตัวเอง ถ้าต้องลงเวลา ให้ HR ผูกบัญชีกับข้อมูลพนักงานก่อน</p>
+        </div>
+      </section>
+    );
+  }
+  return <MobileCheckinCardForEmployee />;
+}
+
+function MobileCheckinCardForEmployee() {
   const { data, isLoading, isError, refetch } = useToday();
   const [flowMode, setFlowMode] = useState<"in" | "out" | null>(null);
   const [now, setNow] = useState<Date | null>(null);
