@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { CalendarDays, ScanLine, Sparkles } from "lucide-react";
 import { LoginForm } from "@/features/auth/login-form";
 import { LoginClock } from "@/features/auth/login-clock";
-import { LoginDial } from "@/features/auth/login-dial";
+import { LoginWatch } from "@/features/auth/login-watch";
+import { LoginFloaters } from "@/features/auth/login-floaters";
 import { Logo, LogoOnDark } from "@/components/shared/logo";
 import { VBot } from "@/components/shared/v-bot";
 import { isGoogleOAuthEnabled } from "@/lib/auth/google-oauth";
@@ -39,9 +40,10 @@ export default function LoginPage() {
       <section className="relative hidden overflow-hidden px-14 py-10 text-white lg:flex lg:flex-col">
         <span aria-hidden="true" className="login-glow login-glow-a" />
         <span aria-hidden="true" className="login-glow login-glow-b" />
+        <LoginFloaters />
 
 
-        <div className="relative my-auto flex items-center gap-10 py-10">
+        <div className="relative z-[3] my-auto flex items-center gap-10 py-10">
           <div className="min-w-0 flex-1">
             {/* The company logo and name, with its background removed, sits right above the headline as one block. */}
             <LogoOnDark height={150} className="mb-7" />
@@ -72,11 +74,11 @@ export default function LoginPage() {
               })}
             </ul>
           </div>
-          <LoginDial className="hidden w-[min(40%,420px)] shrink-0 xl:block" />
+          <LoginWatch className="hidden w-[min(40%,430px)] shrink-0 xl:block" />
           <VBot mood="hi" full className="h-[170px] w-[146px] shrink-0 xl:hidden" />
         </div>
 
-        <p className="relative flex gap-4 text-xs text-[#6f8583]">
+        <p className="relative z-[3] flex gap-4 text-xs text-[#6f8583]">
           <span>© {new Date().getFullYear()} Gadget Villa</span>
           <span>ข้อมูลของคุณเห็นเฉพาะคนที่มีสิทธิ์</span>
         </p>
