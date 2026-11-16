@@ -74,7 +74,9 @@ export function MobileContentWrapper({ children }: { children: React.ReactNode }
 
 
 
-  if (isMobileCustomPath(pathname)) {
+  // /leave has its own phone layout, except the all-staff overview, which is plain page content and needs the shell (title and back arrow).
+  const leaveOverview = pathname === "/leave" && searchParams.get("view") === "overview";
+  if (isMobileCustomPath(pathname) && !leaveOverview) {
 
     return <>{children}</>;
 
