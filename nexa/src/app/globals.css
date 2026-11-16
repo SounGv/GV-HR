@@ -1379,3 +1379,16 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 
 /* The tab bar sits over scrolling content, so its glass is firmer than the other glass surfaces: text behind it must not read through. */
 .gv-lg-nav { background: var(--lg-glass-strong); }
+
+/* Phone forms: plain fields (native selects, date and time boxes, text boxes) copied with `h-8` were 32px tall, too small to tap. Fields
+   inside a table row stay compact. */
+@media (max-width: 767px) {
+  .gv-m :is(select, textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="file"]):not([type="color"])):not(table *) {
+    min-height: 44px;
+  }
+}
+@media (max-width: 767px) {
+  .gv-m [data-slot="dropdown-menu-trigger"]:not(table *) {
+    min-height: 44px;
+  }
+}

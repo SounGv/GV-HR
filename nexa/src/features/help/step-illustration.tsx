@@ -180,7 +180,7 @@ export function StepIllustration({
             ].map((k) => (
               <div key={k.l} className="rounded-md border border-border bg-card p-1.5 text-center">
                 <p className="text-xs font-bold text-foreground">{k.n}</p>
-                <p className="text-[8px] text-muted-foreground">{k.l}</p>
+                <p className="text-[10px] text-muted-foreground">{k.l}</p>
               </div>
             ))}
           </div>

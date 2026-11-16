@@ -155,7 +155,7 @@ export function MobileCalendarView() {
               <span key={status} className="flex items-center gap-1 text-xs text-muted-foreground">
                 <span
                   className={cn(
-                    "flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold",
+                    "flex size-[18px] items-center justify-center rounded-full text-[11px] font-bold",
                     MY_STATUS_BADGE[status].className,
                   )}
                 >
@@ -196,7 +196,7 @@ export function MobileCalendarView() {
                       {status && (
                         <span
                           className={cn(
-                            "absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full text-[7px] font-bold",
+                            "absolute -top-1.5 -right-1 flex size-[18px] items-center justify-center rounded-full text-[11px] font-bold",
                             MY_STATUS_BADGE[status].className,
                           )}
                         >

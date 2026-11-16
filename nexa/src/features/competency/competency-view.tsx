@@ -221,12 +221,12 @@ function CategoryManagementPanel() {
           {categories.map((cat) => (
             <span
               key={cat.id}
-              className="flex items-center gap-1.5 rounded-full border border-border py-1 pr-1 pl-3 text-xs"
+              className="flex items-center gap-1 rounded-full border border-border py-0.5 pr-0.5 pl-3 text-xs md:gap-1.5 md:py-1 md:pr-1"
             >
               {cat.name}
               <Link
                 href={`/performance/competencies/categories/${cat.id}/edit`}
-                className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground md:size-auto md:p-1"
                 aria-label="แก้ไขหมวดหมู่"
               >
                 <Pencil className="size-3" />
@@ -234,7 +234,7 @@ function CategoryManagementPanel() {
               <button
                 type="button"
                 onClick={() => setDeleteTarget(cat)}
-                className="rounded-full p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive md:size-auto md:p-1"
                 aria-label="ลบหมวดหมู่"
               >
                 <Trash2 className="size-3" />

@@ -96,7 +96,7 @@ export function RecurrenceView() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/appraisal/rounds" className="text-sm font-semibold text-primary underline-offset-2 hover:underline">
+        <Link href="/appraisal/rounds" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-2 hover:underline md:min-h-0">
           กลับไปรอบประเมิน
         </Link>
         <Button className="h-11 md:h-9" onClick={() => setEditing({ id: null, body: EMPTY })}>

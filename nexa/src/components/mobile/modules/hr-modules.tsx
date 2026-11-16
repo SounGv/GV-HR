@@ -22,7 +22,8 @@ function MobileToggle({
       aria-checked={checked}
       onClick={onChange}
       className={cn(
-        "relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors",
+        // The invisible ::before widens the tap area to 44px high without changing how the switch looks.
+        "relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors before:absolute before:-inset-x-1 before:-inset-y-[11px] before:content-['']",
         checked ? "bg-primary" : "bg-border",
       )}
     >
