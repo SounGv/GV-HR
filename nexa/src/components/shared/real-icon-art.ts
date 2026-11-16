@@ -57,14 +57,14 @@ const NAT: Record<string, Partial<Palette>> = {house:{b:CR,a:RD},users:{b:BL,a:G
 export type RealIconName = keyof typeof DRAW;
 export type RealIconTone = "natural" | "teal";
 
-/** The inner SVG for one icon. Gradient ids include the name and tone, so repeated icons share identical definitions. */
-export function realIconMarkup(name: string, tone: RealIconTone = "natural"): string {
+/** The inner SVG for one icon. `uid` (from useId) keeps each instance's gradient ids its own: a gradient defined inside a display:none copy would otherwise break every visible copy that points at the same id. */
+export function realIconMarkup(name: string, tone: RealIconTone = "natural", uid = ""): string {
   const k = ALIAS[name] ?? name;
   if (!DRAW[k]) return "";
   const n = tone === "natural" ? NAT[k] : undefined;
   const B = (n?.b ?? TEAL.b) as Tri, A = (n?.a ?? TEAL.a) as Tri, T = n?.t ?? TEAL.t, D = n?.d ?? (n ? B[2] : TEAL.d);
   const W: [string, string] = n ? ["#ffffff", "#e4e9ee"] : TEAL.w;
-  const id = `ri-${k}-${tone}`;
+  const id = `ri${uid}-${k}-${tone}`;
   const g = (i: string, c: Tri) => `<linearGradient id="${id}${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c[0]}"/><stop offset=".55" stop-color="${c[1]}"/><stop offset="1" stop-color="${c[2]}"/></linearGradient>`;
   const defs = `<defs>${g("b", B)}${g("a", A)}<linearGradient id="${id}w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${W[0]}"/><stop offset="1" stop-color="${W[1]}"/></linearGradient><linearGradient id="${id}h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
   const body = DRAW[k].split("@B").join(`url(#${id}b)`).split("@A").join(`url(#${id}a)`).split("@W").join(`url(#${id}w)`).split("@H").join(`url(#${id}h)`).split("@D").join(D).split("@T").join(T).split("@N").join(B[1]).split("@M").join(A[1]);

@@ -1,4 +1,4 @@
-import type { ComponentType, SVGProps } from "react";
+import { useId, type ComponentType, type SVGProps } from "react";
 
 import { realIconMarkup, type RealIconTone } from "./real-icon-art";
 
@@ -8,6 +8,7 @@ export const REAL_ICON_TONE: RealIconTone = "natural";
 type Props = SVGProps<SVGSVGElement> & { size?: number };
 
 export function RealIcon({ name, size = 32, className, ...rest }: Props & { name: string }) {
+  const uid = useId().replace(/:/g, "");
   return (
     <svg
       viewBox="0 0 48 48"
@@ -16,7 +17,7 @@ export function RealIcon({ name, size = 32, className, ...rest }: Props & { name
       aria-hidden="true"
       className={className}
       style={{ overflow: "visible", filter: "drop-shadow(0 2px 2px rgba(10,60,56,.18))" }}
-      dangerouslySetInnerHTML={{ __html: realIconMarkup(name, REAL_ICON_TONE) }}
+      dangerouslySetInnerHTML={{ __html: realIconMarkup(name, REAL_ICON_TONE, uid) }}
       {...rest}
     />
   );

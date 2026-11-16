@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
  * from the "ภาพรวม" nav group / floating launcher on desktop, and isn't
  * part of the mobile tab bar for any role per the redesign spec.
  */
-export function MobileBottomNav() {
+/** The tabs this account sees (by role) and whether a tab is the current page. Shared with the page header, which hides its back arrow on a tab. */
+export function useMobileTabs() {
   const pathname = usePathname();
   const view = useSearchParams().get("view");
   const { can, canAny } = useAuth();
@@ -106,6 +107,11 @@ export function MobileBottomNav() {
         ];
 
   const visibleTabs = tabs.filter((t) => t.show);
+  return { visibleTabs, isActive };
+}
+
+export function MobileBottomNav() {
+  const { visibleTabs, isActive } = useMobileTabs();
   const activeIndex = visibleTabs.findIndex((t) => isActive(t.href));
   const count = visibleTabs.length;
 

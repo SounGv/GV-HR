@@ -223,6 +223,7 @@ export function MobileCheckinFlow({
 
   return (
     <div
+      data-gv-fullscreen
       className={cn(
         "fixed inset-0 z-50 flex flex-col overflow-hidden pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] md:hidden",
         onCamera ? "bg-[#0b1414] text-white" : "gv-lg-bg gv-login-scope text-foreground",
@@ -232,7 +233,8 @@ export function MobileCheckinFlow({
         <FlowHeader title={title} stepIndex={activeStepIndex} dark={onCamera} onClose={onClose} />
       )}
 
-      {step === "camera" && !showMap && (
+      {/* The camera step stays mounted under the full map: its <video> element holds the live stream, and a fresh element would stay black. */}
+      {step === "camera" && (
         <CameraStep
           videoRef={cam.videoRef}
           ready={cam.ready}
@@ -253,7 +255,11 @@ export function MobileCheckinFlow({
         />
       )}
 
-      {step === "camera" && showMap && <FullMapView key={mapKey} geo={geo} onBack={() => setShowMap(false)} />}
+      {step === "camera" && showMap && (
+        <div className="absolute inset-0 z-20 bg-background">
+          <FullMapView key={mapKey} geo={geo} onBack={() => setShowMap(false)} />
+        </div>
+      )}
 
       {step === "preview" && photo && <PreviewStep photo={photo} onRetake={() => setStep("camera")} onConfirm={() => submit()} />}
 

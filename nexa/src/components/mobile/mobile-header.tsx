@@ -5,12 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { RBell } from "@/components/shared/real-icons";
+import { useMobileTabs } from "@/components/layout/mobile-bottom-nav";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
 import { previousOf, readTrail } from "./nav-trail";
 
-/** Pages that are a tab of the bottom bar: no back arrow (it led nowhere useful), and the bell sits in the header instead. */
-export const MOBILE_TAB_ROOTS = new Set(["/dashboard", "/employees", "/requests", "/performance", "/profile", "/calendar", "/reports", "/appraisal/tasks"]);
 
 /** The one place the unread count is shown on the phone (the profile tab no longer repeats it). */
 export function MobileBell() {
@@ -44,7 +43,11 @@ export function MobileHeader({
   className?: string;
 }) {
   const router = useRouter();
-  const isTabRoot = MOBILE_TAB_ROOTS.has(usePathname());
+  // A page that is a tab of this account's bottom bar has no back arrow (it led nowhere useful) and carries the bell. The same page opened as a
+  // drill-down from a menu (calendar for a manager, reports for staff) keeps its back arrow.
+  const pathname = usePathname();
+  const { visibleTabs } = useMobileTabs();
+  const isTabRoot = pathname === "/dashboard" || visibleTabs.some((t) => t.href.split("?")[0] === pathname);
   const showBack = (!!backHref || !!onBack) && !isTabRoot;
   const right = trailing ?? (isTabRoot ? <MobileBell /> : null);
 

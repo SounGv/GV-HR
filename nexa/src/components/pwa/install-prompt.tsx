@@ -101,7 +101,8 @@ export function InstallPrompt() {
       if (!k) return;
       // Never cover a field the person is typing into; try again a moment after they leave it.
       const el = document.activeElement;
-      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+      // Nor over a full-screen flow such as the check-in camera.
+      if (document.querySelector("[data-gv-fullscreen]") || (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA"))) {
         timer = window.setTimeout(tryOpen, 1500);
         return;
       }
