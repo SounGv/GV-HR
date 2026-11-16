@@ -40,12 +40,11 @@ export default function LoginPage() {
         <span aria-hidden="true" className="login-glow login-glow-a" />
         <span aria-hidden="true" className="login-glow login-glow-b" />
 
-        <div className="relative">
-          <LogoOnDark height={116} />
-        </div>
 
         <div className="relative my-auto flex items-center gap-10 py-10">
           <div className="min-w-0 flex-1">
+            {/* The company logo and name, with its background removed, sits right above the headline as one block. */}
+            <LogoOnDark height={150} className="mb-7" />
             <h1 className="text-[44px] leading-[1.25] font-bold tracking-[-0.01em] text-balance text-white xl:text-[60px]">
               ทุกเรื่องของทีม
               <span className="mt-1 block">

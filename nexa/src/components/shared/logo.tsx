@@ -68,7 +68,7 @@ export function LogoOnDark({
       src="/gv-logo-on-dark.png"
       alt="Gadget Villa"
       height={height}
-      width={Math.round(height * (720 / 431))}
+      width={Math.round(height * (900 / 530))}
       priority
       className={cn("shrink-0 object-contain", className)}
     />
