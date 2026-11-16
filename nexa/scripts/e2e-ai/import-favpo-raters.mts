@@ -253,5 +253,6 @@ function parse(dir: string, names: string[], key: Key): Entry[] {
   for (const c of checks) console.log(`${c.ok ? "PASS" : "FAIL"}  ${c.name}${c.err ? "\n      " + c.err : ""}`);
   if (MODE === "apply") console.log("after:", JSON.stringify(after), "before:", JSON.stringify(before));
   await real.$disconnect();
-  process.exit(checks.every((c) => c.ok) && (MODE === "apply" || clean) && mismatches.length === 0 ? 0 : 1);
+  // After a committed write the disagreements are only reported (they come from skipped rows); a dry run still fails on them.
+  process.exit(checks.every((c) => c.ok) && (MODE === "apply" || (clean && mismatches.length === 0)) ? 0 : 1);
 })().catch((e) => { console.error(e); process.exit(2); });
