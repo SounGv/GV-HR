@@ -148,7 +148,7 @@ export function MobileCalendarView() {
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
       ) : (
-        <div className="rounded-2xl bg-card p-2.5 shadow-sm">
+        <div className="gv-lg-card p-2.5">
           <div className="mb-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 px-0.5">
             <span className="text-xs font-medium text-muted-foreground">ของฉัน:</span>
             {MY_STATUS_LEGEND.map(({ status, label }) => (
@@ -225,7 +225,7 @@ export function MobileCalendarView() {
         </div>
       )}
 
-      <div className="rounded-2xl bg-card p-3.5 shadow-sm">
+      <div className="gv-lg-card p-3.5">
         <p className="text-sm font-semibold text-foreground">
           {selected ? `รายการวันที่ ${selected.slice(8)} ${THAI_MONTHS[Number(selected.slice(5, 7)) - 1]}` : "เลือกวันที่"}
         </p>

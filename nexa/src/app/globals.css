@@ -1222,3 +1222,110 @@ button.gv-glass:hover {
 .ai-shortcut-spark { display: none; }
 body[data-ticker-bot] .ai-shortcut-bot { display: none; }
 body[data-ticker-bot] .ai-shortcut-spark { display: block; }
+
+/* ───────── Liquid glass for the phone layout (approved mock, 17 Nov 2026) ─────────
+   Real blur only on the page header, the floating tab bar and the round buttons; cards are near-solid white so their text keeps 4.5:1 and
+   mid-range Android phones stay smooth. Without backdrop-filter, or with "reduce transparency", the glass turns into a solid surface. */
+:root {
+  --lg-glass: rgba(255, 255, 255, 0.62);
+  --lg-glass-strong: rgba(255, 255, 255, 0.82);
+  --lg-card: rgba(255, 255, 255, 0.9);
+  --lg-edge: rgba(255, 255, 255, 0.78);
+  --lg-tile: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(217, 243, 239, 0.72));
+  --lg-bg1: #e6f5f2;
+  --lg-bg2: #f3f6f7;
+  --lg-shadow: 0 10px 30px rgba(15, 70, 64, 0.14);
+  --lg-hi: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(255, 255, 255, 0.25), inset 0 0 22px rgba(255, 255, 255, 0.18);
+}
+.dark {
+  --lg-glass: rgba(34, 40, 42, 0.58);
+  --lg-glass-strong: rgba(34, 40, 42, 0.8);
+  --lg-card: rgba(30, 35, 37, 0.92);
+  --lg-edge: rgba(255, 255, 255, 0.14);
+  --lg-tile: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(45, 212, 191, 0.12));
+  --lg-bg1: #0f1d1c;
+  --lg-bg2: #131516;
+  --lg-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --lg-hi: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+.gv-lg {
+  background: var(--lg-glass);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--lg-edge);
+  box-shadow: var(--lg-shadow), var(--lg-hi);
+}
+.gv-lg-top {
+  background: linear-gradient(180deg, var(--lg-glass-strong), var(--lg-glass));
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  border-bottom: 1px solid var(--lg-edge);
+}
+.gv-lg-card {
+  background: var(--lg-card);
+  border: 1px solid var(--lg-edge);
+  border-radius: 22px;
+  box-shadow: 0 6px 20px rgba(15, 70, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.dark .gv-lg-card { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+/* A glass tile behind a realistic icon (menu tiles, list rows). */
+.gv-lg-tile {
+  background: var(--lg-tile);
+  border: 1px solid var(--lg-edge);
+  box-shadow: 0 4px 12px rgba(15, 70, 64, 0.12), inset 0 1px 0 #fff;
+}
+.dark .gv-lg-tile { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18); }
+/* Page ground with two soft teal glows, so the glass has something to bend. */
+.gv-lg-bg {
+  background:
+    radial-gradient(260px 260px at -10% 18%, rgba(20, 184, 166, 0.28), transparent 70%),
+    radial-gradient(300px 300px at 110% 62%, rgba(110, 231, 183, 0.26), transparent 70%),
+    linear-gradient(180deg, var(--lg-bg1), var(--lg-bg2));
+}
+.dark .gv-lg-bg {
+  background:
+    radial-gradient(260px 260px at -10% 18%, rgba(20, 184, 166, 0.2), transparent 70%),
+    radial-gradient(300px 300px at 110% 62%, rgba(45, 212, 191, 0.12), transparent 70%),
+    linear-gradient(180deg, var(--lg-bg1), var(--lg-bg2));
+}
+/* The drop under the active tab: a lens of lit glass that slides with a small overshoot. */
+.gv-lg-drop {
+  background: radial-gradient(120% 150% at 30% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.4) 55%, rgba(13, 148, 136, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 16px rgba(15, 70, 64, 0.18), inset 0 1px 0 #fff, inset 0 -6px 12px rgba(13, 148, 136, 0.12);
+  transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.55, 1);
+}
+.dark .gv-lg-drop {
+  background: radial-gradient(120% 150% at 30% 0%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06) 55%, rgba(45, 212, 191, 0.2));
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gv-lg { background: var(--lg-glass-strong); }
+  .gv-lg-top { background: var(--lg-glass-strong); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .gv-lg, .gv-lg-top { background: var(--lg-glass-strong); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gv-lg-drop { transition: none; }
+}
+/* Inside a phone page (.gv-m): cards become near-solid glass, the page tabs a glass pill. Scoped so desktop is untouched. */
+@media (max-width: 767px) {
+  .gv-m [data-slot="card"] {
+    background: var(--lg-card);
+    border-color: var(--lg-edge);
+    border-radius: 22px;
+    box-shadow: 0 6px 20px rgba(15, 70, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  .dark .gv-m [data-slot="card"] { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+  .gv-m [data-slot="tabs-list"][data-variant="default"] {
+    background: var(--lg-glass);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid var(--lg-edge);
+    border-radius: 999px;
+    box-shadow: var(--lg-shadow), var(--lg-hi);
+  }
+  .gv-m [data-slot="tabs-trigger"] { border-radius: 999px; }
+}

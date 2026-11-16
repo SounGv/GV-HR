@@ -2,38 +2,29 @@
 
 import { useMenuVisibility } from "./use-menu-visibility";
 import Link from "next/link";
-import {
-  Bell,
-  ChevronRight,
-  UserRound,
-  CheckCircle2,
-} from "lucide-react";
+import { ChevronRight, CheckCircle2 } from "lucide-react";
 import { useNotifications } from "@/features/notification/hooks";
 import { useEmployeeEvaluationHistory } from "@/features/campaign/hooks";
 import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { useAuth } from "@/features/auth/auth-context";
 import type { DashboardActions } from "@/features/dashboard/service";
 import { MobileCheckinCard } from "./mobile-checkin-card";
-import { BenefitsIcon, CheckInIcon, ShiftIcon, TimeEditIcon } from "@/components/shared/menu-icons";
 import {
-  LeaveIcon,
-  OvertimeIcon,
-  CalendarIcon,
-  ClipboardIcon,
-  StarIllustrationIcon,
-} from "@/components/shared/illustrated-icons";
+  RApprove, RBell, RCalendarClock, RCalendarDays, RChart, RClipboardList, RClipboardPen, RClock, RGrid, RHandHeart, RPalm, RScan, RTimer,
+} from "@/components/shared/real-icons";
+import { MobileBell } from "./mobile-header";
 
-/** What an employee does most often, rows of three. Each item only shows if the account may use it. */
+/** What an employee does most often, rows of four (the last slot is "ทั้งหมด", the full menu). Each item only shows if the account may use it. */
 /** `id` matches the menu ids in config/mobile-menu.ts, so hiding a menu in "ตั้งค่าเมนู" hides it here too. */
 const QUICK_MENU = [
-  { id: "leave", href: "/leave/new", label: "ขอลา", icon: LeaveIcon, permission: "leave:read" },
-  { id: "overtime", href: "/overtime/new", label: "ขอ OT", icon: OvertimeIcon, permission: "overtime:read" },
+  { id: "leave", href: "/leave/new", label: "ขอลา", icon: RPalm, permission: "leave:read" },
+  { id: "overtime", href: "/overtime/new", label: "ขอ OT", icon: RTimer, permission: "overtime:read" },
   // The attendance page lists the last 30 days of scans, with each day's in and out times.
-  { id: "checkin", href: "/attendance", label: "ประวัติเข้า-ออกงาน", icon: CheckInIcon, permission: "attendance:read" },
-  { id: "timeedit", href: "/attendance/corrections/new", label: "แก้เวลาเข้า-ออก", icon: TimeEditIcon, permission: "attendance:create" },
-  { id: "benefits", href: "/benefits/medical/new", label: "เบิกค่ารักษา", icon: BenefitsIcon, permission: "expense:read" },
-  { id: "shift", href: "/shifts", label: "ตารางกะ", icon: ShiftIcon, permission: "shift:read" },
-  { id: "calendar", href: "/calendar", label: "ปฏิทิน", icon: CalendarIcon, permission: "calendar:read" },
+  { id: "checkin", href: "/attendance", label: "ประวัติเข้า-ออกงาน", icon: RScan, permission: "attendance:read" },
+  { id: "timeedit", href: "/attendance/corrections/new", label: "แก้เวลา", icon: RClock, permission: "attendance:create" },
+  { id: "benefits", href: "/benefits/medical/new", label: "เบิกค่ารักษา", icon: RHandHeart, permission: "expense:read" },
+  { id: "shift", href: "/shifts", label: "ตารางกะ", icon: RCalendarClock, permission: "shift:read" },
+  { id: "calendar", href: "/calendar", label: "ปฏิทิน", icon: RCalendarDays, permission: "calendar:read" },
 ] as const;
 
 export interface MobileDashboardSnapshot {
@@ -75,7 +66,6 @@ export function MobileDashboardView({
   const { user, can } = useAuth();
   const { isVisible: isMenuVisible } = useMenuVisibility();
   const { data: notifData } = useNotifications();
-  const unreadCount = notifData?.data?.unread ?? 0;
   const hrNotifCount = notifData?.data?.items.filter((n) => !n.read && n.category === "hr").length ?? 0;
 
   const { items: pending, isLoading: evalLoading } = useMyPendingAppraisalTasks();
@@ -103,10 +93,10 @@ export function MobileDashboardView({
   const hasTodo = toApprove > 0 || actions.myPending > 0 || pendingCount > 0 || hrNotifCount > 0;
 
   return (
-    <div className="min-h-full bg-background md:hidden">
+    <div className="gv-m gv-lg-bg min-h-full md:hidden">
       {/* Header — plain white background, no dark card here: the Attendance
           Card below is deliberately the only high-emphasis surface on the page. */}
-      <div className="flex items-start justify-between gap-3 bg-gv-bg px-4 pt-4 pb-3">
+      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gv-dark-green">GV ONE HR</p>
           <p className="mt-1 truncate text-lg font-semibold text-foreground">
@@ -115,25 +105,7 @@ export function MobileDashboardView({
           <p className="mt-0.5 text-xs text-muted-foreground">วันนี้ {today}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/notifications"
-            className="relative flex size-10 items-center justify-center rounded-full bg-card text-warning shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
-            aria-label="แจ้งเตือน"
-          >
-            <Bell className="size-[18px]" strokeWidth={3} />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex min-w-4.5 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-gv-bg">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </Link>
-          <Link
-            href="/profile"
-            className="flex size-10 items-center justify-center rounded-full bg-tone-profile-bg text-tone-profile-fg shadow-[0_1px_2px_rgba(15,27,12,0.06),0_2px_6px_rgba(15,27,12,0.08)] ring-1 ring-border/60 active:scale-95"
-            aria-label="โปรไฟล์"
-          >
-            <UserRound className="size-[18px]" strokeWidth={3} />
-          </Link>
+          <MobileBell />
         </div>
       </div>
 
@@ -145,18 +117,18 @@ export function MobileDashboardView({
         <section className="space-y-2">
           <h2 className="px-1 text-[13px] font-bold text-foreground">ต้องทำวันนี้</h2>
           {evalLoading ? (
-            <div className="h-20 animate-pulse rounded-2xl bg-card" />
+            <div className="h-20 animate-pulse gv-lg-card" />
           ) : !hasTodo ? (
-            <div className="flex items-center gap-2.5 rounded-2xl bg-card p-3.5 text-muted-foreground shadow-sm">
+            <div className="flex items-center gap-2.5 gv-lg-card p-3.5 text-muted-foreground">
               <CheckCircle2 className="size-5 shrink-0 text-icon-chip-fg" strokeWidth={3} />
               <p className="text-sm">ไม่มีรายการที่ต้องทำวันนี้</p>
             </div>
           ) : (
-            <div className="divide-y divide-gv-border overflow-hidden rounded-2xl bg-card shadow-sm">
+            <div className="divide-y divide-gv-border overflow-hidden gv-lg-card">
               {toApprove > 0 && (
                 <Link href="/requests?view=approvals" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
                   <TodoIcon count={toApprove}>
-                    <ClipboardIcon size={32} />
+                    <RApprove size={34} />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">รอคุณอนุมัติ</p>
@@ -168,7 +140,7 @@ export function MobileDashboardView({
               {actions.myPending > 0 && (
                 <Link href="/requests" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
                   <TodoIcon count={actions.myPending}>
-                    <ClipboardIcon size={32} />
+                    <RClipboardList size={34} />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">คำขอของฉันที่รออนุมัติ</p>
@@ -185,7 +157,7 @@ export function MobileDashboardView({
                   className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60"
                 >
                   <TodoIcon count={pendingCount}>
-                    <StarIllustrationIcon size={32} />
+                    <RClipboardPen size={34} />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">มีการประเมินที่ต้องทำ</p>
@@ -197,7 +169,7 @@ export function MobileDashboardView({
               {hrNotifCount > 0 && (
                 <Link href="/notifications" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
                   <TodoIcon count={hrNotifCount}>
-                    <Bell size={28} className="text-warning" strokeWidth={2} />
+                    <RBell size={32} />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">แจ้งเตือนจากหัวหน้า/HR</p>
@@ -215,17 +187,17 @@ export function MobileDashboardView({
             profile drawer, unchanged. */}
         <section className="space-y-2">
           <h2 className="px-1 text-[13px] font-bold text-foreground">เมนูด่วน</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {QUICK_MENU.filter((item) => can(item.permission) && isMenuVisible(item.id)).map((item) => (
+          <div className="gv-lg-card grid grid-cols-4 gap-x-1.5 gap-y-3 p-3">
+            {[...QUICK_MENU.filter((item) => can(item.permission) && isMenuVisible(item.id)), { id: "all", href: "/services", label: "ทั้งหมด", icon: RGrid, permission: "" }].map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-sm active:scale-95 active:bg-icon-chip-bg/60"
+                className="flex min-h-11 flex-col items-center gap-1.5 rounded-2xl text-center active:scale-95"
               >
-                <span className="flex size-11 items-center justify-center">
-                  <item.icon size={32} />
+                <span className="gv-lg-tile flex size-[58px] items-center justify-center rounded-[20px]">
+                  <item.icon size={40} />
                 </span>
-                <span className="text-[12px] font-medium text-foreground">{item.label}</span>
+                <span className="text-xs leading-snug font-semibold text-foreground">{item.label}</span>
               </Link>
             ))}
           </div>
@@ -235,7 +207,7 @@ export function MobileDashboardView({
         <section className="space-y-2">
           <h2 className="px-1 text-[13px] font-bold text-foreground">สรุปของฉัน</h2>
           <Link href="/leave" className="block active:scale-[0.99]">
-            <div className="rounded-2xl bg-card p-3 shadow-sm">
+            <div className="gv-lg-card p-3">
               <p className="text-xs text-muted-foreground">วันลาคงเหลือ</p>
               {leaveByType.length === 0 ? (
                 <p className="mt-1 text-sm font-bold text-foreground">—</p>
@@ -255,10 +227,10 @@ export function MobileDashboardView({
             </div>
           </Link>
           <div className="grid grid-cols-2 gap-2">
-            <SummaryTile href="/requests" icon={ClipboardIcon} label="คำขอของฉัน" value={`${actions.myTotal} รายการ`} />
+            <SummaryTile href="/requests" icon={RClipboardList} label="คำขอของฉัน" value={`${actions.myTotal} รายการ`} />
             <SummaryTile
               href={user.employee ? `/employees/${user.employee.id}/evaluation-history` : "/performance"}
-              icon={StarIllustrationIcon}
+              icon={RChart}
               label="คะแนนการประเมิน"
               value={scoreLoading ? "…" : latestScore != null ? `${latestScore.toFixed(1)} / 5` : "—"}
               disabled={!canViewEvalHistory}
@@ -292,19 +264,17 @@ function SummaryTile({
   label,
   value,
   disabled,
-  tone = "text-icon-chip-fg",
 }: {
   href: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{ size?: number }>;
   label: string;
   value: string;
   disabled?: boolean;
-  tone?: string;
 }) {
   const inner = (
-    <div className="flex h-full flex-col gap-1.5 rounded-2xl bg-card p-3 shadow-sm">
-      <span className={`flex size-7 items-center justify-center ${tone}`}>
-        <Icon className="size-5" strokeWidth={1.75} />
+    <div className="flex h-full flex-col gap-1.5 gv-lg-card p-3">
+      <span className="flex size-8 items-center justify-center">
+        <Icon size={30} />
       </span>
       <p className="truncate text-xs text-muted-foreground">{label}</p>
       <p className="truncate text-sm font-bold text-foreground">{value}</p>

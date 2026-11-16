@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Check, ClipboardCheck, ChevronRight, Clock, ListChecks } from "lucide-react";
 
 import { MobileScreen } from "./mobile-screen";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useQuery } from "@tanstack/react-query";
 import { useReviews } from "@/features/performance/hooks";
@@ -25,13 +26,33 @@ function fmtDate(iso: string) {
  * with an equivalent "งานที่ต้องประเมิน" tab.
  */
 export function MobilePerformanceView() {
+  const { data } = useQuery({ queryKey: appraisalRoundKeys.tasks, queryFn: fetchTasks, retry: false, staleTime: 30_000 });
+  const todoCount = (data?.data ?? []).filter((t) => t.roundStatus === "OPEN" && t.status !== "SUBMITTED").length;
+  const hasTasks = (data?.data ?? []).some((t) => t.roundStatus === "OPEN");
   return (
-    <MobileScreen title="ประเมินผล" backHref="/dashboard" contentClassName="space-y-4 p-4">
-      <PendingSection />
-      <div className="space-y-3">
-        <h2 className="text-base font-semibold text-foreground">ผลประเมินของฉัน</h2>
+    <MobileScreen title="ประเมิน" backHref="/dashboard" contentClassName="space-y-4 p-4">
+      {hasTasks ? (
+        // Two tabs instead of two stacked headings: the work waiting comes first, my own results are one tap away.
+        <Tabs defaultValue="todo" className="space-y-4">
+          <TabsList className="w-full group-data-horizontal/tabs:h-[54px]">
+            <TabsTrigger value="todo" className="gap-1.5">
+              งานที่ต้องทำ
+              {todoCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground">{todoCount}</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="mine">ผลของฉัน</TabsTrigger>
+          </TabsList>
+          <TabsContent value="todo">
+            <PendingSection />
+          </TabsContent>
+          <TabsContent value="mine">
+            <MyReviews />
+          </TabsContent>
+        </Tabs>
+      ) : (
         <MyReviews />
-      </div>
+      )}
     </MobileScreen>
   );
 }
@@ -139,7 +160,7 @@ function AssignmentRow({ item, days }: { item: TaskItem; days: number }) {
   return (
     <Link
       href={`/appraisal/tasks/${item.id}`}
-      className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-sm ring-1 ring-border/60 active:bg-muted"
+      className="flex items-center gap-3 gv-lg-card p-3.5 active:bg-muted"
     >
       <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
         {initials || "?"}

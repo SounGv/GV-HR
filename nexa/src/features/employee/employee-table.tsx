@@ -370,7 +370,7 @@ export function EmployeeTable({ summary }: { summary?: EmployeeSummary } = {}) {
                 <li key={e.id}>
                   <Link
                     href={`/employees/${e.id}`}
-                    className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-sm ring-1 ring-border/60 active:bg-muted"
+                    className="gv-lg-card flex items-center gap-3 p-3.5 active:bg-muted"
                   >
                     <Avatar className="size-12 shrink-0">
                       {e.avatarUrl && <AvatarImage src={e.avatarUrl} alt="" />}

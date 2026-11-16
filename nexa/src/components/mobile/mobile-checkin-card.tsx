@@ -82,7 +82,7 @@ export function MobileCheckinCard() {
 
   return (
     <>
-      <section className="relative overflow-hidden rounded-3xl bg-accent p-5 text-foreground ring-1 ring-border">
+      <section className="gv-lg-card relative overflow-hidden bg-gradient-to-br from-card via-card to-accent p-5 text-foreground">
         <div className="relative flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="size-1.5 rounded-full bg-[#0d9488]" />
@@ -161,7 +161,7 @@ export function MobileCheckinCard() {
         </div>
       </section>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-card p-3.5 text-center shadow-sm">
+      <div className="gv-lg-card mt-3 grid grid-cols-3 gap-2 p-3.5 text-center">
         <div>
           <p className="text-xs text-muted-foreground">เวลาเข้า</p>
           <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">{fmtTime(record?.clockInAt)}</p>

@@ -3,8 +3,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
-import { Bell, Globe, Pencil, ShieldCheck, LogOut, Wallet, ChevronRight } from "lucide-react";
+import type { ComponentType } from "react";
+import { LogOut, ChevronRight } from "lucide-react";
+import { RBell, RGlobe, RPencil, RReceipt, RShield } from "@/components/shared/real-icons";
 import { useAuth } from "@/features/auth/auth-context";
 import { formatCurrency, loginIdentifier, displayName } from "@/lib/format";
 import { useMyProfile } from "@/features/profile/hooks";
@@ -12,16 +13,11 @@ import { usePayroll } from "@/features/payroll/hooks";
 import { MobileScreen } from "./mobile-screen";
 import { MobileModuleCard } from "./mobile-ui";
 
-/** Same colored icon-chip treatment as the desktop sidebar's group headers
- * (see app-sidebar.tsx's `group.chipColor`) — gives each profile submenu
- * row its own accent instead of a flat, same-color icon for everything. */
-function MenuIconChip({ color, icon: Icon }: { color: string; icon: LucideIcon }) {
+/** A realistic icon on a small glass disc (one look for every profile row; the old chips used five colours). */
+function MenuIconChip({ icon: Icon }: { icon: ComponentType<{ size?: number }> }) {
   return (
-    <span
-      className="flex size-8 shrink-0 items-center justify-center rounded-[8px]"
-      style={{ background: color }}
-    >
-      <Icon className="size-4 text-white" strokeWidth={2.25} />
+    <span className="gv-lg-tile flex size-11 shrink-0 items-center justify-center rounded-full">
+      <Icon size={30} />
     </span>
   );
 }
@@ -72,21 +68,21 @@ export function MobileProfileView() {
       </MobileModuleCard>
 
       <MobileModuleCard className="overflow-hidden p-0">
-        <div className="flex justify-between border-b border-border px-3.5 py-3 text-[13px]">
+        <div className="flex justify-between border-b border-border px-3.5 py-3 text-sm">
           <span className="shrink-0 text-muted-foreground">ที่อยู่</span>
           <span className="ml-3 truncate text-right">{addressSummary ?? "—"}</span>
         </div>
-        <div className="flex justify-between border-b border-border px-3.5 py-3 text-[13px]">
+        <div className="flex justify-between border-b border-border px-3.5 py-3 text-sm">
           <span className="shrink-0 text-muted-foreground">ผู้ติดต่อฉุกเฉิน</span>
           <span className="ml-3 truncate text-right">{emergencyContact ?? "—"}</span>
         </div>
         {user.email && (
-          <div className="flex justify-between border-b border-border px-3.5 py-3 text-[13px]">
+          <div className="flex justify-between border-b border-border px-3.5 py-3 text-sm">
             <span className="text-muted-foreground">อีเมล</span>
             <span>{user.email}</span>
           </div>
         )}
-        <div className="flex justify-between px-3.5 py-3 text-[13px]">
+        <div className="flex justify-between px-3.5 py-3 text-sm">
           <span className="text-muted-foreground">ชื่อผู้ใช้</span>
           <span>{user.username ?? "—"}</span>
         </div>
@@ -94,9 +90,9 @@ export function MobileProfileView() {
 
       {canPayroll && (
         <MobileModuleCard className="overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">
+          <div className="flex items-center justify-between border-b border-border px-3.5 py-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-2.5">
-              <MenuIconChip color="#8B5CF6" icon={Wallet} />
+              <MenuIconChip icon={RReceipt} />
               รายได้และสวัสดิการ{latestPayslip ? ` · ${latestPayslip.periodLabel}` : ""}
             </span>
           </div>
@@ -105,21 +101,21 @@ export function MobileProfileView() {
               {latestPayslip.earnings.map((line) => (
                 <div
                   key={line.label}
-                  className="flex justify-between border-b border-border px-3.5 py-2.5 text-[13px]"
+                  className="flex justify-between border-b border-border px-3.5 py-2.5 text-sm"
                 >
                   <span className="text-muted-foreground">{line.label}</span>
                   <span>{formatCurrency(line.amount)}</span>
                 </div>
               ))}
               {latestPayslip.deductions.length > 0 && (
-                <div className="flex justify-between border-b border-border px-3.5 py-2.5 text-[13px]">
+                <div className="flex justify-between border-b border-border px-3.5 py-2.5 text-sm">
                   <span className="text-muted-foreground">รายการหักรวม</span>
                   <span className="text-destructive">-{formatCurrency(latestPayslip.totalDeductions)}</span>
                 </div>
               )}
               <Link
                 href="/payroll"
-                className="flex items-center justify-between px-3.5 py-3 text-[13px] font-semibold active:bg-muted"
+                className="flex items-center justify-between px-3.5 py-3 text-sm font-semibold active:bg-muted"
               >
                 <span>เงินเดือนสุทธิ · ดูสลิปเงินเดือน</span>
                 <span className="flex items-center gap-1 text-foreground">
@@ -129,7 +125,7 @@ export function MobileProfileView() {
               </Link>
             </>
           ) : (
-            <Link href="/payroll" className="flex items-center justify-between px-3.5 py-3 text-[13px] active:bg-muted">
+            <Link href="/payroll" className="flex items-center justify-between px-3.5 py-3 text-sm active:bg-muted">
               <span>ดูสลิปเงินเดือน</span>
               <ChevronRight className="size-4 text-muted-foreground" />
             </Link>
@@ -140,35 +136,36 @@ export function MobileProfileView() {
       <MobileModuleCard className="overflow-hidden p-0">
         <a
           href="#profile-form"
-          className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
+          className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-sm active:bg-muted"
         >
-          <MenuIconChip color="#6366F1" icon={Pencil} />
+          <MenuIconChip icon={RPencil} />
           แก้ไขโปรไฟล์ / รูปประจำตัว
         </a>
         <a
           href="#security"
-          className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
+          className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-sm active:bg-muted"
         >
-          <MenuIconChip color="#22A55B" icon={ShieldCheck} />
+          <MenuIconChip icon={RShield} />
           ความปลอดภัย (รหัสผ่าน, 2FA)
         </a>
         <Link
           href="/notifications"
-          className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-[13px] active:bg-muted"
+          className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-sm active:bg-muted"
         >
-          <MenuIconChip color="#F5A524" icon={Bell} />
+          <MenuIconChip icon={RBell} />
           การแจ้งเตือน
         </Link>
-        <div className="flex items-center gap-2.5 px-3.5 py-3 text-[13px] text-muted-foreground">
-          <MenuIconChip color="#14B8A6" icon={Globe} />
-          ภาษา — ไทย
+        <div className="flex items-center gap-2.5 px-3.5 py-3 text-sm">
+          <MenuIconChip icon={RGlobe} />
+          <span className="flex-1">ภาษา</span>
+          <span className="font-semibold text-foreground">ไทย</span>
         </div>
       </MobileModuleCard>
 
       <button
         type="button"
         onClick={handleLogout}
-        className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-destructive/20 bg-destructive-muted px-4 py-3 text-[13px] font-bold text-destructive active:scale-[0.99]"
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-destructive/20 bg-destructive-muted px-4 py-3 text-sm font-bold text-destructive active:scale-[0.99]"
       >
         <LogOut className="size-4" />
         ออกจากระบบ

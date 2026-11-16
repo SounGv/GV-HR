@@ -58,7 +58,7 @@ export function MobileAttendanceHistory() {
             key={r.id}
             type="button"
             onClick={() => setSelected(r)}
-            className="w-full rounded-xl bg-card p-3.5 text-left shadow-sm active:bg-muted"
+            className="w-full gv-lg-card p-3.5 text-left active:bg-muted"
           >
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold text-foreground">{fmtDate(r.workDate)}</p>

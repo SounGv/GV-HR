@@ -33,7 +33,7 @@ export function MobileMenuTileGrid({ groups, hrStartIndex }: { groups: MobileMen
             <span className="h-3.5 w-1 shrink-0 rounded-full bg-[#0d9488]" />
             {group.title}
           </h2>
-          <div className="rounded-2xl bg-card p-3 shadow-sm ring-1 ring-border/60">
+          <div className="gv-lg-card p-3">
             <div className="grid grid-cols-4 gap-x-1 gap-y-4">
               {group.items.map((item) => (
                 <Link
@@ -41,10 +41,10 @@ export function MobileMenuTileGrid({ groups, hrStartIndex }: { groups: MobileMen
                   href={item.href}
                   className="flex flex-col items-center gap-2 rounded-xl px-0.5 py-1 text-center transition active:scale-95 active:bg-muted"
                 >
-                  <span className="flex size-[52px] items-center justify-center rounded-2xl border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
-                    <item.icon size={36} />
+                  <span className="gv-lg-tile flex size-[58px] items-center justify-center rounded-[20px]">
+                    <item.icon size={40} />
                   </span>
-                  <span className="line-clamp-2 text-[12.5px] font-semibold leading-tight text-foreground">
+                  <span className="line-clamp-2 text-xs font-semibold leading-snug text-foreground">
                     {item.label}
                   </span>
                 </Link>

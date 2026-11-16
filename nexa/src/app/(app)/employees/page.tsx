@@ -17,22 +17,22 @@ export default async function EmployeesPage() {
       <PageHeader title="รายชื่อพนักงาน" />
 
       {/* Phones and narrow windows: one compact line. On a wide screen the same numbers sit in the filter row of the table. */}
-      <dl className="flex flex-wrap gap-x-5 gap-y-1 rounded-2xl bg-card px-4 py-3 text-sm shadow-sm ring-1 ring-border/60 lg:hidden">
+      <dl className="gv-lg-card flex flex-wrap gap-x-4 gap-y-0.5 px-4 py-2 text-xs lg:hidden">
         <div className="flex items-baseline gap-1.5">
           <dt className="text-muted-foreground">ทั้งหมด</dt>
-          <dd className="text-lg font-semibold tabular-nums">{s.headcount}</dd>
+          <dd className="text-base font-semibold tabular-nums">{s.headcount}</dd>
         </div>
         <div className="flex items-baseline gap-1.5">
           <dt className="text-muted-foreground">ปฏิบัติงาน</dt>
-          <dd className="text-lg font-semibold tabular-nums">{s.active}</dd>
+          <dd className="text-base font-semibold tabular-nums">{s.active}</dd>
         </div>
         <div className="flex items-baseline gap-1.5">
           <dt className="text-muted-foreground">ลางาน</dt>
-          <dd className="text-lg font-semibold tabular-nums">{s.onLeave}</dd>
+          <dd className="text-base font-semibold tabular-nums">{s.onLeave}</dd>
         </div>
         <div className="flex items-baseline gap-1.5">
           <dt className="text-muted-foreground">เข้าใหม่เดือนนี้</dt>
-          <dd className="text-lg font-semibold tabular-nums">{s.newThisMonth}</dd>
+          <dd className="text-base font-semibold tabular-nums">{s.newThisMonth}</dd>
         </div>
       </dl>
 

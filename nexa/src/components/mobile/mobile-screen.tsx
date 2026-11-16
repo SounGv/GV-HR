@@ -25,7 +25,7 @@ export function MobileScreen({
   contentClassName?: string;
 }) {
   return (
-    <div className={cn("flex min-h-full flex-col bg-background md:hidden", className)}>
+    <div className={cn("gv-m gv-lg-bg flex min-h-full flex-col md:hidden", className)}>
       <MobileHeader title={title} backHref={backHref} preferHistory={preferHistory} onBack={onBack} trailing={headerTrailing} />
       {/* Scrolls on its own below the header, so sticky rows inside stick at its top (see stickyTabsRow). */}
       <div className={cn("flex-1 overflow-y-auto [--gv-sticky-top:0px]", contentClassName)}>{children}</div>

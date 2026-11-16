@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus, Check, X, CalendarDays, Loader2, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,8 +31,10 @@ import {
 } from "@/features/requests/approval-queue";
 
 export function MobileRequestsView({ defaultTab = "me" }: { defaultTab?: "me" | "approvals" }) {
+  const { canAny } = useAuth();
+  const canApprove = canAny(["leave:approve", "leave:manage", "overtime:approve", "overtime:manage", "attendance:approve", "attendance:manage"]);
   return (
-    <MobileScreen title="คำขอ" contentClassName="p-4">
+    <MobileScreen title={canApprove ? "อนุมัติ" : "คำขอ"} contentClassName="p-4">
       <RequestsBody defaultTab={defaultTab} />
     </MobileScreen>
   );
@@ -52,20 +55,26 @@ function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
   const pendingCount =
     (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0) + (correctionPendingQ.data?.data.length ?? 0);
 
+  const router = useRouter();
   return (
-    <Tabs defaultValue={canApprove ? (hasEmployee ? defaultTab : "approvals") : "me"} className="space-y-4">
+    <Tabs
+      defaultValue={canApprove ? (hasEmployee ? defaultTab : "approvals") : "me"}
+      // The address follows the tab, so the bottom bar lights "อนุมัติ" only on the queue and a refresh stays where the person was.
+      onValueChange={(v) => canApprove && router.replace(v === "approvals" ? "/requests?view=approvals" : "/requests", { scroll: false })}
+      className="space-y-4"
+    >
       <TabsList className="w-full group-data-horizontal/tabs:h-[54px]">
-        <TabsTrigger value="me">ของฉัน</TabsTrigger>
         {canApprove && (
           <TabsTrigger value="approvals" className="gap-1.5">
             รออนุมัติ
             {pendingCount > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold text-destructive-foreground">
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground">
                 {pendingCount > 9 ? "9+" : pendingCount}
               </span>
             )}
           </TabsTrigger>
         )}
+        <TabsTrigger value="me">{canApprove ? "คำขอของฉัน" : "ของฉัน"}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="me" className="space-y-4">
@@ -91,8 +100,9 @@ function MyRequests() {
   const cancelOt = useCancelOvertime();
   const cancelCorrection = useCancelAttendanceCorrection();
   const [target, setTarget] = useState<ReqItem | null>(null);
+  const [showCancelled, setShowCancelled] = useState(false);
 
-  const items = useMemo<ReqItem[]>(() => {
+  const allItems = useMemo<ReqItem[]>(() => {
     const leave: ReqItem[] = (leaveQ.data?.data ?? []).map((r) => ({ kind: "leave", request: r }));
     const ot: ReqItem[] = (otQ.data?.data ?? []).map((r) => ({ kind: "ot", request: r }));
     const correction: ReqItem[] = (correctionQ.data?.data ?? []).map((r) => ({ kind: "correction", request: r }));
@@ -100,6 +110,9 @@ function MyRequests() {
       (a, b) => new Date(b.request.createdAt).getTime() - new Date(a.request.createdAt).getTime(),
     );
   }, [leaveQ.data, otQ.data, correctionQ.data]);
+  // Withdrawn requests crowded out the live ones; they stay one tap away.
+  const cancelledCount = allItems.filter((i) => i.request.status === "CANCELLED").length;
+  const items = showCancelled ? allItems : allItems.filter((i) => i.request.status !== "CANCELLED");
 
   async function confirmCancel() {
     if (!target) return;
@@ -149,6 +162,16 @@ function MyRequests() {
         <EmptyState icon={CalendarDays} title="ยังไม่มีคำขอ" description="เริ่มต้นด้วยการยื่นคำขอลา, OT หรือแก้ไขเวลา" />
       ) : (
         <div className="space-y-2">
+          {cancelledCount > 0 && (
+            <button
+              type="button"
+              aria-pressed={showCancelled}
+              onClick={() => setShowCancelled((v) => !v)}
+              className="inline-flex min-h-11 items-center rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground aria-pressed:border-transparent aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+            >
+              {showCancelled ? "ซ่อนที่ยกเลิก" : `แสดงที่ยกเลิก (${cancelledCount})`}
+            </button>
+          )}
           {items.map((item) => (
             <Card key={`${item.kind}-${item.request.id}`} className="flex-row items-center justify-between gap-3 p-4">
               <Link href={detailHref(item)} className="min-w-0 flex-1">
