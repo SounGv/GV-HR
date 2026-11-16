@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, Loader2, MapPin, Maximize2, RotateCcw, SwitchCamera, X, Zap, ZapOff } from "lucide-react";
+import { AlertTriangle, Camera, Check, CheckCircle2, Loader2, MapPin, Maximize2, RotateCcw, SwitchCamera, X, Zap, ZapOff } from "lucide-react";
 import { TileMap, type LatLng } from "@/components/shared/tile-map";
 import { cn } from "@/lib/utils";
 import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/api/client";
 import { useCameraStream, type CameraFacing } from "@/features/attendance/use-camera-stream";
 import { useClockIn, useClockOut, useToday } from "@/features/attendance/hooks";
 
-type Step = "camera" | "preview" | "processing" | "offsite" | "success" | "error";
+type Step = "map" | "camera" | "preview" | "processing" | "offsite" | "success" | "error";
 
 interface Coords {
   lat: number;
@@ -21,9 +21,9 @@ interface Coords {
 const PHOTO_MAX_SIDE = 1280;
 
 const STEPS = [
-  { key: "camera", label: "กล้อง" },
+  { key: "map", label: "ตำแหน่ง" },
+  { key: "camera", label: "ถ่ายรูป" },
   { key: "preview", label: "ยืนยัน" },
-  { key: "gps", label: "GPS" },
   { key: "save", label: "บันทึก" },
 ] as const;
 
@@ -50,7 +50,7 @@ export function MobileCheckinFlow({
   const clockIn = useClockIn();
   const clockOut = useClockOut();
 
-  const [step, setStep] = useState<Step>(skipCapture ? "processing" : "camera");
+  const [step, setStep] = useState<Step>(skipCapture ? "processing" : "map");
   const [saveStage, setSaveStage] = useState<"gps" | "save">("gps");
   const [photo, setPhoto] = useState<string | null>(null);
   const [torchOn, setTorchOn] = useState(false);
@@ -69,8 +69,6 @@ export function MobileCheckinFlow({
   } | null>(null);
 
   const [facing, setFacing] = useState<CameraFacing>("environment");
-  const [showMap, setShowMap] = useState(false);
-  const [mapKey, setMapKey] = useState(0);
   const cam = useCameraStream(step === "camera" && !skipCapture, facing, { sharp: true });
   const submittingRef = useRef(false);
 
@@ -209,7 +207,7 @@ export function MobileCheckinFlow({
   }
 
   const title = mode === "in" ? "ลงเวลาเข้างาน" : "ลงเวลาออกงาน";
-  const activeStepIndex = step === "camera" ? 0 : step === "preview" ? 1 : step === "processing" ? (saveStage === "gps" ? 2 : 3) : 3;
+  const activeStepIndex = step === "map" ? 0 : step === "camera" ? 1 : step === "preview" ? 2 : 3;
   const onCamera = step === "camera" || step === "preview";
   const distance = coords && hasGeofence ? distanceMeters(coords.lat, coords.lng, branch!.lat!, branch!.lng!) : null;
   const geo: Geo = {
@@ -229,11 +227,13 @@ export function MobileCheckinFlow({
         onCamera ? "bg-[#0b1414] text-white" : "gv-lg-bg gv-login-scope text-foreground",
       )}
     >
-      {(onCamera || step === "processing" || step === "error") && !showMap && (
+      {(onCamera || step === "processing" || step === "error") && (
         <FlowHeader title={title} stepIndex={activeStepIndex} dark={onCamera} onClose={onClose} />
       )}
 
-      {/* The camera step stays mounted under the full map: its <video> element holds the live stream, and a fresh element would stay black. */}
+      {/* First screen: the whole map and one button. The camera only opens (and asks for permission) when the person presses it. */}
+      {step === "map" && <FullMapView geo={geo} stepIndex={activeStepIndex} onClose={onClose} onNext={() => setStep("camera")} />}
+
       {step === "camera" && (
         <CameraStep
           videoRef={cam.videoRef}
@@ -248,17 +248,8 @@ export function MobileCheckinFlow({
           onCapture={capture}
           onSkip={() => submit()}
           geo={geo}
-          onOpenMap={() => {
-            setMapKey((k) => k + 1);
-            setShowMap(true);
-          }}
+          onOpenMap={() => setStep("map")}
         />
-      )}
-
-      {step === "camera" && showMap && (
-        <div className="absolute inset-0 z-20 bg-background">
-          <FullMapView key={mapKey} geo={geo} onBack={() => setShowMap(false)} />
-        </div>
       )}
 
       {step === "preview" && photo && <PreviewStep photo={photo} onRetake={() => setStep("camera")} onConfirm={() => submit()} />}
@@ -346,46 +337,6 @@ function FlowHeader({ title, stepIndex, dark, onClose }: { title: string; stepIn
   );
 }
 
-/** Branch name, how far the person is and whether that is inside the circle, as small chips drawn on a map. */
-function MapChips({ geo }: { geo: Geo }) {
-  const inside = geo.distance != null && geo.radius != null ? geo.distance <= geo.radius : null;
-  const chip = "absolute z-10 inline-flex min-h-[30px] items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-[#131516] shadow-md";
-  return (
-    <>
-      {geo.branchAt && (
-        <span className={cn(chip, "top-2.5 left-2.5")}>
-          <MapPin className="size-4" aria-hidden="true" /> {geo.branchName ?? "สาขา"}
-          {geo.radius != null ? ` · รัศมี ${Math.round(geo.radius).toLocaleString("th-TH")} ม.` : ""}
-        </span>
-      )}
-      <span
-        role="status"
-        aria-live="polite"
-        className={cn(
-          chip,
-          "bottom-2.5 left-2.5",
-          inside === true ? "text-[#17774a]" : inside === false ? "text-[#b42318]" : geo.gpsError ? "text-[#8a6100]" : "",
-        )}
-      >
-        {inside === true ? (
-          <CheckCircle2 className="size-4" aria-hidden="true" />
-        ) : inside === false || geo.gpsError ? (
-          <AlertTriangle className="size-4" aria-hidden="true" />
-        ) : (
-          <MapPin className="size-4" aria-hidden="true" />
-        )}
-        {geo.me
-          ? geo.distance != null
-            ? `ห่าง ${Math.round(geo.distance).toLocaleString("th-TH")} ม. ${inside ? "ในพื้นที่" : "นอกพื้นที่"}`
-            : "GPS พร้อม"
-          : geo.gpsError
-            ? "หาตำแหน่งไม่ได้"
-            : "กำลังหาตำแหน่ง…"}
-      </span>
-    </>
-  );
-}
-
 /** Both the branch circle and the person in view when they are known; otherwise whichever one exists. */
 function mapProps(geo: Geo) {
   const center = geo.me && geo.branchAt ? { lat: (geo.me.lat + geo.branchAt.lat) / 2, lng: (geo.me.lng + geo.branchAt.lng) / 2 } : (geo.branchAt ?? geo.me);
@@ -427,7 +378,6 @@ function CameraStep({
   geo: Geo;
   onOpenMap: () => void;
 }) {
-  const mp = mapProps(geo);
   return (
     <div className="absolute inset-0 overflow-hidden">
       <video ref={videoRef} playsInline muted className={cn("absolute inset-0 size-full object-cover", facing === "user" && "-scale-x-100")} />
@@ -454,30 +404,32 @@ function CameraStep({
         <span className="absolute right-0 bottom-0 size-9 rounded-br-[18px] border-r-[3px] border-b-[3px] border-[#5eead4]" />
       </div>
 
-      {mp.center ? (
-        <div className={cn(CAM_GLASS, "absolute inset-x-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-10 h-[176px] rounded-[28px] p-[5px]")}>
-          <TileMap center={mp.center} zoom={18} fitPoints={mp.fitPoints} fence={mp.fence} pin={mp.pin} me={mp.me} className="size-full rounded-[23px]">
-            <MapChips geo={geo} />
-            <button
-              type="button"
-              onClick={onOpenMap}
-              aria-label="ขยายแผนที่เต็มจอ"
-              className="absolute top-2 right-2 z-10 flex size-10 items-center justify-center rounded-full bg-white/90 text-[#131516] shadow-md active:scale-95"
-            >
-              <Maximize2 className="size-[18px]" />
-            </button>
-          </TileMap>
-        </div>
-      ) : (
-        <div
-          role="status"
-          aria-live="polite"
-          className={cn(CAM_GLASS, "absolute top-[calc(env(safe-area-inset-top)+4.75rem)] left-1/2 z-10 inline-flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold")}
-        >
+      <button
+        type="button"
+        onClick={onOpenMap}
+        aria-label="กลับไปดูแผนที่"
+        className={cn(CAM_GLASS, "absolute top-[calc(env(safe-area-inset-top)+4.75rem)] left-1/2 z-10 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-full px-4 text-sm font-semibold active:scale-95")}
+      >
+        {geo.distance != null && geo.radius != null ? (
+          geo.distance <= geo.radius ? (
+            <CheckCircle2 className="size-4 text-[#9ff0d3]" aria-hidden="true" />
+          ) : (
+            <AlertTriangle className="size-4 text-[#ffd37a]" aria-hidden="true" />
+          )
+        ) : (
           <MapPin className="size-4" aria-hidden="true" />
-          {geo.gpsError ? "หาตำแหน่งไม่ได้" : "กำลังหาตำแหน่ง…"}
-        </div>
-      )}
+        )}
+        <span role="status" aria-live="polite">
+          {geo.me
+            ? geo.distance != null && geo.radius != null
+              ? `ห่าง ${Math.round(geo.distance).toLocaleString("th-TH")} ม. ${geo.distance <= geo.radius ? "ในพื้นที่" : "นอกพื้นที่"}`
+              : "GPS พร้อม"
+            : geo.gpsError
+              ? "หาตำแหน่งไม่ได้"
+              : "กำลังหาตำแหน่ง…"}
+        </span>
+        <Maximize2 className="size-4 opacity-80" aria-hidden="true" />
+      </button>
 
       <div className={cn(CAM_GLASS, "absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] z-10 rounded-[32px] px-4 pt-3.5 pb-4")}>
         <p className="mb-2.5 text-center text-[13px] text-white/90">ถือให้นิ่ง แล้วกดถ่ายรูป</p>
@@ -515,62 +467,64 @@ function CameraStep({
   );
 }
 
-/** The map opened to the whole screen from the camera step: drag to move, plus and minus to zoom, a button back to the person. */
-function FullMapView({ geo, onBack }: { geo: Geo; onBack: () => void }) {
+/** First screen of check-in: the whole map (drag to move, plus and minus to zoom), where the person is against the branch circle, and one button to take the photo. */
+function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex: number; onClose: () => void; onNext: () => void }) {
   const mp = mapProps(geo);
   const inside = geo.distance != null && geo.radius != null ? geo.distance <= geo.radius : null;
+  const warn = inside === false || !!geo.gpsError;
   return (
     <div className="absolute inset-0 text-foreground">
       {mp.center ? (
-        <TileMap center={mp.center} zoom={18} fitPoints={mp.fitPoints} fence={mp.fence} pin={mp.pin} me={mp.me} insets={{ top: 70, bottom: 330 }} interactive className="absolute inset-0" />
+        <TileMap center={mp.center} zoom={18} fitPoints={mp.fitPoints} fence={mp.fence} pin={mp.pin} me={mp.me} insets={{ top: 80, bottom: 320 }} interactive className="absolute inset-0" />
       ) : (
         <div className="absolute inset-0 gv-lg-bg" />
       )}
-      <div className="absolute inset-x-0 top-0 flex items-center gap-2.5 px-3.5 pt-[calc(env(safe-area-inset-top)+0.625rem)]">
-        <button type="button" onClick={onBack} aria-label="กลับไปถ่ายรูป" className="gv-lg flex size-11 shrink-0 items-center justify-center rounded-full">
-          <ChevronLeft className="size-5" />
+      <div className="gv-lg absolute inset-x-3.5 top-[calc(env(safe-area-inset-top)+0.625rem)] z-10 flex items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5">
+        <button type="button" onClick={onClose} aria-label="ยกเลิก" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--lg-glass-strong)] active:scale-95">
+          <X className="size-5" />
         </button>
-        <div className="gv-lg min-w-0 flex-1 rounded-full px-4 py-1.5">
+        <div className="min-w-0 flex-1">
           <p className="text-base leading-tight font-bold">ตำแหน่งของคุณ</p>
-          <p className="text-xs text-muted-foreground">ลากแผนที่ได้ ใช้ปุ่มบวกลบเพื่อย่อขยาย</p>
+          <p className="text-xs text-muted-foreground">
+            ขั้นที่ {stepIndex + 1} จาก {STEPS.length} {STEPS[stepIndex].label}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5" aria-hidden="true">
+          {STEPS.map((s, i) => (
+            <span key={s.key} className={cn("h-1.5 rounded-full", i === stepIndex ? "w-[26px]" : "w-4", i <= stepIndex ? "bg-primary" : "bg-foreground/20")} />
+          ))}
         </div>
       </div>
-      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-[18px] pt-4 pb-[18px]">
+      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] z-10 rounded-[32px] px-[18px] pt-4 pb-[18px]">
         <div className="flex items-center gap-3">
           <span
             className={cn(
               "flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-md",
-              inside === false || geo.gpsError ? "bg-gradient-to-b from-[#f5b700] to-[#b88200]" : "bg-gradient-to-b from-[#14b8a6] to-[#0f766e]",
+              warn ? "bg-gradient-to-b from-[#f5b700] to-[#b88200]" : "bg-gradient-to-b from-[#14b8a6] to-[#0f766e]",
             )}
           >
-            {inside === false || geo.gpsError ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}
+            {warn ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0" role="status" aria-live="polite">
             <p className="text-lg leading-tight font-bold">
               {geo.me ? (inside === false ? "อยู่นอกพื้นที่ทำงาน" : inside ? "อยู่ในพื้นที่ทำงาน" : "ได้ตำแหน่งแล้ว") : geo.gpsError ? "หาตำแหน่งไม่ได้" : "กำลังหาตำแหน่ง…"}
             </p>
             <p className="text-sm text-muted-foreground">
               {geo.branchName ?? "ไม่ระบุสาขา"}
               {geo.distance != null ? ` · ห่าง ${Math.round(geo.distance).toLocaleString("th-TH")} เมตร` : ""}
+              {geo.radius != null ? ` · รัศมี ${Math.round(geo.radius).toLocaleString("th-TH")} ม.` : ""}
             </p>
           </div>
         </div>
-        <dl className="mt-3 grid grid-cols-3 rounded-[20px] border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] py-2.5 text-center">
-          <div>
-            <dt className="text-xs text-muted-foreground">ความแม่นยำ</dt>
-            <dd className="text-[15px] font-bold tabular-nums">{geo.me?.accuracy != null ? `± ${Math.round(geo.me.accuracy)} ม.` : "-"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">ละติจูด</dt>
-            <dd className="text-[15px] font-bold tabular-nums">{geo.me ? geo.me.lat.toFixed(4) : "-"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">ลองจิจูด</dt>
-            <dd className="text-[15px] font-bold tabular-nums">{geo.me ? geo.me.lng.toFixed(4) : "-"}</dd>
-          </div>
-        </dl>
-        <button type="button" onClick={onBack} className={cn(PRIMARY_BTN, "mt-3 h-[52px] w-full")} autoFocus>
-          กลับไปถ่ายรูป
+        {(inside === false || geo.gpsError) && (
+          <p className="mt-2 text-[13px] text-muted-foreground">
+            {geo.gpsError
+              ? "ถ่ายรูปต่อได้ ระบบจะลองหาตำแหน่งอีกครั้งตอนบันทึก"
+              : "ถ่ายรูปต่อได้ ถ้า HR ให้สิทธิ์นอกสถานที่ ระบบจะให้กรอกเหตุผลหลังถ่ายรูป"}
+          </p>
+        )}
+        <button type="button" onClick={onNext} autoFocus className={cn(PRIMARY_BTN, "mt-3 flex h-[56px] w-full items-center justify-center gap-2.5 text-[17px]")}>
+          <Camera className="size-6" aria-hidden="true" /> ถ่ายรูปเช็กอิน
         </button>
       </div>
     </div>
