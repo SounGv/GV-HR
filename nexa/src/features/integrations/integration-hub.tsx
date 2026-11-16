@@ -86,7 +86,7 @@ export function IntegrationHub() {
                     <span className="flex size-11 items-center justify-center rounded-xl bg-muted">
                       <Icon className="size-5 text-foreground" />
                     </span>
-                    <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", st.cls)}>
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", st.cls)}>
                       {st.label}
                     </span>
                   </div>

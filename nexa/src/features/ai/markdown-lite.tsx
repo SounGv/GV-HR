@@ -87,7 +87,7 @@ export function MarkdownLite({ text, className }: { text: string; className?: st
             <li key={ri} className="rounded-xl border border-border bg-card px-3 py-2">
               <p className="flex items-baseline gap-2 font-semibold text-foreground">
                 {rankCol >= 0 && (
-                  <span className="inline-grid size-5 shrink-0 place-items-center rounded-md bg-[#0f766e] text-[11px] text-white tabular-nums">
+                  <span className="inline-grid size-5 shrink-0 place-items-center rounded-md bg-[#0f766e] text-xs text-white tabular-nums">
                     {r[rankCol]}
                   </span>
                 )}

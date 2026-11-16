@@ -276,7 +276,7 @@ function ParticipantRow({
           <p className="text-xs text-muted-foreground">
             {participant.employee.employeeCode} · คะแนนเดิม {participant.overallScore ?? "-"}{" "}
             {participant.band && (
-              <span className={cn("ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium", toneClass(bandTone(participant.band)))}>
+              <span className={cn("ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium", toneClass(bandTone(participant.band)))}>
                 {participant.band}
               </span>
             )}

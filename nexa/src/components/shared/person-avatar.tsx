@@ -41,13 +41,13 @@ export function PersonAvatar({
 
   if (!src) {
     return (
-      <span aria-hidden="true" className={cn("inline-flex size-[30px] shrink-0 rounded-full text-[11.5px]", className)}>
+      <span aria-hidden="true" className={cn("inline-flex size-[30px] shrink-0 rounded-full text-xs", className)}>
         {character}
       </span>
     );
   }
   return (
-    <Avatar aria-hidden="true" className={cn("size-[30px] text-[11.5px]", className)}>
+    <Avatar aria-hidden="true" className={cn("size-[30px] text-xs", className)}>
       <AvatarImage src={src} alt="" />
       <AvatarFallback className="bg-transparent p-0">{character}</AvatarFallback>
     </Avatar>

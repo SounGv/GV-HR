@@ -612,9 +612,9 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                     className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground"
                   >
                     {s.tool === "web_search" ? (
-                      <Globe className="size-3 shrink-0 text-[var(--flip7-teal-dark)]" aria-hidden="true" />
+                      <Globe className="size-3 shrink-0 text-primary" aria-hidden="true" />
                     ) : (
-                      <Database className="size-3 shrink-0 text-[var(--flip7-teal-dark)]" aria-hidden="true" />
+                      <Database className="size-3 shrink-0 text-primary" aria-hidden="true" />
                     )}
                     <span className="truncate">{s.detail}</span>
                   </li>
@@ -708,13 +708,13 @@ function AnswerBubble({ turn, active, onShow }: { turn: Turn; active: boolean; o
             className={cn(
               "mt-1.5 flex w-full items-center gap-2 rounded-[10px] border px-2.5 py-1.5 text-left text-[12.5px] font-semibold transition-colors",
               active
-                ? "border-teal-200 bg-teal-50 text-[var(--flip7-teal-dark)] dark:border-border dark:bg-muted"
+                ? "border-teal-200 bg-teal-50 text-primary dark:border-border dark:bg-muted"
                 : "border-border text-muted-foreground hover:text-foreground",
             )}
           >
             <Database className="size-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate">{firstHeading(turn.content) ?? "ดูรายละเอียด"}</span>
-            <span className="ml-auto shrink-0 text-[11.5px] font-medium">{active ? "แสดงอยู่ทางขวา" : "ดูทางขวา"}</span>
+            <span className="ml-auto shrink-0 text-xs font-medium">{active ? "แสดงอยู่ทางขวา" : "ดูทางขวา"}</span>
           </button>
         )}
       </div>

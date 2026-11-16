@@ -137,8 +137,8 @@ export function PayslipDocument({
           </div>
           <div className="text-right">
             <p className={cn("font-semibold", paper.compact ? "text-xs" : "text-base")}>สลิปเงินเดือน</p>
-            <p className={cn("font-medium", paper.compact ? "text-[10px]" : "mt-1 text-sm")}>{slip.periodLabel}</p>
-            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${slip.status === "PAID" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+            <p className={cn("font-medium", paper.compact ? "text-xs" : "mt-1 text-sm")}>{slip.periodLabel}</p>
+            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${slip.status === "PAID" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
               {slip.status === "PAID" ? "จ่ายแล้ว" : "ฉบับร่าง"}
             </span>
           </div>
@@ -208,13 +208,13 @@ export function PayslipDocument({
         </div>
 
         {HIDE_AMOUNTS && (
-          <p className={cn("mt-3 rounded-md bg-amber-50 px-3 py-2 text-amber-700", paper.compact ? "text-[10px]" : "text-xs")}>
+          <p className={cn("mt-3 rounded-md bg-amber-50 px-3 py-2 text-amber-700", paper.compact ? "text-xs" : "text-xs")}>
             ยอดเงินอยู่ระหว่างตรวจสอบความถูกต้องกับฝ่ายบุคคล จะแสดงผลเมื่อยืนยันยอดแล้ว
           </p>
         )}
 
         {slip.note && (
-          <p className={cn("mt-3 rounded-md bg-slate-50 px-3 py-2 text-slate-600", paper.compact ? "text-[10px]" : "text-xs")}>
+          <p className={cn("mt-3 rounded-md bg-slate-50 px-3 py-2 text-slate-600", paper.compact ? "text-xs" : "text-xs")}>
             <span className="font-medium text-slate-700">หมายเหตุจาก HR: </span>
             {slip.note}
           </p>
@@ -234,7 +234,7 @@ export function PayslipDocument({
             <div className="text-xs text-slate-500">
               {!paper.compact && <p className="font-medium text-slate-700">สแกนเพื่อตรวจสอบความถูกต้อง</p>}
               {!paper.compact && <p className="mt-0.5 break-all">{verifyUrl}</p>}
-              <p className={paper.compact ? "text-[10px]" : "mt-1"}>อ้างอิง {slip.id.slice(0, 8)}</p>
+              <p className={paper.compact ? "text-xs" : "mt-1"}>อ้างอิง {slip.id.slice(0, 8)}</p>
             </div>
           </div>
           <div className="text-center">
@@ -248,14 +248,14 @@ export function PayslipDocument({
                 <img src={company.stampUrl} alt="ตราประทับ" className="ml-1 max-h-16 object-contain opacity-80" />
               ) : null}
             </div>
-            <div className="mt-1 border-t border-slate-300 pt-1 text-[10px] text-slate-500">
+            <div className="mt-1 border-t border-slate-300 pt-1 text-xs text-slate-500">
               ผู้มีอำนาจลงนาม
             </div>
           </div>
         </footer>
 
         {!paper.compact && (
-          <p className="mt-4 text-center text-[10px] text-slate-500">
+          <p className="mt-4 text-center text-xs text-slate-500">
             เอกสารนี้ออกโดยระบบ GV One HR — {company.name}
           </p>
         )}

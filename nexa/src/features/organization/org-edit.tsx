@@ -38,7 +38,7 @@ const MOVED_ROW = "border-[#fde68a] bg-[#fffbeb] dark:border-amber-500/40 dark:b
 
 export function MovedTag() {
   return (
-    <span className="shrink-0 rounded-full bg-[#fef3c7] px-1.5 text-[10.5px] leading-[18px] font-bold text-[#92400e] dark:bg-amber-500/20 dark:text-amber-200">
+    <span className="shrink-0 rounded-full bg-[#fef3c7] px-1.5 text-xs leading-[18px] font-bold text-[#92400e] dark:bg-amber-500/20 dark:text-amber-200">
       ย้ายแล้ว
     </span>
   );
@@ -97,7 +97,7 @@ function MoveSelect({ person }: { person: OrgPerson }) {
   return (
     <label
       title="ย้ายไป…"
-      className="relative grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors focus-within:border-[#0d9488] focus-within:text-[#0f766e] focus-within:ring-2 focus-within:ring-[#0d9488]/40 hover:border-[#0d9488] hover:text-[#0f766e] md:size-8 dark:focus-within:text-primary dark:hover:text-primary"
+      className="relative grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors focus-within:border-[#0d9488] focus-within:text-primary focus-within:ring-2 focus-within:ring-[#0d9488]/40 hover:border-[#0d9488] hover:text-primary md:size-8 dark:focus-within:text-primary dark:hover:text-primary"
     >
       <ArrowRightLeft className="size-4" aria-hidden="true" />
       <select

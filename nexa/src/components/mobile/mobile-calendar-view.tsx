@@ -34,12 +34,12 @@ const SOURCE_LABEL: Record<CalendarSource, string> = {
 };
 
 const MY_STATUS_BADGE: Record<MyDayStatus, { label: string; className: string }> = {
-  PRESENT: { label: "✓", className: "bg-success text-white" },
-  LATE: { label: "!", className: "bg-warning text-white" },
-  LEAVE: { label: "ล", className: "bg-warning text-white" },
-  HOLIDAY: { label: "ป", className: "bg-destructive text-white" },
-  WEEKEND: { label: "หย", className: "bg-muted-foreground/60 text-white" },
-  ABSENT: { label: "✕", className: "bg-destructive text-white" },
+  PRESENT: { label: "✓", className: "bg-success text-success-foreground" },
+  LATE: { label: "!", className: "bg-warning text-warning-foreground" },
+  LEAVE: { label: "ล", className: "bg-warning text-warning-foreground" },
+  HOLIDAY: { label: "ป", className: "bg-destructive text-destructive-foreground" },
+  WEEKEND: { label: "หย", className: "bg-muted-foreground text-white" },
+  ABSENT: { label: "✕", className: "bg-destructive text-destructive-foreground" },
 };
 const MY_STATUS_LEGEND: { status: MyDayStatus; label: string }[] = [
   { status: "PRESENT", label: "มาทำงาน" },

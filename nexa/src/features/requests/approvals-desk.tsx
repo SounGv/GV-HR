@@ -139,10 +139,10 @@ export function ApprovalsDesk() {
                   <Link href={detailHref(item)} className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="text-[13.5px] font-semibold text-foreground hover:underline">{name}</span>
-                      <span className={cn("rounded-full border px-2 py-px text-[11.5px] font-semibold", KIND_TONE[item.kind])}>
+                      <span className={cn("rounded-full border px-2 py-px text-xs font-semibold", KIND_TONE[item.kind])}>
                         {KIND_LABEL[item.kind]}
                       </span>
-                      {days >= 2 && <span className="text-[11.5px] font-semibold text-status-late-fg">รอ {days} วัน</span>}
+                      {days >= 2 && <span className="text-xs font-semibold text-status-late-fg">รอ {days} วัน</span>}
                     </span>
                     <span className="block text-[12.5px] text-muted-foreground">
                       <span className="font-medium text-foreground">{itemLine(item)}</span>

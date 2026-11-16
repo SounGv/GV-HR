@@ -47,7 +47,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
       ) : (
         <>
           <p className="flex items-baseline gap-1.5 px-4">
-            <span className="text-[30px] leading-tight font-bold text-[var(--flip7-teal-dark)] tabular-nums">{totalApprovals}</span>
+            <span className="text-[30px] leading-tight font-bold text-primary tabular-nums">{totalApprovals}</span>
             <span className="text-[13px] text-muted-foreground">รายการ</span>
           </p>
           <ul className="mt-1.5 px-2">

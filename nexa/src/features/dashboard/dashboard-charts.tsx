@@ -314,7 +314,7 @@ export function AttendanceRateLine({ data }: { data: AttendanceTrendPoint[] }) {
               onClick={() => setHidden((h) => ({ ...h, [s.key]: !h[s.key] }))}
               className={cn(
                 "flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs transition",
-                off ? "text-muted-foreground/50" : "text-muted-foreground hover:bg-muted",
+                off ? "text-muted-foreground line-through" : "text-muted-foreground hover:bg-muted",
               )}
               aria-pressed={!off}
             >

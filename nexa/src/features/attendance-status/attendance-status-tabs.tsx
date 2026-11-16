@@ -32,7 +32,7 @@ export function AttendanceStatusTabs({ tabs, label }: { tabs: StatusTab[]; label
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-xs tabular-nums",
-              t.active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground",
+              t.active ? "bg-black/25 text-white" : "bg-muted text-muted-foreground",
             )}
           >
             {t.count}

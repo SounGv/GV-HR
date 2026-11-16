@@ -143,8 +143,8 @@ export function TeamOverview({
                   <div className="flex items-baseline gap-2.5">
                     <span
                       className={cn(
-                        "w-5 shrink-0 text-center text-[11.5px] font-bold tabular-nums",
-                        top ? "text-[#0f766e]" : "text-muted-foreground",
+                        "w-5 shrink-0 text-center text-xs font-bold tabular-nums",
+                        top ? "text-primary" : "text-muted-foreground",
                       )}
                     >
                       {d.name === "อื่นๆ" ? "–" : i + 1}

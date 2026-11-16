@@ -474,7 +474,7 @@ export function ClockCard() {
         {isLoading ? (
           <Skeleton className="h-14 w-full bg-white/10" />
         ) : hasOut ? (
-          <div className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-success text-white">
+          <div className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-success text-success-foreground">
             <CheckCircle2 className="size-5" /> ลงเวลาครบแล้ววันนี้
           </div>
         ) : (

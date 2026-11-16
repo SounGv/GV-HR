@@ -53,7 +53,7 @@ export function ServicesGridView() {
             <span className="flex size-[42px] items-center justify-center rounded-full border-[1.5px] border-primary bg-card text-primary">
               <item.icon className="size-[19px]" />
             </span>
-            <span className="text-[11px] font-semibold leading-snug text-foreground">{item.label}</span>
+            <span className="text-xs font-semibold leading-snug text-foreground">{item.label}</span>
           </Link>
         ))}
       </div>

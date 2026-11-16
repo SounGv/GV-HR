@@ -123,7 +123,7 @@ export function DivisionTreeChart({
               ) : (
                 <div className="ot-empty">
                   <Building2
-                    className="dark:text-primary size-5 shrink-0 text-[#0f766e]"
+                    className="dark:text-primary size-5 shrink-0 text-primary"
                     aria-hidden="true"
                   />
                   <span className="min-w-0">
@@ -242,7 +242,7 @@ function HeadCard({ lead, index }: { lead: TreeLead; index: number }) {
           {p.positionTitle ?? "หัวหน้า"}
         </small>
       </span>
-      <span className="dark:bg-accent dark:text-primary ml-auto shrink-0 rounded-full bg-[#ccfbf1] px-2 text-[11.5px] font-bold whitespace-nowrap text-[#0f766e] tabular-nums">
+      <span className="dark:bg-accent dark:text-primary ml-auto shrink-0 rounded-full bg-[#ccfbf1] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
         ดูแล {lead.under} คน
       </span>
     </Link>
@@ -285,7 +285,7 @@ function TeamCard({ team, index, direct }: { team: TreeTeam; index: number; dire
       )}
       {team.daily.length > 0 && (
         <div className={cn("ot-daily", named === 0 && "mt-2.5")}>
-          <p className="mb-1.5 flex justify-between text-[11.5px] font-bold">
+          <p className="mb-1.5 flex justify-between text-xs font-bold">
             <span>รายวัน</span>
             <span className="tabular-nums">{team.daily.length} คน</span>
           </p>
@@ -321,7 +321,7 @@ function NameRow({ person, tag }: { person: OrgPerson; tag?: string }) {
         gender={person.gender ?? null}
         seed={person.id}
         src={person.avatarUrl}
-        className="size-[26px] text-[10.5px]"
+        className="size-[26px] text-xs"
       />
       <span className="min-w-0 flex-1 truncate">{person.name}</span>
       {tag && <span className="ot-tag">{tag}</span>}

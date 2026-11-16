@@ -40,13 +40,13 @@ export function StepIllustration({
       {kind === "login" && (
         <div className="w-full max-w-[220px] space-y-1.5">
           <div className="h-2 w-16 rounded-full bg-muted-foreground/30" />
-          <div className="h-6 rounded-md border border-border bg-card px-2 text-[9px] text-muted-foreground leading-6">
+          <div className="h-6 rounded-md border border-border bg-card px-2 text-xs text-muted-foreground leading-6">
             somchai@company.com
           </div>
-          <div className="h-6 rounded-md border border-border bg-card px-2 text-[9px] text-muted-foreground leading-6">
+          <div className="h-6 rounded-md border border-border bg-card px-2 text-xs text-muted-foreground leading-6">
             ••••••••
           </div>
-          <div className="flex h-7 items-center justify-center rounded-md bg-primary text-[10.5px] font-bold text-primary-foreground">
+          <div className="flex h-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
             เข้าสู่ระบบ
           </div>
         </div>
@@ -64,7 +64,7 @@ export function StepIllustration({
 
       {kind === "tabs" && (
         <div className="w-full max-w-[220px] space-y-1.5">
-          <div className="flex gap-1 text-[9px] font-semibold">
+          <div className="flex gap-1 text-xs font-semibold">
             {(chips ?? ["ข้อมูลส่วนตัว", "การจ้างงาน", "เงินเดือน"]).map((c, i) => (
               <span
                 key={c}
@@ -96,7 +96,7 @@ export function StepIllustration({
             <span
               key={c}
               className={cn(
-                "rounded-full px-2.5 py-1 text-[10.5px] font-medium",
+                "rounded-full px-2.5 py-1 text-xs font-medium",
                 i === 0 ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground ring-1 ring-border",
               )}
             >
@@ -160,7 +160,7 @@ export function StepIllustration({
             { label: "ประกันสังคม", amount: "-750" },
             { label: "ภาษี", amount: "-171" },
           ]).map((l) => (
-            <div key={l.label} className="flex items-center justify-between text-[10.5px]">
+            <div key={l.label} className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">{l.label}</span>
               <span className={cn("font-semibold", l.amount.startsWith("-") ? "text-destructive" : "text-foreground")}>
                 {l.amount}
@@ -179,7 +179,7 @@ export function StepIllustration({
               { n: "76.4%", l: "ค่าเฉลี่ย" },
             ].map((k) => (
               <div key={k.l} className="rounded-md border border-border bg-card p-1.5 text-center">
-                <p className="text-[11px] font-bold text-foreground">{k.n}</p>
+                <p className="text-xs font-bold text-foreground">{k.n}</p>
                 <p className="text-[8px] text-muted-foreground">{k.l}</p>
               </div>
             ))}
@@ -196,10 +196,10 @@ export function StepIllustration({
 
       {kind === "approve" && (
         <div className="flex w-full max-w-[220px] gap-2">
-          <div className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-success/15 text-[10.5px] font-bold text-success">
+          <div className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-success/15 text-xs font-bold text-success">
             <ThumbsUp className="size-3.5" /> อนุมัติ
           </div>
-          <div className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg border border-border text-[10.5px] font-bold text-muted-foreground">
+          <div className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg border border-border text-xs font-bold text-muted-foreground">
             <ThumbsDown className="size-3.5" /> ไม่อนุมัติ
           </div>
         </div>
@@ -222,7 +222,7 @@ function Row({
   return (
     <div className={cn("flex items-center gap-1.5 rounded-md px-2 py-1.5", className)}>
       {Icon && <Icon className="size-3" />}
-      {label && <span className="truncate text-[10.5px] font-medium">{label}</span>}
+      {label && <span className="truncate text-xs font-medium">{label}</span>}
       {children}
     </div>
   );

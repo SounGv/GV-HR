@@ -25,11 +25,11 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
         <div className="flex items-center gap-2.5">
           <span className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Bell className="size-4" />
-            <span className="absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-white">1</span>
+            <span className="absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground">1</span>
           </span>
           <div className="min-w-0 flex-1 rounded-lg border border-border bg-muted/40 px-2.5 py-2">
-            <p className="truncate text-[11px] font-semibold text-foreground">ประเมินผลงาน H2/2569</p>
-            <p className="text-[10px] text-muted-foreground">รอคุณทำแบบประเมิน</p>
+            <p className="truncate text-xs font-semibold text-foreground">ประเมินผลงาน H2/2569</p>
+            <p className="text-xs text-muted-foreground">รอคุณทำแบบประเมิน</p>
           </div>
         </div>
       )}
@@ -43,13 +43,13 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
             <div
               key={label}
               className={
-                "flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium " +
+                "flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-medium " +
                 (i === 2 ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")
               }
             >
               <span
                 className={
-                  "flex size-4 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold " +
+                  "flex size-4 shrink-0 items-center justify-center rounded-full text-xs font-semibold " +
                   (i === 2 ? "bg-primary-foreground/20" : "bg-muted-foreground/10")
                 }
               >
@@ -75,7 +75,7 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
       {kind === "evidence" && (
         <div className="space-y-2">
           <p className="text-[12px] font-semibold text-foreground">แนบหลักฐาน (ไม่บังคับ)</p>
-          <div className="flex items-center gap-2 rounded-lg border border-dashed border-border px-2.5 py-2 text-[10.5px] text-muted-foreground">
+          <div className="flex items-center gap-2 rounded-lg border border-dashed border-border px-2.5 py-2 text-xs text-muted-foreground">
             <Paperclip className="size-3.5 shrink-0" />
             แตะเพื่อแนบไฟล์ / รูปภาพ
           </div>
@@ -85,7 +85,7 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
       {kind === "required" && (
         <div className="space-y-1.5">
           {[true, true, false].map((done, i) => (
-            <div key={i} className="flex items-center gap-2 text-[11px]">
+            <div key={i} className="flex items-center gap-2 text-xs">
               <span
                 className={
                   "flex size-4 shrink-0 items-center justify-center rounded-full " +
@@ -110,10 +110,10 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
 
       {kind === "draft" && (
         <div className="flex gap-1.5">
-          <div className="flex h-8 flex-1 items-center justify-center rounded-lg border border-border text-[10.5px] font-bold text-muted-foreground">
+          <div className="flex h-8 flex-1 items-center justify-center rounded-lg border border-border text-xs font-bold text-muted-foreground">
             บันทึกแบบร่าง
           </div>
-          <div className="flex h-8 flex-[1.4] items-center justify-center gap-1 rounded-lg bg-primary text-[10.5px] font-bold text-primary-foreground shadow-sm">
+          <div className="flex h-8 flex-[1.4] items-center justify-center gap-1 rounded-lg bg-primary text-xs font-bold text-primary-foreground shadow-sm">
             <Send className="size-3" /> ส่งแบบประเมิน
           </div>
         </div>
@@ -126,9 +126,9 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
               <p className="text-[9.5px] text-muted-foreground">คะแนนรวม (ถ่วงน้ำหนัก)</p>
               <p className="text-[15px] font-bold text-foreground">82.4%</p>
             </div>
-            <span className="rounded-full bg-success/15 px-2 py-0.5 text-[9px] font-bold text-success">ดี/ดีเยี่ยม</span>
+            <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-bold text-success">ดี/ดีเยี่ยม</span>
           </div>
-          <div className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground shadow-sm">
+          <div className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-bold text-primary-foreground shadow-sm">
             <ThumbsUp className="size-3.5" /> รับทราบผลการประเมิน
           </div>
         </div>
@@ -137,11 +137,11 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
       {kind === "reopen" && (
         <div className="space-y-2">
           <div className="space-y-1 rounded-lg border border-border p-2">
-            <p className="text-[10px] font-semibold text-foreground">เหตุผลที่ต้องการแก้ไข</p>
+            <p className="text-xs font-semibold text-foreground">เหตุผลที่ต้องการแก้ไข</p>
             <div className="h-1.5 w-full rounded-full bg-muted-foreground/20" />
             <div className="h-1.5 w-3/5 rounded-full bg-muted-foreground/15" />
           </div>
-          <div className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground shadow-sm">
+          <div className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-bold text-primary-foreground shadow-sm">
             <Send className="size-3.5" /> ส่งคำขอ
           </div>
         </div>

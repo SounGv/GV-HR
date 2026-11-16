@@ -56,7 +56,7 @@ export function DepartmentSummaryView() {
                   {Object.entries(r.bandCounts).map(([band, count]) => (
                     <span
                       key={band}
-                      className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", TONE_CLASS[bandTone(band)])}
+                      className={cn("rounded-full px-2 py-0.5 text-xs font-medium", TONE_CLASS[bandTone(band)])}
                     >
                       {band} · {count}
                     </span>

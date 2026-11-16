@@ -111,7 +111,7 @@ export function TrainingView() {
                           {c.category}
                         </span>
                       <span
-                        className={`text-[11px] font-medium ${
+                        className={`text-xs font-medium ${
                           c.status === "OPEN" ? "text-success" : "text-muted-foreground"
                         }`}
                       >

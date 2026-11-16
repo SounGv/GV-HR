@@ -103,7 +103,7 @@ export function CampaignView() {
                   <div className="flex items-center gap-2">
                     <span className="truncate font-medium text-foreground">{c.name}</span>
                     {c.aiGenerated && (
-                      <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                      <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                         <Sparkles className="size-2.5" /> AI
                       </span>
                     )}

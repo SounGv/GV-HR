@@ -66,7 +66,7 @@ export function ReviewCard({
             <span className="text-2xl font-semibold leading-none tabular-nums">
               {review.overallScore.toFixed(1)}
             </span>
-            <span className="text-[10px] font-medium opacity-80">{review.band} · /5.0</span>
+            <span className="text-xs font-medium opacity-80">{review.band} · /5.0</span>
           </div>
           {canEdit && (
             <Button

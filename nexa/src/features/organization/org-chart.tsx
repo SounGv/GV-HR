@@ -369,7 +369,7 @@ function DivisionCard({
           <span className="truncate">
             {division.isOther ? `ฝ่ายเล็กไม่มีแผนกย่อย (≤${OTHER_MAX_PEOPLE} คน)` : division.code}
           </span>
-          <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-[#0f766e] tabular-nums">
+          <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-primary tabular-nums">
             {division.headcount} คน
           </span>
         </div>
@@ -411,7 +411,7 @@ function DivisionCard({
         <button
           type="button"
           onClick={() => onOpen(division.key)}
-          className="dark:border-border inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-[#cfd6dc] px-3.5 text-[12.5px] font-semibold transition-colors hover:border-[#0d9488] hover:text-[#0f766e]"
+          className="dark:border-border inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-[#cfd6dc] px-3.5 text-[12.5px] font-semibold transition-colors hover:border-[#0d9488] hover:text-primary"
         >
           {division.isOther ? "เปิดผัง →" : "เปิดผังฝ่าย →"}
         </button>
@@ -635,7 +635,7 @@ function DivisionView({
                 <div className="flex sm:justify-center">
                   <div className="bg-card dark:border-border inline-flex w-full items-center gap-2.5 rounded-[14px] border border-dashed border-[#cfd6dc] px-4 py-2.5 sm:w-auto sm:min-w-[230px]">
                     <Building2
-                      className="dark:text-primary size-5 shrink-0 text-[#0f766e]"
+                      className="dark:text-primary size-5 shrink-0 text-primary"
                       aria-hidden="true"
                     />
                     <span className="min-w-0">
@@ -710,7 +710,7 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
     </span>
   );
   const tagEl = (
-    <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2 text-[11px] font-bold whitespace-nowrap text-[#0f766e] tabular-nums">
+    <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
       {tag}
     </span>
   );
@@ -769,7 +769,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
     >
       <div className="border-border bg-muted/50 flex items-center justify-between gap-2 border-b px-3.5 py-2 text-[13.5px] font-bold">
         <span className="min-w-0 truncate">{team.name}</span>
-        <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-[#0f766e] tabular-nums">
+        <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-primary tabular-nums">
           {team.count}
         </span>
       </div>
@@ -806,7 +806,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="dark:text-primary mb-2.5 ml-10 text-[12.5px] font-semibold text-[#0f766e] hover:underline"
+          className="dark:text-primary mb-2.5 ml-10 text-[12.5px] font-semibold text-primary hover:underline"
         >
           {expanded ? "ย่อรายชื่อ" : `+ ดูอีก ${hidden} คน`}
         </button>
@@ -828,11 +828,11 @@ function MemberLink({ person, className }: { person: OrgPerson; className?: stri
         gender={person.gender ?? null}
         seed={person.id}
         src={person.avatarUrl}
-        className="size-[26px] text-[10.5px]"
+        className="size-[26px] text-xs"
       />
       <span className="min-w-0 leading-tight">
         <span className="block truncate">{person.name}</span>
-        <Subtitle moved={moved} className="text-[11.5px]">
+        <Subtitle moved={moved} className="text-xs">
           {person.positionTitle ?? "ไม่ระบุตำแหน่ง"}
         </Subtitle>
       </span>

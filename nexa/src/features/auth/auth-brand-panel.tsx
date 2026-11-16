@@ -34,7 +34,7 @@ export function AuthBrandPanel({
           <Logo size={44} className="size-11" />
           <div className="leading-tight">
             <div className="font-semibold tracking-wide">GV ONE</div>
-            <div className="text-[11px] tracking-[0.18em] text-slate-400">AI WORKFORCE PLATFORM</div>
+            <div className="text-xs tracking-[0.18em] text-slate-400">AI WORKFORCE PLATFORM</div>
           </div>
         </Link>
       ) : (

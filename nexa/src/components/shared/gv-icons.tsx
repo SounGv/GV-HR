@@ -140,7 +140,7 @@ export const GvSystemIcon = make("system");
 export type GvStatus = "bad" | "warn" | "info" | "ok";
 
 const BADGE: Record<GvStatus, { bg: string; glyph: string }> = {
-  bad: { bg: "bg-destructive text-white", glyph: "M12 6v7M12 18h.01" },
+  bad: { bg: "bg-destructive text-destructive-foreground", glyph: "M12 6v7M12 18h.01" },
   warn: { bg: "bg-warning text-warning-foreground", glyph: "M12 7v5l3 2" },
   info: { bg: "bg-info text-info-foreground", glyph: "M12 11v6M12 7h.01" },
   ok: { bg: "bg-success text-success-foreground", glyph: "M5 12.5l4.5 4.5L19 7" },

@@ -100,7 +100,7 @@ export function SessionListView() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{parseDevice(s.userAgent)}</span>
                     {s.isCurrent && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                         อุปกรณ์นี้
                       </span>
                     )}
