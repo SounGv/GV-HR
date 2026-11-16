@@ -898,6 +898,7 @@ export async function listMyAssignments(companyId: string, session: AccessClaims
       id: true,
       raterType: true,
       status: true,
+      participantId: true,
       participant: {
         select: {
           employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
@@ -908,7 +909,17 @@ export async function listMyAssignments(companyId: string, session: AccessClaims
     orderBy: [{ status: "asc" }, { createdAt: "asc" }],
     take: 300,
   });
-  return rows.map((r) => ({
+  // Answer sheets copied from another system are history for HR to read, not work or records in the rater's own list.
+  // Matched on the positive value: a "not equal" JSON filter would also drop every person whose score is not worked out yet.
+  const copied = new Set(
+    (
+      await prisma.appraisalParticipant.findMany({
+        where: { id: { in: rows.map((r) => r.participantId) }, scoreBreakdown: { path: ["source"], equals: "favpo-import" } },
+        select: { id: true },
+      })
+    ).map((p) => p.id),
+  );
+  return rows.filter((r) => !copied.has(r.participantId)).map((r) => ({
     id: r.id,
     raterType: r.raterType,
     status: r.status,
