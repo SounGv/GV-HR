@@ -120,7 +120,7 @@ export function MobileCalendarView() {
           type="button"
           onClick={() => goToMonth(addMonth(month, -1))}
           aria-label="เดือนก่อน"
-          className="flex size-9 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
+          className="flex size-11 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -129,7 +129,7 @@ export function MobileCalendarView() {
           type="button"
           onClick={() => goToMonth(addMonth(month, 1))}
           aria-label="เดือนถัดไป"
-          className="flex size-9 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
+          className="flex size-11 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
         >
           <ChevronRight className="size-4" />
         </button>
@@ -139,7 +139,7 @@ export function MobileCalendarView() {
             setMonth(currentMonth());
             setSelected(todayIso());
           }}
-          className="ml-1 shrink-0 rounded-full bg-card px-2.5 py-1.5 text-xs font-medium text-primary shadow-sm"
+          className="ml-1 inline-flex min-h-11 shrink-0 items-center rounded-full bg-card px-4 text-sm font-medium text-primary shadow-sm"
         >
           วันนี้
         </button>
