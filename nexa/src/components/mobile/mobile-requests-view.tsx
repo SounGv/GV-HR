@@ -33,7 +33,7 @@ export function MobileRequestsView({ defaultTab = "me" }: { defaultTab?: "me" | 
   const { canAny } = useAuth();
   const canApprove = canAny(["leave:approve", "leave:manage", "overtime:approve", "overtime:manage", "attendance:approve", "attendance:manage"]);
   return (
-    <MobileScreen title={canApprove ? "อนุมัติ" : "คำขอ"} contentClassName="p-4">
+    <MobileScreen title={canApprove ? "อนุมัติ" : "คำขอ"} backHref="/dashboard" contentClassName="p-4">
       <RequestsBody defaultTab={defaultTab} />
     </MobileScreen>
   );

@@ -2,6 +2,7 @@
 
 import { useMobileMenuGroups } from "./use-mobile-menu-groups";
 import { MobileMenuTileGrid } from "./mobile-menu-tile-grid";
+import { MobileHeader } from "./mobile-header";
 
 /**
  * Which tiles show up here is decided entirely by the permissions HR has
@@ -13,10 +14,8 @@ export function MobileHomeView({ title = "GV One" }: { title?: string }) {
   const { groups, hrStartIndex } = useMobileMenuGroups();
 
   return (
-    <div className="flex min-h-full flex-col bg-background md:hidden">
-      <div className="sticky top-[env(safe-area-inset-top)] z-30 border-b border-border bg-card px-4 py-3">
-        <h1 className="text-lg font-bold text-foreground">{title}</h1>
-      </div>
+    <div className="gv-m gv-lg-bg flex min-h-full flex-col md:hidden">
+      <MobileHeader title={title} backHref="/dashboard" />
 
       <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 pb-2">
         <MobileMenuTileGrid groups={groups} hrStartIndex={hrStartIndex} />

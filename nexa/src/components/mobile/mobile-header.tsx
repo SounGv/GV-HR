@@ -10,7 +10,6 @@ import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
 import { previousOf, readTrail } from "./nav-trail";
 
-
 /** The one place the unread count is shown on the phone (the profile tab no longer repeats it). */
 export function MobileBell() {
   const { data } = useNotifications();
@@ -43,12 +42,12 @@ export function MobileHeader({
   className?: string;
 }) {
   const router = useRouter();
-  // A page that is a tab of this account's bottom bar has no back arrow (it led nowhere useful) and carries the bell. The same page opened as a
-  // drill-down from a menu (calendar for a manager, reports for staff) keeps its back arrow.
+  // Every page that has somewhere to go back to shows the arrow, tab pages included (hiding it on tabs made menus feel like dead ends).
+  // A page that is a tab of this account's bottom bar also carries the bell, since the profile tab no longer shows the unread count.
   const pathname = usePathname();
   const { visibleTabs } = useMobileTabs();
   const isTabRoot = pathname === "/dashboard" || visibleTabs.some((t) => t.href.split("?")[0] === pathname);
-  const showBack = (!!backHref || !!onBack) && !isTabRoot;
+  const showBack = !!backHref || !!onBack;
   const right = trailing ?? (isTabRoot ? <MobileBell /> : null);
 
   return (
