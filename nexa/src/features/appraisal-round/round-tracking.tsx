@@ -110,6 +110,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
       />
       <p className="rounded-xl bg-muted px-4 py-3 text-sm">
         สรุปคำตอบที่ส่งแล้ว แยกตามมุมมองผู้ประเมิน เป็นค่าเฉลี่ยธรรมดา ยังไม่ถ่วงน้ำหนักและยังไม่มีเกรด (รอ HR ยืนยันสูตร)
+        {" "}
         {r.namedComments ? "ข้อความที่ผู้ประเมินเขียนอยู่ในการ์ดความเห็นของผู้ประเมินแต่ละคน พร้อมชื่อผู้เขียน (เห็นเฉพาะ HR)" : "ข้อความที่ผู้ประเมินเขียนแสดงโดยไม่ระบุชื่อ"}
       </p>
       {r.namedComments && r.namedComments.length > 0 && (
