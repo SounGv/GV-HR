@@ -56,6 +56,12 @@ export function classifyToday(i: ClassifyTodayInput): TodayStatus {
   return i.clockInMin > start + i.lateGraceMin ? "LATE" : "NORMAL";
 }
 
+/**
+ * Someone who came in but took part of the day as leave (an hour, or half a day): they are counted as on time or late by their scan,
+ * and also listed under leave so HR can see the leave beside them.
+ */
+export const hasPartialLeave = (p: { status: string; leaveNote: string | null }) => p.status !== "ON_LEAVE" && !!p.leaveNote;
+
 export interface HourRange {
   startMin: number;
   endMin: number;

@@ -9,7 +9,7 @@ import { AttendanceStatusTabs } from "@/features/attendance-status/attendance-st
 import { DepartmentFilter } from "@/features/attendance-status/department-filter";
 import { listDepartmentOptions, loadTodayAttendance } from "@/features/attendance-status/service";
 import { STATUS_META, attendanceListHref } from "@/features/attendance-status/status-meta";
-import type { TodayStatus } from "@/features/attendance-status/status-rules";
+import { hasPartialLeave, type TodayStatus } from "@/features/attendance-status/status-rules";
 
 export const metadata: Metadata = { title: "การเข้างานวันนี้" };
 
@@ -63,13 +63,14 @@ export default async function AttendanceTodayPage({
     );
   }
 
-  const people = status ? data.people.filter((p) => p.status === status) : data.people;
+  // The leave tab also lists people who came in but took an hour or half a day as leave.
+  const people = status ? data.people.filter((p) => p.status === status || (status === "ON_LEAVE" && hasPartialLeave(p))) : data.people;
   const tabs = [
     { href: attendanceListHref("all", deptIds), label: "ทั้งหมด", count: data.total, active: !status },
     ...TAB_ORDER.map((s) => ({
       href: attendanceListHref(s, deptIds),
       label: STATUS_META[s].label,
-      count: data.counts[s],
+      count: data.counts[s] + (s === "ON_LEAVE" ? data.people.filter(hasPartialLeave).length : 0),
       active: status === s,
     })),
   ];

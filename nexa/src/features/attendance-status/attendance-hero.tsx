@@ -9,7 +9,7 @@ import { PersonAvatar } from "@/components/shared/person-avatar";
 import { FollowRow } from "@/features/dashboard/follow-up";
 import { StatusRing, personLine } from "./attendance-today-sections";
 import { attendanceListHref } from "./status-meta";
-import type { TodayStatus } from "./status-rules";
+import { hasPartialLeave, type TodayStatus } from "./status-rules";
 import type { TodayAttendance } from "./types";
 
 interface Props {
@@ -96,6 +96,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
   const late = data.people.filter((p) => p.status === "LATE");
   const worstLate = late.reduce((m, p) => Math.max(m, p.lateMinutes ?? 0), 0);
   const follow = counts.ABSENT + counts.LATE;
+  const partialLeave = data.people.filter(hasPartialLeave).length;
   const open = data.isWorkingDay && total > 0;
 
   // Nothing to count today (a weekend or holiday, or nobody uses the app in this scope):
@@ -109,7 +110,16 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
         <span className="min-w-0 basis-52">
           <b className="block text-[16px] leading-snug">การเข้างานวันนี้</b>
           <span className="block text-sm leading-snug text-white/85">
-            {!data.isWorkingDay ? <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</> : <>ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</>}
+            {data.weekendActivity && data.weekendActivity.scanned + data.weekendActivity.onLeave > 0 ? (
+              <>
+                วันเสาร์ ยังไม่มีตารางว่าใครต้องมา จึงไม่นับขาดงาน สแกนเข้างานแล้ว <b className="tabular-nums">{data.weekendActivity.scanned}</b> คน สาย{" "}
+                <b className="tabular-nums">{data.weekendActivity.late}</b> คน ลา <b className="tabular-nums">{data.weekendActivity.onLeave}</b> คน
+              </>
+            ) : !data.isWorkingDay ? (
+              <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</>
+            ) : (
+              <>ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</>
+            )}
           </span>
         </span>
         {ticker ? <div className="order-last min-w-0 basis-full lg:order-none lg:flex-1 lg:basis-0">{ticker}</div> : <span className="flex-1" />}
@@ -208,9 +218,9 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             icon={GvLeaveIcon}
             tone="leave"
             label="ลางาน"
-            value={counts.ON_LEAVE}
+            value={counts.ON_LEAVE + partialLeave}
             unit="คน"
-            line="ลาทั้งวันหรือครึ่งวัน"
+            line={partialLeave > 0 ? `รวมลาบางช่วง ${partialLeave} คน (ชั่วโมงหรือครึ่งวัน)` : "ลาทั้งวันหรือครึ่งวัน"}
           />
           <GlassTile
             i={3}

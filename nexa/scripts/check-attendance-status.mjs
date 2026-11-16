@@ -4,7 +4,7 @@
 //   node --experimental-strip-types scripts/check-attendance-status.mjs
 //
 // Names and numbers here are made up. Exit code 1 when any check fails.
-import { classifyToday, excusedUntil, hhmmToMin, watchReasons, watchScore } from "../src/features/attendance-status/status-rules.ts";
+import { classifyToday, excusedUntil, hasPartialLeave, hhmmToMin, watchReasons, watchScore } from "../src/features/attendance-status/status-rules.ts";
 import { capRowsByDay, laterDate } from "../src/features/report/daily-cap.ts";
 
 let failed = 0;
@@ -62,5 +62,11 @@ check("at the end of the leave plus grace (10:05) is still normal", classifyToda
 check("without the leave the same 09:57 scan is late", classifyToday({ ...base, nowMin: 900, clockInMin: 597 }), "LATE");
 check("no scan during the excused hour is not absent yet", classifyToday({ ...base, nowMin: 620, clockInMin: null, excusedUntilMin: 600 }), "NOT_YET");
 check("no scan 30 minutes after the leave ends is absent", classifyToday({ ...base, nowMin: 630, clockInMin: null, excusedUntilMin: 600 }), "ABSENT");
+
+// ---- a person who came in but took an hour or half a day of leave is listed under leave too
+check("came in with an hour of leave: listed under leave", hasPartialLeave({ status: "NORMAL", leaveNote: "ลากิจ 09:00-10:00" }), true);
+check("came in late with half-day leave: listed under leave", hasPartialLeave({ status: "LATE", leaveNote: "ลาป่วยครึ่งวันเช้า" }), true);
+check("on leave all day is already a leave status, not counted twice", hasPartialLeave({ status: "ON_LEAVE", leaveNote: "ลากิจ 09:00-10:00" }), false);
+check("no leave note, not listed", hasPartialLeave({ status: "NORMAL", leaveNote: null }), false);
 
 process.exit(failed ? 1 : 0);

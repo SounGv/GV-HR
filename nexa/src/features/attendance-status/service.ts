@@ -67,8 +67,10 @@ export async function loadTodayAttendance(
   companyId: string,
   session: AccessClaims,
   departmentIds?: string[],
+  /** The moment to read the day for; always now except in checks. */
+  asOf: Date = new Date(),
 ): Promise<TodayAttendance> {
-  const bkk = bangkokParts();
+  const bkk = bangkokParts(asOf);
   const today = bkk.dateUTC;
   const tomorrow = new Date(today.getTime() + DAY_MS);
   const dateIso = today.toISOString().slice(0, 10);
@@ -121,6 +123,29 @@ export async function loadTodayAttendance(
   const users = new Set(usage.map((u) => u.employeeId));
   const checked = roster.filter((e) => users.has(e.id));
   const notChecked = roster.length - checked.length;
+  // A Saturday is not counted as a working day (no schedule says who must come), but people do work it: say what happened.
+  if (nonWorkingReason === "วันหยุดสุดสัปดาห์" && dow === 6 && checked.length > 0) {
+    const satRecords = await prisma.attendanceRecord.findMany({
+      where: { companyId, deletedAt: null, workDate: today, employeeId: { in: checked.map((e) => e.id) } },
+      select: { employeeId: true, clockInAt: true },
+    });
+    const satLeaves = await prisma.leaveRequest.findMany({
+      where: { companyId, deletedAt: null, status: "APPROVED", unit: "DAY", startDate: { lte: today }, endDate: { gte: today }, employeeId: { in: checked.map((e) => e.id) } },
+      select: { employeeId: true },
+    });
+    const leaveIds = new Set(satLeaves.map((l) => l.employeeId));
+    const satShifts = await resolveShiftMinutesBatch(companyId, today, tomorrow);
+    let satLate = 0;
+    for (const r of satRecords) {
+      if (!r.clockInAt || leaveIds.has(r.employeeId)) continue;
+      const e = checked.find((x) => x.id === r.employeeId);
+      if (!e) continue;
+      const shift = shiftMinutesFromBatch(satShifts, e.id, today, e.employmentType);
+      if (classifyToday({ nowMin: 24 * 60, shiftStartMin: shift.startMin, clockInMin: bangkokParts(r.clockInAt).minutesOfDay, onApprovedLeave: false, lateGraceMin: LATE_GRACE_MIN }) === "LATE") satLate++;
+    }
+    const scannedCount = satRecords.filter((r) => r.clockInAt).length;
+    return { ...empty, notChecked, total: checked.length, weekendActivity: { scanned: scannedCount, late: satLate, onLeave: leaveIds.size } };
+  }
   if (nonWorkingReason || checked.length === 0) return { ...empty, notChecked, total: checked.length };
 
   const records = await prisma.attendanceRecord.findMany({
@@ -138,14 +163,22 @@ export async function loadTodayAttendance(
       endDate: { gte: today },
       employee: scope,
     },
-    select: { employeeId: true, type: true },
+    select: { employeeId: true, type: true, halfDay: true, halfDayPeriod: true },
   });
   const onLeave = new Set(leaves.map((l) => l.employeeId));
   // Approved leave taken by the hour (e.g. 09:00-10:00): arriving inside it is not late, see excusedUntil.
   const hourLeaves = await prisma.leaveRequest.findMany({
     where: { companyId, deletedAt: null, status: "APPROVED", unit: "HOUR", startDate: { lte: today }, endDate: { gte: today }, employee: scope },
-    select: { employeeId: true, startTime: true, endTime: true },
+    select: { employeeId: true, type: true, startTime: true, endTime: true },
   });
+  const leaveNoteByEmployee = new Map<string, string[]>();
+  const noteFor = (employeeId: string, note: string) => leaveNoteByEmployee.set(employeeId, [...(leaveNoteByEmployee.get(employeeId) ?? []), note]);
+  for (const l of leaves) {
+    if (l.halfDay) noteFor(l.employeeId, `${LEAVE_TYPE_LABEL[l.type] ?? l.type}ครึ่งวัน${l.halfDayPeriod === "MORNING" ? "เช้า" : l.halfDayPeriod === "AFTERNOON" ? "บ่าย" : ""}`);
+  }
+  for (const l of hourLeaves) {
+    if (l.startTime && l.endTime) noteFor(l.employeeId, `${LEAVE_TYPE_LABEL[l.type] ?? l.type} ${l.startTime}-${l.endTime}`);
+  }
   const hourRangesByEmployee = new Map<string, HourRange[]>();
   for (const l of hourLeaves) {
     const startMin = hhmmToMin(l.startTime);
@@ -193,6 +226,7 @@ export async function loadTodayAttendance(
       lateMinutes: status === "LATE" && clockInMin != null ? clockInMin - Math.max(shift.startMin, excusedUntilMin ?? 0) : null,
       workMode: rec?.clockInAt ? (WORK_MODE_LABEL[rec.workMode] ?? null) : null,
       leaveType: status === "ON_LEAVE" ? (leaveTypeByEmployee.get(e.id)?.join(" / ") ?? null) : null,
+      leaveNote: status === "ON_LEAVE" ? null : (leaveNoteByEmployee.get(e.id)?.join(", ") ?? null),
     };
   });
 

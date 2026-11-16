@@ -48,9 +48,9 @@ function sortPeople(list: TodayPerson[], key: SortKey): TodayPerson[] {
 function detailOf(p: TodayPerson): string {
   switch (p.status) {
     case "LATE":
-      return `เข้า ${p.clockIn} น. · สาย ${p.lateMinutes ?? 0} นาที`;
+      return `เข้า ${p.clockIn} น. · สาย ${p.lateMinutes ?? 0} นาที${p.leaveNote ? ` · ${p.leaveNote}` : ""}`;
     case "NORMAL":
-      return p.clockIn ? `เข้า ${p.clockIn} น.${p.workMode ? ` · ${p.workMode}` : ""}` : "ลาครึ่งวัน";
+      return p.clockIn ? `เข้า ${p.clockIn} น.${p.workMode ? ` · ${p.workMode}` : ""}${p.leaveNote ? ` · ${p.leaveNote}` : ""}` : "ลาครึ่งวัน";
     case "ABSENT":
       return `ยังไม่สแกน · กะเริ่ม ${p.shiftStart} น.`;
     case "NOT_YET":

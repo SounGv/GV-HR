@@ -21,6 +21,8 @@ export interface TodayPerson {
   workMode: string | null;
   /** Leave type(s) such as "ลาป่วย" when the person is on leave today, else null. */
   leaveType: string | null;
+  /** Leave taken today by the hour or by half a day while the person also came in, e.g. "ลากิจ 09:00-10:00"; else null. */
+  leaveNote: string | null;
 }
 
 export interface TodayAttendance {
@@ -39,6 +41,11 @@ export interface TodayAttendance {
   /** Active people left out because they have no clock-in history. */
   notChecked: number;
   people: TodayPerson[];
+  /**
+   * Saturday only: people scanned, late and on leave when the day is not a normal working day. Many people do work Saturdays but
+   * the system has no schedule saying who must, so nobody is counted absent; this only shows what did happen.
+   */
+  weekendActivity?: { scanned: number; late: number; onLeave: number } | null;
 }
 
 export interface WatchPerson {
