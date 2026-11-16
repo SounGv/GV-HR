@@ -1260,10 +1260,13 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 /* Inside a phone page (.gv-m): cards become near-solid glass, the page tabs a glass pill. Scoped so desktop is untouched. */
 @media (max-width: 767px) {
   .gv-m [data-slot="card"] {
-    background: var(--lg-card);
     border-color: var(--lg-edge);
     border-radius: 22px;
     box-shadow: 0 6px 20px rgba(15, 70, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  /* A card that carries its own meaning colour (warning, success, accent and so on) keeps it; only plain cards turn into glass. */
+  .gv-m [data-slot="card"]:not([class*="bg-accent"]):not([class*="bg-warning"]):not([class*="bg-destructive"]):not([class*="bg-success"]):not([class*="bg-info"]):not([class*="bg-primary"]):not([class*="bg-muted"]):not([class*="bg-gradient"]):not([class*="bg-["]) {
+    background: var(--lg-card);
   }
   .dark .gv-m [data-slot="card"] { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
   .gv-m [data-slot="tabs-list"][data-variant="default"] {

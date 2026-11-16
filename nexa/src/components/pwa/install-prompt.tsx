@@ -67,6 +67,7 @@ export function InstallPrompt() {
   const [kind, setKind] = useState<Kind | null>(null);
   const [open, setOpen] = useState(false);
   const installEvent = useRef<InstallEvent | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [eventReady, setEventReady] = useState(false);
 
   // The browser fires this once it decides the app can be installed, usually before the page finishes loading.
@@ -141,12 +142,43 @@ export function InstallPrompt() {
     }
   }
 
+  // While the sheet is open: the page behind does not scroll, Escape means "later", and Tab stays inside the sheet.
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        later();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const nodes = dialogRef.current?.querySelectorAll<HTMLElement>("button, [href], input, textarea, select");
+      if (!nodes || nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, later]);
+
   if (!open || !kind) return null;
 
   return (
     <>
       <div aria-hidden="true" className="fixed inset-0 z-[65] bg-black/35 md:hidden" onClick={later} />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="gv-install-title"

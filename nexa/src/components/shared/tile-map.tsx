@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -78,7 +78,8 @@ export function TileMap({
   // Moving the centre point down in the world moves the subject up on screen, into the strip the sheet leaves free.
   const offsetY = (insetBottom - insetTop) / 2;
 
-  const baseZoom = useMemo(() => {
+  // A few iterations at most, so no memo (the points array is a new object on every render anyway).
+  const baseZoom = (() => {
     if (!fitPoints || fitPoints.length < 2 || !size.w) return zoom;
     const padX = 70;
     const padY = 70 + insetTop + insetBottom;
@@ -88,7 +89,7 @@ export function TileMap({
       if (Math.max(...xs) - Math.min(...xs) <= size.w - padX && Math.max(...ys) - Math.min(...ys) <= size.h - padY) return z;
     }
     return MIN_Z;
-  }, [fitPoints, zoom, size.w, size.h, insetTop, insetBottom]);
+  })();
 
   const z = Math.min(MAX_Z, Math.max(MIN_Z, baseZoom + dz));
   const cx = worldX(center.lng, z) - pan.x;

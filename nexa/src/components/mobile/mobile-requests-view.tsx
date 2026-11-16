@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Plus, Check, X, CalendarDays, Loader2, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,12 +54,11 @@ function RequestsBody({ defaultTab }: { defaultTab: "me" | "approvals" }) {
   const pendingCount =
     (leavePendingQ.data?.data.length ?? 0) + (otPendingQ.data?.data.length ?? 0) + (correctionPendingQ.data?.data.length ?? 0);
 
-  const router = useRouter();
   return (
     <Tabs
       defaultValue={canApprove ? (hasEmployee ? defaultTab : "approvals") : "me"}
-      // The address follows the tab, so the bottom bar lights "อนุมัติ" only on the queue and a refresh stays where the person was.
-      onValueChange={(v) => canApprove && router.replace(v === "approvals" ? "/requests?view=approvals" : "/requests", { scroll: false })}
+      // The address follows the tab (no server round trip), so the bottom bar lights "อนุมัติ" only on the queue and a refresh stays where the person was.
+      onValueChange={(v) => canApprove && window.history.replaceState(null, "", v === "approvals" ? "/requests?view=approvals" : "/requests")}
       className="space-y-4"
     >
       <TabsList className="w-full group-data-horizontal/tabs:h-[54px]">
