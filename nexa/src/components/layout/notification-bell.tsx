@@ -95,6 +95,10 @@ export function NotificationBell() {
             </ul>
           </ScrollArea>
         )}
+        {/* The full list used to be a menu item; the menu no longer has it, so this is the way to it on a computer. */}
+        <Link href="/notifications" className="flex min-h-11 items-center justify-center border-t border-border text-sm font-semibold text-primary hover:bg-muted/60">
+          ดูการแจ้งเตือนทั้งหมด
+        </Link>
       </PopoverContent>
     </Popover>
   );

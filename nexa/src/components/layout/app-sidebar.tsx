@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ArrowUpDown, ChevronDown, Sparkles, Star } from "lucide-react";
+import { ArrowUpDown, ChevronDown, LogOut, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sidebar,
@@ -202,7 +202,18 @@ export function AppSidebar() {
                   </button>
                   {expanded && (
                     <SidebarGroupContent className="mt-0.5 mb-1.5 ml-6 w-auto border-l-2 border-sidebar-border pl-3">
-                      <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+                      <SidebarMenu>
+                        {items.map((item, i) => {
+                          // A small heading where the section changes (the settings group); a group without sections shows none.
+                          const heading = item.section && item.section !== items[i - 1]?.section ? item.section : null;
+                          return (
+                            <Fragment key={item.href}>
+                              {heading && <li className="px-2 pt-2.5 pb-0.5 text-xs font-bold text-[color:var(--muted-strong)]">{heading}</li>}
+                              {renderItem(item)}
+                            </Fragment>
+                          );
+                        })}
+                      </SidebarMenu>
                     </SidebarGroupContent>
                   )}
                 </SidebarGroup>
@@ -213,7 +224,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       {!editing && (
-        <SidebarFooter className="group-data-[collapsible=icon]:hidden">
+        <SidebarFooter className="gap-2 group-data-[collapsible=icon]:hidden">
           <button
             type="button"
             onClick={startEditing}
@@ -221,6 +232,15 @@ export function AppSidebar() {
           >
             <ArrowUpDown className="size-4" />
             จัดเรียงเมนู
+          </button>
+          {/* Sign out is pinned here, apart from the settings pages, so it is always in the same place and hard to hit by mistake. */}
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] text-[13.5px] font-semibold text-[color:var(--muted-strong)] transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-sidebar-ring"
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+            ออกจากระบบ
           </button>
         </SidebarFooter>
       )}

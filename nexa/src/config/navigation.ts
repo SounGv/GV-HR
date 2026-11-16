@@ -1,10 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 import type { ComponentType } from "react";
-import { GvHomeIcon, GvTimeIcon, GvLeaveIcon, GvPeopleIcon, GvEvaluationIcon, GvMoneyIcon, GvReportIcon, GvDataIcon, GvSystemIcon, type GvIconProps } from "@/components/shared/gv-icons";
+import { GvHomeIcon, GvTimeIcon, GvLeaveIcon, GvPeopleIcon, GvEvaluationIcon, GvMoneyIcon, GvReportIcon, GvSystemIcon, type GvIconProps } from "@/components/shared/gv-icons";
 import {
   LayoutDashboard,
   CalendarDays,
-  Bell,
   BookOpen,
   ScanLine,
   PencilLine,
@@ -34,7 +33,6 @@ import {
   Plug,
   Settings2,
   Bot,
-  LogOut,
 } from "lucide-react";
 
 export interface NavItem {
@@ -58,6 +56,8 @@ export interface NavItem {
    * its group (AI Assistant). Still listed here so search and saved menu
    * layouts keep seeing it. */
   featured?: boolean;
+  /** A small heading above this item in the side menu when it differs from the item before it (settings group). */
+  section?: string;
 }
 
 export interface NavGroup {
@@ -83,18 +83,12 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", ready: true },
+      // Everyone reads announcements and meetings, so they sit here and not under the HR reports (menu review, Nov 2026).
+      { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read", ready: true },
+      { label: "นัดประชุม", href: "/meetings", icon: CalendarPlus, permission: "meeting:read", ready: true },
       { label: "น้องวีบอท", href: "/ai", icon: Bot, permission: "ai:read", ready: true, opensAiPanel: true, featured: true },
-      {
-        label: "แจ้งเตือน",
-        href: "/notifications",
-        icon: Bell,
-        permission: "dashboard:read",
-        ready: true,
-        badgeKey: "unreadNotifications",
-      },
-      // HR-level only (employee:update — HR Manager/Super Admin by default,
-      // or any custom role explicitly granted it) — the guide documents
-      // HR-facing workflows, not something every employee needs to see.
+      // HR only (employee:update): the guide documents HR workflows and the page is guarded the same way. A guide written for
+      // staff would let this open to everyone. The notification list has no entry of its own any more: the bell at the top opens it.
       { label: "คู่มือการใช้งาน", href: "/help", icon: BookOpen, permission: "employee:update", ready: true },
     ],
   },
@@ -107,7 +101,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "แก้ไขเวลาเข้า-ออกงาน", href: "/attendance/corrections", icon: PencilLine, permission: "attendance:read", ready: true },
       { label: "กะการทำงาน", href: "/shifts", icon: CalendarClock, permission: "shift:read", ready: true },
       { label: "วันหยุด", href: "/holidays", icon: CalendarCheck, permission: "holiday:read", ready: true },
-      { label: "มาสาย / ขาดงาน", href: "/reports?view=attendance_daily", icon: TriangleAlert, permission: "report:read", ready: true },
+      { label: "ดูมาสาย / ขาดงานรายวัน", href: "/reports?view=attendance_daily", icon: TriangleAlert, permission: "report:read", ready: true },
     ],
   },
   {
@@ -116,6 +110,8 @@ export const NAV_GROUPS: NavGroup[] = [
     chipColor: "#0D9488",
     items: [
       { label: "ขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read", ready: true },
+      { label: "ประวัติการลา", href: "/leave", icon: ClipboardList, permission: "leave:read", ready: true },
+      { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read", ready: true },
       {
         label: "คำขอรออนุมัติ",
         href: "/requests?view=approvals",
@@ -124,10 +120,6 @@ export const NAV_GROUPS: NavGroup[] = [
         ready: true,
         badgeKey: "pendingApprovals",
       },
-      { label: "ประวัติการลา", href: "/leave", icon: ClipboardList, permission: "leave:read", ready: true },
-      { label: "ล่วงเวลา (OT)", href: "/overtime", icon: Timer, permission: "overtime:read", ready: true },
-      { label: "ตั้งสิทธิ์ลาปีใหม่", href: "/leave/year-setup", icon: CalendarCheck, permission: "employee:update", ready: true },
-      { label: "สิทธิ์ลารายคน", href: "/leave/entitlements", icon: ClipboardList, permission: "employee:update", ready: true },
     ],
   },
   {
@@ -140,7 +132,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "โครงสร้างองค์กร", href: "/organization?tab=chart", icon: Network, permission: "employee:read", ready: true },
       { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
       { label: "เอกสารและทรัพย์สิน", href: "/assets", icon: Boxes, permission: "asset:read", ready: true },
-      { label: "สาขา", href: "/branches", icon: Building2, permission: "admin:read", ready: true },
     ],
   },
   {
@@ -152,8 +143,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // "ของฉัน" pages for everyone, one entry for HR into the evaluation
       // system (its own tabs: ภาพรวม / แบบประเมิน / รอบประเมิน / KPI / ตั้งค่า),
       // and training. The old /performance and /kpi pages (2 old reviews, 6
-      // goals, no rounds) stay reachable by address but leave the menu;
-      // นัดประชุม moved to รายงานและสื่อสาร.
+      // goals, no rounds) stay reachable by address but leave the menu.
       { label: "งานประเมินของฉัน", href: "/appraisal/tasks", icon: ClipboardCheck, permission: "notification:read", ready: true, badgeKey: "pendingReviews" },
       { label: "ผลประเมินของฉัน", href: "/appraisal/my-results", icon: ClipboardList, permission: "notification:read", ready: true },
       { label: "จัดการประเมิน", href: "/appraisal", icon: Settings2, permission: "campaign:manage", ready: true },
@@ -169,47 +159,42 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: GvMoneyIcon,
     chipColor: "#0D9488",
     items: [
+      { label: "ประวัติสวัสดิการของฉัน", href: "/benefits/history", icon: History, permission: "expense:read", ready: true },
       { label: "เบิกจ่ายทั่วไป", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
       { label: "ค่ารักษาพยาบาล", href: "/benefits/medical", icon: Stethoscope, permission: "expense:read", ready: true },
       { label: "กู้เงินบริษัท", href: "/benefits/loans", icon: Landmark, permission: "expense:read", ready: true },
-      { label: "ประวัติสวัสดิการของฉัน", href: "/benefits/history", icon: History, permission: "expense:read", ready: true },
       { label: "รายงานสวัสดิการ", href: "/benefits/report", icon: BarChart3, permission: "expense:approve", ready: true },
     ],
   },
   {
-    label: "รายงานและสื่อสาร",
+    label: "รายงาน",
     icon: GvReportIcon,
     chipColor: "#0D9488",
     items: [
-      { label: "รายงานการเข้างาน", href: "/reports?view=attendance", icon: BarChart3, permission: "report:read", ready: true },
+      { label: "สรุปการเข้างานรายเดือน", href: "/reports?view=attendance", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานการลา", href: "/reports?view=leave", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานประเมินผล", href: "/reports?view=performance", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานและวิเคราะห์ทั้งหมด", href: "/reports", icon: BarChart3, permission: "report:read", ready: true },
-      { label: "ประกาศและแจ้งเตือน", href: "/announcements", icon: Megaphone, permission: "announcement:read", ready: true },
-      { label: "นัดประชุม", href: "/meetings", icon: CalendarPlus, permission: "meeting:read", ready: true },
     ],
   },
   {
-    label: "ข้อมูลระบบ",
-    icon: GvDataIcon,
-    chipColor: "#0D9488",
-    items: [
-      { label: "นำเข้าข้อมูล", href: "/import", icon: Upload, permission: "employee:create", ready: true },
-      { label: "ประวัติการนำเข้า / ส่งออก", href: "/admin?tab=audit", icon: ClipboardList, permission: "admin:read", ready: true },
-    ],
-  },
-  {
-    label: "ระบบ",
+    // One settings group instead of "ข้อมูลระบบ" + "ระบบ" (two names people could not tell apart). The headings inside it
+    // (section) show only in the side menu; the tab row at the top lists the same pages in this order.
+    label: "ตั้งค่าระบบ",
     icon: GvSystemIcon,
     chipColor: "#0D9488",
     items: [
-      { label: "ข้อมูลบริษัท", href: "/company", icon: Building2, permission: "admin:read", ready: true },
-      { label: "ศูนย์ต้นทุน", href: "/cost-centers", icon: Building2, permission: "admin:read", ready: true },
-      { label: "ตั้งค่าพื้นที่เช็คอิน", href: "/attendance/settings", icon: MapPinned, permission: "attendance:update", ready: true },
-      { label: "เวิร์กโฟลว์อนุมัติ", href: "/workflows", icon: GitBranch, permission: "workflow:read", ready: true },
-      { label: "การเชื่อมต่อระบบ", href: "/integrations", icon: Plug, permission: "admin:read", ready: true },
-      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings2, permission: "admin:read", ready: true },
-      { label: "ออกจากระบบ", href: "#", icon: LogOut, permission: "dashboard:read", ready: true, isLogout: true },
+      { label: "ข้อมูลบริษัท", href: "/company", icon: Building2, permission: "admin:read", ready: true, section: "บริษัท" },
+      { label: "สาขา", href: "/branches", icon: Building2, permission: "admin:read", ready: true, section: "บริษัท" },
+      { label: "ศูนย์ต้นทุน", href: "/cost-centers", icon: Building2, permission: "admin:read", ready: true, section: "บริษัท" },
+      { label: "ตั้งค่าพื้นที่เช็คอิน", href: "/attendance/settings", icon: MapPinned, permission: "attendance:update", ready: true, section: "เวลาและการลา" },
+      { label: "ตั้งสิทธิ์ลาปีใหม่", href: "/leave/year-setup", icon: CalendarCheck, permission: "employee:update", ready: true, section: "เวลาและการลา" },
+      { label: "สิทธิ์ลารายคน", href: "/leave/entitlements", icon: ClipboardList, permission: "employee:update", ready: true, section: "เวลาและการลา" },
+      { label: "เวิร์กโฟลว์อนุมัติ", href: "/workflows", icon: GitBranch, permission: "workflow:read", ready: true, section: "เวลาและการลา" },
+      { label: "นำเข้าข้อมูล", href: "/import", icon: Upload, permission: "employee:create", ready: true, section: "ข้อมูล" },
+      { label: "บันทึกการใช้งานและการนำเข้า", href: "/admin?tab=audit", icon: ClipboardList, permission: "admin:read", ready: true, section: "ข้อมูล" },
+      { label: "ผู้ดูแลระบบ", href: "/admin", icon: Settings2, permission: "admin:read", ready: true, section: "ผู้ดูแล" },
+      { label: "การเชื่อมต่อระบบ", href: "/integrations", icon: Plug, permission: "admin:read", ready: true, section: "ผู้ดูแล" },
     ],
   },
 ];
