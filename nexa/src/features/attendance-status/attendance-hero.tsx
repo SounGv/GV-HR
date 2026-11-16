@@ -34,6 +34,14 @@ const TILE_TONE = {
   normal: "bg-status-normal-bg text-status-normal-fg ring-status-normal-border",
 } as const;
 
+/** What each colour in the status ring means: the same mark and colour as the tile below, so the ring is not read by colour alone. */
+const RING_LEGEND: { status: TodayStatus; tone: keyof typeof TILE_TONE; label: string; icon: ComponentType<GvIconProps> }[] = [
+  { status: "NORMAL", tone: "normal", label: "ตรงเวลา", icon: GvCheckinIcon },
+  { status: "LATE", tone: "late", label: "มาสาย", icon: GvLateIcon },
+  { status: "ABSENT", tone: "absent", label: "ขาดงาน", icon: GvAbsentIcon },
+  { status: "ON_LEAVE", tone: "leave", label: "ลางาน", icon: GvLeaveIcon },
+];
+
 function GlassTile({
   href,
   icon: Icon,
@@ -142,6 +150,17 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             <div className="gv-rise" style={{ "--i": 1 } as React.CSSProperties}>
               <StatusRing counts={counts} total={total} scanned={scanned} />
             </div>
+            <ul className="gv-rise grid gap-1.5" style={{ "--i": 2 } as React.CSSProperties} aria-label="สีในวงกลม">
+              {RING_LEGEND.map((l) => (
+                <li key={l.status} className="flex items-center gap-2 text-[13px] font-semibold text-white">
+                  <span className={`flex size-6 items-center justify-center rounded-lg ring-1 ring-inset ${TILE_TONE[l.tone]}`}>
+                    <l.icon className="size-4" aria-hidden="true" />
+                  </span>
+                  {l.label}
+                  <span className="tabular-nums">{counts[l.status]}</span>
+                </li>
+              ))}
+            </ul>
             {follow > 0 ? (
               <a
                 href="#follow-up"
