@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, Loader2, MapPinned, RotateCcw, SwitchCamera, X, Zap, ZapOff } from "lucide-react";
+import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, Loader2, MapPin, Maximize2, RotateCcw, SwitchCamera, X, Zap, ZapOff } from "lucide-react";
+import { TileMap, type LatLng } from "@/components/shared/tile-map";
 import { cn } from "@/lib/utils";
 import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
 import { ApiError } from "@/lib/api/client";
@@ -68,6 +69,8 @@ export function MobileCheckinFlow({
   } | null>(null);
 
   const [facing, setFacing] = useState<CameraFacing>("environment");
+  const [showMap, setShowMap] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
   const cam = useCameraStream(step === "camera" && !skipCapture, facing, { sharp: true });
   const submittingRef = useRef(false);
 
@@ -207,54 +210,29 @@ export function MobileCheckinFlow({
 
   const title = mode === "in" ? "ลงเวลาเข้างาน" : "ลงเวลาออกงาน";
   const activeStepIndex = step === "camera" ? 0 : step === "preview" ? 1 : step === "processing" ? (saveStage === "gps" ? 2 : 3) : 3;
+  const onCamera = step === "camera" || step === "preview";
+  const distance = coords && hasGeofence ? distanceMeters(coords.lat, coords.lng, branch!.lat!, branch!.lng!) : null;
+  const geo: Geo = {
+    branchName: branch?.name ?? null,
+    branchAt: hasGeofence ? { lat: branch!.lat!, lng: branch!.lng! } : null,
+    radius: branch?.radiusMeters ?? null,
+    me: coords,
+    distance,
+    gpsError,
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-gv-dark-green pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-white md:hidden">
-      {step !== "success" && step !== "offsite" && (
-        <div
-          className={cn(
-            "px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3",
-            // On the camera and photo-check steps the picture fills the whole screen and the header floats over it.
-            step === "camera" || step === "preview"
-              ? "absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/70 to-transparent pb-6"
-              : "shrink-0",
-          )}
-        >
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex min-h-11 min-w-11 items-center gap-1 text-sm text-slate-300"
-              aria-label="ยกเลิก"
-            >
-              <ChevronLeft className="size-4" /> ยกเลิก
-            </button>
-            <p className="text-sm font-semibold">{title}</p>
-            <span className="w-12" />
-          </div>
-          <div className="mt-3 flex items-center justify-center gap-2 [@media(max-height:480px)]:hidden">
-            {STEPS.map((s, i) => (
-              <div key={s.key} className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "flex size-6 items-center justify-center rounded-full text-xs font-semibold transition",
-                    i < activeStepIndex
-                      ? "bg-gv-lime text-gv-dark-green"
-                      : i === activeStepIndex
-                        ? "bg-gv-lime text-gv-dark-green ring-4 ring-gv-lime/20"
-                        : "bg-white/10 text-white/40",
-                  )}
-                >
-                  {i < activeStepIndex ? <Check className="size-3.5" /> : i + 1}
-                </span>
-                {i < STEPS.length - 1 && <span className="h-px w-4 bg-white/15" />}
-              </div>
-            ))}
-          </div>
-        </div>
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex flex-col overflow-hidden pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] md:hidden",
+        onCamera ? "bg-[#0b1414] text-white" : "gv-lg-bg gv-login-scope text-foreground",
+      )}
+    >
+      {(onCamera || step === "processing" || step === "error") && !showMap && (
+        <FlowHeader title={title} stepIndex={activeStepIndex} dark={onCamera} onClose={onClose} />
       )}
 
-      {step === "camera" && (
+      {step === "camera" && !showMap && (
         <CameraStep
           videoRef={cam.videoRef}
           ready={cam.ready}
@@ -267,25 +245,24 @@ export function MobileCheckinFlow({
           onToggleTorch={toggleTorch}
           onCapture={capture}
           onSkip={() => submit()}
-          branchName={branch?.name ?? null}
-          hasGeofence={hasGeofence}
-          coords={coords}
-          gpsError={gpsError}
-          distance={
-            coords && hasGeofence ? distanceMeters(coords.lat, coords.lng, branch!.lat!, branch!.lng!) : null
-          }
+          geo={geo}
+          onOpenMap={() => {
+            setMapKey((k) => k + 1);
+            setShowMap(true);
+          }}
         />
       )}
 
-      {step === "preview" && photo && (
-        <PreviewStep photo={photo} onRetake={() => setStep("camera")} onConfirm={() => submit()} />
-      )}
+      {step === "camera" && showMap && <FullMapView key={mapKey} geo={geo} onBack={() => setShowMap(false)} />}
 
-      {step === "processing" && <ProcessingStep stage={saveStage} />}
+      {step === "preview" && photo && <PreviewStep photo={photo} onRetake={() => setStep("camera")} onConfirm={() => submit()} />}
+
+      {step === "processing" && <ProcessingStep stage={saveStage} hasPhoto={!!photo} />}
 
       {step === "offsite" && offsiteInfo && (
         <OffsiteStep
           info={offsiteInfo}
+          geo={geo}
           reason={offsiteReason}
           onReasonChange={setOffsiteReason}
           onCancel={onClose}
@@ -305,13 +282,114 @@ export function MobileCheckinFlow({
           record={resultRecord}
           isLate={mode === "in" && resultRecord?.status === "LATE"}
           photo={photo}
-          branchName={branch?.name ?? null}
-          coords={coords}
+          geo={geo}
           onDone={onDone}
         />
       )}
     </div>
   );
+}
+
+/** What the screens need to draw the map and the distance: the branch circle, where the phone is, and how far apart they are. */
+interface Geo {
+  branchName: string | null;
+  branchAt: LatLng | null;
+  radius: number | null;
+  me: Coords | null;
+  distance: number | null;
+  gpsError: string | null;
+}
+
+const CAM_GLASS = "gv-lg-cam";
+
+function FlowHeader({ title, stepIndex, dark, onClose }: { title: string; stepIndex: number; dark: boolean; onClose: () => void }) {
+  return (
+    <div
+      className={cn(
+        "z-10 flex items-center gap-2.5 px-3.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] pb-2",
+        dark ? "absolute inset-x-0 top-0" : "shrink-0 text-foreground",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="ยกเลิก"
+        className={cn("flex size-11 shrink-0 items-center justify-center rounded-full transition active:scale-95", dark ? CAM_GLASS : "gv-lg")}
+      >
+        <X className="size-5" />
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[17px] leading-tight font-bold">{title}</p>
+        <p className={cn("text-xs", dark ? "text-white/85" : "text-muted-foreground")}>
+          ขั้นที่ {stepIndex + 1} จาก {STEPS.length} {STEPS[stepIndex].label}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5" aria-hidden="true">
+        {STEPS.map((s, i) => (
+          <span
+            key={s.key}
+            className={cn(
+              "h-1.5 rounded-full transition-all",
+              i === stepIndex ? "w-[30px]" : "w-[18px]",
+              i <= stepIndex ? (dark ? "bg-[#5eead4]" : "bg-primary") : dark ? "bg-white/35" : "bg-foreground/20",
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Branch name, how far the person is and whether that is inside the circle, as small chips drawn on a map. */
+function MapChips({ geo }: { geo: Geo }) {
+  const inside = geo.distance != null && geo.radius != null ? geo.distance <= geo.radius : null;
+  const chip = "absolute z-10 inline-flex min-h-[30px] items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-[#131516] shadow-md";
+  return (
+    <>
+      {geo.branchAt && (
+        <span className={cn(chip, "top-2.5 left-2.5")}>
+          <MapPin className="size-4" aria-hidden="true" /> {geo.branchName ?? "สาขา"}
+          {geo.radius != null ? ` · รัศมี ${Math.round(geo.radius).toLocaleString("th-TH")} ม.` : ""}
+        </span>
+      )}
+      <span
+        role="status"
+        aria-live="polite"
+        className={cn(
+          chip,
+          "bottom-2.5 left-2.5",
+          inside === true ? "text-[#17774a]" : inside === false ? "text-[#b42318]" : geo.gpsError ? "text-[#8a6100]" : "",
+        )}
+      >
+        {inside === true ? (
+          <CheckCircle2 className="size-4" aria-hidden="true" />
+        ) : inside === false || geo.gpsError ? (
+          <AlertTriangle className="size-4" aria-hidden="true" />
+        ) : (
+          <MapPin className="size-4" aria-hidden="true" />
+        )}
+        {geo.me
+          ? geo.distance != null
+            ? `ห่าง ${Math.round(geo.distance).toLocaleString("th-TH")} ม. ${inside ? "ในพื้นที่" : "นอกพื้นที่"}`
+            : "GPS พร้อม"
+          : geo.gpsError
+            ? "หาตำแหน่งไม่ได้"
+            : "กำลังหาตำแหน่ง…"}
+      </span>
+    </>
+  );
+}
+
+/** Both the branch circle and the person in view when they are known; otherwise whichever one exists. */
+function mapProps(geo: Geo) {
+  const center = geo.me && geo.branchAt ? { lat: (geo.me.lat + geo.branchAt.lat) / 2, lng: (geo.me.lng + geo.branchAt.lng) / 2 } : (geo.branchAt ?? geo.me);
+  return {
+    center,
+    fitPoints: geo.me && geo.branchAt ? [geo.me, geo.branchAt] : undefined,
+    fence: geo.branchAt && geo.radius != null ? { at: geo.branchAt, radius: geo.radius, outside: geo.distance != null && geo.distance > geo.radius } : undefined,
+    pin: geo.branchAt ?? undefined,
+    me: geo.me ?? undefined,
+  };
 }
 
 function CameraStep({
@@ -326,11 +404,8 @@ function CameraStep({
   onToggleTorch,
   onCapture,
   onSkip,
-  branchName,
-  hasGeofence,
-  coords,
-  gpsError,
-  distance,
+  geo,
+  onOpenMap,
 }: {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   ready: boolean;
@@ -343,20 +418,13 @@ function CameraStep({
   onToggleTorch: () => void;
   onCapture: () => void;
   onSkip: () => void;
-  branchName: string | null;
-  hasGeofence: boolean;
-  coords: Coords | null;
-  gpsError: string | null;
-  distance: number | null;
+  geo: Geo;
+  onOpenMap: () => void;
 }) {
+  const mp = mapProps(geo);
   return (
     <div className="absolute inset-0 overflow-hidden">
-      <video
-        ref={videoRef}
-        playsInline
-        muted
-        className={cn("absolute inset-0 size-full object-cover", facing === "user" && "-scale-x-100")}
-      />
+      <video ref={videoRef} playsInline muted className={cn("absolute inset-0 size-full object-cover", facing === "user" && "-scale-x-100")} />
       {!ready && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-slate-300">
           <Loader2 className="size-6 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> กำลังเปิดกล้อง…
@@ -366,48 +434,57 @@ function CameraStep({
         <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
           <AlertTriangle className="size-8 text-amber-300" aria-hidden="true" />
           <p className="text-sm text-slate-200">{errorMessage ?? "เปิดกล้องไม่ได้"}</p>
-          <button
-            type="button"
-            onClick={onSkip}
-            className="mt-2 min-h-11 px-3 text-xs text-slate-300 underline underline-offset-2"
-          >
+          <button type="button" onClick={onSkip} className="mt-2 min-h-11 px-3 text-xs text-slate-300 underline underline-offset-2">
             ข้ามขั้นตอนถ่ายรูปแล้วลงเวลาต่อ
           </button>
         </div>
       )}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pt-10 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
-        <div className="mx-auto mb-4 flex max-w-xs items-center justify-between gap-2 rounded-xl bg-black/60 px-3 py-2 text-xs">
-          <span className="flex items-center gap-1.5 text-slate-200">
-            <MapPinned className={cn("size-3.5 shrink-0", coords ? "text-gv-lime" : "text-amber-300")} />
-            {branchName ?? "ไม่ระบุสาขา"}
-          </span>
-          <span
-            role="status"
-            aria-live="polite"
-            className={cn("shrink-0", coords ? "text-gv-lime" : gpsError ? "text-amber-300" : "text-slate-300")}
-          >
-            {coords
-              ? hasGeofence && distance != null
-                ? `ห่าง ${Math.round(distance).toLocaleString()} ม.`
-                : "GPS พร้อม"
-              : gpsError
-                ? "หาตำแหน่งไม่ได้"
-                : "กำลังหาตำแหน่ง…"}
-          </span>
+
+      {/* Corner marks to help line the face up; they only guide the eye, nothing checks the face. */}
+      <div aria-hidden="true" className="pointer-events-none absolute top-[54%] left-1/2 h-[230px] w-[250px] -translate-x-1/2 -translate-y-1/2">
+        <span className="absolute top-0 left-0 size-9 rounded-tl-[18px] border-t-[3px] border-l-[3px] border-[#5eead4]" />
+        <span className="absolute top-0 right-0 size-9 rounded-tr-[18px] border-t-[3px] border-r-[3px] border-[#5eead4]" />
+        <span className="absolute bottom-0 left-0 size-9 rounded-bl-[18px] border-b-[3px] border-l-[3px] border-[#5eead4]" />
+        <span className="absolute right-0 bottom-0 size-9 rounded-br-[18px] border-r-[3px] border-b-[3px] border-[#5eead4]" />
+      </div>
+
+      {mp.center ? (
+        <div className={cn(CAM_GLASS, "absolute inset-x-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-10 h-[176px] rounded-[28px] p-[5px]")}>
+          <TileMap center={mp.center} zoom={18} fitPoints={mp.fitPoints} fence={mp.fence} pin={mp.pin} me={mp.me} className="size-full rounded-[23px]">
+            <MapChips geo={geo} />
+            <button
+              type="button"
+              onClick={onOpenMap}
+              aria-label="ขยายแผนที่เต็มจอ"
+              className="absolute top-2 right-2 z-10 flex size-10 items-center justify-center rounded-full bg-white/90 text-[#131516] shadow-md active:scale-95"
+            >
+              <Maximize2 className="size-[18px]" />
+            </button>
+          </TileMap>
         </div>
+      ) : (
+        <div
+          role="status"
+          aria-live="polite"
+          className={cn(CAM_GLASS, "absolute top-[calc(env(safe-area-inset-top)+4.75rem)] left-1/2 z-10 inline-flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold")}
+        >
+          <MapPin className="size-4" aria-hidden="true" />
+          {geo.gpsError ? "หาตำแหน่งไม่ได้" : "กำลังหาตำแหน่ง…"}
+        </div>
+      )}
 
-        <p className="mb-3 text-center text-xs text-slate-300">ถือให้นิ่ง แล้วกดถ่ายรูป</p>
-
+      <div className={cn(CAM_GLASS, "absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] z-10 rounded-[32px] px-4 pt-3.5 pb-4")}>
+        <p className="mb-2.5 text-center text-[13px] text-white/90">ถือให้นิ่ง แล้วกดถ่ายรูป</p>
         <div className="flex items-center justify-center gap-8">
           {torchSupported ? (
             <button
               type="button"
               onClick={onToggleTorch}
-              className="flex size-11 items-center justify-center rounded-full bg-white/10 text-white"
+              className={cn(CAM_GLASS, "flex size-11 items-center justify-center rounded-full")}
               aria-label="แฟลช"
               aria-pressed={torchOn}
             >
-              {torchOn ? <Zap className="size-5 text-gv-lime" /> : <ZapOff className="size-5" />}
+              {torchOn ? <Zap className="size-5 text-[#5eead4]" /> : <ZapOff className="size-5" />}
             </button>
           ) : (
             <span className="size-11" />
@@ -416,17 +493,14 @@ function CameraStep({
             type="button"
             onClick={onCapture}
             disabled={!ready}
-            className="flex size-18 items-center justify-center rounded-full bg-white ring-4 ring-white/30 active:scale-95 motion-reduce:active:scale-100 disabled:opacity-40"
+            className="flex size-[78px] items-center justify-center rounded-full border-[1.5px] border-white/70 bg-[radial-gradient(120%_120%_at_30%_0%,rgba(255,255,255,.5),rgba(255,255,255,.14))] shadow-[0_8px_22px_rgba(0,0,0,.4),inset_0_1px_0_rgba(255,255,255,.8)] transition active:scale-95 motion-reduce:active:scale-100 disabled:opacity-40"
             aria-label="ถ่ายรูป"
           >
-            <Camera className="size-7 text-gv-dark-green" />
+            <span className="flex size-[60px] items-center justify-center rounded-full bg-gradient-to-b from-white to-[#d9f3ef] text-[#0f766e] shadow-[inset_0_-3px_6px_rgba(15,118,110,.18)]">
+              <Camera className="size-7" />
+            </span>
           </button>
-          <button
-            type="button"
-            onClick={onSwitchCamera}
-            className="flex size-11 items-center justify-center rounded-full bg-white/10 text-white"
-            aria-label="สลับกล้องหน้า/หลัง"
-          >
+          <button type="button" onClick={onSwitchCamera} className={cn(CAM_GLASS, "flex size-11 items-center justify-center rounded-full")} aria-label="สลับกล้องหน้า/หลัง">
             <SwitchCamera className="size-5" />
           </button>
         </div>
@@ -435,6 +509,73 @@ function CameraStep({
   );
 }
 
+/** The map opened to the whole screen from the camera step: drag to move, plus and minus to zoom, a button back to the person. */
+function FullMapView({ geo, onBack }: { geo: Geo; onBack: () => void }) {
+  const mp = mapProps(geo);
+  const inside = geo.distance != null && geo.radius != null ? geo.distance <= geo.radius : null;
+  return (
+    <div className="absolute inset-0 text-foreground">
+      {mp.center ? (
+        <TileMap center={mp.center} zoom={18} fitPoints={mp.fitPoints} fence={mp.fence} pin={mp.pin} me={mp.me} insets={{ top: 70, bottom: 330 }} interactive className="absolute inset-0" />
+      ) : (
+        <div className="absolute inset-0 gv-lg-bg" />
+      )}
+      <div className="absolute inset-x-0 top-0 flex items-center gap-2.5 px-3.5 pt-[calc(env(safe-area-inset-top)+0.625rem)]">
+        <button type="button" onClick={onBack} aria-label="กลับไปถ่ายรูป" className="gv-lg flex size-11 shrink-0 items-center justify-center rounded-full">
+          <ChevronLeft className="size-5" />
+        </button>
+        <div className="gv-lg min-w-0 flex-1 rounded-full px-4 py-1.5">
+          <p className="text-base leading-tight font-bold">ตำแหน่งของคุณ</p>
+          <p className="text-xs text-muted-foreground">ลากแผนที่ได้ ใช้ปุ่มบวกลบเพื่อย่อขยาย</p>
+        </div>
+      </div>
+      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-[18px] pt-4 pb-[18px]">
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-md",
+              inside === false || geo.gpsError ? "bg-gradient-to-b from-[#f5b700] to-[#b88200]" : "bg-gradient-to-b from-[#14b8a6] to-[#0f766e]",
+            )}
+          >
+            {inside === false || geo.gpsError ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}
+          </span>
+          <div className="min-w-0">
+            <p className="text-lg leading-tight font-bold">
+              {geo.me ? (inside === false ? "อยู่นอกพื้นที่ทำงาน" : inside ? "อยู่ในพื้นที่ทำงาน" : "ได้ตำแหน่งแล้ว") : geo.gpsError ? "หาตำแหน่งไม่ได้" : "กำลังหาตำแหน่ง…"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {geo.branchName ?? "ไม่ระบุสาขา"}
+              {geo.distance != null ? ` · ห่าง ${Math.round(geo.distance).toLocaleString("th-TH")} เมตร` : ""}
+            </p>
+          </div>
+        </div>
+        <dl className="mt-3 grid grid-cols-3 rounded-[20px] border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] py-2.5 text-center">
+          <div>
+            <dt className="text-xs text-muted-foreground">ความแม่นยำ</dt>
+            <dd className="text-[15px] font-bold tabular-nums">{geo.me?.accuracy != null ? `± ${Math.round(geo.me.accuracy)} ม.` : "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">ละติจูด</dt>
+            <dd className="text-[15px] font-bold tabular-nums">{geo.me ? geo.me.lat.toFixed(4) : "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">ลองจิจูด</dt>
+            <dd className="text-[15px] font-bold tabular-nums">{geo.me ? geo.me.lng.toFixed(4) : "-"}</dd>
+          </div>
+        </dl>
+        <button type="button" onClick={onBack} className={cn(PRIMARY_BTN, "mt-3 h-[52px] w-full")} autoFocus>
+          กลับไปถ่ายรูป
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const PRIMARY_BTN =
+  "rounded-full bg-[linear-gradient(180deg,#14b8a6,#0f766e)] text-base font-bold text-white shadow-[0_12px_24px_rgba(15,118,110,.4),inset_0_1px_0_rgba(255,255,255,.5)] transition active:scale-[0.99] disabled:opacity-40 dark:text-[#06201d] dark:bg-[linear-gradient(180deg,#5eead4,#14b8a6)]";
+const CAM_PRIMARY_BTN =
+  "rounded-full bg-[linear-gradient(180deg,#7ff1de,#2dd4bf)] text-[#06201d] font-bold shadow-[0_12px_24px_rgba(15,118,110,.4),inset_0_1px_0_rgba(255,255,255,.6)] transition active:scale-95 motion-reduce:active:scale-100";
+
 function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: () => void; onConfirm: () => void }) {
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -442,22 +583,18 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="absolute inset-0 size-full object-cover" />
 
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-4 pt-14 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
-        <p className="mb-3 text-center text-sm text-white">ตรวจรูปให้ชัดก่อนยืนยัน</p>
-        <div className="flex gap-3">
+      <div className={cn(CAM_GLASS, "absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-4 pt-3.5 pb-4")}>
+        <p className="mb-3 text-center text-[15px] font-semibold text-white">ตรวจรูปให้ชัดก่อนยืนยัน</p>
+        <div className="flex gap-2.5">
           <button
             type="button"
             onClick={onRetake}
-            className="flex h-16 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white/20 text-xs font-semibold text-white backdrop-blur active:scale-95 motion-reduce:active:scale-100"
+            className={cn(CAM_GLASS, "flex h-[58px] flex-1 flex-col items-center justify-center rounded-full text-sm font-semibold transition active:scale-95 motion-reduce:active:scale-100")}
           >
-            <RotateCcw className="size-5" aria-hidden="true" /> ถ่ายใหม่
+            <RotateCcw className="size-[18px]" aria-hidden="true" /> ถ่ายใหม่
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="flex h-16 flex-[2.2] items-center justify-center gap-2 rounded-2xl bg-gv-lime text-lg font-bold text-gv-dark-green shadow-lg active:scale-95 motion-reduce:active:scale-100"
-          >
-            <Check className="size-6" aria-hidden="true" /> ใช้รูปนี้
+          <button type="button" onClick={onConfirm} className={cn(CAM_PRIMARY_BTN, "flex h-[58px] flex-[2.2] items-center justify-center gap-2 text-base")}>
+            <Check className="size-5" aria-hidden="true" /> ใช้รูปนี้
           </button>
         </div>
       </div>
@@ -465,17 +602,48 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
   );
 }
 
-function ProcessingStep({ stage }: { stage: "gps" | "save" }) {
+function ProcessingStep({ stage, hasPhoto }: { stage: "gps" | "save"; hasPhoto: boolean }) {
+  const rows = [
+    ...(hasPhoto ? [{ key: "photo", label: "ถ่ายรูปแล้ว", state: "done" as const }] : []),
+    { key: "gps", label: "ตรวจสอบตำแหน่ง", state: stage === "gps" ? ("now" as const) : ("done" as const) },
+    { key: "save", label: "บันทึกเวลา", state: stage === "save" ? ("now" as const) : ("wait" as const) },
+  ];
   return (
-    <div role="status" aria-live="polite" className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      <Loader2 className="size-9 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite] text-gv-lime" aria-hidden="true" />
-      <p className="text-sm text-slate-200">{stage === "gps" ? "กำลังตรวจสอบตำแหน่ง…" : "กำลังบันทึกเวลา…"}</p>
+    <div role="status" aria-live="polite" className="flex flex-1 items-center px-[18px] pb-16">
+      <div className="gv-lg w-full rounded-[30px] px-[18px] py-6 text-center">
+        <h2 className="text-[22px] leading-snug font-bold">{stage === "gps" ? "กำลังตรวจสอบตำแหน่ง" : "กำลังบันทึกเวลา"}</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">รอสักครู่ ไม่ต้องปิดหน้านี้</p>
+        <ol className="mt-4 grid gap-2.5 text-left">
+          {rows.map((r, i) => (
+            <li key={r.key} className="flex items-center gap-3 rounded-[18px] border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] px-3 py-2.5 text-sm">
+              <span
+                className={cn(
+                  "flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold",
+                  r.state === "done" && "bg-primary text-primary-foreground",
+                  r.state === "wait" && "bg-accent text-primary",
+                  r.state === "now" && "bg-accent text-primary",
+                )}
+              >
+                {r.state === "done" ? (
+                  <Check className="size-4" aria-hidden="true" />
+                ) : r.state === "now" ? (
+                  <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" aria-hidden="true" />
+                ) : (
+                  i + 1
+                )}
+              </span>
+              <span className={cn(r.state === "wait" && "text-muted-foreground")}>{r.label}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </div>
   );
 }
 
 function OffsiteStep({
   info,
+  geo,
   reason,
   onReasonChange,
   onCancel,
@@ -484,7 +652,8 @@ function OffsiteStep({
   actionLabel,
 }: {
   info: { distance: number; branchName: string | null; permitted: boolean };
-  /** "เช็คอิน" or "เช็คเอาท์", for the confirm button. */
+  geo: Geo;
+  /** "ลงเวลาเข้างาน" or "ลงเวลาออกงาน", for the confirm button. */
   actionLabel: string;
   reason: string;
   onReasonChange: (v: string) => void;
@@ -492,82 +661,83 @@ function OffsiteStep({
   onConfirm: () => void;
   pending: boolean;
 }) {
+  const mp = mapProps({ ...geo, distance: info.distance });
   return (
-    <div role="alert" className="flex flex-1 flex-col overflow-y-auto px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] before:flex-1 after:flex-1">
-      <div className="mx-auto mb-4 flex size-14 shrink-0 items-center justify-center rounded-full bg-amber-300/15 text-amber-300">
-        <AlertTriangle className="size-7" aria-hidden="true" />
-      </div>
-      <p className="text-center text-base font-semibold">อยู่นอกพื้นที่ทำงาน</p>
-      <p className="mt-1 text-center text-sm text-slate-300">
-        {info.branchName ? `${info.branchName} — ` : ""}ห่าง {info.distance.toLocaleString()} เมตร
-      </p>
-
-      {info.permitted ? (
-        <>
-          <label htmlFor="offsite-reason" className="mt-4 text-xs text-slate-300">
-            เหตุผลที่อยู่นอกพื้นที่ (จำเป็น)
-          </label>
-          <textarea
-            id="offsite-reason"
-            rows={3}
-            maxLength={500}
-            autoFocus
-            value={reason}
-            onChange={(e) => onReasonChange(e.target.value)}
-            placeholder="เช่น ไปพบลูกค้า / ปฏิบัติงานนอกสถานที่"
-            className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400 focus:border-gv-lime focus:outline-none"
-          />
-          <div className="mt-4 flex gap-3">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex h-13 flex-1 items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold text-white"
-            >
-              ยกเลิก
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={!reason.trim() || pending}
-              className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-gv-lime text-sm font-semibold text-gv-dark-green disabled:opacity-40"
-            >
-              {pending ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check className="size-4" />} ยืนยัน{actionLabel}
-            </button>
-          </div>
-        </>
+    <div role="alert" className="absolute inset-0">
+      {mp.center ? (
+        <TileMap center={mp.center} zoom={17} fitPoints={mp.fitPoints} fence={mp.fence ? { ...mp.fence, outside: true } : undefined} pin={mp.pin} me={mp.me} line={geo.me && geo.branchAt ? [geo.branchAt, geo.me] : undefined} insets={{ top: 100, bottom: 260 }} className="absolute inset-0" />
       ) : (
-        <>
-          <p className="mt-4 text-center text-sm font-medium text-amber-300">คุณไม่มีสิทธิ์{actionLabel}นอกพื้นที่บริษัท</p>
-          <p className="mt-1 text-center text-xs text-slate-400">
-            หากจำเป็นต้องทำงานนอกสถานที่เป็นประจำ กรุณาติดต่อ HR เพื่อขอสิทธิ์
-          </p>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="mt-5 flex h-13 w-full items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold text-white"
-          >
-            กลับหน้าหลัก
-          </button>
-        </>
+        <div className="absolute inset-0 gv-lg-bg" />
       )}
+      <div className="absolute inset-x-3.5 top-[calc(env(safe-area-inset-top)+0.625rem)]">
+        <div className="gv-lg flex items-center gap-2.5 rounded-full px-3.5 py-2">
+          <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#f5b700] to-[#b88200] text-white shadow-md">
+            <AlertTriangle className="size-[18px]" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-base leading-tight font-bold">อยู่นอกพื้นที่ทำงาน</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {info.branchName ? `${info.branchName} ` : ""}ห่าง {info.distance.toLocaleString("th-TH")} เมตร
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-[18px] pt-4 pb-[18px]">
+        {info.permitted ? (
+          <>
+            <label htmlFor="offsite-reason" className="text-sm font-bold">
+              เหตุผลที่อยู่นอกพื้นที่ (จำเป็น)
+            </label>
+            <textarea
+              id="offsite-reason"
+              rows={2}
+              maxLength={500}
+              value={reason}
+              onChange={(e) => onReasonChange(e.target.value)}
+              placeholder="เช่น ไปพบลูกค้า / ปฏิบัติงานนอกสถานที่"
+              className="mt-1.5 w-full rounded-[20px] border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] p-3 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+            />
+            <div className="mt-3 grid grid-cols-[1fr_1.4fr] gap-2.5">
+              <button type="button" onClick={onCancel} className="h-[54px] rounded-full border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] text-base font-bold text-foreground">
+                ยกเลิก
+              </button>
+              <button type="button" onClick={onConfirm} disabled={!reason.trim() || pending} className={cn(PRIMARY_BTN, "flex h-[54px] items-center justify-center gap-2 text-[15px]")}>
+                {pending ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check className="size-4" />} ยืนยัน{actionLabel}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-base font-bold text-[#8a6100] dark:text-[#f5b700]">คุณยังไม่ได้รับสิทธิ์{actionLabel}นอกพื้นที่บริษัท</p>
+            <p className="mt-1 text-sm text-muted-foreground">สิทธิ์นี้ HR เป็นผู้ติ๊กให้เป็นรายคน หากจำเป็นต้องทำงานนอกสถานที่ ติดต่อ HR เพื่อขอสิทธิ์</p>
+            <button type="button" onClick={onCancel} className={cn(PRIMARY_BTN, "mt-3 h-[54px] w-full")}>
+              กลับหน้าหลัก
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onRetry: () => void; onCancel: () => void }) {
   return (
-    <div role="alert" className="flex flex-1 flex-col items-center gap-4 overflow-y-auto px-6 py-6 text-center before:flex-1 after:flex-1">
-      <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-red-300/15 text-red-300">
-        <X className="size-7" aria-hidden="true" />
-      </div>
-      <p className="text-sm text-slate-200">{message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่"}</p>
-      <div className="mt-2 flex gap-3">
-        <button type="button" onClick={onCancel} className="rounded-xl bg-white/10 min-h-11 px-5 text-sm font-semibold text-white">
-          ยกเลิก
-        </button>
-        <button type="button" onClick={onRetry} className="rounded-xl bg-gv-lime min-h-11 px-5 text-sm font-semibold text-gv-dark-green">
-          ลองใหม่
-        </button>
+    <div role="alert" className="flex flex-1 items-center px-[18px] pb-16">
+      <div className="gv-lg w-full rounded-[30px] px-[18px] py-6 text-center">
+        <span className="mx-auto flex size-[68px] items-center justify-center rounded-full bg-gradient-to-b from-[#e4573d] to-[#b42318] text-white shadow-lg">
+          <X className="size-8" aria-hidden="true" />
+        </span>
+        <h2 className="mt-3 text-[22px] leading-snug font-bold">ลงเวลาไม่สำเร็จ</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{message ?? "ตรวจสัญญาณอินเทอร์เน็ต แล้วกด ลองใหม่ ถ้ายังไม่ได้ แจ้ง HR"}</p>
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <button type="button" onClick={onCancel} className="h-[54px] rounded-full border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] text-base font-bold text-foreground">
+            ยกเลิก
+          </button>
+          <button type="button" onClick={onRetry} className={cn(PRIMARY_BTN, "h-[54px]")}>
+            ลองใหม่
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -578,8 +748,7 @@ function SuccessStep({
   record,
   isLate,
   photo,
-  branchName,
-  coords,
+  geo,
   onDone,
 }: {
   mode: "in" | "out";
@@ -591,16 +760,12 @@ function SuccessStep({
   } | null;
   isLate?: boolean;
   photo: string | null;
-  branchName: string | null;
-  coords: Coords | null;
+  geo: Geo;
   onDone: () => void;
 }) {
   const fmtTime = (iso: string | null | undefined) =>
-    iso
-      ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso))
-      : "--:--";
-  const fmtDate = () =>
-    new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" }).format(new Date());
+    iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : "--:--";
+  const fmtDate = () => new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" }).format(new Date());
   const time = mode === "in" ? record?.clockInAt : record?.clockOutAt;
   const distance = mode === "in" ? record?.clockInDistance : record?.clockOutDistance;
   const worked =
@@ -610,65 +775,74 @@ function SuccessStep({
           return `${Math.floor(mins / 60)} ชม. ${mins % 60} นาที`;
         })()
       : "-";
+  const mp = mapProps(geo);
+  // Show where the time was saved, not the distance guess from before the save.
+  const where = geo.me ?? geo.branchAt;
 
   return (
-    <div role="status" aria-live="polite" className="flex flex-1 flex-col overflow-y-auto bg-gv-dark-green px-5 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
-      <div className="flex flex-1 flex-col items-center justify-center py-4 text-center">
-        <div className="gv-confirm flex size-16 shrink-0 items-center justify-center rounded-full bg-gv-lime text-gv-dark-green">
-          <CheckCircle2 className="size-9" />
-        </div>
-        <p className="mt-4 text-lg font-semibold">{mode === "in" ? "ลงเวลาเข้างานแล้ว" : "ลงเวลาออกงานแล้ว"}</p>
-        <p className="mt-1 text-sm text-white">
-          {fmtTime(time)} น. · {fmtDate()}
-        </p>
-        {isLate && (
-          <span className="mt-2 rounded-full bg-amber-300 px-3 py-1 text-xs font-semibold text-gv-dark-green">มาสาย</span>
-        )}
-      </div>
+    <div role="status" aria-live="polite" className="absolute inset-0">
+      {where ? (
+        <TileMap
+          center={where}
+          zoom={18}
+          fence={mp.fence ? { ...mp.fence, outside: false } : undefined}
+          pin={mp.pin}
+          me={mp.me}
+          insets={{ top: 60, bottom: 400 }}
+          className="absolute inset-0"
+        >
+          <span className="absolute top-[calc(env(safe-area-inset-top)+0.75rem)] left-3 z-10 inline-flex min-h-[30px] items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-[#17774a] shadow-md">
+            <CheckCircle2 className="size-4" aria-hidden="true" /> บันทึกที่จุดนี้ {fmtTime(time)}
+          </span>
+        </TileMap>
+      ) : (
+        <div className="gv-lg-bg absolute inset-0" />
+      )}
 
-      <div className="space-y-3 rounded-2xl bg-white p-4 text-gv-dark-green">
-        <Row label="สถานที่" value={branchName ?? "-"} />
-        <Row label="ระยะห่าง" value={distance != null ? `${Math.round(distance).toLocaleString()} เมตร` : "-"} />
-        <Row label="พิกัด" value={coords ? `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : "-"} />
-        {photo && (
-          <div className="flex items-center justify-between gap-2 border-t border-black/5 pt-3">
-            <span className="text-xs text-muted-foreground">รูปถ่าย</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo} alt="" className="size-11 rounded-lg object-cover" />
-          </div>
-        )}
-        <div className="grid grid-cols-3 gap-2 border-t border-black/5 pt-3 text-center">
-          <div>
-            <p className="text-xs text-muted-foreground">เวลาเข้า</p>
-            <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">{fmtTime(record?.clockInAt)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">เวลาออก</p>
-            <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">{fmtTime(record?.clockOutAt)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">เวลาทำงาน</p>
-            <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">{worked}</p>
+      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-[18px] pt-5 pb-[18px]">
+        <div className="flex items-center gap-3">
+          <span className="gv-confirm flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#14b8a6] to-[#0f766e] text-white shadow-md">
+            <CheckCircle2 className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xl leading-tight font-bold">{mode === "in" ? "ลงเวลาเข้างานแล้ว" : "ลงเวลาออกงานแล้ว"}</p>
+            <p className="text-sm text-muted-foreground">
+              {fmtDate()}
+              {geo.branchName ? ` · ${geo.branchName}` : ""}
+              {distance != null ? ` · ห่าง ${Math.round(distance).toLocaleString("th-TH")} เมตร` : ""}
+            </p>
           </div>
         </div>
+        <div className="mt-2 flex items-center gap-2">
+          <p className="text-[34px] leading-tight font-bold tabular-nums">
+            {fmtTime(time)} <span className="text-base font-semibold">น.</span>
+          </p>
+          {isLate && <span className="rounded-full bg-[#f5b700]/25 px-3 py-1 text-xs font-bold text-[#8a6100] dark:text-[#f5b700]">มาสาย</span>}
+        </div>
+        <dl className="mt-3 grid grid-cols-3 rounded-[20px] border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] py-2.5 text-center">
+          <div>
+            <dt className="text-xs text-muted-foreground">เวลาเข้า</dt>
+            <dd className="font-mono text-[15px] font-bold tabular-nums">{fmtTime(record?.clockInAt)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">เวลาออก</dt>
+            <dd className="font-mono text-[15px] font-bold tabular-nums">{fmtTime(record?.clockOutAt)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">เวลาทำงาน</dt>
+            <dd className="font-mono text-[15px] font-bold tabular-nums">{worked}</dd>
+          </div>
+        </dl>
+        <div className="mt-3 flex items-center gap-3">
+          {photo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo} alt="รูปที่ถ่าย" className="size-[58px] shrink-0 rounded-[18px] object-cover" />
+          )}
+          <button type="button" onClick={onDone} className={cn(PRIMARY_BTN, "h-[58px] flex-1")}>
+            กลับหน้าหลัก
+          </button>
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={onDone}
-        className="mt-5 flex h-13 w-full items-center justify-center rounded-2xl bg-gv-lime text-sm font-semibold text-gv-dark-green"
-      >
-        กลับหน้าหลัก
-      </button>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
     </div>
   );
 }

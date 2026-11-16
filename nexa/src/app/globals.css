@@ -1353,3 +1353,21 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 @media (prefers-reduced-motion: reduce) {
   .gv-orb, .gv-login-bot, .gv-login-bot .vbot-arm, .gv-login-bubble { animation: none; }
 }
+
+/* Check-in camera screens: glass over a live picture (always dark, whatever the theme). */
+.gv-lg-cam {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  color: #fff;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gv-lg-cam { background: rgba(20, 30, 30, 0.82); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .gv-lg-cam { background: rgba(20, 30, 30, 0.86); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+/* Map tiles in dark mode: invert and tint so the map does not glare. */
+.dark .gv-tiles img { filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.92); }
