@@ -16,7 +16,7 @@ export const WATCH_ABSENT_DAYS = 2;
 export const WATCH_LEAVE_COUNT = 4;
 export const WATCH_WINDOW_DAYS = 30;
 
-export type TodayStatus = "NORMAL" | "LATE" | "ABSENT" | "ON_LEAVE" | "NOT_YET";
+export type TodayStatus = "NORMAL" | "LATE" | "ABSENT" | "ON_LEAVE" | "LEAVE_PENDING" | "NOT_YET";
 
 export interface ClassifyTodayInput {
   /** Minutes since midnight, Bangkok time. */
@@ -33,12 +33,16 @@ export interface ClassifyTodayInput {
    * late and absent clocks start there instead of at the shift start.
    */
   excusedUntilMin?: number | null;
+  /** A full-day (or half-day) leave request covers today and nobody has answered it yet. */
+  pendingLeave?: boolean;
 }
 
 /**
  * Today's status for one person who is expected to clock in.
  *
  * - approved leave and no scan  -> ON_LEAVE
+ * - leave asked for, not answered yet, no scan -> LEAVE_PENDING (not absent: the person did what they should; it becomes
+ *   ON_LEAVE when approved and ABSENT again if refused or cancelled)
  * - scanned                     -> LATE after shift start + grace, otherwise NORMAL
  *   (a scan on a leave day is a half-day worker and is not counted late, the
  *   same way payroll and the monthly report treat it)
@@ -50,6 +54,7 @@ export function classifyToday(i: ClassifyTodayInput): TodayStatus {
   const start = Math.max(i.shiftStartMin, i.excusedUntilMin ?? 0);
   if (i.clockInMin == null) {
     if (i.onApprovedLeave) return "ON_LEAVE";
+    if (i.pendingLeave) return "LEAVE_PENDING";
     return i.nowMin < start + absentAfter ? "NOT_YET" : "ABSENT";
   }
   if (i.onApprovedLeave) return "NORMAL";

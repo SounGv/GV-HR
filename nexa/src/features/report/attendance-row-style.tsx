@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CalendarDays, CircleCheck, CircleX, Clock } from "lucide-react";
+import { CalendarClock, CalendarDays, CircleCheck, CircleX, Clock } from "lucide-react";
 
 import { ATTENDANCE_STATUS_LABEL } from "@/features/attendance/status-badge";
 import type { AttendanceStatus } from "@/features/attendance/types";
@@ -9,6 +9,10 @@ import type { ReportColumn } from "./types";
 import type { PhotoPreview } from "./report-photo-cell";
 
 type Row = Record<string, string | number>;
+
+/** The report adds one state to the attendance statuses: leave asked for and not answered yet (never saved on a record). */
+type ReportStatus = AttendanceStatus | "LEAVE_PENDING";
+const PENDING_LABEL = "ลา รออนุมัติ";
 
 /**
  * Colour language for the daily attendance report: yellow = late, red =
@@ -20,8 +24,14 @@ type Row = Record<string, string | number>;
  * classes it can find as whole strings.
  */
 const TONE: Partial<
-  Record<AttendanceStatus, { row: string; bar: string; card: string; header: string }>
+  Record<ReportStatus, { row: string; bar: string; card: string; header: string }>
 > = {
+  LEAVE_PENDING: {
+    row: "bg-status-pending-bg hover:bg-[color-mix(in_oklab,var(--status-pending-bg)_92%,var(--foreground))]",
+    bar: "shadow-[inset_5px_0_0_var(--status-pending-dot)]",
+    card: "border-dashed border-status-pending-border bg-status-pending-bg",
+    header: "border-status-pending-border bg-foreground/5",
+  },
   LATE: {
     row: "bg-status-late-bg hover:bg-[color-mix(in_oklab,var(--status-late-bg)_92%,var(--foreground))]",
     bar: "shadow-[inset_5px_0_0_var(--status-late-dot)]",
@@ -43,7 +53,7 @@ const TONE: Partial<
 };
 
 function toneOf(row: Row) {
-  const key = row.statusKey as AttendanceStatus | undefined;
+  const key = row.statusKey as ReportStatus | undefined;
   return key ? TONE[key] : undefined;
 }
 
@@ -62,7 +72,11 @@ export function dailyCardClass(row: Row): { card?: string; header?: string } {
   return { card: t?.card, header: t?.header };
 }
 
-const BADGE: Record<AttendanceStatus, { icon: typeof Clock; className: string }> = {
+const BADGE: Record<ReportStatus, { icon: typeof Clock; className: string }> = {
+  LEAVE_PENDING: {
+    icon: CalendarClock,
+    className: "border-dashed border-status-pending-border bg-status-pending-bg text-status-pending-fg",
+  },
   PRESENT: {
     icon: CircleCheck,
     className: "border-status-normal-border bg-status-normal-bg text-status-normal-fg",
@@ -77,7 +91,7 @@ const BADGE: Record<AttendanceStatus, { icon: typeof Clock; className: string }>
 
 /** Status as icon + word, from the `statusKey` the service already sends. */
 export function ReportStatusBadge({ statusKey, fallback }: { statusKey?: string; fallback?: ReactNode }) {
-  const style = statusKey ? BADGE[statusKey as AttendanceStatus] : undefined;
+  const style = statusKey ? BADGE[statusKey as ReportStatus] : undefined;
   if (!style) return <>{fallback ?? statusKey}</>;
   const Icon = style.icon;
   return (
@@ -88,7 +102,7 @@ export function ReportStatusBadge({ statusKey, fallback }: { statusKey?: string;
       )}
     >
       <Icon className="size-3.5 shrink-0" aria-hidden="true" />
-      {ATTENDANCE_STATUS_LABEL[statusKey as AttendanceStatus]}
+      {statusKey === "LEAVE_PENDING" ? PENDING_LABEL : ATTENDANCE_STATUS_LABEL[statusKey as AttendanceStatus]}
     </span>
   );
 }

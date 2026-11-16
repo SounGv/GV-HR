@@ -23,6 +23,8 @@ export interface TodayPerson {
   leaveType: string | null;
   /** Leave taken today by the hour or by half a day while the person also came in, e.g. "ลากิจ 09:00-10:00"; else null. */
   leaveNote: string | null;
+  /** When the person asked for leave that is still waiting for an answer, e.g. "ลาป่วยทั้งวัน ยื่นเมื่อ 08:41 · รอหัวหน้าอนุมัติ"; else null. */
+  pendingLeaveNote: string | null;
 }
 
 export interface TodayAttendance {
@@ -61,6 +63,8 @@ export interface WatchPerson {
   late: number;
   absent: number;
   leave: number;
+  /** Days with no scan where a leave request is still waiting for an answer: not counted as absent until it is answered. */
+  pendingLeave?: number;
   reasons: ("late" | "absent" | "leave")[];
   score: number;
 }

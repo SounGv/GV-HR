@@ -40,6 +40,12 @@ export function WatchTags({ person }: { person: WatchPerson }) {
           </span>
         );
       })}
+      {(person.pendingLeave ?? 0) > 0 && (
+        <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold", STATUS_META.LEAVE_PENDING.surface)}>
+          <STATUS_META.LEAVE_PENDING.icon className="size-3.5" aria-hidden="true" />
+          รอผลใบลา {person.pendingLeave} วัน
+        </span>
+      )}
     </span>
   );
 }

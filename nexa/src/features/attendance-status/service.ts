@@ -74,7 +74,7 @@ export async function loadTodayAttendance(
   const today = bkk.dateUTC;
   const tomorrow = new Date(today.getTime() + DAY_MS);
   const dateIso = today.toISOString().slice(0, 10);
-  const counts: Record<TodayStatus, number> = { NORMAL: 0, LATE: 0, ABSENT: 0, ON_LEAVE: 0, NOT_YET: 0 };
+  const counts: Record<TodayStatus, number> = { NORMAL: 0, LATE: 0, ABSENT: 0, ON_LEAVE: 0, LEAVE_PENDING: 0, NOT_YET: 0 };
 
   const holiday = await prisma.holiday.findFirst({
     where: { companyId, deletedAt: null, date: today },
@@ -166,6 +166,21 @@ export async function loadTodayAttendance(
     select: { employeeId: true, type: true, halfDay: true, halfDayPeriod: true },
   });
   const onLeave = new Set(leaves.map((l) => l.employeeId));
+  // Leave asked for today that nobody has answered yet: shown as "waiting", not as absent (see classifyToday).
+  const pendingLeaves = await prisma.leaveRequest.findMany({
+    where: { companyId, deletedAt: null, status: "PENDING", unit: "DAY", startDate: { lte: today }, endDate: { gte: today }, employee: scope },
+    select: { employeeId: true, type: true, halfDay: true, halfDayPeriod: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const pendingNoteByEmployee = new Map<string, string>();
+  for (const l of pendingLeaves) {
+    if (pendingNoteByEmployee.has(l.employeeId)) continue;
+    const span = l.halfDay ? `ครึ่งวัน${l.halfDayPeriod === "MORNING" ? "เช้า" : l.halfDayPeriod === "AFTERNOON" ? "บ่าย" : ""}` : "ทั้งวัน";
+    const filed = bangkokParts(l.createdAt);
+    const filedToday = filed.dateUTC.getTime() === today.getTime();
+    const when = filedToday ? hhmm(filed.minutesOfDay) : `${filed.dateUTC.getUTCDate()}/${filed.dateUTC.getUTCMonth() + 1}`;
+    pendingNoteByEmployee.set(l.employeeId, `${LEAVE_TYPE_LABEL[l.type] ?? l.type}${span} ยื่นเมื่อ ${when} · รอหัวหน้าอนุมัติ`);
+  }
   // Approved leave taken by the hour (e.g. 09:00-10:00): arriving inside it is not late, see excusedUntil.
   const hourLeaves = await prisma.leaveRequest.findMany({
     where: { companyId, deletedAt: null, status: "APPROVED", unit: "HOUR", startDate: { lte: today }, endDate: { gte: today }, employee: scope },
@@ -211,6 +226,7 @@ export async function loadTodayAttendance(
       onApprovedLeave: onLeave.has(e.id),
       lateGraceMin: LATE_GRACE_MIN,
       excusedUntilMin,
+      pendingLeave: pendingNoteByEmployee.has(e.id),
     });
     counts[status]++;
     return {
@@ -227,6 +243,7 @@ export async function loadTodayAttendance(
       lateMinutes: status === "LATE" && clockInMin != null ? clockInMin - Math.max(shift.startMin, excusedUntilMin ?? 0) : null,
       workMode: rec?.clockInAt ? (WORK_MODE_LABEL[rec.workMode] ?? null) : null,
       leaveType: status === "ON_LEAVE" ? (leaveTypeByEmployee.get(e.id)?.join(" / ") ?? null) : null,
+      pendingLeaveNote: status === "LEAVE_PENDING" ? (pendingNoteByEmployee.get(e.id) ?? null) : null,
       leaveNote: status === "ON_LEAVE" ? null : (leaveNoteByEmployee.get(e.id)?.join(", ") ?? null),
     };
   });
@@ -278,7 +295,7 @@ export async function loadAttendanceWatch(
     const department = String(row.department);
     const person =
       byPerson.get(code) ??
-      ({ code, name: String(row.name), department, late: 0, absent: 0, leave: 0, reasons: [], score: 0 } as WatchPerson);
+      ({ code, name: String(row.name), department, late: 0, absent: 0, leave: 0, pendingLeave: 0, reasons: [], score: 0 } as WatchPerson);
     const dept = deptStats.get(department) ?? { codes: new Set<string>(), late: 0, absent: 0 };
     dept.codes.add(code);
     if (row.statusKey === "LATE") {
@@ -287,6 +304,9 @@ export async function loadAttendanceWatch(
     } else if (row.statusKey === "ABSENT") {
       person.absent++;
       dept.absent++;
+    } else if (row.statusKey === "LEAVE_PENDING") {
+      // Waiting for an answer: not absent yet. It turns into absent again if the request is refused or cancelled.
+      person.pendingLeave = (person.pendingLeave ?? 0) + 1;
     } else if (row.statusKey === "ON_LEAVE" && COUNTED_LEAVE_NOTES.some((n) => String(row.note).startsWith(n))) {
       person.leave++;
     }

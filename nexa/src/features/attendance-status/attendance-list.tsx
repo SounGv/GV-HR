@@ -55,6 +55,8 @@ function detailOf(p: TodayPerson): string {
       return `ยังไม่สแกน · กะเริ่ม ${p.shiftStart} น.`;
     case "NOT_YET":
       return `กะเริ่ม ${p.shiftStart} น.`;
+    case "LEAVE_PENDING":
+      return p.pendingLeaveNote ?? "ยื่นใบลาแล้ว · รออนุมัติ";
     default:
       return p.leaveType ? `${p.leaveType}ทั้งวัน` : "ลางานทั้งวัน";
   }
@@ -65,6 +67,7 @@ const EMPTY_TEXT: Record<TodayStatus | "all", string> = {
   ABSENT: "วันนี้ยังไม่มีคนขาดงาน",
   LATE: "วันนี้ยังไม่มีคนมาสาย",
   ON_LEAVE: "วันนี้ยังไม่มีคนลา",
+  LEAVE_PENDING: "ไม่มีใบลาที่รออนุมัติของวันนี้",
   NOT_YET: "ทุกคนถึงเวลาเริ่มกะแล้ว",
   NORMAL: "ยังไม่มีคนที่สถานะปกติ",
 };

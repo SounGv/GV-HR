@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { ArrowDown, Check, Clock, TriangleAlert } from "lucide-react";
+import { ArrowDown, CalendarClock, Check, Clock, TriangleAlert } from "lucide-react";
 import { GvAbsentIcon, GvCheckinIcon, GvLateIcon, GvLeaveIcon, type GvIconProps } from "@/components/shared/gv-icons";
 
 import { CountUp } from "@/components/shared/count-up";
@@ -42,7 +42,10 @@ const TILE_TONE = {
   absent: "bg-status-absent-bg text-status-absent-fg ring-status-absent-border",
   leave: "bg-status-leave-bg text-status-leave-fg ring-status-leave-border",
   normal: "bg-status-normal-bg text-status-normal-fg ring-status-normal-border",
+  pending: "bg-status-pending-bg text-status-pending-fg ring-status-pending-border",
 } as const;
+
+const PendingIcon = ({ className }: GvIconProps) => <CalendarClock className={className} aria-hidden="true" />;
 
 /** What each colour in the status ring means: the same mark and colour as the tile below, so the ring is not read by colour alone. */
 const RING_LEGEND: { status: TodayStatus; tone: keyof typeof TILE_TONE; label: string; icon: ComponentType<GvIconProps> }[] = [
@@ -50,6 +53,8 @@ const RING_LEGEND: { status: TodayStatus; tone: keyof typeof TILE_TONE; label: s
   { status: "LATE", tone: "late", label: "มาสาย", icon: GvLateIcon },
   { status: "ABSENT", tone: "absent", label: "ขาดงาน", icon: GvAbsentIcon },
   { status: "ON_LEAVE", tone: "leave", label: "ลางาน", icon: GvLeaveIcon },
+  // Shown only while someone is waiting for an answer to a leave request.
+  { status: "LEAVE_PENDING", tone: "pending", label: "ลา รออนุมัติ", icon: PendingIcon },
 ];
 
 function GlassTile({
@@ -175,7 +180,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
               <StatusRing counts={counts} total={total} scanned={scanned} />
             </div>
             <ul className="gv-rise grid gap-1.5" style={{ "--i": 2 } as React.CSSProperties} aria-label="สีในวงกลม">
-              {RING_LEGEND.map((l) => (
+              {RING_LEGEND.filter((l) => l.status !== "LEAVE_PENDING" || counts.LEAVE_PENDING > 0).map((l) => (
                 <li key={l.status} className="flex items-center gap-2 text-[13px] font-semibold text-white">
                   <span className={`flex size-6 items-center justify-center rounded-lg ring-1 ring-inset ${TILE_TONE[l.tone]}`}>
                     <l.icon className="size-4" aria-hidden="true" />
@@ -199,6 +204,15 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
                 <Check className="size-4" aria-hidden="true" />
                 ยังไม่มีคนขาดหรือสาย
               </span>
+            )}
+            {counts.LEAVE_PENDING > 0 && (
+              <Link
+                href={attendanceListHref("LEAVE_PENDING", departmentIds)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-dashed border-white/60 bg-white/10 px-4 text-[13.5px] font-bold text-white hover:bg-white/20"
+              >
+                <CalendarClock className="size-4" aria-hidden="true" />
+                ลา รออนุมัติ {counts.LEAVE_PENDING} คน
+              </Link>
             )}
           </div>
         )}
@@ -236,7 +250,14 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
             label="ลางาน"
             value={counts.ON_LEAVE + partialLeave}
             unit="คน"
-            line={partialLeave > 0 ? `รวมลาบางช่วง ${partialLeave} คน (ชั่วโมงหรือครึ่งวัน)` : "ลาทั้งวันหรือครึ่งวัน"}
+            line={
+              [
+                partialLeave > 0 ? `รวมลาบางช่วง ${partialLeave} คน (ชั่วโมงหรือครึ่งวัน)` : "",
+                counts.LEAVE_PENDING > 0 ? `รออนุมัติ ${counts.LEAVE_PENDING} คน (ยังไม่นับเป็นขาด)` : "",
+              ]
+                .filter(Boolean)
+                .join(" · ") || "ลาทั้งวันหรือครึ่งวัน"
+            }
             spark={trend?.leave}
           />
           <GlassTile

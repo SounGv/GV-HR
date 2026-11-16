@@ -69,4 +69,12 @@ check("came in late with half-day leave: listed under leave", hasPartialLeave({ 
 check("on leave all day is already a leave status, not counted twice", hasPartialLeave({ status: "ON_LEAVE", leaveNote: "ลากิจ 09:00-10:00" }), false);
 check("no leave note, not listed", hasPartialLeave({ status: "NORMAL", leaveNote: null }), false);
 
+// ---- leave asked for and not answered yet is waiting, not absent
+check("no scan, waiting leave request, after the cut-off: LEAVE_PENDING not absent", classifyToday({ ...base, nowMin: 900, clockInMin: null, pendingLeave: true }), "LEAVE_PENDING");
+check("no scan, waiting leave request, before the shift: already shown as waiting", classifyToday({ ...base, nowMin: 500, clockInMin: null, pendingLeave: true }), "LEAVE_PENDING");
+check("approved leave wins over a waiting one", classifyToday({ ...base, nowMin: 900, clockInMin: null, pendingLeave: true, onApprovedLeave: true }), "ON_LEAVE");
+check("scanned in with a waiting request: the scan decides (normal)", classifyToday({ ...base, nowMin: 900, clockInMin: 530, pendingLeave: true }), "NORMAL");
+check("scanned late with a waiting request: still late", classifyToday({ ...base, nowMin: 900, clockInMin: 597, pendingLeave: true }), "LATE");
+check("request refused or cancelled (no pending flag): absent again", classifyToday({ ...base, nowMin: 900, clockInMin: null, pendingLeave: false }), "ABSENT");
+
 process.exit(failed ? 1 : 0);

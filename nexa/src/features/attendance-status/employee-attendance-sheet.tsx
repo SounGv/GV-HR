@@ -24,6 +24,7 @@ const REPORT_STATUS: Record<string, TodayStatus> = {
   LATE: "LATE",
   ABSENT: "ABSENT",
   ON_LEAVE: "ON_LEAVE",
+  LEAVE_PENDING: "LEAVE_PENDING",
 };
 
 /**

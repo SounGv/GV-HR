@@ -579,7 +579,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         lateMinutes,
         earlyMinutes: earlyMinutesOf(r.clockOutAt, shift.endMin),
         status: ATTENDANCE_STATUS_LABEL[status] ?? status,
-        statusKey: status,
+        // A report row can also be "LEAVE_PENDING" (no scan, leave waiting for an answer); that one never comes from a record.
+        statusKey: status as string,
         workMode: WORK_MODE_LABEL[r.workMode] ?? r.workMode,
         note: r.note ?? "-",
         editor: r.updatedById ? editorNameById.get(r.updatedById) ?? "-" : "-",
@@ -648,7 +649,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       employeeId: string,
       person: Person,
       day: Date,
-      statusKey: "ON_LEAVE" | "ABSENT",
+      statusKey: "ON_LEAVE" | "ABSENT" | "LEAVE_PENDING",
       note: string,
     ): DailyRow => {
       const shift = shiftMinutesFromBatch(shiftMap, employeeId, day, person.employmentType);
@@ -670,7 +671,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         otReason: blank,
         lateMinutes: blank,
         earlyMinutes: blank,
-        status: ATTENDANCE_STATUS_LABEL[statusKey] ?? statusKey,
+        status: statusKey === "LEAVE_PENDING" ? "ลา รออนุมัติ" : (ATTENDANCE_STATUS_LABEL[statusKey] ?? statusKey),
         statusKey,
         workMode: blank,
         note,
@@ -756,6 +757,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
           companyId,
           deletedAt: null,
           status: "PENDING",
+          // Only a whole-day request excuses a day with no scan; an hour of leave does not.
+          unit: "DAY",
           startDate: { lt: end },
           endDate: { gte: start },
           ...deptRel,
@@ -783,12 +786,18 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
             dateIso: day,
             code: e.employeeCode,
             stat: null,
+            // Asked for leave and waiting for an answer: not absent. It becomes absent again if the request is refused or cancelled.
             row: noPunchRow(
               e.id,
               e,
               d,
-              "ABSENT",
-              hasPending ? "ไม่มีบันทึกเวลา · มีใบลารออนุมัติ" : "ไม่มีบันทึกเวลา และไม่มีใบลาที่อนุมัติ",
+              hasPending ? "LEAVE_PENDING" : "ABSENT",
+              hasPending
+                ? // A request nobody answers must not hide an absence for weeks: say so on the row once the day is more than 3 days old.
+                  todayBangkok.getTime() - d.getTime() > 3 * DAY_MS
+                  ? "ไม่มีบันทึกเวลา · ใบลารออนุมัติค้างเกิน 3 วัน ควรตอบ"
+                  : "ไม่มีบันทึกเวลา · ใบลารออนุมัติ"
+                : "ไม่มีบันทึกเวลา และไม่มีใบลาที่อนุมัติ",
             ),
           });
         }
@@ -827,6 +836,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     }
     const leaveShown = shown.filter((k) => k.row.statusKey === "ON_LEAVE" && !k.stat).length;
     const absentShown = shown.filter((k) => k.row.statusKey === "ABSENT" && !k.stat).length;
+    const pendingShown = shown.filter((k) => k.row.statusKey === "LEAVE_PENDING" && !k.stat).length;
 
     const avgHours = hoursCount ? totalHours / hoursCount : 0;
     const footnote =
@@ -835,6 +845,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)` +
       (leaveShown > 0 ? ` · ลางานโดยไม่มีบันทึกเวลา ${leaveShown} วัน` : "") +
       (absentShown > 0 ? ` · ขาดงาน (ไม่มีบันทึกเวลาและไม่มีใบลาอนุมัติ) ${absentShown} วัน` : "") +
+      (pendingShown > 0 ? ` · ลารออนุมัติ (ยังไม่นับเป็นขาด) ${pendingShown} วัน` : "") +
       (notCheckedCount > 0
         ? ` · ไม่ได้ตรวจการขาดงานของ ${notCheckedCount} คน ที่ไม่มีบันทึกเวลาเลยในช่วงนี้และ ${ABSENT_ACTIVITY_LOOKBACK_DAYS} วันก่อนหน้า (ยังไม่ได้ใช้เช็คอินในแอป)`
         : "") +

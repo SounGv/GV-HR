@@ -36,7 +36,7 @@ const COMPANY = "00000000-0000-0000-0000-000000000001";
   await check("a normal Monday is unchanged: 16 Nov counts add up", async () => {
     const t = await loadTodayAttendance(COMPANY, hr);
     assert.equal(t.isWorkingDay, true);
-    const sum = t.counts.NORMAL + t.counts.LATE + t.counts.ABSENT + t.counts.ON_LEAVE + t.counts.NOT_YET;
+    const sum = t.counts.NORMAL + t.counts.LATE + t.counts.ABSENT + t.counts.ON_LEAVE + t.counts.LEAVE_PENDING + t.counts.NOT_YET;
     assert.equal(sum, t.total);
   });
   await check("the person on morning hourly leave carries a leave note and is not late", async () => {
