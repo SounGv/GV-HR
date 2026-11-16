@@ -4,7 +4,7 @@ import { CalendarDays, ScanLine, Sparkles } from "lucide-react";
 import { LoginForm } from "@/features/auth/login-form";
 import { LoginClock } from "@/features/auth/login-clock";
 import { LoginDial } from "@/features/auth/login-dial";
-import { Logo } from "@/components/shared/logo";
+import { Logo, LogoOnDark } from "@/components/shared/logo";
 import { VBot } from "@/components/shared/v-bot";
 import { isGoogleOAuthEnabled } from "@/lib/auth/google-oauth";
 
@@ -40,12 +40,8 @@ export default function LoginPage() {
         <span aria-hidden="true" className="login-glow login-glow-a" />
         <span aria-hidden="true" className="login-glow login-glow-b" />
 
-        <div className="relative flex items-center gap-3">
-          <Logo size={64} className="h-auto w-16" />
-          <span className="leading-tight">
-            <b className="block text-[15px]">GV One HR</b>
-            <span className="text-xs text-[#9fb3b1]">Gadget Villa</span>
-          </span>
+        <div className="relative">
+          <LogoOnDark height={116} />
         </div>
 
         <div className="relative my-auto flex items-center gap-10 py-10">
