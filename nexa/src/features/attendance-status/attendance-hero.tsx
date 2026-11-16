@@ -5,6 +5,7 @@ import { ArrowDown, Check, Clock, TriangleAlert } from "lucide-react";
 import { GvAbsentIcon, GvCheckinIcon, GvLateIcon, GvLeaveIcon, type GvIconProps } from "@/components/shared/gv-icons";
 
 import { CountUp } from "@/components/shared/count-up";
+import { MiniSpark } from "@/features/dashboard/mini-spark";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { FollowRow } from "@/features/dashboard/follow-up";
 import { StatusRing, personLine } from "./attendance-today-sections";
@@ -18,9 +19,18 @@ interface Props {
   departmentIds: string[];
 }
 
+/** The last days of each number, oldest first, for the small trend line in each tile. */
+export interface HeroTrend {
+  late: number[];
+  absent: number[];
+  leave: number[];
+  present: number[];
+}
+
 interface HeroProps extends Props {
   /** The news ticker; shown inside the hero in both layouts. */
   ticker?: ReactNode;
+  trend?: HeroTrend;
 }
 
 const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
@@ -51,6 +61,7 @@ function GlassTile({
   unit,
   line,
   bar,
+  spark,
   i,
 }: {
   href: string;
@@ -61,6 +72,8 @@ function GlassTile({
   unit: string;
   line?: string;
   bar?: number;
+  /** The last days of this number; drawn as a small line at the bottom of the tile. */
+  spark?: number[];
   i: number;
 }) {
   return (
@@ -81,6 +94,7 @@ function GlassTile({
         </span>
       )}
       {line && <span className="mt-1 block text-xs text-white/75">{line}</span>}
+      {spark && spark.length > 1 && <MiniSpark values={spark} className="mt-1 h-6 w-full text-white/70" />}
     </Link>
   );
 }
@@ -91,7 +105,7 @@ function GlassTile({
  * follow-up list on the left; four glass tiles (late, absent, leave, on time)
  * on the right, each opening its list.
  */
-export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
+export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps) {
   const { counts, total, scanned } = data;
   const late = data.people.filter((p) => p.status === "LATE");
   const worstLate = late.reduce((m, p) => Math.max(m, p.lateMinutes ?? 0), 0);
@@ -201,6 +215,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             value={counts.LATE}
             unit="คน"
             line={counts.LATE > 0 ? `สายสุด ${worstLate} นาที` : "ยังไม่มีคนมาสาย"}
+            spark={trend?.late}
           />
           <GlassTile
             i={1}
@@ -211,6 +226,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             value={counts.ABSENT}
             unit="คน"
             line="ยังไม่สแกนหลังเวลาเข้างาน"
+            spark={trend?.absent}
           />
           <GlassTile
             i={2}
@@ -221,6 +237,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             value={counts.ON_LEAVE + partialLeave}
             unit="คน"
             line={partialLeave > 0 ? `รวมลาบางช่วง ${partialLeave} คน (ชั่วโมงหรือครึ่งวัน)` : "ลาทั้งวันหรือครึ่งวัน"}
+            spark={trend?.leave}
           />
           <GlassTile
             i={3}
@@ -232,6 +249,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             unit={`คน · ${pct(counts.NORMAL, total)}%`}
             bar={pct(counts.NORMAL, total)}
             line={counts.NOT_YET > 0 ? `ยังไม่ถึงเวลาเข้างาน ${counts.NOT_YET} คน` : undefined}
+            spark={trend?.present}
           />
         </div>
       ) : (

@@ -14,7 +14,7 @@ import {
   AttendanceStatusTiles,
   DepartmentBreakdownCard,
 } from "./attendance-today-sections";
-import { AttendanceFollowRows, AttendanceHero } from "./attendance-hero";
+import { AttendanceFollowRows, AttendanceHero, type HeroTrend } from "./attendance-hero";
 import type { TodayAttendance } from "./types";
 
 /** How often today's attendance numbers are read again while the page is in view. */
@@ -125,9 +125,9 @@ export function LiveStatusBar() {
 }
 
 /** Dashboard hero: today's attendance on the dark teal surface with glass tiles. */
-export function LiveHero({ ticker }: { ticker?: ReactNode }) {
+export function LiveHero({ ticker, trend }: { ticker?: ReactNode; trend?: HeroTrend }) {
   const { data, departmentIds } = useLiveToday();
-  return <AttendanceHero data={data} departmentIds={departmentIds} ticker={ticker} />;
+  return <AttendanceHero data={data} departmentIds={departmentIds} ticker={ticker} trend={trend} />;
 }
 
 /** The live absent / late rows at the top of "ต้องตามวันนี้". */

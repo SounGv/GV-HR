@@ -48,7 +48,7 @@ export function TeamOverview({
         }
       />
       <div className="grid items-stretch gap-[22px] lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)]">
-        <Card className="gap-0 p-5">
+        <Card className="gv-panel gv-lift gap-0 p-5">
           <div className="flex items-baseline justify-between gap-3">
             <h3 className="text-[15px] font-semibold">ประเภทการจ้าง</h3>
             <span className="text-muted-foreground text-[12.5px] tabular-nums">
@@ -98,7 +98,7 @@ export function TeamOverview({
           </ul>
         </Card>
 
-        <Card className="gap-0 p-5">
+        <Card className="gv-panel gv-lift gap-0 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <h3 className="text-[15px] font-semibold">พนักงานแต่ละแผนก</h3>
             <span className="text-muted-foreground text-[12.5px] tabular-nums">

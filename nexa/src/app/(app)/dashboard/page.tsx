@@ -46,6 +46,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AttendanceRateLine } from "@/features/dashboard/dashboard-charts-lazy";
 import { KpiMiniBars } from "@/features/dashboard/kpi-mini-bars";
+import { MiniSpark } from "@/features/dashboard/mini-spark";
 import { TeamOverview } from "@/features/dashboard/team-overview";
 import { groupTopDepartments } from "@/features/dashboard/group-departments";
 import { loginIdentifier, displayName } from "@/lib/format";
@@ -203,6 +204,7 @@ function StripCell({
   decimals = 0,
   unit,
   sub,
+  spark,
 }: {
   icon: ComponentType<GvIconProps>;
   label: string;
@@ -210,6 +212,8 @@ function StripCell({
   decimals?: number;
   unit: string;
   sub?: ReactNode;
+  /** The last days of this number, drawn as a small line under it. */
+  spark?: number[];
 }) {
   return (
     <div className="border-border px-[18px] py-3.5 not-first:border-l max-lg:[&:nth-child(4)]:border-l-0 max-lg:[&:nth-child(n+4)]:border-t">
@@ -220,6 +224,7 @@ function StripCell({
         <CountUp value={value} decimals={decimals} /> <span className="text-xs font-medium text-muted-foreground">{unit}</span>
       </p>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
+      {spark && spark.length > 1 && <MiniSpark values={spark} className="mt-1 h-6 w-full text-primary/70" />}
     </div>
   );
 }
@@ -436,7 +441,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </section>
       )}
 
-      {attendanceToday && <LiveHero ticker={<NewsTicker announcement={latestAnnouncement} />} />}
+      {attendanceToday && (
+        <LiveHero
+          ticker={<NewsTicker announcement={latestAnnouncement} />}
+          trend={{
+            late: attendanceTrend.map((p) => p.late),
+            absent: attendanceTrend.map((p) => p.absent),
+            leave: attendanceTrend.map((p) => p.leave),
+            present: attendanceTrend.map((p) => p.present),
+          }}
+        />
+      )}
 
       {/* "ต้องตามวันนี้" board (owner-approved mock, 14 Nov 2026): one card per thing to follow, the
           most urgent first, approvals included; things with nothing today are left to the news ticker. */}
@@ -521,7 +536,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {attendanceToday && (
         <section aria-label="14 วันทำการล่าสุด" className="space-y-3">
           <SectionHeading title="14 วันทำการล่าสุด" hint="ยอดรวมจากการเข้างานย้อนหลัง และ OT ของวันนี้" />
-          <Card className="grid grid-cols-3 gap-0 py-0 lg:grid-cols-6">
+          <Card className="gv-panel grid grid-cols-3 gap-0 py-0 lg:grid-cols-6">
             <StripCell
               icon={GvMeetingIcon}
               label="พนักงานทั้งหมด"
@@ -529,10 +544,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               unit="คน"
               sub={s.newThisMonth > 0 ? <span className="text-success">+{s.newThisMonth} เดือนนี้</span> : undefined}
             />
-            <StripCell icon={GvCheckinIcon} label="เข้างานเฉลี่ย" value={avgAttendanceRate} unit="%" />
-            <StripCell icon={GvLateIcon} label="มาสายรวม" value={lateSum} unit="ครั้ง" />
-            <StripCell icon={GvLeaveIcon} label="ลารวม" value={leaveSum} unit="ครั้ง" />
-            <StripCell icon={GvAbsentIcon} label="ไม่มีบันทึกเวลา" value={absentSum} unit="คน-วัน" />
+            <StripCell icon={GvCheckinIcon} label="เข้างานเฉลี่ย" value={avgAttendanceRate} unit="%" sub="เทียบพนักงานทั้งหมด" spark={attendanceTrend.map((p) => p.present)} />
+            <StripCell icon={GvLateIcon} label="มาสายรวม" value={lateSum} unit="ครั้ง" spark={attendanceTrend.map((p) => p.late)} />
+            <StripCell icon={GvLeaveIcon} label="ลารวม" value={leaveSum} unit="ครั้ง" spark={attendanceTrend.map((p) => p.leave)} />
+            <StripCell icon={GvAbsentIcon} label="ไม่มีบันทึกเวลา" value={absentSum} unit="คน-วัน" sub="รวมคนที่ไม่ใช้แอปสแกน" spark={attendanceTrend.map((p) => p.absent)} />
             <StripCell
               icon={GvOtIcon}
               label="OT วันนี้"
@@ -641,7 +656,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {/* Attendance rate line (dashboard-fix-3) — % of headcount per business
           day, plus a rolled-up summary alongside it. */}
       {canSeeCompany && (
-      <Card>
+      <Card className="gv-panel">
         <CardHeader>
           <CardTitle>การเข้างาน 14 วันทำการล่าสุด</CardTitle>
           <p className="text-xs text-muted-foreground">อัตราเข้างาน/มาสาย/ลา ต่อวัน เทียบเป็น %</p>
