@@ -52,7 +52,7 @@ interface WatchProps {
 /** E. People who reached a threshold in the last 30 days, for a one-to-one conversation, not for judging by numbers. */
 export function WatchlistCard({ data, departmentIds }: WatchProps) {
   return (
-    <Card className="gap-0">
+    <Card className="gv-panel gv-panel-lift gap-0">
       <CardHeader className="pb-2">
         <CardTitle className="text-base">ควรติดตาม ({data.windowDays} วันล่าสุด)</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -99,7 +99,7 @@ export function WatchlistCard({ data, departmentIds }: WatchProps) {
 export function DepartmentWatchCard({ data }: { data: AttendanceWatch }) {
   const top = data.departments.slice(0, 4);
   return (
-    <Card className="gap-0">
+    <Card className="gv-panel gv-panel-lift gap-0">
       <CardHeader className="pb-2">
         <CardTitle className="text-base">แผนกที่ควรจับตา ({data.windowDays} วันล่าสุด)</CardTitle>
         <p className="text-sm text-muted-foreground">เรียงตามจำนวนครั้งที่สายและขาดเฉลี่ยต่อคน</p>
