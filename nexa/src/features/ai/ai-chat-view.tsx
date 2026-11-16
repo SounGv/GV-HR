@@ -156,7 +156,7 @@ export function AiChatView({
           setForm(cmd.action);
           setInput("");
         } else {
-          runQuick({ action: cmd.action, ...(cmd.name ? { name: cmd.name } : {}) }, trimmed);
+          runQuick({ action: cmd.action, ...(cmd.name ? { name: cmd.name } : {}), ...(cmd.count ? { count: cmd.count } : {}) }, trimmed);
         }
         return;
       }

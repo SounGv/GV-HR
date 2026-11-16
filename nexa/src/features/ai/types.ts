@@ -55,7 +55,8 @@ export interface AttachmentPayload {
 
 /** What the quick actions (no AI) are asked and what they answer. Mirrors src/lib/ai/quick.ts. */
 export interface QuickRequest {
-  action: "late_today" | "absent_today" | "pending_approvals" | "leave_quota" | "shifts_week" | "eval_progress" | "announce" | "notify";
+  action: "late_today" | "absent_today" | "pending_approvals" | "leave_quota" | "shifts_week" | "eval_progress" | "leave_ranking" | "announce" | "notify";
+  count?: number;
   name?: string;
   title?: string;
   body?: string;

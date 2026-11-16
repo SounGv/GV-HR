@@ -248,7 +248,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
           setForm(cmd.action);
           setInput("");
         } else {
-          runQuick({ action: cmd.action, ...(cmd.name ? { name: cmd.name } : {}) }, q);
+          runQuick({ action: cmd.action, ...(cmd.name ? { name: cmd.name } : {}), ...(cmd.count ? { count: cmd.count } : {}) }, q);
         }
         return;
       }

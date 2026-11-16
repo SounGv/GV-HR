@@ -2,6 +2,10 @@ import type { Prisma } from "@prisma/client";
 import { canAny } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { loadTodayAttendance } from "@/features/attendance-status/service";
+import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
+import { clampTop, dayText as leaveDayText, rankLeave } from "@/features/ai/leave-ranking";
+import { displayName } from "@/lib/format";
+import { prisma } from "@/lib/prisma";
 import { executeReadTool } from "@/lib/ai/read-tools";
 import { prepareProposal } from "@/lib/ai/proposals";
 import type { ProposalCard } from "@/features/ai/proposal";
@@ -14,6 +18,7 @@ import { LOCAL_SOURCE_LINE, quickToMarkdown, QUICK_MAX_ROWS, rowsNote, type Quic
 
 export interface QuickInput {
   action: QuickAction;
+  count?: number;
   name?: string;
   title?: string;
   body?: string;
@@ -144,6 +149,38 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
               c.peopleWaiting !== undefined ? `${c.peopleWaiting} จาก ${c.participants} คน` : `${c.participants - c.resultsFinalized} จาก ${c.participants} คน`,
             ]),
           },
+        }),
+      );
+    }
+
+    case "leave_ranking": {
+      if (!canAny(session.perms, ["leave:approve", "leave:manage", "report:read"])) return refused("ไม่ได้รับอนุญาต: ต้องมีสิทธิ์ดูสถิติการลา");
+      // The calendar year in Bangkok; only approved leave taken by the day counts, and a manager sees only their own scope.
+      // shortcut: a request is counted whole in the year it starts (one spanning New Year is not split); fine for a top-N list,
+      // split by day if HR ever needs exact year totals.
+      const year = new Date(Date.now() + 7 * 3600000).getUTCFullYear();
+      const rows = await prisma.leaveRequest.findMany({
+        where: {
+          companyId: session.companyId,
+          status: "APPROVED",
+          unit: "DAY",
+          startDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
+          employee: { deletedAt: null, ...(scopeWhere ?? {}) },
+        },
+        select: { employeeId: true, type: true, days: true, employee: { select: { firstName: true, lastName: true, nickname: true, department: { select: { name: true } } } } },
+        take: 20000,
+      });
+      const ranking = rankLeave(
+        rows.map((r) => ({ employeeId: r.employeeId, name: displayName(r.employee), department: r.employee.department?.name ?? "ไม่ระบุแผนก", typeLabel: LEAVE_TYPE_LABEL[r.type] ?? r.type, days: r.days })),
+        clampTop(input.count),
+      );
+      if (ranking.people === 0) return text(`ปี ${year + 543} ยังไม่มีการลาที่อนุมัติแล้ว`);
+      const tie = ranking.tiedBeyond > 0 ? ` อีก ${ranking.tiedBeyond} คนลาเท่าอันดับสุดท้ายไม่ได้แสดง` : "";
+      return text(
+        quickToMarkdown({
+          text: `ปี ${year + 543} คนที่ลาเยอะสุด ${ranking.lines.length} อันดับ จากทั้งหมด ${ranking.people} คนที่ลา (นับวันลาที่อนุมัติแล้ว)`,
+          table: { head: ["อันดับ", "ชื่อ", "แผนก", "รวม (วัน)", "แยกประเภท"], rows: ranking.lines.map((l, i) => [String(i + 1), l.name, l.department, leaveDayText(l.totalDays), l.breakdown]) },
+          note: `ไม่นับการลารายชั่วโมง${tie}`,
         }),
       );
     }

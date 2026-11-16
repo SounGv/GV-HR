@@ -46,7 +46,7 @@ check("a sentence that only contains a keyword is not a command", () => {
   }
 });
 check("anything not understood returns null, never a guess", () => {
-  for (const t of ["", "   ", "สวัสดี", "สรุป OT เดือนนี้ พร้อมค่าใช้จ่าย", "ปีนี้ใครลาเยอะสุด 5 อันดับ", "ก".repeat(200)]) {
+  for (const t of ["", "   ", "สวัสดี", "สรุป OT เดือนนี้ พร้อมค่าใช้จ่าย", "ปีนี้ใครลาเยอะสุดในแผนกคลัง 5 อันดับ", "ก".repeat(200)]) {
     assert.equal(parseQuickCommand(t), null, t.slice(0, 20));
   }
 });

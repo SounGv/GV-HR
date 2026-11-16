@@ -22,6 +22,7 @@
     "check:imported-comments": "node --experimental-strip-types scripts/check-imported-comments.mjs",
     "check:backup-ai": "node --experimental-strip-types scripts/check-backup-ai.mjs",
     "check:rater-sheet": "node --experimental-strip-types scripts/check-rater-sheet.mjs",
+    "check:leave-ranking": "node --experimental-strip-types scripts/check-leave-ranking.mjs",
     "test:devplan": "node scripts/e2e-ai/build.mjs run-devplan && node --env-file=.env.local .tmp-e2e/run-devplan.cjs",
     "test:adjust": "node scripts/e2e-ai/build.mjs run-adjust && node --env-file=.env.local .tmp-e2e/run-adjust.cjs",
     "test:refresh": "node scripts/e2e-ai/build.mjs run-refresh && node --env-file=.env.local .tmp-e2e/run-refresh.cjs",

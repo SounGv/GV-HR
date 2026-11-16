@@ -11,6 +11,7 @@ export type QuickAction =
   | "leave_quota"
   | "shifts_week"
   | "eval_progress"
+  | "leave_ranking"
   | "announce"
   | "notify";
 
@@ -21,6 +22,7 @@ export const QUICK_ACTIONS: { id: QuickAction; label: string; icon: "clock" | "u
   { id: "leave_quota", label: "โควตาวันลาของ…", icon: "cal", needs: "name" },
   { id: "shifts_week", label: "ตารางกะสัปดาห์นี้", icon: "cal", needs: "none" },
   { id: "eval_progress", label: "ความคืบหน้ารอบประเมิน", icon: "chart", needs: "none" },
+  { id: "leave_ranking", label: "ใครลาเยอะสุดปีนี้", icon: "cal", needs: "none" },
   { id: "announce", label: "ส่งประกาศ", icon: "mega", needs: "form" },
   { id: "notify", label: "ส่งแจ้งเตือน", icon: "bell", needs: "form" },
 ];
@@ -31,6 +33,8 @@ export interface QuickCommand {
   name?: string;
   /** What followed "ประกาศ" or "แจ้งเตือน", offered as the title of the form. */
   title?: string;
+  /** The "5" in "ลาเยอะสุด 5 อันดับ". */
+  count?: number;
 }
 
 const clean = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -73,6 +77,8 @@ export function parseQuickCommand(raw: string): QuickCommand | null {
     const name = clean(quota[1] ?? "");
     return name ? { action: "leave_quota", name } : { action: "leave_quota" };
   }
+  const ranking = /^(?:ปีนี้\s*)?(?:ใคร)?ลา(?:เยอะ|มาก|บ่อย)สุด(?:ปีนี้)?\s*(?:(\d{1,2})\s*อันดับ(?:แรก)?)?\s*(?:แยก(?:ตาม)?ประเภท(?:ลา)?)?$/.exec(t);
+  if (ranking) return ranking[1] ? { action: "leave_ranking", count: Number(ranking[1]) } : { action: "leave_ranking" };
   const announce = /^(?:ส่ง|สร้าง|ลง)?ประกาศ(?:\s+(.*))?$/.exec(t);
   if (announce) return announce[1] ? { action: "announce", title: clean(announce[1]) } : { action: "announce" };
   const notify = /^(?:ส่ง)?แจ้งเตือน(?:ทุกคน)?(?:\s+(.*))?$/.exec(t);
