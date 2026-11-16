@@ -171,7 +171,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel className="font-semibold text-[var(--login-text-primary)]">รหัสผ่าน</FormLabel>
-                <Link href="/forgot-password" className="text-xs font-medium text-[var(--login-link)] hover:text-[var(--login-link-hover)] hover:underline">
+                <Link href="/forgot-password" className="-my-3 py-3 pl-3 text-xs font-medium text-[var(--login-link)] hover:text-[var(--login-link-hover)] hover:underline">
                   ลืมรหัสผ่าน?
                 </Link>
               </div>

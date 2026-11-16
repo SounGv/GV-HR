@@ -43,7 +43,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, React.ComponentP
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            className="absolute top-1/2 right-4.5 -translate-y-1/2 text-[var(--login-text-secondary)] hover:text-[var(--login-text-primary)]"
+            className="absolute top-1/2 right-1 flex size-11 -translate-y-1/2 items-center justify-center text-[var(--login-text-secondary)] hover:text-[var(--login-text-primary)]"
             aria-label={visible ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
             tabIndex={-1}
           >
