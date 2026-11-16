@@ -464,7 +464,7 @@ export function TaskForm({
       )}
 
       {/* Thumb bar: one main action per screen. */}
-      <div className="border-border bg-background fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t px-4 py-3 md:bottom-0 md:left-[var(--sidebar-width,0px)] md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="border-border bg-background fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 border-t px-4 py-3 md:bottom-0 md:left-[var(--sidebar-width,0px)] md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-2xl items-center gap-2">
           {view === "start" && (
             <Button

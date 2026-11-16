@@ -340,7 +340,7 @@ export function CompanyProfileForm() {
       {/* Sticky save bar — md:pr-24 leaves room in case the AI chat panel
           (AiChatPanel, fixed bottom-6 right-6, opened from the sidebar) is
           open at the same time, same reservation as FormFooter's. */}
-      <div className="sticky bottom-20 z-10 flex justify-end md:bottom-4 md:pr-24">
+      <div className="sticky bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-10 flex justify-end md:bottom-4 md:pr-24">
         <div className="flex items-center gap-2 rounded-2xl border border-border bg-background p-2 shadow-lg">
           {!canEdit && <span className="px-2 text-xs text-muted-foreground">คุณไม่มีสิทธิ์แก้ไข</span>}
           <Button type="submit" disabled={!canEdit || updateMut.isPending}>

@@ -212,7 +212,7 @@ export function PendingTray({
       inert={!show}
       className={cn(
         "fixed left-1/2 z-[45] w-[min(860px,calc(100%-32px))] -translate-x-1/2 rounded-2xl bg-[#131516] px-3.5 py-3 text-white shadow-[0_24px_48px_-16px_rgba(0,0,0,.5)] transition-transform duration-300 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none",
-        "bottom-[calc(4rem+env(safe-area-inset-bottom)+12px)] md:bottom-5",
+        "bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] md:bottom-5",
         show ? "translate-y-0" : "translate-y-[calc(100%+120px)]",
       )}
     >

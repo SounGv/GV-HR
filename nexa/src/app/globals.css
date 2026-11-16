@@ -1174,6 +1174,8 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
    Real blur only on the page header, the floating tab bar and the round buttons; cards are near-solid white so their text keeps 4.5:1 and
    mid-range Android phones stay smooth. Without backdrop-filter, or with "reduce transparency", the glass turns into a solid surface. */
 :root {
+  /* Space the floating tab bar takes at the bottom of a phone (14px gap + 68px bar + a little air); bars pinned above it use this. */
+  --gv-tabbar: 6.25rem;
   --lg-glass: rgba(255, 255, 255, 0.62);
   --lg-glass-strong: rgba(255, 255, 255, 0.82);
   --lg-card: rgba(255, 255, 255, 0.9);

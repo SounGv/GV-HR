@@ -254,7 +254,7 @@ export function SelfProfileForm() {
       </Section>
 
       {/* md:pr-24 clears the floating AI launcher (fixed bottom-6 right-6 size-14, z-40) */}
-      <div className="sticky bottom-20 z-10 flex justify-end md:bottom-4 md:pr-24">
+      <div className="sticky bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-10 flex justify-end md:bottom-4 md:pr-24">
         <div className="rounded-2xl border border-border bg-background p-2 shadow-lg">
           <Button type="submit" disabled={updateMut.isPending}>
             {updateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}

@@ -161,7 +161,7 @@ export function MobileBottomNav() {
       {/* Content fades out under the bar instead of showing through it, so cards never look stacked behind the tabs. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-[calc(7.5rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-[var(--lg-bg2)] via-[var(--lg-bg2)]/85 to-transparent md:hidden"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[15] h-[calc(7.5rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-[var(--lg-bg2)] via-[var(--lg-bg2)]/85 to-transparent md:hidden"
       />
       <nav
         aria-label="เมนูลัด"

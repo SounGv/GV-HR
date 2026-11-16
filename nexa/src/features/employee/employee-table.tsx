@@ -418,7 +418,7 @@ export function EmployeeTable({ summary }: { summary?: EmployeeSummary } = {}) {
 
       {/* subtle background-refetch hint */}
       {isFetching && !isLoading && (
-        <div className="pointer-events-none fixed right-4 bottom-4 rounded-full bg-primary px-3 py-1 text-xs text-primary-foreground opacity-80">
+        <div className="pointer-events-none fixed right-4 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] rounded-full md:bottom-4 bg-primary px-3 py-1 text-xs text-primary-foreground opacity-80">
           กำลังอัปเดต…
         </div>
       )}

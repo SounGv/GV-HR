@@ -278,7 +278,7 @@ export function Wizard({ round }: { round: RoundDetail }) {
       </div>
 
       {/* Sticky action bar: saving happens here, so there is no separate save button per step. */}
-      <div className="border-border bg-background sticky bottom-0 z-20 -mx-4 border-t px-4 py-3 md:-mx-6 md:px-6">
+      <div className="border-border bg-background sticky bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-20 -mx-4 border-t px-4 py-3 md:bottom-0 md:-mx-6 md:px-6">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Button
             variant="outline"
