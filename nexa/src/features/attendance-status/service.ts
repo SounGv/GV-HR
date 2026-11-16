@@ -14,6 +14,9 @@ import { avatarPaths } from "@/lib/avatar-server";
 import {
   WATCH_WINDOW_DAYS,
   classifyToday,
+  excusedUntil,
+  hhmmToMin,
+  type HourRange,
   watchReasons,
   watchScore,
   type TodayStatus,
@@ -138,6 +141,18 @@ export async function loadTodayAttendance(
     select: { employeeId: true, type: true },
   });
   const onLeave = new Set(leaves.map((l) => l.employeeId));
+  // Approved leave taken by the hour (e.g. 09:00-10:00): arriving inside it is not late, see excusedUntil.
+  const hourLeaves = await prisma.leaveRequest.findMany({
+    where: { companyId, deletedAt: null, status: "APPROVED", unit: "HOUR", startDate: { lte: today }, endDate: { gte: today }, employee: scope },
+    select: { employeeId: true, startTime: true, endTime: true },
+  });
+  const hourRangesByEmployee = new Map<string, HourRange[]>();
+  for (const l of hourLeaves) {
+    const startMin = hhmmToMin(l.startTime);
+    const endMin = hhmmToMin(l.endTime);
+    if (startMin === null || endMin === null) continue;
+    hourRangesByEmployee.set(l.employeeId, [...(hourRangesByEmployee.get(l.employeeId) ?? []), { startMin, endMin }]);
+  }
   // Leave type shown beside the name; a person with two overlapping requests shows each type once.
   const leaveTypeByEmployee = new Map<string, string[]>();
   for (const l of leaves) {
@@ -154,12 +169,14 @@ export async function loadTodayAttendance(
     const rec = recordByEmployee.get(e.id);
     const clockInMin = rec?.clockInAt ? bangkokParts(rec.clockInAt).minutesOfDay : null;
     const shift = shiftMinutesFromBatch(shiftMap, e.id, today, e.employmentType);
+    const excusedUntilMin = excusedUntil(hourRangesByEmployee.get(e.id) ?? [], shift.startMin);
     const status = classifyToday({
       nowMin: bkk.minutesOfDay,
       shiftStartMin: shift.startMin,
       clockInMin,
       onApprovedLeave: onLeave.has(e.id),
       lateGraceMin: LATE_GRACE_MIN,
+      excusedUntilMin,
     });
     counts[status]++;
     return {
@@ -173,7 +190,7 @@ export async function loadTodayAttendance(
       status,
       clockIn: clockInMin == null ? null : hhmm(clockInMin),
       shiftStart: hhmm(shift.startMin),
-      lateMinutes: status === "LATE" && clockInMin != null ? clockInMin - shift.startMin : null,
+      lateMinutes: status === "LATE" && clockInMin != null ? clockInMin - Math.max(shift.startMin, excusedUntilMin ?? 0) : null,
       workMode: rec?.clockInAt ? (WORK_MODE_LABEL[rec.workMode] ?? null) : null,
       leaveType: status === "ON_LEAVE" ? (leaveTypeByEmployee.get(e.id)?.join(" / ") ?? null) : null,
     };

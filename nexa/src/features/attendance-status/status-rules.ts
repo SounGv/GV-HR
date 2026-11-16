@@ -28,6 +28,11 @@ export interface ClassifyTodayInput {
   onApprovedLeave: boolean;
   lateGraceMin: number;
   absentAfterMin?: number;
+  /**
+   * End of an approved hourly leave that covers the shift start (see `excusedUntil`): the person is excused until then, so the
+   * late and absent clocks start there instead of at the shift start.
+   */
+  excusedUntilMin?: number | null;
 }
 
 /**
@@ -41,12 +46,46 @@ export interface ClassifyTodayInput {
  */
 export function classifyToday(i: ClassifyTodayInput): TodayStatus {
   const absentAfter = i.absentAfterMin ?? ABSENT_AFTER_SHIFT_START_MIN;
+  // An hour of approved leave at the start of the shift moves the start: arriving inside it is not late.
+  const start = Math.max(i.shiftStartMin, i.excusedUntilMin ?? 0);
   if (i.clockInMin == null) {
     if (i.onApprovedLeave) return "ON_LEAVE";
-    return i.nowMin < i.shiftStartMin + absentAfter ? "NOT_YET" : "ABSENT";
+    return i.nowMin < start + absentAfter ? "NOT_YET" : "ABSENT";
   }
   if (i.onApprovedLeave) return "NORMAL";
-  return i.clockInMin > i.shiftStartMin + i.lateGraceMin ? "LATE" : "NORMAL";
+  return i.clockInMin > start + i.lateGraceMin ? "LATE" : "NORMAL";
+}
+
+export interface HourRange {
+  startMin: number;
+  endMin: number;
+}
+
+/** "HH:mm" as minutes since midnight, or null when it is not a time. */
+export function hhmmToMin(t: string | null | undefined): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(t ?? "");
+  if (!m) return null;
+  const h = Number(m[1]);
+  const mm = Number(m[2]);
+  return h > 23 || mm > 59 ? null : h * 60 + mm;
+}
+
+/**
+ * Until when an approved hourly leave excuses the person from the start of the shift: the end of the leave that covers the shift
+ * start, extended through any leave that begins where the last one ends (09:00-10:00 then 10:00-11:00 excuses until 11:00).
+ * A leave in the middle of the day does not touch arrival, so it returns null.
+ */
+export function excusedUntil(leaves: readonly HourRange[], shiftStartMin: number): number | null {
+  let until: number | null = null;
+  let reach = shiftStartMin;
+  const sorted = [...leaves].filter((l) => l.endMin > l.startMin).sort((a, b) => a.startMin - b.startMin);
+  for (const l of sorted) {
+    if (l.startMin <= reach && l.endMin > reach) {
+      until = l.endMin;
+      reach = l.endMin;
+    }
+  }
+  return until;
 }
 
 export interface WatchCounts {

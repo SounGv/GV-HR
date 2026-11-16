@@ -10,6 +10,7 @@ import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/
 import { EXPENSE_STATUS_LABEL, EXPENSE_CATEGORY_LABEL } from "@/features/expense/labels";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { bangkokParts, lateOrPresent } from "@/lib/datetime";
+import { excusedUntil, hhmmToMin, type HourRange } from "@/features/attendance-status/status-rules";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
 import type { ReportResult, ReportSummaryDatum } from "./types";
@@ -510,6 +511,27 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // totals describe exactly the rows that are returned.
     const recStats: { hours: number | "-"; ot: number; late: number | "-" }[] = [];
 
+    // Approved leave taken by the hour: arriving inside it is not late (same rule as the home page, see excusedUntil).
+    const hourLeaves = await prisma.leaveRequest.findMany({
+      where: { companyId, deletedAt: null, status: "APPROVED", unit: "HOUR", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
+      select: { employeeId: true, startDate: true, startTime: true, endTime: true },
+    });
+    const hourRangesByKey = new Map<string, HourRange[]>();
+    for (const l of hourLeaves) {
+      const startMin = hhmmToMin(l.startTime);
+      const endMin = hhmmToMin(l.endTime);
+      if (startMin === null || endMin === null) continue;
+      const key = `${l.employeeId}|${l.startDate.toISOString().slice(0, 10)}`;
+      hourRangesByKey.set(key, [...(hourRangesByKey.get(key) ?? []), { startMin, endMin }]);
+    }
+    // A day covered by approved leave taken by the day (a half day, say) is not counted late: the monthly summary above and payroll
+    // already skip these days, and the home page does the same, so the daily rows must not say "late" for them.
+    const dayLeaves = await prisma.leaveRequest.findMany({
+      where: { companyId, deletedAt: null, status: "APPROVED", unit: "DAY", startDate: { lt: end }, endDate: { gte: start }, ...deptRel },
+      select: { employeeId: true, startDate: true, endDate: true },
+    });
+    const onDayLeave = (employeeId: string, workDate: Date) =>
+      dayLeaves.some((l) => l.employeeId === employeeId && l.startDate.getTime() <= workDate.getTime() && workDate.getTime() <= l.endDate.getTime());
     const rows = recs.map((r) => {
       const hours = hoursWorked(r.clockInAt, r.clockOutAt);
       const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
@@ -519,7 +541,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       // past the shift end without a request is not OT (HR rule, 2026-10-20).
       const otHoursNum = approvedOt ?? 0;
       const otApproval = otApprovalByKey.get(otKey);
-      const lateMinutes = lateMinutesOf(r.clockInAt, shift.startMin);
+      const lateFrom = Math.max(shift.startMin, excusedUntil(hourRangesByKey.get(`${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`) ?? [], shift.startMin) ?? 0);
+      const excusedByLeave = onDayLeave(r.employeeId, r.workDate);
+      const lateMinutes = excusedByLeave ? "-" : lateMinutesOf(r.clockInAt, lateFrom);
       recStats.push({ hours, ot: otHoursNum || 0, late: lateMinutes });
       // Recomputed against the employee's real shift rather than trusting
       // the stored `status` — that field was set at clock-in time using
@@ -532,7 +556,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       // never be overwritten by it.
       const status =
         r.clockInAt != null && (r.status === "PRESENT" || r.status === "LATE")
-          ? lateOrPresent(bangkokParts(r.clockInAt).minutesOfDay, shift.startMin)
+          ? excusedByLeave
+            ? "PRESENT"
+            : lateOrPresent(bangkokParts(r.clockInAt).minutesOfDay, lateFrom)
           : r.status;
       return {
         date: formatDate(r.workDate),

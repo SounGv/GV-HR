@@ -4,7 +4,7 @@
 //   node --experimental-strip-types scripts/check-attendance-status.mjs
 //
 // Names and numbers here are made up. Exit code 1 when any check fails.
-import { classifyToday, watchReasons, watchScore } from "../src/features/attendance-status/status-rules.ts";
+import { classifyToday, excusedUntil, hhmmToMin, watchReasons, watchScore } from "../src/features/attendance-status/status-rules.ts";
 import { capRowsByDay, laterDate } from "../src/features/report/daily-cap.ts";
 
 let failed = 0;
@@ -45,5 +45,22 @@ check("a complete boundary day is kept", [r.kept.length, r.truncatedFrom], [8, "
 r = capRowsByDay(rows, 1);
 check("a limit smaller than one day keeps nothing", [r.kept.length, r.truncatedFrom], [0, "2026-10-06"]);
 check("laterDate picks the later, ignoring null", [laterDate(null, "2026-10-02"), laterDate("2026-10-03", "2026-10-02"), laterDate(null, null)], ["2026-10-02", "2026-10-03", null]);
+
+// ---- approved leave by the hour at the start of the shift (the real case: leave 09:00-10:00, scan at 09:57)
+const hr = (a, b) => ({ startMin: hhmmToMin(a), endMin: hhmmToMin(b) });
+check("hhmmToMin reads times and refuses nonsense", [hhmmToMin("09:00"), hhmmToMin("9:05"), hhmmToMin("24:00"), hhmmToMin("09:60"), hhmmToMin(null), hhmmToMin("abc")], [540, 545, null, null, null, null]);
+check("leave 09:00-10:00 excuses until 10:00", excusedUntil([hr("09:00", "10:00")], 540), 600);
+check("leave in the middle of the day does not touch arrival", excusedUntil([hr("13:00", "14:00")], 540), null);
+check("leave that already ended before the shift does not count", excusedUntil([hr("07:00", "08:00")], 540), null);
+check("leave that begins before the shift and runs into it excuses until its end", excusedUntil([hr("08:00", "10:00")], 540), 600);
+check("back to back leaves 09:00-10:00 then 10:00-11:00 excuse until 11:00", excusedUntil([hr("10:00", "11:00"), hr("09:00", "10:00")], 540), 660);
+check("a gap between two leaves stops the chain", excusedUntil([hr("09:00", "10:00"), hr("10:30", "11:00")], 540), 600);
+check("no leave, nothing excused", excusedUntil([], 540), null);
+check("the real case: leave 09:00-10:00 and a scan at 09:57 is normal", classifyToday({ ...base, nowMin: 900, clockInMin: 597, excusedUntilMin: 600 }), "NORMAL");
+check("arriving after the leave ends plus grace is late, counted from the end of the leave", classifyToday({ ...base, nowMin: 900, clockInMin: 606, excusedUntilMin: 600 }), "LATE");
+check("at the end of the leave plus grace (10:05) is still normal", classifyToday({ ...base, nowMin: 900, clockInMin: 605, excusedUntilMin: 600 }), "NORMAL");
+check("without the leave the same 09:57 scan is late", classifyToday({ ...base, nowMin: 900, clockInMin: 597 }), "LATE");
+check("no scan during the excused hour is not absent yet", classifyToday({ ...base, nowMin: 620, clockInMin: null, excusedUntilMin: 600 }), "NOT_YET");
+check("no scan 30 minutes after the leave ends is absent", classifyToday({ ...base, nowMin: 630, clockInMin: null, excusedUntilMin: 600 }), "ABSENT");
 
 process.exit(failed ? 1 : 0);
