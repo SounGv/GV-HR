@@ -53,8 +53,18 @@ class Rollback extends Error {}
       assert.ok(o.resultsBoard.every((b: any) => b.ceiling === true));
       for (const b of o.resultsBoard) assert.equal(b.spread.reduce((s: number, x: any) => s + x.count, 0), b.total);
     });
-    await check("no 'up by 1.4 points': the two October rounds are different directions, so nothing is compared", async () => {
-      assert.equal(o.results.change, null);
+    await check("the average is compared only with the round before it in the same direction (September, never the other October round)", async () => {
+      // Independent calculation: the previous round with the same kind of raters and the mean of its approved scores.
+      const latest = await tx.appraisalRound.findUnique({ where: { id: o.results.roundId }, select: { raterTypes: true } });
+      const others = await tx.appraisalRound.findMany({ where: { companyId: COMPANY, deletedAt: null, isTemplate: false, id: { not: o.results.roundId }, raterTypes: { equals: latest.raterTypes } }, orderBy: { closedAt: "desc" }, select: { id: true, name: true } });
+      if (others.length === 0) {
+        assert.equal(o.results.change, null);
+        return;
+      }
+      const prev = await tx.appraisalParticipant.aggregate({ where: { roundId: others[0]!.id, resultStatus: { in: ["APPROVED", "PUBLISHED", "ACKNOWLEDGED"] }, scorePercent: { not: null } }, _avg: { scorePercent: true } });
+      assert.ok(o.results.change, "there is an earlier round in the same direction, so a comparison is expected");
+      assert.equal(o.results.change.previousName, others[0]!.name);
+      assert.equal(o.results.change.delta, Math.round((o.results.average - Math.round(prev._avg.scorePercent! * 10) / 10) * 10) / 10);
     });
     await check("the rounds list marks templates", async () => {
       const list: any[] = (await listRounds(COMPANY)) as any;
