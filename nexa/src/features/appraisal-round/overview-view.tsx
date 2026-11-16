@@ -194,7 +194,9 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
   const current = !s1 ? 1 : !s2 ? 2 : 3;
   const stateOf = (n: number): StepState => (n < current ? "done" : n === current ? "now" : "later");
 
-  const pending = rounds.find((r) => r.status === "SCHEDULED") ?? rounds.find((r) => r.status === "DRAFT");
+  // A template is only ever copied, so it is never "the draft to continue".
+  const pending = rounds.find((r) => r.status === "SCHEDULED") ?? rounds.find((r) => r.status === "DRAFT" && !r.isTemplate);
+  const templateCount = rounds.filter((r) => r.isTemplate).length;
 
   const sub =
     current === 1
@@ -223,6 +225,9 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
     } else if (pending) {
       step3Note = `มีรอบฉบับร่าง "${pending.name}" ทำต่อได้เลย`;
       step3Action = <HeroPill href={`/appraisal/rounds/${pending.id}`}>ทำต่อ →</HeroPill>;
+    } else if (templateCount > 0) {
+      step3Note = `มีแม่แบบ ${templateCount} รอบ คัดลอกเป็นรอบใหม่ แล้วตั้งวันเปิด–ปิด`;
+      step3Action = <HeroPill href="/appraisal/rounds">ไปคัดลอกแม่แบบ →</HeroPill>;
     } else if (can("campaign:create")) {
       step3Action = (
         <HeroPill onClick={newRound.start} disabled={newRound.pending}>

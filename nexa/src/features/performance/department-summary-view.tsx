@@ -16,10 +16,10 @@ const TONE_CLASS: Record<string, string> = {
 };
 
 export function DepartmentSummaryView() {
-  const { data, isLoading, isError, refetch } = useDepartmentSummary();
+  const { data, isLoading, isError, error, refetch } = useDepartmentSummary();
   const rows = data?.data ?? [];
 
-  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (isError) return <ErrorState error={error} onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={4} />;
   if (rows.length === 0) {
     return <EmptyState icon={Building2} title="ยังไม่มีข้อมูล" description="สรุปผลระดับแผนกจะแสดงเมื่อมีการประเมินพนักงาน" />;

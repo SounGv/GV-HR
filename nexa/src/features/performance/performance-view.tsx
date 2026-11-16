@@ -168,7 +168,7 @@ function AnalyticsTab({
 
 function MyReviews() {
   const { user, can } = useAuth();
-  const { data, isLoading, isError, refetch } = useReviews("me");
+  const { data, isLoading, isError, error, refetch } = useReviews("me");
   const reviews = data?.data ?? [];
   const canViewHistory = can("campaign:read") && !!user.employee?.id;
 
@@ -185,7 +185,7 @@ function MyReviews() {
         </div>
       )}
       {isError ? (
-        <ErrorState onRetry={() => refetch()} />
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
         <TableLoadingState rows={3} />
       ) : reviews.length === 0 ? (
@@ -198,7 +198,7 @@ function MyReviews() {
 }
 
 function TeamReviews() {
-  const { data, isLoading, isError, refetch } = useReviews("team");
+  const { data, isLoading, isError, error, refetch } = useReviews("team");
   const reviews = data?.data ?? [];
 
   return (
@@ -217,7 +217,7 @@ function TeamReviews() {
       </div>
 
       {isError ? (
-        <ErrorState onRetry={() => refetch()} />
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
         <TableLoadingState rows={3} />
       ) : reviews.length === 0 ? (
