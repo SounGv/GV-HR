@@ -26,9 +26,18 @@ interface HeroProps extends Props {
 const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
 /** One translucent tile on the hero: status, count, a short line; opens that status's list. */
+/** Each count has its own status colour on the icon chip, so late, absent, leave and on time read apart at a glance (the word stays beside it). */
+const TILE_TONE = {
+  late: "bg-status-late-bg text-status-late-fg ring-status-late-border",
+  absent: "bg-status-absent-bg text-status-absent-fg ring-status-absent-border",
+  leave: "bg-status-leave-bg text-status-leave-fg ring-status-leave-border",
+  normal: "bg-status-normal-bg text-status-normal-fg ring-status-normal-border",
+} as const;
+
 function GlassTile({
   href,
   icon: Icon,
+  tone,
   label,
   value,
   unit,
@@ -38,6 +47,7 @@ function GlassTile({
 }: {
   href: string;
   icon: ComponentType<GvIconProps>;
+  tone: keyof typeof TILE_TONE;
   label: string;
   value: number;
   unit: string;
@@ -48,8 +58,8 @@ function GlassTile({
   return (
     <Link href={href} className="gv-glass gv-rise block px-4 py-3.5" style={{ "--i": i + 1 } as React.CSSProperties}>
       <span className="flex items-center gap-2 text-[13px] font-semibold text-white/90">
-        <span className="flex size-7 items-center justify-center rounded-[9px] bg-white/15 text-white ring-1 ring-white/25 ring-inset">
-          <Icon className="size-[18px]" aria-hidden="true" />
+        <span className={`flex size-8 items-center justify-center rounded-[10px] ring-1 ring-inset ${TILE_TONE[tone]}`}>
+          <Icon className="size-5" aria-hidden="true" />
         </span>
         {label}
       </span>
@@ -157,6 +167,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             i={0}
             href={attendanceListHref("LATE", departmentIds)}
             icon={GvLateIcon}
+            tone="late"
             label="มาสาย"
             value={counts.LATE}
             unit="คน"
@@ -166,6 +177,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             i={1}
             href={attendanceListHref("ABSENT", departmentIds)}
             icon={GvAbsentIcon}
+            tone="absent"
             label="ขาดงาน"
             value={counts.ABSENT}
             unit="คน"
@@ -175,6 +187,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             i={2}
             href={attendanceListHref("ON_LEAVE", departmentIds)}
             icon={GvLeaveIcon}
+            tone="leave"
             label="ลางาน"
             value={counts.ON_LEAVE}
             unit="คน"
@@ -184,6 +197,7 @@ export function AttendanceHero({ data, departmentIds, ticker }: HeroProps) {
             i={3}
             href={attendanceListHref("NORMAL", departmentIds)}
             icon={GvCheckinIcon}
+            tone="normal"
             label="มาตรงเวลา"
             value={counts.NORMAL}
             unit={`คน · ${pct(counts.NORMAL, total)}%`}
