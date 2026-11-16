@@ -96,7 +96,7 @@ export function IntegrationHub() {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {i.capabilities.map((c) => (
-                      <span key={c} className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                      <span key={c} className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                         {c}
                       </span>
                     ))}

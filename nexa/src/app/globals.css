@@ -379,7 +379,7 @@
   --border: #272b30;
   --input: #272b30;
   /* About 3:1 on the dark card; var(--input) was 1.15:1, so empty fields vanished. */
-  --field-border: #5a626b;
+  --field-border: #69727b;
   --field-bg: transparent;
   --field-shadow: none;
   --card-shadow: none;
@@ -564,6 +564,8 @@
   --muted-foreground: #4f5861;
 }
 .dark .theme-flip7 {
+  /* The light-mode rule above darkens grey text for the pale ground; in dark mode that left it at 2.5:1 on the home and attendance pages. */
+  --muted-foreground: #b8bec4;
   --card-shadow: none;
   --card-hover-border: #3a4047;
   --row-hover: rgba(255, 255, 255, 0.04);

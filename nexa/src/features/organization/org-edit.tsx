@@ -173,7 +173,7 @@ export function DropZone({
         over && "bg-[#ecfdf5] outline-[#0d9488] dark:bg-primary/10 dark:outline-primary",
       )}
     >
-      <p className="mb-1 px-1 text-[11px] font-bold tracking-wide text-muted-foreground">{label}</p>
+      <p className="mb-1 px-1 text-xs font-bold tracking-wide text-muted-foreground">{label}</p>
       {children}
     </div>
   );
@@ -267,7 +267,7 @@ export function ConfirmMovesDialog({
         <div className="-mx-1 max-h-[55vh] overflow-auto px-1">
           <table className="w-full border-collapse text-[13px]">
             <thead>
-              <tr className="text-left text-[11.5px] text-muted-foreground">
+              <tr className="text-left text-xs text-muted-foreground">
                 <th scope="col" className="border-b border-border px-2 py-1.5 font-bold">
                   พนักงาน
                 </th>

@@ -480,12 +480,12 @@ function FormEditor({ form }: { form: FormDetail }) {
             ] as const
           ).map(([k, v]) => (
             <div key={k} className="gv-glass min-w-[64px] px-3 py-2">
-              <dt className="text-xs text-white/80">{k}</dt>
+              <dt className="text-xs text-white/90">{k}</dt>
               <dd className="text-xl leading-snug font-bold tabular-nums">{v}</dd>
             </div>
           ))}
           <div className="gv-glass min-w-[84px] px-3 py-2">
-            <dt className="text-xs text-white/80">ความพร้อม</dt>
+            <dt className="text-xs text-white/90">ความพร้อม</dt>
             <dd
               className="pt-0.5 text-base leading-snug font-bold"
               style={{ color: problems.length ? "var(--status-late-dot)" : undefined }}
@@ -1463,7 +1463,7 @@ function PhonePreview({
         <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-[27px]">
           <div className="sticky top-0 z-[1] bg-[linear-gradient(160deg,var(--on-hero-accent-fg),var(--primary))] px-3.5 pt-3 pb-2.5 text-white">
             <b className="block text-sm">ประเมิน วันชัย (ตัวอย่าง)</b>
-            <span className="block truncate text-xs text-white/75">
+            <span className="block truncate text-xs text-white/90">
               {formName} · ในฐานะ{RATER_LABEL[as]}
             </span>
             <div className="mt-2 flex gap-[3px]" aria-hidden="true">

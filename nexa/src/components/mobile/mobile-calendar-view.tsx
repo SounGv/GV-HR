@@ -150,9 +150,9 @@ export function MobileCalendarView() {
       ) : (
         <div className="rounded-2xl bg-card p-2.5 shadow-sm">
           <div className="mb-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 px-0.5">
-            <span className="text-[11px] font-medium text-muted-foreground">ของฉัน:</span>
+            <span className="text-xs font-medium text-muted-foreground">ของฉัน:</span>
             {MY_STATUS_LEGEND.map(({ status, label }) => (
-              <span key={status} className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <span key={status} className="flex items-center gap-1 text-xs text-muted-foreground">
                 <span
                   className={cn(
                     "flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold",
@@ -168,7 +168,7 @@ export function MobileCalendarView() {
 
           <div className="grid grid-cols-7 gap-1">
             {WEEKDAYS.map((w) => (
-              <div key={w} className="py-1 text-center text-[11px] font-medium text-muted-foreground">
+              <div key={w} className="py-1 text-center text-xs font-medium text-muted-foreground">
                 {w}
               </div>
             ))}
@@ -189,7 +189,7 @@ export function MobileCalendarView() {
                       }}
                       className={cn(
                         "relative flex h-11 flex-col items-center justify-center gap-0.5 rounded-lg border text-xs transition",
-                        c.inMonth ? "bg-card" : "bg-muted/30 text-muted-foreground/60",
+                        c.inMonth ? "bg-card" : "bg-muted/30 text-muted-foreground",
                         selected === c.iso ? "border-primary ring-1 ring-primary" : "border-transparent",
                       )}
                     >

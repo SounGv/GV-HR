@@ -236,17 +236,17 @@ export function MobileDashboardView({
           <h2 className="px-1 text-[13px] font-bold text-foreground">สรุปของฉัน</h2>
           <Link href="/leave" className="block active:scale-[0.99]">
             <div className="rounded-2xl bg-card p-3 shadow-sm">
-              <p className="text-[11px] text-muted-foreground">วันลาคงเหลือ</p>
+              <p className="text-xs text-muted-foreground">วันลาคงเหลือ</p>
               {leaveByType.length === 0 ? (
                 <p className="mt-1 text-sm font-bold text-foreground">—</p>
               ) : (
                 <dl className="mt-1 grid grid-cols-3 gap-2">
                   {leaveByType.map((b) => (
                     <div key={b.type} className="min-w-0">
-                      <dt className="truncate text-[11px] text-muted-foreground">{b.label}</dt>
+                      <dt className="truncate text-xs text-muted-foreground">{b.label}</dt>
                       <dd className="text-lg font-bold tabular-nums text-foreground">
                         {b.configured ? b.remaining : "—"}
-                        {b.configured && <span className="text-[11px] font-medium text-muted-foreground"> วัน</span>}
+                        {b.configured && <span className="text-xs font-medium text-muted-foreground"> วัน</span>}
                       </dd>
                     </div>
                   ))}
@@ -306,7 +306,7 @@ function SummaryTile({
       <span className={`flex size-7 items-center justify-center ${tone}`}>
         <Icon className="size-5" strokeWidth={1.75} />
       </span>
-      <p className="truncate text-[11px] text-muted-foreground">{label}</p>
+      <p className="truncate text-xs text-muted-foreground">{label}</p>
       <p className="truncate text-sm font-bold text-foreground">{value}</p>
     </div>
   );

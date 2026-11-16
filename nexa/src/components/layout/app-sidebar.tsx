@@ -151,7 +151,7 @@ export function AppSidebar() {
             {item.label}
           </span>
         </SidebarMenuButton>
-        {!item.ready && <SidebarMenuBadge className="text-[10px] text-muted-foreground">เร็วๆ นี้</SidebarMenuBadge>}
+        {!item.ready && <SidebarMenuBadge className="text-xs text-muted-foreground">เร็วๆ นี้</SidebarMenuBadge>}
         {item.ready && badge > 0 && (
           <SidebarMenuBadge className="bg-[#CDEB03] font-semibold text-[#131516]">{badge > 9 ? "9+" : badge}</SidebarMenuBadge>
         )}

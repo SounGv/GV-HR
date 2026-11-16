@@ -166,7 +166,7 @@ export function AiChatPanel() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm leading-tight font-semibold">AI Assistant</p>
-          <p className="text-xs leading-tight text-white/85">น้องวีบอท · ตอบจากข้อมูลจริง</p>
+          <p className="text-xs leading-tight text-white/90">น้องวีบอท · ตอบจากข้อมูลจริง</p>
         </div>
         <button
           type="button"

@@ -694,7 +694,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             {!attendanceToday && (
             <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:w-[220px] lg:grid-cols-1">
               <div className="gv-teal-surface flex flex-col rounded-2xl p-3">
-                <span className="text-xs text-white/80">เข้างานเฉลี่ย</span>
+                <span className="text-xs text-white/90">เข้างานเฉลี่ย</span>
                 <span className="text-2xl font-bold text-white tabular-nums">{avgAttendanceRate}%</span>
               </div>
               <div className="flex flex-col rounded-2xl bg-surface-muted p-3">

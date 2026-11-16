@@ -23,7 +23,7 @@ export function MobileMenuTileGrid({ groups, hrStartIndex }: { groups: MobileMen
       {groups.map((group, i) => (
         <section key={group.title}>
           {i === hrStartIndex && i > 0 && (
-            <div className="mb-4 flex items-center gap-2 px-1 text-[11px] font-semibold text-muted-foreground">
+            <div className="mb-4 flex items-center gap-2 px-1 text-xs font-semibold text-muted-foreground">
               <Users className="size-3.5" />
               สำหรับหัวหน้างาน / ฝ่ายบุคคล
               <span className="h-px flex-1 bg-border" />

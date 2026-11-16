@@ -108,7 +108,7 @@ export function TeamOverview({
                     </span>
                   </span>
                   <span className="text-[22px] leading-none font-bold tabular-nums">{t.count}</span>
-                  <span className="bg-muted text-muted-foreground w-11 rounded-full px-2 py-0.5 text-center text-[11.5px] font-semibold tabular-nums">
+                  <span className="bg-muted text-muted-foreground w-11 rounded-full px-2 py-0.5 text-center text-xs font-semibold tabular-nums">
                     {t.pct}%
                   </span>
                   </RowLink>
@@ -158,7 +158,7 @@ export function TeamOverview({
                       {d.name}
                     </span>
                     <span className="text-[15px] font-bold tabular-nums">{d.count}</span>
-                    <span className="text-muted-foreground w-8 text-right text-[11.5px] tabular-nums">
+                    <span className="text-muted-foreground w-9 text-right text-xs tabular-nums">
                       {share}%
                     </span>
                   </div>

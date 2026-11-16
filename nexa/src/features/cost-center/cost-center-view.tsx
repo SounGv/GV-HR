@@ -65,7 +65,7 @@ export function CostCenterView() {
                     {c.name} <span className="text-xs text-muted-foreground">({c.code})</span>
                   </p>
                   {c.description && <p className="truncate text-xs text-muted-foreground">{c.description}</p>}
-                  <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <Users className="size-3" /> {c.employeeCount} คน
                   </p>
                 </div>

@@ -256,7 +256,7 @@ function Templates() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{w.name}</span>
                     {!w.active && (
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                         ปิดใช้งาน
                       </span>
                     )}
@@ -289,7 +289,7 @@ function Templates() {
               <div className="mt-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                 {w.steps.map((s, i) => (
                   <span key={i} className="flex items-center gap-1">
-                    {i > 0 && <span className="text-muted-foreground/50">→</span>}
+                    {i > 0 && <span className="text-muted-foreground/70">→</span>}
                     <span className="rounded bg-muted px-1.5 py-0.5">{s.approverRole}</span>
                   </span>
                 ))}

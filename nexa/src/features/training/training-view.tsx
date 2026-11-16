@@ -107,7 +107,7 @@ export function TrainingView() {
                   <Card key={c.id} className="gap-0 p-4">
                     <Link href={`/training/${c.id}`} className="block">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
                           {c.category}
                         </span>
                       <span

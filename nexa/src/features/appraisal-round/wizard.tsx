@@ -360,7 +360,7 @@ function Hero({
         : "บันทึกอัตโนมัติเมื่อกดถัดไป";
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" aria-labelledby="round-wizard-title">
-      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-sm text-white/70 md:hidden">
+      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-sm text-white/90 md:hidden">
         <BackLink href="/appraisal/rounds" onHero>
           รอบประเมิน
         </BackLink>
@@ -378,7 +378,7 @@ function Hero({
           <span className="size-1.5 rounded-full bg-status-late-dot" aria-hidden="true" /> ฉบับร่าง
         </span>
         <span
-          className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/75"
+          className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/90"
           aria-live="polite"
         >
           <span
@@ -425,7 +425,7 @@ function Hero({
                 <span
                   className={cn(
                     "flex min-h-8 items-center gap-2 text-sm font-semibold",
-                    on ? "text-white" : "text-white/70",
+                    on ? "text-white" : "text-white/90",
                   )}
                 >
                   <span
@@ -461,7 +461,7 @@ function Tile({
 }) {
   return (
     <div className="gv-glass min-w-0 px-3.5 py-3">
-      <p className="text-xs leading-snug text-white/80">{label}</p>
+      <p className="text-xs leading-snug text-white/90">{label}</p>
       <p
         className={cn(
           "mt-0.5 leading-snug font-bold tabular-nums",
@@ -469,7 +469,7 @@ function Tile({
         )}
       >
         {value}
-        {unit && <span className="ml-1 text-xs font-medium text-white/75">{unit}</span>}
+        {unit && <span className="ml-1 text-xs font-medium text-white/90">{unit}</span>}
       </p>
     </div>
   );

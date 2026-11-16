@@ -65,7 +65,7 @@ export function BranchView() {
                     {b.name} <span className="text-xs text-muted-foreground">({b.code})</span>
                   </p>
                   {b.address && <p className="truncate text-xs text-muted-foreground">{b.address}</p>}
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1"><Users className="size-3" /> {b.employeeCount} คน</span>
                     {b.phone && <span>โทร. {b.phone}</span>}
                     {b.hasGeofence && (

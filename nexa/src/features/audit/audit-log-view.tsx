@@ -125,7 +125,7 @@ export function AuditLogView() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{r.action}</span>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       {r.entity}
                     </span>
                   </div>

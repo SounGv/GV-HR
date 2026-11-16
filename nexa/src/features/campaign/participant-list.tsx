@@ -98,7 +98,7 @@ export function ParticipantList({
               {p.overallScore != null && (
                 <div className="text-right">
                   <div className="text-sm font-semibold text-foreground">{p.overallScore.toFixed(1)}</div>
-                  <div className="text-[10px] text-muted-foreground">{p.band}</div>
+                  <div className="text-xs text-muted-foreground">{p.band}</div>
                 </div>
               )}
               {p.finalizedAt ? (

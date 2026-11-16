@@ -102,7 +102,7 @@ export function PayslipDialog({
             </div>
             <div className="text-right">
               <PayrollStatusBadge status={view.status} />
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {view.paidAt ? `จ่ายเมื่อ ${new Date(view.paidAt).toLocaleDateString("th-TH")}` : "ยังไม่จ่าย"}
               </p>
             </div>
@@ -161,7 +161,7 @@ export function PayslipDialog({
               <AdjustList label="รายได้เพิ่มเติม" rows={earningRows} onChange={setEarningRows} />
               <AdjustList label="รายการหักเพิ่มเติม" rows={deductionRows} onChange={setDeductionRows} />
               <div className="space-y-1">
-                <p className="text-[11px] font-medium text-muted-foreground">หมายเหตุจาก HR (แสดงบนสลิป)</p>
+                <p className="text-xs font-medium text-muted-foreground">หมายเหตุจาก HR (แสดงบนสลิป)</p>
                 <Textarea
                   rows={2}
                   className="text-sm"
@@ -246,7 +246,7 @@ function AdjustList({
   }
   return (
     <div className="space-y-1.5">
-      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       {rows.map((r, i) => (
         <div key={i} className="flex items-center gap-1.5">
           <Input

@@ -618,7 +618,7 @@ function SuccessStep({
           <CheckCircle2 className="size-9" />
         </div>
         <p className="mt-4 text-lg font-semibold">{mode === "in" ? "ลงเวลาเข้างานแล้ว" : "ลงเวลาออกงานแล้ว"}</p>
-        <p className="mt-1 text-sm text-white/80">
+        <p className="mt-1 text-sm text-white/90">
           {fmtTime(time)} น. · {fmtDate()}
         </p>
         {isLate && (

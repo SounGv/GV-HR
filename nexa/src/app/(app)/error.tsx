@@ -37,7 +37,7 @@ export default function AppError({
           {error?.digest ? `\n\ndigest: ${error.digest}` : ""}
         </pre>
         {error?.stack && (
-          <pre className="mt-2 max-h-64 max-w-full overflow-auto rounded-lg border border-border bg-muted/50 p-3 text-[11px] text-muted-foreground">
+          <pre className="mt-2 max-h-64 max-w-full overflow-auto rounded-lg border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
             {error.stack}
           </pre>
         )}

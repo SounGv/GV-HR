@@ -168,14 +168,14 @@ export function PayslipDocument({
                 <tr key={i} className="border-b border-slate-100">
                   <td className="py-1.5">{e.label}</td>
                   <td className="py-1.5 text-right tabular-nums">
-                    {HIDE_AMOUNTS ? <span className="text-slate-400 italic">{HIDDEN_AMOUNT}</span> : e.amount.toLocaleString("th-TH")}
+                    {HIDE_AMOUNTS ? <span className="text-slate-500 italic">{HIDDEN_AMOUNT}</span> : e.amount.toLocaleString("th-TH")}
                   </td>
                 </tr>
               ))}
               <tr className="font-semibold">
                 <td className="py-1.5">รวมรายได้</td>
                 <td className="py-1.5 text-right tabular-nums">
-                  {HIDE_AMOUNTS ? <span className="text-slate-400 italic">{HIDDEN_AMOUNT}</span> : slip.gross.toLocaleString("th-TH")}
+                  {HIDE_AMOUNTS ? <span className="text-slate-500 italic">{HIDDEN_AMOUNT}</span> : slip.gross.toLocaleString("th-TH")}
                 </td>
               </tr>
             </tbody>
@@ -193,14 +193,14 @@ export function PayslipDocument({
                 <tr key={i} className="border-b border-slate-100">
                   <td className="py-1.5">{d.label}</td>
                   <td className="py-1.5 text-right tabular-nums">
-                    {HIDE_AMOUNTS ? <span className="text-slate-400 italic">{HIDDEN_AMOUNT}</span> : d.amount.toLocaleString("th-TH")}
+                    {HIDE_AMOUNTS ? <span className="text-slate-500 italic">{HIDDEN_AMOUNT}</span> : d.amount.toLocaleString("th-TH")}
                   </td>
                 </tr>
               ))}
               <tr className="font-semibold">
                 <td className="py-1.5">รวมรายการหัก</td>
                 <td className="py-1.5 text-right tabular-nums">
-                  {HIDE_AMOUNTS ? <span className="text-slate-400 italic">{HIDDEN_AMOUNT}</span> : slip.totalDeductions.toLocaleString("th-TH")}
+                  {HIDE_AMOUNTS ? <span className="text-slate-500 italic">{HIDDEN_AMOUNT}</span> : slip.totalDeductions.toLocaleString("th-TH")}
                 </td>
               </tr>
             </tbody>
@@ -223,7 +223,7 @@ export function PayslipDocument({
         <div className={cn("mt-4 flex items-center justify-between rounded-lg bg-slate-900 text-white print:bg-slate-900", paper.compact ? "px-3 py-2" : "px-5 py-4")}>
           <span className="font-medium">เงินเดือนสุทธิ (Net Pay)</span>
           <span className="text-xl font-bold tabular-nums">
-            {HIDE_AMOUNTS ? <span className="text-base font-normal text-slate-300 italic">{HIDDEN_AMOUNT}</span> : formatCurrency(slip.net)}
+            {HIDE_AMOUNTS ? <span className="text-base font-normal text-slate-500 italic">{HIDDEN_AMOUNT}</span> : formatCurrency(slip.net)}
           </span>
         </div>
 
@@ -255,7 +255,7 @@ export function PayslipDocument({
         </footer>
 
         {!paper.compact && (
-          <p className="mt-4 text-center text-[10px] text-slate-400">
+          <p className="mt-4 text-center text-[10px] text-slate-500">
             เอกสารนี้ออกโดยระบบ GV One HR — {company.name}
           </p>
         )}

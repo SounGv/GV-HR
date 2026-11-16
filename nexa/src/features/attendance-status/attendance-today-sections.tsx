@@ -118,7 +118,7 @@ export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
     <section className="gv-teal-surface rounded-2xl p-5">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-white/85">การเข้างานวันนี้ · ข้อมูล ณ {data.asOf} น.</p>
+          <p className="text-sm text-white/90">การเข้างานวันนี้ · ข้อมูล ณ {data.asOf} น.</p>
           <p className="mt-1 text-[19px] leading-snug font-bold">
             สแกนเข้างานแล้ว <span className="tabular-nums">{scanned}</span> จาก{" "}
             <span className="tabular-nums">{total}</span> คน

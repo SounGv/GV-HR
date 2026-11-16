@@ -382,7 +382,7 @@ export function ClockCard() {
         type="button"
         onClick={() => refetch()}
         aria-label="รีเฟรช"
-        className="absolute top-5 right-5 flex size-9 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white"
+        className="absolute top-5 right-5 flex size-9 items-center justify-center rounded-full bg-white/10 text-white/90 transition hover:bg-white/20 hover:text-white"
       >
         <RotateCcw className="size-4" />
       </button>
@@ -536,7 +536,7 @@ export function ClockCard() {
                   )}
                 >
                   <span className="text-2xl">{m.emoji}</span>
-                  <span className="text-[10px] text-slate-400">{m.label}</span>
+                  <span className="text-xs text-slate-400">{m.label}</span>
                 </button>
               ))}
             </div>

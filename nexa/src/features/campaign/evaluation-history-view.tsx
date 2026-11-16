@@ -47,7 +47,7 @@ export function EvaluationHistoryView({ employeeId }: { employeeId: string }) {
             {r.overallScore != null ? (
               <div className="text-right">
                 <div className="text-sm font-semibold text-foreground">{r.overallScore.toFixed(1)}</div>
-                <div className="text-[10px] text-muted-foreground">{r.band}</div>
+                <div className="text-xs text-muted-foreground">{r.band}</div>
               </div>
             ) : (
               <span className="text-xs text-muted-foreground">ยังไม่มีคะแนน</span>

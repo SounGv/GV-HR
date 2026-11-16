@@ -558,7 +558,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               <ArrowUp className="size-4" strokeWidth={2.4} />
             </button>
           </div>
-          <p className="mt-1.5 px-1 text-[11.5px] text-muted-foreground">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · ตัวเลขที่ใช้จ่ายเงินให้ยืนยันจากรายงานก่อน</p>
+          <p className="mt-1.5 px-1 text-xs text-muted-foreground">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · ตัวเลขที่ใช้จ่ายเงินให้ยืนยันจากรายงานก่อน</p>
         </form>
       </section>
 

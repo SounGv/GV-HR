@@ -204,7 +204,7 @@ export function TaskForm({
             <h1 className="truncate text-base leading-snug font-bold">
               ประเมิน {task.personName}
             </h1>
-            <p className="truncate text-xs text-white/75">
+            <p className="truncate text-xs text-white/90">
               {task.roundName} · ในฐานะ{RATER_LABEL[task.raterType]}
               {task.endIso ? ` · ปิด ${fmtDay(task.endIso)}` : ""}
             </p>
@@ -221,7 +221,7 @@ export function TaskForm({
           ) : (
             !locked && (
               <span
-                className="flex shrink-0 items-center gap-1.5 text-xs text-white/80"
+                className="flex shrink-0 items-center gap-1.5 text-xs text-white/90"
                 aria-live="polite"
               >
                 <span
