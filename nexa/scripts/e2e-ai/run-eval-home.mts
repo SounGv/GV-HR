@@ -30,11 +30,13 @@ class Rollback extends Error {}
     const actor = (await tx.user.findFirst({ where: { companyId: COMPANY }, select: { id: true } }))!.id;
     const hr = { sub: actor, companyId: COMPANY, email: null, username: "hr.test", roles: [], perms: ["campaign:update", "campaign:approve", "campaign:manage", "campaign:read", "campaign:create"] } as any;
     const o: any = await loadEvaluationOverview(COMPANY, hr);
+    // Drafts that are not templates already in the data (someone may have started a new round): they are real work waiting.
+    const otherDrafts = await tx.appraisalRound.count({ where: { companyId: COMPANY, deletedAt: null, status: "DRAFT", isTemplate: false } });
 
     await check("the two template rounds are marked, and are not counted as work waiting", async () => {
       assert.equal(marked.count, 2);
-      assert.equal(o.draftCount, 0);
-      assert.deepEqual(o.drafts, []);
+      assert.equal(o.draftCount, otherDrafts);
+      assert.equal(o.drafts.length, otherDrafts);
       assert.equal(o.templates.length, 2);
       assert.ok(o.templates.every((t: any) => !t.name.startsWith("แม่แบบ")));
     });
@@ -71,7 +73,7 @@ class Rollback extends Error {}
       assert.deepEqual(c.raterPairs, tpl.raterPairs);
       assert.deepEqual(c.raterTypes, tpl.raterTypes);
       const o2: any = await loadEvaluationOverview(COMPANY, hr);
-      assert.equal(o2.draftCount, 1, "the copy is work waiting");
+      assert.equal(o2.draftCount, otherDrafts + 1, "the copy is work waiting");
       assert.equal(o2.templates.length, 2);
     });
     g.__tx = undefined;
