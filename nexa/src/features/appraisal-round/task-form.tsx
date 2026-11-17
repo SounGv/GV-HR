@@ -2,13 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ChevronLeft,
   Info,
   Lock,
   PencilLine,
@@ -32,6 +30,7 @@ import {
   type AnswerValue,
   type SnapQuestion,
 } from "./answers";
+import { scoreIconSrc } from "./score-icon";
 import { RATER_LABEL, type TaskDetail } from "./types";
 
 /*
@@ -71,27 +70,13 @@ export function scoreTone(score: number, max: number) {
   return "bg-muted text-foreground";
 }
 
-/**
- * The 3D picture for a score (Microsoft Fluent Emoji 3D, MIT, files in public/icons/score): the top score is a
- * trophy (a thumbs-up when the scale is only 1-3), the lowest a wrench ("can be improved", not a sad face),
- * and the ones between a thumbs-up, a neutral face or a seedling. The number stays on a badge, so the picture
- * is never the only signal.
- */
-export function scoreIconSrc(score: number, max: number) {
-  if (score <= 1) return "/icons/score/wrench.png";
-  if (score >= max) return max > 3 ? "/icons/score/trophy.png" : "/icons/score/thumbs-up.png";
-  if (max >= 4 && score === max - 1) return "/icons/score/thumbs-up.png";
-  if (max >= 5 && score === 2) return "/icons/score/seedling.png";
-  return "/icons/score/neutral.png";
-}
-
 function ScoreIcon({ score, max, small }: { score: number; max: number; small?: boolean }) {
   return (
     <span
       className={cn(
         "relative flex shrink-0 items-center justify-center rounded-full",
         "bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,.95),rgba(255,255,255,.35)_60%,rgba(255,255,255,.1))] dark:bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,.3),rgba(255,255,255,.08)_60%,rgba(255,255,255,.02))]",
-        "shadow-[inset_0_0_0_1px_rgba(255,255,255,.9),inset_0_-6px_10px_rgba(15,118,110,.12),0_12px_16px_-10px_rgba(15,70,64,.5)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,.18),0_12px_16px_-10px_rgba(0,0,0,.6)]",
+        "shadow-[inset_0_0_0_1px_rgba(255,255,255,.9),inset_0_-6px_10px_color-mix(in_srgb,var(--primary)_12%,transparent),0_12px_16px_-10px_color-mix(in_srgb,var(--primary)_55%,black)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,.18),0_12px_16px_-10px_rgba(0,0,0,.6)]",
         small ? "size-10" : "size-14",
       )}
     >
@@ -138,6 +123,11 @@ export function TaskForm({
     [task.ratingMax, task.ratingLabels],
   );
 
+  // The first rated question's own words for each score (the form builder's "what each score means"), shown on the intro.
+  const startDesc = useMemo(
+    () => new Map((questions.find((x) => x.answerType === "RATING")?.levelDescriptions ?? []).map((l) => [l.score, l.text])),
+    [questions],
+  );
   const [values, setValues] = useState<Values>(() =>
     Object.fromEntries(task.answers.map((a) => [a.questionId, a.value])),
   );
@@ -243,21 +233,17 @@ export function TaskForm({
 
   return (
     <div ref={topRef} className="relative isolate mx-auto max-w-2xl scroll-mt-4 space-y-4 pb-28">
-      {/* Water drops drifting behind the glass (decoration only, never over text). */}
-      <span aria-hidden="true" className="gv-drop -z-10 h-11 w-[38px] -right-3 top-24 md:-right-12" />
-      <span aria-hidden="true" className="gv-drop -z-10 hidden h-[26px] w-[22px] md:block md:-left-10 md:top-[34%]" style={{ animationDelay: "-3s", animationDuration: "9s" }} />
-      <span aria-hidden="true" className="gv-drop -z-10 hidden h-[60px] w-[52px] md:block md:-right-16 md:top-[58%]" style={{ animationDelay: "-5s", animationDuration: "8s" }} />
-      <span aria-hidden="true" className="gv-drop -z-10 hidden h-[19px] w-4 md:block md:-left-6 md:top-[78%]" style={{ animationDelay: "-2s", animationDuration: "6s" }} />
+      {/* Water drops drifting behind the glass (decoration only, never over text). The box clips them to the column,
+          so they cannot make the page scroll sideways. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <span className="gv-drop top-24 -right-3 h-11 w-[38px]" />
+        <span className="gv-drop top-[34%] -left-2 hidden h-[26px] w-[22px] md:block" style={{ animationDelay: "-3s", animationDuration: "9s" }} />
+        <span className="gv-drop top-[58%] -right-4 hidden h-[60px] w-[52px] md:block" style={{ animationDelay: "-5s", animationDuration: "8s" }} />
+        <span className="gv-drop top-[78%] -left-1 hidden h-[19px] w-4 md:block" style={{ animationDelay: "-2s", animationDuration: "6s" }} />
+      </div>
       {/* Header: who, as whom, progress per question, save state (frosted glass). */}
       <section className="gv-frost rounded-[26px] p-3.5 sm:p-5" aria-label="งานประเมิน">
         <div className="flex items-center gap-3">
-          <Link
-            href={backHref}
-            aria-label={`กลับไป${backLabel}`}
-            className="bg-card/80 text-foreground hover:bg-card flex size-11 shrink-0 items-center justify-center rounded-full shadow-[inset_0_1px_0_#fff,0_4px_10px_-4px_rgba(15,70,64,.4)] md:hidden"
-          >
-            <ChevronLeft className="size-5" aria-hidden="true" />
-          </Link>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-base leading-snug font-bold">
               ประเมิน {task.personName}
@@ -310,7 +296,7 @@ export function TaskForm({
               style={{
                 background:
                   view === "q" && i === cur
-                    ? "linear-gradient(90deg,#14b8a6,#0f766e)"
+                    ? "linear-gradient(90deg, var(--ring), var(--primary))"
                     : isAnswered(values[x.id])
                       ? "var(--primary)"
                       : "color-mix(in srgb, var(--primary) 16%, transparent)",
@@ -364,18 +350,21 @@ export function TaskForm({
               คะแนนแต่ละระดับหมายถึง
             </h2>
             <ul className="border-border bg-card overflow-hidden rounded-[18px] border">
-              {rubric.map((r) => (
-                <li
-                  key={r.score}
-                  className="border-border flex items-start gap-3 border-t px-4 py-2.5 first:border-t-0"
-                >
-                  <ScoreIcon score={r.score} max={task.ratingMax} small />
-                  <span className="min-w-0 text-sm">
-                    <b className="block text-sm">{r.label}</b>
-                    {r.desc && <span className="text-muted-foreground">{r.desc}</span>}
-                  </span>
-                </li>
-              ))}
+              {rubric.map((r) => {
+                const words = startDesc.get(r.score) ?? r.desc;
+                return (
+                  <li
+                    key={r.score}
+                    className="border-border flex items-start gap-3 border-t px-4 py-2.5 first:border-t-0"
+                  >
+                    <ScoreIcon score={r.score} max={task.ratingMax} small />
+                    <span className="min-w-0 text-sm">
+                      <b className="block text-sm">{r.label}</b>
+                      {words && <span className="text-muted-foreground">{words}</span>}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <ul className="space-y-2 text-sm">
@@ -542,7 +531,11 @@ export function TaskForm({
               >
                 {qBlocked
                   ? q && q.required && !isAnswered(values[q.id])
-                    ? "เลือกคะแนนก่อน"
+                    ? q.answerType === "RATING"
+                      ? "เลือกคะแนนก่อน"
+                      : q.answerType === "CHOICE" || q.answerType === "MULTI_CHOICE"
+                        ? "เลือกคำตอบก่อน"
+                        : "ตอบข้อนี้ก่อน"
                     : "เขียนตัวอย่างก่อน"
                   : cur === questions.length - 1
                     ? "ตรวจทวน"
@@ -645,7 +638,7 @@ export function QuestionStep({
             >
               <b className="text-foreground font-semibold">ดูจาก:</b> {q.helpText}
             </p>
-            {q.helpText.length > 70 && (
+            {(q.helpText.length > 70 || q.helpText.split(/\r?\n/).length > 2) && (
               <button
                 type="button"
                 aria-expanded={helpOpen}
@@ -674,11 +667,11 @@ export function QuestionStep({
                 disabled={disabled}
                 onClick={() => onValue(r.score)}
                 className={cn(
-                  "bg-card/90 relative flex w-full items-start gap-3 rounded-[26px] border-[1.5px] py-3 pr-3.5 pl-3 text-left shadow-[0_10px_24px_-16px_rgba(15,70,64,.5),inset_0_1px_0_rgba(255,255,255,.95)] transition-[border-color,box-shadow,transform,opacity] duration-200 active:scale-[0.985] disabled:opacity-60 dark:shadow-none",
+                  "bg-card/90 relative flex w-full items-start gap-3 rounded-[26px] border-[1.5px] py-3 pr-3.5 pl-3 text-left shadow-[0_10px_24px_-16px_color-mix(in_srgb,var(--primary)_55%,black),inset_0_1px_0_rgba(255,255,255,.95)] transition-[border-color,box-shadow,transform,opacity] duration-200 active:scale-[0.985] disabled:opacity-60 dark:shadow-none",
                   on
                     ? low
-                      ? "border-destructive border-2 shadow-[0_0_0_4px_var(--status-absent-bg),0_16px_28px_-16px_rgba(180,68,10,.6)] dark:shadow-none"
-                      : "border-primary border-2 shadow-[0_0_0_4px_var(--accent),0_16px_28px_-16px_rgba(15,118,110,.8)] dark:shadow-none"
+                      ? "border-destructive border-2 shadow-[0_0_0_4px_var(--status-absent-bg),0_16px_28px_-16px_var(--destructive)] dark:shadow-none"
+                      : "border-primary border-2 shadow-[0_0_0_4px_var(--accent),0_16px_28px_-16px_var(--primary)] dark:shadow-none"
                     : "border-border hover:border-ring/50",
                   picked && !on && "opacity-85",
                 )}
@@ -715,11 +708,11 @@ export function QuestionStep({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "mt-0.5 flex size-[26px] shrink-0 items-center justify-center rounded-full border-2 text-white transition-colors",
+                    "mt-0.5 flex size-[26px] shrink-0 items-center justify-center rounded-full border-2 transition-colors",
                     on
                       ? low
-                        ? "border-destructive bg-destructive"
-                        : "border-primary bg-primary"
+                        ? "border-destructive bg-destructive text-destructive-foreground"
+                        : "border-primary bg-primary text-primary-foreground"
                       : "border-muted-foreground/50 bg-card/50",
                   )}
                 >

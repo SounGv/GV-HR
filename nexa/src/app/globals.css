@@ -1527,25 +1527,28 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 
 /* ── Frosted glass + floating drops (rater answering screen, rater-question-glass-mock-v3.html) ──
    .gv-frost is a light frosted pane: blur 22px, hairline edge. Without backdrop-filter, or with "reduce
-   transparency", it becomes the solid card colour. .gv-drop are decorative water drops that sit behind
+   transparency", it becomes the solid card colour. .gv-frost sits in the components layer on purpose: un-layered CSS would beat
+   Tailwind utilities, and the "example required" tint and border resets on the same element would be ignored. .gv-drop are decorative water drops that sit behind
    the glass (never over text) and drift slowly; reduced motion stops them. */
-.gv-frost {
-  background: color-mix(in srgb, var(--card) 62%, transparent);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid color-mix(in srgb, #fff 78%, transparent);
-  box-shadow: 0 12px 34px rgba(15, 70, 64, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
-}
-.dark .gv-frost {
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .gv-frost { background: var(--card); }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .gv-frost { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
+@layer components {
+  .gv-frost {
+    background: color-mix(in srgb, var(--card) 62%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid color-mix(in srgb, #fff 78%, transparent);
+    box-shadow: 0 12px 34px rgba(15, 70, 64, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+  }
+  .dark .gv-frost {
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .gv-frost { background: var(--card); }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .gv-frost { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  }
 }
 .gv-drop {
   position: absolute;

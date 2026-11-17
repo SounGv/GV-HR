@@ -21,6 +21,7 @@
     "check:ui": "node scripts/check-ui-invariants.mjs",
     "check:imported-comments": "node --experimental-strip-types scripts/check-imported-comments.mjs",
     "check:backup-ai": "node --experimental-strip-types scripts/check-backup-ai.mjs",
+    "check:score-icon": "node --experimental-strip-types scripts/check-score-icon.mjs",
     "check:rater-sheet": "node --experimental-strip-types scripts/check-rater-sheet.mjs",
     "check:leave-ranking": "node --experimental-strip-types scripts/check-leave-ranking.mjs",
     "test:eval-home": "node scripts/e2e-ai/build.mjs run-eval-home && node --env-file=.env.local .tmp-e2e/run-eval-home.cjs",
