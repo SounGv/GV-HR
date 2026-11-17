@@ -5,6 +5,7 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { getDashboardSummary } from "@/features/dashboard/service";
 import { getReport } from "@/features/report/service";
 import { REPORT_TYPES } from "@/features/report/schema";
+import { REPORT_TYPE_PERMISSION } from "@/features/report/permissions";
 import { prepareProposal } from "@/lib/ai/proposals";
 import { executeReadTool, READ_TOOLS } from "@/lib/ai/read-tools";
 import type { ProposalCard } from "@/features/ai/proposal";
@@ -346,6 +347,9 @@ export async function executeTool(
 
       case "get_hr_report": {
         if (!can(session.perms, "report:read")) return deny("report:read");
+        // The same extra permission the Reports page asks for this type of report (pay figures, rater comments).
+        const typePerm = REPORT_TYPE_PERMISSION[String(input.type)];
+        if (typePerm && !can(session.perms, typePerm)) return deny(typePerm);
         // Convert the tool's period (YYYY-MM or YYYY) into a from/to date range.
         const period = typeof input.period === "string" ? input.period : undefined;
         let from: string | undefined;

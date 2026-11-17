@@ -42,6 +42,7 @@ const PUBLIC_API = new Set([
   // instead, checked inside the route handler.
   "/api/cron/evaluation-schedules",
   "/api/cron/attendance-check",
+  "/api/cron/appraisal-rounds",
   // LINE's servers call this directly (no session cookie) — authenticates
   // itself via the x-line-signature HMAC header, checked inside the handler.
   "/api/integrations/line/webhook",

@@ -8,6 +8,8 @@ import { setupTwoFactor } from "@/lib/auth/service";
 import { GET as performanceGet } from "@/app/api/performance/route";
 import { GET as requestsGet } from "@/app/api/workflows/requests/route";
 import { POST as mfaSetupPost } from "@/app/api/auth/mfa/setup/route";
+import { GET as reportsGet } from "@/app/api/reports/route";
+import { executeTool } from "@/lib/ai/tools";
 
 // Who may see what: the company-wide lists are for HR, a login step token is not a login, and 2FA cannot be re-enrolled
 // over a live secret. Runs against the real database, inside ONE transaction that is thrown away at the end.
@@ -29,6 +31,9 @@ const preset = (name: string) => rolePermissionKeys({ name, isSystem: true, perm
 const EMPLOYEE = preset("Employee");
 const MANAGER = preset("Manager");
 const HR = preset("HR Manager");
+const FINANCE = preset("Finance");
+// A manager is normally also an employee: the two sets together are what such a person really holds.
+const MANAGER_AND_EMPLOYEE = [...new Set([...MANAGER, ...EMPLOYEE])];
 
 async function asUser(userId: string, perms: string[], roles: string[]) {
   g.__token = await signAccessToken({ sub: userId, companyId: COMPANY, email: null, username: null, roles, perms });
@@ -94,6 +99,27 @@ const snapshot = async () => ({ users: await real.user.count(), reviews: await r
           await assert.rejects(() => setupTwoFactor(on.id), /ปิดก่อน/);
           const row = await tx.user.findUnique({ where: { id: on.id }, select: { twoFactorSecret: true } });
           assert.equal(row?.twoFactorSecret, "KEEP-ME", "the secret that protects the account was not replaced");
+        });
+
+        await t("S6 pay figures: a manager who is also an employee cannot read the payroll report, in the Reports page or through the assistant; HR and Finance can", async () => {
+          await asUser(user.id, MANAGER_AND_EMPLOYEE, ["Manager", "Employee"]);
+          assert.ok(MANAGER_AND_EMPLOYEE.includes("report:read"), "the test person can read reports at all");
+          assert.equal((await call(reportsGet, "/api/reports?type=payroll")).status, 403, "reports page");
+          const asked = await executeTool({ sub: user.id, companyId: COMPANY, email: null, username: null, roles: ["Manager"], perms: MANAGER_AND_EMPLOYEE } as any, "get_hr_report", { type: "payroll" });
+          assert.match(asked, /ไม่ได้รับอนุญาต/, "assistant refuses too");
+          for (const [perms, role] of [[HR, "HR Manager"], [FINANCE, "Finance"]] as const) {
+            await asUser(user.id, perms, [role]);
+            assert.equal((await call(reportsGet, "/api/reports?type=payroll")).status, 200, role);
+            const ok = await executeTool({ sub: user.id, companyId: COMPANY, email: null, username: null, roles: [role], perms } as any, "get_hr_report", { type: "payroll" });
+            assert.doesNotMatch(ok, /ไม่ได้รับอนุญาต/, role);
+          }
+        });
+
+        await t("S7 rater comments: the assistant refuses appraisal_detail to someone without evaluation rights, as the Reports page does", async () => {
+          const finance = { sub: user.id, companyId: COMPANY, email: null, username: null, roles: ["Finance"], perms: FINANCE } as any;
+          await asUser(user.id, FINANCE, ["Finance"]);
+          assert.equal((await call(reportsGet, "/api/reports?type=appraisal_detail")).status, 403);
+          assert.match(await executeTool(finance, "get_hr_report", { type: "appraisal_detail" }), /ไม่ได้รับอนุญาต/);
         });
 
         g.__tx = undefined;

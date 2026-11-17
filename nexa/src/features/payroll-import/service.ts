@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { updatePayrollAdjustments } from "@/features/payroll/service";
 import { payrollImportRowSchema } from "./schema";
+import { mergeAdjustmentLines, type AdjustmentLine } from "./merge";
 import type { ImportSummary } from "@/features/employee-import/schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -54,7 +55,7 @@ export async function importPayrollAdjustments(
     }
     const record = await prisma.payrollRecord.findFirst({
       where: { companyId, employeeId, period: g.period, deletedAt: null },
-      select: { id: true, status: true },
+      select: { id: true, status: true, manualAdjustments: true, note: true },
     });
     if (!record) {
       errors.push({ row: 0, code: g.employeeCode, message: `ยังไม่ได้ออกรอบเงินเดือนงวด ${g.period} ให้พนักงานคนนี้ — กรุณาออกรอบก่อน` });
@@ -64,14 +65,25 @@ export async function importPayrollAdjustments(
       warnings.push(`${g.employeeCode} (${g.period}): จ่ายแล้ว ข้ามการนำเข้ารายการเพิ่มเติม`);
       continue;
     }
-    await updatePayrollAdjustments(
-      companyId,
-      session,
-      record.id,
-      { extraEarnings: g.earnings, extraDeductions: g.deductions },
-      meta,
-    );
-    updated++;
+    // Keep what HR already keyed on this payslip (and its note); only the lines the file also has are taken from the file.
+    const current = (record.manualAdjustments ?? {}) as { earnings?: AdjustmentLine[]; deductions?: AdjustmentLine[] };
+    // One payslip that cannot be changed (a closed period, a missing pay rate) is reported and skipped; it must not stop the rest or lose the summary.
+    try {
+      await updatePayrollAdjustments(
+        companyId,
+        session,
+        record.id,
+        {
+          extraEarnings: mergeAdjustmentLines(current.earnings, g.earnings),
+          extraDeductions: mergeAdjustmentLines(current.deductions, g.deductions),
+          note: record.note ?? undefined,
+        },
+        meta,
+      );
+      updated++;
+    } catch (e) {
+      errors.push({ row: 0, code: g.employeeCode, message: e instanceof Error ? e.message : "บันทึกรายการไม่สำเร็จ" });
+    }
   }
 
   return { created: 0, updated, total: groups.size, errors, warnings };

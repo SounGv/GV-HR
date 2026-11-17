@@ -5,20 +5,11 @@ import { can } from "@/lib/auth/rbac";
 import { Forbidden } from "@/lib/api/errors";
 import { reportQuerySchema } from "@/features/report/schema";
 import { getReport } from "@/features/report/service";
+import { REPORT_TYPE_PERMISSION } from "@/features/report/permissions";
 import { teamScopeFilter } from "@/features/employee/service";
 import { ok, handleApiError } from "@/lib/api/response";
 
 export const runtime = "nodejs";
-
-// Report types whose data is more sensitive than plain "report:read" implies
-// (company-wide pay figures) — require the same permission the dedicated
-// /api/payroll endpoints already enforce, so a role with report:read but no
-// payroll:read (e.g. Manager) can't read everyone's payroll through Reports.
-const TYPE_PERMISSION: Partial<Record<string, string>> = {
-  payroll: "payroll:read",
-  // Per-topic scores and the examples raters wrote: the same people who manage evaluation rounds.
-  appraisal_detail: "campaign:manage",
-};
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,7 +31,7 @@ export async function GET(req: NextRequest) {
       branchId: multi("branchId"),
       costCenterId: multi("costCenterId"),
     });
-    const requiredPerm = TYPE_PERMISSION[query.type];
+    const requiredPerm = REPORT_TYPE_PERMISSION[query.type];
     if (requiredPerm && !can(session.perms, requiredPerm)) {
       throw Forbidden("ไม่มีสิทธิ์ดูรายงานนี้");
     }
