@@ -137,8 +137,11 @@ export async function verifyMfaAndLogin(
 }
 
 export async function setupTwoFactor(userId: string): Promise<{ secret: string; otpauthUrl: string }> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, username: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, username: true, twoFactorEnabled: true } });
   if (!user) throw Unauthorized();
+  // With 2FA on, a new setup would replace the secret that protects the account without proving anyone holds the old
+  // one. Turning it off needs a current code, so that is the only way to start over.
+  if (user.twoFactorEnabled) throw BadRequest("เปิดใช้งาน 2FA อยู่แล้ว ต้องปิดก่อน (ใช้รหัสปัจจุบัน) จึงจะตั้งค่าใหม่ได้");
   const secret = generateSecret();
   // Stored immediately but inert — twoFactorEnabled stays false until confirmed,
   // so an abandoned setup never actually gates login.

@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { LoginInput } from "./login-input";
 import { PasswordInput } from "./password-input";
 import { LoginButton } from "./login-button";
+import { safeRedirectPath } from "@/lib/auth/redirect";
 
 const OAUTH_ERROR_MESSAGE: Record<string, string> = {
   google_disabled: "ยังไม่ได้เปิดใช้งานเข้าสู่ระบบด้วย Google",
@@ -64,7 +65,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
   }, []);
 
   function goToRedirect() {
-    const redirect = searchParams.get("redirect") || "/dashboard";
+    const redirect = safeRedirectPath(searchParams.get("redirect"));
     router.replace(redirect);
     router.refresh();
   }

@@ -23,6 +23,7 @@ export default async function WorkflowRequestDetailPage({ params }: { params: Pr
       id: true,
       workflowName: true,
       requesterName: true,
+      requesterEmployeeId: true,
       title: true,
       detail: true,
       amount: true,
@@ -35,7 +36,15 @@ export default async function WorkflowRequestDetailPage({ params }: { params: Pr
 
   if (!request) notFound();
 
-  const steps = (request.steps as Array<{ name?: string; status?: string; decidedByName?: string; note?: string }>) ?? [];
+  const steps = (request.steps as Array<{ name?: string; status?: string; decidedByName?: string; note?: string; approverRole?: string }>) ?? [];
+
+  // A request is for the person who made it, the roles that approve one of its steps, and the people who manage workflows (HR).
+  // Anyone else gets "not found", the same as a made-up id.
+  const own = !!session.employeeId && request.requesterEmployeeId === session.employeeId;
+  const approver = steps.some((s) => !!s.approverRole && session.roles.includes(s.approverRole));
+  const manager = session.perms.includes("*") || session.perms.includes("workflow:create");
+  if (!own && !approver && !manager) notFound();
+
   const status = request.status as RequestStatus;
 
   return (

@@ -237,6 +237,11 @@ const requestSelect = {
   createdAt: true,
 } satisfies Prisma.ApprovalRequestSelect;
 
+/** HR holds workflow:create (the Manager and Employee presets only read), the same split the page uses for its manage buttons. */
+function canManageWorkflows(session: AccessClaims): boolean {
+  return session.perms.includes("*") || session.perms.includes("workflow:create");
+}
+
 export async function listRequests(
   companyId: string,
   session: AccessClaims,
@@ -273,7 +278,8 @@ export async function listRequests(
       .map(serializeRequest);
   }
 
-  // all
+  // all: every request in the company, for the people who manage workflows (HR). An employee or a manager sees their own and their inbox only.
+  if (!canManageWorkflows(session)) throw Forbidden("ดูคำขอของทุกคนได้เฉพาะผู้ดูแลเวิร์กโฟลว์");
   const rows = await prisma.approvalRequest.findMany({
     where: { companyId },
     select: requestSelect,

@@ -8,6 +8,7 @@ import {
 import { getRequestMeta } from "@/lib/api/request";
 import { handleApiError } from "@/lib/api/response";
 import { AppError, Unauthorized } from "@/lib/api/errors";
+import { safeRedirectPath } from "@/lib/auth/redirect";
 
 export const runtime = "nodejs";
 
@@ -54,13 +55,6 @@ export async function POST(req: NextRequest) {
     clearSessionCookies(res);
     return res;
   }
-}
-
-/** Only an app-relative path — never follow a redirect target off this origin. */
-function safeRedirectPath(raw: string | null): string {
-  // A backslash counts as a slash for browsers ("/\evil.com" leaves this site), so it is refused too.
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return "/dashboard";
-  return raw;
 }
 
 const MAX_PAGE_RETRIES = 3;

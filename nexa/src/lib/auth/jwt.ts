@@ -61,6 +61,10 @@ export async function signAccessToken(claims: AccessClaims): Promise<string> {
 export async function verifyAccessToken(token: string): Promise<AccessClaims | null> {
   try {
     const { payload } = await jwtVerify(token, accessSecret());
+    // The 2FA step token and the AI action card are signed with this same secret and carry a `purpose`. A real
+    // access token has none, so anything with a purpose is refused here: otherwise the 5-minute 2FA token that
+    // follows a correct password would work as a login cookie.
+    if (payload.purpose !== undefined || typeof payload.sub !== "string" || !Array.isArray(payload.perms)) return null;
     return payload as unknown as AccessClaims;
   } catch {
     return null;
