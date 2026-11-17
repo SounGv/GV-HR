@@ -36,20 +36,38 @@ function getCsrfToken(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-let refreshPromise: Promise<boolean> | null = null;
+/** "ok": a new session. "invalid": the server says the session is over (401). "unavailable": the server or the network could not answer; the session is still there. */
+type RefreshOutcome = "ok" | "invalid" | "unavailable";
 
-async function doRefresh(): Promise<boolean> {
+let refreshPromise: Promise<RefreshOutcome> | null = null;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function refreshOnce(): Promise<RefreshOutcome> {
+  try {
+    const r = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+    if (r.ok) return "ok";
+    return r.status === 401 ? "invalid" : "unavailable";
+  } catch {
+    return "unavailable";
+  }
+}
+
+async function doRefresh(): Promise<RefreshOutcome> {
   if (!refreshPromise) {
-    refreshPromise = fetch("/api/auth/refresh", {
-      method: "POST",
-      credentials: "include",
-    })
-      .then((r) => r.ok)
-      .catch(() => false)
-      .finally(() => {
-        // Allow a fresh refresh attempt after this one settles.
-        setTimeout(() => (refreshPromise = null), 0);
-      });
+    refreshPromise = (async () => {
+      // A database that is busy for a second or a phone that lost signal for a moment must not end the session: try again a couple of times.
+      let outcome = await refreshOnce();
+      for (const wait of [500, 1500]) {
+        if (outcome !== "unavailable") break;
+        await sleep(wait);
+        outcome = await refreshOnce();
+      }
+      return outcome;
+    })().finally(() => {
+      // Allow a fresh refresh attempt after this one settles.
+      setTimeout(() => (refreshPromise = null), 0);
+    });
   }
   return refreshPromise;
 }
@@ -85,8 +103,10 @@ async function request<T>(
 
   if (res.status === 401 && retry && !path.startsWith("/api/auth/")) {
     const refreshed = await doRefresh();
-    if (refreshed) return request<T>(path, options, false);
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    if (refreshed === "ok") return request<T>(path, options, false);
+    // Only a session the server has ended sends the person to sign in. If the refresh just could not be answered,
+    // the cookies are still good: this request fails with its own 401 and the next one tries again.
+    if (refreshed === "invalid" && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
       window.location.href = "/login";
     }
   }

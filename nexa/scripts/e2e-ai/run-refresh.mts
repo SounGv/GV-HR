@@ -56,6 +56,52 @@ const snapshot = async () => ({ tokens: await real.refreshToken.count(), users: 
           assert.equal(await active(), 0, "the successor was revoked too");
         });
 
+        // A rotation that happened `ago` ms in the past: the old token's revocation and its successor's creation both move back.
+        const rotatedAgo = async (ago: number, usedSuccessor: boolean, agent?: string) => {
+          const meta = agent ? { userAgent: agent } : undefined;
+          const first = await issueRefreshToken(user.id, meta);
+          const second = (await rotateRefreshToken(first.token, meta))!;
+          if (usedSuccessor) await rotateRefreshToken(second.token, meta); // the browser did get the new token and used it
+          const past = new Date(Date.now() - ago);
+          await tx.refreshToken.update({ where: { id: first.jti }, data: { revokedAt: past } });
+          await tx.refreshToken.update({ where: { id: second.jti }, data: { createdAt: past } });
+          return first;
+        };
+
+        await t("F3a the old token coming back after the new one was used is theft once the short window has passed", async () => {
+          await tx.refreshToken.updateMany({ where: { userId: user.id }, data: { revokedAt: new Date() } });
+          const first = await rotatedAgo(120_000, true);
+          assert.equal(await rotateRefreshToken(first.token), null);
+          assert.equal(await active(), 0);
+        });
+
+        await t("F3b an answer that never reached the browser: the old token is accepted again within 5 minutes and nobody is signed out", async () => {
+          await tx.refreshToken.updateMany({ where: { userId: user.id }, data: { revokedAt: new Date() } });
+          const first = await rotatedAgo(180_000, false, "phone");
+          const again = await rotateRefreshToken(first.token, { userAgent: "phone" });
+          assert.ok(again, "the old token still opens a session");
+          assert.ok((await active()) >= 2, "the unused successor was not revoked");
+        });
+
+        await t("F3c the same after more than 5 minutes is treated as theft", async () => {
+          await tx.refreshToken.updateMany({ where: { userId: user.id }, data: { revokedAt: new Date() } });
+          const first = await rotatedAgo(360_000, false, "phone");
+          assert.equal(await rotateRefreshToken(first.token, { userAgent: "phone" }), null);
+          assert.equal(await active(), 0);
+        });
+
+        await t("F3d the late old token from a different browser is theft even inside the window, and a changed network address alone is not", async () => {
+          await tx.refreshToken.updateMany({ where: { userId: user.id }, data: { revokedAt: new Date() } });
+          const first = await rotatedAgo(120_000, false, "phone");
+          assert.equal(await rotateRefreshToken(first.token, { userAgent: "another browser" }), null);
+          assert.equal(await active(), 0);
+          // the same phone on another network: the address is not part of the check
+          const first2 = await issueRefreshToken(user.id, { ip: "10.0.0.1", userAgent: "phone" });
+          await rotateRefreshToken(first2.token, { ip: "10.0.0.1", userAgent: "phone" });
+          const late = await rotateRefreshToken(first2.token, { ip: "10.9.9.9", userAgent: "phone" });
+          assert.ok(late, "a different address with the same browser is accepted inside the window");
+        });
+
         await t("F4 a token revoked by logout is never accepted again, even a second later", async () => {
           // the tokens made by the earlier cases are minutes old, as a real user's other sessions would be
           await tx.refreshToken.updateMany({ where: { userId: user.id }, data: { createdAt: new Date(Date.now() - 600_000) } });

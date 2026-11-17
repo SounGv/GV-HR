@@ -52,23 +52,64 @@ export interface RotateResult {
 }
 
 /** How long after a rotation the old token is still accepted once more (two requests racing on one cookie). */
-export const ROTATION_GRACE_MS = 10_000;
+export const ROTATION_GRACE_MS = 60_000;
 
 /**
- * True when this revoked token was revoked by a rotation seconds ago, as opposed to a logout, a session the user
+ * Longer allowance when the answer to the rotation never reached the browser (the app was put to sleep or the signal
+ * dropped): the new token was issued but nobody has used it, so the old one coming back is the same person, not a thief.
+ */
+export const LOST_ANSWER_GRACE_MS = 5 * 60_000;
+
+/**
+ * True when this revoked token was revoked by a rotation moments ago, as opposed to a logout, a session the user
  * ended, or an old token someone kept. A rotation always issues the successor in the same moment, so a token of the
  * same user created right around the revocation is the proof; a logout leaves no such token.
+ *
+ * The match is on the browser (user agent), not the network address: a phone moves between wifi and mobile data
+ * and between carrier gateways within seconds, so the address of two requests from one phone often differs.
  */
 async function rotatedJustNow(row: { id: string; userId: string; revokedAt: Date | null }, meta?: { ip?: string; userAgent?: string }): Promise<boolean> {
   if (!row.revokedAt) return false;
   const revokedMs = row.revokedAt.getTime();
-  if (Date.now() - revokedMs > ROTATION_GRACE_MS) return false;
-  const successor = await prisma.refreshToken.findFirst({
-    // Made for the same client that is asking now (address and browser), so a login on another device a moment later does not count.
-    where: { userId: row.userId, id: { not: row.id }, createdIp: meta?.ip ?? null, userAgent: meta?.userAgent ?? null, createdAt: { gte: new Date(revokedMs - 2_000), lte: new Date(revokedMs + 5_000) } },
-    select: { id: true },
+  const age = Date.now() - revokedMs;
+  if (age > LOST_ANSWER_GRACE_MS) return false;
+  const successors = await prisma.refreshToken.findMany({
+    where: { userId: row.userId, id: { not: row.id }, userAgent: meta?.userAgent ?? null, createdAt: { gte: new Date(revokedMs - 2_000), lte: new Date(revokedMs + 5_000) } },
+    select: { revokedAt: true },
   });
-  return successor !== null;
+  if (successors.length === 0) return false;
+  return age <= ROTATION_GRACE_MS || successors.some((s) => s.revokedAt === null);
+}
+
+/** Revoke the old token and store its successor in ONE step, so a failure in between cannot leave the person with neither. Null when someone else rotated it first. */
+async function rotateOnce(
+  row: { id: string; userId: string },
+  meta: { ip?: string; userAgent?: string } | undefined,
+  remember: boolean,
+): Promise<RotateResult | null> {
+  const jti = randomUUID();
+  const token = await signRefreshToken({ sub: row.userId, jti, remember });
+  const done = await prisma.$transaction(async (tx) => {
+    const revoked = await tx.refreshToken.updateMany({ where: { id: row.id, revokedAt: null }, data: { revokedAt: new Date() } });
+    if (revoked.count === 0) return false;
+    await tx.refreshToken.create({
+      data: {
+        id: jti,
+        userId: row.userId,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + REFRESH_TTL_SECONDS * 1000),
+        createdIp: meta?.ip,
+        userAgent: meta?.userAgent,
+      },
+    });
+    return true;
+  });
+  return done ? { userId: row.userId, token, jti, remember } : null;
+}
+
+async function signOutEverywhere(userId: string, why: string): Promise<void> {
+  console.warn(`[auth] refresh token reused (${why}): all sessions of user ${userId} were revoked`);
+  await revokeAllForUser(userId);
 }
 
 /**
@@ -95,20 +136,24 @@ export async function rotateRefreshToken(
       return { userId: row.userId, token: next.token, jti: next.jti, remember: claims.remember };
     }
     // Reuse of an already-rotated token → revoke everything for this user.
-    await revokeAllForUser(row.userId);
+    await signOutEverywhere(row.userId, row.revokedAt ? `revoked ${Math.round((Date.now() - row.revokedAt.getTime()) / 1000)}s ago` : "revoked");
     return null;
   }
   if (row.expiresAt.getTime() < Date.now()) return null;
 
   // Revoke the old, issue a fresh one (rotation) — carrying the same
   // "remember me" choice forward, since only the original login request had
-  // the checkbox.
-  await prisma.refreshToken.update({
-    where: { id: row.id },
-    data: { revokedAt: new Date() },
-  });
-  const next = await issueRefreshToken(row.userId, meta, claims.remember);
-  return { userId: row.userId, token: next.token, jti: next.jti, remember: claims.remember };
+  // the checkbox. Revoke and issue happen together; if another request rotated the same token a
+  // moment earlier, this one is treated like any other late arrival of that token.
+  const next = await rotateOnce(row, meta, claims.remember);
+  if (next) return next;
+  const current = await prisma.refreshToken.findUnique({ where: { id: row.id } });
+  if (current && (await rotatedJustNow(current, meta))) {
+    const again = await issueRefreshToken(row.userId, meta, claims.remember);
+    return { userId: row.userId, token: again.token, jti: again.jti, remember: claims.remember };
+  }
+  await signOutEverywhere(row.userId, "lost a rotation race");
+  return null;
 }
 
 export async function revokeRefreshToken(rawToken: string): Promise<void> {
