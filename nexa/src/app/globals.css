@@ -1524,3 +1524,47 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   .lf { opacity: 0.5; }
   .lw-stage[data-live="true"] .lw-second { transition: none; }
 }
+
+/* ── Frosted glass + floating drops (rater answering screen, rater-question-glass-mock-v3.html) ──
+   .gv-frost is a light frosted pane: blur 22px, hairline edge. Without backdrop-filter, or with "reduce
+   transparency", it becomes the solid card colour. .gv-drop are decorative water drops that sit behind
+   the glass (never over text) and drift slowly; reduced motion stops them. */
+.gv-frost {
+  background: color-mix(in srgb, var(--card) 62%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid color-mix(in srgb, #fff 78%, transparent);
+  box-shadow: 0 12px 34px rgba(15, 70, 64, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+}
+.dark .gv-frost {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gv-frost { background: var(--card); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .gv-frost { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+.gv-drop {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0 9%, rgba(255, 255, 255, 0.35) 22%, rgba(94, 234, 212, 0.3) 55%, rgba(13, 148, 136, 0.38) 100%);
+  box-shadow: inset -3px -5px 8px rgba(11, 90, 84, 0.25), inset 2px 3px 6px rgba(255, 255, 255, 0.7),
+    0 10px 14px -8px rgba(11, 90, 84, 0.45);
+  animation: gv-float 7s ease-in-out infinite;
+}
+.dark .gv-drop {
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.7) 0 9%, rgba(255, 255, 255, 0.14) 24%, rgba(45, 212, 191, 0.22) 58%, rgba(20, 184, 166, 0.3) 100%);
+  box-shadow: inset -3px -5px 8px rgba(0, 0, 0, 0.35), inset 2px 3px 6px rgba(255, 255, 255, 0.3),
+    0 10px 14px -8px rgba(0, 0, 0, 0.6);
+}
+@keyframes gv-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(4px, -14px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gv-drop { animation: none; }
+}

@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, ChevronLeft, Lock, PencilLine, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronLeft,
+  Info,
+  Lock,
+  PencilLine,
+  Send,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -58,6 +69,48 @@ export function scoreTone(score: number, max: number) {
   if (score === 1) return "bg-status-absent-bg text-status-absent-fg";
   if (score === max) return "bg-accent text-accent-foreground";
   return "bg-muted text-foreground";
+}
+
+/**
+ * The 3D picture for a score (Microsoft Fluent Emoji 3D, MIT, files in public/icons/score): the top score is a
+ * trophy (a thumbs-up when the scale is only 1-3), the lowest a wrench ("can be improved", not a sad face),
+ * and the ones between a thumbs-up, a neutral face or a seedling. The number stays on a badge, so the picture
+ * is never the only signal.
+ */
+export function scoreIconSrc(score: number, max: number) {
+  if (score <= 1) return "/icons/score/wrench.png";
+  if (score >= max) return max > 3 ? "/icons/score/trophy.png" : "/icons/score/thumbs-up.png";
+  if (max >= 4 && score === max - 1) return "/icons/score/thumbs-up.png";
+  if (max >= 5 && score === 2) return "/icons/score/seedling.png";
+  return "/icons/score/neutral.png";
+}
+
+function ScoreIcon({ score, max, small }: { score: number; max: number; small?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "relative flex shrink-0 items-center justify-center rounded-full",
+        "bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,.95),rgba(255,255,255,.35)_60%,rgba(255,255,255,.1))] dark:bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,.3),rgba(255,255,255,.08)_60%,rgba(255,255,255,.02))]",
+        "shadow-[inset_0_0_0_1px_rgba(255,255,255,.9),inset_0_-6px_10px_rgba(15,118,110,.12),0_12px_16px_-10px_rgba(15,70,64,.5)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,.18),0_12px_16px_-10px_rgba(0,0,0,.6)]",
+        small ? "size-10" : "size-14",
+      )}
+    >
+      <Image
+        src={scoreIconSrc(score, max)}
+        alt=""
+        width={64}
+        height={64}
+        unoptimized
+        className={cn(
+          "object-contain drop-shadow-[0_5px_5px_rgba(15,40,38,.35)]",
+          small ? "size-7" : "size-10",
+        )}
+      />
+      <span className="bg-card text-foreground absolute -right-1 -bottom-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[12.5px] leading-none font-bold tabular-nums shadow-[0_2px_6px_rgba(0,0,0,.25)]">
+        {score}
+      </span>
+    </span>
+  );
 }
 
 const isAnswered = (v: AnswerValue | undefined) =>
@@ -189,14 +242,19 @@ export function TaskForm({
       needsNote(q, list.find((a) => a.questionId === q.id) as never, task.noteAtLowest));
 
   return (
-    <div ref={topRef} className="mx-auto max-w-2xl scroll-mt-4 space-y-4 pb-28">
-      {/* Header: who, as whom, progress per question, save state. */}
-      <section className="gv-hero p-4 sm:p-5" aria-label="งานประเมิน">
+    <div ref={topRef} className="relative isolate mx-auto max-w-2xl scroll-mt-4 space-y-4 pb-28">
+      {/* Water drops drifting behind the glass (decoration only, never over text). */}
+      <span aria-hidden="true" className="gv-drop -z-10 h-11 w-[38px] -right-3 top-24 md:-right-12" />
+      <span aria-hidden="true" className="gv-drop -z-10 hidden h-[26px] w-[22px] md:block md:-left-10 md:top-[34%]" style={{ animationDelay: "-3s", animationDuration: "9s" }} />
+      <span aria-hidden="true" className="gv-drop -z-10 hidden h-[60px] w-[52px] md:block md:-right-16 md:top-[58%]" style={{ animationDelay: "-5s", animationDuration: "8s" }} />
+      <span aria-hidden="true" className="gv-drop -z-10 hidden h-[19px] w-4 md:block md:-left-6 md:top-[78%]" style={{ animationDelay: "-2s", animationDuration: "6s" }} />
+      {/* Header: who, as whom, progress per question, save state (frosted glass). */}
+      <section className="gv-frost rounded-[26px] p-3.5 sm:p-5" aria-label="งานประเมิน">
         <div className="flex items-center gap-3">
           <Link
             href={backHref}
             aria-label={`กลับไป${backLabel}`}
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/12 hover:bg-white/20 md:hidden"
+            className="bg-card/80 text-foreground hover:bg-card flex size-11 shrink-0 items-center justify-center rounded-full shadow-[inset_0_1px_0_#fff,0_4px_10px_-4px_rgba(15,70,64,.4)] md:hidden"
           >
             <ChevronLeft className="size-5" aria-hidden="true" />
           </Link>
@@ -204,7 +262,7 @@ export function TaskForm({
             <h1 className="truncate text-base leading-snug font-bold">
               ประเมิน {task.personName}
             </h1>
-            <p className="truncate text-xs text-white">
+            <p className="text-muted-foreground truncate text-xs">
               {task.roundName} · ในฐานะ{RATER_LABEL[task.raterType]}
               {task.endIso ? ` · ปิด ${fmtDay(task.endIso)}` : ""}
             </p>
@@ -221,7 +279,7 @@ export function TaskForm({
           ) : (
             !locked && (
               <span
-                className="flex shrink-0 items-center gap-1.5 text-xs text-white"
+                className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-xs"
                 aria-live="polite"
               >
                 <span
@@ -248,14 +306,14 @@ export function TaskForm({
           {questions.map((x, i) => (
             <span
               key={x.id}
-              className="h-[5px] flex-1 rounded-full transition-colors"
+              className="h-[6px] flex-1 rounded-full transition-colors"
               style={{
                 background:
                   view === "q" && i === cur
-                    ? "#fff"
+                    ? "linear-gradient(90deg,#14b8a6,#0f766e)"
                     : isAnswered(values[x.id])
-                      ? "var(--on-hero-accent)"
-                      : "rgba(255,255,255,.2)",
+                      ? "var(--primary)"
+                      : "color-mix(in srgb, var(--primary) 16%, transparent)",
               }}
             />
           ))}
@@ -311,14 +369,7 @@ export function TaskForm({
                   key={r.score}
                   className="border-border flex items-start gap-3 border-t px-4 py-2.5 first:border-t-0"
                 >
-                  <span
-                    className={cn(
-                      "flex size-8 shrink-0 items-center justify-center rounded-[10px] text-sm font-bold",
-                      scoreTone(r.score, task.ratingMax),
-                    )}
-                  >
-                    {r.score}
-                  </span>
+                  <ScoreIcon score={r.score} max={task.ratingMax} small />
                   <span className="min-w-0 text-sm">
                     <b className="block text-sm">{r.label}</b>
                     {r.desc && <span className="text-muted-foreground">{r.desc}</span>}
@@ -464,7 +515,7 @@ export function TaskForm({
       )}
 
       {/* Thumb bar: one main action per screen. */}
-      <div className="gv-foot border-border bg-background fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 border-t px-4 py-3 md:bottom-0 md:left-[var(--sidebar-width,0px)] md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="gv-foot gv-frost fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 rounded-t-[26px] border-x-0 border-b-0 px-4 py-3 md:bottom-0 md:left-[var(--sidebar-width,0px)] md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-2xl items-center gap-2">
           {view === "start" && (
             <Button
@@ -489,8 +540,14 @@ export function TaskForm({
                 disabled={!!qBlocked}
                 onClick={() => (cur === questions.length - 1 ? go("review") : go("q", cur + 1))}
               >
-                {cur === questions.length - 1 ? "ตรวจทวน" : "ข้อถัดไป"}{" "}
-                <ArrowRight className="size-4" aria-hidden="true" />
+                {qBlocked
+                  ? q && q.required && !isAnswered(values[q.id])
+                    ? "เลือกคะแนนก่อน"
+                    : "เขียนตัวอย่างก่อน"
+                  : cur === questions.length - 1
+                    ? "ตรวจทวน"
+                    : "ข้อถัดไป"}{" "}
+                {!qBlocked && <ArrowRight className="size-4" aria-hidden="true" />}
               </Button>
             </>
           )}
@@ -562,6 +619,8 @@ export function QuestionStep({
 }) {
   const own = new Map((q.levelDescriptions ?? []).map((l) => [l.score, l.text]));
   const noteMissing = noteRequired && !note.trim();
+  const [helpOpen, setHelpOpen] = useState(false);
+  const picked = q.answerType === "RATING" && value !== undefined;
   return (
     <div className="gv-rise space-y-3.5">
       <div>
@@ -571,18 +630,41 @@ export function QuestionStep({
           {!q.required && " · ไม่บังคับ"}
         </span>
         <h2 className="mt-2 text-xl leading-snug font-bold break-words">{q.text}</h2>
-        {q.helpText && (
-          <p className="text-muted-foreground mt-1 text-sm leading-relaxed whitespace-pre-line">
-            <b className="text-foreground font-semibold">ดูจาก:</b> {q.helpText}
-          </p>
-        )}
       </div>
+      {q.helpText && (
+        <div className="gv-frost flex items-start gap-2.5 rounded-[20px] px-3 py-2.5">
+          <span className="bg-accent text-accent-foreground flex size-8 shrink-0 items-center justify-center rounded-full">
+            <Info className="size-[18px]" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p
+              className={cn(
+                "text-muted-foreground text-sm leading-relaxed whitespace-pre-line",
+                !helpOpen && "line-clamp-2",
+              )}
+            >
+              <b className="text-foreground font-semibold">ดูจาก:</b> {q.helpText}
+            </p>
+            {q.helpText.length > 70 && (
+              <button
+                type="button"
+                aria-expanded={helpOpen}
+                onClick={() => setHelpOpen((o) => !o)}
+                className="text-primary min-h-8 text-sm font-bold"
+              >
+                {helpOpen ? "ย่อ" : "ดูทั้งหมด"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {q.answerType === "RATING" && (
-        <div role="radiogroup" aria-label={q.text} className="grid gap-2.5">
+        <div role="radiogroup" aria-label={q.text} className={cn("grid", ratingMax > 3 ? "gap-2" : "gap-2.5")}>
           {rubric.map((r) => {
             const on = value === r.score;
             const desc = own.get(r.score) ?? r.desc;
+            const low = r.score === 1;
             return (
               <button
                 key={r.score}
@@ -592,26 +674,40 @@ export function QuestionStep({
                 disabled={disabled}
                 onClick={() => onValue(r.score)}
                 className={cn(
-                  "bg-card flex w-full items-start gap-3 rounded-[18px] border-[1.5px] px-3.5 py-3 text-left transition-[border-color,box-shadow,transform] duration-200 active:scale-[0.985] disabled:opacity-60",
+                  "bg-card/90 relative flex w-full items-start gap-3 rounded-[26px] border-[1.5px] py-3 pr-3.5 pl-3 text-left shadow-[0_10px_24px_-16px_rgba(15,70,64,.5),inset_0_1px_0_rgba(255,255,255,.95)] transition-[border-color,box-shadow,transform,opacity] duration-200 active:scale-[0.985] disabled:opacity-60 dark:shadow-none",
                   on
-                    ? r.score === 1
-                      ? "border-destructive shadow-[0_0_0_3px_var(--status-absent-bg)] dark:shadow-none"
-                      : "border-primary shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
+                    ? low
+                      ? "border-destructive border-2 shadow-[0_0_0_4px_var(--status-absent-bg),0_16px_28px_-16px_rgba(180,68,10,.6)] dark:shadow-none"
+                      : "border-primary border-2 shadow-[0_0_0_4px_var(--accent),0_16px_28px_-16px_rgba(15,118,110,.8)] dark:shadow-none"
                     : "border-border hover:border-ring/50",
+                  picked && !on && "opacity-85",
                 )}
               >
-                <span
-                  className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-[13px] text-base font-bold",
-                    scoreTone(r.score, ratingMax),
-                  )}
-                >
-                  {r.score}
-                </span>
+                <ScoreIcon score={r.score} max={ratingMax} small={ratingMax > 3} />
                 <span className="min-w-0 flex-1">
-                  <b className="block text-base leading-snug">{r.label}</b>
+                  <b className="flex items-center gap-2 text-base leading-snug">
+                    {r.label}
+                    {on && (
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full px-2 text-xs leading-relaxed font-bold",
+                          low
+                            ? "bg-status-absent-bg text-status-absent-fg"
+                            : "bg-accent text-accent-foreground",
+                        )}
+                      >
+                        <Check className="size-3" aria-hidden="true" />
+                        เลือกแล้ว
+                      </span>
+                    )}
+                  </b>
                   {desc && (
-                    <span className="text-muted-foreground mt-0.5 block text-sm leading-relaxed">
+                    <span
+                      className={cn(
+                        "text-muted-foreground mt-0.5 block text-sm leading-relaxed",
+                        picked && !on && "line-clamp-2",
+                      )}
+                    >
                       {desc}
                     </span>
                   )}
@@ -619,14 +715,16 @@ export function QuestionStep({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "mt-0.5 size-[22px] shrink-0 rounded-full border-2 transition-[border-width]",
+                    "mt-0.5 flex size-[26px] shrink-0 items-center justify-center rounded-full border-2 text-white transition-colors",
                     on
-                      ? r.score === 1
-                        ? "border-[7px] border-destructive"
-                        : "border-[7px] border-primary"
-                      : "border-muted-foreground/50",
+                      ? low
+                        ? "border-destructive bg-destructive"
+                        : "border-primary bg-primary"
+                      : "border-muted-foreground/50 bg-card/50",
                   )}
-                />
+                >
+                  {on && <Check className="size-4" strokeWidth={3.4} />}
+                </span>
               </button>
             );
           })}
@@ -636,8 +734,8 @@ export function QuestionStep({
       {q.answerType === "RATING" && (
         <label
           className={cn(
-            "bg-card block rounded-2xl border px-3.5 py-2.5",
-            noteMissing ? "border-status-absent-border bg-status-absent-bg/50" : "border-border",
+            "gv-frost block rounded-[22px] px-3.5 py-2.5",
+            noteMissing && "border-status-absent-border bg-status-absent-bg/60",
           )}
         >
           <span className="text-foreground flex justify-between gap-2 text-sm font-bold">
@@ -661,6 +759,13 @@ export function QuestionStep({
             className="mt-1 min-h-[56px] resize-none border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
           />
         </label>
+      )}
+
+      {noteMissing && (
+        <p className="text-status-absent-fg flex items-start gap-2 text-sm font-bold">
+          <TriangleAlert className="mt-1 size-[18px] shrink-0" aria-hidden="true" />
+          เขียนตัวอย่างสั้นๆ ก่อน จึงกดข้อถัดไปได้
+        </p>
       )}
 
       {(q.answerType === "CHOICE" || q.answerType === "MULTI_CHOICE") && (
