@@ -486,6 +486,7 @@ export async function cancelOvertime(
     "hr-alerts",
     `↩️ ${displayName(req.employee)} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
     "overtime",
+    "info",
   );
 
   return record;

@@ -624,6 +624,7 @@ export async function cancelLeave(
     "hr-alerts",
     `↩️ ${displayName(req.employee)} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
     "leave",
+    "info",
   );
 
   return updated;

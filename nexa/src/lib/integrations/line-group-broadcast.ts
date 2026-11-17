@@ -24,8 +24,10 @@ export async function broadcastToLineGroups(
   text: string,
   /** Notification category of the post; only categories in LINE_CATEGORIES go out (see line-policy.ts). */
   topic: string,
+  /** "info" posts (a cancelled request) are not sent: LINE counts one message per group member and the plan is small. */
+  kind: "action" | "info" = "action",
 ): Promise<void> {
-  if (!shouldPushToLine(topic)) return;
+  if (kind === "info" || !shouldPushToLine(topic)) return;
   try {
     const groups = await prisma.lineGroupTarget.findMany({
       where: { companyId, purpose, active: true },

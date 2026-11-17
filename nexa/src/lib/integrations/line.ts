@@ -21,9 +21,32 @@ export function verifyLineSignature(rawBody: string, signature: string | null): 
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/**
+ * LINE answers 429 "You have reached your monthly limit" once the plan's allowance is used up. Every push after that fails
+ * too, so this instance stops calling LINE until the first moment of the next month (Bangkok time). Kept in memory: a cold
+ * start asks LINE once more, gets the same answer and blocks again.
+ */
+let blockedUntilMs = 0;
+
+/**
+ * The first instant of the next calendar month in Bangkok (UTC+7, no daylight saving).
+ *
+ * @param nowMs Current time in milliseconds since the epoch.
+ */
+export function nextBangkokMonthStartMs(nowMs: number): number {
+  const bangkok = new Date(nowMs + 7 * 3600_000);
+  return Date.UTC(bangkok.getUTCFullYear(), bangkok.getUTCMonth() + 1, 1) - 7 * 3600_000;
+}
+
+/** Whether a LINE reply means the monthly allowance is spent (a plain rate limit is also 429, and must not block a month). */
+export function isMonthlyLimitReply(status: number, text: string): boolean {
+  return status === 429 && /monthly limit/i.test(text);
+}
+
 async function callLineApi(path: string, body: unknown): Promise<void> {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) return;
+  if (Date.now() < blockedUntilMs) return;
   try {
     const res = await fetch(`https://api.line.me${path}`, {
       method: "POST",
@@ -32,7 +55,12 @@ async function callLineApi(path: string, body: unknown): Promise<void> {
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
-      console.error(`[line] ${path} failed: ${res.status} ${await res.text().catch(() => "")}`);
+      const text = await res.text().catch(() => "");
+      console.error(`[line] ${path} failed: ${res.status} ${text}`);
+      if (isMonthlyLimitReply(res.status, text)) {
+        blockedUntilMs = nextBangkokMonthStartMs(Date.now());
+        console.error("[line] monthly allowance is used up: no more LINE calls from this instance until next month");
+      }
     }
   } catch (err) {
     console.error(`[line] ${path} request error:`, err);

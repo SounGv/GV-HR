@@ -85,7 +85,7 @@ export async function createNotification(
     select: { id: true },
   });
 
-  if (shouldPushToLine(input.category, input.line) && isLineConfigured()) {
+  if (shouldPushToLine(input.category, input.line, input.title) && isLineConfigured()) {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
       select: { lineUserId: true },

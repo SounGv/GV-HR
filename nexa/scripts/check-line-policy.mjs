@@ -1,7 +1,7 @@
 // Checks which notifications are also pushed to LINE, with made-up categories only.
 // Run: node --experimental-strip-types scripts/check-line-policy.mjs
 import assert from "node:assert/strict";
-import { LINE_CATEGORIES, shouldPostScansToLineGroups, shouldPushToLine } from "../src/features/notification/line-policy.ts";
+import { LINE_CATEGORIES, isAnswerNotice, shouldPostScansToLineGroups, shouldPushToLine } from "../src/features/notification/line-policy.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -34,6 +34,20 @@ check("the caller's own choice always wins, in both directions", () => {
 });
 check("the list has exactly the four agreed categories", () => {
   assert.deepEqual([...LINE_CATEGORIES].sort(), ["attendance-correction", "evaluation", "leave", "overtime"]);
+});
+check("answers to requests (approved, not approved, cancelled) stay in the app, requests waiting for approval still go", () => {
+  for (const t of ["คำขอลาได้รับอนุมัติ", "คำขอลาไม่ได้รับอนุมัติ", "คำขอลาถูกยกเลิก", "คำขอ OT ได้รับอนุมัติ", "คำขอแก้ไขเวลาได้รับอนุมัติ"]) {
+    assert.equal(isAnswerNotice(t), true, t);
+    assert.equal(shouldPushToLine(t.includes("OT") ? "overtime" : t.includes("เวลา") ? "attendance-correction" : "leave", undefined, t), false, t);
+  }
+  for (const [c, t] of [["leave", "มีคำขอลารออนุมัติ"], ["overtime", "มีคำขอ OT รออนุมัติ"], ["attendance-correction", "มีคำขอแก้ไขเวลาเข้า-ออกงานรออนุมัติ"]]) {
+    assert.equal(shouldPushToLine(c, undefined, t), true, t);
+  }
+});
+check("evaluation messages are never held back by the answer rule, and the caller's choice still wins", () => {
+  assert.equal(shouldPushToLine("evaluation", undefined, "ถึงรอบประเมิน: พฤศจิกายน 2569"), true);
+  assert.equal(shouldPushToLine("evaluation", undefined, "ผลประเมินได้รับอนุมัติแล้ว"), true);
+  assert.equal(shouldPushToLine("leave", true, "คำขอลาได้รับอนุมัติ"), true);
 });
 check("check-in and check-out posts to LINE groups are off by default and on only for the exact value true", () => {
   const before = process.env.LINE_GROUP_POST_SCANS;

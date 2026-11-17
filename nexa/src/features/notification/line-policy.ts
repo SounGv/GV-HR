@@ -11,6 +11,11 @@
  * stays in the app's inbox.
  * The earlier, longer list was: leave, overtime, attendance, workflow,
  * expense, medical, performance, evaluation, meeting, hr.
+ *
+ * 2026-11-17: the free plan ran out of messages in the middle of the month, so
+ * the answers ("approved", "not approved", "cancelled") of leave, OT and
+ * time-correction requests stay in the app too. LINE keeps what a person has
+ * to act on: requests waiting for approval, and evaluation round messages.
  */
 export const LINE_CATEGORIES: ReadonlySet<string> = new Set([
   "leave",
@@ -30,12 +35,25 @@ export function shouldPostScansToLineGroups(): boolean {
 }
 
 /**
+ * Whether a notice only reports an answer or a change to a request (approved, not approved, cancelled), not something to do.
+ *
+ * @param title The notification title as shown to the person.
+ */
+export function isAnswerNotice(title: string): boolean {
+  return /ได้รับอนุมัติ|ไม่ได้รับอนุมัติ|ถูกยกเลิก|ยกเลิก/.test(title);
+}
+
+/**
  * Whether a notification should also go to LINE.
  *
  * @param category Notification category; missing means "system".
  * @param explicit The caller's own `line` choice, which always wins when given.
+ * @param title The title; with it, answers to requests stay in the app (see the note above). Evaluation messages are never held back.
  */
-export function shouldPushToLine(category: string | undefined, explicit?: boolean): boolean {
+export function shouldPushToLine(category: string | undefined, explicit?: boolean, title?: string): boolean {
   if (explicit !== undefined) return explicit;
-  return LINE_CATEGORIES.has(category ?? "system");
+  const c = category ?? "system";
+  if (!LINE_CATEGORIES.has(c)) return false;
+  if (title !== undefined && c !== "evaluation" && isAnswerNotice(title)) return false;
+  return true;
 }
