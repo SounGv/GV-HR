@@ -70,7 +70,7 @@ export function scoreTone(score: number, max: number) {
   return "bg-muted text-foreground";
 }
 
-function ScoreIcon({ score, max, small }: { score: number; max: number; small?: boolean }) {
+function ScoreIcon({ score, max, small, picked }: { score: number; max: number; small?: boolean; picked?: boolean }) {
   return (
     <span
       className={cn(
@@ -78,6 +78,7 @@ function ScoreIcon({ score, max, small }: { score: number; max: number; small?: 
         "bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,.95),rgba(255,255,255,.35)_60%,rgba(255,255,255,.1))] dark:bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,.3),rgba(255,255,255,.08)_60%,rgba(255,255,255,.02))]",
         "shadow-[inset_0_0_0_1px_rgba(255,255,255,.9),inset_0_-6px_10px_color-mix(in_srgb,var(--primary)_12%,transparent),0_12px_16px_-10px_color-mix(in_srgb,var(--primary)_55%,black)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,.18),0_12px_16px_-10px_rgba(0,0,0,.6)]",
         small ? "size-10" : "size-14",
+        picked && "gv-icon-breathe",
       )}
     >
       <Image
@@ -89,6 +90,7 @@ function ScoreIcon({ score, max, small }: { score: number; max: number; small?: 
         className={cn(
           "object-contain drop-shadow-[0_5px_5px_rgba(15,40,38,.35)]",
           small ? "size-7" : "size-10",
+          picked && "gv-icon-pop",
         )}
       />
       <span className="bg-card text-foreground absolute -right-1 -bottom-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[12.5px] leading-none font-bold tabular-nums shadow-[0_2px_6px_rgba(0,0,0,.25)]">
@@ -237,9 +239,8 @@ export function TaskForm({
           so they cannot make the page scroll sideways. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <span className="gv-drop top-24 -right-3 h-11 w-[38px]" />
-        <span className="gv-drop top-[34%] -left-2 hidden h-[26px] w-[22px] md:block" style={{ animationDelay: "-3s", animationDuration: "9s" }} />
         <span className="gv-drop top-[58%] -right-4 hidden h-[60px] w-[52px] md:block" style={{ animationDelay: "-5s", animationDuration: "8s" }} />
-        <span className="gv-drop top-[78%] -left-1 hidden h-[19px] w-4 md:block" style={{ animationDelay: "-2s", animationDuration: "6s" }} />
+        <span className="gv-drop top-[82%] -right-2 hidden h-[26px] w-[22px] md:block" style={{ animationDelay: "-3s", animationDuration: "9s" }} />
       </div>
       {/* Header: who, as whom, progress per question, save state (frosted glass). */}
       <section className="gv-frost rounded-[26px] p-3.5 sm:p-5" aria-label="งานประเมิน">
@@ -676,7 +677,7 @@ export function QuestionStep({
                   picked && !on && "opacity-85",
                 )}
               >
-                <ScoreIcon score={r.score} max={ratingMax} small={ratingMax > 3} />
+                <ScoreIcon score={r.score} max={ratingMax} small={ratingMax > 3} picked={on} />
                 <span className="min-w-0 flex-1">
                   <b className="flex items-center gap-2 text-base leading-snug">
                     {r.label}
