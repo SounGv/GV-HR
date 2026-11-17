@@ -238,7 +238,7 @@ export async function publishResults(companyId: string, session: AccessClaims, r
 export async function getRoundResults(companyId: string, roundId: string, session: AccessClaims) {
   const round = await prisma.appraisalRound.findFirst({ where: { id: roundId, companyId, deletedAt: null }, select: { id: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
-  const scope = participantScope(await viewableEmployeeIds(companyId, session));
+  const scope = participantScope(await viewableEmployeeIds(companyId, session), session.employeeId);
   const rows = await prisma.appraisalParticipant.findMany({
     where: { roundId, ...scope },
     select: {

@@ -153,11 +153,11 @@ const snapshot = async () => ({
           assert.equal(r.managers.companyAverage, 100, "the average of the people this viewer can see");
         });
 
-        await t("R6 a person with no team and no company scope sees an empty review", async () => {
+        await t("R6 a person with no team sees only the one person they rate as manager; with no employee record, nobody", async () => {
           const r = await getRoundReview(COMPANY, claims(["campaign:approve"], M3), round.id);
-          assert.equal(r.total, 0);
-          assert.deepEqual(r.people, []);
-          assert.deepEqual(r.managers.rows, []);
+          assert.equal(r.total, 1, "M3 rated p[6] and nobody else in this round");
+          assert.deepEqual(r.people, [], "p[6] is not calculated yet, so there is no result to list");
+          assert.equal(r.managers.rows.length, 1, "the only manager average shown is M3's own, for the person they rated");
           const none = await getRoundReview(COMPANY, claims(["campaign:approve"]), round.id);
           assert.equal(none.total, 0, "no employee record means no team");
         });

@@ -106,7 +106,9 @@ const snapshot = async () => ({
           assert.equal(o.draftCount, 0);
         });
 
-        await t("E3 a manager with no team sees nothing, not the company", async () => {
+        await t("E3 a manager with no team and nobody to rate sees nothing, not the company", async () => {
+          // D is a real person: whoever they really rate as manager in real rounds would (rightly) show up, so clear that inside this rolled-back transaction.
+          await tx.appraisalAssignment.deleteMany({ where: { raterEmployeeId: D, raterType: "MANAGER" } });
           const o = await loadEvaluationOverview(COMPANY, claims(["campaign:manage"], D));
           assert.equal(o.open.find((x) => x.id === open.id)!.summary.people.total, 0);
           assert.equal(o.results, null);

@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { avatarPaths } from "@/lib/avatar-server";
@@ -97,9 +98,10 @@ function dayDiff(from: Date, to: Date): number {
  *   so a wider role can never show more through the assistant than it is allowed to.
  */
 export async function loadEvaluationOverview(companyId: string, session: AccessClaims, opts: { limitTo?: Set<string>; includeClosed?: boolean } = {}): Promise<EvaluationOverview> {
-  let ids = await viewableEmployeeIds(companyId, session);
-  if (opts.limitTo) ids = ids ? new Set([...ids].filter((id) => opts.limitTo!.has(id))) : opts.limitTo;
-  const scope = participantScope(ids);
+  const viewable = await viewableEmployeeIds(companyId, session);
+  // The people the assistant's own access scope allows narrow the person's view, never widen it.
+  const seen = participantScope(viewable, session.employeeId);
+  const scope: Prisma.AppraisalParticipantWhereInput = opts.limitTo ? { AND: [seen, { employeeId: { in: [...opts.limitTo] } }] } : seen;
   const today = bangkokParts().dateUTC;
 
   const openRounds = await prisma.appraisalRound.findMany({
@@ -324,5 +326,5 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
     }
   }
 
-  return { companyWide: ids === null, open, results, awaitingCalculation, draftCount, drafts, awaitingReview, faces, myTasks, templates, lastClosed, resultsBoard };
+  return { companyWide: viewable === null && !opts.limitTo, open, results, awaitingCalculation, draftCount, drafts, awaitingReview, faces, myTasks, templates, lastClosed, resultsBoard };
 }

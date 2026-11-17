@@ -42,7 +42,7 @@ export async function getRoundReview(companyId: string, session: AccessClaims, r
   const snapshot = round.formSnapshot as unknown as RoundSnapshot | null;
 
   const participants = await prisma.appraisalParticipant.findMany({
-    where: { roundId, ...participantScope(ids) },
+    where: { roundId, ...participantScope(ids, session.employeeId) },
     select: {
       id: true,
       formId: true,
@@ -102,7 +102,7 @@ export async function getRoundReview(companyId: string, session: AccessClaims, r
   people.sort((a, b) => Number(b.talk || b.nearEdge) - Number(a.talk || a.nearEdge) || a.department.localeCompare(b.department, "th") || a.name.localeCompare(b.name, "th"));
 
   const history = await prisma.appraisalScoreAdjustment.findMany({
-    where: { participant: { roundId, ...participantScope(ids) } },
+    where: { participant: { roundId, ...participantScope(ids, session.employeeId) } },
     orderBy: { createdAt: "desc" },
     take: 50,
     select: {

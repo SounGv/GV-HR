@@ -449,7 +449,7 @@ export async function listPublishedForms(companyId: string) {
 export async function getRoundProgress(companyId: string, id: string, session: AccessClaims) {
   const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
-  const scope = participantScope(await viewableEmployeeIds(companyId, session));
+  const scope = participantScope(await viewableEmployeeIds(companyId, session), session.employeeId);
   const groups = await prisma.appraisalAssignment.groupBy({
     by: ["raterType", "status"],
     where: { participant: { roundId: id, ...scope } },
@@ -746,7 +746,7 @@ export async function deleteRound(companyId: string, session: AccessClaims, id: 
 export async function getRoundMatrix(companyId: string, id: string, session: AccessClaims) {
   const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true, formSnapshot: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
-  const scope = participantScope(await viewableEmployeeIds(companyId, session));
+  const scope = participantScope(await viewableEmployeeIds(companyId, session), session.employeeId);
   // The date and the score of each rater's sheet are for HR only: a manager sees who has finished, not what each person gave.
   const isHr = can(session.perms, "campaign:update");
   const rows = await prisma.appraisalParticipant.findMany({
@@ -820,7 +820,7 @@ export async function getParticipantResult(
 ): Promise<ParticipantResult> {
   const viewable = await viewableEmployeeIds(companyId, session);
   const p = await prisma.appraisalParticipant.findFirst({
-    where: { id: participantId, roundId, round: { companyId, deletedAt: null }, ...participantScope(viewable) },
+    where: { id: participantId, roundId, round: { companyId, deletedAt: null }, ...participantScope(viewable, session.employeeId) },
     select: {
       id: true,
       departmentName: true,
@@ -902,7 +902,7 @@ export async function getParticipantResult(
 export async function getRoundDepartmentProgress(companyId: string, id: string, session: AccessClaims) {
   const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
-  const scope = participantScope(await viewableEmployeeIds(companyId, session));
+  const scope = participantScope(await viewableEmployeeIds(companyId, session), session.employeeId);
   const rows = await prisma.appraisalAssignment.findMany({
     where: { participant: { roundId: id, ...scope } },
     select: { status: true, participant: { select: { departmentName: true } } },
