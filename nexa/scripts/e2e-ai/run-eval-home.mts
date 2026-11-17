@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test doubles stand in for Next */
 import assert from "node:assert/strict";
 import { prisma as real } from "@real/prisma";
+import { restoreFavpoWorld } from "./favpo-world.mts";
 import { loadEvaluationOverview } from "@/features/dashboard-people/evaluation-overview";
 import { cloneRound, listRounds, openRound } from "@/features/appraisal-round/service";
 
@@ -25,6 +26,7 @@ class Rollback extends Error {}
 
   const body = async (tx: any) => {
     g.__tx = tx;
+    await restoreFavpoWorld(tx);
     if (!before.column) await tx.$executeRawUnsafe(`ALTER TABLE "appraisal_rounds" ADD COLUMN "isTemplate" BOOLEAN NOT NULL DEFAULT false`);
     const marked = await tx.appraisalRound.updateMany({ where: { companyId: COMPANY, status: "DRAFT", name: { startsWith: "แม่แบบ" } }, data: { isTemplate: true } });
     const actor = (await tx.user.findFirst({ where: { companyId: COMPANY }, select: { id: true } }))!.id;

@@ -2,13 +2,31 @@
 import assert from "node:assert/strict";
 import { prisma as real } from "@real/prisma";
 import { getReport } from "@/features/report/service";
+import { restoreFavpoWorld } from "./favpo-world.mts";
 
-// The overview above the evaluation report, against the real database. Read-only: it writes nothing and fails if any row count changed.
+// The overview above the evaluation report, against the real database. The report is read inside a transaction that is thrown away (it first brings back
+// the hidden Favpo rounds this suite was written for, see favpo-world.mts), and the suite fails if any row count changed.
+const g = globalThis as any;
+class Rollback extends Error {}
 const COMPANY = "00000000-0000-0000-0000-000000000001";
 
 (async () => {
   const before = { rounds: await real.appraisalRound.count(), participants: await real.appraisalParticipant.count(), audit: await real.auditLog.count() };
-  const report = await getReport(COMPANY, { type: "performance" } as any);
+  let report!: Awaited<ReturnType<typeof getReport>>;
+  try {
+    await real.$transaction(
+      async (tx) => {
+        g.__tx = tx;
+        await restoreFavpoWorld(tx);
+        report = await getReport(COMPANY, { type: "performance" } as any);
+        g.__tx = undefined;
+        throw new Rollback();
+      },
+      { timeout: 120_000, maxWait: 30_000 },
+    );
+  } catch (e) {
+    if (!(e instanceof Rollback)) throw e;
+  }
   const rounds = report.evaluation?.rounds ?? [];
   const lines: string[] = [];
   const check = (name: string, fn: () => void) => {
