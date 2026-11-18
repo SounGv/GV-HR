@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
-import { requirePagePermission } from "@/lib/auth/page-guard";
-import { ReviewFormPage } from "@/features/performance/review-form-page";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "สร้างการประเมิน" };
-
-export default async function NewReviewPage() {
-  await requirePagePermission("performance:create");
-  return <ReviewFormPage />;
+/** Old single-review form, replaced by the evaluation rounds (it had collected only 2 test records). */
+export default function Page() {
+  redirect("/appraisal/rounds");
 }
