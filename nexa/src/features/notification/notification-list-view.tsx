@@ -73,8 +73,14 @@ export function NotificationListView() {
                 {body}
               </Link>
             ) : (
-              <li key={n.id} onClick={onOpen} className={`px-4 py-3 ${n.read ? "" : "cursor-pointer bg-primary/5"}`}>
-                {body}
+              <li key={n.id} className={n.read ? "px-4 py-3" : "bg-primary/5"}>
+                {n.read ? (
+                  body
+                ) : (
+                  <button type="button" onClick={onOpen} className="block w-full px-4 py-3 text-left transition hover:bg-muted/60">
+                    {body}
+                  </button>
+                )}
               </li>
             );
           })}

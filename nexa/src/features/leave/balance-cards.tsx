@@ -91,7 +91,7 @@ export function BalanceCards() {
                     <Stat label="คงเหลือ (วัน)" value={left} strong />
                   </dl>
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={`ใช้ไปแล้ว ${LEAVE_TYPE_LABEL[b.type]}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
-                    <div className={cn("h-full rounded-full transition-all", st.bar)} style={{ width: `${pct}%` }} />
+                    <div className={cn("h-full rounded-full transition-[width]", st.bar)} style={{ width: `${pct}%` }} />
                   </div>
                   <p
                     className={cn(

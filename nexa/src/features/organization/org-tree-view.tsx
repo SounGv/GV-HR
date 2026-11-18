@@ -258,7 +258,7 @@ function TeamCard({ team, index, direct }: { team: TreeTeam; index: number; dire
           <Users className="size-4" />
         </span>
         <span className="min-w-0">
-          <b className="block truncate text-sm leading-tight">{team.name}</b>
+          <b className="block truncate text-sm leading-snug">{team.name}</b>
           {direct ? (
             <small className="text-muted-foreground block text-xs">ขึ้นตรงกับหัวหน้าฝ่าย</small>
           ) : (

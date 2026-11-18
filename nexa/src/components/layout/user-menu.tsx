@@ -25,8 +25,8 @@ export function UserMenu() {
         </AvatarFallback>
       </Avatar>
       <span className="hidden text-left sm:block">
-        <span className="block text-sm leading-tight font-medium">{name}</span>
-        <span className="block text-xs leading-tight text-muted-foreground">{role}</span>
+        <span className="block text-sm leading-snug font-medium">{name}</span>
+        <span className="block text-xs leading-snug text-muted-foreground">{role}</span>
       </span>
     </Button>
   );

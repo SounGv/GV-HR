@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { rubricFor } from "@/features/appraisal-form/rating-labels";
 import { ApiError } from "@/lib/api/client";
+import { arrowSelect } from "@/lib/arrow-select";
 import { cn } from "@/lib/utils";
 import {
   NOTE_MAX,
@@ -98,20 +99,6 @@ function ScoreIcon({ score, max, small, picked }: { score: number; max: number; 
       </span>
     </span>
   );
-}
-
-/** Arrow keys move through a radio group and pick, as native radios do (the rows are buttons with role="radio"). */
-function arrowSelect(e: React.KeyboardEvent<HTMLElement>) {
-  const step =
-    e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
-  if (!step) return;
-  const radios = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]:not(:disabled)'));
-  const at = radios.indexOf(document.activeElement as HTMLButtonElement);
-  if (at === -1) return;
-  e.preventDefault();
-  const next = radios[(at + step + radios.length) % radios.length];
-  next.focus();
-  next.click();
 }
 
 const isAnswered = (v: AnswerValue | undefined) =>

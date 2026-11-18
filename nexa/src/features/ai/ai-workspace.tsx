@@ -31,6 +31,7 @@ import { ApiError } from "@/lib/api/client";
 import { AttachButton, AttachTray, FileDownloads, SentFiles, useAttachments } from "./attachments-ui";
 import { playReplyChime, unlockReplyChime } from "./reply-chime";
 import { MarkdownLite } from "./markdown-lite";
+import { arrowSelect } from "@/lib/arrow-select";
 import { firstHeading, splitSummary, withoutFirstHeading } from "./reply-parts";
 import { ProposalCards } from "./proposal-cards";
 import { beginPointerDrag } from "./pointer-drag";
@@ -128,13 +129,14 @@ function useChatWidth(): [number | null, (w: number | null) => void] {
 /** Three-way width switch for the result panel. */
 function PanelWidthSwitch({ value, onChange }: { value: PanelWidth; onChange: (w: PanelWidth) => void }) {
   return (
-    <div role="radiogroup" aria-label="ความกว้างของแผงผลลัพธ์" className="inline-flex items-center gap-0.5 rounded-[10px] border border-border bg-card p-0.5">
-      {PANEL_WIDTHS.map((w) => (
+    <div role="radiogroup" aria-label="ความกว้างของแผงผลลัพธ์" onKeyDown={arrowSelect} className="inline-flex items-center gap-0.5 rounded-[10px] border border-border bg-card p-0.5">
+      {PANEL_WIDTHS.map((w, wi) => (
         <button
           key={w.id}
           type="button"
           role="radio"
           aria-checked={value === w.id}
+          tabIndex={value === w.id || (wi === 0 && !PANEL_WIDTHS.some((x) => x.id === value)) ? 0 : -1}
           title={w.hint}
           onClick={() => onChange(w.id)}
           className={cn(
@@ -448,7 +450,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         <div className="flex items-center gap-2 border-b border-border px-4 py-1.5">
           <EngineBadge mode={engine.mode} />
           {access.data?.data.canManage && (
-            <Link href="/ai/settings" className="ml-auto inline-flex min-h-8 items-center text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">
+            <Link href="/ai/settings" className="ml-auto inline-flex min-h-11 items-center text-xs text-muted-foreground underline md:min-h-8 underline-offset-2 hover:text-foreground">
               ตั้งค่า
             </Link>
           )}

@@ -126,7 +126,7 @@ export function FollowRow({
         </span>
         <span className="shrink-0 text-right leading-none">
           <span className={cn("block text-[34px] font-bold tabular-nums", TONE[tone].num)}>{display ?? count}</span>
-          <span className="mt-1 block text-[12px] text-muted-foreground">{unit}</span>
+          <span className="mt-1 block text-[12px] leading-snug text-muted-foreground">{unit}</span>
         </span>
       </div>
       {tag && (

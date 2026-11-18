@@ -384,7 +384,7 @@ function DivisionCard({
               seed={head.person.id}
               src={head.person.avatarUrl}
             />
-            <small className="text-muted-foreground min-w-0 text-xs leading-tight">
+            <small className="text-muted-foreground min-w-0 text-xs leading-snug">
               <b className="text-foreground block truncate text-[12.5px] font-semibold">
                 {head.person.name}
               </b>
@@ -830,7 +830,7 @@ function MemberLink({ person, className }: { person: OrgPerson; className?: stri
         src={person.avatarUrl}
         className="size-[26px] text-xs"
       />
-      <span className="min-w-0 leading-tight">
+      <span className="min-w-0 leading-snug">
         <span className="block truncate">{person.name}</span>
         <Subtitle moved={moved} className="text-xs">
           {person.positionTitle ?? "ไม่ระบุตำแหน่ง"}

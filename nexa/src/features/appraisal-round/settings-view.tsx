@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
+import { arrowSelect } from "@/lib/arrow-select";
 import { cn } from "@/lib/utils";
 import { useSaveSettings, useSettings } from "./hooks";
 import type { SettingsView } from "./types";
@@ -31,13 +32,14 @@ function Choice<T extends string | number>({
   return (
     <fieldset className="space-y-2" disabled={disabled}>
       <legend className="text-sm font-semibold">{label}</legend>
-      <div role="radiogroup" aria-label={label} className="grid gap-2 sm:grid-cols-2">
-        {options.map((o) => (
+      <div role="radiogroup" aria-label={label} onKeyDown={arrowSelect} className="grid gap-2 sm:grid-cols-2">
+        {options.map((o, oi) => (
           <button
             key={String(o.v)}
             type="button"
             role="radio"
             aria-checked={value === o.v}
+            tabIndex={value === o.v || (oi === 0 && !options.some((x) => x.v === value)) ? 0 : -1}
             onClick={() => onChange(o.v)}
             className={cn(
               "flex min-h-12 items-start gap-2.5 rounded-xl border px-3 py-2 text-left disabled:opacity-60",

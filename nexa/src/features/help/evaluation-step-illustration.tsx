@@ -123,7 +123,7 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
             <div>
-              <p className="text-[9.5px] text-muted-foreground">คะแนนรวม (ถ่วงน้ำหนัก)</p>
+              <p className="text-xs text-muted-foreground">คะแนนรวม (ถ่วงน้ำหนัก)</p>
               <p className="text-[15px] font-bold text-foreground">82.4%</p>
             </div>
             <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-bold text-success">ดี/ดีเยี่ยม</span>

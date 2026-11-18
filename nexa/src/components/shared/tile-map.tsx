@@ -217,7 +217,7 @@ export function TileMap({
         target="_blank"
         rel="noreferrer"
         style={{ bottom: insetBottom + 6 }}
-        className="absolute right-2 z-10 rounded-md bg-white/80 px-1.5 py-px text-[10px] text-[#333]"
+        className="absolute right-2 z-10 rounded-md bg-white/80 px-1.5 py-px text-xs text-[#333]"
       >
         © OpenStreetMap
       </a>

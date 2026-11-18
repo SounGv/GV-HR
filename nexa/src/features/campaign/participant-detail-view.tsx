@@ -577,7 +577,7 @@ function TemplateProgress({
         aria-valuemax={total}
         aria-label={`กรอกแล้ว ${answered} จาก ${total} หัวข้อ`}
       >
-        <div className="h-full rounded-full bg-[#0d9488] transition-all motion-reduce:transition-none" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-ring transition-[width] motion-reduce:transition-none" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

@@ -89,7 +89,7 @@ export function ReviewCard({
               <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-all",
+                    "h-full rounded-full transition-[width]",
                     c.score >= 4 ? "bg-success" : c.score >= 3 ? "bg-primary" : "bg-warning",
                   )}
                   style={{ width: `${(c.score / 5) * 100}%` }}

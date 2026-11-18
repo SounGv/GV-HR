@@ -144,7 +144,7 @@ export function KpiView() {
                         </div>
                         <div className="h-2 overflow-hidden rounded-full bg-muted">
                           <div
-                            className={`h-full rounded-full transition-all ${
+                            className={`h-full rounded-full transition-[width] ${
                               effectiveStatus === "AT_RISK"
                                 ? "bg-warning"
                                 : effectiveStatus === "COMPLETED"

@@ -2,6 +2,8 @@
 
 
 
+import { arrowSelect } from "@/lib/arrow-select";
+
 import { cn } from "@/lib/utils";
 
 
@@ -52,9 +54,11 @@ export function MobileSegmentedTabs<T extends string>({
 
       role="tablist"
 
+      onKeyDown={arrowSelect}
+
     >
 
-      {options.map((opt) => {
+      {options.map((opt, i) => {
 
         const active = value === opt.value;
 
@@ -69,6 +73,8 @@ export function MobileSegmentedTabs<T extends string>({
             role="tab"
 
             aria-selected={active}
+
+            tabIndex={active || (i === 0 && !options.some((o) => o.value === value)) ? 0 : -1}
 
             onClick={() => onChange(opt.value)}
 

@@ -96,7 +96,7 @@ export function ChangePasswordForm() {
           <LockKeyhole className="size-6" aria-hidden="true" />
         </span>
         <div>
-          <h2 className="text-[22px] leading-tight font-bold">เปลี่ยนรหัสผ่าน</h2>
+          <h2 className="text-[22px] leading-snug font-bold">เปลี่ยนรหัสผ่าน</h2>
           <p className="mt-1 text-[13.5px] leading-relaxed text-white">ตั้งรหัสใหม่ที่เดาได้ยาก และไม่ใช้ซ้ำกับเว็บอื่น</p>
         </div>
         <p className="gv-glass mt-auto flex items-start gap-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-white">

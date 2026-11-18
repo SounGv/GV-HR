@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
+import { arrowSelect } from "@/lib/arrow-select";
 import { cn } from "@/lib/utils";
 import { DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER } from "./calc";
 import { useDecideOvertime } from "./hooks";
@@ -53,21 +54,22 @@ export function OvertimeDecideActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div role="radiogroup" aria-label="ประเภทวัน" className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+      <div role="radiogroup" aria-label="ประเภทวัน" onKeyDown={arrowSelect} className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
         {(
           [
             ["NORMAL", "วันทำงาน", DEFAULT_MULTIPLIER],
             ["DAY_OFF", "วันหยุด", DAY_OFF_MULTIPLIER],
           ] as const
-        ).map(([value, title, times]) => (
+        ).map(([value, title, times], vi) => (
           <button
             key={value}
             type="button"
             role="radio"
             aria-checked={dayType === value}
+            tabIndex={dayType === value || (vi === 0 && dayType !== "NORMAL" && dayType !== "DAY_OFF") ? 0 : -1}
             onClick={() => setDayType(value)}
             className={cn(
-              "min-h-8 rounded-md px-2.5 text-xs font-semibold transition",
+              "min-h-11 rounded-md px-2.5 text-xs font-semibold transition md:min-h-8",
               dayType === value ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
             )}
           >

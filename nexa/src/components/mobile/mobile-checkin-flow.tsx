@@ -316,7 +316,7 @@ function FlowHeader({ title, stepIndex, dark, onClose }: { title: string; stepIn
         <X className="size-5" />
       </button>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[17px] leading-tight font-bold">{title}</p>
+        <p className="truncate text-[17px] leading-snug font-bold">{title}</p>
         <p className={cn("text-xs", dark ? "text-white/85" : "text-muted-foreground")}>
           ขั้นที่ {stepIndex + 1} จาก {STEPS.length} {STEPS[stepIndex].label}
         </p>
@@ -326,7 +326,7 @@ function FlowHeader({ title, stepIndex, dark, onClose }: { title: string; stepIn
           <span
             key={s.key}
             className={cn(
-              "h-1.5 rounded-full transition-all",
+              "h-1.5 rounded-full transition-[width,background-color]",
               i === stepIndex ? "w-[30px]" : "w-[18px]",
               i <= stepIndex ? (dark ? "bg-[#5eead4]" : "bg-primary") : dark ? "bg-white/35" : "bg-foreground/20",
             )}
@@ -484,7 +484,7 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
           <X className="size-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="text-base leading-tight font-bold">ตำแหน่งของคุณ</p>
+          <p className="text-base leading-snug font-bold">ตำแหน่งของคุณ</p>
           <p className="text-xs text-muted-foreground">
             ขั้นที่ {stepIndex + 1} จาก {STEPS.length} {STEPS[stepIndex].label}
           </p>
@@ -506,7 +506,7 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
             {warn ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}
           </span>
           <div className="min-w-0" role="status" aria-live="polite">
-            <p className="text-lg leading-tight font-bold">
+            <p className="text-lg leading-snug font-bold">
               {geo.me ? (inside === false ? "อยู่นอกพื้นที่ทำงาน" : inside ? "อยู่ในพื้นที่ทำงาน" : "ได้ตำแหน่งแล้ว") : geo.gpsError ? "หาตำแหน่งไม่ได้" : "กำลังหาตำแหน่ง…"}
             </p>
             <p className="text-sm text-muted-foreground">
@@ -635,7 +635,7 @@ function OffsiteStep({
             <AlertTriangle className="size-[18px]" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="text-base leading-tight font-bold">อยู่นอกพื้นที่ทำงาน</p>
+            <p className="text-base leading-snug font-bold">อยู่นอกพื้นที่ทำงาน</p>
             <p className="truncate text-xs text-muted-foreground">
               {info.branchName ? `${info.branchName} ` : ""}ห่าง {info.distance.toLocaleString("th-TH")} เมตร
             </p>
@@ -765,7 +765,7 @@ function SuccessStep({
             <CheckCircle2 className="size-5" />
           </span>
           <div className="min-w-0">
-            <p className="text-xl leading-tight font-bold">{mode === "in" ? "ลงเวลาเข้างานแล้ว" : "ลงเวลาออกงานแล้ว"}</p>
+            <p className="text-xl leading-snug font-bold">{mode === "in" ? "ลงเวลาเข้างานแล้ว" : "ลงเวลาออกงานแล้ว"}</p>
             <p className="text-sm text-muted-foreground">
               {fmtDate()}
               {geo.branchName ? ` · ${geo.branchName}` : ""}

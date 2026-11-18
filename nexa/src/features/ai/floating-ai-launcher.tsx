@@ -165,8 +165,8 @@ export function AiChatPanel() {
           <VBot mood="hi" className="h-7 w-8" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm leading-tight font-semibold">AI Assistant</p>
-          <p className="text-xs leading-tight text-white">น้องวีบอท · ตอบจากข้อมูลจริง</p>
+          <p className="text-sm leading-snug font-semibold">AI Assistant</p>
+          <p className="text-xs leading-snug text-white">น้องวีบอท · ตอบจากข้อมูลจริง</p>
         </div>
         <button
           type="button"

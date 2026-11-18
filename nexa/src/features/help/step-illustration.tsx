@@ -144,7 +144,7 @@ export function StepIllustration({
 
       {kind === "checkin" && (
         <div className="flex w-full max-w-[220px] flex-col items-center gap-2">
-          <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[9.5px] font-semibold text-secondary-foreground">
+          <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">
             <MapPin className="size-2.5" /> อยู่ในระยะ
           </span>
           <div className="flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-primary text-[12px] font-bold text-primary-foreground shadow-sm">
@@ -180,7 +180,7 @@ export function StepIllustration({
             ].map((k) => (
               <div key={k.l} className="rounded-md border border-border bg-card p-1.5 text-center">
                 <p className="text-xs font-bold text-foreground">{k.n}</p>
-                <p className="text-[10px] text-muted-foreground">{k.l}</p>
+                <p className="text-xs text-muted-foreground">{k.l}</p>
               </div>
             ))}
           </div>

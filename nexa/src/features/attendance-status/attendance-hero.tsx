@@ -161,7 +161,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
           </span>
           <span className="rounded-full bg-[#fde047] px-2.5 py-0.5 text-xs font-bold text-[#3f2d00]">ข้อมูล ณ {data.asOf} น.</span>
         </div>
-        <h2 className="mt-4 text-[30px] leading-tight font-bold">การเข้างานวันนี้</h2>
+        <h2 className="mt-4 text-[30px] leading-snug font-bold">การเข้างานวันนี้</h2>
         <p className="mt-1 text-[13.5px] text-white">
           {!data.isWorkingDay ? (
             <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</>
