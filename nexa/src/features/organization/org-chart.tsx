@@ -325,7 +325,7 @@ function CompanyView({
                 <Building2 className="size-5" aria-hidden="true" />
               </span>
               <span className="min-w-0">
-                <b className="block truncate text-[15px] leading-snug">{companyName ?? "องค์กร"}</b>
+                <b className="block text-[15px] leading-snug break-words">{companyName ?? "องค์กร"}</b>
                 <small className="text-xs text-white tabular-nums">
                   {tree.total} คน · {realDivisions} ฝ่าย
                 </small>
@@ -385,10 +385,10 @@ function DivisionCard({
               src={head.person.avatarUrl}
             />
             <small className="text-muted-foreground min-w-0 text-xs leading-snug">
-              <b className="text-foreground block truncate text-[12.5px] font-semibold">
+              <b className="text-foreground block text-[12.5px] leading-snug font-semibold break-words">
                 {head.person.name}
               </b>
-              <span className="block truncate">
+              <span className="block leading-snug break-words">
                 {head.person.positionTitle ?? "หัวหน้าสูงสุดในฝ่าย"}
               </span>
             </small>
@@ -439,7 +439,7 @@ function DeptLine({
       )}
       style={{ paddingLeft: 8 + (depth - 1) * 12 }}
     >
-      <span className="min-w-0 truncate">{name}</span>
+      <span className="min-w-0 leading-snug break-words">{name}</span>
       <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{count}</span>
     </div>
   );
@@ -462,7 +462,11 @@ function IssuesBox({ issues }: { issues: OrgIssues }) {
   }
   const people: string[] = [];
   if (issues.noDepartment > 0) people.push(`พนักงาน ${issues.noDepartment} คนยังไม่มีแผนก`);
-  if (issues.noManager > 0) people.push(`${issues.noManager} คนยังไม่ได้ตั้งหัวหน้า`);
+  if (issues.noManager > 0) {
+    const shown = issues.noManagerNames.slice(0, 4).join(", ");
+    const more = issues.noManagerNames.length > 4 ? ` และอีก ${issues.noManagerNames.length - 4} คน` : "";
+    people.push(`ยังไม่ได้ตั้งหัวหน้า ${issues.noManager} คน: ${shown}${more}`);
+  }
   if (issues.managerLoop > 0) people.push(`${issues.managerLoop} คนตั้งหัวหน้าวนกันเอง`);
   if (people.length > 0) items.push(people.join(" · "));
 
@@ -618,7 +622,11 @@ function DivisionView({
         <EmptyState icon={Users} title="ยังไม่มีพนักงานในฝ่ายนี้" />
       ) : reporting ? (
         <>
-          <DivisionTreeChart tree={reporting} divisionName={division.name} />
+          <DivisionTreeChart
+            tree={reporting}
+            divisionName={division.name}
+            emptyNote={division.isOther ? "รวมฝ่ายเล็กที่ไม่มีแผนกย่อย" : undefined}
+          />
           {reporting.unassigned.length > 0 && <UnassignedBox people={reporting.unassigned} />}
         </>
       ) : (

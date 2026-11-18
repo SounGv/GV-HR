@@ -491,4 +491,65 @@ check("edit mode keeps empty columns so every department is a drop target", () =
   });
 }
 
+// A division with no head of its own, the company head, and parent/child names.
+{
+  const d = [
+    dept("ceo", "ผู้บริหาร"),
+    dept("sm", "ฝ่ายการขายและการตลาด"),
+    dept("sm-on", "แผนกขายออนไลน์", "sm"),
+    dept("sm-off", "แผนกการตลาดออฟไลน์", "sm"),
+    dept("svc", "ฝ่ายเซอร์วิสและเคลม"),
+    dept("svc-sub", "ฝ่ายเซอร์วิส", "svc"),
+  ];
+  const p = [
+    person("boss", "ceo"),
+    person("m1", "sm-on", "boss"),
+    person("m2", "sm-off", "boss"),
+    person("s1", "sm-on", "m1"),
+    person("s2", "sm-off", "m2"),
+    person("seller", "sm", "boss"),
+    person("head", "svc", "boss"),
+    person("agent", "svc-sub", "head"),
+  ];
+  const smDiv = (people) => buildCompanyTree(d, people).divisions.find((x) => x.key === "sm");
+  check("tree: a division with no head of its own shows the one outside manager everyone reports to", () => {
+    const t = buildDivisionTree(smDiv(p), p);
+    assert.equal(t.heads.length, 0);
+    assert.equal(t.outerHead?.person.id, "boss");
+    assert.equal(t.outerHead?.under, 5);
+  });
+  check("tree: no outer head when the top people report to different outside managers", () => {
+    const split = p.map((x) => (x.id === "m2" ? { ...x, managerId: "head" } : x));
+    assert.equal(buildDivisionTree(smDiv(split), split).outerHead, null);
+  });
+  check("tree: a division that has its own head keeps it and has no outer head", () => {
+    const own = [
+      person("boss", "ceo"),
+      person("sm-head", "sm", "boss"),
+      person("m1", "sm", "sm-head"),
+      person("s1", "sm-on", "m1"),
+    ];
+    const t = buildDivisionTree(smDiv(own), own);
+    assert.equal(t.outerHead, null);
+    assert.equal(t.heads[0]?.person.id, "sm-head");
+  });
+  check("issues: a department and its own sub-department are not flagged as the same department", () => {
+    assert.deepEqual(detectOrgIssues(d, p).duplicateNames, []);
+    assert.equal(
+      detectOrgIssues([dept("a", "ฝ่ายเซอร์วิส"), dept("b", "ฝ่ายเซอร์วิสและเคลม")], []).duplicateNames.length,
+      1,
+    );
+  });
+  check("issues: the one person at the very top is not asked for a manager; others are, by name", () => {
+    assert.equal(detectOrgIssues(d, p).noManager, 0);
+    const i = detectOrgIssues(d, [...p, person("stray", "ceo")]);
+    assert.equal(i.noManager, 1);
+    assert.deepEqual(i.noManagerNames, ["stray"]);
+  });
+  check("issues: two people with no manager who both have teams are both flagged", () => {
+    const two = [...p, person("boss2", "ceo"), person("e2", "ceo", "boss2")];
+    assert.equal(detectOrgIssues(d, two).noManager, 2);
+  });
+}
+
 console.log(`\n${n} checks passed`);

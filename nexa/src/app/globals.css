@@ -911,6 +911,7 @@ button.gv-glass:hover {
   align-items: center;
   gap: 14px;
   min-width: 280px;
+  max-width: 380px;
   padding: 14px 18px 14px 14px;
   border-radius: 20px;
   color: #fff;
@@ -937,6 +938,7 @@ button.gv-glass:hover {
   align-items: center;
   gap: 11px;
   min-width: 230px;
+  max-width: 300px;
   padding: 11px 14px 11px 11px;
   border-radius: 18px;
   border: 1px solid #bfe9e2;

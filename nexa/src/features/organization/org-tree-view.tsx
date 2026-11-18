@@ -22,9 +22,12 @@ const WIDE_AFTER = 8;
 export function DivisionTreeChart({
   tree,
   divisionName,
+  emptyNote = "ยังไม่มีหัวหน้าฝ่ายในข้อมูลพนักงาน",
 }: {
   tree: DivisionTree;
   divisionName: string;
+  /** Shown under the name when there is no head to draw (ฝ่ายอื่นๆ is a group, not a division with a missing head). */
+  emptyNote?: string;
 }) {
   const [fit, setFit] = useState(true);
   const [showDaily, setShowDaily] = useState(true);
@@ -120,6 +123,10 @@ export function DivisionTreeChart({
                     <TopCard key={h.person.id} node={h} />
                   ))}
                 </div>
+              ) : tree.outerHead ? (
+                <div className="ot-tops">
+                  <TopCard node={tree.outerHead} outer />
+                </div>
               ) : (
                 <div className="ot-empty">
                   <Building2
@@ -127,10 +134,8 @@ export function DivisionTreeChart({
                     aria-hidden="true"
                   />
                   <span className="min-w-0">
-                    <b className="block truncate text-sm leading-snug">{divisionName}</b>
-                    <small className="text-muted-foreground block text-xs">
-                      ยังไม่มีหัวหน้าฝ่ายในข้อมูลพนักงาน
-                    </small>
+                    <b className="block text-sm leading-snug break-words">{divisionName}</b>
+                    <small className="text-muted-foreground block text-xs">{emptyNote}</small>
                   </span>
                 </div>
               )}
@@ -199,7 +204,7 @@ function Toggle({
   );
 }
 
-function TopCard({ node }: { node: PersonNode }) {
+function TopCard({ node, outer }: { node: PersonNode; outer?: boolean }) {
   const p = node.person;
   return (
     <Link href={employeeHref(p.id)} className="ot-top ot-rise" style={rise(0)}>
@@ -213,12 +218,12 @@ function TopCard({ node }: { node: PersonNode }) {
         />
       </span>
       <span className="min-w-0">
-        <b className="block truncate text-[18px] leading-snug">{p.name}</b>
-        <small className="block truncate text-[12.5px] text-white">
+        <b className="block text-[18px] leading-snug break-words">{p.name}</b>
+        <small className="block text-[12.5px] leading-snug text-white break-words">
           {p.positionTitle ?? "หัวหน้าฝ่าย"}
         </small>
         <span className="mt-1 inline-block rounded-md bg-[#CDEB03] px-2 text-xs font-bold text-[#131516] tabular-nums">
-          ดูแล {node.under} คน
+          {outer ? "ดูแลฝ่ายนี้" : "ดูแล"} {node.under} คน
         </span>
       </span>
     </Link>
@@ -237,8 +242,8 @@ function HeadCard({ lead, index }: { lead: TreeLead; index: number }) {
         className="size-11 text-sm"
       />
       <span className="min-w-0">
-        <b className="block truncate text-[15px] leading-snug">{p.name}</b>
-        <small className="text-muted-foreground block truncate text-xs">
+        <b className="block text-[15px] leading-snug break-words">{p.name}</b>
+        <small className="text-muted-foreground block text-xs leading-snug break-words">
           {p.positionTitle ?? "หัวหน้า"}
         </small>
       </span>
@@ -258,7 +263,7 @@ function TeamCard({ team, index, direct }: { team: TreeTeam; index: number; dire
           <Users className="size-4" />
         </span>
         <span className="min-w-0">
-          <b className="block truncate text-sm leading-snug">{team.name}</b>
+          <b className="block text-sm leading-snug break-words">{team.name}</b>
           {direct ? (
             <small className="text-muted-foreground block text-xs">ขึ้นตรงกับหัวหน้าฝ่าย</small>
           ) : (
@@ -323,7 +328,7 @@ function NameRow({ person, tag }: { person: OrgPerson; tag?: string }) {
         src={person.avatarUrl}
         className="size-[26px] text-xs"
       />
-      <span className="min-w-0 flex-1 truncate">{person.name}</span>
+      <span className="min-w-0 flex-1 leading-snug break-words">{person.name}</span>
       {tag && <span className="ot-tag">{tag}</span>}
     </Link>
   );

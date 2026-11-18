@@ -357,6 +357,11 @@ export interface TreeLead {
 export interface DivisionTree {
   /** Division head(s), as in {@link buildDivisionPeople}. */
   heads: PersonNode[];
+  /**
+   * The one person outside the division that everyone at the top of it reports to, shown as the top card
+   * when the division has no head of its own (e.g. the company head over three managers).
+   */
+  outerHead: PersonNode | null;
   /** Team heads: people with a team under them who report to the head (or to nobody in the division). */
   leads: TreeLead[];
   /** Everyone not under a team head (reports straight to the head, or to someone in another division). */
@@ -453,8 +458,23 @@ export function buildDivisionTree(division: Division, people: OrgPerson[]): Divi
   });
   const direct = toTeams(members.filter((p) => !placed.has(p.id)));
   const allTeams = [...leads.flatMap((l) => l.teams), ...direct];
+
+  // No head inside the division: if every top person reports to the same person outside it, that person
+  // is the head to draw (a placeholder box with no one in it looked unfinished next to the other divisions).
+  let outerHead: PersonNode | null = null;
+  if (base.heads.length === 0 && !division.isOther && members.length > 0) {
+    const byId = new Map(people.map((p) => [p.id, p]));
+    const tops = members.filter(
+      (p) => !unassignedIds.has(p.id) && (!p.managerId || !memberIds.has(p.managerId)),
+    );
+    const outer = new Set(tops.map((p) => p.managerId));
+    const only = outer.size === 1 ? [...outer][0] : null;
+    const person = only ? byId.get(only) : undefined;
+    if (person && tops.length > 0) outerHead = { person, under: members.length - unassignedIds.size };
+  }
   return {
     heads: base.heads,
+    outerHead,
     leads,
     direct,
     unassigned: base.unassigned,
@@ -478,8 +498,10 @@ export interface OrgIssues {
   testDepts: { id: string; name: string; count: number }[];
   /** People with no department, or whose department was deleted. */
   noDepartment: number;
-  /** People with no manager, or whose manager is no longer an active employee. */
+  /** People with no manager, or whose manager is no longer an active employee (the company head excluded). */
   noManager: number;
+  /** Their names, for the amber box. */
+  noManagerNames: string[];
   /** People caught in a managerId loop (A → B → A). */
   managerLoop: number;
 }
@@ -524,7 +546,9 @@ export function detectOrgIssues(depts: OrgDept[], people: OrgPerson[]): OrgIssue
     if (grouped.has(depts[i].id)) continue;
     const group = [depts[i]];
     for (let j = i + 1; j < depts.length; j++) {
-      if (!grouped.has(depts[j].id) && looksLikeSameDept(depts[i].name, depts[j].name))
+      // A department and its own sub-department ("ฝ่ายเซอร์วิสและเคลม" over "ฝ่ายเซอร์วิส") are meant to differ.
+      const related = depts[j].parentId === depts[i].id || depts[i].parentId === depts[j].id;
+      if (!grouped.has(depts[j].id) && !related && looksLikeSameDept(depts[i].name, depts[j].name))
         group.push(depts[j]);
     }
     if (group.length > 1) {
@@ -553,14 +577,22 @@ export function detectOrgIssues(depts: OrgDept[], people: OrgPerson[]): OrgIssue
     }
   }
 
+  // The person at the very top has no manager by design. Only skip them when exactly one person with
+  // no manager has people under them; if there are several, each of those is worth a look.
+  const managedIds = new Set(people.map((p) => p.managerId).filter(Boolean) as string[]);
+  const withoutManager = people.filter(
+    (p) => !p.managerId || p.managerId === p.id || !personIds.has(p.managerId),
+  );
+  const topOnes = withoutManager.filter((p) => managedIds.has(p.id));
+  const flagged = topOnes.length === 1 ? withoutManager.filter((p) => p.id !== topOnes[0].id) : withoutManager;
+
   return {
     orphanDepts,
     duplicateNames,
     testDepts,
     noDepartment: people.filter((p) => !p.departmentId || !live.has(p.departmentId)).length,
-    noManager: people.filter(
-      (p) => !p.managerId || p.managerId === p.id || !personIds.has(p.managerId),
-    ).length,
+    noManager: flagged.length,
+    noManagerNames: flagged.map((p) => p.name),
     managerLoop,
   };
 }
