@@ -33,17 +33,24 @@ function Tabs({
  * sticky is measured from that box, not the window.
  */
 export const stickyTabsRow =
-  "sticky z-20 top-[var(--gv-sticky-top,calc(env(safe-area-inset-top)+4rem))] md:top-[calc(var(--gv-band-h,5.75rem)+0.5rem)]"
+  "sticky z-20 -mt-2 bg-background pt-2 top-[calc(var(--gv-sticky-top,calc(env(safe-area-inset-top)+4rem))-0.5rem)] md:top-[var(--gv-band-h,5.75rem)]"
+
+/**
+ * The sticky layer of a plain tab strip: full width, page-coloured, from the band's bottom edge
+ * down to just under the pills. A bare sticky pill let the page scroll past on both sides and
+ * under it (the banner title and filter chips showed around it), so the strip sits on this
+ * backing instead. The negative top margin gives back the padding, so nothing moves at rest.
+ */
+const stickyTabsBacking =
+  "flex bg-background group-data-horizontal/tabs:sticky group-data-horizontal/tabs:z-20 group-data-horizontal/tabs:-mt-2 group-data-horizontal/tabs:pt-2 group-data-horizontal/tabs:top-[calc(var(--gv-sticky-top,calc(env(safe-area-inset-top)+4rem))-0.5rem)] md:group-data-horizontal/tabs:top-[var(--gv-band-h,5.75rem)]"
 
 const tabsListVariants = cva(
   "group/tabs-list inline-flex w-fit items-center justify-center rounded-xl p-1 text-muted-foreground group-data-horizontal/tabs:h-10 max-md:group-data-horizontal/tabs:h-[54px] group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none data-[variant=line]:border-b data-[variant=line]:border-border",
   {
     variants: {
       variant: {
-        // Stays in view while the page scrolls (see stickyTabsRow). It only
-        // sticks where the list sits directly inside <Tabs>.
-        default:
-          "bg-muted group-data-horizontal/tabs:sticky group-data-horizontal/tabs:z-20 group-data-horizontal/tabs:top-[var(--gv-sticky-top,calc(env(safe-area-inset-top)+4rem))] group-data-horizontal/tabs:shadow-[0_6px_16px_-10px_rgba(15,23,42,0.35)] md:group-data-horizontal/tabs:top-[calc(var(--gv-band-h,5.75rem)+0.5rem)]",
+        // Stays in view while the page scrolls: TabsList wraps it in stickyTabsBacking.
+        default: "bg-muted group-data-horizontal/tabs:shadow-[0_6px_16px_-10px_rgba(15,23,42,0.35)]",
         line: "gap-1 bg-transparent",
       },
     },
@@ -58,13 +65,20 @@ function TabsList({
   variant = "default",
   ...props
 }: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
-  return (
+  const list = (
     <TabsPrimitive.List
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(tabsListVariants({ variant }), className)}
       {...props}
     />
+  )
+  // Only the default pill strip sticks; the line variant sits inside a row the page already makes sticky.
+  if (variant !== "default") return list
+  return (
+    <div data-slot="tabs-sticky" className={stickyTabsBacking}>
+      {list}
+    </div>
   )
 }
 
