@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 
 export const HOLIDAY_TYPES = ["COMPANY", "NATIONAL"] as const;
 
 export const holidayCreateSchema = z.object({
-  date: z.coerce.date({ message: "กรุณาเลือกวันที่" }),
+  date: calendarDate({ message: "กรุณาเลือกวันที่" }),
   name: z.string().trim().min(1, "กรุณากรอกชื่อวันหยุด").max(200),
   type: z.enum(HOLIDAY_TYPES).default("COMPANY"),
   notifyEnabled: z.coerce.boolean().default(true),

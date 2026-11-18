@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 
 export const GOAL_STATUSES = [
   "NOT_STARTED",
@@ -30,7 +31,7 @@ export const goalCreateSchema = z.object({
   status: z.enum(GOAL_STATUSES).default("NOT_STARTED"),
   dueDate: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
-    z.coerce.date().optional(),
+    calendarDate().optional(),
   ),
 });
 export type GoalCreateInput = z.infer<typeof goalCreateSchema>;

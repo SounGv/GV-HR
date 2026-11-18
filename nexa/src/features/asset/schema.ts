@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 
 export const ASSET_STATUSES = ["AVAILABLE", "ASSIGNED", "REPAIR", "RETIRED"] as const;
 
@@ -11,7 +12,7 @@ export const assetCreateSchema = z.object({
   category: z.string().trim().min(1, "กรุณาระบุหมวดหมู่").max(60),
   serialNumber: optional(z.string().trim().max(100)),
   status: z.enum(ASSET_STATUSES).default("AVAILABLE"),
-  purchaseDate: optional(z.coerce.date()),
+  purchaseDate: optional(calendarDate()),
   purchasePrice: optional(z.coerce.number().min(0)),
   note: optional(z.string().trim().max(500)),
 });

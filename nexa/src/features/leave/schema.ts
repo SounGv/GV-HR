@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 import { dataUrlFileOrHttpUrlSchema } from "@/lib/image-schema";
 import { HOURLY_LEAVE_TYPES, computeLeaveHours } from "./days";
 import { HOURS_PER_LEAVE_DAY } from "./hour-pool";
@@ -23,8 +24,8 @@ function sameDay(a: Date, b: Date) {
 export const leaveCreateSchema = z
   .object({
     type: z.enum(LEAVE_TYPES),
-    startDate: z.coerce.date({ message: "กรุณาเลือกวันเริ่ม" }),
-    endDate: z.coerce.date({ message: "กรุณาเลือกวันสิ้นสุด" }),
+    startDate: calendarDate({ message: "กรุณาเลือกวันเริ่ม" }),
+    endDate: calendarDate({ message: "กรุณาเลือกวันสิ้นสุด" }),
     halfDay: z.coerce.boolean().default(false),
     halfDayPeriod: z.preprocess(
       (v) => (v === "" || v == null ? undefined : v),

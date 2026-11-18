@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 
 export const TRAINING_STATUSES = ["OPEN", "CLOSED"] as const;
 export const ENROLLMENT_STATUSES = ["ENROLLED", "COMPLETED", "CANCELLED"] as const;
@@ -17,7 +18,7 @@ export const courseCreateSchema = z.object({
   location: optionalText,
   scheduledDate: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
-    z.coerce.date().optional(),
+    calendarDate().optional(),
   ),
   capacity: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),

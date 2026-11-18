@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 
 export const EVENT_TYPES = ["event", "meeting", "deadline"] as const;
 
@@ -12,10 +13,10 @@ export const eventCreateSchema = z
     title: z.string().trim().min(1, "กรุณาระบุชื่อกิจกรรม").max(200),
     description: optionalText,
     type: z.enum(EVENT_TYPES).default("event"),
-    startDate: z.coerce.date({ message: "กรุณาเลือกวันที่เริ่ม" }),
+    startDate: calendarDate({ message: "กรุณาเลือกวันที่เริ่ม" }),
     endDate: z.preprocess(
       (v) => (v === "" || v == null ? undefined : v),
-      z.coerce.date().optional(),
+      calendarDate().optional(),
     ),
   })
   .refine((d) => !d.endDate || d.endDate >= d.startDate, {
@@ -28,10 +29,10 @@ export const eventUpdateSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   description: optionalText,
   type: z.enum(EVENT_TYPES).optional(),
-  startDate: z.coerce.date().optional(),
+  startDate: calendarDate().optional(),
   endDate: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
-    z.coerce.date().nullable().optional(),
+    calendarDate().nullable().optional(),
   ),
 });
 export type EventUpdateInput = z.infer<typeof eventUpdateSchema>;

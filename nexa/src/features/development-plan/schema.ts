@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 
 export const DEVELOPMENT_ITEM_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "OVERDUE", "CANCELLED"] as const;
 
 const optionalText = (max: number) =>
   z.preprocess((v) => (v === "" || v == null ? undefined : v), z.string().trim().max(max).optional());
-const optionalDate = z.preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.date().optional());
+const optionalDate = z.preprocess((v) => (v === "" || v == null ? undefined : v), calendarDate().optional());
 
 export const developmentItemCreateSchema = z.object({
   title: z.string().trim().min(1, "กรุณาระบุหัวข้อ").max(200),

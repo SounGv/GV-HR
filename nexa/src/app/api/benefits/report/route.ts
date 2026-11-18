@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 import { requirePermission } from "@/lib/auth/guard";
 import { getMedicalBenefitsReport, getLoanBenefitsReport } from "@/features/benefits/report-service";
 import { ok, handleApiError } from "@/lib/api/response";
@@ -14,8 +15,8 @@ const querySchema = z.object({
   // repeated ?departmentId=a&departmentId=b keys.
   departmentId: z.array(z.string()).min(1).optional(),
   status: z.string().optional(),
-  startDate: z.coerce.date().optional(),
-  endDate: z.coerce.date().optional(),
+  startDate: calendarDate().optional(),
+  endDate: calendarDate().optional(),
 });
 
 export async function GET(req: NextRequest) {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 
 const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
 const colorRe = /^#[0-9a-fA-F]{6}$/;
@@ -18,7 +19,7 @@ export type TemplateUpdateInput = z.infer<typeof templateUpdateSchema>;
 export const assignmentUpsertSchema = z.object({
   employeeId: z.string().uuid(),
   templateId: z.string().uuid(),
-  date: z.coerce.date({ message: "วันที่ไม่ถูกต้อง" }),
+  date: calendarDate({ message: "วันที่ไม่ถูกต้อง" }),
   note: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
     z.string().trim().max(200).optional(),

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 import { parseHM, MIN_OT_MINUTES, OT_DAY_TYPES } from "./calc";
 
 export const OT_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
@@ -7,7 +8,7 @@ const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const otCreateSchema = z
   .object({
     // The kind of day is not asked for: the server sets it from the date (Sunday / company holiday = day off).
-    date: z.coerce.date({ message: "กรุณาเลือกวันที่" }),
+    date: calendarDate({ message: "กรุณาเลือกวันที่" }),
     startTime: z.string().regex(timeRe, "เวลาไม่ถูกต้อง"),
     endTime: z.string().regex(timeRe, "เวลาไม่ถูกต้อง"),
     reason: z.preprocess(

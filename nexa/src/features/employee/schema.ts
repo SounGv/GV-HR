@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 import { listQuerySchema } from "@/lib/api/pagination";
 import { passwordSchema } from "@/lib/auth/password-policy";
 import { DATA_URL_IMAGE_RE } from "@/lib/image-schema";
@@ -28,7 +29,7 @@ export const COMPENSATION_TYPES = ["MONTHLY", "DAILY", "HOURLY"] as const;
 const optional = <T extends z.ZodTypeAny>(inner: T) =>
   z.preprocess((v) => (v === "" || v === null ? undefined : v), inner.optional());
 
-const optionalDate = optional(z.coerce.date());
+const optionalDate = optional(calendarDate());
 const optionalCuidLike = optional(z.string().uuid());
 // Branch ids aren't validated as strict RFC4122 UUIDs — some seeded/legacy
 // branch ids in this system use human-readable placeholders (e.g. the

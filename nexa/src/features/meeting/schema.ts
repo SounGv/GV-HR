@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 
 export const MEETING_STATUSES = ["SCHEDULED", "CANCELLED"] as const;
 export const MEETING_RESPONSE_STATUSES = ["PENDING", "ACCEPTED", "DECLINED"] as const;
@@ -14,8 +15,8 @@ export const meetingCreateSchema = z
       (v) => (v === "" || v == null ? undefined : v),
       z.string().trim().max(200).optional(),
     ),
-    startAt: z.coerce.date({ message: "กรุณาเลือกวันและเวลาเริ่ม" }),
-    endAt: z.coerce.date({ message: "กรุณาเลือกวันและเวลาสิ้นสุด" }),
+    startAt: calendarDate({ message: "กรุณาเลือกวันและเวลาเริ่ม" }),
+    endAt: calendarDate({ message: "กรุณาเลือกวันและเวลาสิ้นสุด" }),
     attendeeEmployeeIds: z.array(z.string().uuid()).min(1, "กรุณาเลือกผู้เข้าร่วมอย่างน้อย 1 คน"),
   })
   .refine((d) => d.endAt > d.startAt, {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
 import { dataUrlOrHttpUrlSchema } from "@/lib/image-schema";
 
 export const EXPENSE_STATUSES = ["DRAFT", "PENDING", "APPROVED", "REJECTED", "PAID", "CANCELLED"] as const;
@@ -22,7 +23,7 @@ export const expenseCreateSchema = z
     title: z.string().trim().min(1, "กรุณาระบุรายการ").max(200),
     category: z.enum(EXPENSE_CATEGORIES).default("other"),
     amount: z.coerce.number().positive("จำนวนเงินต้องมากกว่า 0").max(10_000_000),
-    expenseDate: z.coerce.date({ message: "กรุณาเลือกวันที่" }),
+    expenseDate: calendarDate({ message: "กรุณาเลือกวันที่" }),
     description: optionalText,
     receiptUrl: z.preprocess((v) => (v === "" || v == null ? undefined : v), dataUrlOrHttpUrlSchema()),
     // Medical-only fields (category === "medical") — see feature spec.
