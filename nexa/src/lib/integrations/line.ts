@@ -7,7 +7,13 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto";
  * means "skip silently, don't crash the caller," not a hard failure.
  */
 
+/**
+ * True when GV One may talk to LINE. LINE_PAUSED=true switches every send off while keeping the
+ * token and secret in place (the free plan's monthly quota is shared with whatever else uses the
+ * same account); remove the variable and redeploy to switch it back on.
+ */
 export function isLineConfigured(): boolean {
+  if (process.env.LINE_PAUSED === "true") return false;
   return !!process.env.LINE_CHANNEL_ACCESS_TOKEN && !!process.env.LINE_CHANNEL_SECRET;
 }
 
