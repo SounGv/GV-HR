@@ -66,7 +66,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
                   return (
                     <li
                       key={a.id}
-                      className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold", STATUS_CLASS[a.status])}
+                      className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold", canFill && a.status !== "SUBMITTED" && "max-md:w-full max-md:flex-wrap max-md:rounded-xl", STATUS_CLASS[a.status])}
                     >
                       <Icon className="size-3.5" aria-hidden="true" />
                       {RATER_LABEL[a.raterType]}
@@ -74,7 +74,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
                       {a.submittedAt && ` ${formatDate(a.submittedAt)}`}
                       {a.percent !== null && <span className="tabular-nums"> · ได้ {a.percent}%</span>}
                       {canFill && a.status !== "SUBMITTED" && (
-                        <Link href={`/appraisal/rounds/${roundId}/fill/${a.id}`} className="ml-1 font-bold underline underline-offset-2">
+                        <Link href={`/appraisal/rounds/${roundId}/fill/${a.id}`} className="ml-1 font-bold underline underline-offset-2 max-md:ml-auto max-md:inline-flex max-md:min-h-11 max-md:items-center max-md:px-3">
                           กรอกแทน
                         </Link>
                       )}

@@ -38,7 +38,7 @@ export function ServicesGridView() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-bold text-foreground">บริการ</h1>
+        <h2 className="text-lg font-bold text-foreground">บริการ</h2>
         <p className="text-sm text-muted-foreground">ทางลัดไปยังฟังก์ชันที่ใช้บ่อย</p>
       </div>
 

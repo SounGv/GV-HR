@@ -393,10 +393,12 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
-        {label} {required && <span className="text-destructive">*</span>}
+      <label className="block space-y-1.5">
+        <span className="block text-xs font-medium text-muted-foreground">
+          {label} {required && <span className="text-destructive">*</span>}
+        </span>
+        {children}
       </label>
-      {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );

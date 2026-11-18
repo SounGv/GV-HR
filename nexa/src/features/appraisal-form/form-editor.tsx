@@ -47,6 +47,7 @@ import {
   useRemoveBankItem,
   useSaveAppraisalForm,
 } from "./hooks";
+import { arrowSelect } from "@/lib/arrow-select";
 import { rubricFor, type RatingLabel } from "./rating-labels";
 import { formProblems } from "./rules";
 import {
@@ -1075,6 +1076,7 @@ function TopicEditor({
             <div
               role="radiogroup"
               aria-label="ประเภทคำตอบ"
+              onKeyDown={arrowSelect}
               className="bg-muted inline-flex flex-wrap gap-0.5 rounded-xl p-1"
             >
               {TYPE_ORDER.map((t) => (
@@ -1083,6 +1085,7 @@ function TopicEditor({
                   type="button"
                   role="radio"
                   aria-checked={q.answerType === t}
+                  tabIndex={q.answerType === t ? 0 : -1}
                   disabled={!canEdit}
                   onClick={() =>
                     onPatch({
@@ -1095,7 +1098,7 @@ function TopicEditor({
                     })
                   }
                   className={cn(
-                    "text-muted-foreground min-h-9 rounded-[9px] px-3 text-sm font-semibold disabled:opacity-60",
+                    "text-muted-foreground min-h-11 rounded-[9px] px-3 text-sm font-semibold disabled:opacity-60 md:min-h-9",
                     q.answerType === t && "bg-card text-foreground shadow-sm",
                   )}
                 >

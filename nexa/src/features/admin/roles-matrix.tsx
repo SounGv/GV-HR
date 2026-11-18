@@ -125,7 +125,7 @@ export function RolesMatrix() {
             type="button"
             onClick={() => setSelectedId(r.id)}
             className={cn(
-              "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
+              "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors max-md:min-h-11",
               selected?.id === r.id ? "bg-primary/10 text-primary" : "hover:bg-muted",
             )}
           >
@@ -184,7 +184,7 @@ export function RolesMatrix() {
                       {m.actions.map((a) => {
                         const key = `${m.key}:${a}`;
                         return (
-                          <label key={key} className="flex items-center gap-1.5 text-sm">
+                          <label key={key} className="flex items-center gap-1.5 text-sm max-md:min-h-11">
                             <Checkbox
                               checked={perms.has(key)}
                               disabled={locked}
@@ -197,7 +197,7 @@ export function RolesMatrix() {
                       {!locked && (
                         <button
                           type="button"
-                          className="text-xs text-primary hover:underline"
+                          className="text-xs text-primary hover:underline max-md:min-h-11"
                           onClick={() =>
                             toggleModule(
                               m.key,

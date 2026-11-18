@@ -94,6 +94,7 @@ export function MobileDashboardView({
 
   return (
     <div className="gv-m gv-lg-bg min-h-full md:hidden">
+      <h1 className="sr-only">หน้าหลัก</h1>
       {/* Header — plain white background, no dark card here: the Attendance
           Card below is deliberately the only high-emphasis surface on the page. */}
       <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
