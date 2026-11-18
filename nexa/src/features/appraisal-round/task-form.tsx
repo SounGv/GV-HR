@@ -100,6 +100,20 @@ function ScoreIcon({ score, max, small, picked }: { score: number; max: number; 
   );
 }
 
+/** Arrow keys move through a radio group and pick, as native radios do (the rows are buttons with role="radio"). */
+function arrowSelect(e: React.KeyboardEvent<HTMLElement>) {
+  const step =
+    e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+  if (!step) return;
+  const radios = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]:not(:disabled)'));
+  const at = radios.indexOf(document.activeElement as HTMLButtonElement);
+  if (at === -1) return;
+  e.preventDefault();
+  const next = radios[(at + step + radios.length) % radios.length];
+  next.focus();
+  next.click();
+}
+
 const isAnswered = (v: AnswerValue | undefined) =>
   v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0);
 
@@ -199,6 +213,19 @@ export function TaskForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, notes]);
 
+  // Leaving this screen inside the app (back button, another menu) within the 1.2 s wait would drop the last answer:
+  // save it on the way out.
+  const flushRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    flushRef.current = () => {
+      if (!locked && dirty.current) void saveNow();
+    };
+  });
+  useEffect(() => {
+    const flush = flushRef;
+    return () => flush.current();
+  }, []);
+
   // Closing the page with answers not yet saved asks first.
   useEffect(() => {
     if (locked) return;
@@ -218,6 +245,7 @@ export function TaskForm({
   async function onSubmit() {
     try {
       await save.mutateAsync({ answers: list, submit: true });
+      dirty.current = false;
       toast.success(`ส่งผลประเมิน ${task.personName} แล้ว`);
       router.push(backHref);
     } catch (err) {
@@ -246,10 +274,10 @@ export function TaskForm({
       <section className="gv-frost rounded-[26px] p-3.5 sm:p-5" aria-label="งานประเมิน">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-base leading-snug font-bold">
+            <h1 className="text-base leading-snug font-bold text-balance break-words">
               ประเมิน {task.personName}
             </h1>
-            <p className="text-muted-foreground truncate text-xs">
+            <p className="text-muted-foreground text-xs break-words">
               {task.roundName} · ในฐานะ{RATER_LABEL[task.raterType]}
               {task.endIso ? ` · ปิด ${fmtDay(task.endIso)}` : ""}
             </p>
@@ -258,7 +286,7 @@ export function TaskForm({
             <button
               type="button"
               onClick={saveNow}
-              className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-destructive-muted px-2.5 text-xs font-bold text-destructive"
+              className="relative flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-destructive-muted px-2.5 text-xs font-bold text-destructive before:absolute before:-inset-y-1 before:inset-x-0 before:content-['']"
             >
               <span className="size-1.5 rounded-full bg-destructive" aria-hidden="true" />
               ยังไม่บันทึก · ลองใหม่
@@ -266,7 +294,7 @@ export function TaskForm({
           ) : (
             !locked && (
               <span
-                className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-xs"
+                className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-xs tabular-nums"
                 aria-live="polite"
               >
                 <span
@@ -347,7 +375,7 @@ export function TaskForm({
             </div>
           </div>
           <div>
-            <h2 className="text-foreground mb-2 px-0.5 text-sm font-bold">
+            <h2 className="text-foreground mb-2 px-0.5 text-sm font-bold text-balance">
               คะแนนแต่ละระดับหมายถึง
             </h2>
             <ul className="border-border bg-card overflow-hidden rounded-[18px] border">
@@ -410,7 +438,7 @@ export function TaskForm({
       {view === "review" && (
         <div className="gv-rise space-y-3">
           <div>
-            <h2 className="text-xl font-bold">{locked ? "คำตอบที่ส่งแล้ว" : "ตรวจทวนก่อนส่ง"}</h2>
+            <h2 className="text-xl font-bold text-balance">{locked ? "คำตอบที่ส่งแล้ว" : "ตรวจทวนก่อนส่ง"}</h2>
             {!locked && <p className="text-muted-foreground text-sm">กดหัวข้อเพื่อแก้</p>}
           </div>
           <ul className="border-border bg-card overflow-hidden rounded-[18px] border">
@@ -468,7 +496,7 @@ export function TaskForm({
                       <b className="block text-sm leading-snug break-words">{x.text}</b>
                       <span
                         className={cn(
-                          "block truncate text-xs",
+                          "block text-xs break-words",
                           (done && !noNote) || (!done && !x.required)
                             ? "text-muted-foreground"
                             : "text-status-late-fg",
@@ -623,7 +651,7 @@ export function QuestionStep({
           {q.section ? ` · ${q.section}` : ""}
           {!q.required && " · ไม่บังคับ"}
         </span>
-        <h2 className="mt-2 text-xl leading-snug font-bold break-words">{q.text}</h2>
+        <h2 className="mt-2 text-xl leading-snug font-bold break-words text-balance">{q.text}</h2>
       </div>
       {q.helpText && (
         <div className="gv-frost flex items-start gap-2.5 rounded-[20px] px-3 py-2.5">
@@ -644,7 +672,7 @@ export function QuestionStep({
                 type="button"
                 aria-expanded={helpOpen}
                 onClick={() => setHelpOpen((o) => !o)}
-                className="text-primary min-h-8 text-sm font-bold"
+                className="text-primary relative min-h-8 text-sm font-bold before:absolute before:-inset-x-2 before:-inset-y-1.5 before:content-['']"
               >
                 {helpOpen ? "ย่อ" : "ดูทั้งหมด"}
               </button>
@@ -654,8 +682,13 @@ export function QuestionStep({
       )}
 
       {q.answerType === "RATING" && (
-        <div role="radiogroup" aria-label={q.text} className={cn("grid", ratingMax > 3 ? "gap-2" : "gap-2.5")}>
-          {rubric.map((r) => {
+        <div
+          role="radiogroup"
+          aria-label={q.text}
+          onKeyDown={arrowSelect}
+          className={cn("grid", ratingMax > 3 ? "gap-2" : "gap-2.5")}
+        >
+          {rubric.map((r, ri) => {
             const on = value === r.score;
             const desc = own.get(r.score) ?? r.desc;
             const low = r.score === 1;
@@ -665,6 +698,7 @@ export function QuestionStep({
                 type="button"
                 role="radio"
                 aria-checked={on}
+                tabIndex={on || (value === undefined && ri === 0) ? 0 : -1}
                 disabled={disabled}
                 onClick={() => onValue(r.score)}
                 className={cn(
@@ -728,7 +762,7 @@ export function QuestionStep({
       {q.answerType === "RATING" && (
         <label
           className={cn(
-            "gv-frost block rounded-[22px] px-3.5 py-2.5",
+            "gv-frost block rounded-[22px] px-3.5 py-2.5 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
             noteMissing && "border-status-absent-border bg-status-absent-bg/60",
           )}
         >
@@ -766,9 +800,10 @@ export function QuestionStep({
         <div
           role={q.answerType === "CHOICE" ? "radiogroup" : "group"}
           aria-label={q.text}
+          onKeyDown={q.answerType === "CHOICE" ? arrowSelect : undefined}
           className="grid gap-2"
         >
-          {(q.options ?? []).map((o) => {
+          {(q.options ?? []).map((o, oi) => {
             const picked = Array.isArray(value) ? value.includes(o.value) : value === o.value;
             return (
               <button
@@ -776,6 +811,7 @@ export function QuestionStep({
                 type="button"
                 role={q.answerType === "CHOICE" ? "radio" : "checkbox"}
                 aria-checked={picked}
+                tabIndex={q.answerType === "CHOICE" && !picked && (value !== undefined || oi > 0) ? -1 : 0}
                 disabled={disabled}
                 onClick={() =>
                   q.answerType === "CHOICE"
@@ -815,6 +851,7 @@ export function QuestionStep({
         <Input
           aria-label={q.text}
           className="h-12"
+          autoComplete="off"
           maxLength={500}
           disabled={disabled}
           value={typeof value === "string" ? value : ""}
