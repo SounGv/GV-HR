@@ -434,7 +434,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         <header className="flex items-center gap-2.5 border-b border-border px-4 py-3">
           <VBot mood={chat.isPending ? "think" : "ok"} className="h-8 w-9" />
           <div className="min-w-0">
-            <h1 className="text-[14.5px] leading-tight font-semibold">AI Assistant</h1>
+            <h2 className="text-[14.5px] leading-snug font-semibold">AI Assistant</h2>
             <p className="text-xs text-muted-foreground">ตอบจากข้อมูลจริงในระบบ · ผลลัพธ์แสดงที่แผงขวา</p>
           </div>
           <button

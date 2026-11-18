@@ -82,6 +82,7 @@ export function CompetencyView() {
         <Input
           className="pl-9"
           placeholder="ค้นหาหัวข้อ..."
+          aria-label="ค้นหาหัวข้อสมรรถนะ"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

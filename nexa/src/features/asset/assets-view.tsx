@@ -95,6 +95,7 @@ export function AssetsView() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="ค้นหาชื่อ, รหัส, S/N…"
+              aria-label="ค้นหาทรัพย์สิน"
               className="pl-8 max-sm:h-11"
             />
           </div>

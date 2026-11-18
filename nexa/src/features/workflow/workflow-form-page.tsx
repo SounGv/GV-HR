@@ -127,6 +127,7 @@ export function WorkflowFormPage({ workflow }: { workflow?: ApprovalWorkflow }) 
               <Input
                 className="flex-1"
                 placeholder="ชื่อขั้น เช่น หัวหน้าอนุมัติ"
+                aria-label={`ชื่อขั้นที่ ${i + 1}`}
                 value={s.name}
                 onChange={(e) => setStep(i, { name: e.target.value })}
               />

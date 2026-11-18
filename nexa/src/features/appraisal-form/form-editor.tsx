@@ -1112,13 +1112,13 @@ function TopicEditor({
               <span className="text-foreground mb-1.5 block text-sm font-bold">
                 น้ำหนัก
               </span>
-              <div className="border-border inline-flex h-10 items-center overflow-hidden rounded-xl border-[1.5px]">
+              <div className="border-border inline-flex h-12 items-center overflow-hidden rounded-xl border-[1.5px]">
                 <button
                   type="button"
                   aria-label="ลดน้ำหนัก"
                   disabled={!canEdit || q.weight <= 1}
                   onClick={() => onPatch({ weight: q.weight - 1 })}
-                  className="bg-muted/60 h-full w-10 text-lg font-bold disabled:opacity-40"
+                  className="bg-muted/60 h-full w-11 text-lg font-bold disabled:opacity-40"
                 >
                   −
                 </button>
@@ -1128,14 +1128,14 @@ function TopicEditor({
                   aria-label="เพิ่มน้ำหนัก"
                   disabled={!canEdit || q.weight >= 10}
                   onClick={() => onPatch({ weight: q.weight + 1 })}
-                  className="bg-muted/60 h-full w-10 text-lg font-bold disabled:opacity-40"
+                  className="bg-muted/60 h-full w-11 text-lg font-bold disabled:opacity-40"
                 >
                   +
                 </button>
               </div>
             </div>
           )}
-          <label className="flex min-h-10 cursor-pointer items-center gap-2.5 text-sm font-semibold">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold">
             <Switch
               checked={q.required}
               disabled={!canEdit}

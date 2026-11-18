@@ -147,7 +147,7 @@ export function NotifyForm() {
                     roster.map((e) => (
                       <label
                         key={e.id}
-                        className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-muted"
+                        className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-muted max-md:min-h-11"
                       >
                         <input
                           type="checkbox"

@@ -105,7 +105,7 @@ export function SuccessionPlanFormPage({ plan }: { plan?: SuccessionPlanDetail }
         </div>
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-foreground">หมายเหตุ</label>
-          <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <Textarea rows={3} aria-label="หมายเหตุ" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
       </form>
     </FormPageShell>

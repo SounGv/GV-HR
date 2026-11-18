@@ -455,6 +455,7 @@ export function MobileLeaveForm() {
           <textarea
             rows={3}
             placeholder="ระบุเหตุผลการลา"
+            aria-label="เหตุผลการลา"
             className="min-h-[72px] w-full resize-none rounded-[10px] border border-[var(--field-border)] bg-transparent px-3 py-2.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             {...form.register("reason")}
           />

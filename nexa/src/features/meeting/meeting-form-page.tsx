@@ -183,6 +183,7 @@ export function MeetingFormPage() {
                 <FormLabel>ผู้เข้าร่วม ({selected.length} คน)</FormLabel>
                 <Input
                   placeholder="ค้นหาชื่อพนักงาน..."
+                  aria-label="ค้นหาผู้เข้าร่วม"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="mb-2"
@@ -194,7 +195,7 @@ export function MeetingFormPage() {
                     candidates.map((e) => (
                       <label
                         key={e.id}
-                        className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-muted"
+                        className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-muted max-md:min-h-11"
                       >
                         <input
                           type="checkbox"

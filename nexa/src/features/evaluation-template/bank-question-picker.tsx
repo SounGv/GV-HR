@@ -81,7 +81,7 @@ export function BankQuestionPicker({ onAdd }: { onAdd: (question: QuestionFormVa
         </DialogHeader>
         <div className="relative">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="ค้นหาหัวข้อ..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-9" aria-label="ค้นหาหัวข้อ" placeholder="ค้นหาหัวข้อ..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="max-h-80 space-y-1 overflow-y-auto">
           {isLoading ? (

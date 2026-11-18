@@ -111,10 +111,10 @@ function BranchGeofenceCard({ branch }: { branch: Geofence }) {
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <Labeled label="ละติจูด (Latitude)">
-              <Input value={lat} onChange={(e) => setLat(e.target.value)} inputMode="decimal" placeholder="13.736717" />
+              <Input value={lat} onChange={(e) => setLat(e.target.value)} inputMode="decimal" placeholder="13.736717" aria-label="ละติจูด" />
             </Labeled>
             <Labeled label="ลองจิจูด (Longitude)">
-              <Input value={lng} onChange={(e) => setLng(e.target.value)} inputMode="decimal" placeholder="100.523186" />
+              <Input value={lng} onChange={(e) => setLng(e.target.value)} inputMode="decimal" placeholder="100.523186" aria-label="ลองจิจูด" />
             </Labeled>
             <Labeled label="รัศมี (เมตร)">
               <Input value={radius} onChange={(e) => setRadius(e.target.value)} inputMode="numeric" placeholder="150" />
