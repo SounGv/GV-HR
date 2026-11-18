@@ -249,7 +249,7 @@ export function TaskForm({
       needsNote(q, list.find((a) => a.questionId === q.id) as never, task.noteAtLowest));
 
   return (
-    <div ref={topRef} className="relative isolate mx-auto max-w-2xl scroll-mt-4 space-y-4 pb-28">
+    <div ref={topRef} className="relative isolate mx-auto max-w-2xl scroll-mt-4 space-y-4 pb-28 md:pb-4">
       {/* Water drops drifting behind the glass (decoration only, never over text). The box clips them to the column,
           so they cannot make the page scroll sideways. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
@@ -520,8 +520,8 @@ export function TaskForm({
       )}
 
       {/* Thumb bar: one main action per screen. */}
-      <div className="gv-foot gv-frost fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 rounded-t-[26px] border-x-0 border-b-0 px-4 py-3 md:bottom-0 md:left-[var(--sidebar-width,0px)] md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex max-w-2xl items-center gap-2">
+      <div className="gv-foot gv-frost fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 rounded-t-[26px] border-x-0 border-b-0 px-4 py-3 md:sticky md:inset-x-auto md:bottom-4 md:rounded-[26px] md:border md:px-3">
+        <div className="flex items-center gap-2">
           {view === "start" && (
             <Button
               className="h-12 flex-1 font-bold"
