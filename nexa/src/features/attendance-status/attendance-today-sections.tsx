@@ -21,7 +21,6 @@ const RING_COLOR: Record<TodayStatus, string> = {
   LATE: "var(--status-late-dot)",
   ABSENT: "var(--status-absent-dot)",
   ON_LEAVE: "var(--status-leave-dot)",
-  LEAVE_PENDING: "var(--status-pending-dot)",
   NOT_YET: "var(--status-notyet-dot)",
 };
 
@@ -40,7 +39,7 @@ export function StatusRing({ counts, total, scanned }: { counts: Record<TodaySta
   const gap = shown.length > 1 ? 3 : 0;
   let offset = 0;
   return (
-    <div className="relative size-[104px] shrink-0" role="img" aria-label={`มาแล้ว ${pct(scanned, total)}% · ${STATUS_ORDER.filter((x) => x !== "LEAVE_PENDING" || counts[x] > 0).map((x) => `${STATUS_META[x].label} ${counts[x]} คน`).join(" ")}`}>
+    <div className="relative size-[104px] shrink-0" role="img" aria-label={`มาแล้ว ${pct(scanned, total)}% · ${STATUS_ORDER.map((x) => `${STATUS_META[x].label} ${counts[x]} คน`).join(" ")}`}>
       <svg viewBox="0 0 100 100" className="size-full -rotate-90" aria-hidden="true">
         <circle cx="50" cy="50" r={r} fill="none" stroke="rgb(255 255 255 / 0.18)" strokeWidth="10" />
         {shown.map((s) => {
@@ -96,7 +95,7 @@ function SegmentLine({
     <div
       className={cn("flex gap-1", className)}
       role="img"
-      aria-label={STATUS_ORDER.filter((s) => s !== "LEAVE_PENDING" || counts[s] > 0).map((s) => `${STATUS_META[s].label} ${counts[s]} คน`).join(" ")}
+      aria-label={STATUS_ORDER.map((s) => `${STATUS_META[s].label} ${counts[s]} คน`).join(" ")}
     >
       {shown.map((s) => {
         const piece = cn("h-full min-w-2 basis-0 rounded-full", STATUS_META[s].segment);
@@ -130,7 +129,7 @@ export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
             <p className="mt-3 text-base">ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</p>
           ) : (
             <ul className="mt-2 flex flex-wrap gap-x-5">
-              {STATUS_ORDER.filter((s) => s !== "LEAVE_PENDING" || counts[s] > 0).map((s) => (
+              {STATUS_ORDER.map((s) => (
                 <li key={s}>
                   <Link
                     href={attendanceListHref(s, departmentIds)}
@@ -158,7 +157,7 @@ export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
 /** B. Compact "follow up today" chips for the middle of the existing approvals strip. */
 export function AttendanceFollowChips({ data, departmentIds }: SectionProps) {
   if (!data.isWorkingDay) return null;
-  const chips: TodayStatus[] = data.counts.LEAVE_PENDING > 0 ? ["ABSENT", "LATE", "ON_LEAVE", "LEAVE_PENDING"] : ["ABSENT", "LATE", "ON_LEAVE"];
+  const chips: TodayStatus[] = ["ABSENT", "LATE", "ON_LEAVE"];
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label="ต้องตามวันนี้">
       <span className="text-sm">ต้องตามวันนี้</span>
@@ -185,8 +184,7 @@ export function AttendanceFollowChips({ data, departmentIds }: SectionProps) {
 /** C. One tile per status; each opens the matching list. */
 export function AttendanceStatusTiles({ data, departmentIds }: SectionProps) {
   if (!data.isWorkingDay || data.total === 0) return null;
-  // The "waiting for an answer" tile only appears when someone is waiting.
-  const order: TodayStatus[] = data.counts.LEAVE_PENDING > 0 ? ["NORMAL", "LATE", "ABSENT", "ON_LEAVE", "LEAVE_PENDING", "NOT_YET"] : ["NORMAL", "LATE", "ABSENT", "ON_LEAVE", "NOT_YET"];
+  const order: TodayStatus[] = ["NORMAL", "LATE", "ABSENT", "ON_LEAVE", "NOT_YET"];
   return (
     <section aria-label="สถานะการเข้างานวันนี้" className="space-y-3">
       <div className="flex items-end gap-3">
@@ -238,8 +236,7 @@ const ATTENTION: { status: TodayStatus; empty: string }[] = [
 
 export function personLine(p: TodayPerson, status: TodayStatus): string {
   if (status === "LATE") return `เข้า ${p.clockIn} น. · สาย ${p.lateMinutes ?? 0} นาที${p.leaveNote ? ` · ${p.leaveNote}` : ""}`;
-  if (status === "ABSENT") return `ยังไม่สแกน · กะเริ่ม ${p.shiftStart} น.`;
-  if (status === "LEAVE_PENDING") return p.pendingLeaveNote ?? "ยื่นใบลาแล้ว · รออนุมัติ";
+  if (status === "ABSENT") return `ยังไม่สแกน · กะเริ่ม ${p.shiftStart} น.${p.pendingLeaveNote ? ` · ${p.pendingLeaveNote}` : ""}`;
   return p.leaveType ? `${p.leaveType}ทั้งวัน` : "ลางานทั้งวัน";
 }
 
@@ -310,7 +307,7 @@ export function DepartmentBreakdownCard({ data, departmentIds }: SectionProps) {
     const d = byDept.get(p.department) ?? {
       id: p.departmentId,
       name: p.department,
-      counts: { NORMAL: 0, LATE: 0, ABSENT: 0, ON_LEAVE: 0, LEAVE_PENDING: 0, NOT_YET: 0 },
+      counts: { NORMAL: 0, LATE: 0, ABSENT: 0, ON_LEAVE: 0, NOT_YET: 0 },
       total: 0,
     };
     d.counts[p.status]++;

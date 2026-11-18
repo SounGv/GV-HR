@@ -1,4 +1,4 @@
-import { CalendarClock, CalendarDays, CircleCheck, CircleX, Clock, Hourglass } from "lucide-react";
+import { CalendarDays, CircleCheck, CircleX, Clock, Hourglass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TodayStatus } from "./status-rules";
 
@@ -11,7 +11,7 @@ import type { TodayStatus } from "./status-rules";
 export interface StatusMeta {
   label: string;
   /** Value of the `status` query parameter on the list page. */
-  param: "normal" | "late" | "absent" | "leave" | "pending" | "notyet";
+  param: "normal" | "late" | "absent" | "leave" | "notyet";
   icon: typeof Clock;
   /** Tile / badge surface: background, border and text. */
   surface: string;
@@ -72,17 +72,6 @@ export const STATUS_META: Record<TodayStatus, StatusMeta> = {
     bar: "shadow-[inset_5px_0_0_var(--status-leave-dot)]",
     card: "border-status-leave-border bg-status-leave-bg",
   },
-  LEAVE_PENDING: {
-    label: "ลา รออนุมัติ",
-    param: "pending",
-    icon: CalendarClock,
-    surface: "border-dashed border-status-pending-border bg-status-pending-bg text-status-pending-fg",
-    segment: "bg-status-pending-dot",
-    dot: "bg-status-pending-dot",
-    row: "bg-status-pending-bg hover:bg-[color-mix(in_oklab,var(--status-pending-bg)_92%,var(--foreground))]",
-    bar: "shadow-[inset_5px_0_0_var(--status-pending-dot)]",
-    card: "border-dashed border-status-pending-border bg-status-pending-bg",
-  },
   NOT_YET: {
     label: "ยังไม่ถึงเวลา",
     param: "notyet",
@@ -97,7 +86,7 @@ export const STATUS_META: Record<TodayStatus, StatusMeta> = {
 };
 
 /** Display order everywhere: the ones that need attention first. */
-export const STATUS_ORDER: TodayStatus[] = ["ABSENT", "LATE", "LEAVE_PENDING", "ON_LEAVE", "NOT_YET", "NORMAL"];
+export const STATUS_ORDER: TodayStatus[] = ["ABSENT", "LATE", "ON_LEAVE", "NOT_YET", "NORMAL"];
 
 /** Address of the list page for one status, keeping the department filter. */
 export function attendanceListHref(status: TodayStatus | "all", departmentIds: string[] = []): string {

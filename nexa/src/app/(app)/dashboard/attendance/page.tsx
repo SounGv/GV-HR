@@ -19,10 +19,9 @@ const PARAM_TO_STATUS: Record<string, TodayStatus> = {
   late: "LATE",
   absent: "ABSENT",
   leave: "ON_LEAVE",
-  pending: "LEAVE_PENDING",
   notyet: "NOT_YET",
 };
-const TAB_ORDER: TodayStatus[] = ["NORMAL", "LATE", "ABSENT", "ON_LEAVE", "LEAVE_PENDING", "NOT_YET"];
+const TAB_ORDER: TodayStatus[] = ["NORMAL", "LATE", "ABSENT", "ON_LEAVE", "NOT_YET"];
 
 /**
  * Today's people by status. Visible only to people who can approve or manage
@@ -68,8 +67,7 @@ export default async function AttendanceTodayPage({
   const people = status ? data.people.filter((p) => p.status === status || (status === "ON_LEAVE" && hasPartialLeave(p))) : data.people;
   const tabs = [
     { href: attendanceListHref("all", deptIds), label: "ทั้งหมด", count: data.total, active: !status },
-    // The "waiting for an answer" tab only shows when someone is waiting (or when it is the tab being viewed).
-    ...TAB_ORDER.filter((s) => s !== "LEAVE_PENDING" || data.counts[s] > 0 || status === s).map((s) => ({
+    ...TAB_ORDER.map((s) => ({
       href: attendanceListHref(s, deptIds),
       label: STATUS_META[s].label,
       count: data.counts[s] + (s === "ON_LEAVE" ? data.people.filter(hasPartialLeave).length : 0),

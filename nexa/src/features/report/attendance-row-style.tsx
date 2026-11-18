@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CalendarClock, CalendarDays, CircleCheck, CircleX, Clock } from "lucide-react";
+import { CalendarDays, CircleCheck, CircleX, Clock } from "lucide-react";
 
 import { ATTENDANCE_STATUS_LABEL } from "@/features/attendance/status-badge";
 import type { AttendanceStatus } from "@/features/attendance/types";
@@ -10,9 +10,7 @@ import type { PhotoPreview } from "./report-photo-cell";
 
 type Row = Record<string, string | number>;
 
-/** The report adds one state to the attendance statuses: leave asked for and not answered yet (never saved on a record). */
-type ReportStatus = AttendanceStatus | "LEAVE_PENDING";
-const PENDING_LABEL = "ลา รออนุมัติ";
+type ReportStatus = AttendanceStatus;
 
 /**
  * Colour language for the daily attendance report: yellow = late, red =
@@ -26,12 +24,6 @@ const PENDING_LABEL = "ลา รออนุมัติ";
 const TONE: Partial<
   Record<ReportStatus, { row: string; bar: string; card: string; header: string }>
 > = {
-  LEAVE_PENDING: {
-    row: "bg-status-pending-bg hover:bg-[color-mix(in_oklab,var(--status-pending-bg)_92%,var(--foreground))]",
-    bar: "shadow-[inset_5px_0_0_var(--status-pending-dot)]",
-    card: "border-dashed border-status-pending-border bg-status-pending-bg",
-    header: "border-status-pending-border bg-foreground/5",
-  },
   LATE: {
     row: "bg-status-late-bg hover:bg-[color-mix(in_oklab,var(--status-late-bg)_92%,var(--foreground))]",
     bar: "shadow-[inset_5px_0_0_var(--status-late-dot)]",
@@ -73,10 +65,6 @@ export function dailyCardClass(row: Row): { card?: string; header?: string } {
 }
 
 const BADGE: Record<ReportStatus, { icon: typeof Clock; className: string }> = {
-  LEAVE_PENDING: {
-    icon: CalendarClock,
-    className: "border-dashed border-status-pending-border bg-status-pending-bg text-status-pending-fg",
-  },
   PRESENT: {
     icon: CircleCheck,
     className: "border-status-normal-border bg-status-normal-bg text-status-normal-fg",
@@ -102,7 +90,7 @@ export function ReportStatusBadge({ statusKey, fallback }: { statusKey?: string;
       )}
     >
       <Icon className="size-3.5 shrink-0" aria-hidden="true" />
-      {statusKey === "LEAVE_PENDING" ? PENDING_LABEL : ATTENDANCE_STATUS_LABEL[statusKey as AttendanceStatus]}
+      {ATTENDANCE_STATUS_LABEL[statusKey as AttendanceStatus]}
     </span>
   );
 }
