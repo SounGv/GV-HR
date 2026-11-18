@@ -9,7 +9,7 @@ export default async function AppraisalFormsPage() {
   await requirePagePermission("campaign:manage");
   return (
     <div className="space-y-6">
-      <PageHeader title="แบบประเมิน" description="สร้างแบบประเมินที่ใช้กับรอบประเมิน แบบมีเวอร์ชัน" />
+      <PageHeader title="แบบประเมิน" description="ชุดคำถามที่รอบประเมินใช้ แต่ละแบบมีหลายเวอร์ชัน" />
       <FormListView />
     </div>
   );

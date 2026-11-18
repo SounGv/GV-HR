@@ -53,7 +53,7 @@ export function FormListView() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">แบบประเมินมีเวอร์ชัน แบบที่ใช้งานแล้วแก้ไม่ได้ ต้องสร้างเวอร์ชันใหม่</p>
+        <p className="text-sm text-muted-foreground">แบบที่ใช้งานอยู่แก้ไม่ได้ ถ้าจะเปลี่ยนคำถาม ให้สร้างเวอร์ชันใหม่</p>
         {canCreate && (
           <Button className="h-11 md:h-9" onClick={startNew} disabled={create.isPending}>
             <Plus className="size-4" /> สร้างแบบประเมิน

@@ -14,7 +14,7 @@ import { formatDate, displayName } from "@/lib/format";
 import { getReview } from "@/features/performance/service";
 import { bandTone } from "@/features/performance/calc";
 
-export const metadata: Metadata = { title: "รายละเอียดผลการประเมิน" };
+export const metadata: Metadata = { title: "รายละเอียดผลประเมิน" };
 
 export default async function PerformanceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePagePermission("performance:read");
@@ -53,7 +53,7 @@ export default async function PerformanceDetailPage({ params }: { params: Promis
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">รายละเอียดผลการประเมิน</CardTitle>
+          <CardTitle className="text-base">รายละเอียดผลประเมิน</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

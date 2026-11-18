@@ -42,7 +42,7 @@ export const MODULES = [
   { key: "performance", label: "ประเมินผลงาน", actions: ["read", "create", "update", "delete", "approve"] },
   {
     key: "campaign",
-    label: "แคมเปญประเมินผล",
+    label: "รอบประเมิน",
     // "manage" gates the admin surfaces (campaign list/detail, Question Bank,
     // templates, auto-schedules, score thresholds) separately from "read",
     // which plain employees keep so they can see + respond to their OWN

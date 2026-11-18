@@ -16,12 +16,12 @@ export async function GET(req: NextRequest) {
       Object.fromEntries(req.nextUrl.searchParams.entries()),
     );
     if (query.scope !== "me" && !can(session.perms, "performance:create")) {
-      throw Forbidden("ไม่มีสิทธิ์ดูผลการประเมินของผู้อื่น");
+      throw Forbidden("ไม่มีสิทธิ์ดูผลประเมินของผู้อื่น");
     }
     // The whole company's reviews are for HR. "performance:delete" is the key a Manager does not hold (they have read,
     // create and update for their own team), the same way other services tell HR from a Manager.
     if (query.scope === "all" && !can(session.perms, "performance:delete")) {
-      throw Forbidden("ดูผลการประเมินทั้งบริษัทได้เฉพาะ HR");
+      throw Forbidden("ดูผลประเมินทั้งบริษัทได้เฉพาะ HR");
     }
     const records = await listReviews(session.companyId, session, query);
     return ok(records);

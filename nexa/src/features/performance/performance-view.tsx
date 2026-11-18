@@ -189,7 +189,7 @@ function MyReviews() {
       ) : isLoading ? (
         <TableLoadingState rows={3} />
       ) : reviews.length === 0 ? (
-        <EmptyState icon={ClipboardCheck} title="ยังไม่มีผลการประเมิน" description="ผลการประเมินจากหัวหน้างานจะแสดงที่นี่" />
+        <EmptyState icon={ClipboardCheck} title="ยังไม่มีผลประเมิน" description="ผลประเมินจากหัวหน้างานจะแสดงที่นี่" />
       ) : (
         reviews.map((r) => <ReviewCard key={r.id} review={r} />)
       )}

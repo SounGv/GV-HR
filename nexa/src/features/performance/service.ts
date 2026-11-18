@@ -135,12 +135,12 @@ export async function getReview(companyId: string, session: AccessClaims, id: st
     where: { id, companyId, deletedAt: null },
     select: reviewSelect,
   });
-  if (!record) throw NotFound("ไม่พบผลการประเมิน");
+  if (!record) throw NotFound("ไม่พบผลประเมิน");
 
   const own = record.employee.id === session.employeeId;
   const managesTarget = record.employee.managerId === session.employeeId;
   if (!own && !managesTarget && !isHrLevel(session)) {
-    throw Forbidden("ไม่มีสิทธิ์ดูผลการประเมินนี้");
+    throw Forbidden("ไม่มีสิทธิ์ดูผลประเมินนี้");
   }
   return record;
 }
@@ -214,7 +214,7 @@ export async function updateReview(
     where: { id, companyId, deletedAt: null },
     select: { id: true, employee: { select: { managerId: true } } },
   });
-  if (!existing) throw NotFound("ไม่พบผลการประเมิน");
+  if (!existing) throw NotFound("ไม่พบผลประเมิน");
   if (existing.employee.managerId !== session.employeeId && !isHrLevel(session)) {
     throw Forbidden("แก้ไขได้เฉพาะทีมที่คุณดูแล");
   }

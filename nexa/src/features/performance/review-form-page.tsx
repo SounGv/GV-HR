@@ -298,7 +298,7 @@ export function ReviewFormPage({ review }: { review?: ReviewInit }) {
             name="summary"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>สรุปผลการประเมิน</FormLabel>
+                <FormLabel>สรุปผลประเมิน</FormLabel>
                 <FormControl>
                   <Textarea rows={2} {...field} />
                 </FormControl>

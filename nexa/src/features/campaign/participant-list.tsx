@@ -172,7 +172,7 @@ function RejectResultDialog({
     <Dialog open={!!participantId} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>ไม่อนุมัติผลการประเมิน</DialogTitle>
+          <DialogTitle>ไม่อนุมัติผลประเมิน</DialogTitle>
           <DialogDescription>ส่งคำตอบของผู้ประเมินหลักกลับไปแก้ไข ต้องระบุเหตุผล</DialogDescription>
         </DialogHeader>
         <Textarea

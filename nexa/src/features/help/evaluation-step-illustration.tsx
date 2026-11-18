@@ -129,7 +129,7 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
             <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-bold text-success">ดี/ดีเยี่ยม</span>
           </div>
           <div className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-bold text-primary-foreground shadow-sm">
-            <ThumbsUp className="size-3.5" /> รับทราบผลการประเมิน
+            <ThumbsUp className="size-3.5" /> รับทราบผลประเมิน
           </div>
         </div>
       )}

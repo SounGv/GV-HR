@@ -289,9 +289,9 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
         {round.name}
       </h2>
       <p className="mt-0.5 text-sm leading-relaxed break-words text-white">
-        {round.formName && <>ใช้ &ldquo;{round.formName}&rdquo; · </>}
-        {round.participantCount} คนที่ถูกประเมิน
-        {others > 0 && ` · เปิดอยู่อีก ${others} รอบ (ดูด้านล่าง)`}
+        {round.formName && <>ใช้ &ldquo;{round.formName}&rdquo; </>}
+        ประเมิน {round.participantCount} คน
+        {others > 0 && ` และยังมีอีก ${others} รอบที่เปิดอยู่`}
       </p>
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="ส่งแล้ว" value={<CountUp value={submitted} />} unit={`/ ${total} งาน`}>
@@ -307,7 +307,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
           </div>
         </Kpi>
         <Kpi label="ยังไม่เริ่ม" value={p ? <CountUp value={p.pending} /> : dash} unit="งาน" />
-        <Kpi label="ทำค้างไว้" value={p ? <CountUp value={p.inProgress} /> : dash} unit="งาน" />
+        <Kpi label="กำลังทำ" value={p ? <CountUp value={p.inProgress} /> : dash} unit="งาน" />
         {left === null ? (
           <Kpi label="เหลือเวลา" value={dash} unit="ไม่ได้กำหนดวันปิด" />
         ) : left <= 0 ? (
@@ -374,7 +374,7 @@ function RoundsSection({ rounds, hasPublished }: { rounds: RoundListItem[]; hasP
   const shown = rounds.slice(0, MAX_ROWS);
   return (
     <section className="space-y-3">
-      <SectionHeading title="รอบประเมิน" hint="ทุกรอบ เรียงจากล่าสุด" action={rounds.length > 0 ? <AllLink href="/appraisal/rounds" /> : undefined} />
+      <SectionHeading title="รอบประเมิน" hint="การประเมินที่เปิดจริง ใหม่สุดอยู่บน" action={rounds.length > 0 ? <AllLink href="/appraisal/rounds" /> : undefined} />
       {rounds.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
@@ -475,7 +475,7 @@ function FormsSection() {
     <section className="space-y-3">
       <SectionHeading
         title="แบบประเมิน"
-        hint="ต้องยืนยันใช้ก่อน จึงเลือกในรอบได้"
+        hint="ชุดคำถามที่ใช้ในแต่ละรอบ ต้องยืนยันใช้ก่อนจึงเลือกได้"
         action={list.length > MAX_ROWS ? <AllLink href="/appraisal/forms" /> : undefined}
       />
       {forms.isError ? (
@@ -557,7 +557,7 @@ export function OverviewView() {
             </section>
           ) : rounds.isLoading ? (
             <section className="space-y-3">
-              <SectionHeading title="รอบประเมิน" hint="ทุกรอบ เรียงจากล่าสุด" />
+              <SectionHeading title="รอบประเมิน" hint="การประเมินที่เปิดจริง ใหม่สุดอยู่บน" />
               <TableLoadingState rows={3} />
             </section>
           ) : (

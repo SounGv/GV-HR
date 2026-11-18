@@ -1304,7 +1304,7 @@ export async function approveReopen(
   if (!response) throw NotFound("ไม่พบแบบประเมิน");
   if (!isHrLevel(session)) throw Forbidden("เปิดแก้ไขใหม่ได้เฉพาะ HR");
   if (response.status !== "SUBMITTED") throw BadRequest("เปิดแก้ไขใหม่ได้เฉพาะแบบประเมินที่ส่งไปแล้ว");
-  if (response.participant.finalizedAt) throw BadRequest("ผลการประเมินนี้สรุปผลแล้ว ไม่สามารถเปิดแก้ไขได้");
+  if (response.participant.finalizedAt) throw BadRequest("ผลประเมินนี้สรุปผลแล้ว ไม่สามารถเปิดแก้ไขได้");
 
   // Compare-and-swap on status: two concurrent approvals (double-click,
   // retry) both read status "SUBMITTED" before either write lands. Guarding
@@ -1594,8 +1594,8 @@ export async function finalizeParticipant(
     companyId,
     participant.employeeId,
     {
-      title: "ผลการประเมินของคุณพร้อมแล้ว",
-      body: "หัวหน้างานสรุปผลการประเมินรอบนี้เรียบร้อยแล้ว กดดูรายละเอียดและรับทราบผลได้เลย",
+      title: "ผลประเมินของคุณพร้อมแล้ว",
+      body: "หัวหน้างานสรุปผลประเมินรอบนี้เรียบร้อยแล้ว กดดูรายละเอียดและรับทราบผลได้เลย",
       category: "performance",
       link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
     },
@@ -1646,7 +1646,7 @@ export async function rejectParticipantResult(
     },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
-  if (participant.finalizedAt) throw BadRequest("ผลการประเมินนี้สรุปผลแล้ว ไม่สามารถไม่อนุมัติได้");
+  if (participant.finalizedAt) throw BadRequest("ผลประเมินนี้สรุปผลแล้ว ไม่สามารถไม่อนุมัติได้");
 
   const scoringRaterType: RaterType = participant.campaign.raterTypes.includes("MANAGER") ? "MANAGER" : "SELF";
   const scoringResponse = participant.responses.find((r) => r.raterType === scoringRaterType && r.status === "SUBMITTED");
@@ -1685,7 +1685,7 @@ export async function rejectParticipantResult(
     companyId,
     scoringResponse.raterEmployeeId,
     {
-      title: "ผลการประเมินถูกตีกลับให้แก้ไข",
+      title: "ผลประเมินถูกตีกลับให้แก้ไข",
       body: note,
       category: "performance",
       link: `/performance/campaigns/${participant.campaignId}/participants/${participantId}`,
@@ -1713,9 +1713,9 @@ export async function acknowledgeResult(companyId: string, session: AccessClaims
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
     select: { id: true, employeeId: true, finalizedAt: true },
   });
-  if (!participant) throw NotFound("ไม่พบผลการประเมิน");
+  if (!participant) throw NotFound("ไม่พบผลประเมิน");
   if (participant.employeeId !== session.employeeId) throw Forbidden("รับทราบได้เฉพาะผลของตนเอง");
-  if (!participant.finalizedAt) throw BadRequest("ผลการประเมินยังไม่สรุป ยังไม่สามารถรับทราบได้");
+  if (!participant.finalizedAt) throw BadRequest("ผลประเมินยังไม่สรุป ยังไม่สามารถรับทราบได้");
 
   await prisma.evaluationParticipant.update({
     where: { id: participantId },

@@ -24,7 +24,7 @@ export function EvaluationHistoryView({ employeeId }: { employeeId: string }) {
   if (isLoading) return <TableLoadingState rows={3} />;
   if (rows.length === 0) {
     return (
-      <EmptyState icon={History} title="ยังไม่มีประวัติการประเมิน" description="ผลการประเมินจากทุกแคมเปญจะแสดงที่นี่" />
+      <EmptyState icon={History} title="ยังไม่มีประวัติการประเมิน" description="ผลประเมินจากทุกแคมเปญจะแสดงที่นี่" />
     );
   }
 

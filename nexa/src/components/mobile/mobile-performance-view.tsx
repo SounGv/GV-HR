@@ -185,7 +185,7 @@ function MyReviews() {
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={2} />;
   if (reviews.length === 0) {
-    return <EmptyState icon={ClipboardCheck} title="ยังไม่มีผลการประเมิน" description="ผลการประเมินจากหัวหน้างานจะแสดงที่นี่" />;
+    return <EmptyState icon={ClipboardCheck} title="ยังไม่มีผลประเมิน" description="ผลประเมินจากหัวหน้างานจะแสดงที่นี่" />;
   }
   return (
     <div className="space-y-3">

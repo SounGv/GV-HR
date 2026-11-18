@@ -13,7 +13,7 @@ export default async function PerformancePage() {
     <>
       <MobilePerformanceView />
       <div className="hidden space-y-6 md:block">
-        <PageHeader title="ประเมินผลงาน" description="ดูผลการประเมินของคุณ และประเมินสมรรถนะของทีม" />
+        <PageHeader title="ประเมินผลงาน" description="ดูผลประเมินของคุณ และประเมินสมรรถนะของทีม" />
         <PerformanceView />
       </div>
     </>

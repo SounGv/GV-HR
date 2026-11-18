@@ -76,7 +76,7 @@ function participantToPrompt(participant: ParticipantDetail): string {
     });
 
   return [
-    `นี่คือผลการประเมิน "${participant.campaign.name}" รอบ ${participant.campaign.cycle} ของพนักงาน ${name} จากระบบ GV One`,
+    `นี่คือผลประเมิน "${participant.campaign.name}" รอบ ${participant.campaign.cycle} ของพนักงาน ${name} จากระบบ GV One`,
     participant.overallScore != null ? `คะแนนรวมทางการ (จากหัวหน้างาน): ${participant.overallScore.toFixed(1)}/5 (${participant.band})` : "ยังไม่มีคะแนนรวมทางการ",
     "",
     ...sections,
@@ -186,7 +186,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
   async function acknowledge() {
     try {
       await acknowledgeMutation.mutateAsync(participantId);
-      toast.success("รับทราบผลการประเมินแล้ว");
+      toast.success("รับทราบผลประเมินแล้ว");
       refetch();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "รับทราบไม่สำเร็จ");
@@ -300,7 +300,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
               </span>
               {canAcknowledge && (
                 <Button size="sm" onClick={acknowledge} disabled={acknowledgeMutation.isPending}>
-                  {acknowledgeMutation.isPending && <Loader2 className="size-4 animate-spin" />} รับทราบผลการประเมิน
+                  {acknowledgeMutation.isPending && <Loader2 className="size-4 animate-spin" />} รับทราบผลประเมิน
                 </Button>
               )}
             </div>
