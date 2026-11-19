@@ -5,6 +5,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { PageHeader } from "@/components/shared/page-header";
 import { AI_MODEL, isAiConfigured } from "@/lib/ai/client";
 import { engineStatus, recentEngineEvents } from "@/lib/ai/engine";
+import { isBackupConfigured } from "@/lib/ai/groq";
 import { usagePercent } from "@/features/ai/engine-state";
 
 export const metadata: Metadata = { title: "ตั้งค่าน้องวีบอท" };
@@ -28,6 +29,7 @@ export default async function AiSettingsPage() {
   const status = await engineStatus(session.companyId);
   const events = await recentEngineEvents(session.companyId);
   const configured = isAiConfigured();
+  const backupOn = isBackupConfigured();
   const fallback = status.decision.mode === "fallback";
   const percent = usagePercent(status.used, status.cap);
 
@@ -96,12 +98,17 @@ export default async function AiSettingsPage() {
       </section>
 
       <section aria-labelledby="engine-other" className="space-y-3 rounded-2xl border border-border bg-card p-5">
-        <h2 id="engine-other" className="text-lg font-semibold leading-snug">AI ฟรีเจ้าอื่น</h2>
+        <h2 id="engine-other" className="text-lg font-semibold leading-snug">AI สำรองภายนอก</h2>
         <label className="flex min-h-11 items-center gap-3 text-sm text-muted-foreground">
-          <input type="checkbox" disabled className="size-5" />
-          เปิดใช้ AI เจ้าอื่นเป็นตัวสำรอง (ยังไม่เปิดให้ใช้)
+          <input type="checkbox" disabled defaultChecked={backupOn} className="size-5" />
+          เปิดใช้ AI เจ้าอื่นเป็นตัวสำรอง ({backupOn ? "เปิดอยู่" : "ยังไม่ได้ตั้งค่า"})
         </label>
-        <p className="text-sm leading-relaxed text-muted-foreground">ตอนนี้โหมดสำรองใช้ปุ่มลัดที่ตอบจากข้อมูลในระบบเท่านั้น ข้อมูลไม่ออกนอกระบบ</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          ปุ่มลัดตอบจากข้อมูลในระบบ ข้อมูลไม่ออกนอกระบบ
+          {backupOn
+            ? " แต่ถ้าผู้ใช้พิมพ์คำถามเองตอนอยู่ในโหมดสำรอง ข้อความที่พิมพ์ (เฉพาะคำถามล่าสุด) จะถูกส่งไปให้ผู้ให้บริการ AI สำรองภายนอกตอบ โดยไม่ส่งข้อมูลพนักงานจากระบบและไม่ส่งไฟล์ ผู้ใช้เห็นข้อความเตือนในหน้าแชทและคำตอบมีป้าย \"ตอบโดย AI สำรอง\""
+            : " ตอนนี้ยังไม่ได้ตั้งค่า AI สำรองภายนอก โหมดสำรองจึงตอบด้วยปุ่มลัดเท่านั้น"}
+        </p>
       </section>
 
       <details className="rounded-2xl border border-border bg-card p-5 text-sm">

@@ -9,7 +9,7 @@ type Props = { searchParams: Promise<{ q?: string }> };
 
 export default async function AiPage({ searchParams }: Props) {
   await requireAiPageAccess();
-  // `/ai?q=` comes from the dashboard's ask box; it's asked once on arrival.
+  // `/ai?q=` comes from the dashboard's ask box; it only fills the input box; the person presses send.
   const { q } = await searchParams;
   const initialQuestion = typeof q === "string" ? q.trim().slice(0, 2000) || undefined : undefined;
 

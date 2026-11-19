@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { writeAudit } from "@/lib/audit";
+import { AppError } from "@/lib/api/errors";
 import { notifyPermissionHolders } from "@/features/notification/service";
 import {
   capLevel,
   decideEngine,
   ENGINE_NOTICE,
+  FALLBACK_REPLY,
   monthStartBangkok,
   readCap,
   type EngineDecision,
@@ -75,9 +76,39 @@ export async function recentEngineEvents(companyId: string, take = 8) {
   }));
 }
 
-/** One answered question: it is what the monthly meter counts. Warns the administrators at 80% and 100%. */
-export async function recordChat(companyId: string, userId: string, usedBefore: number, cap: number | null) {
-  await writeAudit({ companyId, actorUserId: userId, action: CHAT, entity: "AiChat" });
+/**
+ * Reserves one question BEFORE the model is called, so questions that run side by side cannot all slip under the cap
+ * and a question that fails after paid steps is still counted. The row is the one the monthly meter counts.
+ * Returns null when the month's cap is already used up (the row is taken back).
+ */
+export async function reserveChat(companyId: string, userId: string, cap: number | null): Promise<{ id: string; usedBefore: number } | null> {
+  const mine = await prisma.auditLog.create({ data: { companyId, actorUserId: userId, action: CHAT, entity: "AiChat" }, select: { id: true } });
+  const used = await getUsage(companyId);
+  if (cap !== null && used > cap) {
+    await prisma.auditLog.delete({ where: { id: mine.id } }).catch(() => undefined);
+    return null;
+  }
+  return { id: mine.id, usedBefore: used - 1 };
+}
+
+/**
+ * The form and criteria designers also call the AI service, so they count against the same monthly cap and show in
+ * the meter. Throws (429, plain Thai) when the cap is used up; the caller gives the slot back if the service refuses the call.
+ */
+export async function reserveDesignerCall(companyId: string, userId: string) {
+  const cap = monthlyCap();
+  const slot = await reserveChat(companyId, userId, cap);
+  if (!slot) throw new AppError("RATE_LIMITED", 429, FALLBACK_REPLY.cap);
+  return { ...slot, cap };
+}
+
+/** The reserved question never reached the service (key or credit refused it): it cost nothing, so it is not counted. */
+export async function releaseChat(id: string) {
+  await prisma.auditLog.delete({ where: { id } }).catch(() => undefined);
+}
+
+/** Warns the administrators at 80% and 100% once a reserved question has been counted. */
+export async function noteChatUsage(companyId: string, usedBefore: number, cap: number | null) {
   const level = capLevel(usedBefore + 1, cap);
   if (level === 0) return;
   const since = monthStartBangkok(new Date());

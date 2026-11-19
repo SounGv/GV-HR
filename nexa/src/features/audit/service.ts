@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { fullName } from "@/lib/format";
 import type { AuditLogQuery } from "./schema";
 
+const BANGKOK_DAY_MS = 86400000;
+
 export async function listAuditLogs(companyId: string, query: AuditLogQuery) {
   const where = {
     companyId,
@@ -11,8 +13,9 @@ export async function listAuditLogs(companyId: string, query: AuditLogQuery) {
     ...(query.from || query.to
       ? {
           createdAt: {
-            ...(query.from ? { gte: new Date(query.from) } : {}),
-            ...(query.to ? { lte: new Date(query.to) } : {}),
+            // The boxes hold Bangkok calendar days: from = start of that day, to = up to the start of the next day.
+            ...(query.from ? { gte: new Date(`${query.from}T00:00:00+07:00`) } : {}),
+            ...(query.to ? { lt: new Date(new Date(`${query.to}T00:00:00+07:00`).getTime() + BANGKOK_DAY_MS) } : {}),
           },
         }
       : {}),

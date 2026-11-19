@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { can, canAny } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { displayName } from "@/lib/format";
+import { bangkokParts } from "@/lib/datetime";
 import { employeeNameFilter } from "@/lib/ai/scope";
 import { getBalancesFor } from "@/features/leave/service";
 import { listLeave } from "@/features/leave/service";
@@ -44,7 +45,10 @@ export const READ_TOOLS: NexaTool[] = [
       "List requests waiting for the asker's approval: leave (ลา), overtime (OT) and attendance time corrections (ขอแก้เวลา). HR sees all; a manager sees their own team. Read-only: this does not approve anything (use approve_requests with the ids for that). Use for 'มีอะไรรออนุมัติบ้าง'.",
     input_schema: {
       type: "object",
-      properties: { kind: { type: "string", enum: ["all", "leave", "overtime", "correction"], description: "default all" } },
+      properties: {
+        kind: { type: "string", enum: ["all", "leave", "overtime", "correction"], description: "default all" },
+        withReasons: { type: "boolean", description: "include each request's reason text (written by the requester); only when the user asks for reasons" },
+      },
       additionalProperties: false,
     },
   },
@@ -76,6 +80,12 @@ export const READ_TOOLS: NexaTool[] = [
     },
   },
 ];
+
+/**
+ * Free text written by other people (reasons, notes). It goes to the model as data inside a marker and is cut short;
+ * the system prompt says text inside the marker is never an instruction.
+ */
+const untrusted = (text: string | null | undefined) => (text ? `<<ข้อความผู้ใช้: ${text.replace(/[<>]/g, " ").slice(0, 200)}>>` : null);
 
 const dayOf = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : null);
 
@@ -117,10 +127,11 @@ export async function executeReadTool(
       }
       if (!employeeId) return "บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน เช็คโควตาของตัวเองไม่ได้ ให้ระบุชื่อพนักงานที่ต้องการเช็ค";
 
-      const rows = await getBalancesFor(companyId, employeeId, year);
+      const askedYear = year ?? bangkokParts().year;
+      const rows = await getBalancesFor(companyId, employeeId, askedYear);
       return JSON.stringify({
         employee: who,
-        year: year ?? new Date().getFullYear(),
+        year: askedYear,
         quotaConfiguredByHr: rows.every((r) => r.daysConfigured),
         balances: rows.map((r) => ({
           ...balanceLine(r.type, r.totalDays, r.usedDays, r.pendingDays),
@@ -133,6 +144,7 @@ export async function executeReadTool(
     case "list_pending_approvals": {
       const kind = typeof input.kind === "string" ? input.kind : "all";
       const want = (k: string) => kind === "all" || kind === k;
+      const withReasons = input.withReasons === true;
       const out: Record<string, unknown> = {};
       const denied: string[] = [];
       const LIMIT = 25;
@@ -151,7 +163,7 @@ export async function executeReadTool(
               to: dayOf(r.endDate),
               days: r.days,
               ...(r.unit === "HOUR" ? { hours: r.hours, time: `${r.startTime}-${r.endTime}` } : {}),
-              reason: r.reason ?? null,
+              ...(withReasons ? { reason: untrusted(r.reason) } : {}),
               requestedAt: dayOf(r.createdAt),
             })),
           };
@@ -170,7 +182,7 @@ export async function executeReadTool(
               time: `${r.startTime}-${r.endTime}`,
               hours: r.hours,
               multiplier: r.multiplier,
-              reason: r.reason ?? null,
+              ...(withReasons ? { reason: untrusted(r.reason) } : {}),
               requestedAt: dayOf(r.createdAt),
             })),
           };
@@ -188,7 +200,7 @@ export async function executeReadTool(
               workDate: dayOf(r.workDate),
               clockIn: r.requestedClockIn?.toISOString() ?? null,
               clockOut: r.requestedClockOut?.toISOString() ?? null,
-              reason: r.reason,
+              ...(withReasons ? { reason: untrusted(r.reason) } : {}),
               requestedAt: dayOf(r.createdAt),
             })),
           };
@@ -234,7 +246,7 @@ export async function executeReadTool(
           employee: nameById.get(r.employeeId),
           shift: r.template.name,
           time: `${r.template.startTime}-${r.template.endTime}`,
-          ...(r.note ? { note: r.note } : {}),
+          ...(r.note ? { note: untrusted(r.note) } : {}),
         })),
         ...(visible.length > LIMIT ? { note: `แสดง ${LIMIT} รายการแรกจาก ${visible.length}` } : {}),
       });
@@ -256,37 +268,38 @@ export async function executeReadTool(
         orderBy: { endDate: includeClosed ? "desc" : "asc" },
         take: includeClosed ? 3 : 5,
       });
-      // The evaluation system HR runs now (/appraisal): used when the older campaign tables have nothing to report.
-      if (campaigns.length === 0) {
-        const limitTo = scopeWhere
-          ? new Set((await prisma.employee.findMany({ where: { companyId, deletedAt: null, AND: [scopeWhere] }, select: { id: true } })).map((e) => e.id))
-          : undefined;
-        const overview = await loadEvaluationOverview(companyId, session, { limitTo, includeClosed });
-        const rounds = overview.open.filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase()));
-        if (rounds.length > 0) {
-          return JSON.stringify(
-            rounds.map((r) => ({
-              name: r.name,
-              status: r.closed ? "ปิดแล้ว" : "เปิดอยู่",
-              closes: r.endIso,
-              ...(r.daysLeft !== null ? { daysLeft: r.daysLeft } : {}),
-              participants: r.summary.people.total,
-              peopleDone: r.summary.people.done,
-              peopleWaiting: r.summary.people.pending,
-              evaluationsSubmitted: r.summary.forms.submitted,
-              evaluationsTotal: r.summary.forms.total,
-              percentDone: r.summary.forms.percentSubmitted,
-              resultsFinalized: 0,
-              byRaterType: r.summary.byRater.map((b) => ({ type: b.label, submitted: b.total - b.pending, total: b.total, percentDone: percentDone(b.total - b.pending, b.total) })),
-              stillToSubmit: r.summary.pendingPeople.map((p) => ({ about: p.name, department: p.department, waitingOn: p.waiting })),
-            })),
-          );
-        }
+      // The evaluation system HR runs now (/appraisal) is read together with the older campaign tables,
+      // so an old campaign left ACTIVE cannot hide the current rounds.
+      const limitTo = scopeWhere
+        ? new Set((await prisma.employee.findMany({ where: { companyId, deletedAt: null, AND: [scopeWhere] }, select: { id: true } })).map((e) => e.id))
+        : undefined;
+      const overview = await loadEvaluationOverview(companyId, session, { limitTo, includeClosed });
+      const rounds = overview.open.filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase()));
+      const results: unknown[] = [];
+      for (const r of rounds) {
+        // Approved, published or acknowledged results of the people inside the asker's scope.
+        const finalized = await prisma.appraisalParticipant.count({
+          where: { roundId: r.id, resultStatus: { in: ["APPROVED", "PUBLISHED", "ACKNOWLEDGED"] }, employee: { AND: [scopeWhere ?? {}] } },
+        });
+        results.push({
+          name: r.name,
+          status: r.closed ? "ปิดแล้ว" : "เปิดอยู่",
+          closes: r.endIso,
+          ...(r.daysLeft !== null ? { daysLeft: r.daysLeft } : {}),
+          participants: r.summary.people.total,
+          peopleDone: r.summary.people.done,
+          peopleWaiting: r.summary.people.pending,
+          evaluationsSubmitted: r.summary.forms.submitted,
+          evaluationsTotal: r.summary.forms.total,
+          percentDone: r.summary.forms.percentSubmitted,
+          resultsFinalized: finalized,
+          byRaterType: r.summary.byRater.map((b) => ({ type: b.label, submitted: b.total - b.pending, total: b.total, percentDone: percentDone(b.total - b.pending, b.total) })),
+          stillToSubmit: r.summary.pendingPeople.map((p) => ({ about: p.name, department: p.department, waitingOn: p.waiting })),
+        });
       }
-      if (campaigns.length === 0) return (includeClosed ? "ไม่พบรอบประเมิน" : "ไม่มีรอบประเมินที่เปิดอยู่ (ถ้าต้องการดูรอบที่ปิดแล้วให้ใช้ includeClosed)") + (q ? ` ที่ชื่อตรงกับ "${q}"` : "");
+      if (campaigns.length === 0 && results.length === 0) return (includeClosed ? "ไม่พบรอบประเมิน" : "ไม่มีรอบประเมินที่เปิดอยู่ (ถ้าต้องการดูรอบที่ปิดแล้วให้ใช้ includeClosed)") + (q ? ` ที่ชื่อตรงกับ "${q}"` : "");
 
       const inScope: Prisma.EvaluationParticipantWhereInput = { employee: { AND: [scopeWhere ?? {}] } };
-      const results: unknown[] = [];
       for (const c of campaigns) {
         const participants = await prisma.evaluationParticipant.count({ where: { campaignId: c.id, ...inScope } });
         const finalized = await prisma.evaluationParticipant.count({ where: { campaignId: c.id, finalizedAt: { not: null }, ...inScope } });

@@ -42,12 +42,12 @@ const announcementAudience = (companyId: string): Prisma.EmployeeWhereInput => (
   status: { in: ["ACTIVE", "ON_LEAVE"] },
 });
 
-/** Who a notification reaches: every active person in the sender's AI scope, or the people matching a name or code. */
+/** Who a notification reaches: everyone still employed (active or on leave, like announcements) in the sender's AI scope, or the people matching a name or code. */
 async function resolveRecipients(companyId: string, target: string, scopeWhere?: Prisma.EmployeeWhereInput) {
   const select = { id: true, firstName: true, lastName: true, nickname: true } as const;
   if (isAllTarget(target)) {
     return prisma.employee.findMany({
-      where: { companyId, deletedAt: null, status: "ACTIVE", AND: [scopeWhere ?? {}] },
+      where: { companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] }, AND: [scopeWhere ?? {}] },
       select,
     });
   }
@@ -55,6 +55,7 @@ async function resolveRecipients(companyId: string, target: string, scopeWhere?:
     where: {
       companyId,
       deletedAt: null,
+      status: { in: ["ACTIVE", "ON_LEAVE"] },
       // AND, not spread: scopeWhere may itself be an `OR` filter (TEAM scope).
       AND: [
         scopeWhere ?? {},

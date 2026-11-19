@@ -12,7 +12,8 @@ import type { ProposalCard } from "@/features/ai/proposal";
 import { checkOutput, MAX_OUTPUT_FILES } from "@/features/ai/attachments";
 import { buildOutputFile, type OutFile } from "@/lib/ai/attachments-server";
 import { computePayroll } from "@/features/payroll/calc";
-import { fullName } from "@/lib/format";
+import { displayName, fullName } from "@/lib/format";
+import { employeeNameFilter } from "@/lib/ai/scope";
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
@@ -35,6 +36,30 @@ function stripDataUrls<T extends Record<string, unknown>>(row: T): T {
 }
 
 type Meta = { ip?: string; userAgent?: string };
+
+/**
+ * Free text another person wrote (announcement body, reasons). The model gets it inside a marker and cut short;
+ * the system prompt says text inside the marker is data and never an instruction.
+ */
+const untrusted = (text: string | null | undefined, max = 600) => (text ? `<<ข้อความผู้ใช้: ${text.replace(/[<>]/g, " ").slice(0, max)}>>` : null);
+
+/** Up to 6 people matching a name, nickname or code inside the asker's scope (AND, not spread: scopeWhere may be an OR filter). */
+async function findPeople(companyId: string, q: string, scopeWhere: Prisma.EmployeeWhereInput | undefined, activeOnly: boolean) {
+  return prisma.employee.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      ...(activeOnly ? { status: { notIn: ["RESIGNED", "TERMINATED"] as ("RESIGNED" | "TERMINATED")[] } } : {}),
+      AND: [scopeWhere ?? {}, employeeNameFilter(q)],
+    },
+    select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true },
+    take: 6,
+    orderBy: { employeeCode: "asc" },
+  });
+}
+
+const manyPeople = (found: { employeeCode: string; firstName: string | null; lastName: string | null; nickname: string | null }[]) =>
+  `พบหลายคน ให้ถามผู้ใช้ว่าหมายถึงคนไหน: ${found.map((e) => `${displayName(e)} (${e.employeeCode})`).join(", ")}`;
 
 export interface NexaTool {
   name: string;
@@ -420,22 +445,13 @@ export async function executeTool(
 
       case "get_employee_context": {
         if (!can(session.perms, "employee:read")) return deny("employee:read");
-        const q = String(input.query ?? "");
+        const q = String(input.query ?? "").trim();
+        if (!q) return "ไม่พบพนักงานที่ตรงกับคำค้น";
+        const found = await findPeople(companyId, q, scopeWhere, false);
+        if (found.length > 1) return manyPeople(found);
+        if (found.length === 0) return "ไม่พบพนักงานที่ตรงกับคำค้น";
         const emp = await prisma.employee.findFirst({
-          where: {
-            companyId,
-            deletedAt: null,
-            AND: [
-              scopeWhere ?? {},
-              {
-                OR: [
-                  { employeeCode: { equals: q, mode: "insensitive" } },
-                  { firstName: { contains: q, mode: "insensitive" } },
-                  { lastName: { contains: q, mode: "insensitive" } },
-                ],
-              },
-            ],
-          },
+          where: { id: found[0].id, companyId, deletedAt: null },
           select: {
             id: true,
             employeeCode: true,
@@ -473,7 +489,7 @@ export async function executeTool(
           take: 10,
           select: { title: true, body: true, authorName: true, publishedAt: true },
         });
-        return JSON.stringify(anns);
+        return JSON.stringify(anns.map((a) => ({ ...a, title: untrusted(a.title, 200), body: untrusted(a.body) })));
       }
 
       // Writes never run from here. They draw a confirmation card and the person
@@ -512,22 +528,14 @@ export async function executeTool(
         let base = num(input.baseSalary);
         let who: string | null = null;
         if (input.employee) {
-          const q = String(input.employee);
+          const q = String(input.employee).trim();
+          if (!q) return "ไม่พบพนักงานที่ตรงกับคำค้น";
+          // Resigned people are left out: a name shared with a former colleague must not pick their salary.
+          const found = await findPeople(companyId, q, scopeWhere, true);
+          if (found.length > 1) return manyPeople(found);
+          if (found.length === 0) return "ไม่พบพนักงานที่ตรงกับคำค้น";
           const emp = await prisma.employee.findFirst({
-            where: {
-              companyId,
-              deletedAt: null,
-              AND: [
-                scopeWhere ?? {},
-                {
-                  OR: [
-                    { employeeCode: { equals: q, mode: "insensitive" } },
-                    { firstName: { contains: q, mode: "insensitive" } },
-                    { lastName: { contains: q, mode: "insensitive" } },
-                  ],
-                },
-              ],
-            },
+            where: { id: found[0].id, companyId, deletedAt: null },
             select: { firstName: true, lastName: true, baseSalary: true },
           });
           if (!emp) return "ไม่พบพนักงานที่ตรงกับคำค้น";

@@ -37,7 +37,7 @@ export interface AiAccess {
   /** Administrators (may edit employees): see the AI settings page. */
   canManage?: boolean;
   /** Who answers now: the AI service, or the built-in quick actions. */
-  engine?: { mode: "ai" | "fallback"; reason?: "credit" | "key" | "cap"; used: number; cap: number | null };
+  engine?: { mode: "ai" | "fallback"; reason?: "credit" | "key" | "cap"; used: number; cap: number | null; backup?: boolean };
 }
 
 /** A file the assistant hands back; `data` is base64. */

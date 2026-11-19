@@ -41,6 +41,8 @@ export async function getActionCenter(
 
   const hasReports = reportIds.length > 0;
   const reportFilter = { companyId, deletedAt: null, status: "PENDING" as const };
+  // Company-wide approvers do not count their own requests: approving one's own request is refused.
+  const notMine = employeeId ? { employeeId: { not: employeeId } } : {};
 
   // Bangkok calendar day (the server runs in UTC, where "today" is still
   // yesterday until 07:00 Bangkok time).
@@ -62,12 +64,12 @@ export async function getActionCenter(
   const isHrForLeave = can(perms, "leave:approve");
   const isHrForOvertime = can(perms, "overtime:approve");
   const leave = isHrForLeave
-    ? await prisma.leaveRequest.count({ where: reportFilter })
+    ? await prisma.leaveRequest.count({ where: { ...reportFilter, ...notMine } })
     : hasReports
       ? await prisma.leaveRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
       : 0;
   const overtime = isHrForOvertime
-    ? await prisma.overtimeRequest.count({ where: reportFilter })
+    ? await prisma.overtimeRequest.count({ where: { ...reportFilter, ...notMine } })
     : hasReports
       ? await prisma.overtimeRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
       : 0;
@@ -75,7 +77,7 @@ export async function getActionCenter(
   // listAttendanceCorrections applies it for the "team" scope) — they were the
   // one approval type missing from this banner and from the sidebar badge.
   const correction = can(perms, "attendance:approve")
-    ? await prisma.attendanceCorrectionRequest.count({ where: reportFilter })
+    ? await prisma.attendanceCorrectionRequest.count({ where: { ...reportFilter, ...notMine } })
     : hasReports
       ? await prisma.attendanceCorrectionRequest.count({ where: { ...reportFilter, employeeId: { in: reportIds } } })
       : 0;
@@ -264,7 +266,8 @@ export async function getDashboardSummary(
     where: { companyId, deletedAt: null, workDate: { gte: todayStart, lt: todayEnd }, status: "LATE", ...employeeIdFilter },
   });
   const onLeaveTodayRows = await prisma.leaveRequest.findMany({
-    where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: todayEnd }, endDate: { gte: todayStart }, ...employeeIdFilter },
+    // Day leave only: an hour of leave does not take the person out of the day.
+    where: { companyId, deletedAt: null, status: "APPROVED", unit: "DAY", startDate: { lt: todayEnd }, endDate: { gte: todayStart }, ...employeeIdFilter },
     select: { employeeId: true },
   });
   const otTodayAgg = await prisma.overtimeRequest.aggregate({
@@ -355,7 +358,7 @@ export async function getAttendanceTrend(companyId: string, days = 14): Promise<
   });
   const holidays = await prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } });
   const leaves = await prisma.leaveRequest.findMany({
-    where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start } },
+    where: { companyId, deletedAt: null, status: "APPROVED", unit: "DAY", startDate: { lt: end }, endDate: { gte: start } },
     select: { startDate: true, endDate: true, employeeId: true },
   });
   const otRows = await prisma.overtimeRequest.groupBy({
@@ -386,8 +389,10 @@ export async function getAttendanceTrend(companyId: string, days = 14): Promise<
     const dayRecords = recordsByDate.get(key) ?? [];
     const present = dayRecords.filter((r) => r.clockInAt).length;
     const late = dayRecords.filter((r) => r.status === "LATE").length;
+    // On leave = approved day leave (hourly leave is not a day off) and no scan that day, so nobody is counted twice.
+    const punchedIds = new Set(dayRecords.filter((r) => r.clockInAt).map((r) => r.employeeId));
     const onLeaveEmployeeIds = new Set(
-      leaves.filter((l) => l.startDate.getTime() <= d.getTime() && l.endDate.getTime() >= d.getTime()).map((l) => l.employeeId),
+      leaves.filter((l) => l.startDate.getTime() <= d.getTime() && l.endDate.getTime() >= d.getTime() && !punchedIds.has(l.employeeId)).map((l) => l.employeeId),
     );
     const absent = Math.max(0, activeCount - present - onLeaveEmployeeIds.size);
 
@@ -427,7 +432,7 @@ export async function getDepartmentWatchlist(companyId: string, days = 30): Prom
   // Sequential, not Promise.all — connection_limit=1 (see getActionCenter above).
   const employees = await prisma.employee.findMany({
     where: { companyId, deletedAt: null, status: "ACTIVE" },
-    select: { id: true, departmentId: true, department: { select: { name: true } } },
+    select: { id: true, departmentId: true, hireDate: true, terminationDate: true, department: { select: { name: true } } },
   });
   const records = await prisma.attendanceRecord.findMany({
     where: { companyId, deletedAt: null, workDate: { gte: start, lt: end } },
@@ -435,7 +440,7 @@ export async function getDepartmentWatchlist(companyId: string, days = 30): Prom
   });
   const holidays = await prisma.holiday.findMany({ where: { companyId, deletedAt: null, date: { gte: start, lt: end } }, select: { date: true } });
   const leaves = await prisma.leaveRequest.findMany({
-    where: { companyId, deletedAt: null, status: "APPROVED", startDate: { lt: end }, endDate: { gte: start } },
+    where: { companyId, deletedAt: null, status: "APPROVED", unit: "DAY", startDate: { lt: end }, endDate: { gte: start } },
     select: { startDate: true, endDate: true, employeeId: true },
   });
 
@@ -463,6 +468,9 @@ export async function getDepartmentWatchlist(companyId: string, days = 30): Prom
       if (dow === 0 || dow === 6) continue;
       const key = iso(d);
       if (holidaySet.has(key)) continue;
+      // Not absent before the person was hired or after they left.
+      if (emp.hireDate && key < iso(emp.hireDate)) continue;
+      if (emp.terminationDate && key > iso(emp.terminationDate)) continue;
       const onLeave = myLeaves.some((l) => l.startDate.getTime() <= d.getTime() && l.endDate.getTime() >= d.getTime());
       if (onLeave) continue;
       const rec = recordsByEmployeeDay.get(`${emp.id}|${key}`);

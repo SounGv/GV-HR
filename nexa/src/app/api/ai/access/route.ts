@@ -3,6 +3,7 @@ import { ok, handleApiError } from "@/lib/api/response";
 import { canAttachFiles, resolveAiAccess } from "@/lib/ai/scope";
 import { can } from "@/lib/auth/rbac";
 import { engineStatus } from "@/lib/ai/engine";
+import { isBackupConfigured } from "@/lib/ai/groq";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,8 @@ export async function GET() {
         reason: e.decision.mode === "fallback" ? e.decision.reason : undefined,
         used: e.used,
         cap: e.cap,
+        // True when a typed question in the fallback goes to the outside backup provider (the banner says so).
+        backup: isBackupConfigured(),
       },
     });
   } catch (err) {

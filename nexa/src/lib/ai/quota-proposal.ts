@@ -4,6 +4,7 @@ import { signAiProposalToken, type AccessClaims } from "@/lib/auth/jwt";
 import { writeAudit } from "@/lib/audit";
 import { displayName } from "@/lib/format";
 import { employeeNameFilter } from "@/lib/ai/scope";
+import { bangkokParts } from "@/lib/datetime";
 import { PROPOSAL_TOOL_RESULT, type ConfirmOutcome, type ProposalCard, type ProposalPayload } from "@/features/ai/proposal";
 import {
   buildQuotaCard,
@@ -33,7 +34,7 @@ export async function prepareQuotaProposal(
   scopeWhere?: Prisma.EmployeeWhereInput,
 ): Promise<{ card: ProposalCard | null; message: string }> {
   const companyId = session.companyId;
-  const input = checkQuotaInput(raw, new Date().getFullYear());
+  const input = checkQuotaInput(raw, bangkokParts().year);
   if (!input.ok) return { card: null, message: input.message };
 
   const rows: QuotaRow[] = [];

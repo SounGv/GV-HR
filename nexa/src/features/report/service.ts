@@ -15,6 +15,7 @@ import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendanc
 import { REPORT_LABELS, type ReportQuery } from "./schema";
 import type { ReportResult, ReportSummaryDatum } from "./types";
 import { capRowsByDay, laterDate } from "./daily-cap";
+import { absentDays, employedDays, leaveCover, workingDays } from "./work-days";
 import { summarizeRound, type ScoredPerson } from "./result-insights";
 
 const GOAL_STATUS_LABEL: Record<string, string> = {
@@ -80,18 +81,18 @@ function photoUrlOf(recordId: string, kind: "in" | "out", updatedAt: Date): stri
   return `/api/attendance/${recordId}/photo?kind=${kind}&v=${updatedAt.getTime()}`;
 }
 
-/** [start, end) date window. Defaults to the current calendar month. */
+/** [start, end) date window. Defaults to the current calendar month, by the Bangkok calendar. */
 function computeRange(q: ReportQuery) {
-  const now = new Date();
+  const now = bangkokParts();
   const start = q.from
     ? new Date(`${q.from}T00:00:00.000Z`)
-    : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    : new Date(Date.UTC(now.year, now.month - 1, 1));
   let end: Date;
   if (q.to) {
     const [y, m, d] = q.to.split("-").map(Number);
     end = new Date(Date.UTC(y, m - 1, d + 1)); // inclusive end-of-day → exclusive
   } else {
-    end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+    end = new Date(Date.UTC(now.year, now.month - 1, now.day + 1));
   }
   return { start, end };
 }
@@ -117,7 +118,10 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     ...(query.costCenterId ? { costCenterId: { in: query.costCenterId } } : {}),
     ...(query.employeeWhere ?? {}),
   };
-  const deptRel = Object.keys(employeeFilter).length ? { employee: employeeFilter } : {};
+  // Removed (soft-deleted) people stay out of every report; test accounts and ex-staff must not inflate rows or totals.
+  const deptRel = { employee: { ...employeeFilter, deletedAt: null } };
+  // Payroll is the exception: a person removed after being paid still belongs in that period's pay report.
+  const payrollRel = Object.keys(employeeFilter).length ? { employee: employeeFilter } : {};
 
   if (query.type === "employees") {
     const emps = await prisma.employee.findMany({
@@ -167,7 +171,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     // Sequential, not Promise.all — connection_limit=1.
     const employees = await prisma.employee.findMany({
       where: { companyId, deletedAt: null, status: "ACTIVE", ...employeeFilter },
-      select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
+      select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, hireDate: true, terminationDate: true, department: { select: { name: true } } },
     });
     const recs = await prisma.attendanceRecord.findMany({
       where: { companyId, deletedAt: null, workDate: { gte: start, lt: end }, ...deptRel },
@@ -187,7 +191,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       select: {
         startDate: true,
         endDate: true,
-        days: true,
+        halfDay: true,
+        unit: true,
         type: true,
         attachmentUrl: true,
         employee: { select: { employeeCode: true } },
@@ -209,25 +214,16 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     });
 
     const holidayDates = new Set(holidays.map((h) => h.date.toISOString().slice(0, 10)));
-    const DAY_MS = 86_400_000;
-    let businessDays = 0;
-    // A month still in progress only counts working days up to today
-    // (Bangkok): a day that hasn't happened yet can't be scheduled or missed,
-    // otherwise every future day of the month showed up as "absent".
-    const todayBkk = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
-    for (let d = new Date(start); d.getTime() < end.getTime(); d = new Date(d.getTime() + DAY_MS)) {
-      if (d.toISOString().slice(0, 10) > todayBkk) break;
-      const dow = d.getUTCDay();
-      if (dow === 0 || dow === 6) continue;
-      if (holidayDates.has(d.toISOString().slice(0, 10))) continue;
-      businessDays++;
+    // A month still in progress only counts working days up to today (Bangkok): a day that hasn't happened yet
+    // can't be scheduled or missed. Each person's days also start at their hire date and stop at their termination date.
+    const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+    const todayBkk = isoDay(bangkokParts().dateUTC);
+    const businessDayList = workingDays(isoDay(start), isoDay(new Date(end.getTime() - 86_400_000)), todayBkk, holidayDates);
+    const personDays = new Map<string, { days: string[]; daySet: Set<string>; punched: Set<string>; cover: Map<string, number> }>();
+    for (const e of employees) {
+      const days = employedDays(businessDayList, e.hireDate ? isoDay(e.hireDate) : null, e.terminationDate ? isoDay(e.terminationDate) : null);
+      personDays.set(e.employeeCode, { days, daySet: new Set(days), punched: new Set(), cover: new Map() });
     }
-    const clippedDays = (leaveStart: Date, leaveEnd: Date, storedDays: number) => {
-      if (leaveStart >= start && leaveEnd < end) return storedDays;
-      const clipStart = leaveStart < start ? start : leaveStart;
-      const clipEndExclusive = leaveEnd >= end ? end : new Date(leaveEnd.getTime() + DAY_MS);
-      return Math.max(0, Math.round((clipEndExclusive.getTime() - clipStart.getTime()) / DAY_MS));
-    };
 
     const map = new Map<
       string,
@@ -266,7 +262,12 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     for (const r of recs) {
       const row = map.get(r.employee.employeeCode);
       if (!row) continue; // e.g. an inactive employee's leftover record
-      if (r.clockInAt) row.present += 1;
+      // A scan counts as a day present only on a working day the person was employed (not a weekend or holiday).
+      if (r.clockInAt) {
+        const pd = personDays.get(r.employee.employeeCode);
+        const day = isoDay(r.workDate);
+        if (pd?.daySet.has(day)) pd.punched.add(day);
+      }
       if (r.status === "LATE" && !isOnLeave(r.employee.employeeCode, r.workDate)) row.late += 1;
       if (r.earlyLeaveOut) row.earlyLeave += 1;
       if (r.clockInAt && !r.clockOutAt) row.noClockOut += 1;
@@ -280,7 +281,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     for (const l of leaves) {
       const row = map.get(l.employee.employeeCode);
       if (!row) continue;
-      const days = clippedDays(l.startDate, l.endDate, l.days);
+      // Working days inside the report range and up to today; 0.5 for a half day. Hourly leave counts no whole days.
+      const pd = personDays.get(l.employee.employeeCode);
+      const cover = pd && l.unit === "DAY" ? leaveCover({ startIso: isoDay(l.startDate), endIso: isoDay(l.endDate), halfDay: l.halfDay }, pd.daySet) : new Map<string, number>();
+      let days = 0;
+      for (const [day, part] of cover) {
+        days += part;
+        pd!.cover.set(day, Math.min(1, (pd!.cover.get(day) ?? 0) + part));
+      }
       row.leave += days;
       if (l.type === "SICK") row.sick += days;
       else if (l.type === "PERSONAL") row.personal += days;
@@ -300,6 +308,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       if (row) row.otHours += o._sum.hours ?? 0;
     }
     for (const [code, v] of map) {
+      v.present = personDays.get(code)?.punched.size ?? 0;
       if (v.late > 0) {
         const emp = employees.find((e) => e.employeeCode === code);
         bumpDept(deptLate, emp?.department?.name, v.late);
@@ -331,12 +340,15 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "hours", label: "ชั่วโมงรวม", numeric: true },
         { key: "otHours", label: "ชั่วโมง OT", numeric: true },
       ],
-      rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => ({
+      rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => {
+        const pd = personDays.get(code)!;
+        const scheduled = pd.days.length;
+        return {
         code,
         name: v.name,
-        scheduled: businessDays,
+        scheduled,
         present: v.present,
-        rate: businessDays > 0 ? Math.round((v.present / businessDays) * 1000) / 10 : 0,
+        rate: scheduled > 0 ? Math.round((v.present / scheduled) * 1000) / 10 : 0,
         late: v.late,
         earlyLeave: v.earlyLeave,
         noClockOut: v.noClockOut,
@@ -347,13 +359,14 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         leave: Math.round(v.leave * 10) / 10,
         attachedLeaves: v.attachedLeaves,
         pendingLeave: v.pendingLeave,
-        absent: Math.max(0, Math.round((businessDays - v.present - v.leave) * 10) / 10),
+        absent: Math.round(absentDays(pd.days, pd.punched, pd.cover) * 10) / 10,
         onsite: v.onsite,
         wfh: v.wfh,
         outside: v.outside,
         hours: Math.round(v.hours * 10) / 10,
         otHours: Math.round(v.otHours * 10) / 10,
-      })),
+        };
+      }),
       summary: toSummary(deptLate),
       summaryLabel: "จำนวนวันมาสายตามแผนก",
       summaryUnit: "วัน",
@@ -1111,7 +1124,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   if (query.type === "payroll") {
     const period = start.toISOString().slice(0, 7); // YYYY-MM of the range start
     const prs = await prisma.payrollRecord.findMany({
-      where: { companyId, deletedAt: null, period, ...deptRel },
+      where: { companyId, deletedAt: null, period, ...payrollRel },
       select: {
         gross: true,
         totalDeductions: true,
@@ -1576,7 +1589,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     const nameOf = (e: { firstName: string; lastName: string; nickname: string | null }) => displayName(e);
 
     // No clock-out, and it isn't still today's in-progress shift.
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = bangkokParts().dateUTC.toISOString().slice(0, 10);
     for (const r of recs) {
       const d = r.workDate.toISOString().slice(0, 10);
       if (r.clockInAt && !r.clockOutAt && d < todayIso) {
@@ -1692,7 +1705,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       if (p.net < 0) {
         findings.push({
           date: label, code: p.employee.employeeCode, name: nameOf(p.employee), department: deptOf(p.employee),
-          issueType: "เงินเดือนติดลบ", detail: `เงินเดือนสุทธิ ${p.net.toLocaleString("th-TH")} บาท — รายการหักเกินรายได้`,
+          issueType: "เงินเดือนติดลบ", detail: "เงินเดือนสุทธิติดลบ — รายการหักเกินรายได้ (ดูจำนวนเงินที่หน้าเงินเดือน)",
         });
       }
     }

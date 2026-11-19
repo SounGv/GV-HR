@@ -169,7 +169,7 @@ function useElapsed(running: boolean): number {
  * wide result panel on the right (tables and numbers need the width; a chat
  * bubble squeezes them).
  *
- * @param initialQuestion Asked once on load (from the dashboard's ask box, `/ai?q=`).
+ * @param initialQuestion Put in the input box on load (from the dashboard's ask box, `/ai?q=`); the person presses send.
  */
 export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -300,11 +300,13 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
   }
 
   useEffect(() => {
+    // A link (`/ai?q=`) only fills the box: a question runs, and counts, when the person presses send.
     if (initialQuestion && !askedInitial.current) {
       askedInitial.current = true;
-      submit(initialQuestion, []);
+      setInput(initialQuestion);
+      inputRef.current?.focus();
     }
-    // Ask exactly once on mount.
+    // Once, on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -457,7 +459,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         </div>
 
         <div ref={scrollRef} className="flex-1 space-y-3.5 overflow-y-auto p-4" aria-live="polite">
-          {fallback && <FallbackBanner reason={engine.reason} />}
+          {fallback && <FallbackBanner reason={engine.reason} backup={engine.backup} />}
           <div className="flex items-start gap-2">
             <VBot mood="hi" className="h-7 w-8" />
             <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13.5px] shadow-[var(--card-shadow)]">

@@ -7,6 +7,8 @@ import { friendlyAiError } from "@/lib/ai/ai-failure";
 import { BadRequest, NotFound } from "@/lib/api/errors";
 import { getAnthropic, isAiConfigured, AI_MODEL } from "@/lib/ai/client";
 import { prisma } from "@/lib/prisma";
+import { noteChatUsage, releaseChat, reserveDesignerCall } from "@/lib/ai/engine";
+import { classifyAiFailure, isLastingFailure } from "@/features/ai/ai-error";
 import { fullName } from "@/lib/format";
 
 export const runtime = "nodejs";
@@ -152,14 +154,25 @@ export async function POST(request: NextRequest) {
     ].join("\n");
 
     const anthropic = getAnthropic();
-    const response = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 2048,
-      system,
-      tools: [{ name: "submit_competencies", description: "Submit the designed competencies.", input_schema: OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema }],
-      tool_choice: { type: "tool", name: "submit_competencies" },
-      messages: [{ role: "user", content: userPrompt }],
-    });
+    // Counted against the monthly AI cap before the call, like the chat.
+    const slot = await reserveDesignerCall(session.companyId, session.sub);
+    let response: Anthropic.Message;
+    try {
+      response = await anthropic.messages.create({
+        model: AI_MODEL,
+        max_tokens: 2048,
+        system,
+        tools: [{ name: "submit_competencies", description: "Submit the designed competencies.", input_schema: OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema }],
+        tool_choice: { type: "tool", name: "submit_competencies" },
+        messages: [{ role: "user", content: userPrompt }],
+      });
+    } catch (callErr) {
+      const status = typeof (callErr as { status?: unknown }).status === "number" ? (callErr as { status: number }).status : undefined;
+      // Credit or key refused the call: it cost nothing, so the slot goes back.
+      if (isLastingFailure(classifyAiFailure(status, callErr instanceof Error ? callErr.message : String(callErr)))) await releaseChat(slot.id);
+      throw callErr;
+    }
+    await noteChatUsage(session.companyId, slot.usedBefore, slot.cap).catch((e) => console.error("[ai/campaign-designer] usage record failed:", e));
 
     const toolUse = response.content.find((b) => b.type === "tool_use");
     const draft = (toolUse?.type === "tool_use" ? (toolUse.input as DesignerDraft) : null);

@@ -100,11 +100,13 @@ export function AiChatView({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    // A link (`/ai?q=`) only fills the box: a question runs, and counts, when the person presses send.
     if (initialQuestion && !askedInitial.current) {
       askedInitial.current = true;
-      submit(initialQuestion);
+      setInput(initialQuestion);
+      inputRef.current?.focus();
     }
-    // Ask exactly once on mount.
+    // Once, on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -208,7 +210,7 @@ export function AiChatView({
   return (
     <div className={cn("flex flex-col overflow-hidden rounded-2xl border border-border bg-card", className)}>
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4" aria-live="polite">
-        {fallback && <FallbackBanner reason={engine.reason} />}
+        {fallback && <FallbackBanner reason={engine.reason} backup={engine.backup} />}
         {turns.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
             {fallback ? (

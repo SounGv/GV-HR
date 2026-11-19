@@ -163,6 +163,7 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
         where: {
           companyId: session.companyId,
           status: "APPROVED",
+          deletedAt: null,
           unit: "DAY",
           startDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
           employee: { deletedAt: null, ...(scopeWhere ?? {}) },

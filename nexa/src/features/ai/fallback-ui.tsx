@@ -27,6 +27,8 @@ export function useEngineMode() {
   return {
     mode,
     reason,
+    /** A typed question in the fallback is sent to the outside backup provider. */
+    backup: base?.backup === true,
     /** Call with every chat answer. */
     observe(res: Pick<ChatResponse, "engine" | "fallbackReason">) {
       if (res.engine === "fallback") setOverride({ mode: "fallback", reason: res.fallbackReason });
@@ -57,7 +59,7 @@ export function EngineBadge({ mode }: { mode: "ai" | "fallback" }) {
 }
 
 /** Says what changed and what still works, once, at the top of the conversation. */
-export function FallbackBanner({ reason }: { reason?: Reason }) {
+export function FallbackBanner({ reason, backup }: { reason?: Reason; backup?: boolean }) {
   return (
     <div role="status" className="rounded-xl border border-status-late-border bg-status-late-bg px-3 py-2.5 text-sm text-status-late-fg">
       <p className="flex items-center gap-1.5 font-semibold">
@@ -66,6 +68,11 @@ export function FallbackBanner({ reason }: { reason?: Reason }) {
       <p className="mt-0.5 leading-relaxed">
         {reason ? REASON_TEXT[reason] : "AI หลักใช้ไม่ได้ชั่วคราว"} ใช้ปุ่มลัดด้านล่างได้ตามปกติ ตอบจากข้อมูลในระบบ ไม่ใช้ AI ส่วนการร่างข้อความและการอ่านไฟล์ต้องรอ AI กลับมา
       </p>
+      {backup && (
+        <p className="mt-1 leading-relaxed">
+          ถ้าพิมพ์คำถามเอง คำถามที่พิมพ์จะถูกส่งไปให้ผู้ให้บริการ AI สำรองภายนอกตอบ อย่าใส่ชื่อ เงินเดือน หรือข้อมูลส่วนตัวของพนักงานในคำถาม
+        </p>
+      )}
     </div>
   );
 }
