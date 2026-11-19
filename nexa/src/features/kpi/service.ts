@@ -72,6 +72,21 @@ export function deriveStatus(
 }
 
 /**
+ * The status to hand to deriveStatus when the request did not send one: a stored
+ * CANCELLED or AT_RISK is kept (otherwise editing a title or reporting progress
+ * silently revives the goal), except AT_RISK once the target is met.
+ */
+function carriedStatus(
+  stored: GoalCreateInput["status"],
+  current: number,
+  target: number,
+): GoalCreateInput["status"] | undefined {
+  if (stored === "CANCELLED") return stored;
+  if (stored === "AT_RISK" && !(target > 0 && current >= target)) return stored;
+  return undefined;
+}
+
+/**
  * An Objective's own currentValue/targetValue stay untouched (never
  * silently overwritten from key-result data) — rollup is computed fresh on
  * every read instead, so there's exactly one source of truth per Key Result
@@ -240,7 +255,7 @@ export async function updateGoal(
 ) {
   const goal = await prisma.goal.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, targetValue: true, currentValue: true },
+    select: { id: true, targetValue: true, currentValue: true, status: true },
   });
   if (!goal) throw NotFound("ไม่พบเป้าหมาย");
 
@@ -258,7 +273,7 @@ export async function updateGoal(
       ...(input.targetValue !== undefined ? { targetValue: input.targetValue } : {}),
       ...(input.currentValue !== undefined ? { currentValue: input.currentValue } : {}),
       ...(input.weight !== undefined ? { weight: input.weight } : {}),
-      status: deriveStatus(nextCurrent, nextTarget, input.status),
+      status: deriveStatus(nextCurrent, nextTarget, input.status ?? carriedStatus(goal.status, nextCurrent, nextTarget)),
       ...(input.dueDate !== undefined ? { dueDate: input.dueDate ?? null } : {}),
       updatedById: session.sub,
     },
@@ -287,7 +302,7 @@ export async function updateGoalProgress(
 ) {
   const goal = await prisma.goal.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeId: true, targetValue: true },
+    select: { id: true, employeeId: true, targetValue: true, status: true },
   });
   if (!goal) throw NotFound("ไม่พบเป้าหมาย");
   if (goal.employeeId !== session.employeeId) {
@@ -298,7 +313,7 @@ export async function updateGoalProgress(
     where: { id: goal.id },
     data: {
       currentValue: input.currentValue,
-      status: deriveStatus(input.currentValue, goal.targetValue, input.status),
+      status: deriveStatus(input.currentValue, goal.targetValue, input.status ?? carriedStatus(goal.status, input.currentValue, goal.targetValue)),
       updatedById: session.sub,
     },
     select: goalSelect,

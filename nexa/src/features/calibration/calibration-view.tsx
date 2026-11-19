@@ -160,6 +160,7 @@ function CreateSessionDialog() {
 function SessionDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const { can } = useAuth();
   const canApprove = can("calibration:approve");
+  const canEditScore = can("calibration:update");
   const { data, isLoading, isError, refetch } = useCalibrationSession(id);
   const completeMut = useCompleteCalibrationSession();
   const session = data?.data;
@@ -199,7 +200,7 @@ function SessionDetail({ id, onBack }: { id: string; onBack: () => void }) {
       ) : (
         <div className="space-y-2">
           {session.participants.map((p) => (
-            <ParticipantRow key={p.id} sessionId={id} participant={p} readOnly={session.status === "COMPLETED"} />
+            <ParticipantRow key={p.id} sessionId={id} participant={p} readOnly={session.status === "COMPLETED"} canEditScore={canEditScore} />
           ))}
         </div>
       )}
@@ -234,10 +235,13 @@ function ParticipantRow({
   sessionId,
   participant,
   readOnly,
+  canEditScore,
 }: {
   sessionId: string;
   participant: CalibrationParticipant;
   readOnly: boolean;
+  /** Score and band are HR's (calibration:update); a manager sets potential only. */
+  canEditScore: boolean;
 }) {
   const [score, setScore] = useState(participant.calibratedScore?.toString() ?? "");
   const [potential, setPotential] = useState<PotentialLevel | "">(participant.potential ?? "");
@@ -248,7 +252,7 @@ function ParticipantRow({
   const delta = scoreNum != null && participant.overallScore != null ? Math.round((scoreNum - participant.overallScore) * 100) / 100 : null;
 
   async function save() {
-    if (delta && delta !== 0 && !note.trim()) {
+    if (canEditScore && delta && delta !== 0 && !note.trim()) {
       toast.error("กรุณาระบุเหตุผลที่ปรับคะแนน");
       return;
     }
@@ -257,7 +261,7 @@ function ParticipantRow({
         sessionId,
         participantId: participant.id,
         input: {
-          ...(score.trim() ? { calibratedScore: Number(score) } : {}),
+          ...(canEditScore && score.trim() ? { calibratedScore: Number(score) } : {}),
           ...(potential ? { potential } : {}),
           potentialNote: note.trim() || undefined,
         },
@@ -291,7 +295,7 @@ function ParticipantRow({
             className="h-8 w-20"
             placeholder="คะแนน"
             value={score}
-            disabled={readOnly}
+            disabled={readOnly || !canEditScore}
             onChange={(e) => setScore(e.target.value)}
           />
           {delta != null && delta !== 0 && (

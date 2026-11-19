@@ -6,9 +6,12 @@ export const calibrationSessionCreateSchema = z.object({
 });
 export type CalibrationSessionCreateInput = z.infer<typeof calibrationSessionCreateSchema>;
 
+/** The five labels scoreBand() can return: a calibrated band must be one of them. */
+export const CALIBRATION_BANDS = ["ดีเยี่ยม", "ดี", "ปานกลาง", "ต้องพัฒนา", "ต้องปรับปรุงเร่งด่วน"] as const;
+
 export const calibrationParticipantUpdateSchema = z.object({
   calibratedScore: z.coerce.number().min(1, "1-5").max(5, "1-5").optional(),
-  calibratedBand: z.string().max(50).optional(),
+  calibratedBand: z.enum(CALIBRATION_BANDS, { error: "ระดับผลประเมินไม่ถูกต้อง" }).optional(),
   potential: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
   potentialNote: z.string().max(1000).optional(),
 });

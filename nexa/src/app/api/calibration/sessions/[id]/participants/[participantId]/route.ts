@@ -7,16 +7,17 @@ import { getRequestMeta } from "@/lib/api/request";
 
 export const runtime = "nodejs";
 
-type Ctx = { params: Promise<{ participantId: string }> };
+type Ctx = { params: Promise<{ id: string; participantId: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   try {
     const session = await requirePermission("calibration:read");
-    const { participantId } = await params;
+    const { id, participantId } = await params;
     const input = calibrationParticipantUpdateSchema.parse(await req.json().catch(() => ({})));
     const result = await updateParticipantCalibration(
       session.companyId,
       session,
+      id,
       participantId,
       input,
       getRequestMeta(req),

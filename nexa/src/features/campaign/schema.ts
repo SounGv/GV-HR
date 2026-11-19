@@ -1,4 +1,13 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
+
+/** Optional date field: the forms send "" for an empty box, which means "not set". */
+const optionalCalendarDate = z.preprocess((v) => (v === "" || v === null ? undefined : v), calendarDate().optional());
+
+const endNotBeforeStart = {
+  message: "วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม",
+  path: ["endDate"] as string[],
+};
 
 const competencyWeightSchema = z.object({
   competencyId: z.string().uuid(),
@@ -12,10 +21,10 @@ const raterTypesSchema = z
 const campaignCreateBaseSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อแคมเปญ").max(200),
   cycle: z.string().trim().min(1, "กรุณาระบุรอบการประเมิน").max(40),
-  startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่ม"),
-  endDate: z.string().min(1, "กรุณาเลือกวันที่สิ้นสุด"),
-  acknowledgeDueDate: z.string().optional(),
-  followUpDate: z.string().optional(),
+  startDate: calendarDate({ message: "กรุณาเลือกวันที่เริ่ม" }),
+  endDate: calendarDate({ message: "กรุณาเลือกวันที่สิ้นสุด" }),
+  acknowledgeDueDate: optionalCalendarDate,
+  followUpDate: optionalCalendarDate,
   raterTypes: raterTypesSchema.default(["SELF", "MANAGER"]),
   // Mutually exclusive — a campaign either scores against the new Evaluation
   // Template (Section -> Question) or the legacy Competency list, never both.
@@ -28,19 +37,21 @@ const campaignCreateBaseSchema = z.object({
   clonedFromId: z.string().uuid().optional(),
 });
 
-export const campaignCreateSchema = campaignCreateBaseSchema.refine(
-  (v) => !!v.templateId || (v.competencies && v.competencies.length > 0),
-  { message: "ต้องเลือกแบบประเมิน (Template) หรือสมรรถนะอย่างน้อย 1 รายการ", path: ["competencies"] },
-);
+export const campaignCreateSchema = campaignCreateBaseSchema
+  .refine((v) => !!v.templateId || (v.competencies && v.competencies.length > 0), {
+    message: "ต้องเลือกแบบประเมิน (Template) หรือสมรรถนะอย่างน้อย 1 รายการ",
+    path: ["competencies"],
+  })
+  .refine((v) => v.endDate >= v.startDate, endNotBeforeStart);
 export type CampaignCreateInput = z.infer<typeof campaignCreateSchema>;
 
 export const campaignUpdateSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
   cycle: z.string().trim().min(1).max(40).optional(),
-  startDate: z.string().min(1).optional(),
-  endDate: z.string().min(1).optional(),
-  acknowledgeDueDate: z.string().optional(),
-  followUpDate: z.string().optional(),
+  startDate: calendarDate().optional(),
+  endDate: calendarDate().optional(),
+  acknowledgeDueDate: optionalCalendarDate,
+  followUpDate: optionalCalendarDate,
   status: z.enum(["DRAFT", "ACTIVE", "CLOSED", "ARCHIVED"]).optional(),
   raterTypes: raterTypesSchema.optional(),
   competencies: z.array(competencyWeightSchema).min(1).optional(),
@@ -53,21 +64,23 @@ export const campaignListQuerySchema = z.object({
 export type CampaignListQuery = z.infer<typeof campaignListQuerySchema>;
 
 /** "สร้างรอบใหม่จากรอบเดิม" — see cloneCampaign in service.ts. */
-export const cloneCampaignSchema = z.object({
-  name: z.string().trim().min(1, "กรุณาระบุชื่อรอบใหม่").max(200),
-  cycle: z.string().trim().min(1, "กรุณาระบุรอบการประเมิน").max(40),
-  startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่ม"),
-  endDate: z.string().min(1, "กรุณาเลือกวันที่สิ้นสุด"),
-  acknowledgeDueDate: z.string().optional(),
-  followUpDate: z.string().optional(),
-  // Which of the source campaign's competency categories to bring along —
-  // omitted/empty means "all". Only meaningful for the legacy Competency
-  // path; a Template-based source is always cloned in full (the template
-  // itself is versioned, not filtered question-by-question).
-  categoryIds: z.array(z.string().uuid()).optional(),
-  raterTypes: raterTypesSchema.optional(),
-  employeeIds: z.array(z.string().uuid()).optional(),
-});
+export const cloneCampaignSchema = z
+  .object({
+    name: z.string().trim().min(1, "กรุณาระบุชื่อรอบใหม่").max(200),
+    cycle: z.string().trim().min(1, "กรุณาระบุรอบการประเมิน").max(40),
+    startDate: calendarDate({ message: "กรุณาเลือกวันที่เริ่ม" }),
+    endDate: calendarDate({ message: "กรุณาเลือกวันที่สิ้นสุด" }),
+    acknowledgeDueDate: optionalCalendarDate,
+    followUpDate: optionalCalendarDate,
+    // Which of the source campaign's competency categories to bring along —
+    // omitted/empty means "all". Only meaningful for the legacy Competency
+    // path; a Template-based source is always cloned in full (the template
+    // itself is versioned, not filtered question-by-question).
+    categoryIds: z.array(z.string().uuid()).optional(),
+    raterTypes: raterTypesSchema.optional(),
+    employeeIds: z.array(z.string().uuid()).optional(),
+  })
+  .refine((v) => v.endDate >= v.startDate, endNotBeforeStart);
 export type CloneCampaignInput = z.infer<typeof cloneCampaignSchema>;
 
 export const evaluationThresholdsSchema = z

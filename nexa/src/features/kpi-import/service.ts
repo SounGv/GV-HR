@@ -48,40 +48,45 @@ export async function importKpiGoals(
       continue;
     }
 
-    const existing = await prisma.goal.findFirst({
-      where: { companyId, employeeId, title: r.title, cycle: r.cycle, deletedAt: null },
-      select: { id: true },
-    });
-
-    const status = deriveStatus(r.currentValue, r.targetValue);
-    const data = {
-      unit: r.unit ?? "%",
-      targetValue: r.targetValue,
-      currentValue: r.currentValue,
-      weight: r.weight,
-      status,
-      dueDate: r.dueDate ? new Date(r.dueDate) : null,
-      updatedById: session.sub,
-    };
-
-    if (existing) {
-      await prisma.goal.update({ where: { id: existing.id }, data });
-      updated++;
-    } else {
-      await prisma.goal.create({
-        data: {
-          companyId,
-          employeeId,
-          ownerEmployeeId: session.employeeId ?? null,
-          ownerUserId: session.sub,
-          title: r.title,
-          type: "KPI",
-          cycle: r.cycle,
-          ...data,
-          createdById: session.sub,
-        },
+    try {
+      const existing = await prisma.goal.findFirst({
+        where: { companyId, employeeId, title: r.title, cycle: r.cycle, deletedAt: null },
+        select: { id: true },
       });
-      created++;
+
+      const status = deriveStatus(r.currentValue, r.targetValue);
+      const data = {
+        unit: r.unit ?? "%",
+        targetValue: r.targetValue,
+        currentValue: r.currentValue,
+        weight: r.weight,
+        status,
+        dueDate: r.dueDate ?? null,
+        updatedById: session.sub,
+      };
+
+      if (existing) {
+        await prisma.goal.update({ where: { id: existing.id }, data });
+        updated++;
+      } else {
+        await prisma.goal.create({
+          data: {
+            companyId,
+            employeeId,
+            ownerEmployeeId: session.employeeId ?? null,
+            ownerUserId: session.sub,
+            title: r.title,
+            type: "KPI",
+            cycle: r.cycle,
+            ...data,
+            createdById: session.sub,
+          },
+        });
+        created++;
+      }
+    } catch {
+      // One failing row must not abort the rest or hide the summary and audit row.
+      errors.push({ row: index, code: r.employeeCode, message: "บันทึกแถวนี้ไม่สำเร็จ" });
     }
   }
 

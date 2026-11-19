@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { calendarDate } from "@/lib/date-schema";
+import { updateSchemaOf } from "@/lib/zod-update";
 
 export const GOAL_STATUSES = [
   "NOT_STARTED",
@@ -36,8 +37,12 @@ export const goalCreateSchema = z.object({
 });
 export type GoalCreateInput = z.infer<typeof goalCreateSchema>;
 
-/** Full edit (managers) — all fields optional. */
-export const goalUpdateSchema = goalCreateSchema.partial().omit({ employeeId: true });
+/** Full edit (managers) — all fields optional, and no defaults: a PATCH that sends only { title } must not
+ * reset type, unit, currentValue, weight or status. Typed against the create input because updateSchemaOf
+ * builds its shape dynamically, so its own inferred type is loose. */
+export const goalUpdateSchema = updateSchemaOf(goalCreateSchema).omit({ employeeId: true }) as unknown as z.ZodType<
+  Partial<Omit<GoalCreateInput, "employeeId">>
+>;
 export type GoalUpdateInput = z.infer<typeof goalUpdateSchema>;
 
 /** Progress-only update (goal owner). */

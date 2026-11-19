@@ -108,7 +108,7 @@ export async function createScheduleTemplate(
       intervalMonths: input.intervalMonths,
       durationDays: input.durationDays,
       raterTypes: input.raterTypes,
-      nextRunAt: new Date(input.nextRunAt),
+      nextRunAt: input.nextRunAt,
       active: input.active ?? true,
       createdById: session.sub,
       updatedById: session.sub,
@@ -180,7 +180,7 @@ export async function updateScheduleTemplate(
         ...(input.intervalMonths !== undefined ? { intervalMonths: input.intervalMonths } : {}),
         ...(input.durationDays !== undefined ? { durationDays: input.durationDays } : {}),
         ...(input.raterTypes !== undefined ? { raterTypes: input.raterTypes } : {}),
-        ...(input.nextRunAt !== undefined ? { nextRunAt: new Date(input.nextRunAt) } : {}),
+        ...(input.nextRunAt !== undefined ? { nextRunAt: input.nextRunAt } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
         // Switching to a Template clears the Competency link and vice versa —
         // a schedule generates one kind of campaign at a time, never both.

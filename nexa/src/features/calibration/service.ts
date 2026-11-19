@@ -101,38 +101,51 @@ export async function createSession(
   });
   if (!campaign) throw NotFound("ไม่พบแคมเปญ");
 
-  const created = await prisma.$transaction(async (tx) => {
-    const calibrationSession = await tx.calibrationSession.create({
-      data: {
-        companyId,
-        campaignId: input.campaignId,
-        name: input.name,
-        facilitatorEmployeeId: session.employeeId ?? null,
-      },
-      select: { id: true },
-    });
-
-    const finalized = await tx.evaluationParticipant.findMany({
-      where: { campaignId: input.campaignId, finalizedAt: { not: null } },
-      select: { id: true, overallScore: true, band: true },
-    });
-    if (finalized.length === 0) {
-      throw BadRequest("แคมเปญนี้ยังไม่มีผู้เข้าร่วมที่สรุปผลแล้ว");
-    }
-
-    for (const p of finalized) {
-      await tx.evaluationParticipant.update({
-        where: { id: p.id },
-        data: {
-          calibrationSessionId: calibrationSession.id,
-          calibratedScore: p.overallScore,
-          calibratedBand: p.band,
-        },
-      });
-    }
-
-    return calibrationSession;
+  // One calibration session per campaign: a second one would re-assign every
+  // finalized participant and reset the calibrated scores of the first back to
+  // the raw scores.
+  const existingSession = await prisma.calibrationSession.findFirst({
+    where: { companyId, campaignId: input.campaignId },
+    select: { id: true },
   });
+  if (existingSession) throw BadRequest("แคมเปญนี้มีรอบปรับเทียบอยู่แล้ว");
+
+  const finalizedCount = await prisma.evaluationParticipant.count({
+    where: { campaignId: input.campaignId, finalizedAt: { not: null } },
+  });
+  if (finalizedCount === 0) {
+    throw BadRequest("แคมเปญนี้ยังไม่มีผู้เข้าร่วมที่สรุปผลแล้ว");
+  }
+
+  // One UPDATE for every finalized participant (a loop of single updates on
+  // a one-connection pool can outlast the default 5 s transaction timeout).
+  // Only rows not yet in a session are touched, so earlier calibration stays.
+  const created = await prisma.$transaction(
+    async (tx) => {
+      const calibrationSession = await tx.calibrationSession.create({
+        data: {
+          companyId,
+          campaignId: input.campaignId,
+          name: input.name,
+          facilitatorEmployeeId: session.employeeId ?? null,
+        },
+        select: { id: true },
+      });
+
+      await tx.$executeRaw`
+        UPDATE "evaluation_participants"
+        SET "calibrationSessionId" = ${calibrationSession.id},
+            "calibratedScore" = "overallScore",
+            "calibratedBand" = "band"
+        WHERE "campaignId" = ${input.campaignId}
+          AND "finalizedAt" IS NOT NULL
+          AND "calibrationSessionId" IS NULL
+      `;
+
+      return calibrationSession;
+    },
+    { timeout: 20_000, maxWait: 10_000 },
+  );
 
   await writeAudit({
     companyId,
@@ -150,6 +163,7 @@ export async function createSession(
 export async function updateParticipantCalibration(
   companyId: string,
   session: AccessClaims,
+  calibrationSessionId: string,
   participantId: string,
   input: CalibrationParticipantUpdateInput,
   meta?: Meta,
@@ -158,7 +172,9 @@ export async function updateParticipantCalibration(
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
     select: {
       id: true,
+      calibratedScore: true,
       calibratedBand: true,
+      calibrationSessionId: true,
       employee: { select: { managerId: true } },
       calibrationSession: { select: { status: true } },
     },
@@ -170,17 +186,34 @@ export async function updateParticipantCalibration(
   if (!hrLevel && !managesTarget) {
     throw Forbidden("ปรับเทียบได้เฉพาะทีมที่คุณดูแล");
   }
-  if (participant.calibrationSession?.status === "COMPLETED") {
+
+  // The participant must sit in the open session named by the URL: outside a
+  // session nothing has been finalized or put up for calibration yet.
+  if (participant.calibrationSessionId !== calibrationSessionId || !participant.calibrationSession) {
+    throw BadRequest("ผู้เข้าร่วมคนนี้ไม่ได้อยู่ในรอบปรับเทียบนี้");
+  }
+  if (participant.calibrationSession.status === "COMPLETED") {
     throw BadRequest("รอบปรับเทียบนี้เสร็จสิ้นแล้ว");
   }
 
-  const calibratedBand =
-    input.calibratedBand ?? (input.calibratedScore !== undefined ? scoreBand(input.calibratedScore) : undefined);
+  // Score and band are HR's call (calibration:update); a manager may only set
+  // potential. The form sends the stored score back unchanged, so an equal
+  // value is not a change.
+  const canSetScore = session.perms.includes("*") || session.perms.includes("calibration:update");
+  const scoreChanged = input.calibratedScore !== undefined && input.calibratedScore !== participant.calibratedScore;
+  const bandChanged = input.calibratedBand !== undefined && input.calibratedBand !== participant.calibratedBand;
+  if (!canSetScore && (scoreChanged || bandChanged)) {
+    throw Forbidden("ปรับคะแนนได้เฉพาะ HR หัวหน้าตั้งได้เฉพาะศักยภาพ");
+  }
+
+  const calibratedBand = !canSetScore
+    ? undefined
+    : (input.calibratedBand ?? (input.calibratedScore !== undefined ? scoreBand(input.calibratedScore) : undefined));
 
   await prisma.evaluationParticipant.update({
     where: { id: participantId },
     data: {
-      ...(input.calibratedScore !== undefined ? { calibratedScore: input.calibratedScore } : {}),
+      ...(canSetScore && input.calibratedScore !== undefined ? { calibratedScore: input.calibratedScore } : {}),
       ...(calibratedBand !== undefined ? { calibratedBand } : {}),
       ...(input.potential !== undefined ? { potential: input.potential } : {}),
       ...(input.potentialNote !== undefined ? { potentialNote: input.potentialNote } : {}),

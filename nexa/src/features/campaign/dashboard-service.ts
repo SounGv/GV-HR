@@ -24,24 +24,33 @@ export async function getEvaluationDashboard(companyId: string, _session: Access
   const campaign = filters.campaignId
     ? await prisma.evaluationCampaign.findFirst({
         where: { id: filters.campaignId, companyId, deletedAt: null },
-        select: { id: true, name: true, cycle: true, status: true, startDate: true },
+        select: { id: true, name: true, cycle: true, status: true, startDate: true, raterTypes: true },
       })
     : await prisma.evaluationCampaign.findFirst({
         where: { companyId, deletedAt: null, status: { not: "DRAFT" } },
         orderBy: { startDate: "desc" },
-        select: { id: true, name: true, cycle: true, status: true, startDate: true },
+        select: { id: true, name: true, cycle: true, status: true, startDate: true, raterTypes: true },
       });
   if (!campaign) throw NotFound("ไม่พบรอบประเมิน");
 
+  // One `employee` object and one `scorePercent` object: spreading each filter
+  // separately made the later one replace the earlier (department + position
+  // filtered by position only; min + max applied max only).
+  const employeeWhere = {
+    ...(filters.departmentId ? { departmentId: filters.departmentId } : {}),
+    ...(filters.positionId ? { positionId: filters.positionId } : {}),
+    ...(filters.managerId ? { managerId: filters.managerId } : {}),
+  };
+  const scoreWhere = {
+    ...(filters.scoreMin != null ? { gte: filters.scoreMin } : {}),
+    ...(filters.scoreMax != null ? { lte: filters.scoreMax } : {}),
+  };
   const participants = await prisma.evaluationParticipant.findMany({
     where: {
       campaignId: campaign.id,
-      ...(filters.departmentId ? { employee: { departmentId: filters.departmentId } } : {}),
-      ...(filters.positionId ? { employee: { positionId: filters.positionId } } : {}),
-      ...(filters.managerId ? { employee: { managerId: filters.managerId } } : {}),
+      ...(Object.keys(employeeWhere).length > 0 ? { employee: employeeWhere } : {}),
       ...(filters.status ? { scoreStatus: filters.status } : {}),
-      ...(filters.scoreMin != null ? { scorePercent: { gte: filters.scoreMin } } : {}),
-      ...(filters.scoreMax != null ? { scorePercent: { lte: filters.scoreMax } } : {}),
+      ...(Object.keys(scoreWhere).length > 0 ? { scorePercent: scoreWhere } : {}),
     },
     select: {
       id: true,
@@ -60,7 +69,7 @@ export async function getEvaluationDashboard(companyId: string, _session: Access
           position: { select: { id: true, title: true } },
         },
       },
-      responses: { select: { status: true } },
+      responses: { select: { raterType: true, status: true } },
       // Improvement plan follow-up date, if one exists for this cycle.
       // (Loaded separately below since DevelopmentPlan keys by cycle string.)
     },
@@ -75,7 +84,10 @@ export async function getEvaluationDashboard(companyId: string, _session: Access
 
   // ── KPI cards ──
   const totalParticipants = participants.length;
-  const completed = participants.filter((p) => p.responses.some((r) => r.status === "SUBMITTED")).length;
+  // "Done" means the scoring rater (manager if the round collects one, else
+  // self) has submitted, not just any rater.
+  const scoringRaterType = campaign.raterTypes.includes("MANAGER") ? "MANAGER" : "SELF";
+  const completed = participants.filter((p) => p.responses.some((r) => r.raterType === scoringRaterType && r.status === "SUBMITTED")).length;
   const notDone = totalParticipants - completed;
   const scored = participants.filter((p) => p.scorePercent != null);
   const avgScore = scored.length > 0 ? scored.reduce((s, p) => s + p.scorePercent!, 0) / scored.length : null;

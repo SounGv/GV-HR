@@ -4,12 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { scoreBand } from "@/lib/scoring";
+import { bangkokParts } from "@/lib/datetime";
 import { createNotification } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { getTemplateSnapshot, cloneTemplate, updateTemplate as updateEvaluationTemplate } from "@/features/evaluation-template/service";
 import type { CampaignTemplateSnapshot } from "@/features/evaluation-template/types";
 import { scoreTemplateAnswersDetailed, scoreCompetenciesDetailed, bandScoreStatus } from "./scoring";
 import { RATER_LABEL } from "./labels";
+import { canSeeParticipantResult } from "./result-visibility";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
   AddParticipantsInput,
@@ -27,13 +29,19 @@ import type { RaterType } from "./types";
 type Meta = { ip?: string; userAgent?: string };
 
 /** `endDate` is a date-only value (midnight UTC of the chosen day) — the
- * deadline covers the whole of that calendar day, so the real cutoff is
- * midnight the day after. */
+ * deadline covers the whole of that Bangkok calendar day, so it is past only
+ * once today's Bangkok date is after `endDate`. */
 function isPastDeadline(endDate: Date | null): boolean {
   if (!endDate) return false;
-  const cutoff = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
-  return new Date() >= cutoff;
+  return bangkokParts().dateUTC.getTime() > endDate.getTime();
 }
+
+const ALLOWED_STATUS_MOVES: Record<string, string[]> = {
+  DRAFT: ["ACTIVE"],
+  ACTIVE: ["CLOSED"],
+  CLOSED: ["ARCHIVED"],
+  ARCHIVED: [],
+};
 
 const competencySelect = {
   competencyId: true,
@@ -67,6 +75,32 @@ const participantSelect = {
   },
   responses: { select: { raterType: true, status: true, submittedAt: true, raterEmployeeId: true, reopenRequested: true, dueDate: true } },
 } satisfies Prisma.EvaluationParticipantSelect;
+
+/** Stored score columns reset to empty (a reopened or rejected result). */
+const clearedScoreFields = {
+  overallScore: null,
+  band: null,
+  rawScore: null,
+  maxScore: null,
+  scorePercent: null,
+  questionCount: null,
+  evaluatorCount: null,
+  lowestTopics: Prisma.JsonNull,
+  scoreStatus: null,
+};
+
+/** Result fields of a participant, blanked for viewers who may not see the result yet. */
+const hiddenResultFields = {
+  overallScore: null,
+  band: null,
+  scorePercent: null,
+  scoreStatus: null,
+  rawScore: null,
+  maxScore: null,
+  questionCount: null,
+  evaluatorCount: null,
+  lowestTopics: null,
+};
 
 /**
  * Wildcard grants like "campaign:*" are expanded into concrete permission
@@ -161,7 +195,7 @@ export async function getCampaign(companyId: string, id: string, session: Access
   // specifically invited to rate (PEER/UPWARD — not derivable from the org
   // chart, since that's the whole point of those rater types) — see the
   // matching fix in getParticipant() below.
-  const participants = hrLevel
+  const visible = hrLevel
     ? campaign.participants
     : campaign.participants.filter(
         (p) =>
@@ -169,6 +203,23 @@ export async function getCampaign(companyId: string, id: string, session: Access
           p.employee.managerId === session.employeeId ||
           p.responses.some((r) => r.raterEmployeeId === session.employeeId),
       );
+  // Same confidentiality rule as getParticipant: only HR and the person's
+  // manager see results and every rater's row; the reviewee sees the result
+  // once HR finalizes it; an invited rater sees neither. Everyone else keeps
+  // only their own response row, so who was invited / who already submitted
+  // (PEER/UPWARD anonymity) never reaches the reviewee.
+  const participants = hrLevel
+    ? visible
+    : visible.map((p) => {
+        const managesTarget = p.employee.managerId === session.employeeId;
+        const own = p.employee.id === session.employeeId;
+        const canSeeResult = canSeeParticipantResult({ hrLevel: false, managesTarget, own, finalized: !!p.finalizedAt });
+        return {
+          ...p,
+          ...(canSeeResult ? {} : hiddenResultFields),
+          responses: managesTarget ? p.responses : p.responses.filter((r) => r.raterEmployeeId === session.employeeId),
+        };
+      });
 
   return {
     id: campaign.id,
@@ -185,7 +236,7 @@ export async function getCampaign(companyId: string, id: string, session: Access
     competencies: mapCompetencies(campaign.competencies),
     participants,
     participantCount: campaign.participants.length,
-    readiness: evaluateCampaignReadiness(campaign.raterTypes, campaign.participants),
+    readiness: evaluateCampaignReadiness(campaign.raterTypes, visible),
   };
 }
 
@@ -240,10 +291,10 @@ export async function createCampaign(
       companyId,
       name: input.name,
       cycle: input.cycle,
-      startDate: new Date(input.startDate),
-      endDate: new Date(input.endDate),
-      acknowledgeDueDate: input.acknowledgeDueDate ? new Date(input.acknowledgeDueDate) : undefined,
-      followUpDate: input.followUpDate ? new Date(input.followUpDate) : undefined,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      acknowledgeDueDate: input.acknowledgeDueDate,
+      followUpDate: input.followUpDate,
       clonedFromId: input.clonedFromId,
       raterTypes: input.raterTypes,
       aiGenerated: input.aiGenerated ?? false,
@@ -361,9 +412,26 @@ export async function updateCampaign(
 ) {
   const existing = await prisma.evaluationCampaign.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, status: true },
+    select: { id: true, status: true, startDate: true, endDate: true },
   });
   if (!existing) throw NotFound("ไม่พบแคมเปญ");
+
+  // Status only moves forward: DRAFT -> ACTIVE -> CLOSED -> ARCHIVED. Going
+  // back would re-send every notification, re-stamp publishedAt, or let a
+  // round with submitted evaluations be deleted as if it were a draft.
+  if (input.status !== undefined && input.status !== existing.status) {
+    if (!ALLOWED_STATUS_MOVES[existing.status]?.includes(input.status)) {
+      throw BadRequest("เปลี่ยนสถานะแคมเปญย้อนกลับหรือข้ามขั้นไม่ได้");
+    }
+  }
+  // Raters decide who must score and which rater is the official one, so they
+  // are fixed once the round is open.
+  if (input.raterTypes !== undefined && existing.status !== "DRAFT") {
+    throw BadRequest("แก้ไขทิศทางการประเมินได้เฉพาะแคมเปญที่ยังเป็นฉบับร่าง");
+  }
+  const effectiveStart = input.startDate ?? existing.startDate;
+  const effectiveEnd = input.endDate ?? existing.endDate;
+  if (effectiveEnd < effectiveStart) throw BadRequest("วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม");
 
   const changingCompetencies = input.competencies !== undefined;
   if (changingCompetencies && existing.status !== "DRAFT") {
@@ -407,16 +475,19 @@ export async function updateCampaign(
     if (found !== competencyIds.length) throw BadRequest("พบสมรรถนะที่ไม่ถูกต้อง");
   }
 
+  const movingStatus = input.status !== undefined && input.status !== existing.status;
   await prisma.$transaction(async (tx) => {
-    await tx.evaluationCampaign.update({
-      where: { id },
+    // A status move is guarded on the status that was read, so two requests
+    // (double click, two tabs) cannot both apply it.
+    const { count: updated } = await tx.evaluationCampaign.updateMany({
+      where: { id, deletedAt: null, ...(movingStatus ? { status: existing.status } : {}) },
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.cycle !== undefined ? { cycle: input.cycle } : {}),
-        ...(input.startDate !== undefined ? { startDate: new Date(input.startDate) } : {}),
-        ...(input.endDate !== undefined ? { endDate: new Date(input.endDate) } : {}),
-        ...(input.acknowledgeDueDate !== undefined ? { acknowledgeDueDate: new Date(input.acknowledgeDueDate) } : {}),
-        ...(input.followUpDate !== undefined ? { followUpDate: new Date(input.followUpDate) } : {}),
+        ...(input.startDate !== undefined ? { startDate: input.startDate } : {}),
+        ...(input.endDate !== undefined ? { endDate: input.endDate } : {}),
+        ...(input.acknowledgeDueDate !== undefined ? { acknowledgeDueDate: input.acknowledgeDueDate } : {}),
+        ...(input.followUpDate !== undefined ? { followUpDate: input.followUpDate } : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
         ...(input.status === "ACTIVE" && existing.status !== "ACTIVE" ? { publishedAt: new Date() } : {}),
         ...(input.status === "CLOSED" && existing.status !== "CLOSED" ? { closedAt: new Date() } : {}),
@@ -424,6 +495,7 @@ export async function updateCampaign(
         updatedById: session.sub,
       },
     });
+    if (updated === 0) throw Conflict("แคมเปญนี้ถูกเปลี่ยนสถานะไปแล้ว กรุณารีเฟรชหน้า");
 
     if (changingCompetencies) {
       await tx.evaluationCampaignCompetency.deleteMany({ where: { campaignId: id } });
@@ -440,7 +512,7 @@ export async function updateCampaign(
   if (input.status === "ACTIVE" && existing.status !== "ACTIVE") {
     const campaign = await prisma.evaluationCampaign.findUnique({ where: { id }, select: { name: true, cycle: true } });
     const pending = await prisma.evaluationResponse.findMany({
-      where: { status: "PENDING", participant: { campaignId: id } },
+      where: { status: { in: ["PENDING", "IN_PROGRESS"] }, participant: { campaignId: id } },
       select: {
         raterType: true,
         raterEmployeeId: true,
@@ -504,10 +576,11 @@ export async function deleteCampaign(companyId: string, session: AccessClaims, i
   if (!existing) throw NotFound("ไม่พบแคมเปญ");
   if (existing.status !== "DRAFT") throw BadRequest("ลบได้เฉพาะแคมเปญที่ยังเป็นฉบับร่าง");
 
-  await prisma.evaluationCampaign.update({
-    where: { id },
+  const { count } = await prisma.evaluationCampaign.updateMany({
+    where: { id, companyId, deletedAt: null, status: "DRAFT" },
     data: { deletedAt: new Date(), updatedById: session.sub },
   });
+  if (count === 0) throw Conflict("แคมเปญนี้เปลี่ยนสถานะไปแล้ว ลบไม่ได้ กรุณารีเฟรชหน้า");
 
   await writeAudit({
     companyId,
@@ -762,19 +835,29 @@ export async function getParticipant(companyId: string, participantId: string, s
     anonymizeTypes.push("PEER", "UPWARD");
   }
 
+  // The result (blended score, band, breakdown) follows the same rule as the
+  // responses: HR and the person's manager see it at once, the reviewee only
+  // after HR finalizes, and an invited rater never does.
+  const canSeeResult = canSeeParticipantResult({ hrLevel, managesTarget, own, finalized: !!participant.finalizedAt });
+  const result = canSeeResult
+    ? {
+        overallScore: participant.overallScore,
+        band: participant.band,
+        scorePercent: participant.scorePercent,
+        scoreStatus: participant.scoreStatus,
+        rawScore: participant.rawScore,
+        maxScore: participant.maxScore,
+        questionCount: participant.questionCount,
+        evaluatorCount: participant.evaluatorCount,
+        lowestTopics: participant.lowestTopics as unknown as { key: string; label: string; score: number; maxScore: number }[] | null,
+      }
+    : hiddenResultFields;
+
   return {
     id: participant.id,
-    overallScore: participant.overallScore,
-    band: participant.band,
+    ...result,
     finalizedAt: participant.finalizedAt,
-    scorePercent: participant.scorePercent,
-    scoreStatus: participant.scoreStatus,
     employeeAcknowledged: participant.employeeAcknowledged,
-    rawScore: participant.rawScore,
-    maxScore: participant.maxScore,
-    questionCount: participant.questionCount,
-    evaluatorCount: participant.evaluatorCount,
-    lowestTopics: participant.lowestTopics as unknown as { key: string; label: string; score: number; maxScore: number }[] | null,
     employee: participant.employee,
     campaign: {
       id: participant.campaign.id,
@@ -984,7 +1067,8 @@ export async function getMyPendingResponses(companyId: string, session: AccessCl
   const rows = await prisma.evaluationResponse.findMany({
     where: {
       raterEmployeeId: employeeId,
-      status: "PENDING",
+      // IN_PROGRESS = a saved draft, still owed.
+      status: { in: ["PENDING", "IN_PROGRESS"] },
       participant: { campaign: { companyId, status: "ACTIVE", deletedAt: null } },
     },
     select: {
@@ -1084,7 +1168,7 @@ export async function getMyEvaluationAssignments(companyId: string, session: Acc
   // Still-pending items first (they need action); submitted ones after,
   // most recently submitted first.
   const sorted = [...rows].sort((a, b) => {
-    if (a.status !== b.status) return a.status === "PENDING" ? -1 : 1;
+    if ((a.status === "SUBMITTED") !== (b.status === "SUBMITTED")) return a.status === "SUBMITTED" ? 1 : -1;
     return 0; // createdAt: "desc" from the query already orders each group
   });
 
@@ -1127,7 +1211,18 @@ export async function submitMyResponse(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true, finalizedAt: true, campaign: { select: { status: true, endDate: true, templateSnapshot: true } } },
+    select: {
+      id: true,
+      finalizedAt: true,
+      campaign: {
+        select: {
+          status: true,
+          endDate: true,
+          templateSnapshot: true,
+          competencies: { select: { competencyId: true, competency: { select: { maxScore: true } } } },
+        },
+      },
+    },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
   if (participant.finalizedAt) {
@@ -1136,20 +1231,25 @@ export async function submitMyResponse(
   if (participant.campaign.status === "CLOSED") {
     throw Forbidden("แคมเปญนี้ปิดแล้ว ไม่สามารถส่งแบบประเมินได้อีก");
   }
+  // Only an open (ACTIVE) round takes answers: a draft round has not been
+  // announced yet and an archived one is over.
+  if (participant.campaign.status !== "ACTIVE") {
+    throw Forbidden("แคมเปญนี้ยังไม่เปิดให้ส่งแบบประเมิน");
+  }
   // The `status` field only flips to CLOSED via a manual HR action — nothing
   // auto-closes a campaign when its endDate passes, so that date must be
   // enforced here too, or every participant can keep submitting/editing
   // indefinitely past the stated deadline. endDate is a date-only value
   // (midnight UTC of the chosen day), so the deadline covers the whole of
-  // that calendar day — the cutoff is midnight the day AFTER.
+  // that Bangkok calendar day.
   if (isPastDeadline(participant.campaign.endDate)) {
     throw Forbidden("พ้นกำหนดเวลาการประเมินแล้ว ไม่สามารถส่งแบบประเมินได้");
   }
 
-  const response = await prisma.evaluationResponse.findFirst({
-    where: { participantId, raterEmployeeId: session.employeeId ?? "" },
-    select: { id: true, raterType: true },
-  });
+  const response = await findMyOpenResponse(participantId, session.employeeId);
+  if (response === "submitted") {
+    throw Conflict("ส่งแบบประเมินนี้ไปแล้ว หากต้องการแก้ไขให้กดขอเปิดแก้ไขและรอ HR อนุมัติ");
+  }
   if (!response) throw Forbidden("ไม่มีสิทธิ์ทำแบบประเมินนี้");
 
   // Which field is actually stored is decided here, from the campaign's own
@@ -1165,16 +1265,40 @@ export async function submitMyResponse(
         .filter((q) => q.required && (q.visibleTo.length === 0 || q.visibleTo.includes(response.raterType)))
         .map((q) => q.id),
     );
-    const answeredIds = new Set((input.answers ?? []).map((a) => a.questionId));
+    // A blank value is not an answer.
+    const answeredIds = new Set((input.answers ?? []).filter((a) => a.value.trim() !== "").map((a) => a.questionId));
     if (requiredIds.some((id) => !answeredIds.has(id))) {
       throw BadRequest("กรุณาตอบคำถามที่บังคับตอบให้ครบทุกข้อ");
     }
-  } else if (!input.scores || input.scores.length === 0) {
-    throw BadRequest("กรุณาให้คะแนนสมรรถนะอย่างน้อย 1 รายการ");
+    // A value that is not one of the question's options would score nothing
+    // and still count as answered.
+    const questionById = new Map(templateSnapshot.sections.flatMap((s) => s.questions.map((q) => [q.id, q] as const)));
+    for (const a of input.answers ?? []) {
+      const q = questionById.get(a.questionId);
+      if (!q || a.value.trim() === "" || !q.options || q.options.length === 0) continue;
+      if (!q.options.some((o) => o.value === a.value)) {
+        throw BadRequest("มีคำตอบที่ไม่ตรงกับตัวเลือกของคำถาม รีเฟรชหน้าแล้วตอบใหม่");
+      }
+    }
+  } else {
+    if (!input.scores || input.scores.length === 0) {
+      throw BadRequest("กรุณาให้คะแนนสมรรถนะอย่างน้อย 1 รายการ");
+    }
+    // Each score must belong to this campaign's competencies and stay within
+    // that competency's own maximum.
+    const maxByCompetency = new Map(participant.campaign.competencies.map((c) => [c.competencyId, c.competency.maxScore]));
+    for (const sc of input.scores) {
+      const max = maxByCompetency.get(sc.competencyId);
+      if (max === undefined || sc.score > max) {
+        throw BadRequest("มีคะแนนเกินช่วงของสมรรถนะนั้น รีเฟรชหน้าแล้วให้คะแนนใหม่");
+      }
+    }
   }
 
-  await prisma.evaluationResponse.update({
-    where: { id: response.id },
+  // Guarded on status: a double click or a second tab sees count 0 instead of
+  // overwriting a response that was just submitted.
+  const { count } = await prisma.evaluationResponse.updateMany({
+    where: { id: response.id, status: { not: "SUBMITTED" } },
     data: {
       scores: templateSnapshot ? [] : input.scores,
       answers: templateSnapshot ? input.answers : undefined,
@@ -1186,6 +1310,7 @@ export async function submitMyResponse(
       submittedAt: new Date(),
     },
   });
+  if (count === 0) throw Conflict("ส่งแบบประเมินนี้ไปแล้ว กรุณารีเฟรชหน้า");
 
   // Recomputes the full weighted blend from every SUBMITTED response
   // (whichever rater type just submitted) — see computeAndStoreScore.
@@ -1204,12 +1329,31 @@ export async function submitMyResponse(
   return { ok: true as const, raterType: response.raterType };
 }
 
+/**
+ * The caller's own response row on a participant that can still be filled in.
+ * One person can hold two rows on the same participant (e.g. a PEER invite
+ * while also being the MANAGER), so rows already SUBMITTED are skipped and the
+ * scoring rater type comes first. Returns "submitted" when every row is
+ * already submitted, null when the caller has no row at all.
+ */
+async function findMyOpenResponse(participantId: string, employeeId: string | undefined) {
+  const rows = await prisma.evaluationResponse.findMany({
+    where: { participantId, raterEmployeeId: employeeId ?? "" },
+    select: { id: true, raterType: true, status: true },
+  });
+  if (rows.length === 0) return null;
+  const open = rows.filter((r) => r.status !== "SUBMITTED");
+  if (open.length === 0) return "submitted" as const;
+  open.sort((a, b) => PRIMARY_RATER_PRIORITY.indexOf(a.raterType) - PRIMARY_RATER_PRIORITY.indexOf(b.raterType));
+  return open[0];
+}
+
 /** Autosave — writes whatever the rater has filled in so far without
  * requiring every required question to be answered yet, and without
- * touching the stored score (that only ever runs on actual submit). Keeps
- * status PENDING on the very first save, IN_PROGRESS after — so "resume"
- * (getParticipant) can tell a genuinely-untouched task apart from one the
- * rater already started. */
+ * touching the stored score (that only ever runs on actual submit). Sets the
+ * response to IN_PROGRESS, so "resume" (getParticipant) can tell a
+ * genuinely-untouched task apart from one the rater already started; the
+ * pending lists count IN_PROGRESS as still owed. */
 export async function saveDraftResponse(
   companyId: string,
   session: AccessClaims,
@@ -1223,20 +1367,20 @@ export async function saveDraftResponse(
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
   if (participant.finalizedAt) throw Forbidden("การประเมินนี้สรุปผลแล้ว ไม่สามารถแก้ไขคำตอบได้อีก");
   if (participant.campaign.status === "CLOSED") throw Forbidden("แคมเปญนี้ปิดแล้ว ไม่สามารถบันทึกแบบร่างได้");
+  if (participant.campaign.status !== "ACTIVE") throw Forbidden("แคมเปญนี้ยังไม่เปิดให้ส่งแบบประเมิน");
   if (isPastDeadline(participant.campaign.endDate)) {
     throw Forbidden("พ้นกำหนดเวลาการประเมินแล้ว ไม่สามารถบันทึกแบบร่างได้");
   }
 
-  const response = await prisma.evaluationResponse.findFirst({
-    where: { participantId, raterEmployeeId: session.employeeId ?? "" },
-    select: { id: true, status: true },
-  });
+  const response = await findMyOpenResponse(participantId, session.employeeId);
+  if (response === "submitted") throw Forbidden("ส่งแบบประเมินนี้ไปแล้ว");
   if (!response) throw Forbidden("ไม่มีสิทธิ์ทำแบบประเมินนี้");
-  if (response.status === "SUBMITTED") throw Forbidden("ส่งแบบประเมินนี้ไปแล้ว");
 
   const templateSnapshot = participant.campaign.templateSnapshot as unknown as CampaignTemplateSnapshot | null;
-  await prisma.evaluationResponse.update({
-    where: { id: response.id },
+  // Guarded on status: an autosave that was already in flight when the rater
+  // pressed Submit must not turn the submitted response back into a draft.
+  const { count } = await prisma.evaluationResponse.updateMany({
+    where: { id: response.id, status: { not: "SUBMITTED" } },
     data: {
       scores: templateSnapshot ? [] : (input.scores ?? []),
       answers: templateSnapshot ? input.answers : undefined,
@@ -1247,6 +1391,7 @@ export async function saveDraftResponse(
       status: "IN_PROGRESS",
     },
   });
+  if (count === 0) throw Forbidden("ส่งแบบประเมินนี้ไปแล้ว");
 
   return { ok: true as const };
 }
@@ -1299,7 +1444,14 @@ export async function approveReopen(
 ) {
   const response = await prisma.evaluationResponse.findFirst({
     where: { id: responseId, participant: { campaign: { companyId, deletedAt: null } } },
-    select: { id: true, status: true, reopenRequested: true, participant: { select: { finalizedAt: true } } },
+    select: {
+      id: true,
+      status: true,
+      raterType: true,
+      participantId: true,
+      reopenRequested: true,
+      participant: { select: { finalizedAt: true, campaign: { select: { raterTypes: true } } } },
+    },
   });
   if (!response) throw NotFound("ไม่พบแบบประเมิน");
   if (!isHrLevel(session)) throw Forbidden("เปิดแก้ไขใหม่ได้เฉพาะ HR");
@@ -1321,6 +1473,17 @@ export async function approveReopen(
     },
   });
   if (count === 0) throw Conflict("แบบประเมินนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
+  // When the scoring rater's response is reopened the stored score is stale:
+  // clear it (as rejectParticipantResult does) so HR cannot finalize it while
+  // the rater is locked out; the next submit recomputes it.
+  const scoringRaterType: RaterType = response.participant.campaign.raterTypes.includes("MANAGER") ? "MANAGER" : "SELF";
+  if (response.raterType === scoringRaterType) {
+    await prisma.evaluationParticipant.updateMany({
+      where: { id: response.participantId, finalizedAt: null },
+      data: clearedScoreFields,
+    });
+  }
 
   await writeAudit({
     companyId,
@@ -1447,7 +1610,7 @@ export async function removeRater(companyId: string, session: AccessClaims, resp
   if (response.raterType !== "PEER" && response.raterType !== "UPWARD" && response.raterType !== "HR_EXEC") {
     throw BadRequest("ยกเลิกได้เฉพาะผู้ประเมินที่เชิญเป็นรายบุคคล (Peer/Upward/HR)");
   }
-  if (response.status !== "PENDING") {
+  if (response.status === "SUBMITTED") {
     throw BadRequest("ผู้ประเมินคนนี้ส่งแบบประเมินไปแล้ว");
   }
 
@@ -1571,17 +1734,21 @@ export async function finalizeParticipant(
 ) {
   const participant = await prisma.evaluationParticipant.findFirst({
     where: { id: participantId, campaign: { companyId, deletedAt: null } },
-    select: { id: true, overallScore: true, employeeId: true, campaignId: true },
+    select: { id: true, overallScore: true, employeeId: true, campaignId: true, finalizedAt: true },
   });
   if (!participant) throw NotFound("ไม่พบผู้เข้าร่วมการประเมิน");
+  if (participant.finalizedAt) throw Conflict("ผลประเมินนี้สรุปผลไปแล้ว");
   if (participant.overallScore === null) {
     throw BadRequest("ยังไม่มีคะแนนจากหัวหน้างาน ไม่สามารถสรุปผลได้");
   }
 
-  await prisma.evaluationParticipant.update({
-    where: { id: participantId },
+  // Guarded on finalizedAt: a double click must not re-stamp the date or
+  // re-send the notifications.
+  const { count } = await prisma.evaluationParticipant.updateMany({
+    where: { id: participantId, finalizedAt: null, overallScore: { not: null } },
     data: { finalizedAt: new Date() },
   });
+  if (count === 0) throw Conflict("ผลประเมินนี้สรุปผลไปแล้ว หรือคะแนนเพิ่งถูกตีกลับ กรุณารีเฟรชหน้า");
 
   await maybeCreateImprovementPlan(companyId, participantId, session);
 
@@ -1668,17 +1835,7 @@ export async function rejectParticipantResult(
 
   await prisma.evaluationParticipant.update({
     where: { id: participantId },
-    data: {
-      overallScore: null,
-      band: null,
-      rawScore: null,
-      maxScore: null,
-      scorePercent: null,
-      questionCount: null,
-      evaluatorCount: null,
-      lowestTopics: Prisma.JsonNull,
-      scoreStatus: null,
-    },
+    data: clearedScoreFields,
   });
 
   await createNotification(
@@ -1761,6 +1918,7 @@ export async function getEmployeeEvaluationHistory(
       calibratedScore: true,
       calibratedBand: true,
       finalizedAt: true,
+      calibrationSession: { select: { status: true } },
       campaign: {
         select: { id: true, name: true, cycle: true, status: true, startDate: true, endDate: true },
       },
@@ -1768,17 +1926,26 @@ export async function getEmployeeEvaluationHistory(
     orderBy: { campaign: { startDate: "desc" } },
   });
 
-  return rows.map((r) => ({
-    participantId: r.id,
-    overallScore: r.overallScore,
-    band: r.band,
-    // Calibration (when it's happened) supersedes the raw manager score —
-    // same fallback the 9-Box/calibration views already use.
-    calibratedScore: r.calibratedScore,
-    calibratedBand: r.calibratedBand,
-    finalizedAt: r.finalizedAt,
-    campaign: r.campaign,
-  }));
+  // HR and the person's manager see every row; the employee themself only gets
+  // a result once HR finalized it, and the calibrated figures only once the
+  // calibration session is also completed (before that they are HR's work in
+  // progress).
+  const seesAll = hrLevel || manages;
+  return rows.map((r) => {
+    const released = seesAll || !!r.finalizedAt;
+    const calibrationReleased = seesAll || (!!r.finalizedAt && (!r.calibrationSession || r.calibrationSession.status === "COMPLETED"));
+    return {
+      participantId: r.id,
+      overallScore: released ? r.overallScore : null,
+      band: released ? r.band : null,
+      // Calibration (when it's happened) supersedes the raw manager score —
+      // same fallback the 9-Box/calibration views already use.
+      calibratedScore: calibrationReleased ? r.calibratedScore : null,
+      calibratedBand: calibrationReleased ? r.calibratedBand : null,
+      finalizedAt: r.finalizedAt,
+      campaign: r.campaign,
+    };
+  });
 }
 
 const thresholdSelect = {

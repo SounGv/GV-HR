@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { calendarDate } from "@/lib/date-schema";
+import { updateSchemaOf } from "@/lib/zod-update";
 
 const raterTypesSchema = z
   .array(z.enum(["SELF", "MANAGER"]))
@@ -20,7 +22,7 @@ const scheduleTemplateBaseSchema = z.object({
     .refine((v) => (INTERVAL_MONTHS as readonly number[]).includes(v), "รอบไม่ถูกต้อง"),
   durationDays: z.coerce.number().int().min(1).max(90).default(14),
   raterTypes: raterTypesSchema.default(["SELF", "MANAGER"]),
-  nextRunAt: z.string().min(1, "กรุณาเลือกวันที่เริ่มรอบแรก"),
+  nextRunAt: calendarDate({ message: "กรุณาเลือกวันที่เริ่มรอบแรก" }),
   active: z.boolean().optional(),
   // Mutually exclusive with `competencies` — a schedule either generates
   // legacy Competency-based campaigns or new Template-based ones.
@@ -34,5 +36,9 @@ export const scheduleTemplateCreateSchema = scheduleTemplateBaseSchema.refine(
 );
 export type ScheduleTemplateCreateInput = z.infer<typeof scheduleTemplateCreateSchema>;
 
-export const scheduleTemplateUpdateSchema = scheduleTemplateBaseSchema.partial();
+// No defaults on update: a PATCH of only { active: false } must not reset durationDays or raterTypes.
+// Typed against the create input: updateSchemaOf builds its shape dynamically, so its own inferred type is loose.
+export const scheduleTemplateUpdateSchema = updateSchemaOf(scheduleTemplateBaseSchema) as unknown as z.ZodType<
+  Partial<ScheduleTemplateCreateInput>
+>;
 export type ScheduleTemplateUpdateInput = z.infer<typeof scheduleTemplateUpdateSchema>;
