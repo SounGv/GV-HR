@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
+import { can } from "@/lib/auth/rbac";
 import { announcementUpdateSchema } from "@/features/announcement/schema";
 import { getAnnouncement, deleteAnnouncement, updateAnnouncement } from "@/features/announcement/service";
 import { ok, handleApiError } from "@/lib/api/response";
@@ -13,7 +14,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   try {
     const session = await requirePermission("announcement:read");
     const { id } = await params;
-    return ok(await getAnnouncement(session.companyId, id));
+    return ok(await getAnnouncement(session.companyId, id, can(session.perms, "announcement:create")));
   } catch (err) {
     return handleApiError(err);
   }

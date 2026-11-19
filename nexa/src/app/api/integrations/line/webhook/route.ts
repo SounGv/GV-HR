@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { verifyLineSignature, replyLineMessage, isLinkCodeText, shouldRegisterHrGroups, isLineFriend } from "@/lib/integrations/line";
 
@@ -43,6 +44,8 @@ export async function POST(request: NextRequest) {
   for (const event of events) {
     // เดิม: link-account flow (ข้อความ 6 หลัก) — ไม่แก้ logic ภายใน
     if (event.type === "message" && event.message?.type === "text") {
+      // Linking happens in a one-to-one chat only: a code-shaped word typed in a group (shared with other services) is not answered.
+      if (event.source?.type !== "user") continue;
       const lineUserId = event.source?.userId;
       const replyToken = event.replyToken;
       const code = event.message.text?.trim().toUpperCase();
@@ -61,10 +64,21 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      await prisma.employee.update({
-        where: { id: employee.id },
-        data: { lineUserId, lineLinkCode: null, lineLinkCodeExpiresAt: null },
-      });
+      try {
+        await prisma.employee.update({
+          where: { id: employee.id },
+          data: { lineUserId, lineLinkCode: null, lineLinkCodeExpiresAt: null },
+        });
+      } catch (err) {
+        // lineUserId is unique: this LINE account is already linked to another employee. Answer instead of failing the whole batch.
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+          if (replyToken) {
+            await replyLineMessage(replyToken, "บัญชี LINE นี้เชื่อมกับพนักงานคนอื่นแล้ว หากต้องการเปลี่ยน ให้ยกเลิกการเชื่อมต่อเดิมจากหน้าโปรไฟล์ในระบบ GV One ก่อน");
+          }
+          continue;
+        }
+        throw err;
+      }
       if (replyToken) {
         // Pushes only reach friends: someone who sent the code without adding the bot gets told so.
         const friend = await isLineFriend(lineUserId);

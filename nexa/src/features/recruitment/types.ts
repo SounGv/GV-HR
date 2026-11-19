@@ -26,7 +26,9 @@ export interface Candidate {
   email: string | null;
   phone: string | null;
   note: string | null;
-  resumeUrl: string | null;
+  /** List rows carry hasResume only; the file itself is loaded with one candidate. */
+  hasResume?: boolean;
+  resumeUrl?: string | null;
   stage: CandidateStage;
   createdAt: string;
   jobPosting: { id: string; title: string };

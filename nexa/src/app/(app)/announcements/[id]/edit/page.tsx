@@ -15,7 +15,7 @@ export default async function EditAnnouncementPage({
   const session = await requirePagePermission("announcement:update");
   const { id } = await params;
 
-  const a = await getAnnouncement(session.companyId, id).catch((e) => {
+  const a = await getAnnouncement(session.companyId, id, true).catch((e) => {
     if (e instanceof AppError && e.status === 404) notFound();
     throw e;
   });

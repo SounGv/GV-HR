@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { calendarDate } from "@/lib/date-schema";
+import { updateSchemaOf } from "@/lib/zod-update";
 
 export const TRAINING_STATUSES = ["OPEN", "CLOSED"] as const;
 export const ENROLLMENT_STATUSES = ["ENROLLED", "COMPLETED", "CANCELLED"] as const;
@@ -28,7 +29,8 @@ export const courseCreateSchema = z.object({
 });
 export type CourseCreateInput = z.infer<typeof courseCreateSchema>;
 
-export const courseUpdateSchema = courseCreateSchema.partial();
+// Typed against the create input: updateSchemaOf builds its shape dynamically, so its own inferred type is loose.
+export const courseUpdateSchema = updateSchemaOf(courseCreateSchema) as unknown as z.ZodType<Partial<CourseCreateInput>>;
 export type CourseUpdateInput = z.infer<typeof courseUpdateSchema>;
 
 export const enrollmentUpdateSchema = z.object({

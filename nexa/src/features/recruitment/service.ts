@@ -27,16 +27,22 @@ const jobSelect = {
   _count: { select: { candidates: true } },
 } satisfies Prisma.JobPostingSelect;
 
-const candidateSelect = {
+/** List rows: no resumeUrl, which can be a multi-MB base64 data URL (a list of them passes the response size cap). */
+const candidateListSelect = {
   id: true,
   name: true,
   email: true,
   phone: true,
   note: true,
-  resumeUrl: true,
   stage: true,
   createdAt: true,
   jobPosting: { select: { id: true, title: true } },
+} satisfies Prisma.CandidateSelect;
+
+/** One candidate: the list fields plus the resume. */
+const candidateSelect = {
+  ...candidateListSelect,
+  resumeUrl: true,
 } satisfies Prisma.CandidateSelect;
 
 // ─────────────────────────── Jobs ───────────────────────────
@@ -177,17 +183,26 @@ export async function listCandidates(
   companyId: string,
   filter: { jobPostingId?: string; stage?: CandidateStage },
 ) {
-  return prisma.candidate.findMany({
+  const rows = await prisma.candidate.findMany({
     where: {
       companyId,
       deletedAt: null,
       ...(filter.jobPostingId ? { jobPostingId: filter.jobPostingId } : {}),
       ...(filter.stage ? { stage: filter.stage } : {}),
     },
-    select: candidateSelect,
+    select: candidateListSelect,
     orderBy: { createdAt: "desc" },
     take: 500,
   });
+  // Which rows have a resume, without loading the files themselves.
+  const withResume = rows.length
+    ? await prisma.candidate.findMany({
+        where: { id: { in: rows.map((r) => r.id) }, resumeUrl: { not: null } },
+        select: { id: true },
+      })
+    : [];
+  const hasResume = new Set(withResume.map((r) => r.id));
+  return rows.map((r) => ({ ...r, hasResume: hasResume.has(r.id) }));
 }
 
 export async function createCandidate(
@@ -242,7 +257,8 @@ export async function updateCandidate(
     action: "candidate.update",
     entity: "Candidate",
     entityId: id,
-    after: input,
+    // Field names only: the values hold contact details and a resume file (up to ~3 MB) that do not belong in the log.
+    after: { changedFields: Object.keys(input).filter((k) => input[k as keyof typeof input] !== undefined) },
     ...meta,
   });
   return candidate;

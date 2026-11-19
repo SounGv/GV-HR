@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { EMPLOYMENT_TYPES } from "@/features/employee/schema";
 import { dataUrlFileOrHttpUrlSchema } from "@/lib/image-schema";
+import { updateSchemaOf } from "@/lib/zod-update";
 
 export const JOB_STATUSES = ["OPEN", "CLOSED"] as const;
 export const CANDIDATE_STAGES = [
@@ -25,7 +26,8 @@ export const jobCreateSchema = z.object({
   status: z.enum(JOB_STATUSES).default("OPEN"),
 });
 export type JobCreateInput = z.infer<typeof jobCreateSchema>;
-export const jobUpdateSchema = jobCreateSchema.partial();
+// Typed against the create input: updateSchemaOf builds its shape dynamically, so its own inferred type is loose.
+export const jobUpdateSchema = updateSchemaOf(jobCreateSchema) as unknown as z.ZodType<Partial<JobCreateInput>>;
 export type JobUpdateInput = z.infer<typeof jobUpdateSchema>;
 
 export const jobListQuerySchema = z.object({
@@ -42,7 +44,9 @@ export const candidateCreateSchema = z.object({
   stage: z.enum(CANDIDATE_STAGES).default("APPLIED"),
 });
 export type CandidateCreateInput = z.infer<typeof candidateCreateSchema>;
-export const candidateUpdateSchema = candidateCreateSchema.partial().omit({ jobPostingId: true });
+export const candidateUpdateSchema = updateSchemaOf(
+  candidateCreateSchema.omit({ jobPostingId: true }),
+) as unknown as z.ZodType<Partial<Omit<CandidateCreateInput, "jobPostingId">>>;
 export type CandidateUpdateInput = z.infer<typeof candidateUpdateSchema>;
 
 export const candidateListQuerySchema = z.object({

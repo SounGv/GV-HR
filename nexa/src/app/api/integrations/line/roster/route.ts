@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
 
   const employees = await prisma.employee.findMany({
     where: {
+      deletedAt: null,
       lineUserId: { not: null },
       status: { in: ["ACTIVE", "ON_LEAVE"] },
     },

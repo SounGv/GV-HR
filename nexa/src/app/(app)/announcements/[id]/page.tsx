@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CalendarDays, FileText, Pin, UserRound } from "lucide-react";
 
 import { requirePagePermission } from "@/lib/auth/page-guard";
+import { can } from "@/lib/auth/rbac";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
@@ -16,7 +17,13 @@ export default async function AnnouncementDetailPage({ params }: { params: Promi
   const { id } = await params;
 
   const announcement = await prisma.announcement.findFirst({
-    where: { id, companyId: session.companyId, deletedAt: null },
+    where: {
+      id,
+      companyId: session.companyId,
+      deletedAt: null,
+      // Drafts and retracted texts are for the people who write announcements only.
+      ...(can(session.perms, "announcement:create") ? {} : { status: "PUBLISHED" as const }),
+    },
     select: {
       id: true,
       title: true,

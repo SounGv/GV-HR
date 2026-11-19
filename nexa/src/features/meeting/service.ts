@@ -3,6 +3,7 @@ import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { can } from "@/lib/auth/rbac";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -34,9 +35,13 @@ const meetingSelect = {
 } satisfies Prisma.MeetingSelect;
 
 
-/** HR-level (wildcard) may view/cancel any meeting; everyone else only their own. */
+/**
+ * HR-level may view/cancel any meeting; everyone else only their own. The literal "*" never reaches
+ * session.perms (it is expanded into concrete keys), so test a key only HR roles hold; managers
+ * have meeting:update but not employee:update.
+ */
 function isHrLevel(session: AccessClaims): boolean {
-  return session.perms.includes("*");
+  return can(session.perms, "employee:update");
 }
 
 function withMyResponse<T extends { attendees: { employee: { id: string }; status: string }[] }>(

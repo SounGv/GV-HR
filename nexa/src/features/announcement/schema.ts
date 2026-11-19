@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { updateSchemaOf } from "@/lib/zod-update";
 
 export const ANNOUNCEMENT_STATUSES = ["DRAFT", "PUBLISHED"] as const;
 
@@ -10,7 +11,10 @@ export const announcementCreateSchema = z.object({
 });
 export type AnnouncementCreateInput = z.infer<typeof announcementCreateSchema>;
 
-export const announcementUpdateSchema = announcementCreateSchema.partial();
+// Typed against the create input: updateSchemaOf builds its shape dynamically, so its own inferred type is loose.
+export const announcementUpdateSchema = updateSchemaOf(announcementCreateSchema) as unknown as z.ZodType<
+  Partial<AnnouncementCreateInput>
+>;
 export type AnnouncementUpdateInput = z.infer<typeof announcementUpdateSchema>;
 
 export const announcementListQuerySchema = z.object({

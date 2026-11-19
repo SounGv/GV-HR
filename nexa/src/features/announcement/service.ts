@@ -123,9 +123,13 @@ export async function getLatestAnnouncement(companyId: string) {
   });
 }
 
-export async function getAnnouncement(companyId: string, id: string) {
+/**
+ * @param canManage True for people who may write announcements (they also open drafts); everyone else
+ * only reads published ones, so a retracted or draft text stays hidden even to someone holding its link.
+ */
+export async function getAnnouncement(companyId: string, id: string, canManage = false) {
   const announcement = await prisma.announcement.findFirst({
-    where: { id, companyId, deletedAt: null },
+    where: { id, companyId, deletedAt: null, ...(canManage ? {} : { status: "PUBLISHED" as const }) },
     select,
   });
   if (!announcement) throw NotFound("ไม่พบประกาศ");

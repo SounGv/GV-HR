@@ -8,6 +8,25 @@ import type { CourseCreateInput, CourseUpdateInput, EnrollmentUpdateInput } from
 
 type Meta = { ip?: string; userAgent?: string };
 
+/** What the seat helpers use from a transaction (the app's extended client, not the stock Prisma.TransactionClient). */
+type SeatTx = Pick<typeof prisma, "$queryRaw" | "trainingEnrollment">;
+
+/**
+ * Locks the course row until the transaction ends, so two requests taking the last seat are served
+ * one after the other even when they run on different serverless instances (each has its own pool).
+ */
+async function lockCourse(tx: SeatTx, courseId: string) {
+  await tx.$queryRaw`SELECT id FROM training_courses WHERE id = ${courseId} FOR UPDATE`;
+}
+
+/** Throws when the course already has `capacity` seats taken (cancelled enrollments do not count). */
+async function assertSeatFree(tx: SeatTx, courseId: string, capacity: number | null) {
+  if (capacity == null) return;
+  await lockCourse(tx, courseId);
+  const count = await tx.trainingEnrollment.count({ where: { courseId, status: { not: "CANCELLED" } } });
+  if (count >= capacity) throw BadRequest("หลักสูตรเต็มแล้ว");
+}
+
 
 const courseSelect = {
   id: true,
@@ -219,18 +238,10 @@ export async function enrollSelf(
     throw Conflict("คุณลงทะเบียนหลักสูตรนี้แล้ว");
   }
 
-  // Capacity check + write share one transaction so two concurrent
-  // enrollments can't both pass the count check before either commits —
-  // this app's Prisma pool is connection_limit=1, so a transaction fully
-  // completes before the next queued request's queries even start,
-  // preventing a capped course from being over-filled by a race.
+  // Capacity check + write share one transaction that holds a lock on the course row, so two
+  // concurrent enrollments (even on different serverless instances) cannot both pass the count.
   const record = await prisma.$transaction(async (tx) => {
-    if (course.capacity != null) {
-      const count = await tx.trainingEnrollment.count({
-        where: { courseId, status: { not: "CANCELLED" } },
-      });
-      if (count >= course.capacity) throw BadRequest("หลักสูตรเต็มแล้ว");
-    }
+    await assertSeatFree(tx, courseId, course.capacity);
 
     return existing
       ? await tx.trainingEnrollment.update({
@@ -303,19 +314,27 @@ export async function updateEnrollment(
 ) {
   const enr = await prisma.trainingEnrollment.findFirst({
     where: { id, companyId },
-    select: { id: true },
+    select: { id: true, courseId: true, status: true, completedAt: true, course: { select: { capacity: true } } },
   });
   if (!enr) throw NotFound("ไม่พบการลงทะเบียน");
 
-  const record = await prisma.trainingEnrollment.update({
-    where: { id: enr.id },
-    data: {
-      status: input.status,
-      score: input.score ?? null,
-      completedAt: input.status === "COMPLETED" ? new Date() : null,
-      updatedById: session.sub,
-    },
-    select: { id: true },
+  const record = await prisma.$transaction(async (tx) => {
+    // Bringing a cancelled enrollment back takes a seat again, so it obeys the course capacity.
+    if (enr.status === "CANCELLED" && input.status !== "CANCELLED") {
+      await assertSeatFree(tx, enr.courseId, enr.course.capacity);
+    }
+    return tx.trainingEnrollment.update({
+      where: { id: enr.id },
+      data: {
+        status: input.status,
+        // A score that was not sent stays as it is; completedAt is stamped once, when it becomes COMPLETED.
+        ...(input.score !== undefined ? { score: input.score } : {}),
+        completedAt:
+          input.status !== "COMPLETED" ? null : enr.status === "COMPLETED" && enr.completedAt ? enr.completedAt : new Date(),
+        updatedById: session.sub,
+      },
+      select: { id: true },
+    });
   });
   await writeAudit({
     companyId,

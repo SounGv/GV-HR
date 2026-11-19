@@ -88,9 +88,14 @@ export async function createNotification(
   if (shouldPushToLine(input.category, input.line, input.title) && isLineConfigured()) {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { lineUserId: true },
+      select: { lineUserId: true, status: true, deletedAt: true },
     });
-    if (employee?.lineUserId) {
+    // Someone who left (or was removed) keeps their lineUserId; never push to them.
+    if (
+      employee?.lineUserId &&
+      !employee.deletedAt &&
+      (employee.status === "ACTIVE" || employee.status === "ON_LEAVE")
+    ) {
       const linkLine = input.link ? `\n${appBaseUrl() + input.link}` : "";
       await pushLineMessage(employee.lineUserId, `${input.title}\n${input.body}${linkLine}`);
     }
@@ -129,9 +134,9 @@ export async function notifyPermissionHolders(
 
 /**
  * HR-composed notification to a chosen set of employees — the "select
- * people, they see a bell notification" bulk-notify tool. One at a time
- * (not Promise.all): the pooled connection can only serve one query at a
- * time, and firing dozens concurrently exhausts the pool wait queue.
+ * people, they see a bell notification" bulk-notify tool. The rows go in with
+ * one createMany: sequential inserts for hundreds of people can hit the
+ * function time limit, and Promise.all would exhaust the one-connection pool.
  */
 export async function sendBulkNotification(
   companyId: string,
@@ -145,10 +150,8 @@ export async function sendBulkNotification(
   });
   if (employees.length === 0) throw BadRequest("ไม่พบพนักงานปลายทางที่เลือก");
 
-  for (const emp of employees) {
-    await createNotification(companyId, emp.id, { title: input.title, body: input.body, category: "hr" }, session.sub);
-  }
-
+  // Audit first, then one insert: up to 500 sequential inserts can pass the function time limit
+  // and leave a partial send that HR then repeats.
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -157,6 +160,19 @@ export async function sendBulkNotification(
     entityId: session.sub,
     after: { title: input.title, recipients: employees.length },
     ...meta,
+  });
+
+  // Category "hr" is not a LINE category (line-policy), so a bulk notice is in-app only.
+  await prisma.notification.createMany({
+    data: employees.map((emp) => ({
+      companyId,
+      employeeId: emp.id,
+      title: input.title,
+      body: input.body,
+      category: "hr",
+      link: null,
+      createdById: session.sub,
+    })),
   });
 
   return { sent: employees.length };

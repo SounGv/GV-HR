@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { calendarDate } from "@/lib/date-schema";
+import { updateSchemaOf } from "@/lib/zod-update";
 
 export const ASSET_STATUSES = ["AVAILABLE", "ASSIGNED", "REPAIR", "RETIRED"] as const;
 
@@ -18,7 +19,8 @@ export const assetCreateSchema = z.object({
 });
 export type AssetCreateInput = z.infer<typeof assetCreateSchema>;
 
-export const assetUpdateSchema = assetCreateSchema.partial();
+// Typed against the create input: updateSchemaOf builds its shape dynamically, so its own inferred type is loose.
+export const assetUpdateSchema = updateSchemaOf(assetCreateSchema) as unknown as z.ZodType<Partial<AssetCreateInput>>;
 export type AssetUpdateInput = z.infer<typeof assetUpdateSchema>;
 
 export const assetListQuerySchema = z.object({

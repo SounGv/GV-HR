@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { BadRequest, NotFound } from "@/lib/api/errors";
+import { BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { AssetCreateInput, AssetListQuery, AssetUpdateInput } from "./schema";
 
@@ -77,6 +77,8 @@ export async function createAsset(
   input: AssetCreateInput,
   meta?: Meta,
 ) {
+  // A holder is set only by the assign endpoint, so a new asset cannot start as ASSIGNED.
+  if (input.status === "ASSIGNED") throw BadRequest("ใช้ปุ่มเบิกเพื่อระบุผู้ถือทรัพย์สิน");
   const { purchasePrice, ...rest } = input;
   const asset = await prisma.asset.create({
     data: {
@@ -109,15 +111,26 @@ export async function updateAsset(
 ) {
   const existing = await prisma.asset.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (!existing) throw NotFound("ไม่พบทรัพย์สิน");
 
-  const asset = await prisma.asset.update({
-    where: { id },
+  // Status and holder move together: only assign / return changes them, so the edit form cannot
+  // leave a holder on an "available" asset (the leaver check reads status = ASSIGNED).
+  if (input.status !== undefined && input.status !== existing.status) {
+    if (input.status === "ASSIGNED") throw BadRequest("ใช้ปุ่มเบิกเพื่อระบุผู้ถือทรัพย์สิน");
+    if (existing.status === "ASSIGNED") {
+      throw BadRequest("ทรัพย์สินนี้มีผู้ถืออยู่ ให้รับคืนก่อนจึงเปลี่ยนสถานะได้ (รีเฟรชหน้าแล้วลองใหม่)");
+    }
+  }
+
+  // Guarded on the status we just read, so an assign that lands in between is not overwritten.
+  const { count } = await prisma.asset.updateMany({
+    where: { id, companyId, deletedAt: null, status: existing.status },
     data: { ...toData(input), updatedById: session.sub },
-    select,
   });
+  if (count === 0) throw Conflict("ทรัพย์สินนี้ถูกเปลี่ยนแปลงไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+  const asset = await prisma.asset.findFirstOrThrow({ where: { id, companyId }, select });
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -137,14 +150,17 @@ export async function deleteAsset(
 ) {
   const existing = await prisma.asset.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, assetCode: true },
+    select: { id: true, assetCode: true, status: true },
   });
   if (!existing) throw NotFound("ไม่พบทรัพย์สิน");
+  if (existing.status === "ASSIGNED") throw BadRequest("ทรัพย์สินนี้มีผู้ถืออยู่ ให้รับคืนก่อนจึงลบได้");
 
-  await prisma.asset.update({
-    where: { id },
+  // Guarded so an assign that lands after the read cannot be deleted from under its holder.
+  const { count } = await prisma.asset.updateMany({
+    where: { id, companyId, deletedAt: null, status: { not: "ASSIGNED" } },
     data: { deletedAt: new Date(), updatedById: session.sub },
   });
+  if (count === 0) throw Conflict("ทรัพย์สินนี้ถูกเปลี่ยนแปลงไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -182,8 +198,11 @@ export async function assignAsset(
     }
   }
 
-  const asset = await prisma.asset.update({
-    where: { id },
+  // Guarded on the current status: only an AVAILABLE asset can be handed out and only an
+  // ASSIGNED one can be taken back, so two HR users cannot both win and a REPAIR / RETIRED asset
+  // cannot be assigned.
+  const { count } = await prisma.asset.updateMany({
+    where: { id, companyId, deletedAt: null, status: employeeId ? "AVAILABLE" : "ASSIGNED" },
     data: employeeId
       ? {
           assignedToEmployeeId: employeeId,
@@ -197,8 +216,15 @@ export async function assignAsset(
           assignedAt: null,
           updatedById: session.sub,
         },
-    select,
   });
+  if (count === 0) {
+    throw Conflict(
+      employeeId
+        ? "ทรัพย์สินนี้ไม่ได้อยู่ในสถานะว่าง หรือถูกเบิกไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า"
+        : "ทรัพย์สินนี้ไม่ได้อยู่ในสถานะถูกเบิก กรุณารีเฟรชหน้า",
+    );
+  }
+  const asset = await prisma.asset.findFirstOrThrow({ where: { id, companyId }, select });
 
   await writeAudit({
     companyId,
