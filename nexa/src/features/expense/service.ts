@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { hasCompletedOneYear, hasPassedProbation } from "@/lib/tenure";
+import { bangkokParts } from "@/lib/datetime";
+import { displayName } from "@/lib/format";
+import { createNotification, notifyPermissionHolders } from "@/features/notification/service";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ExpenseClaim } from "./types";
 import type { ExpenseCreateInput, ExpenseDecideInput, ExpenseListQuery } from "./schema";
@@ -119,6 +122,16 @@ async function assertMedicalExpenseAllowed(
     throw BadRequest("สิทธิ์เบิกค่ารักษาพยาบาลจะเปิดให้เมื่อผ่านทดลองงานและทำงานครบ 1 ปีแล้ว");
   }
 
+  // The yearly cap is counted by the year of the claim date, so the date must be a real,
+  // current one. Otherwise a claim dated next or last year starts a fresh cap.
+  const today = bangkokParts();
+  if (expenseDate.getUTCFullYear() !== today.year) {
+    throw BadRequest(`วันที่เบิกค่ารักษาพยาบาลต้องอยู่ในปี ${today.year} นี้ เลือกวันที่ใหม่แล้วส่งอีกครั้ง`);
+  }
+  if (expenseDate.getTime() >= today.dateUTC.getTime() + 86_400_000) {
+    throw BadRequest("วันที่เบิกค่ารักษาพยาบาลต้องไม่ใช่วันในอนาคต เลือกวันที่ใหม่แล้วส่งอีกครั้ง");
+  }
+
   const cap = await getMedicalExpenseCap(companyId);
   const year = expenseDate.getUTCFullYear();
   const yearStart = new Date(Date.UTC(year, 0, 1));
@@ -186,6 +199,26 @@ export async function resolveSickLeaveReference(companyId: string, employeeId: s
   return leave;
 }
 
+/** Tell the people who can decide a claim (expense:approve) that one is waiting. */
+async function notifyApprovers(companyId: string, session: AccessClaims, employeeId: string, claim: { id: string; title: string; amount: number }) {
+  const requester = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId, deletedAt: null },
+    select: { firstName: true, lastName: true, nickname: true },
+  });
+  await notifyPermissionHolders(
+    companyId,
+    "expense:approve",
+    employeeId,
+    {
+      title: "มีรายการเบิกจ่ายรออนุมัติ",
+      body: `${requester ? displayName(requester) : "พนักงาน"} ขอเบิก ${claim.title} ${claim.amount.toFixed(2)} บาท`,
+      category: "expense",
+      link: `/expenses/${claim.id}`,
+    },
+    session.sub,
+  );
+}
+
 export async function createExpense(
   companyId: string,
   session: AccessClaims,
@@ -232,6 +265,7 @@ export async function createExpense(
     after: { title: input.title, amount: input.amount },
     ...meta,
   });
+  if (!isDraft) await notifyApprovers(companyId, session, employeeId, { id: record.id, title: input.title, amount: input.amount });
   return serialize(record);
 }
 
@@ -254,11 +288,13 @@ export async function submitExpense(companyId: string, session: AccessClaims, id
     await assertMedicalExpenseAllowed(companyId, employeeId, Number(claim.amount), claim.expenseDate, claim.id);
   }
 
-  const record = await prisma.expenseClaim.update({
-    where: { id: claim.id },
+  // Guard on status so a double submit or a cancel in between cannot be overwritten.
+  const { count } = await prisma.expenseClaim.updateMany({
+    where: { id: claim.id, status: "DRAFT" },
     data: { status: "PENDING", updatedById: session.sub },
-    select: claimSelect,
   });
+  if (count === 0) throw Conflict("รายการนี้ถูกดำเนินการไปแล้ว กรุณารีเฟรชหน้า");
+  const record = await prisma.expenseClaim.findFirstOrThrow({ where: { id: claim.id }, select: claimSelect });
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -267,6 +303,7 @@ export async function submitExpense(companyId: string, session: AccessClaims, id
     entityId: claim.id,
     ...meta,
   });
+  await notifyApprovers(companyId, session, employeeId, { id: claim.id, title: record.title, amount: Number(record.amount) });
   return serialize(record);
 }
 
@@ -281,7 +318,9 @@ export async function listExpenses(
     // No employee record (admin, system account): nothing is "mine", so an empty list, not an error.
     if (!hasEmployee(session)) return [];
     employeeIds = [requireEmployeeId(session)];
-  } else if (query.scope === "team") {
+  } else if (query.scope === "team" && !isFinanceLevel(session)) {
+    // Finance-level approvers (expense:approve) decide every claim in the
+    // company, so their pending queue is company-wide, like listLeave.
     const reports = await prisma.employee.findMany({
       where: { companyId, managerId: session.employeeId ?? "__none__", deletedAt: null },
       select: { id: true },
@@ -369,6 +408,18 @@ export async function decideExpense(
     entityId: claim.id,
     ...meta,
   });
+  const approved = input.action === "approve";
+  await createNotification(
+    companyId,
+    claim.employeeId,
+    {
+      title: approved ? "รายการเบิกจ่ายได้รับอนุมัติ" : "รายการเบิกจ่ายไม่ได้รับอนุมัติ",
+      body: `${record.title} ${Number(record.amount).toFixed(2)} บาท${input.note ? `: ${input.note}` : ""}`,
+      category: "expense",
+      link: `/expenses/${claim.id}`,
+    },
+    session.sub,
+  );
   return serialize(record);
 }
 
@@ -386,11 +437,13 @@ export async function markExpensePaid(
   if (!claim) throw NotFound("ไม่พบรายการเบิกจ่าย");
   if (claim.status !== "APPROVED") throw BadRequest("จ่ายได้เฉพาะรายการที่อนุมัติแล้ว");
 
-  const record = await prisma.expenseClaim.update({
-    where: { id: claim.id },
+  // Guard on status so a double click cannot pay twice (second one sees count 0).
+  const { count } = await prisma.expenseClaim.updateMany({
+    where: { id: claim.id, status: "APPROVED" },
     data: { status: "PAID", paidAt: new Date(), updatedById: session.sub },
-    select: claimSelect,
   });
+  if (count === 0) throw Conflict("รายการนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+  const record = await prisma.expenseClaim.findFirstOrThrow({ where: { id: claim.id }, select: claimSelect });
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -419,11 +472,13 @@ export async function cancelExpense(
     throw BadRequest("ยกเลิกได้เฉพาะรายการที่เป็นฉบับร่างหรือรออนุมัติ");
   }
 
-  const record = await prisma.expenseClaim.update({
-    where: { id: claim.id },
+  // Guard on the status we read, so a cancel cannot overwrite an approval that landed in between.
+  const { count } = await prisma.expenseClaim.updateMany({
+    where: { id: claim.id, status: claim.status },
     data: { status: "CANCELLED", updatedById: session.sub },
-    select: claimSelect,
   });
+  if (count === 0) throw Conflict("รายการนี้ถูกดำเนินการไปแล้ว กรุณารีเฟรชหน้า");
+  const record = await prisma.expenseClaim.findFirstOrThrow({ where: { id: claim.id }, select: claimSelect });
   await writeAudit({
     companyId,
     actorUserId: session.sub,

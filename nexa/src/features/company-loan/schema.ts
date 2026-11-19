@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataUrlFileOrHttpUrlSchema } from "@/lib/image-schema";
 
 export const LOAN_STATUSES = ["PENDING", "APPROVED", "REJECTED", "PAID", "CANCELLED"] as const;
 
@@ -13,7 +14,7 @@ export const loanCreateSchema = z.object({
   reason: optionalText,
   bankName: optionalText,
   bankAccountNo: optionalText,
-  attachmentUrl: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.string().optional()),
+  attachmentUrl: z.preprocess((v) => (v === "" || v == null ? undefined : v), dataUrlFileOrHttpUrlSchema()),
 });
 export type LoanCreateInput = z.infer<typeof loanCreateSchema>;
 

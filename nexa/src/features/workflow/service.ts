@@ -261,11 +261,13 @@ export async function listRequests(
   }
 
   if (query.scope === "inbox") {
+    // The role filter below runs in code (steps is JSON), so the read must not be cut at the
+    // newest few hundred or older requests would never reach their approvers.
     const rows = await prisma.approvalRequest.findMany({
       where: { companyId, status: "PENDING" },
       select: requestSelect,
       orderBy: { createdAt: "desc" },
-      take: 300,
+      take: 5000,
     });
     const roles = new Set(session.roles);
     return rows
@@ -405,8 +407,10 @@ export async function decideRequest(
   // before either write lands. Guarding the write on the status they read
   // means only the first one actually applies — the second sees count 0 and
   // fails loudly instead of silently overwriting the first decision's steps.
+  // currentStep is part of the guard too: a decision read at step 0 must not write
+  // after the request has moved on to step 1, or it would rewind the step.
   const { count } = await prisma.approvalRequest.updateMany({
-    where: { id: req.id, status: "PENDING" },
+    where: { id: req.id, status: "PENDING", currentStep: req.currentStep },
     data: {
       steps: steps as unknown as Prisma.InputJsonValue,
       currentStep: nextStep,

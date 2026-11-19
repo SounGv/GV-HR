@@ -3,8 +3,9 @@ import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import { createNotification } from "@/features/notification/service";
+import { createNotification, notifyPermissionHolders } from "@/features/notification/service";
 import { hasCompletedOneYear, hasPassedProbation } from "@/lib/tenure";
+import { bangkokParts } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { CompanyLoanRequest, LoanEligibility } from "./types";
 import type { LoanCreateInput, LoanDecideInput, LoanListQuery, LoanRepayInput } from "./schema";
@@ -78,7 +79,7 @@ export async function getLoanEligibility(companyId: string, employeeId: string):
       ? Number(employee.baseSalary)
       : null;
 
-  const year = now.getUTCFullYear();
+  const year = bangkokParts(now).year;
   const existing = await prisma.companyLoanRequest.findFirst({
     where: { companyId, employeeId, year, status: { in: ["PENDING", "APPROVED", "PAID"] }, deletedAt: null },
     select: { id: true },
@@ -117,11 +118,11 @@ async function assertLoanAllowed(companyId: string, employeeId: string, amount: 
 export async function createLoan(companyId: string, session: AccessClaims, input: LoanCreateInput, meta?: Meta) {
   const employeeId = requireEmployeeId(session);
   const salarySnapshot = await assertLoanAllowed(companyId, employeeId, input.amount);
-  const year = new Date().getUTCFullYear();
+  const year = bangkokParts().year;
 
   const requester = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true, nickname: true, managerId: true },
+    select: { firstName: true, lastName: true, nickname: true },
   });
 
   const record = await prisma.companyLoanRequest.create({
@@ -143,6 +144,23 @@ export async function createLoan(companyId: string, session: AccessClaims, input
     select: loanSelect,
   });
 
+  // Two requests sent at the same moment can both pass the once-a-year check
+  // (no unique key in the table). Whoever is not the first active request of the
+  // year withdraws itself; ordering by createdAt then id makes both sides agree.
+  const active = await prisma.companyLoanRequest.findMany({
+    where: { companyId, employeeId, year, status: { in: ["PENDING", "APPROVED", "PAID"] }, deletedAt: null },
+    select: { id: true },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: 1,
+  });
+  if (active[0] && active[0].id !== record.id) {
+    await prisma.companyLoanRequest.updateMany({
+      where: { id: record.id, status: "PENDING" },
+      data: { status: "CANCELLED", updatedById: session.sub },
+    });
+    throw BadRequest("คุณใช้สิทธิ์กู้เงินบริษัทของปีนี้ไปแล้ว กู้ได้ปีละ 1 ครั้ง");
+  }
+
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -153,19 +171,20 @@ export async function createLoan(companyId: string, session: AccessClaims, input
     ...meta,
   });
 
-  if (requester?.managerId) {
-    await createNotification(
-      companyId,
-      requester.managerId,
-      {
-        title: "มีคำขอกู้เงินบริษัทรออนุมัติ",
-        body: `${displayName(requester)} ขอกู้เงิน ${input.amount.toFixed(2)} บาท`,
-        category: "expense",
-        link: `/benefits/loans/${record.id}`,
-      },
-      session.sub,
-    );
-  }
+  // Deciding needs expense:approve, so the notice goes to the people who hold it
+  // (the direct manager usually does not and could not act on it).
+  await notifyPermissionHolders(
+    companyId,
+    "expense:approve",
+    employeeId,
+    {
+      title: "มีคำขอกู้เงินบริษัทรออนุมัติ",
+      body: `${requester ? displayName(requester) : "พนักงาน"} ขอกู้เงิน ${input.amount.toFixed(2)} บาท`,
+      category: "expense",
+      link: `/benefits/loans/${record.id}`,
+    },
+    session.sub,
+  );
 
   return serialize(record);
 }
@@ -177,7 +196,9 @@ export async function listLoans(companyId: string, session: AccessClaims, query:
     // No employee record (admin, system account): nothing is "mine", so an empty list, not an error.
     if (!hasEmployee(session)) return [];
     employeeIds = [requireEmployeeId(session)];
-  } else if (query.scope === "team") {
+  } else if (query.scope === "team" && !isFinanceLevel(session)) {
+    // Finance-level approvers (expense:approve) decide every request in the
+    // company, so their pending queue is company-wide, like listLeave.
     const reports = await prisma.employee.findMany({
       where: { companyId, managerId: session.employeeId ?? "__none__", deletedAt: null },
       select: { id: true },
@@ -293,11 +314,13 @@ export async function markLoanPaid(companyId: string, session: AccessClaims, id:
   if (!loan) throw NotFound("ไม่พบคำขอกู้เงิน");
   if (loan.status !== "APPROVED") throw BadRequest("จ่ายได้เฉพาะคำขอที่อนุมัติแล้ว");
 
-  const record = await prisma.companyLoanRequest.update({
-    where: { id: loan.id },
+  // Guard on status so a double click cannot pay twice (second one sees count 0).
+  const { count } = await prisma.companyLoanRequest.updateMany({
+    where: { id: loan.id, status: "APPROVED" },
     data: { status: "PAID", paidAt: new Date(), updatedById: session.sub },
-    select: loanSelect,
   });
+  if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+  const record = await prisma.companyLoanRequest.findFirstOrThrow({ where: { id: loan.id }, select: loanSelect });
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -367,16 +390,13 @@ export async function applyPayrollLoanInstallments(
   meta?: Meta,
 ): Promise<void> {
   for (const { loanId, installment } of installments) {
-    const loan = await prisma.companyLoanRequest.findFirst({
+    // Atomic increment: a manual repayment and a payroll installment on the
+    // same loan at the same moment must both land.
+    const { count } = await prisma.companyLoanRequest.updateMany({
       where: { id: loanId, companyId, deletedAt: null },
-      select: { repaidAmount: true },
+      data: { repaidAmount: { increment: new Prisma.Decimal(installment) }, updatedById: session.sub },
     });
-    if (!loan) continue;
-    const newRepaid = Number(loan.repaidAmount) + installment;
-    await prisma.companyLoanRequest.update({
-      where: { id: loanId },
-      data: { repaidAmount: new Prisma.Decimal(newRepaid), updatedById: session.sub },
-    });
+    if (count === 0) continue;
     await writeAudit({
       companyId,
       actorUserId: session.sub,
@@ -411,11 +431,15 @@ export async function recordLoanRepayment(
     throw BadRequest(`ยอดผ่อนชำระเกินยอดเงินกู้คงเหลือ (คงเหลือ ${(Number(loan.amount) - Number(loan.repaidAmount)).toFixed(2)} บาท)`);
   }
 
-  const record = await prisma.companyLoanRequest.update({
-    where: { id: loan.id },
-    data: { repaidAmount: new Prisma.Decimal(newRepaid), updatedById: session.sub },
-    select: loanSelect,
+  // Increment inside the database, and re-check the ceiling in the same write,
+  // so a concurrent repayment cannot be lost or push the total past the loan.
+  const ceiling = Math.round((Number(loan.amount) + 0.01 - input.amount) * 100) / 100;
+  const { count } = await prisma.companyLoanRequest.updateMany({
+    where: { id: loan.id, status: "PAID", repaidAmount: { lte: new Prisma.Decimal(ceiling) } },
+    data: { repaidAmount: { increment: new Prisma.Decimal(input.amount) }, updatedById: session.sub },
   });
+  if (count === 0) throw Conflict("ยอดผ่อนชำระเปลี่ยนไประหว่างบันทึก กรุณารีเฟรชหน้าแล้วลองใหม่");
+  const record = await prisma.companyLoanRequest.findFirstOrThrow({ where: { id: loan.id }, select: loanSelect });
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -438,11 +462,13 @@ export async function cancelLoan(companyId: string, session: AccessClaims, id: s
   if (loan.employeeId !== employeeId) throw Forbidden("ยกเลิกได้เฉพาะคำขอของตนเอง");
   if (loan.status !== "PENDING") throw BadRequest("ยกเลิกได้เฉพาะคำขอที่รออนุมัติ");
 
-  const record = await prisma.companyLoanRequest.update({
-    where: { id: loan.id },
+  // Guard on status so a cancel cannot overwrite an approval that landed in between.
+  const { count } = await prisma.companyLoanRequest.updateMany({
+    where: { id: loan.id, status: "PENDING" },
     data: { status: "CANCELLED", updatedById: session.sub },
-    select: loanSelect,
   });
+  if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้ว กรุณารีเฟรชหน้า");
+  const record = await prisma.companyLoanRequest.findFirstOrThrow({ where: { id: loan.id }, select: loanSelect });
   await writeAudit({
     companyId,
     actorUserId: session.sub,

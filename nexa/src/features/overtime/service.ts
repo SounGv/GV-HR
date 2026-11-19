@@ -134,10 +134,17 @@ export async function createOvertime(
     category: "overtime",
     link: `/overtime/${record.id}`,
   };
-  if (employee?.managerId) {
-    await createNotification(companyId, employee.managerId, otNotice, session.sub);
+  // The manager on file may have resigned or been removed: only an active one gets it.
+  const manager = employee?.managerId
+    ? await prisma.employee.findFirst({
+        where: { id: employee.managerId, companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } },
+        select: { id: true },
+      })
+    : null;
+  if (manager) {
+    await createNotification(companyId, manager.id, otNotice, session.sub);
   } else {
-    // No direct manager on file — send it to the HR-level approvers instead of nobody.
+    // No (active) direct manager on file — send it to the HR-level approvers instead of nobody.
     await notifyPermissionHolders(companyId, "overtime:approve", session.employeeId ?? null, otNotice, session.sub);
   }
 
@@ -435,6 +442,7 @@ export async function cancelOvertime(
       employeeId: true,
       status: true,
       hours: true,
+      paidAt: true,
       employee: { select: { firstName: true, lastName: true, nickname: true, managerId: true } },
     },
   });
@@ -443,10 +451,12 @@ export async function cancelOvertime(
   if (req.status !== "PENDING" && req.status !== "APPROVED") {
     throw BadRequest("คำขอนี้ยกเลิกไม่ได้");
   }
+  // OT already paid on a payslip cannot be withdrawn here: the money has gone out, so HR must handle it.
+  if (req.paidAt) throw BadRequest("OT นี้ถูกจ่ายในเงินเดือนไปแล้ว ยกเลิกเองไม่ได้ ติดต่อฝ่ายบุคคล");
 
   const wasApproved = req.status === "APPROVED";
   const { count } = await prisma.overtimeRequest.updateMany({
-    where: { id: req.id, status: req.status },
+    where: { id: req.id, status: req.status, paidAt: null },
     data: { status: "CANCELLED", updatedById: session.sub },
   });
   if (count === 0) throw Conflict("คำขอนี้ถูกดำเนินการไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");

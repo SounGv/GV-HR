@@ -284,15 +284,18 @@ export async function createLeave(
     link: `/leave/${record.id}`,
   };
   let routedTo = "HR (ผู้มีสิทธิ์อนุมัติลา)";
-  if (requester?.managerId) {
-    await createNotification(companyId, requester.managerId, leaveNotice, session.sub);
-    const manager = await prisma.employee.findFirst({
-      where: { id: requester.managerId, companyId, deletedAt: null },
-      select: { firstName: true, lastName: true, nickname: true },
-    });
-    if (manager) routedTo = displayName(manager);
+  // The manager on file may have resigned or been removed: only an active one gets it.
+  const manager = requester?.managerId
+    ? await prisma.employee.findFirst({
+        where: { id: requester.managerId, companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } },
+        select: { id: true, firstName: true, lastName: true, nickname: true },
+      })
+    : null;
+  if (manager) {
+    await createNotification(companyId, manager.id, leaveNotice, session.sub);
+    routedTo = displayName(manager);
   } else {
-    // No direct manager on file — send it to the HR-level approvers instead of nobody.
+    // No (active) direct manager on file — send it to the HR-level approvers instead of nobody.
     await notifyPermissionHolders(companyId, "leave:approve", employeeId, leaveNotice, session.sub);
   }
 
@@ -455,23 +458,54 @@ export async function decideLeave(
 
     if (input.action === "approve" && usesBalance) {
       const year = req.startDate.getUTCFullYear();
-      const hourly = hourlyUsage(isHourly ? req.hours ?? 0 : 0, hourPoolTotal);
-      await tx.leaveBalance.upsert({
-        where: { employeeId_year_type: { employeeId: req.employeeId, year, type: req.type } },
-        update: isHourly
-          ? { usedHours: { increment: hourly.usedHours }, usedDays: { increment: hourly.usedDays } }
-          : { usedDays: { increment: req.days } },
-        create: {
-          companyId,
-          employeeId: req.employeeId,
-          year,
-          type: req.type,
-          totalDays: quotaDaysForNewBalance,
-          usedDays: isHourly ? hourly.usedDays : req.days,
-          totalHours: quotaHoursForNewBalance,
-          usedHours: isHourly ? hourly.usedHours : 0,
-        },
+      const balanceKey = { employeeId_year_type: { employeeId: req.employeeId, year, type: req.type } };
+      // The balance was checked before the transaction, so two approvals for the same
+      // person can both pass it. Check again here against the row as it is now, and
+      // write only if nobody changed the used amounts since we read them.
+      const bal = await tx.leaveBalance.findUnique({
+        where: balanceKey,
+        select: { totalDays: true, usedDays: true, totalHours: true, usedHours: true },
       });
+      if (bal) {
+        if (isHourly) {
+          const left = remainingLeaveHours(bal);
+          if ((req.hours ?? 0) > left) {
+            throw BadRequest(`ไม่สามารถอนุมัติได้ เพราะชั่วโมงคงเหลือของพนักงานไม่พอ (คงเหลือ ${left} ชม. แต่คำขอนี้ ${req.hours} ชม.)`);
+          }
+        } else if (req.days > Math.max(0, bal.totalDays - bal.usedDays)) {
+          throw BadRequest(`ไม่สามารถอนุมัติได้ เพราะวันลาคงเหลือของพนักงานไม่พอ (คงเหลือ ${Math.max(0, bal.totalDays - bal.usedDays)} วัน แต่คำขอนี้ ${req.days} วัน)`);
+        }
+        const hourly = hourlyUsage(isHourly ? req.hours ?? 0 : 0, bal.totalHours);
+        const { count: bumped } = await tx.leaveBalance.updateMany({
+          where: { employeeId: req.employeeId, year, type: req.type, usedDays: bal.usedDays, usedHours: bal.usedHours },
+          data: isHourly
+            ? { usedHours: { increment: hourly.usedHours }, usedDays: { increment: hourly.usedDays } }
+            : { usedDays: { increment: req.days } },
+        });
+        if (bumped === 0) throw Conflict("ยอดวันลาของพนักงานเพิ่งเปลี่ยน กรุณารีเฟรชหน้าแล้วอนุมัติอีกครั้ง");
+      } else {
+        const hourly = hourlyUsage(isHourly ? req.hours ?? 0 : 0, hourPoolTotal);
+        try {
+          await tx.leaveBalance.create({
+            data: {
+              companyId,
+              employeeId: req.employeeId,
+              year,
+              type: req.type,
+              totalDays: quotaDaysForNewBalance,
+              usedDays: isHourly ? hourly.usedDays : req.days,
+              totalHours: quotaHoursForNewBalance,
+              usedHours: isHourly ? hourly.usedHours : 0,
+            },
+          });
+        } catch (e) {
+          // Another approval created the row first.
+          if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+            throw Conflict("ยอดวันลาของพนักงานเพิ่งเปลี่ยน กรุณารีเฟรชหน้าแล้วอนุมัติอีกครั้ง");
+          }
+          throw e;
+        }
+      }
     }
 
     return rec;

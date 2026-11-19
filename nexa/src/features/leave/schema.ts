@@ -26,7 +26,11 @@ export const leaveCreateSchema = z
     type: z.enum(LEAVE_TYPES),
     startDate: calendarDate({ message: "กรุณาเลือกวันเริ่ม" }),
     endDate: calendarDate({ message: "กรุณาเลือกวันสิ้นสุด" }),
-    halfDay: z.coerce.boolean().default(false),
+    // z.coerce.boolean() turns the string "false" into true, so read the words ourselves.
+    halfDay: z.preprocess(
+      (v) => (v === "false" || v === "0" ? false : v === "true" || v === "1" ? true : v),
+      z.boolean().default(false),
+    ),
     halfDayPeriod: z.preprocess(
       (v) => (v === "" || v == null ? undefined : v),
       z.enum(HALF_DAY_PERIODS).optional(),

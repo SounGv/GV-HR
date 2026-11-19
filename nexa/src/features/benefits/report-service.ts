@@ -1,7 +1,12 @@
 import { displayName } from "@/lib/format";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { bangkokParts } from "@/lib/datetime";
 import { getMedicalExpenseCap } from "@/features/expense/service";
+
+/** Claims that count against the yearly cap: drafts, rejected and cancelled ones do not. */
+const COUNTED_STATUSES = ["PENDING", "APPROVED", "PAID"] as const;
+const BANGKOK_OFFSET_MS = 7 * 3_600_000;
 
 export interface BenefitsReportFilters {
   year?: number;
@@ -32,7 +37,7 @@ export interface MedicalReportRow {
  * row per claim — "วงเงินทั้งหมด/จำนวนครั้งที่เบิก/ยอดอนุมัติสะสม" are all
  * per-employee totals). */
 export async function getMedicalBenefitsReport(companyId: string, filters: BenefitsReportFilters): Promise<MedicalReportRow[]> {
-  const year = filters.year ?? new Date().getFullYear();
+  const year = filters.year ?? bangkokParts().year;
   const cap = await getMedicalExpenseCap(companyId);
 
   const claims = await prisma.expenseClaim.findMany({
@@ -42,7 +47,8 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
       deletedAt: null,
       expenseDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
       ...(filters.employeeId ? { employeeId: filters.employeeId } : {}),
-      ...(filters.status ? { status: filters.status as Prisma.ExpenseClaimWhereInput["status"] } : {}),
+      // No status chosen: only claims that count (not drafts, rejected or cancelled). A chosen status is shown as asked.
+      status: filters.status ? (filters.status as Prisma.ExpenseClaimWhereInput["status"]) : { in: [...COUNTED_STATUSES] },
       ...(filters.startDate || filters.endDate
         ? {
             expenseDate: {
@@ -95,8 +101,27 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
     if (c.receiptUrl) row.attachments.push(c.receiptUrl);
     if (c.sickLeaveRequestId) row.sickLeaveRefs.push(c.sickLeaveRequestId);
   }
+  // With a status filter the rows above hold only part of the year, so the balance is worked out
+  // from every counted claim of the year (same rule the claim form uses), not from the filtered rows.
+  const yearTotals = new Map<string, number>();
+  if (filters.status && byEmployee.size > 0) {
+    const used = await prisma.expenseClaim.groupBy({
+      by: ["employeeId"],
+      where: {
+        companyId,
+        category: "medical",
+        deletedAt: null,
+        employeeId: { in: [...byEmployee.keys()] },
+        status: { in: [...COUNTED_STATUSES] },
+        expenseDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
+      },
+      _sum: { amount: true },
+    });
+    for (const u of used) yearTotals.set(u.employeeId, Number(u._sum.amount ?? 0));
+  }
   for (const row of byEmployee.values()) {
-    row.remaining = Math.max(0, row.totalCap - row.approvedTotal - row.pendingTotal);
+    const usedAmount = filters.status ? (yearTotals.get(row.employeeId) ?? 0) : row.approvedTotal + row.pendingTotal;
+    row.remaining = Math.max(0, row.totalCap - usedAmount);
   }
   return [...byEmployee.values()].sort((a, b) => a.employeeName.localeCompare(b.employeeName));
 }
@@ -128,9 +153,11 @@ export async function getLoanBenefitsReport(companyId: string, filters: Benefits
       ...(filters.status ? { status: filters.status as Prisma.CompanyLoanRequestWhereInput["status"] } : {}),
       ...(filters.startDate || filters.endDate
         ? {
+            // createdAt is a timestamp; the dates are Bangkok calendar days (UTC midnight), so the
+            // range runs from 00:00 of the first day to the end of the last day in Bangkok time.
             createdAt: {
-              ...(filters.startDate ? { gte: filters.startDate } : {}),
-              ...(filters.endDate ? { lte: filters.endDate } : {}),
+              ...(filters.startDate ? { gte: new Date(filters.startDate.getTime() - BANGKOK_OFFSET_MS) } : {}),
+              ...(filters.endDate ? { lt: new Date(filters.endDate.getTime() + 86_400_000 - BANGKOK_OFFSET_MS) } : {}),
             },
           }
         : {}),
