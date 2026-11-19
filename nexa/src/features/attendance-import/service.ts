@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { lateOrPresent } from "@/lib/datetime";
@@ -115,23 +116,6 @@ export async function importAttendance(
     const shift = shiftMinutesFromBatch(shiftMap, employee.id, workDate, employee.employmentType);
     const status = lateOrPresent(hh * 60 + mm, shift.startMin);
 
-    await prisma.attendanceRecord.create({
-      data: {
-        companyId,
-        employeeId: employee.id,
-        workDate,
-        clockInAt,
-        clockOutAt,
-        workMode: "ONSITE",
-        clockInBranchId: employee.branchId,
-        status,
-        note: "นำเข้าจากไฟล์โดยฝ่ายบุคคล",
-        createdById: session.sub,
-        updatedById: session.sub,
-      },
-    });
-    created++;
-
     // An imported punch that clocks out past the employee's scheduled shift
     // end is real overtime that a bare clock-in/out import would otherwise
     // never surface — there's no OT request behind it (the system wasn't
@@ -141,6 +125,7 @@ export async function importAttendance(
     // attendance records themselves.
     // Saturday is a company-wide half day — time worked past the (already
     // shortened) shift end doesn't count as OT, per company policy.
+    let otData: Prisma.OvertimeRequestUncheckedCreateInput | null = null;
     if (r.clockOut && workDate.getUTCDay() !== 6) {
       const [outH, outM] = r.clockOut.split(":").map(Number);
       const excessMinutes = outH * 60 + outM - shift.endMin;
@@ -165,29 +150,57 @@ export async function importAttendance(
           DEFAULT_MULTIPLIER,
         );
         const shiftEndLabel = `${String(Math.floor(shift.endMin / 60)).padStart(2, "0")}:${String(shift.endMin % 60).padStart(2, "0")}`;
-        await prisma.overtimeRequest.create({
+        otData = {
+          companyId,
+          employeeId: employee.id,
+          date: workDate,
+          startTime: shiftEndLabel,
+          endTime: r.clockOut,
+          hours,
+          multiplier: DEFAULT_MULTIPLIER,
+          estimatedAmount: estimated,
+          reason: "สร้างอัตโนมัติจากการนำเข้าไฟล์ลงเวลา (เวลาออกเกินกะ)",
+          status: "APPROVED",
+          approverEmployeeId: session.employeeId ?? null,
+          approverUserId: session.sub,
+          decidedAt: new Date(),
+          decisionNote: "อนุมัติอัตโนมัติจากการนำเข้าไฟล์ลงเวลาโดยฝ่ายบุคคล",
+          createdById: session.sub,
+          updatedById: session.sub,
+        };
+      }
+    }
+
+    // The punch and its OT go in together or not at all. A row that lost a race
+    // with a real scan (same employee and date) is skipped with a warning, not a 500.
+    try {
+      await prisma.$transaction([
+        prisma.attendanceRecord.create({
           data: {
             companyId,
             employeeId: employee.id,
-            date: workDate,
-            startTime: shiftEndLabel,
-            endTime: r.clockOut,
-            hours,
-            multiplier: DEFAULT_MULTIPLIER,
-            estimatedAmount: estimated,
-            reason: "สร้างอัตโนมัติจากการนำเข้าไฟล์ลงเวลา (เวลาออกเกินกะ)",
-            status: "APPROVED",
-            approverEmployeeId: session.employeeId ?? null,
-            approverUserId: session.sub,
-            decidedAt: new Date(),
-            decisionNote: "อนุมัติอัตโนมัติจากการนำเข้าไฟล์ลงเวลาโดยฝ่ายบุคคล",
+            workDate,
+            clockInAt,
+            clockOutAt,
+            workMode: "ONSITE",
+            clockInBranchId: employee.branchId,
+            status,
+            note: "นำเข้าจากไฟล์โดยฝ่ายบุคคล",
             createdById: session.sub,
             updatedById: session.sub,
           },
-        });
-        otCreated++;
+        }),
+        ...(otData ? [prisma.overtimeRequest.create({ data: otData })] : []),
+      ]);
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        warnings.push(`${r.employeeCode} (${r.date}): มีข้อมูลลงเวลาอยู่แล้ว ข้ามแถวนี้`);
+        continue;
       }
+      throw err;
     }
+    created++;
+    if (otData) otCreated++;
   }
 
   if (otCreated > 0) {

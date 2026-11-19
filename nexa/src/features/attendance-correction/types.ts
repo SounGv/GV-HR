@@ -26,5 +26,6 @@ export interface AttendanceCorrectionFormValues {
   workDate: string;
   requestedClockIn?: string;
   requestedClockOut?: string;
+  requestedClockOutNextDay?: boolean;
   reason: string;
 }

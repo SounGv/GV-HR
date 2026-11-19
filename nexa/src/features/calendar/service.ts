@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { NotFound } from "@/lib/api/errors";
 import { displayName } from "@/lib/format";
+import { bangkokParts } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { CalendarItem, CalendarMonth, MyDayStatus } from "./types";
 import type { EventCreateInput, EventUpdateInput } from "./schema";
@@ -15,8 +16,9 @@ function iso(d: Date): string {
 }
 
 function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  // Bangkok month, not the server clock (UTC on Vercel).
+  const { year, month } = bangkokParts();
+  return `${year}-${String(month).padStart(2, "0")}`;
 }
 
 export async function getMonth(
@@ -67,7 +69,7 @@ export async function getMonth(
     },
     select: {
       id: true,
-      type: true,
+      unit: true,
       startDate: true,
       endDate: true,
       employeeId: true,
@@ -142,7 +144,8 @@ export async function getMonth(
       `l-${l.id}`,
       `ลา — ${displayName(l.employee)}`,
       "leave",
-      l.type,
+      // Not the leave type: sick leave is health data and every calendar reader sees these rows.
+      "leave",
       l.startDate,
       l.endDate,
     );
@@ -182,14 +185,15 @@ async function getMyDayStatus(
   start: Date,
   lastDay: Date,
   holidays: { date: Date }[],
-  leaves: { employeeId: string; startDate: Date; endDate: Date }[],
+  leaves: { employeeId: string; unit: string; startDate: Date; endDate: Date }[],
 ): Promise<Record<string, MyDayStatus>> {
-  const todayIsoStr = iso(new Date());
+  const todayIsoStr = iso(bangkokParts().dateUTC);
   const rangeEnd = new Date(Math.min(lastDay.getTime(), new Date(`${todayIsoStr}T00:00:00.000Z`).getTime()));
   if (rangeEnd.getTime() < start.getTime()) return {};
 
   const holidaySet = new Set(holidays.map((h) => iso(h.date)));
-  const myLeaves = leaves.filter((l) => l.employeeId === employeeId);
+  // Hourly leave covers part of a day, so it does not mark the whole day as leave.
+  const myLeaves = leaves.filter((l) => l.employeeId === employeeId && l.unit === "DAY");
   const records = await prisma.attendanceRecord.findMany({
     where: { companyId, employeeId, workDate: { gte: start, lte: rangeEnd } },
     select: { workDate: true, clockInAt: true, status: true },
@@ -214,7 +218,12 @@ async function getMyDayStatus(
       continue;
     }
     const weekday = cur.getUTCDay();
-    result[day] = weekday === 0 || weekday === 6 ? "WEEKEND" : "ABSENT";
+    if (weekday === 0 || weekday === 6) {
+      result[day] = "WEEKEND";
+    } else if (day !== todayIsoStr) {
+      // Today with no scan yet is left unset: the day is not over, so it is not absent.
+      result[day] = "ABSENT";
+    }
   }
   return result;
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { calendarDate } from "@/lib/date-schema";
+import { updateSchemaOf } from "@/lib/zod-update";
 
 const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
 const colorRe = /^#[0-9a-fA-F]{6}$/;
@@ -13,7 +14,8 @@ export const templateCreateSchema = z.object({
 });
 export type TemplateCreateInput = z.infer<typeof templateCreateSchema>;
 
-export const templateUpdateSchema = templateCreateSchema.partial();
+// Not .partial(): in Zod 4 that keeps the defaults (colour, break) and a PATCH of one field would reset the rest.
+export const templateUpdateSchema = updateSchemaOf(templateCreateSchema);
 export type TemplateUpdateInput = z.infer<typeof templateUpdateSchema>;
 
 export const assignmentUpsertSchema = z.object({

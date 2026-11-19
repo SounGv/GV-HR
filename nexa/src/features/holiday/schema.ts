@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { calendarDate } from "@/lib/date-schema";
+import { updateSchemaOf } from "@/lib/zod-update";
 
 export const HOLIDAY_TYPES = ["COMPANY", "NATIONAL"] as const;
 
@@ -11,7 +12,8 @@ export const holidayCreateSchema = z.object({
 });
 export type HolidayCreateInput = z.infer<typeof holidayCreateSchema>;
 
-export const holidayUpdateSchema = holidayCreateSchema.partial();
+// Not .partial(): in Zod 4 that keeps the defaults and a PATCH of the name would reset type and notifications.
+export const holidayUpdateSchema = updateSchemaOf(holidayCreateSchema);
 export type HolidayUpdateInput = z.infer<typeof holidayUpdateSchema>;
 
 export const holidayListQuerySchema = z.object({

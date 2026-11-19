@@ -6,7 +6,8 @@ import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification, notifyPermissionHolders } from "@/features/notification/service";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
-import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
+import { bangkokParts, lateOrPresent, EARLY_LEAVE_GRACE_MIN } from "@/lib/datetime";
+import { isEarlyLeaveElapsed, minutesSinceWorkDate } from "@/features/attendance/overnight";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type {
@@ -51,6 +52,13 @@ function toBangkokDateTime(workDate: string, time: string): Date {
   return new Date(`${workDate}T${time}:00+07:00`);
 }
 
+/** A clock-out at or before the clock-in would make hours negative in payroll, so refuse it before it is saved. */
+function assertOutAfterIn(inAt: Date | null | undefined, outAt: Date | null | undefined) {
+  if (inAt && outAt && outAt <= inAt) {
+    throw BadRequest("เวลาออกต้องอยู่หลังเวลาเข้า ตรวจเวลาที่ขอและเวลาที่บันทึกไว้เดิมของวันนั้นอีกครั้ง");
+  }
+}
+
 export async function createAttendanceCorrection(
   companyId: string,
   session: AccessClaims,
@@ -66,40 +74,66 @@ export async function createAttendanceCorrection(
     throw BadRequest("ขอแก้เวลาได้เฉพาะวันนี้หรือวันที่ผ่านมาแล้ว ตรวจปีให้เป็น ค.ศ. (เช่น 2026)");
   }
 
-  // Unlike leave, there was no guard against multiple PENDING correction
-  // requests for the same day — a second approval for the same date would
-  // silently clobber whatever the first one already wrote to AttendanceRecord
-  // (both key on the same employeeId+workDate unique constraint), leaving
-  // the earlier request shown as APPROVED even though its effect no longer
-  // exists. One pending request per day is enough; a real update just needs
-  // to edit or cancel the existing one first.
-  const existingPending = await prisma.attendanceCorrectionRequest.findFirst({
-    where: { companyId, employeeId, workDate: new Date(input.workDate), status: "PENDING", deletedAt: null },
-    select: { id: true },
+  const requestedIn = input.requestedClockIn ? toBangkokDateTime(input.workDate, input.requestedClockIn) : null;
+  let requestedOut = input.requestedClockOut ? toBangkokDateTime(input.workDate, input.requestedClockOut) : null;
+  if (requestedOut && input.requestedClockOutNextDay) requestedOut = new Date(requestedOut.getTime() + 24 * 60 * 60 * 1000);
+  assertOutAfterIn(requestedIn, requestedOut);
+
+  // A request for only one punch is checked against the other punch already on record.
+  const stored = await prisma.attendanceRecord.findUnique({
+    where: { employeeId_workDate: { employeeId, workDate: new Date(input.workDate) } },
+    select: { clockInAt: true, clockOutAt: true },
   });
-  if (existingPending) {
-    throw Conflict("คุณมีคำขอแก้ไขเวลาสำหรับวันนี้ที่รออนุมัติอยู่แล้ว กรุณารอผลหรือยกเลิกคำขอเดิมก่อน");
-  }
+  assertOutAfterIn(requestedIn ?? stored?.clockInAt, requestedOut ?? stored?.clockOutAt);
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
     select: { firstName: true, lastName: true, nickname: true, managerId: true },
   });
 
-  const record = await prisma.attendanceCorrectionRequest.create({
-    data: {
-      companyId,
-      employeeId,
-      workDate: new Date(input.workDate),
-      requestedClockIn: input.requestedClockIn ? toBangkokDateTime(input.workDate, input.requestedClockIn) : null,
-      requestedClockOut: input.requestedClockOut ? toBangkokDateTime(input.workDate, input.requestedClockOut) : null,
-      reason: input.reason,
-      status: "PENDING",
-      createdById: session.sub,
-      updatedById: session.sub,
-    },
-    select: requestSelect,
-  });
+  // Unlike leave, there was no guard against multiple PENDING correction
+  // requests for the same day — a second approval for the same date would
+  // silently clobber whatever the first one already wrote to AttendanceRecord
+  // (both key on the same employeeId+workDate unique constraint), leaving
+  // the earlier request shown as APPROVED even though its effect no longer
+  // exists. One pending request per day is enough; a real update just needs
+  // to edit or cancel the existing one first. The check and the insert run in one
+  // serializable transaction so two quick submissions cannot both pass the check.
+  let record;
+  try {
+    record = await prisma.$transaction(
+      async (tx) => {
+        const existingPending = await tx.attendanceCorrectionRequest.findFirst({
+          where: { companyId, employeeId, workDate: new Date(input.workDate), status: "PENDING", deletedAt: null },
+          select: { id: true },
+        });
+        if (existingPending) {
+          throw Conflict("คุณมีคำขอแก้ไขเวลาสำหรับวันนี้ที่รออนุมัติอยู่แล้ว กรุณารอผลหรือยกเลิกคำขอเดิมก่อน");
+        }
+        return tx.attendanceCorrectionRequest.create({
+          data: {
+            companyId,
+            employeeId,
+            workDate: new Date(input.workDate),
+            requestedClockIn: requestedIn,
+            requestedClockOut: requestedOut,
+            reason: input.reason,
+            status: "PENDING",
+            createdById: session.sub,
+            updatedById: session.sub,
+          },
+          select: requestSelect,
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  } catch (err) {
+    // P2034: the other submission won the race.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2034") {
+      throw Conflict("คุณมีคำขอแก้ไขเวลาสำหรับวันนี้ที่รออนุมัติอยู่แล้ว กรุณารอผลหรือยกเลิกคำขอเดิมก่อน");
+    }
+    throw err;
+  }
 
   await writeAudit({
     companyId,
@@ -239,8 +273,14 @@ export async function decideAttendanceCorrection(
     const rec = await tx.attendanceCorrectionRequest.findFirstOrThrow({ where: { id: req.id }, select: requestSelect });
 
     if (input.action === "approve") {
+      // Re-check against what is on record now: the other punch may have changed since the request was made.
+      const stored = await tx.attendanceRecord.findUnique({
+        where: { employeeId_workDate: { employeeId: req.employeeId, workDate: req.workDate } },
+        select: { clockInAt: true, clockOutAt: true },
+      });
+      assertOutAfterIn(req.requestedClockIn ?? stored?.clockInAt, req.requestedClockOut ?? stored?.clockOutAt);
+      const clockOutElapsed = req.requestedClockOut ? minutesSinceWorkDate(req.requestedClockOut, req.workDate) : null;
       const clockInMinutes = req.requestedClockIn ? bangkokParts(req.requestedClockIn).minutesOfDay : null;
-      const clockOutMinutes = req.requestedClockOut ? bangkokParts(req.requestedClockOut).minutesOfDay : null;
       await tx.attendanceRecord.upsert({
         where: { employeeId_workDate: { employeeId: req.employeeId, workDate: req.workDate } },
         create: {
@@ -250,7 +290,7 @@ export async function decideAttendanceCorrection(
           clockInAt: req.requestedClockIn,
           clockOutAt: req.requestedClockOut,
           status: clockInMinutes != null ? lateOrPresent(clockInMinutes, shift!.startMin) : "PRESENT",
-          earlyLeaveOut: clockOutMinutes != null ? isEarlyLeave(clockOutMinutes, shift!.endMin) : false,
+          earlyLeaveOut: clockOutElapsed != null ? isEarlyLeaveElapsed(clockOutElapsed, shift!, EARLY_LEAVE_GRACE_MIN) : false,
           note: "แก้ไขเวลาโดยการอนุมัติคำขอแก้ไขเวลาเข้า-ออกงาน",
           createdById: session.sub,
           updatedById: session.sub,
@@ -259,7 +299,7 @@ export async function decideAttendanceCorrection(
           ...(req.requestedClockIn ? { clockInAt: req.requestedClockIn } : {}),
           ...(req.requestedClockOut ? { clockOutAt: req.requestedClockOut } : {}),
           ...(clockInMinutes != null ? { status: lateOrPresent(clockInMinutes, shift!.startMin) } : {}),
-          ...(clockOutMinutes != null ? { earlyLeaveOut: isEarlyLeave(clockOutMinutes, shift!.endMin) } : {}),
+          ...(clockOutElapsed != null ? { earlyLeaveOut: isEarlyLeaveElapsed(clockOutElapsed, shift!, EARLY_LEAVE_GRACE_MIN) } : {}),
           updatedById: session.sub,
         },
       });

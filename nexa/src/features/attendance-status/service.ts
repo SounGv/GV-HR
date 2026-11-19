@@ -165,7 +165,11 @@ export async function loadTodayAttendance(
     },
     select: { employeeId: true, type: true, halfDay: true, halfDayPeriod: true },
   });
-  const onLeave = new Set(leaves.map((l) => l.employeeId));
+  // A whole-day leave excuses the day. A half day only covers its half: a morning half day moves the start to the
+  // middle of the shift, an afternoon half day leaves the normal start (the person is still expected in the morning).
+  // A half-day row with no period recorded cannot be split, so it stays a whole day as before.
+  const onLeave = new Set(leaves.filter((l) => !l.halfDay || !l.halfDayPeriod).map((l) => l.employeeId));
+  const morningHalfDay = new Set(leaves.filter((l) => l.halfDay && l.halfDayPeriod === "MORNING").map((l) => l.employeeId));
   // Leave asked for today that is not approved yet: the person is counted absent until it is (see classifyToday); this only
   // gives the row a note that a request is waiting.
   const pendingLeaves = await prisma.leaveRequest.findMany({
@@ -219,7 +223,11 @@ export async function loadTodayAttendance(
     const rec = recordByEmployee.get(e.id);
     const clockInMin = rec?.clockInAt ? bangkokParts(rec.clockInAt).minutesOfDay : null;
     const shift = shiftMinutesFromBatch(shiftMap, e.id, today, e.employmentType);
-    const excusedUntilMin = excusedUntil(hourRangesByEmployee.get(e.id) ?? [], shift.startMin);
+    const hourlyExcusedUntil = excusedUntil(hourRangesByEmployee.get(e.id) ?? [], shift.startMin);
+    // Middle of the shift (an overnight shift ends the next day); the half-day split is not set by any HR rule yet.
+    const shiftEnd = shift.endMin <= shift.startMin ? shift.endMin + 24 * 60 : shift.endMin;
+    const halfDayStartMin = morningHalfDay.has(e.id) ? Math.floor((shift.startMin + shiftEnd) / 2) : null;
+    const excusedUntilMin = halfDayStartMin == null ? hourlyExcusedUntil : Math.max(hourlyExcusedUntil ?? 0, halfDayStartMin);
     const status = classifyToday({
       nowMin: bkk.minutesOfDay,
       shiftStartMin: shift.startMin,

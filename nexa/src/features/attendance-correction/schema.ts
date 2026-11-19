@@ -13,12 +13,21 @@ export const attendanceCorrectionCreateSchema = z
     workDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "วันที่ไม่ถูกต้อง"),
     requestedClockIn: optionalTime,
     requestedClockOut: optionalTime,
+    // The clock-out falls on the day after the work date (a shift that ends past midnight).
+    requestedClockOutNextDay: z.boolean().optional(),
     reason: z.string().trim().min(1, "กรุณาระบุเหตุผล").max(500),
   })
   .refine((d) => !!d.requestedClockIn || !!d.requestedClockOut, {
     message: "กรุณาระบุเวลาเข้าหรือออกที่ต้องการแก้ไขอย่างน้อยหนึ่งอย่าง",
     path: ["requestedClockIn"],
-  });
+  })
+  .refine(
+    (d) => !d.requestedClockIn || !d.requestedClockOut || d.requestedClockOutNextDay === true || d.requestedClockOut > d.requestedClockIn,
+    {
+      message: "เวลาออกต้องอยู่หลังเวลาเข้า ถ้าออกงานหลังเที่ยงคืนให้ติ๊ก “ออกงานวันถัดไป”",
+      path: ["requestedClockOut"],
+    },
+  );
 export type AttendanceCorrectionCreateInput = z.infer<typeof attendanceCorrectionCreateSchema>;
 
 export const attendanceCorrectionDecideSchema = z.object({

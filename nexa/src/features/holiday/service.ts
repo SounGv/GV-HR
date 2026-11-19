@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { bangkokParts } from "@/lib/datetime";
 import { NotFound } from "@/lib/api/errors";
 import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -14,7 +15,7 @@ const select = {
 } as const;
 
 export async function listHolidays(companyId: string, year?: number) {
-  const y = year ?? new Date().getFullYear();
+  const y = year ?? bangkokParts().year;
   const from = new Date(Date.UTC(y, 0, 1));
   const to = new Date(Date.UTC(y + 1, 0, 1));
 
@@ -40,10 +41,22 @@ export async function createHoliday(
   actor: AccessClaims,
   meta?: { ip?: string; userAgent?: string },
 ) {
-  const created = await prisma.holiday.create({
-    data: { ...input, companyId, createdById: actor.sub, updatedById: actor.sub },
-    select,
+  // A deleted holiday still holds its (date, name) key in the database. Bring that row back
+  // instead of failing with "already exists" for a holiday no screen shows.
+  const deleted = await prisma.holiday.findFirst({
+    where: { companyId, date: input.date, name: input.name, deletedAt: { not: null } },
+    select: { id: true },
   });
+  const created = deleted
+    ? await prisma.holiday.update({
+        where: { id: deleted.id },
+        data: { ...input, deletedAt: null, updatedById: actor.sub },
+        select,
+      })
+    : await prisma.holiday.create({
+        data: { ...input, companyId, createdById: actor.sub, updatedById: actor.sub },
+        select,
+      });
   refreshAttendanceWatch(companyId);
   await writeAudit({
     companyId,
@@ -66,9 +79,22 @@ export async function updateHoliday(
 ) {
   const existing = await prisma.holiday.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, date: true, name: true },
   });
   if (!existing) throw NotFound("ไม่พบวันหยุด");
+
+  // Moving onto the date and name of a deleted holiday would hit its unique key: clear that deleted row first.
+  if (input.date !== undefined || input.name !== undefined) {
+    await prisma.holiday.deleteMany({
+      where: {
+        companyId,
+        id: { not: id },
+        date: input.date ?? existing.date,
+        name: input.name ?? existing.name,
+        deletedAt: { not: null },
+      },
+    });
+  }
 
   const updated = await prisma.holiday.update({
     where: { id },

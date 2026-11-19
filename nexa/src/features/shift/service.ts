@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { bangkokParts } from "@/lib/datetime";
 import { BadRequest, Conflict, Forbidden, NotFound, NoEmployee } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ShiftAssignment } from "./types";
@@ -121,12 +122,17 @@ export async function deleteTemplate(
     select: { id: true },
   });
   if (!tpl) throw NotFound("ไม่พบกะการทำงาน");
-  // Remove assignments then soft-delete the template.
-  await prisma.shiftAssignment.deleteMany({ where: { companyId, templateId: tpl.id } });
-  await prisma.shiftTemplate.update({
-    where: { id: tpl.id },
-    data: { deletedAt: new Date(), updatedById: session.sub },
-  });
+  // Remove today's and future assignments and soft-delete the template in one transaction. Past
+  // assignments stay: they are the record of what shift each person worked (reports read them), and
+  // a soft-deleted template still resolves for them.
+  const today = bangkokParts().dateUTC;
+  await prisma.$transaction([
+    prisma.shiftAssignment.deleteMany({ where: { companyId, templateId: tpl.id, date: { gte: today } } }),
+    prisma.shiftTemplate.update({
+      where: { id: tpl.id },
+      data: { deletedAt: new Date(), updatedById: session.sub },
+    }),
+  ]);
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -323,6 +329,13 @@ export async function createSwapRequest(
   });
   if (!target) throw BadRequest("ไม่พบพนักงานที่เลือก");
 
+  // One open request per shift: two pending requests would let the second approval take the shift back from the first person.
+  const open = await prisma.shiftSwapRequest.findFirst({
+    where: { companyId, assignmentId: assignment.id, status: "PENDING" },
+    select: { id: true },
+  });
+  if (open) throw Conflict("เวรนี้มีคำขอสลับที่รออนุมัติอยู่แล้ว ยกเลิกคำขอเดิมก่อนจึงขอใหม่ได้");
+
   const record = await prisma.shiftSwapRequest.create({
     data: {
       companyId,
@@ -431,10 +444,12 @@ export async function decideSwapRequest(
       });
       if (clash) throw BadRequest("พนักงานที่เลือกมีเวรอยู่แล้วในวันนั้น");
 
-      await tx.shiftAssignment.update({
-        where: { id: req.assignmentId },
+      // Only move the shift while it still belongs to the requester; if it was already given away, nothing moves and the approval rolls back.
+      const moved = await tx.shiftAssignment.updateMany({
+        where: { id: req.assignmentId, companyId, employeeId: req.requesterEmployeeId },
         data: { employeeId: req.targetEmployeeId, updatedById: session.sub },
       });
+      if (moved.count === 0) throw BadRequest("เวรนี้ไม่ได้เป็นของผู้ขออีกแล้ว ไม่สามารถอนุมัติได้");
     }
 
     return tx.shiftSwapRequest.findFirstOrThrow({

@@ -6,12 +6,13 @@ import { writeAudit } from "@/lib/audit";
 import { AppError, BadRequest, Conflict, NotFound } from "@/lib/api/errors";
 import { checkGeofence } from "@/lib/geo";
 import { can } from "@/lib/auth/rbac";
-import { bangkokParts, lateOrPresent, isEarlyLeave } from "@/lib/datetime";
+import { bangkokParts, lateOrPresent, EARLY_LEAVE_GRACE_MIN } from "@/lib/datetime";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { shouldPostScansToLineGroups } from "@/features/notification/line-policy";
 import type { AttendanceListQuery, ClockInput } from "./schema";
+import { isEarlyLeaveElapsed, isOpenSessionCurrent, minutesSinceWorkDate } from "./overnight";
 
 const recordSelect = {
   id: true,
@@ -178,10 +179,28 @@ export async function getToday(companyId: string, session: AccessClaims) {
   // Sequential, not Promise.all — this app's pooled connection runs with
   // connection_limit=1, so concurrent Prisma calls can throw P2024 instead
   // of both completing.
-  const record = await prisma.attendanceRecord.findFirst({
+  let record = await prisma.attendanceRecord.findFirst({
     where: { companyId, employeeId, workDate: dateUTC, deletedAt: null },
     select: recordSelect,
   });
+  // Past midnight on an overnight shift (or OT) today has no scan yet, but
+  // yesterday's row is still open: show it so the card offers clock-out
+  // instead of starting a second record. A row open for more than 16 hours is a
+  // forgotten clock-out, so a normal day shift still sees clock-in next morning.
+  if (!record?.clockInAt) {
+    const yesterday = await prisma.attendanceRecord.findFirst({
+      where: {
+        companyId,
+        employeeId,
+        workDate: new Date(dateUTC.getTime() - 24 * 60 * 60 * 1000),
+        deletedAt: null,
+        clockInAt: { not: null },
+        clockOutAt: null,
+      },
+      select: recordSelect,
+    });
+    if (yesterday?.clockInAt && isOpenSessionCurrent(yesterday.clockInAt, new Date())) record = yesterday;
+  }
   const employee = await loadEmployeeWithBranch(companyId, employeeId);
   return { record, branch: employee.branch };
 }
@@ -364,10 +383,13 @@ export async function clockOut(
     ).distance;
   }
 
-  const record = await prisma.attendanceRecord.update({
-    where: { id: existing.id },
+  // Guarded write: a double tap or retry must not overwrite the first clock-out's time, photo and place.
+  // Early leave is measured from the start of the work date so an overnight shift or OT past midnight is not "early".
+  const now = new Date();
+  const { count } = await prisma.attendanceRecord.updateMany({
+    where: { id: existing.id, clockOutAt: null },
     data: {
-      clockOutAt: new Date(),
+      clockOutAt: now,
       clockOutLat: input.lat ?? null,
       clockOutLng: input.lng ?? null,
       clockOutDistance: distance,
@@ -376,9 +398,13 @@ export async function clockOut(
       clockOutDevice: input.device ?? null,
       clockOutViaQr: qrVerified,
       moodOut: input.mood ?? undefined,
-      earlyLeaveOut: isEarlyLeave(bp.minutesOfDay, shift.endMin),
+      earlyLeaveOut: isEarlyLeaveElapsed(minutesSinceWorkDate(now, existing.workDate), shift, EARLY_LEAVE_GRACE_MIN),
       updatedById: session.sub,
     },
+  });
+  if (count === 0) throw Conflict("คุณได้เช็คเอาท์แล้ววันนี้");
+  const record = await prisma.attendanceRecord.findUniqueOrThrow({
+    where: { id: existing.id },
     select: recordSelect,
   });
 
@@ -414,10 +440,16 @@ export async function startBreak(companyId: string, session: AccessClaims, meta?
   if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
   if (existing.clockOutAt) throw BadRequest("เช็คเอาท์แล้ว ไม่สามารถเริ่มพักได้");
   if (existing.breakStartAt && !existing.breakEndAt) throw Conflict("กำลังพักอยู่แล้ว");
+  if (existing.breakStartAt) throw Conflict("พักไปแล้ววันนี้ พักได้วันละครั้ง");
 
-  const record = await prisma.attendanceRecord.update({
-    where: { id: existing.id },
+  // Guarded write: only a row with no break yet and no clock-out matches, so a retry cannot wipe a finished break.
+  const { count } = await prisma.attendanceRecord.updateMany({
+    where: { id: existing.id, breakStartAt: null, clockOutAt: null },
     data: { breakStartAt: new Date(), breakEndAt: null, updatedById: session.sub },
+  });
+  if (count === 0) throw Conflict("พักไปแล้ววันนี้ หรือเช็คเอาท์แล้ว");
+  const record = await prisma.attendanceRecord.findUniqueOrThrow({
+    where: { id: existing.id },
     select: recordSelect,
   });
 
@@ -441,9 +473,13 @@ export async function endBreak(companyId: string, session: AccessClaims, meta?: 
     throw BadRequest("ยังไม่ได้เริ่มพัก");
   }
 
-  const record = await prisma.attendanceRecord.update({
-    where: { id: existing.id },
+  const { count } = await prisma.attendanceRecord.updateMany({
+    where: { id: existing.id, breakStartAt: { not: null }, breakEndAt: null },
     data: { breakEndAt: new Date(), updatedById: session.sub },
+  });
+  if (count === 0) throw BadRequest("ยังไม่ได้เริ่มพัก");
+  const record = await prisma.attendanceRecord.findUniqueOrThrow({
+    where: { id: existing.id },
     select: recordSelect,
   });
 

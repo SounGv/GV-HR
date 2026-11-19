@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { HourMinuteSelect } from "@/components/shared/time-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +33,7 @@ const formSchema = z
     workDate: z.string().min(1, "กรุณาเลือกวันที่"),
     requestedClockIn: z.string().optional(),
     requestedClockOut: z.string().optional(),
+    requestedClockOutNextDay: z.boolean().optional(),
     reason: z.string().trim().min(1, "กรุณาระบุเหตุผล"),
   })
   .refine((d) => !!d.requestedClockIn || !!d.requestedClockOut, {
@@ -45,7 +47,14 @@ const formSchema = z
   .refine((d) => !d.requestedClockOut || timeRe.test(d.requestedClockOut), {
     message: "เวลาไม่ถูกต้อง",
     path: ["requestedClockOut"],
-  });
+  })
+  .refine(
+    (d) => !d.requestedClockIn || !d.requestedClockOut || d.requestedClockOutNextDay === true || d.requestedClockOut > d.requestedClockIn,
+    {
+      message: "เวลาออกต้องอยู่หลังเวลาเข้า ถ้าออกงานหลังเที่ยงคืนให้ติ๊ก “ออกงานวันถัดไป”",
+      path: ["requestedClockOut"],
+    },
+  );
 type FormSchema = z.infer<typeof formSchema>;
 
 export function CorrectionFormPage() {
@@ -55,7 +64,7 @@ export function CorrectionFormPage() {
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: { workDate: "", requestedClockIn: "", requestedClockOut: "", reason: "" },
+    defaultValues: { workDate: "", requestedClockIn: "", requestedClockOut: "", requestedClockOutNextDay: false, reason: "" },
   });
 
   async function onSubmit(values: FormSchema) {
@@ -132,6 +141,18 @@ export function CorrectionFormPage() {
               )}
             />
           </div>
+          <FormField
+            control={form.control}
+            name="requestedClockOutNextDay"
+            render={({ field }) => (
+              <FormItem>
+                <label className="flex min-h-11 items-center gap-3 text-sm md:min-h-9">
+                  <Checkbox checked={field.value === true} onCheckedChange={(c) => field.onChange(c === true)} />
+                  ออกงานวันถัดไป (กะข้ามคืน หรือทำงานเลยเที่ยงคืน)
+                </label>
+              </FormItem>
+            )}
+          />
           <p className="text-xs text-muted-foreground">
             ระบุเฉพาะเวลาที่ต้องการแก้ไข — เว้นว่างช่องที่ไม่ต้องการเปลี่ยน
           </p>
