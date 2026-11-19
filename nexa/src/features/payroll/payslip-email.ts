@@ -44,7 +44,7 @@ function lineItemRows(items: PayrollLineItem[]): string {
   return items
     .map(
       (i) =>
-        `<tr><td style="padding:4px 0;color:#334155;">${i.label}</td><td style="padding:4px 0;text-align:right;color:#334155;">${i.amount.toLocaleString("th-TH")}</td></tr>`,
+        `<tr><td style="padding:4px 0;color:#334155;">${escapeHtml(i.label)}</td><td style="padding:4px 0;text-align:right;color:#334155;">${i.amount.toLocaleString("th-TH")}</td></tr>`,
     )
     .join("");
 }
@@ -70,9 +70,9 @@ export function renderPayslipEmailHtml({
   return `
 <div style="font-family:'Anuphan','Segoe UI',Tahoma,sans-serif;max-width:600px;margin:0 auto;color:#0f172a;">
   <div style="border-bottom:2px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px;">
-    <p style="margin:0;font-size:16px;font-weight:700;">${company.legalName ?? company.name}</p>
-    <p style="margin:2px 0 0;font-size:12px;color:#64748b;">${companyAddress(company)}</p>
-    ${company.taxId ? `<p style="margin:2px 0 0;font-size:12px;color:#64748b;">เลขประจำตัวผู้เสียภาษี ${company.taxId}</p>` : ""}
+    <p style="margin:0;font-size:16px;font-weight:700;">${escapeHtml(company.legalName ?? company.name)}</p>
+    <p style="margin:2px 0 0;font-size:12px;color:#64748b;">${escapeHtml(companyAddress(company))}</p>
+    ${company.taxId ? `<p style="margin:2px 0 0;font-size:12px;color:#64748b;">เลขประจำตัวผู้เสียภาษี ${escapeHtml(company.taxId)}</p>` : ""}
   </div>
 
   <p style="margin:0 0 4px;font-size:15px;font-weight:600;">สลิปเงินเดือน · ${record.periodLabel}</p>
@@ -84,8 +84,8 @@ export function renderPayslipEmailHtml({
       <td style="color:#64748b;font-size:12px;text-align:right;">รหัสพนักงาน</td>
     </tr>
     <tr>
-      <td style="font-weight:600;">${name}</td>
-      <td style="font-weight:600;text-align:right;">${record.employee.employeeCode}</td>
+      <td style="font-weight:600;">${escapeHtml(name)}</td>
+      <td style="font-weight:600;text-align:right;">${escapeHtml(record.employee.employeeCode)}</td>
     </tr>
   </table>
 
@@ -126,6 +126,6 @@ export function renderPayslipEmailHtml({
     ตรวจสอบความถูกต้องของสลิปนี้ได้ที่ <a href="${verifyUrl}" style="color:#365314;">${verifyUrl}</a><br/>
     รหัสอ้างอิง: ${record.id.slice(0, 8)}
   </p>
-  <p style="margin:12px 0 0;font-size:11px;color:#94a3b8;text-align:center;">เอกสารนี้ออกโดยระบบ GV One HR — ${company.name}</p>
+  <p style="margin:12px 0 0;font-size:11px;color:#94a3b8;text-align:center;">เอกสารนี้ออกโดยระบบ GV One HR — ${escapeHtml(company.name)}</p>
 </div>`.trim();
 }

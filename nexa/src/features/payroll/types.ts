@@ -4,6 +4,8 @@ export type PayrollScope = "me" | "all";
 export interface PayrollLineItem {
   label: string;
   amount: number;
+  /** Set on lines the system built (ot, loan, tax, sso, base); absent on HR-typed lines and on older payslips. */
+  kind?: string;
 }
 
 export interface PayrollRecord {

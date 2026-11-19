@@ -8,14 +8,10 @@ import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { sendEmail } from "@/lib/email";
 import { getCompanyProfile } from "@/features/company/service";
-import { computePayroll, periodLabel, type LineItem, type TaxDeductionInputs, unpaidHourRate, unpaidHoursCharged } from "./calc";
+import { computePayroll, isValidPeriod, periodLabel, systemLineAmount, type LineItem, type TaxDeductionInputs, unpaidHourRate, unpaidHoursCharged } from "./calc";
 import { leaveDaysWithin, PAID_LEAVE_TYPES } from "@/features/leave/days";
 import { renderPayslipEmailHtml } from "./payslip-email";
-import {
-  getOutstandingLoansForPayroll,
-  sumInstallments,
-  applyPayrollLoanInstallments,
-} from "@/features/company-loan/service";
+import { getOutstandingLoansForPayroll, sumInstallments } from "@/features/company-loan/service";
 import type { PayrollAdjustInput, PayrollListQuery } from "./schema";
 
 type Meta = { ip?: string; userAgent?: string };
@@ -411,12 +407,16 @@ export async function getPayrollPeriodStatus(companyId: string, period: string) 
   return { period, closed: !!closed, closedAt: closed?.closedAt ?? null };
 }
 
-async function requirePeriodOpen(companyId: string, period: string) {
+async function isPeriodClosed(companyId: string, period: string): Promise<boolean> {
   const closed = await prisma.payrollPeriod.findUnique({
     where: { companyId_period: { companyId, period } },
     select: { id: true },
   });
-  if (closed) throw BadRequest("งวดนี้ปิดแล้ว ไม่สามารถประมวลผลหรือแก้ไขได้อีก");
+  return !!closed;
+}
+
+async function requirePeriodOpen(companyId: string, period: string) {
+  if (await isPeriodClosed(companyId, period)) throw BadRequest("งวดนี้ปิดแล้ว ไม่สามารถประมวลผลหรือแก้ไขได้อีก");
 }
 
 /**
@@ -432,6 +432,7 @@ export async function closePayrollPeriod(
   period: string,
   meta?: Meta,
 ) {
+  if (!isValidPeriod(period)) throw BadRequest("รูปแบบงวดต้องเป็น YYYY-MM เช่น 2026-11");
   const existing = await prisma.payrollPeriod.findUnique({
     where: { companyId_period: { companyId, period } },
     select: { id: true },
@@ -552,6 +553,7 @@ export async function generatePayroll(
   const existingMap = new Map(existing.map((r) => [r.employeeId, r]));
 
   let count = 0;
+  let closedMidRun = false;
 
   for (const emp of employees) {
     const prior = existingMap.get(emp.id);
@@ -577,32 +579,52 @@ export async function generatePayroll(
       extraDeductions: adj.deductions,
       taxDeductions: toTaxDeductions(emp),
     });
-    await prisma.payrollRecord.upsert({
-      where: { employeeId_period: { employeeId: emp.id, period } },
-      update: {
-        periodLabel: label,
-        earnings: json(comp.earnings),
-        deductions: json(comp.deductions),
-        gross: comp.gross,
-        totalDeductions: comp.totalDeductions,
-        net: comp.net,
-        updatedById: session.sub,
-      },
-      create: {
-        companyId,
-        employeeId: emp.id,
-        period,
-        periodLabel: label,
-        earnings: json(comp.earnings),
-        deductions: json(comp.deductions),
-        gross: comp.gross,
-        totalDeductions: comp.totalDeductions,
-        net: comp.net,
-        status: "DRAFT",
-        createdById: session.sub,
-        updatedById: session.sub,
-      },
-    });
+    // A run takes a long time with one DB connection: the period may have been
+    // closed since the check at the top. Stop here rather than write into it.
+    if (await isPeriodClosed(companyId, period)) {
+      closedMidRun = true;
+      break;
+    }
+    if (prior) {
+      // Write only while the slip is still a DRAFT: if finance marked it paid
+      // since `existing` was read, the guard matches nothing and it is left alone.
+      const { count: n } = await prisma.payrollRecord.updateMany({
+        where: { companyId, employeeId: emp.id, period, status: "DRAFT" },
+        data: {
+          periodLabel: label,
+          earnings: json(comp.earnings),
+          deductions: json(comp.deductions),
+          gross: comp.gross,
+          totalDeductions: comp.totalDeductions,
+          net: comp.net,
+          updatedById: session.sub,
+        },
+      });
+      if (n === 0) continue;
+    } else {
+      try {
+        await prisma.payrollRecord.create({
+          data: {
+            companyId,
+            employeeId: emp.id,
+            period,
+            periodLabel: label,
+            earnings: json(comp.earnings),
+            deductions: json(comp.deductions),
+            gross: comp.gross,
+            totalDeductions: comp.totalDeductions,
+            net: comp.net,
+            status: "DRAFT",
+            createdById: session.sub,
+            updatedById: session.sub,
+          },
+        });
+      } catch (err) {
+        // Another run created this payslip after `existing` was read: leave it to that run.
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") continue;
+        throw err;
+      }
+    }
     count++;
   }
 
@@ -614,6 +636,7 @@ export async function generatePayroll(
     after: { period, count },
     ...meta,
   });
+  if (closedMidRun) throw BadRequest("งวดนี้ถูกปิดระหว่างประมวลผล รายการที่ทำไปแล้วยังอยู่ ส่วนที่เหลือไม่ได้ประมวลผล");
 
   return { period, periodLabel: label, count };
 }
@@ -772,8 +795,12 @@ export async function updatePayrollAdjustments(
     taxDeductions: toTaxDeductions(employee),
   });
 
-  const updated = await prisma.payrollRecord.update({
-    where: { id: record.id },
+  // Many awaits have passed since the status/period check above: look at the
+  // period lock again and write only while the payslip is still a DRAFT, so a
+  // concurrent "mark paid" or "close period" is never overwritten.
+  await requirePeriodOpen(companyId, record.period);
+  const { count: written } = await prisma.payrollRecord.updateMany({
+    where: { id: record.id, companyId, status: "DRAFT" },
     data: {
       earnings: json(comp.earnings),
       deductions: json(comp.deductions),
@@ -784,6 +811,10 @@ export async function updatePayrollAdjustments(
       net: comp.net,
       updatedById: session.sub,
     },
+  });
+  if (written === 0) throw Conflict("รายการนี้ถูกจ่ายแล้วหรือถูกเปลี่ยนโดยผู้อื่น กรุณารีเฟรชหน้า");
+  const updated = await prisma.payrollRecord.findFirstOrThrow({
+    where: { id: record.id },
     select: recordWithEmployeeSelect,
   });
 
@@ -862,8 +893,9 @@ export async function markPaid(
 
   const earnings = (record.earnings as unknown as LineItem[] | null) ?? [];
   const deductions = (record.deductions as unknown as LineItem[] | null) ?? [];
-  const storedOtSum = earnings.find((e) => e.label === "ค่าล่วงเวลา (OT)")?.amount ?? 0;
-  const storedLoanSum = deductions.find((d) => d.label === "หักชำระเงินกู้")?.amount ?? 0;
+  // Matched by line kind, so an HR-typed line with the same label is not mistaken for the system line.
+  const storedOtSum = systemLineAmount({ earnings, deductions }, "ot");
+  const storedLoanSum = systemLineAmount({ earnings, deductions }, "loan");
 
   if (currentOtSum !== storedOtSum || currentLoanSum !== storedLoanSum) {
     throw BadRequest(
@@ -871,35 +903,52 @@ export async function markPaid(
     );
   }
 
-  // Compare-and-swap on status, BEFORE the loan-installment side effect
-  // below runs: two concurrent "mark paid" clicks (double-click, retry)
-  // could both pass the status check above before either write lands — a
-  // plain update() would let both proceed to applyPayrollLoanInstallments,
-  // deducting the same installment twice. Guarding the write on the status
-  // just read means only the first actually applies.
-  const { count } = await prisma.payrollRecord.updateMany({
-    where: { id, status: { not: "PAID" } },
-    data: { status: "PAID", paidAt: new Date(), updatedById: session.sub },
+  // One transaction: the status flip, the OT paidAt stamps and the loan
+  // repayments all happen or none do, so a failure part-way can never leave a
+  // PAID payslip whose OT/loan was not finalized (the retry would only say
+  // "already paid" and the installment would be deducted again next month).
+  //
+  // The status write is a compare-and-swap: two concurrent "mark paid" clicks
+  // could both pass the status check above before either write lands, and
+  // only the first may apply the side effects. The OT/loan finalize is safe
+  // because the drift guard above proved these sums match the stored payslip.
+  // Loan repayment uses { increment } so it is not a read-then-write.
+  const paidAt = new Date();
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.payrollRecord.updateMany({
+      where: { id, companyId, status: { not: "PAID" } },
+      data: { status: "PAID", paidAt, updatedById: session.sub },
+    });
+    if (count === 0) throw Conflict("รายการนี้ถูกจ่ายไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
+    await tx.overtimeRequest.updateMany({
+      where: { companyId, employeeId: record.employeeId, status: "APPROVED", paidAt: null, date: { gte: from, lt: to } },
+      data: { paidAt },
+    });
+    for (const { loanId, installment } of installments ?? []) {
+      await tx.companyLoanRequest.updateMany({
+        where: { id: loanId, companyId, deletedAt: null },
+        data: { repaidAmount: { increment: installment }, updatedById: session.sub },
+      });
+    }
   });
-  if (count === 0) throw Conflict("รายการนี้ถูกจ่ายไปแล้วโดยผู้อื่น กรุณารีเฟรชหน้า");
+
+  for (const { loanId, installment } of installments ?? []) {
+    await writeAudit({
+      companyId,
+      actorUserId: session.sub,
+      action: "loan.repay",
+      entity: "CompanyLoanRequest",
+      entityId: loanId,
+      after: { amount: installment, source: "payroll" },
+      ...meta,
+    });
+  }
 
   const updated = await prisma.payrollRecord.findFirstOrThrow({
     where: { id },
     select: recordWithEmployeeSelect,
   });
-
-  // Finalize the two auto-computed lines this payslip pulled in live at
-  // generate time — from here on they're locked in as actually paid, so a
-  // later payroll run for a different period can't pull the same OT/loan
-  // installment in again. Safe now: the drift guard above already proved
-  // these sums match what's actually reflected in the stored payslip.
-  await prisma.overtimeRequest.updateMany({
-    where: { companyId, employeeId: record.employeeId, status: "APPROVED", paidAt: null, date: { gte: from, lt: to } },
-    data: { paidAt: new Date() },
-  });
-  if (installments?.length) {
-    await applyPayrollLoanInstallments(companyId, session, installments, meta);
-  }
 
   await writeAudit({
     companyId,
@@ -961,8 +1010,15 @@ export async function sendPayslipEmails(
       verifyUrl: `${verifyBaseUrl}/verify/payslip/${record.id}`,
     });
 
-    await sendEmail({ to: record.employee.email, subject: `สลิปเงินเดือน ${record.periodLabel}`, html });
-    sent.push(record.employee.id);
+    // One failing address must not stop the rest, and a failure is never counted as sent.
+    const delivered = await sendEmail({ to: record.employee.email, subject: `สลิปเงินเดือน ${record.periodLabel}`, html }).catch(
+      () => false,
+    );
+    if (delivered) {
+      sent.push(record.employee.id);
+    } else {
+      skipped.push({ employeeId: record.employee.id, name, reason: "ส่งอีเมลไม่สำเร็จ ตรวจการตั้งค่าอีเมลของระบบ" });
+    }
   }
 
   await writeAudit({

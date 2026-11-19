@@ -1,6 +1,34 @@
+/**
+ * Marks the lines computePayroll() builds itself, so they are told apart from
+ * HR-typed or imported extra lines that may carry the same label.
+ */
+export type LineKind = "base" | "ot" | "loan" | "tax" | "sso";
+
 export interface LineItem {
   label: string;
   amount: number;
+  kind?: LineKind;
+}
+
+const SYSTEM_LINE_LABEL = {
+  ot: "ค่าล่วงเวลา (OT)",
+  loan: "หักชำระเงินกู้",
+  tax: "ภาษีหัก ณ ที่จ่าย",
+  sso: "ประกันสังคม",
+} as const;
+
+/**
+ * Amount of a system-built line on a stored payslip. Payslips stored before
+ * `kind` existed have no kind on any line, so those fall back to the label.
+ */
+export function systemLineAmount(
+  slip: { earnings: { label: string; amount: number; kind?: string }[]; deductions: { label: string; amount: number; kind?: string }[] },
+  kind: keyof typeof SYSTEM_LINE_LABEL,
+): number {
+  const lines = kind === "ot" ? slip.earnings : slip.deductions;
+  const legacy = ![...slip.earnings, ...slip.deductions].some((l) => l.kind);
+  const hit = legacy ? lines.find((l) => l.label === SYSTEM_LINE_LABEL[kind]) : lines.find((l) => l.kind === kind);
+  return hit?.amount ?? 0;
 }
 
 export interface PayrollComputation {
@@ -135,9 +163,9 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const lateOccurrences = Math.max(0, input.lateOccurrences ?? 0);
   const lateDeduction = Math.round(lateOccurrences * (input.lateDeductionPerOccurrence ?? 0));
 
-  const earnings: LineItem[] = [{ label: BASE_PAY_LABEL[input.compensationType ?? "MONTHLY"], amount: salary }];
+  const earnings: LineItem[] = [{ label: BASE_PAY_LABEL[input.compensationType ?? "MONTHLY"], amount: salary, kind: "base" }];
   if (allowances) earnings.push({ label: "ค่าตำแหน่ง/เบี้ยเลี้ยง", amount: allowances });
-  if (overtime) earnings.push({ label: "ค่าล่วงเวลา (OT)", amount: overtime });
+  if (overtime) earnings.push({ label: "ค่าล่วงเวลา (OT)", amount: overtime, kind: "ot" });
   if (bonus) earnings.push({ label: "โบนัส", amount: bonus });
   if (other) earnings.push({ label: "รายได้อื่นๆ", amount: other });
   for (const e of input.extraEarnings ?? []) {
@@ -194,10 +222,10 @@ export function computePayroll(input: PayrollInput): PayrollComputation {
   const tax = Math.round(taxOnRecurring / 12) + Math.round(taxOnRecurringPlusOneOff - taxOnRecurring);
 
   const deductions: LineItem[] = [];
-  if (socialSecurity) deductions.push({ label: "ประกันสังคม", amount: socialSecurity });
-  if (tax) deductions.push({ label: "ภาษีหัก ณ ที่จ่าย", amount: tax });
+  if (socialSecurity) deductions.push({ label: "ประกันสังคม", amount: socialSecurity, kind: "sso" });
+  if (tax) deductions.push({ label: "ภาษีหัก ณ ที่จ่าย", amount: tax, kind: "tax" });
   if (providentFund) deductions.push({ label: "กองทุนสำรองเลี้ยงชีพ", amount: providentFund });
-  if (loan) deductions.push({ label: "หักชำระเงินกู้", amount: loan });
+  if (loan) deductions.push({ label: "หักชำระเงินกู้", amount: loan, kind: "loan" });
   if (advance) deductions.push({ label: "หักเบิกล่วงหน้า", amount: advance });
   if (unpaidLeaveDeduction) deductions.push({ label: "หักลาไม่รับค่าจ้าง", amount: unpaidLeaveDeduction });
   if (unpaidHourDeduction) {

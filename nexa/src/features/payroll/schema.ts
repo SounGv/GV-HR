@@ -22,7 +22,7 @@ export type SendPayslipEmailInput = z.infer<typeof sendPayslipEmailSchema>;
 
 const lineItemSchema = z.object({
   label: z.string().trim().min(1, "กรุณาระบุรายการ").max(100),
-  amount: z.coerce.number().min(0, "ต้องไม่ติดลบ"),
+  amount: z.coerce.number().min(0, "ต้องไม่ติดลบ").max(10_000_000, "จำนวนเงินสูงเกินไป ตรวจจำนวนเลขศูนย์อีกครั้ง"),
 });
 
 export const payrollAdjustSchema = z.object({

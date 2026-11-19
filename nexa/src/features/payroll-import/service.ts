@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { AccessClaims } from "@/lib/auth/jwt";
+import { AppError } from "@/lib/api/errors";
 import { updatePayrollAdjustments } from "@/features/payroll/service";
 import { payrollImportRowSchema } from "./schema";
 import { mergeAdjustmentLines, type AdjustmentLine } from "./merge";
@@ -82,7 +83,8 @@ export async function importPayrollAdjustments(
       );
       updated++;
     } catch (e) {
-      errors.push({ row: 0, code: g.employeeCode, message: e instanceof Error ? e.message : "บันทึกรายการไม่สำเร็จ" });
+      // Only our own Thai messages (closed period, no pay rate...) go back to the client; a raw database error does not.
+      errors.push({ row: 0, code: g.employeeCode, message: e instanceof AppError ? e.message : "บันทึกรายการไม่สำเร็จ ลองใหม่อีกครั้ง" });
     }
   }
 

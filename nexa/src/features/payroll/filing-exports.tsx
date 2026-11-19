@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fullName } from "@/lib/format";
+import { systemLineAmount } from "./calc";
 import type { PayrollRecord } from "./types";
 
 /**
@@ -20,11 +21,10 @@ import type { PayrollRecord } from "./types";
  * the column order here can be adjusted to match exactly.
  */
 
-function findDeduction(record: PayrollRecord, label: string): number {
-  // Standard computed items ("ประกันสังคม" / "ภาษีหัก ณ ที่จ่าย") always land in
-  // `deductions` — `manualAdjustments` is only for HR's ad-hoc line items
-  // (bonus, loan repayment) added on top, never a replacement for these.
-  return record.deductions.find((d) => d.label === label)?.amount ?? 0;
+function findDeduction(record: PayrollRecord, kind: "sso" | "tax"): number {
+  // Standard computed items (ประกันสังคม / ภาษีหัก ณ ที่จ่าย) are matched by
+  // their kind, so an HR-typed line with the same label is not counted.
+  return systemLineAmount(record, kind);
 }
 
 async function downloadSheet(rows: (string | number)[][], header: string[], sheetName: string, fileName: string) {
@@ -75,7 +75,7 @@ export function PayrollFilingExports({ records, period }: { records: PayrollReco
         r.employee!.nationalId ?? "(ไม่มีเลขบัตรประชาชน)",
         fullName(r.employee!.firstName, r.employee!.lastName),
         r.gross,
-        findDeduction(r, "ภาษีหัก ณ ที่จ่าย"),
+        findDeduction(r, "tax"),
       ]);
       await downloadSheet(body, header, "ภงด", `tax-filing_${period}.xlsx`);
       toast.success("ดาวน์โหลดไฟล์ข้อมูลภาษีแล้ว");
@@ -93,7 +93,7 @@ export function PayrollFilingExports({ records, period }: { records: PayrollReco
         "เงินสมทบฝ่ายนายจ้าง (บาท)",
       ];
       const body = rows.map((r) => {
-        const contribution = findDeduction(r, "ประกันสังคม");
+        const contribution = findDeduction(r, "sso");
         const wageBase = contribution >= 750 ? 15000 : Math.round(contribution / 0.05);
         return [
           r.employee!.nationalId ?? "(ไม่มีเลขบัตรประชาชน)",
