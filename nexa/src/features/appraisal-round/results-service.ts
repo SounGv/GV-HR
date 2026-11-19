@@ -1,6 +1,6 @@
 import { displayName } from "@/lib/format";
 import { avatarPaths } from "@/lib/avatar-server";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, NotFound, NoEmployee } from "@/lib/api/errors";
@@ -76,6 +76,14 @@ export async function saveSettings(
   if (frozen > 0 && scoringChanged) {
     throw BadRequest(`มีผลที่อนุมัติหรือประกาศแล้ว ${frozen} คน จึงเปลี่ยนวิธีคิดคะแนนหรือเกณฑ์เกรดไม่ได้`);
   }
+  // Turning approval off while results sit approved would leave them unable to be published (publishing then looks
+  // only at calculated ones), so those have to be published first.
+  if (input.approvalLevels < 1 && current.approvalLevels >= 1) {
+    const waiting = await prisma.appraisalParticipant.count({
+      where: { round: { companyId, deletedAt: null }, resultStatus: "APPROVED" },
+    });
+    if (waiting > 0) throw BadRequest(`มีผลที่อนุมัติแล้วรอประกาศ ${waiting} คน กรุณาประกาศผลให้เสร็จก่อนจึงปิดการอนุมัติได้`);
+  }
 
   const data = {
     calcMode: input.calcMode,
@@ -150,7 +158,7 @@ export async function calculateRound(companyId: string, session: AccessClaims, r
       noAnswers++;
       await prisma.appraisalParticipant.update({
         where: { id: p.id },
-        data: { resultStatus: "NOT_CALCULATED", scorePercent: null, overallScore: null, grade: null, scoreBreakdown: undefined, calculatedAt: null },
+        data: { resultStatus: "NOT_CALCULATED", scorePercent: null, overallScore: null, grade: null, scoreBreakdown: Prisma.DbNull, calculatedAt: null },
       });
       continue;
     }
@@ -187,6 +195,10 @@ const idsOrAll = (ids: readonly string[] | undefined) => (ids && ids.length ? { 
 export async function approveResults(companyId: string, session: AccessClaims, roundId: string, participantIds?: string[], meta?: Meta) {
   const settings = await getSettings(companyId);
   if (settings.approvalLevels < 1) throw BadRequest("บริษัทยังไม่ได้ตั้งให้ต้องอนุมัติผล ประกาศผลได้เลย");
+  // Approved results are not worked out again, so approving before the round closes would leave out answers still coming in.
+  const round = await prisma.appraisalRound.findFirst({ where: { id: roundId, companyId, deletedAt: null }, select: { status: true } });
+  if (!round) throw NotFound("ไม่พบรอบประเมิน");
+  if (round.status !== "CLOSED") throw BadRequest("อนุมัติผลได้เมื่อปิดรอบแล้ว");
   const res = await prisma.appraisalParticipant.updateMany({
     where: { roundId, round: { companyId, deletedAt: null }, resultStatus: "CALCULATED", ...idsOrAll(participantIds) },
     data: { resultStatus: "APPROVED", approvedAt: new Date(), approvedById: session.sub },
@@ -432,8 +444,8 @@ export async function saveAssignmentAsHr(
     const missing = unansweredRequired(form.questions as SnapQuestion[], a.raterType, answers, { noteAtLowest: !!form.noteAtLowest });
     if (missing.length) throw BadRequest(`ยังตอบไม่ครบ: ${missing.join(", ")}`);
   }
-  await prisma.appraisalAssignment.update({
-    where: { id: assignmentId },
+  const saved = await prisma.appraisalAssignment.updateMany({
+    where: { id: assignmentId, status: { not: "SUBMITTED" } },
     data: {
       answers: answers as unknown as Prisma.InputJsonValue,
       status: input.submit ? "SUBMITTED" : "IN_PROGRESS",
@@ -442,6 +454,7 @@ export async function saveAssignmentAsHr(
       submittedByUserId: input.submit ? session.sub : null,
     },
   });
+  if (saved.count !== 1) throw BadRequest("ส่งผลประเมินแล้ว แก้ไขไม่ได้");
   await writeAudit({
     companyId,
     actorUserId: session.sub,

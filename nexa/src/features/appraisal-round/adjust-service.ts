@@ -75,21 +75,23 @@ export async function adjustScore(
   const byName = await whoIs(session);
   const overall = overallFor(next, row);
 
-  // One after the other (the connection pool has one slot).
-  await prisma.appraisalParticipant.update({
-    where: { id: row.id },
-    data: {
-      scorePercent: next,
-      grade: toGrade,
-      ...(overall !== undefined ? { overallScore: overall } : {}),
-      adjustedAt: new Date(),
-      originalScorePercent: original,
-      originalGrade: originalGrade ?? null,
-    },
-  });
-  await prisma.appraisalScoreAdjustment.create({
-    data: { participantId: row.id, kind: "ADJUST", fromPercent: row.scorePercent, toPercent: next, fromGrade: row.grade, toGrade, reason, byUserId: session.sub, byName },
-  });
+  // The new score and its history go in together: a score with no recorded reason must never exist.
+  await prisma.$transaction([
+    prisma.appraisalParticipant.update({
+      where: { id: row.id },
+      data: {
+        scorePercent: next,
+        grade: toGrade,
+        ...(overall !== undefined ? { overallScore: overall } : {}),
+        adjustedAt: new Date(),
+        originalScorePercent: original,
+        originalGrade: originalGrade ?? null,
+      },
+    }),
+    prisma.appraisalScoreAdjustment.create({
+      data: { participantId: row.id, kind: "ADJUST", fromPercent: row.scorePercent, toPercent: next, fromGrade: row.grade, toGrade, reason, byUserId: session.sub, byName },
+    }),
+  ]);
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -124,20 +126,22 @@ export async function revertAdjustment(
   const byName = await whoIs(session);
   const overall = overallFor(back, row);
 
-  await prisma.appraisalParticipant.update({
-    where: { id: row.id },
-    data: {
-      scorePercent: back,
-      grade: toGrade,
-      ...(overall !== undefined ? { overallScore: overall } : {}),
-      adjustedAt: null,
-      originalScorePercent: null,
-      originalGrade: null,
-    },
-  });
-  await prisma.appraisalScoreAdjustment.create({
-    data: { participantId: row.id, kind: "REVERT", fromPercent: row.scorePercent, toPercent: back, fromGrade: row.grade, toGrade, reason, byUserId: session.sub, byName },
-  });
+  await prisma.$transaction([
+    prisma.appraisalParticipant.update({
+      where: { id: row.id },
+      data: {
+        scorePercent: back,
+        grade: toGrade,
+        ...(overall !== undefined ? { overallScore: overall } : {}),
+        adjustedAt: null,
+        originalScorePercent: null,
+        originalGrade: null,
+      },
+    }),
+    prisma.appraisalScoreAdjustment.create({
+      data: { participantId: row.id, kind: "REVERT", fromPercent: row.scorePercent, toPercent: back, fromGrade: row.grade, toGrade, reason, byUserId: session.sub, byName },
+    }),
+  ]);
   await writeAudit({
     companyId,
     actorUserId: session.sub,

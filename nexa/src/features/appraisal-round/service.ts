@@ -521,26 +521,29 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
   const pidByEmployee = new Map(participants.map((p) => [p.employeeId, p.id]));
   const mode = sendMode(detail.startIso as string, iso(bangkokParts().dateUTC));
 
-  await prisma.$transaction([
-    prisma.appraisalAssignment.deleteMany({ where: { participant: { roundId: id } } }),
-    prisma.appraisalAssignment.createMany({
-      data: matches.map((m) => ({
-        participantId: pidByEmployee.get(m.participantId) as string,
-        raterEmployeeId: m.raterId,
-        raterType: m.raterType,
-      })),
-      skipDuplicates: true,
-    }),
-    prisma.appraisalRound.update({
-      where: { id },
+  // The round is claimed first, only while it is still a draft: a second open (double click, two tabs) finds it taken
+  // and stops here, so it can never delete assignments that raters have already started on.
+  await prisma.$transaction(async (tx) => {
+    const claimed = await tx.appraisalRound.updateMany({
+      where: { id, companyId, status: "DRAFT", deletedAt: null },
       data: {
         status: mode === "NOW" ? "OPEN" : "SCHEDULED",
         openedAt: new Date(),
         formSnapshot: snapshot as unknown as Prisma.InputJsonValue,
         updatedById: session.sub,
       },
-    }),
-  ]);
+    });
+    if (claimed.count !== 1) throw BadRequest("รอบนี้เปิดแล้ว");
+    await tx.appraisalAssignment.deleteMany({ where: { participant: { roundId: id } } });
+    await tx.appraisalAssignment.createMany({
+      data: matches.map((m) => ({
+        participantId: pidByEmployee.get(m.participantId) as string,
+        raterEmployeeId: m.raterId,
+        raterType: m.raterType,
+      })),
+      skipDuplicates: true,
+    });
+  });
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -672,7 +675,7 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
     data: {
       companyId,
       // A copy of a template is an ordinary draft, named without the word "แม่แบบ" so it reads as a round.
-      name: src.isTemplate ? src.name.replace(/^แม่แบบs*/, "") : `${src.name} (สำเนา)`,
+      name: src.isTemplate ? src.name.replace(/^แม่แบบ\s*/, "") : `${src.name} (สำเนา)`,
       formId: published.id,
       raterTypes: src.raterTypes,
       perspectiveWeights: (src.perspectiveWeights ?? undefined) as Prisma.InputJsonValue | undefined,
@@ -1039,8 +1042,9 @@ export async function saveMyAnswers(
     const missing = unansweredRequired(snap.questions, a.raterType, answers, { noteAtLowest: snap.noteAtLowest });
     if (missing.length) throw BadRequest(`ยังตอบไม่ครบ: ${missing.join(", ")}`);
   }
-  await prisma.appraisalAssignment.update({
-    where: { id },
+  // Guarded at write time too: a draft save that was already in flight must never undo a sheet that was just submitted.
+  const saved = await prisma.appraisalAssignment.updateMany({
+    where: { id, status: { not: "SUBMITTED" } },
     data: {
       answers: answers as unknown as Prisma.InputJsonValue,
       status: input.submit ? "SUBMITTED" : "IN_PROGRESS",
@@ -1048,6 +1052,7 @@ export async function saveMyAnswers(
       submittedAt: input.submit ? new Date() : null,
     },
   });
+  if (saved.count !== 1) throw BadRequest("ส่งผลประเมินแล้ว แก้ไขไม่ได้");
   if (input.submit) {
     await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_assignment.submit", entity: "AppraisalAssignment", entityId: id, ...meta });
   }
@@ -1135,14 +1140,34 @@ export async function runRoundJobs() {
     console.error("recurring rounds step failed", e);
   }
 
+  // Open rounds where some rater never got the invitation (the message failed on the start day): try those people again.
+  // Reminders only reach people who were invited, so without this step they would hear nothing at all.
+  const missed = await prisma.appraisalRound.findMany({
+    where: { deletedAt: null, status: "OPEN", participants: { some: { assignments: { some: { notifiedAt: null } } } } },
+    select: { id: true, companyId: true },
+  });
+  for (const r of missed) {
+    try {
+      const res = await sendInvitations(r.companyId, r.id);
+      summary.invitationsSent += res.sent;
+    } catch (e) {
+      console.error("invitation retry failed for round", r.id, e);
+    }
+  }
+
+  // One round failing must not stop the others from opening or being reminded.
   const due = await prisma.appraisalRound.findMany({
     where: { deletedAt: null, status: "SCHEDULED", startDate: { lte: new Date(`${todayIso}T00:00:00Z`) } },
     select: { id: true, companyId: true },
   });
   for (const r of due) {
-    const res = await sendInvitations(r.companyId, r.id);
-    summary.opened++;
-    summary.invitationsSent += res.sent;
+    try {
+      const res = await sendInvitations(r.companyId, r.id);
+      summary.opened++;
+      summary.invitationsSent += res.sent;
+    } catch (e) {
+      console.error("opening scheduled round failed", r.id, e);
+    }
   }
 
   const open = await prisma.appraisalRound.findMany({
@@ -1151,7 +1176,11 @@ export async function runRoundJobs() {
   });
   for (const r of open) {
     if (!r.endDate || !shouldRemind(iso(r.endDate), todayIso)) continue;
-    summary.reminded += await remindUnsubmitted(r, 20);
+    try {
+      summary.reminded += await remindUnsubmitted(r, 20);
+    } catch (e) {
+      console.error("reminders failed for round", r.id, e);
+    }
   }
   return summary;
 }

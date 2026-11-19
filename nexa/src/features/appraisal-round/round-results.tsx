@@ -89,7 +89,7 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
             </Link>
           )}
           {needsApproval && can("campaign:approve") && (
-            <Button variant="outline" className="h-11 md:h-9" onClick={() => run("approve")} disabled={act.approve.isPending || counts("CALCULATED") === 0}>
+            <Button variant="outline" className="h-11 md:h-9" onClick={() => run("approve")} disabled={act.approve.isPending || status !== "CLOSED" || counts("CALCULATED") === 0}>
               <ShieldCheck className="size-4" /> อนุมัติผลที่คำนวณแล้ว
             </Button>
           )}
