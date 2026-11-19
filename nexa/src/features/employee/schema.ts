@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { updateSchemaOf } from "@/lib/zod-update";
 import { calendarDate } from "@/lib/date-schema";
 import { listQuerySchema } from "@/lib/api/pagination";
 import { passwordSchema } from "@/lib/auth/password-policy";
@@ -91,9 +92,52 @@ export const employeeCreateSchema = z.object({
 
 export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
 
-/** All fields optional for PATCH (partial update). */
-export const employeeUpdateSchema = employeeCreateSchema.partial();
-export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
+/** For PATCH: "" or null means "clear this field" (stored as null); a missing key means "leave it alone". */
+const clearable = <T extends z.ZodTypeAny>(inner: T) =>
+  z.preprocess((v) => (v === null || (typeof v === "string" && v.trim() === "") ? null : v), inner.nullable().optional());
+
+const clearableText = (max: number) => clearable(z.string().trim().max(max));
+
+type ClearableKey =
+  | "firstNameEn" | "lastNameEn" | "nickname" | "email" | "phone" | "gender" | "dateOfBirth" | "nationalId"
+  | "maritalStatus" | "branchId" | "departmentId" | "positionId" | "managerId" | "costCenterId" | "hireDate"
+  | "probationEndDate" | "terminationDate" | "bankName" | "bankAccountNo" | "addressLine" | "district"
+  | "province" | "postalCode";
+
+/** Typed against the create input: updateSchemaOf builds its shape dynamically, so its own inferred type is loose. */
+export type EmployeeUpdateInput = Partial<Omit<EmployeeCreateInput, ClearableKey>> & {
+  [K in ClearableKey]?: EmployeeCreateInput[K] | null;
+};
+
+/**
+ * All fields optional for PATCH, with no create defaults (a body of `{ email }` must not reset status, type or
+ * pay type), and with the fields a user can empty on the edit form (org links, dates, text) able to clear to null.
+ */
+export const employeeUpdateSchema = updateSchemaOf(employeeCreateSchema).extend({
+  firstNameEn: clearableText(120),
+  lastNameEn: clearableText(120),
+  nickname: clearableText(60),
+  email: clearable(z.string().trim().toLowerCase().email("อีเมลไม่ถูกต้อง")),
+  phone: clearableText(30),
+  gender: clearable(z.enum(GENDERS)),
+  dateOfBirth: clearable(calendarDate()),
+  nationalId: clearableText(20),
+  maritalStatus: clearable(z.enum(MARITAL)),
+  branchId: clearable(z.string().trim().min(1).max(100)),
+  departmentId: clearable(z.string().uuid()),
+  positionId: clearable(z.string().uuid()),
+  managerId: clearable(z.string().uuid()),
+  costCenterId: clearable(z.string().uuid()),
+  hireDate: clearable(calendarDate()),
+  probationEndDate: clearable(calendarDate()),
+  terminationDate: clearable(calendarDate()),
+  bankName: clearableText(120),
+  bankAccountNo: clearableText(40),
+  addressLine: clearableText(255),
+  district: clearableText(120),
+  province: clearableText(120),
+  postalCode: clearableText(10),
+}) as unknown as z.ZodType<EmployeeUpdateInput>;
 
 /** List query = base pagination + employee-specific filters. */
 export const employeeListQuerySchema = listQuerySchema.extend({

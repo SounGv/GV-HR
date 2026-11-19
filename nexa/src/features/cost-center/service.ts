@@ -37,11 +37,14 @@ export async function getCostCenter(companyId: string, id: string) {
 }
 
 async function assertCodeFree(companyId: string, code: string, exceptId?: string) {
+  // The database unique covers removed rows too, so look at them as well and say why the code is taken.
   const existing = await prisma.costCenter.findFirst({
-    where: { companyId, code, deletedAt: null, ...(exceptId ? { id: { not: exceptId } } : {}) },
-    select: { id: true },
+    where: { companyId, code, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { deletedAt: true },
   });
-  if (existing) throw Conflict(`มีรหัสศูนย์ต้นทุน “${code}” อยู่แล้ว`);
+  if (existing) {
+    throw Conflict(existing.deletedAt ? `รหัสศูนย์ต้นทุน “${code}” เคยใช้กับรายการที่ถูกลบไปแล้ว ใช้รหัสอื่น` : `มีรหัสศูนย์ต้นทุน “${code}” อยู่แล้ว`);
+  }
 }
 
 export async function createCostCenter(

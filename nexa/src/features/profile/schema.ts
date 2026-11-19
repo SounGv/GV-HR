@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DATA_URL_IMAGE_RE } from "@/lib/image-schema";
 import { isAvatarPath } from "@/lib/avatar";
+import { calendarDate } from "@/lib/date-schema";
 
 const emptyToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
 const optText = (max = 200) =>
@@ -31,6 +32,15 @@ export const selfProfileSchema = z.object({
     z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "วันที่ไม่ถูกต้อง")
+      // A real calendar day in 1900-2100 (2026-02-31 and a Buddhist-era year like 2569 are typing slips).
+      .refine(
+        (v) => {
+          const d = calendarDate().safeParse(v);
+          // The round trip catches days that roll over (2026-02-31 becomes 3 March).
+          return d.success && d.data.toISOString().slice(0, 10) === v;
+        },
+        "วันที่ไม่ถูกต้อง ปีต้องเป็น ค.ศ. เช่น 1998",
+      )
       .nullable()
       .optional(),
   ),

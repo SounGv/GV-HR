@@ -43,11 +43,14 @@ export async function getBranch(companyId: string, id: string) {
 }
 
 async function assertCodeFree(companyId: string, code: string, exceptId?: string) {
+  // The database unique covers removed rows too, so look at them as well and say why the code is taken.
   const existing = await prisma.branch.findFirst({
-    where: { companyId, code, deletedAt: null, ...(exceptId ? { id: { not: exceptId } } : {}) },
-    select: { id: true },
+    where: { companyId, code, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { deletedAt: true },
   });
-  if (existing) throw Conflict(`มีรหัสสาขา “${code}” อยู่แล้ว`);
+  if (existing) {
+    throw Conflict(existing.deletedAt ? `รหัสสาขา “${code}” เคยใช้กับรายการที่ถูกลบไปแล้ว ใช้รหัสอื่น` : `มีรหัสสาขา “${code}” อยู่แล้ว`);
+  }
 }
 
 export async function createBranch(

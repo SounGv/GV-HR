@@ -99,6 +99,7 @@ export function EmployeeFormPage({
           <EmployeeForm
             key={`${employee?.id ?? "new"}-${formKey}`}
             formId={FORM_ID}
+            employeeId={employee?.id}
             defaultValues={employee ? toFormValues(employee) : undefined}
             orgOptions={orgData?.data}
             onSubmit={handleSubmit}

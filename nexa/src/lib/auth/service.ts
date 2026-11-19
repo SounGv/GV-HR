@@ -130,7 +130,12 @@ export async function verifyMfaAndLogin(
     if (!recovery) {
       throw Unauthorized("รหัสยืนยันไม่ถูกต้อง");
     }
-    await prisma.twoFactorRecoveryCode.update({ where: { id: recovery.id }, data: { usedAt: new Date() } });
+    // Spend the code only while it is still unused, so two requests with the same code cannot both pass.
+    const spent = await prisma.twoFactorRecoveryCode.updateMany({
+      where: { id: recovery.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    if (spent.count === 0) throw Unauthorized("รหัสยืนยันไม่ถูกต้อง");
   }
 
   return completeLogin(user, meta, mfaClaims.remember);

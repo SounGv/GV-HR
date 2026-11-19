@@ -46,6 +46,10 @@ const profileSelect = {
 
 type Meta = { ip?: string; userAgent?: string };
 
+function maskAccount(v: string | null | undefined) {
+  return v ? `****${v.slice(-4)}` : null;
+}
+
 function requireEmployeeId(session: SessionUser): string {
   return requireEmployee(session, "บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน จึงแก้ไขโปรไฟล์ไม่ได้");
 }
@@ -68,23 +72,44 @@ export async function updateMyProfile(
   const employeeId = requireEmployeeId(session);
   const { dateOfBirth, ...rest } = input;
 
+  // Read the payout account first so a change to it can be traced in the audit row.
+  const before = await prisma.employee.findFirst({
+    where: { id: employeeId, companyId: session.companyId, deletedAt: null },
+    select: { bankName: true, bankAccountNo: true },
+  });
+
   // Scope the write to the caller's own record + company (defense in depth).
   const result = await prisma.employee.updateMany({
     where: { id: employeeId, companyId: session.companyId, deletedAt: null },
     data: {
       ...rest,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      // Only touch the date when it was sent: undefined = leave it, null (cleared) = remove it.
+      ...(dateOfBirth !== undefined ? { dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null } : {}),
       updatedById: session.sub,
     },
   });
   if (result.count === 0) throw NotFound("ไม่พบข้อมูลพนักงานของคุณ");
 
+  const bankChanged =
+    before != null &&
+    ((input.bankName !== undefined && input.bankName !== before.bankName) ||
+      (input.bankAccountNo !== undefined && input.bankAccountNo !== before.bankAccountNo));
   await writeAudit({
     companyId: session.companyId,
     actorUserId: session.sub,
     action: "profile.update_self",
     entity: "Employee",
     entityId: employeeId,
+    // Account numbers are masked to the last 4 digits so the audit list does not expose them.
+    ...(before && bankChanged
+      ? {
+          before: { bankName: before.bankName, bankAccountNo: maskAccount(before.bankAccountNo) },
+          after: {
+            bankName: input.bankName ?? before.bankName,
+            bankAccountNo: maskAccount(input.bankAccountNo !== undefined ? input.bankAccountNo : before.bankAccountNo),
+          },
+        }
+      : {}),
     ...meta,
   });
 

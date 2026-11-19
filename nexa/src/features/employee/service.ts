@@ -3,11 +3,12 @@ import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { Forbidden, NotFound } from "@/lib/api/errors";
+import { BadRequest, Forbidden, NotFound } from "@/lib/api/errors";
 import { buildOrderBy, toSkipTake } from "@/lib/api/pagination";
 import { revokeAllForUser } from "@/lib/auth/token-store";
 import { listAssetsHeldBy } from "@/features/asset/service";
 import { notifyPermissionHolders } from "@/features/notification/service";
+import { assertCanDisableLogin } from "./account";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import {
   EMPLOYEE_SORTABLE,
@@ -139,6 +140,13 @@ const MANAGER_REDACTED_FIELDS = [
   "hourlyRate",
   "bankName",
   "bankAccountNo",
+  "dateOfBirth",
+  "addressLine",
+  "district",
+  "province",
+  "postalCode",
+  "taxLifeInsurance",
+  "taxHealthInsurance",
 ] as const satisfies readonly (keyof EmployeeDetail)[];
 
 export async function getEmployee(companyId: string, id: string, session?: AccessClaims): Promise<EmployeeDetail> {
@@ -153,7 +161,12 @@ export async function getEmployee(companyId: string, id: string, session?: Acces
     const managesTarget = employee.manager?.id === session.employeeId;
     if (!own && !managesTarget) throw Forbidden("ดูข้อมูลได้เฉพาะทีมของคุณ");
     if (managesTarget && !own) {
-      for (const field of MANAGER_REDACTED_FIELDS) employee[field] = null;
+      for (const field of MANAGER_REDACTED_FIELDS) (employee as Record<string, unknown>)[field] = null;
+      // Non-nullable tax deduction fields: blanked to their empty values instead.
+      employee.taxSpouseNoIncome = false;
+      employee.taxChildrenStandard = 0;
+      employee.taxChildrenEnhanced = 0;
+      employee.taxParentCareCount = 0;
     }
   }
 
@@ -206,12 +219,59 @@ export async function suggestNextEmployeeCode(companyId: string): Promise<string
   return `EMP${String(maxN + 1).padStart(4, "0")}`;
 }
 
+type OrgRefs = {
+  branchId?: string | null;
+  departmentId?: string | null;
+  positionId?: string | null;
+  costCenterId?: string | null;
+  managerId?: string | null;
+};
+
+/**
+ * Org links must point at live rows of the same company, and a manager may not be the employee or someone who
+ * (directly or further up) reports to the employee. Only keys that were sent are checked; null (clear) is fine.
+ * Sequential reads on purpose: the pool is 1 connection.
+ */
+async function assertValidOrgRefs(companyId: string, selfId: string | null, input: OrgRefs) {
+  const live = { companyId, deletedAt: null };
+  if (input.branchId && !(await prisma.branch.findFirst({ where: { id: input.branchId, ...live }, select: { id: true } }))) {
+    throw BadRequest("ไม่พบสาขาที่เลือก หรือสาขาถูกลบไปแล้ว");
+  }
+  if (input.departmentId && !(await prisma.department.findFirst({ where: { id: input.departmentId, ...live }, select: { id: true } }))) {
+    throw BadRequest("ไม่พบแผนกที่เลือก หรือแผนกถูกลบไปแล้ว");
+  }
+  if (input.positionId && !(await prisma.position.findFirst({ where: { id: input.positionId, ...live }, select: { id: true } }))) {
+    throw BadRequest("ไม่พบตำแหน่งที่เลือก หรือตำแหน่งถูกลบไปแล้ว");
+  }
+  if (input.costCenterId && !(await prisma.costCenter.findFirst({ where: { id: input.costCenterId, ...live }, select: { id: true } }))) {
+    throw BadRequest("ไม่พบศูนย์ต้นทุนที่เลือก หรือศูนย์ต้นทุนถูกลบไปแล้ว");
+  }
+  if (input.managerId) {
+    if (selfId && input.managerId === selfId) throw BadRequest("ตั้งพนักงานเป็นหัวหน้าของตัวเองไม่ได้");
+    const manager = await prisma.employee.findFirst({ where: { id: input.managerId, ...live }, select: { managerId: true } });
+    if (!manager) throw BadRequest("ไม่พบหัวหน้าที่เลือก หรือหัวหน้าถูกลบไปแล้ว");
+    if (selfId) {
+      // Walk up from the new manager; reaching the employee means the reporting line would loop.
+      let cursor: string | null = manager.managerId;
+      for (let guard = 0; cursor && guard < 50; guard++) {
+        if (cursor === selfId) throw BadRequest("ตั้งหัวหน้าคนนี้ไม่ได้ เพราะหัวหน้าจะวนกันเอง");
+        const up: { managerId: string | null } | null = await prisma.employee.findFirst({
+          where: { id: cursor, companyId },
+          select: { managerId: true },
+        });
+        cursor = up?.managerId ?? null;
+      }
+    }
+  }
+}
+
 export async function createEmployee(
   companyId: string,
   input: EmployeeCreateInput,
   actor: AccessClaims,
   meta?: { ip?: string; userAgent?: string },
 ): Promise<EmployeeDetail> {
+  await assertValidOrgRefs(companyId, null, input);
   const created = await prisma.employee.create({
     data: {
       ...toDecimalFields(input),
@@ -235,6 +295,28 @@ export async function createEmployee(
   return created;
 }
 
+/**
+ * What goes into the audit row for an edit: the names of every field that was sent, plus the values of the
+ * non-sensitive ones (status, type, org links). Pay, national ID, bank, tax and the photo are named only,
+ * never copied (the photo alone can be megabytes and the audit list returns every payload).
+ */
+const AUDIT_VALUE_KEYS = [
+  "status",
+  "employmentType",
+  "compensationType",
+  "branchId",
+  "departmentId",
+  "positionId",
+  "managerId",
+  "costCenterId",
+] as const;
+
+function auditAfter(input: EmployeeUpdateInput) {
+  const values: Record<string, unknown> = {};
+  for (const k of AUDIT_VALUE_KEYS) if (input[k] !== undefined) values[k] = input[k];
+  return { fields: Object.keys(input), ...values };
+}
+
 export async function updateEmployee(
   companyId: string,
   id: string,
@@ -248,6 +330,13 @@ export async function updateEmployee(
   });
   if (!existing) throw NotFound("ไม่พบพนักงาน");
 
+  await assertValidOrgRefs(companyId, id, input);
+  // Switching a login off through the status needs the same privilege check as the account screens.
+  const INACTIVE_STATUSES = new Set(["TERMINATED", "RESIGNED", "SUSPENDED"]);
+  const disablesLogin =
+    !!existing.userId && !!input.status && input.status !== existing.status && INACTIVE_STATUSES.has(input.status);
+  if (disablesLogin) await assertCanDisableLogin(actor, existing.userId!);
+
   const updated = await prisma.employee.update({
     where: { id },
     data: { ...toUpdateData(input), updatedById: actor.sub },
@@ -259,7 +348,6 @@ export async function updateEmployee(
   // Employment status drives system access: leaving employment must revoke
   // login immediately, and reinstating it must restore access — not leave
   // the account silently disabled or, worse, silently still active.
-  const INACTIVE_STATUSES = new Set(["TERMINATED", "RESIGNED", "SUSPENDED"]);
   if (existing.userId && input.status && input.status !== existing.status) {
     if (INACTIVE_STATUSES.has(input.status)) {
       await prisma.user.update({ where: { id: existing.userId }, data: { status: "DISABLED" } });
@@ -297,7 +385,7 @@ export async function updateEmployee(
     action: "employee.update",
     entity: "Employee",
     entityId: id,
-    after: input,
+    after: auditAfter(input),
     ...meta,
   });
 
@@ -315,6 +403,8 @@ export async function softDeleteEmployee(
     select: { id: true, employeeCode: true, userId: true },
   });
   if (!existing) throw NotFound("ไม่พบพนักงาน");
+  // Deleting the record also switches the login off, so apply the same self / higher-privilege guard.
+  if (existing.userId) await assertCanDisableLogin(actor, existing.userId);
 
   await prisma.employee.update({
     where: { id },

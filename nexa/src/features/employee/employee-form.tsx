@@ -97,11 +97,14 @@ const EMPTY: FormSchema = {
 
 export function EmployeeForm({
   formId,
+  employeeId,
   defaultValues,
   orgOptions,
   onSubmit,
 }: {
   formId: string;
+  /** Set when editing: that person is left out of the manager list (nobody reports to themself). */
+  employeeId?: string;
   defaultValues?: Partial<EmployeeFormValues>;
   orgOptions?: OrgOptions;
   onSubmit: (values: EmployeeFormValues) => void;
@@ -178,9 +181,10 @@ export function EmployeeForm({
   }
 
   function submit(values: FormSchema) {
-    // Strip the "none" sentinel back to undefined before sending.
+    // The "none" sentinel goes out as null: on edit that clears the stored value (undefined would be dropped
+    // from the JSON and leave the old one); create treats null as "not set".
     const cleaned = Object.fromEntries(
-      Object.entries(values).map(([k, v]) => [k, v === NONE ? undefined : v]),
+      Object.entries(values).map(([k, v]) => [k, v === NONE ? null : v]),
     ) as unknown as EmployeeFormValues;
     onSubmit(cleaned);
   }
@@ -256,7 +260,7 @@ export function EmployeeForm({
               <SelectField form={form} name="positionId" label="ตำแหน่ง" placeholder="เลือกตำแหน่ง" clearable
                 options={positionsInDepartment.map((p) => ({ value: p.id, label: p.title }))} />
               <SelectField form={form} name="managerId" label="หัวหน้างาน" placeholder="เลือกหัวหน้างาน" clearable
-                options={(orgOptions?.managers ?? []).map((m) => ({
+                options={(orgOptions?.managers ?? []).filter((m) => m.id !== employeeId).map((m) => ({
                   value: m.id,
                   label: `${displayName(m)} · ${m.employeeCode}`,
                 }))} />

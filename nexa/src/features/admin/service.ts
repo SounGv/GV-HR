@@ -7,6 +7,7 @@ import { can } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { RoleCreateInput, RoleUpdateInput } from "./schema";
 import { rolePermissionKeys } from "@/config/permissions";
+import { isCompanyWideEmployeeViewer } from "@/features/employee/service";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -25,18 +26,29 @@ function assertGrantable(session: AccessClaims, keys: string[]) {
   }
 }
 
-/** Replace a role's permission set with the given permission keys. */
-async function setRolePermissions(session: AccessClaims, roleId: string, keys: string[]) {
+/**
+ * Looks up the permission rows for the given keys. Call this (and assertGrantable) BEFORE writing anything, so a
+ * refused grant leaves nothing behind; the actual replace then runs inside the caller's transaction.
+ */
+async function resolvePermissionIds(session: AccessClaims, keys: string[]) {
   assertGrantable(session, keys);
-
   const perms = await prisma.permission.findMany({
     where: { key: { in: keys } },
     select: { id: true },
   });
-  await prisma.rolePermission.deleteMany({ where: { roleId } });
-  if (perms.length > 0) {
-    await prisma.rolePermission.createMany({
-      data: perms.map((p) => ({ roleId, permissionId: p.id })),
+  return perms.map((p) => p.id);
+}
+
+/** Replace a role's permission set, inside the caller's transaction. */
+async function replaceRolePermissions(
+  tx: { rolePermission: typeof prisma.rolePermission },
+  roleId: string,
+  permissionIds: string[],
+) {
+  await tx.rolePermission.deleteMany({ where: { roleId } });
+  if (permissionIds.length > 0) {
+    await tx.rolePermission.createMany({
+      data: permissionIds.map((permissionId) => ({ roleId, permissionId })),
       skipDuplicates: true,
     });
   }
@@ -72,18 +84,22 @@ export async function createRole(
   input: RoleCreateInput,
   meta?: Meta,
 ) {
-  const role = await prisma.role.create({
-    data: {
-      companyId,
-      name: input.name,
-      description: input.description,
-      isSystem: false,
-      createdById: session.sub,
-      updatedById: session.sub,
-    },
-    select: { id: true },
+  const permissionIds = await resolvePermissionIds(session, input.permissions);
+  const role = await prisma.$transaction(async (tx) => {
+    const created = await tx.role.create({
+      data: {
+        companyId,
+        name: input.name,
+        description: input.description,
+        isSystem: false,
+        createdById: session.sub,
+        updatedById: session.sub,
+      },
+      select: { id: true },
+    });
+    await replaceRolePermissions(tx, created.id, permissionIds);
+    return created;
   });
-  await setRolePermissions(session, role.id, input.permissions);
 
   await writeAudit({
     companyId,
@@ -112,15 +128,19 @@ export async function updateRole(
   if (!role) throw NotFound("ไม่พบบทบาท");
   if (role.isSystem) throw Forbidden("ไม่สามารถแก้ไขบทบาทของระบบได้");
 
-  await prisma.role.update({
-    where: { id },
-    data: {
-      ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.description !== undefined ? { description: input.description } : {}),
-      updatedById: session.sub,
-    },
+  // Check the grant first, then write the role fields and its permissions together (one transaction).
+  const permissionIds = input.permissions ? await resolvePermissionIds(session, input.permissions) : null;
+  await prisma.$transaction(async (tx) => {
+    await tx.role.update({
+      where: { id },
+      data: {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        updatedById: session.sub,
+      },
+    });
+    if (permissionIds) await replaceRolePermissions(tx, id, permissionIds);
   });
-  if (input.permissions) await setRolePermissions(session, id, input.permissions);
 
   await writeAudit({
     companyId,
@@ -258,7 +278,11 @@ export async function setAiAccessGrant(
     select: { employee: { select: { id: true } } },
   });
   if (!user) throw NotFound("ไม่พบผู้ใช้");
-  if (!user.employee) throw BadRequest("บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน จึงกำหนดขอบเขต AI ให้ไม่ได้");
+  if (!user.employee) throw BadRequest("ไม่สามารถกำหนดขอบเขต AI ให้ได้ เพราะบัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน");
+  // Company-wide AI answers are as wide as HR's own view, so only someone who already has that view may grant it.
+  if (scope === "COMPANY" && !isCompanyWideEmployeeViewer(session)) {
+    throw Forbidden("กำหนดขอบเขต AI ทั้งบริษัทได้เฉพาะผู้ที่ดูข้อมูลพนักงานทั้งบริษัทได้");
+  }
 
   const grant = await prisma.aiAccessGrant.upsert({
     where: { employeeId: user.employee.id },
@@ -321,9 +345,46 @@ export async function setUserRoles(
 ) {
   const user = await prisma.user.findFirst({
     where: { id: userId, companyId, deletedAt: null },
-    select: { id: true, roles: { select: { roleId: true } } },
+    select: {
+      id: true,
+      roles: {
+        select: {
+          roleId: true,
+          role: { select: { name: true, isSystem: true, permissions: { select: { permission: { select: { key: true } } } } } },
+        },
+      },
+    },
   });
   if (!user) throw NotFound("ไม่พบผู้ใช้");
+
+  // Changing the roles of someone who holds more than the caller (Super Admin) is a way to lock them out, and
+  // emptying your own roles locks yourself out, so both are refused.
+  if (userId === session.sub && roleIds.length === 0) {
+    throw Forbidden("ลบบทบาททั้งหมดของตัวเองไม่ได้ ให้ผู้ดูแลคนอื่นทำแทน");
+  }
+  if (userId !== session.sub) {
+    const heldKeys = new Set(user.roles.flatMap((r) => rolePermissionKeys(r.role)));
+    if ([...heldKeys].some((k) => !can(session.perms, k))) {
+      throw Forbidden("แก้บทบาทของผู้ใช้ที่มีสิทธิ์เกินกว่าคุณไม่ได้");
+    }
+  }
+  // Keep at least one Super Admin in the company.
+  const holdsSuperAdmin = user.roles.some((r) => r.role.isSystem && r.role.name === "Super Admin");
+  if (holdsSuperAdmin) {
+    const keepsIt = roleIds.length > 0 && (await prisma.role.count({
+      where: { id: { in: roleIds }, isSystem: true, name: "Super Admin" },
+    })) > 0;
+    if (!keepsIt) {
+      const others = await prisma.userRole.count({
+        where: {
+          userId: { not: userId },
+          role: { isSystem: true, name: "Super Admin" },
+          user: { companyId, deletedAt: null, status: "ACTIVE" },
+        },
+      });
+      if (others === 0) throw BadRequest("ต้องมี Super Admin อย่างน้อย 1 คน ตั้ง Super Admin คนอื่นก่อนแล้วจึงเอาบทบาทนี้ออก");
+    }
+  }
 
   if (roleIds.length > 0) {
     const roles = await prisma.role.findMany({
@@ -331,7 +392,7 @@ export async function setUserRoles(
       select: { id: true, name: true, isSystem: true, permissions: { select: { permission: { select: { key: true } } } } },
     });
     if (roles.length !== roleIds.length) throw BadRequest("มีบทบาทที่ไม่ถูกต้อง");
-    // Same reasoning as assertGrantable in setRolePermissions: assigning a
+    // Same reasoning as assertGrantable for role permissions: assigning a
     // role can't hand the target user permissions the caller doesn't have.
     // Roles the user already holds aren't a new grant, so keeping them must
     // not block unrelated edits.

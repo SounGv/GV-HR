@@ -198,11 +198,14 @@ export async function applyOrgMoves(
 }
 
 async function assertCodeFree(companyId: string, code: string, exceptId?: string) {
+  // The database unique covers removed rows too, so look at them as well and say why the code is taken.
   const existing = await prisma.department.findFirst({
-    where: { companyId, code, deletedAt: null, ...(exceptId ? { id: { not: exceptId } } : {}) },
-    select: { id: true },
+    where: { companyId, code, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { deletedAt: true },
   });
-  if (existing) throw Conflict(`มีรหัสฝ่าย “${code}” อยู่แล้ว`);
+  if (existing) {
+    throw Conflict(existing.deletedAt ? `รหัสฝ่าย “${code}” เคยใช้กับรายการที่ถูกลบไปแล้ว ใช้รหัสอื่น` : `มีรหัสฝ่าย “${code}” อยู่แล้ว`);
+  }
 }
 
 /** Walk ancestors of `parentId`; throw if `id` appears (would create a cycle). */
@@ -278,7 +281,14 @@ export async function updateDepartment(
   });
   if (!dept) throw NotFound("ไม่พบฝ่าย");
   if (input.code) await assertCodeFree(companyId, input.code, id);
-  if (input.parentId) await assertNoCycle(companyId, id, input.parentId);
+  if (input.parentId) {
+    const parent = await prisma.department.findFirst({
+      where: { id: input.parentId, companyId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!parent) throw BadRequest("ไม่พบฝ่ายแม่");
+    await assertNoCycle(companyId, id, input.parentId);
+  }
 
   const record = await prisma.department.update({
     where: { id: dept.id },
@@ -363,12 +373,25 @@ export async function listPositions(companyId: string): Promise<PositionRow[]> {
   }));
 }
 
-async function assertPositionCodeFree(companyId: string, code: string, exceptId?: string) {
-  const existing = await prisma.position.findFirst({
-    where: { companyId, code, deletedAt: null, ...(exceptId ? { id: { not: exceptId } } : {}) },
+/** A position's department must be a live one of the same company. */
+async function assertPositionDepartment(companyId: string, departmentId: string | null | undefined) {
+  if (!departmentId) return;
+  const dept = await prisma.department.findFirst({
+    where: { id: departmentId, companyId, deletedAt: null },
     select: { id: true },
   });
-  if (existing) throw Conflict(`มีรหัสตำแหน่ง “${code}” อยู่แล้ว`);
+  if (!dept) throw BadRequest("ไม่พบฝ่ายที่เลือก หรือฝ่ายถูกลบไปแล้ว");
+}
+
+async function assertPositionCodeFree(companyId: string, code: string, exceptId?: string) {
+  // The database unique covers removed rows too, so look at them as well and say why the code is taken.
+  const existing = await prisma.position.findFirst({
+    where: { companyId, code, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { deletedAt: true },
+  });
+  if (existing) {
+    throw Conflict(existing.deletedAt ? `รหัสตำแหน่ง “${code}” เคยใช้กับรายการที่ถูกลบไปแล้ว ใช้รหัสอื่น` : `มีรหัสตำแหน่ง “${code}” อยู่แล้ว`);
+  }
 }
 
 export async function getPosition(companyId: string, id: string) {
@@ -387,6 +410,7 @@ export async function createPosition(
   meta?: Meta,
 ) {
   await assertPositionCodeFree(companyId, input.code);
+  await assertPositionDepartment(companyId, input.departmentId);
   const record = await prisma.position.create({
     data: {
       companyId,
@@ -424,6 +448,7 @@ export async function updatePosition(
   });
   if (!pos) throw NotFound("ไม่พบตำแหน่ง");
   if (input.code) await assertPositionCodeFree(companyId, input.code, id);
+  await assertPositionDepartment(companyId, input.departmentId);
 
   const record = await prisma.position.update({
     where: { id: pos.id },

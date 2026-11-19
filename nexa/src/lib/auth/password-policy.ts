@@ -19,8 +19,18 @@ const GEN_UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // no I/O
 const GEN_DIGIT = "23456789"; // no 0/1
 const GEN_ALL = GEN_LOWER + GEN_UPPER + GEN_DIGIT;
 
+/** Uniform random integer in [0, max) from the platform's secure generator (no modulo bias). */
+function randomBelow(max: number): number {
+  const limit = Math.floor(0x100000000 / max) * max;
+  const buf = new Uint32Array(1);
+  do {
+    globalThis.crypto.getRandomValues(buf);
+  } while (buf[0] >= limit);
+  return buf[0] % max;
+}
+
 function randomChar(pool: string): string {
-  return pool[Math.floor(Math.random() * pool.length)];
+  return pool[randomBelow(pool.length)];
 }
 
 /** Generates a random password guaranteed to satisfy `passwordSchema`. */
@@ -30,7 +40,7 @@ export function generateStrongPassword(length = 12): string {
   const chars = [...required, ...rest];
   // Shuffle so the guaranteed chars aren't always in the first 3 positions.
   for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomBelow(i + 1);
     [chars[i], chars[j]] = [chars[j], chars[i]];
   }
   return chars.join("");

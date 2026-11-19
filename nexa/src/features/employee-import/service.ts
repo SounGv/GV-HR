@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { BadRequest } from "@/lib/api/errors";
 import { can } from "@/lib/auth/rbac";
 import type { SessionUser } from "@/lib/auth/session";
 import { importRowSchema, type ImportSummary } from "./schema";
@@ -8,6 +9,12 @@ import { importRowSchema, type ImportSummary } from "./schema";
 type Meta = { ip?: string; userAgent?: string };
 
 const norm = (s: string) => s.trim().toLowerCase();
+
+/** Row number shown in errors: the spreadsheet row the client sent (`_row`), else the position in the posted list. */
+function sheetRow(raw: Record<string, unknown>, index: number) {
+  const n = raw._row;
+  return typeof n === "number" && Number.isInteger(n) && n > 0 ? n : index + 1;
+}
 
 export async function importEmployees(
   companyId: string,
@@ -44,7 +51,7 @@ export async function importEmployees(
     const parsed = importRowSchema.safeParse(raw);
     if (!parsed.success) {
       errors.push({
-        row: i + 1,
+        row: sheetRow(raw, i),
         code: String(raw.employeeCode ?? "-"),
         message: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง",
       });
@@ -52,11 +59,11 @@ export async function importEmployees(
     }
     const r = parsed.data;
     if (seen.has(r.employeeCode)) {
-      errors.push({ row: i + 1, code: r.employeeCode, message: "รหัสพนักงานซ้ำในไฟล์" });
+      errors.push({ row: sheetRow(raw, i), code: r.employeeCode, message: "รหัสพนักงานซ้ำในไฟล์" });
       return;
     }
     seen.add(r.employeeCode);
-    valid.push({ row: r, index: i + 1 });
+    valid.push({ row: r, index: sheetRow(raw, i) });
   });
 
   let created = 0;
@@ -73,75 +80,85 @@ export async function importEmployees(
   const idByCode = new Map(codeMap);
   const pendingManagers: { code: string; managerCode: string }[] = [];
 
-  await prisma.$transaction(async (tx) => {
-    for (const { row: r, index } of valid) {
-      if (codeMap.has(r.employeeCode) && !canUpdate) {
-        errors.push({ row: index, code: r.employeeCode, message: "มีพนักงานรหัสนี้อยู่แล้ว และคุณไม่มีสิทธิ์แก้ไขข้อมูลพนักงาน" });
-        continue;
-      }
-      if (!codeMap.has(r.employeeCode) && takenBySoftDeleted.has(r.employeeCode)) {
-        errors.push({ row: index, code: r.employeeCode, message: "รหัสพนักงานนี้เคยถูกใช้กับพนักงานที่ถูกลบไปแล้ว กรุณาใช้รหัสอื่น" });
-        continue;
-      }
-      const lookup = (label: string, value: string | null | undefined, map: Map<string, string>) => {
-        if (!value) return undefined;
-        const id = map.get(norm(value));
-        if (!id) warnings.push(`${r.employeeCode}: ไม่พบ${label} “${value}” (ข้ามการผูก${label})`);
-        return id;
-      };
-      const departmentId = lookup("แผนก", r.department, deptMap);
-      const positionId = lookup("ตำแหน่ง", r.position, posMap);
-      const branchId = lookup("สาขา", r.branch, branchMap);
-      const costCenterId = lookup("ศูนย์ต้นทุน", r.costCenter, costCenterMap);
+  // One update/create per row on a single connection: the 5 s default would roll everything back on a big file.
+  const txOptions = { maxWait: 10_000, timeout: Math.min(55_000, 15_000 + valid.length * 40) };
+  try {
+    await prisma.$transaction(async (tx) => {
+      for (const { row: r, index } of valid) {
+        if (codeMap.has(r.employeeCode) && !canUpdate) {
+          errors.push({ row: index, code: r.employeeCode, message: "มีพนักงานรหัสนี้อยู่แล้ว และคุณไม่มีสิทธิ์แก้ไขข้อมูลพนักงาน" });
+          continue;
+        }
+        if (!codeMap.has(r.employeeCode) && takenBySoftDeleted.has(r.employeeCode)) {
+          errors.push({ row: index, code: r.employeeCode, message: "รหัสพนักงานนี้เคยถูกใช้กับพนักงานที่ถูกลบไปแล้ว กรุณาใช้รหัสอื่น" });
+          continue;
+        }
+        const lookup = (label: string, value: string | null | undefined, map: Map<string, string>) => {
+          if (!value) return undefined;
+          const id = map.get(norm(value));
+          if (!id) warnings.push(`${r.employeeCode}: ไม่พบ${label} “${value}” (ข้ามการผูก${label})`);
+          return id;
+        };
+        const departmentId = lookup("แผนก", r.department, deptMap);
+        const positionId = lookup("ตำแหน่ง", r.position, posMap);
+        const branchId = lookup("สาขา", r.branch, branchMap);
+        const costCenterId = lookup("ศูนย์ต้นทุน", r.costCenter, costCenterMap);
 
-      // A blank cell (or a name that doesn't match) means "leave this alone" —
-      // it used to overwrite the saved value with null, so re-importing a
-      // partial sheet silently wiped existing departments, positions and contacts.
-      const provided = {
-        firstName: r.firstName,
-        ...(r.lastName ? { lastName: r.lastName } : {}),
-        ...(r.nickname != null ? { nickname: r.nickname } : {}),
-        ...(r.email != null ? { email: r.email } : {}),
-        ...(r.phone != null ? { phone: r.phone } : {}),
-        ...(departmentId ? { departmentId } : {}),
-        ...(positionId ? { positionId } : {}),
-        ...(branchId ? { branchId } : {}),
-        ...(costCenterId ? { costCenterId } : {}),
-        // hireDate / probationEndDate drive medical-benefit and loan eligibility.
-        ...(r.hireDate ? { hireDate: r.hireDate } : {}),
-        ...(r.probationEndDate ? { probationEndDate: r.probationEndDate } : {}),
-        ...(r.baseSalary != null ? { baseSalary: new Prisma.Decimal(r.baseSalary) } : {}),
-        updatedById: session.sub,
-      };
+        // A blank cell (or a name that doesn't match) means "leave this alone" —
+        // it used to overwrite the saved value with null, so re-importing a
+        // partial sheet silently wiped existing departments, positions and contacts.
+        const provided = {
+          firstName: r.firstName,
+          ...(r.lastName ? { lastName: r.lastName } : {}),
+          ...(r.nickname != null ? { nickname: r.nickname } : {}),
+          ...(r.email != null ? { email: r.email } : {}),
+          ...(r.phone != null ? { phone: r.phone } : {}),
+          ...(departmentId ? { departmentId } : {}),
+          ...(positionId ? { positionId } : {}),
+          ...(branchId ? { branchId } : {}),
+          ...(costCenterId ? { costCenterId } : {}),
+          // hireDate / probationEndDate drive medical-benefit and loan eligibility.
+          ...(r.hireDate ? { hireDate: r.hireDate } : {}),
+          ...(r.probationEndDate ? { probationEndDate: r.probationEndDate } : {}),
+          ...(r.baseSalary != null ? { baseSalary: new Prisma.Decimal(r.baseSalary) } : {}),
+          updatedById: session.sub,
+        };
 
-      const existingId = codeMap.get(r.employeeCode);
-      if (existingId) {
-        await tx.employee.update({ where: { id: existingId }, data: provided });
-        updated++;
-      } else {
-        const createdRow = await tx.employee.create({
-          data: { companyId, employeeCode: r.employeeCode, lastName: "", ...provided, createdById: session.sub },
-          select: { id: true },
-        });
-        idByCode.set(r.employeeCode, createdRow.id);
-        created++;
+        const existingId = codeMap.get(r.employeeCode);
+        if (existingId) {
+          await tx.employee.update({ where: { id: existingId }, data: provided });
+          updated++;
+        } else {
+          const createdRow = await tx.employee.create({
+            data: { companyId, employeeCode: r.employeeCode, lastName: "", ...provided, createdById: session.sub },
+            select: { id: true },
+          });
+          idByCode.set(r.employeeCode, createdRow.id);
+          created++;
+        }
+        if (r.managerCode) pendingManagers.push({ code: r.employeeCode, managerCode: r.managerCode });
       }
-      if (r.managerCode) pendingManagers.push({ code: r.employeeCode, managerCode: r.managerCode });
+
+      for (const { code, managerCode } of pendingManagers) {
+        const employeeId = idByCode.get(code);
+        const managerId = idByCode.get(managerCode);
+        if (!employeeId) continue;
+        if (managerCode === code) {
+          warnings.push(`${code}: หัวหน้าเป็นคนเดียวกับพนักงาน (ข้ามการผูกหัวหน้า)`);
+        } else if (!managerId) {
+          warnings.push(`${code}: ไม่พบรหัสหัวหน้า “${managerCode}” (ข้ามการผูกหัวหน้า)`);
+        } else {
+          await tx.employee.update({ where: { id: employeeId }, data: { managerId } });
+        }
+      }
+    }, txOptions);
+  } catch (err) {
+    // P2028 = the transaction ran out of time; nothing was saved.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2028") {
+      throw BadRequest("นำเข้าไม่ทัน ไม่มีข้อมูลถูกบันทึก ลองแบ่งไฟล์เป็นชุดละไม่เกิน 500 แถว");
     }
-
-    for (const { code, managerCode } of pendingManagers) {
-      const employeeId = idByCode.get(code);
-      const managerId = idByCode.get(managerCode);
-      if (!employeeId) continue;
-      if (managerCode === code) {
-        warnings.push(`${code}: หัวหน้าเป็นคนเดียวกับพนักงาน (ข้ามการผูกหัวหน้า)`);
-      } else if (!managerId) {
-        warnings.push(`${code}: ไม่พบรหัสหัวหน้า “${managerCode}” (ข้ามการผูกหัวหน้า)`);
-      } else {
-        await tx.employee.update({ where: { id: employeeId }, data: { managerId } });
-      }
-    }
-  });
+    throw err;
+  }
 
   await writeAudit({
     companyId,

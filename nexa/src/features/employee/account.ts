@@ -10,6 +10,27 @@ import { rolePermissionKeys } from "@/config/permissions";
 
 type Meta = { ip?: string; userAgent?: string };
 
+const REMOVED_EMAIL_MSG = "อีเมลนี้เคยใช้กับบัญชีที่ถูกลบไปแล้ว ใช้อีเมลอื่น หรือให้ผู้ดูแลระบบช่วยคืนบัญชีเดิม";
+const REMOVED_USERNAME_MSG = "ชื่อผู้ใช้นี้เคยใช้กับบัญชีที่ถูกลบไปแล้ว ใช้ชื่ออื่น";
+
+/**
+ * Guard for anything that switches a login off (terminate, suspend, delete an employee): the caller may not do it
+ * to their own login, nor to a user whose permissions go beyond the caller's (HR holds employee:update but not
+ * admin:*, so it must not be able to lock out Super Admin). Same subset rule as the password reset below.
+ */
+export async function assertCanDisableLogin(actor: { sub: string; perms: string[] }, userId: string) {
+  if (userId === actor.sub) throw Forbidden("ปิดบัญชีของตัวเองไม่ได้ ให้ผู้ดูแลคนอื่นทำแทน");
+  const roles = await prisma.userRole.findMany({
+    where: { userId },
+    select: { role: { select: { name: true, isSystem: true, permissions: { select: { permission: { select: { key: true } } } } } } },
+  });
+  const targetKeys = new Set<string>();
+  for (const ur of roles) for (const k of rolePermissionKeys(ur.role)) targetKeys.add(k);
+  if ([...targetKeys].some((k) => !can(actor.perms, k))) {
+    throw Forbidden("ปิดบัญชีของผู้ใช้ที่มีสิทธิ์เกินกว่าคุณไม่ได้");
+  }
+}
+
 /**
  * Create a login account for an employee: a User (hashed password) with the
  * company's "Employee" role, linked back to the employee. HR-set initial
@@ -25,21 +46,26 @@ export async function createEmployeeAccount(
 ) {
   const emp = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { id: true, userId: true },
+    select: { id: true, userId: true, status: true },
   });
   if (!emp) throw NotFound("ไม่พบพนักงาน");
   if (emp.userId) throw Conflict("พนักงานคนนี้มีบัญชีเข้าใช้งานแล้ว");
+  // A login made for someone who has left would be ACTIVE and let them sign in.
+  if (emp.status === "TERMINATED" || emp.status === "RESIGNED") {
+    throw BadRequest("พนักงานคนนี้พ้นสภาพแล้ว สร้างบัญชีเข้าใช้งานไม่ได้ เปลี่ยนสถานะเป็นทำงานอยู่ก่อน");
+  }
 
   const email = input.email ? input.email.toLowerCase().trim() : null;
   const username = input.username ? input.username.toLowerCase().trim() : null;
 
+  // The database unique covers removed accounts too, so look at them as well and say so.
   if (email) {
-    const dupe = await prisma.user.findFirst({ where: { email, deletedAt: null }, select: { id: true } });
-    if (dupe) throw Conflict("อีเมลนี้ถูกใช้งานแล้ว");
+    const dupe = await prisma.user.findFirst({ where: { companyId, email }, select: { deletedAt: true } });
+    if (dupe) throw Conflict(dupe.deletedAt ? REMOVED_EMAIL_MSG : "อีเมลนี้ถูกใช้งานแล้ว");
   }
   if (username) {
-    const dupe = await prisma.user.findFirst({ where: { username, deletedAt: null }, select: { id: true } });
-    if (dupe) throw Conflict("ชื่อผู้ใช้นี้ถูกใช้งานแล้ว");
+    const dupe = await prisma.user.findFirst({ where: { companyId, username }, select: { deletedAt: true } });
+    if (dupe) throw Conflict(dupe.deletedAt ? REMOVED_USERNAME_MSG : "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว");
   }
 
   const role = await prisma.role.findFirst({
@@ -188,12 +214,12 @@ export async function updateEmployeeAccount(
   if (!emailChanged && !usernameChanged && !input.password) throw BadRequest("ไม่มีอะไรเปลี่ยน");
 
   if (email && emailChanged) {
-    const dupe = await prisma.user.findFirst({ where: { email, deletedAt: null, NOT: { id: emp.userId } }, select: { id: true } });
-    if (dupe) throw Conflict("อีเมลนี้ถูกใช้งานแล้ว");
+    const dupe = await prisma.user.findFirst({ where: { companyId, email, NOT: { id: emp.userId } }, select: { deletedAt: true } });
+    if (dupe) throw Conflict(dupe.deletedAt ? REMOVED_EMAIL_MSG : "อีเมลนี้ถูกใช้งานแล้ว");
   }
   if (username && usernameChanged) {
-    const dupe = await prisma.user.findFirst({ where: { username, deletedAt: null, NOT: { id: emp.userId } }, select: { id: true } });
-    if (dupe) throw Conflict("ชื่อผู้ใช้นี้ถูกใช้งานแล้ว");
+    const dupe = await prisma.user.findFirst({ where: { companyId, username, NOT: { id: emp.userId } }, select: { deletedAt: true } });
+    if (dupe) throw Conflict(dupe.deletedAt ? REMOVED_USERNAME_MSG : "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว");
   }
 
   const passwordHash = input.password ? await hashPassword(input.password) : undefined;

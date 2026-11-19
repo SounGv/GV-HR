@@ -1,7 +1,7 @@
 import { requirePermission } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
 import { ok, handleApiError } from "@/lib/api/response";
-import { suggestNextEmployeeCode } from "@/features/employee/service";
+import { suggestNextEmployeeCode, teamScopeFilter } from "@/features/employee/service";
 
 export const runtime = "nodejs";
 
@@ -21,8 +21,11 @@ export async function GET() {
     });
     const branches = await prisma.branch.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } });
     const costCenters = await prisma.costCenter.findMany({ where, select: { id: true, name: true }, orderBy: { name: "asc" } });
+    // A plain manager sees only themself and their team here, like the employee list; the company-wide
+    // reporting line is for HR / Finance.
+    const scope = teamScopeFilter(session);
     const managers = await prisma.employee.findMany({
-      where,
+      where: scope ? { ...where, AND: [scope] } : where,
       select: {
         id: true,
         firstName: true,
@@ -36,7 +39,7 @@ export async function GET() {
         costCenterId: true,
       },
       orderBy: { firstName: "asc" },
-      take: 500,
+      take: 2000,
     });
     const nextEmployeeCode = await suggestNextEmployeeCode(companyId);
 

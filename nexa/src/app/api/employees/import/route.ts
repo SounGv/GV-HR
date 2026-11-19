@@ -6,6 +6,8 @@ import { importPayloadSchema } from "@/features/employee-import/schema";
 import { importEmployees } from "@/features/employee-import/service";
 
 export const runtime = "nodejs";
+// A large sheet saves one row at a time, so allow the function the time its transaction is given.
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {

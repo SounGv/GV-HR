@@ -40,6 +40,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 interface PreviewRow {
   data: Record<string, string>;
   error: string | null;
+  /** Row number in the spreadsheet (header is row 1), sent so server errors point at the right line. */
+  sheetRow: number;
 }
 
 /** Quote-aware CSV parser → array of rows (arrays of cells). */
@@ -109,7 +111,7 @@ export function ImportCenter() {
     }
 
     const seen = new Set<string>();
-    const preview: PreviewRow[] = grid.slice(1).map((cells) => {
+    const preview: PreviewRow[] = grid.slice(1).map((cells, rowIndex) => {
       const data: Record<string, string> = {};
       colMap.forEach((key, i) => {
         if (key) data[key] = (cells[i] ?? "").trim();
@@ -120,14 +122,14 @@ export function ImportCenter() {
       else if (data.email && !EMAIL_RE.test(data.email)) error = "อีเมลไม่ถูกต้อง";
       else if (seen.has(data.employeeCode)) error = "รหัสซ้ำในไฟล์";
       if (data.employeeCode) seen.add(data.employeeCode);
-      return { data, error };
+      return { data, error, sheetRow: rowIndex + 2 };
     });
     setRows(preview);
   }
 
   async function runImport() {
     if (!rows) return;
-    const valid = rows.filter((r) => !r.error).map((r) => r.data);
+    const valid = rows.filter((r) => !r.error).map((r) => ({ ...r.data, _row: r.sheetRow }));
     if (valid.length === 0) {
       toast.error("ไม่มีแถวที่ถูกต้องให้นำเข้า");
       return;
