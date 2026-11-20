@@ -139,13 +139,6 @@ export const GvSystemIcon = make("system");
 
 export type GvStatus = "bad" | "warn" | "info" | "ok";
 
-const BADGE: Record<GvStatus, { bg: string; glyph: string }> = {
-  bad: { bg: "bg-destructive text-destructive-foreground", glyph: "M12 6v7M12 18h.01" },
-  warn: { bg: "bg-warning text-warning-foreground", glyph: "M12 7v5l3 2" },
-  info: { bg: "bg-info text-info-foreground", glyph: "M12 11v6M12 7h.01" },
-  ok: { bg: "bg-success text-success-foreground", glyph: "M5 12.5l4.5 4.5L19 7" },
-};
-
 /**
  * The teal tile an icon sits on. It is the same teal for every group; urgency is told by the small badge on the
  * corner (a glyph on a status colour) together with the status word written beside the card, never by recolouring
@@ -156,21 +149,13 @@ const BADGE: Record<GvStatus, { bg: string; glyph: string }> = {
  * @param className Size and spacing; defaults to 44px.
  * @param iconClassName Icon size inside a tile that is not 44px; defaults to 26px.
  */
-export function GvIconTile({ icon: Icon, status, className, iconClassName }: { icon: ComponentType<GvIconProps>; status?: GvStatus; className?: string; iconClassName?: string }) {
+export function GvIconTile({ icon: Icon, className, iconClassName }: { icon: ComponentType<GvIconProps>; status?: GvStatus; className?: string; iconClassName?: string }) {
   return (
     <span
       aria-hidden="true"
-      className={cn("relative flex size-11 shrink-0 items-center justify-center rounded-lg bg-accent text-primary ring-1 ring-primary/15 ring-inset", className)}
+      className={cn("relative flex size-11 shrink-0 items-center justify-center text-primary", className)}
     >
       <Icon className={iconClassName ?? "size-[26px]"} />
-      {status && (
-        <span className={cn("absolute -top-1.5 -right-1.5 flex size-[19px] items-center justify-center rounded-full ring-2 ring-card", BADGE[status].bg)}>
-          <svg viewBox="0 0 24 24" className="size-[11px]" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-            {status === "warn" && <circle cx="12" cy="12" r="8" />}
-            <path d={BADGE[status].glyph} />
-          </svg>
-        </span>
-      )}
     </span>
   );
 }

@@ -659,15 +659,6 @@ a.gv-glass:hover,
 button.gv-glass:hover {
   background: var(--accent);
 }
-/* Section heading's teal bar. */
-.gv-bar-heading::before {
-  content: "";
-  flex: none;
-  width: 4px;
-  height: 20px;
-  border-radius: 2px;
-  background: #1976d2;
-}
 /* Row with a coloured severity edge on the left (set --edge). */
 .gv-edge {
   position: relative;

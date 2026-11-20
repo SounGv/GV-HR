@@ -50,7 +50,7 @@ function LeaveGroup({ title, people, empty }: { title: string; people: LeavePers
               <span className="flex flex-col items-end gap-0.5 text-right">
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold",
+                    "inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-xs font-semibold",
                     STATUS_META.ON_LEAVE.surface,
                   )}
                 >
@@ -130,7 +130,7 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
                   </span>
                   <span
                     className={cn(
-                      "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold tabular-nums",
+                      "inline-flex rounded-sm border px-2.5 py-0.5 text-xs font-semibold tabular-nums",
                       p.daysLeft <= 7 ? STATUS_META.LATE.surface : "border-border bg-card text-foreground",
                     )}
                   >

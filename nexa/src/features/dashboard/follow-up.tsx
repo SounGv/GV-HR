@@ -124,12 +124,12 @@ export function FollowRow({
           {sub && <span className="block text-[12.5px] leading-snug text-muted-foreground">{sub}</span>}
         </span>
         <span className="shrink-0 text-right leading-snug">
-          <span className={cn("block text-[34px] font-bold tabular-nums", TONE[tone].num)}>{display ?? count}</span>
+          <span className={"block text-[34px] font-bold text-foreground tabular-nums"}>{display ?? count}</span>
           <span className="mt-1 block text-[12px] leading-snug text-muted-foreground">{unit}</span>
         </span>
       </div>
       {tag && (
-        <span className={cn("relative inline-flex self-start rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold", TONE[tone].word)}>
+        <span className={cn("relative inline-flex self-start rounded-sm px-2.5 py-0.5 text-[12.5px] font-semibold", TONE[tone].word)}>
           {tone === "info" ? "i" : "!"} {tag}
         </span>
       )}

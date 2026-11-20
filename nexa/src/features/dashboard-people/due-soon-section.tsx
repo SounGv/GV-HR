@@ -63,7 +63,7 @@ export function DueSoonList({ items }: { items: DueSoonItem[] }) {
                 </span>
               </span>
               <span className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-status-late-fg">
+                <span className="inline-flex items-center gap-1.5 rounded-sm border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-status-late-fg">
                   <Clock className="size-3.5" aria-hidden="true" />
                   เหลือ {it.daysLeft} วัน
                 </span>

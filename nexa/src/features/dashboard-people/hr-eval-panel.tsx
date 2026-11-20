@@ -106,7 +106,7 @@ export function ResultsBoardCard({ board }: { board: RoundResultBoard[] }) {
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-base leading-snug font-semibold">ผลรอบล่าสุด</h3>
         {warn && (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold text-status-late-fg">
+          <span className="inline-flex items-center gap-1.5 rounded-sm border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold text-status-late-fg">
             <TriangleAlert className="size-3.5" aria-hidden="true" /> คะแนนกระจุกที่เต็ม
           </span>
         )}

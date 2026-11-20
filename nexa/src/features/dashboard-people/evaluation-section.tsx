@@ -32,7 +32,7 @@ function DaysLeft({ round }: { round: OpenRound }) {
   if (round.daysLeft === null || round.endIso === null) return null;
   const late = round.daysLeft < 0;
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-status-late-fg">
+    <span className="inline-flex items-center gap-1.5 rounded-sm border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-status-late-fg">
       <Clock className="size-3.5" aria-hidden="true" />
       {late ? `เลยกำหนด ${Math.abs(round.daysLeft)} วัน` : round.daysLeft === 0 ? "ปิดวันนี้" : `เหลือ ${round.daysLeft} วัน`} · ปิด {fmtDay(round.endIso)}
     </span>
@@ -149,7 +149,7 @@ function ResultsView({ r }: { r: ResultsCard }) {
     <article className={CARD} aria-label={`ผลประเมิน ${r.roundName}`}>
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-base leading-snug font-semibold break-words">{r.roundName}</h3>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-success-muted px-2.5 py-0.5 text-xs font-semibold text-success">
+        <span className="inline-flex items-center gap-1.5 rounded-sm bg-success-muted px-2.5 py-0.5 text-xs font-semibold text-success">
           <CheckCircle2 className="size-3.5" aria-hidden="true" /> อนุมัติผลแล้ว
         </span>
       </div>
@@ -240,7 +240,7 @@ function StatusPill({ tone, icon: Icon, children }: { tone: "warn" | "info"; ico
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-sm px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
         tone === "warn" ? "border border-status-late-border bg-status-late-bg text-status-late-fg" : "bg-info/10 text-info",
       )}
     >
@@ -397,7 +397,7 @@ export function HrResultsLine({ r }: { r: ResultsCard }) {
         {change ? ` ${change}` : ""}
       </p>
       <span className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-success-muted px-2.5 py-0.5 text-xs font-semibold text-success">
+        <span className="inline-flex items-center gap-1.5 rounded-sm bg-success-muted px-2.5 py-0.5 text-xs font-semibold text-success">
           <CheckCircle2 className="size-3.5" aria-hidden="true" /> อนุมัติผลแล้ว
         </span>
         <Link href={r.href} className={BTN}>
@@ -421,7 +421,7 @@ function MyTasks({ o }: { o: EvaluationOverview }) {
           <li key={t.assignmentId} className="flex flex-wrap items-center justify-between gap-2 py-2">
             <span className="text-sm font-semibold break-words">{t.person}</span>
             {t.status === "SUBMITTED" ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-success-muted px-2.5 py-0.5 text-xs font-semibold text-success">
+              <span className="inline-flex items-center gap-1.5 rounded-sm bg-success-muted px-2.5 py-0.5 text-xs font-semibold text-success">
                 <CheckCircle2 className="size-3.5" aria-hidden="true" /> ประเมินแล้ว
               </span>
             ) : (

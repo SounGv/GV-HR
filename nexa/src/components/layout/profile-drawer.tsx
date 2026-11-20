@@ -165,11 +165,11 @@ export function ProfileDrawer() {
   // Same per-topic chip colors as MenuIconChip in mobile-profile-view.tsx,
   // so the drawer and the profile page read as one consistent system.
   const items = [
-    { href: "/profile", label: "ข้อมูลส่วนตัว", icon: User, show: true, badge: 0, chipColor: "#6366F1" },
-    { href: "/notifications", label: "การแจ้งเตือน", icon: Bell, show: true, badge: unreadCount, chipColor: "#F5A524" },
-    { href: "/profile#security", label: "ความปลอดภัย", icon: ShieldCheck, show: true, badge: 0, chipColor: "#22A55B" },
-    { href: "/profile#security", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound, show: true, badge: 0, chipColor: "#42a5f5" },
-    { href: "/help", label: "คู่มือการใช้งาน", icon: Settings2, show: canSeeHelp, badge: 0, chipColor: "#64748B" },
+    { href: "/profile", label: "ข้อมูลส่วนตัว", icon: User, show: true, badge: 0 },
+    { href: "/notifications", label: "การแจ้งเตือน", icon: Bell, show: true, badge: unreadCount },
+    { href: "/profile#security", label: "ความปลอดภัย", icon: ShieldCheck, show: true, badge: 0 },
+    { href: "/profile#security", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound, show: true, badge: 0 },
+    { href: "/help", label: "คู่มือการใช้งาน", icon: Settings2, show: canSeeHelp, badge: 0 },
   ];
 
   return (
@@ -225,10 +225,9 @@ export function ProfileDrawer() {
                   className="flex min-h-16 items-center gap-3 rounded-lg px-3 py-3 text-[17px] font-semibold text-foreground transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.99] active:bg-muted"
                 >
                   <span
-                    className="relative flex size-10 shrink-0 items-center justify-center rounded-lg "
-                    style={{ background: item.chipColor }}
+                    className="relative flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent"
                   >
-                    <item.icon className="size-[18px] text-white" strokeWidth={3} />
+                    <item.icon className="size-[18px] text-primary" strokeWidth={2} />
                     {item.badge > 0 && (
                       <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground ring-2 ring-card">
                         {item.badge > 9 ? "9+" : item.badge}
@@ -248,7 +247,7 @@ export function ProfileDrawer() {
                 closeDrawer();
                 logout();
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/20 bg-destructive-muted px-4 py-3 text-sm font-bold text-destructive active:scale-[0.99]"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-bold text-destructive active:scale-[0.99]"
             >
               <LogOut className="size-4" />
               ออกจากระบบ
