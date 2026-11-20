@@ -44,7 +44,7 @@ type IconType = ComponentType<{ className?: string; "aria-hidden"?: boolean | "t
 export const FOLLOW_BOARD_CLASS = "flex flex-wrap items-start gap-3.5";
 
 const CARD =
-  "relative flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 overflow-hidden rounded-lg border border-border bg-card p-4 shadow-[0_2px_4px_rgba(11,40,37,.06),0_12px_28px_rgba(11,40,37,.10)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-sm motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:shadow-sm";
+  "relative flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 overflow-hidden rounded-lg border border-border bg-card p-4 shadow-sm transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-sm motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:shadow-sm";
 
 /**
  * One card on the dashboard's "ต้องตามวันนี้" board (owner-approved mock, 14 Nov

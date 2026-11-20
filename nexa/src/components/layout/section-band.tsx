@@ -92,50 +92,57 @@ export function SectionBand() {
           <UserMenu />
         </div>
       </div>
-      <div className="flex h-12 items-center gap-2 border-b border-border bg-card px-3 sm:px-4">
-        {/* The one back control on a computer, on every page but home (as the old top bar had it): back to the page the person
-            came from, or home when this is where they started. */}
-        {!isHome && (
-          <button
-            type="button"
-            onClick={() => router.push(previousOf(readTrail()) ?? HOME_PATH)}
-            className="flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            ย้อนกลับ
-          </button>
-        )}
-        {chrome?.leading && <span className="shrink-0">{chrome.leading}</span>}
-        <nav aria-label="เส้นทางนำทาง" className="flex min-w-0 items-center gap-1 text-sm">
-          {crumbs.map((c, i) => {
-            const last = i === crumbs.length - 1;
-            return (
-              <Fragment key={i}>
-                {i > 0 && <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
-                {last ? (
-                  <h1 className="font-heading truncate text-[15px] leading-normal font-bold text-foreground">{c.label}</h1>
-                ) : c.href ? (
-                  <Link href={c.href} className="truncate text-muted-foreground transition hover:text-foreground">
-                    {c.label}
-                  </Link>
-                ) : (
-                  <span className="truncate text-muted-foreground">{c.label}</span>
-                )}
-              </Fragment>
-            );
-          })}
-          {/* A page without a title of its own yet (still loading) shows the menu's name; this keeps the heading a real h1. */}
-          {crumbs.length === 0 && <h1 className="sr-only">GV One</h1>}
-        </nav>
-        {chrome?.subtitle && (
-          <span className="hidden min-w-0 truncate border-l border-border pl-3 text-sm text-muted-foreground lg:inline" title={chrome.subtitle}>
-            {chrome.subtitle}
-          </span>
-        )}
-        {chrome?.status && <span className="shrink-0">{chrome.status}</span>}
-        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
-          {!hasTabs && <div ref={setSlot ?? undefined} className="flex items-center gap-2 pr-2" />}
+      {/* Favpo page head: a small path row, then one row with the back arrow on the left, the title in the middle and the page's
+          buttons on the right (the slot below is where every page's buttons are drawn), the subtitle under the title. */}
+      <nav aria-label="เส้นทางนำทาง" className="flex min-h-8 items-center gap-1 border-b border-border bg-card px-3 text-[13px] sm:px-4">
+        {crumbs.map((c, i) => {
+          const last = i === crumbs.length - 1;
+          return (
+            <Fragment key={i}>
+              {i > 0 && <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
+              {last ? (
+                <span aria-current="page" className="truncate text-foreground">
+                  {c.label}
+                </span>
+              ) : c.href ? (
+                <Link href={c.href} className="truncate text-muted-foreground transition hover:text-foreground">
+                  {c.label}
+                </Link>
+              ) : (
+                <span className="truncate text-muted-foreground">{c.label}</span>
+              )}
+            </Fragment>
+          );
+        })}
+      </nav>
+      <div className="grid min-h-14 grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-2 border-b border-border bg-card px-3 py-1 sm:px-4">
+        <div className="flex items-center">
+          {/* The one back control on a computer, on every page but home: back to the page the person came from, or home when this is
+              where they started. */}
+          {!isHome && (
+            <button
+              type="button"
+              onClick={() => router.push(previousOf(readTrail()) ?? HOME_PATH)}
+              aria-label="ย้อนกลับ"
+              className="flex size-11 items-center justify-center rounded-lg text-foreground transition hover:bg-muted"
+            >
+              <ArrowLeft className="size-5" aria-hidden="true" />
+            </button>
+          )}
         </div>
+        <div className="flex min-w-0 flex-col items-center text-center">
+          <div className="flex min-w-0 items-center justify-center gap-2">
+            {chrome?.leading && <span className="shrink-0">{chrome.leading}</span>}
+            <h1 className="font-heading truncate text-xl leading-snug font-medium text-foreground">{title || "GV One"}</h1>
+            {chrome?.status && <span className="shrink-0">{chrome.status}</span>}
+          </div>
+          {chrome?.subtitle && (
+            <span className="max-w-full truncate text-sm text-muted-foreground" title={chrome.subtitle}>
+              {chrome.subtitle}
+            </span>
+          )}
+        </div>
+        <div ref={setSlot ?? undefined} className="flex min-w-0 items-center justify-end gap-2" />
       </div>
 
       {/* A long tab row (the settings group, the evaluation group) is split: one chip per section here, the tabs of the open
@@ -188,7 +195,6 @@ export function SectionBand() {
               );
             })}
           </nav>
-          <div ref={setSlot ?? undefined} className="flex shrink-0 items-center gap-2 self-center pl-2" />
         </div>
       )}
     </header>

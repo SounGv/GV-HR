@@ -471,7 +471,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             t.role === "user" ? (
               <p
                 key={i}
-                className="ml-auto w-fit max-w-[85%] rounded-[16px_16px_4px_16px] bg-[var(--flip7-teal-dark)] px-3.5 py-2 text-[13.5px] break-words text-white shadow-[0_1px_2px_rgba(21,101,192,.2),0_6px_14px_-8px_rgba(21,101,192,.5)]"
+                className="ml-auto w-fit max-w-[85%] rounded-[16px_16px_4px_16px] bg-[var(--flip7-teal-dark)] px-3.5 py-2 text-[13.5px] break-words text-white shadow-sm"
               >
                 {t.content}
                 <SentFiles files={t.files} />
@@ -601,7 +601,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               {reportStep?.report && (
                 <Link
                   href={`/reports?view=${encodeURIComponent(reportStep.report.type)}`}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(21,101,192,.2),0_6px_14px_-8px_rgba(21,101,192,.5)] transition-colors hover:bg-[#0d47a1]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0d47a1]"
                 >
                   เปิดรายงานเต็ม <ExternalLink className="size-3.5" aria-hidden="true" />
                 </Link>

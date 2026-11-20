@@ -128,9 +128,9 @@ export function AppSidebar() {
           isActive={active}
           tooltip={item.label}
           className={cn(
-            "h-9 text-[14px] [&_svg]:size-4",
+            "h-10 text-[14px] [&_svg]:size-4",
             active
-              ? "data-active:bg-sidebar-primary data-active:font-semibold data-active:text-sidebar-primary-foreground data-active:shadow-[0_1px_2px_rgba(21,101,192,.2),0_6px_14px_-8px_rgba(21,101,192,.5)] data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
+              ? "data-active:bg-[#e3f2fd] data-active:font-bold data-active:text-[#0d47a1] data-active:shadow-[inset_3px_0_0_#1976d2] data-active:hover:bg-[#e3f2fd] data-active:hover:text-[#0d47a1] dark:data-active:bg-[#0f2744] dark:data-active:text-[#90caf9] dark:data-active:hover:bg-[#0f2744]"
               : "font-medium text-sidebar-foreground hover:text-sidebar-foreground",
           )}
           render={

@@ -231,7 +231,7 @@ export function OrgChart({
             className={cn(
               "h-[34px] rounded-[9px] px-3.5 text-[13.5px] font-semibold whitespace-nowrap transition-colors sm:px-4",
               view === value
-                ? "bg-[#1565c0] text-white shadow-[0_1px_2px_rgba(21,101,192,.2),0_10px_24px_-12px_rgba(21,101,192,.55)]"
+                ? "bg-[#1565c0] text-white shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -360,7 +360,7 @@ function DivisionCard({
   const head = useMemo(() => divisionHead(division, people), [division, people]);
   return (
     <div
-      className="gv-rise border-border bg-card overflow-hidden rounded-lg border shadow-[var(--card-shadow)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(19,21,22,.06),0_14px_28px_-14px_rgba(19,21,22,.25)]"
+      className="gv-rise border-border bg-card overflow-hidden rounded-lg border shadow-[var(--card-shadow)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-sm"
       style={rise(index)}
     >
       <div className="dark:border-border border-b border-[#e3f2fd] bg-[#eef6fd] px-3.5 py-3 dark:bg-[#0f2744]">
