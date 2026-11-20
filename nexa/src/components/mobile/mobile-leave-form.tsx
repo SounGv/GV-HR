@@ -319,7 +319,7 @@ export function MobileLeaveForm() {
       {blockedMessage && <MobileAlertBanner tone="danger">{blockedMessage}</MobileAlertBanner>}
 
       <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-3.5">
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="rounded-lg border border-border bg-card p-4">
           <p className="mb-2.5 text-[15px] font-semibold text-foreground">ประเภทการลา</p>
           <div className="grid grid-cols-2 gap-2">
             {TYPE_ORDER.map((t) => {

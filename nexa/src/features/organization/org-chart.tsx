@@ -215,7 +215,7 @@ export function OrgChart({
       <div
         role="group"
         aria-label="มุมมองผังองค์กร"
-        className="border-border bg-card inline-flex w-fit max-w-full rounded-xl border p-1 shadow-[var(--card-shadow)]"
+        className="border-border bg-card inline-flex w-fit max-w-full rounded-lg border p-1 shadow-[var(--card-shadow)]"
       >
         {(
           [
@@ -318,7 +318,7 @@ function CompanyView({
         <div className="sm:mx-auto sm:w-max">
           <div className="flex sm:justify-center">
             <div
-              className="gv-hero gv-rise flex w-full items-center gap-3 rounded-[18px] px-5 py-3.5 sm:inline-flex sm:w-auto"
+              className="gv-hero gv-rise flex w-full items-center gap-3 rounded-lg px-5 py-3.5 sm:inline-flex sm:w-auto"
               style={rise(0)}
             >
               <span className="grid size-[38px] shrink-0 place-items-center rounded-[11px] border border-white/20 bg-white/10">
@@ -360,10 +360,10 @@ function DivisionCard({
   const head = useMemo(() => divisionHead(division, people), [division, people]);
   return (
     <div
-      className="gv-rise border-border bg-card overflow-hidden rounded-2xl border shadow-[var(--card-shadow)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(19,21,22,.06),0_14px_28px_-14px_rgba(19,21,22,.25)]"
+      className="gv-rise border-border bg-card overflow-hidden rounded-lg border shadow-[var(--card-shadow)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(19,21,22,.06),0_14px_28px_-14px_rgba(19,21,22,.25)]"
       style={rise(index)}
     >
-      <div className="dark:border-border border-b border-[#e6f4f1] bg-[linear-gradient(180deg,#eef6fd,transparent)] px-3.5 py-3 dark:bg-[linear-gradient(180deg,#0f2744,transparent)]">
+      <div className="dark:border-border border-b border-[#e3f2fd] bg-[#eef6fd] px-3.5 py-3 dark:bg-[#0f2744]">
         <b className="block text-[14.5px] leading-snug">{division.name}</b>
         <div className="text-muted-foreground mt-1.5 flex items-center justify-between gap-2 text-xs">
           <span className="truncate">
@@ -473,7 +473,7 @@ function IssuesBox({ issues }: { issues: OrgIssues }) {
   return (
     <div
       role="note"
-      className="flex items-start gap-2.5 rounded-[14px] border border-[#fde68a] bg-[#fffbeb] px-4 py-3 text-[13px] text-[#713f12] dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+      className="flex items-start gap-2.5 rounded-lg border border-[#fde68a] bg-[#fffbeb] px-4 py-3 text-[13px] text-[#713f12] dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
     >
       <AlertTriangle
         className="mt-0.5 size-4 shrink-0 text-[#b45309] dark:text-amber-400"
@@ -576,7 +576,7 @@ function DivisionView({
               aria-pressed={editButton.editing}
               onClick={editButton.onToggle}
               className={cn(
-                "mt-3 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-[13.5px] font-bold transition-[translate,background-color] duration-200 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 md:h-9",
+                "mt-3 inline-flex h-11 items-center gap-2 rounded-lg px-4 text-[13.5px] font-bold transition-[translate,background-color] duration-200 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 md:h-9",
                 editButton.editing ? "bg-[#bbdefb] text-[#0d47a1]" : "bg-white text-[#1565c0]",
               )}
             >
@@ -608,7 +608,7 @@ function DivisionView({
       {editing && (
         <div
           role="note"
-          className="flex items-start gap-2.5 rounded-[14px] border border-[#fde68a] bg-[#fffbeb] px-4 py-2.5 text-[13px] text-[#713f12] dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+          className="flex items-start gap-2.5 rounded-lg border border-[#fde68a] bg-[#fffbeb] px-4 py-2.5 text-[13px] text-[#713f12] dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
         >
           <span aria-hidden="true">⇅</span>
           <span>
@@ -641,7 +641,7 @@ function DivisionView({
                 </div>
               ) : (
                 <div className="flex sm:justify-center">
-                  <div className="bg-card dark:border-border inline-flex w-full items-center gap-2.5 rounded-[14px] border border-dashed border-[#cfd6dc] px-4 py-2.5 sm:w-auto sm:min-w-[230px]">
+                  <div className="bg-card dark:border-border inline-flex w-full items-center gap-2.5 rounded-lg border border-dashed border-[#cfd6dc] px-4 py-2.5 sm:w-auto sm:min-w-[230px]">
                     <Building2
                       className="dark:text-primary size-5 shrink-0 text-primary"
                       aria-hidden="true"
@@ -695,10 +695,10 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
   const edit = useOrgEdit();
   const p = node.person;
   const className = cn(
-    "flex min-w-0 items-center gap-2.5 rounded-[14px] border bg-card px-3.5 py-2.5 transition-colors",
+    "flex min-w-0 items-center gap-2.5 rounded-lg border bg-card px-3.5 py-2.5 transition-colors",
     top
       ? "border-[#bbdefb] shadow-[0_0_0_3px_#e3f2fd,var(--card-shadow)] hover:border-[#1976d2] sm:min-w-[230px] dark:border-primary/40 dark:shadow-none"
-      : "border-[#e6f4f1] bg-[#f8fdfc] hover:border-[#bbdefb] dark:border-border dark:bg-accent/40",
+      : "border-[#e3f2fd] bg-[#f8fdfc] hover:border-[#bbdefb] dark:border-border dark:bg-accent/40",
   );
   const avatar = (
     <PersonAvatar
@@ -772,7 +772,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
   const hidden = team.members.length - shown.length;
   return (
     <div
-      className="gv-rise border-border bg-card overflow-hidden rounded-2xl border shadow-[var(--card-shadow)]"
+      className="gv-rise border-border bg-card overflow-hidden rounded-lg border shadow-[var(--card-shadow)]"
       style={rise(index)}
     >
       <div className="border-border bg-muted/50 flex items-center justify-between gap-2 border-b px-3.5 py-2 text-[13.5px] font-bold">
@@ -862,7 +862,7 @@ function MemberLink({ person, className }: { person: OrgPerson; className?: stri
 
 function UnassignedBox({ people }: { people: OrgPerson[] }) {
   return (
-    <div className="dark:border-border mx-1 mt-3 rounded-2xl border border-dashed border-[#cfd6dc] p-3">
+    <div className="dark:border-border mx-1 mt-3 rounded-lg border border-dashed border-[#cfd6dc] p-3">
       <SectionHeading
         as="h3"
         title="ยังไม่ระบุหัวหน้า"

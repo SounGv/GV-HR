@@ -520,7 +520,7 @@ function FormEditor({ form }: { form: FormDetail }) {
       </section>
 
       {locked && (
-        <div className="border-border bg-muted flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-sm">
+        <div className="border-border bg-muted flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 text-sm">
           <Lock className="size-4 shrink-0" aria-hidden="true" />
           <p className="min-w-0 flex-1">
             แบบนี้ถูกใช้งานแล้ว แก้ไขไม่ได้ ถ้าต้องการเปลี่ยน ให้สร้างเวอร์ชันใหม่
@@ -557,7 +557,7 @@ function FormEditor({ form }: { form: FormDetail }) {
           onOpenBank={() => setBankOpen(true)}
         />
 
-        <Card className="gap-0 rounded-[20px] p-0" aria-label="แก้ไขหัวข้อ">
+        <Card className="gap-0 rounded-lg p-0" aria-label="แก้ไขหัวข้อ">
           {current ? (
             <TopicEditor
               key={current.q.uiKey}
@@ -609,7 +609,7 @@ function FormEditor({ form }: { form: FormDetail }) {
               onSystem={applySystemNames}
               usingSystem={!custom}
             />
-            <Card className="gap-3 rounded-[20px] p-4" aria-label="กติกาและความพร้อม">
+            <Card className="gap-3 rounded-lg p-4" aria-label="กติกาและความพร้อม">
               <h2 className="gv-bar-heading flex items-center gap-2 text-sm font-semibold">
                 กติกาตอนตอบ
               </h2>
@@ -763,7 +763,7 @@ function Outline({
       : {};
 
   return (
-    <Card className="gap-0 rounded-[20px] p-0 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]" aria-label="โครงแบบประเมิน">
+    <Card className="gap-0 rounded-lg p-0 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]" aria-label="โครงแบบประเมิน">
       <div className="flex items-center gap-2 px-4 pt-4 pb-2">
         <h2 className="gv-bar-heading flex items-center gap-2 text-sm font-semibold">
           โครงแบบประเมิน
@@ -796,7 +796,7 @@ function Outline({
             .reduce((a, q) => a + q.weight, 0);
           const pct = Math.round((sw / ratingWeight) * 100);
           return (
-            <div key={s.key} className="mb-2 rounded-2xl">
+            <div key={s.key} className="mb-2 rounded-lg">
               <div className="flex items-center gap-1 px-2 pt-1.5">
                 {renaming === s.key ? (
                   <Input
@@ -875,7 +875,7 @@ function Outline({
                       onClick={() => onSelect(q.uiKey)}
                       aria-current={sel === q.uiKey ? "true" : undefined}
                       className={cn(
-                        "flex min-h-10 w-full items-center gap-2 rounded-xl border-[1.5px] px-2 py-1.5 text-left text-sm transition-colors",
+                        "flex min-h-10 w-full items-center gap-2 rounded-lg border-[1.5px] px-2 py-1.5 text-left text-sm transition-colors",
                         sel === q.uiKey
                           ? "border-ring/40 bg-accent"
                           : "hover:bg-muted/60 border-transparent",
@@ -923,7 +923,7 @@ function Outline({
                   <button
                     type="button"
                     onClick={() => onAddTopic(s.key)}
-                    className="border-border hover:bg-accent mt-0.5 flex min-h-9 w-full items-center gap-1.5 rounded-xl border-[1.5px] border-dashed px-2.5 text-sm font-semibold text-primary hover:border-ring hover:bg-accent"
+                    className="border-border hover:bg-accent mt-0.5 flex min-h-9 w-full items-center gap-1.5 rounded-lg border-[1.5px] border-dashed px-2.5 text-sm font-semibold text-primary hover:border-ring hover:bg-accent"
                   >
                     <Plus className="size-3.5" aria-hidden="true" /> เพิ่มหัวข้อ
                     {s.name ? `ใน${s.name}` : ""}
@@ -1040,7 +1040,7 @@ function TopicEditor({
           />
         </label>
         {parts.length >= 3 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-status-late-border bg-status-late-bg px-3 py-2 text-sm text-status-late-fg">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-status-late-border bg-status-late-bg px-3 py-2 text-sm text-status-late-fg">
             <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
             <span className="min-w-0 flex-1">
               หัวข้อนี้มีหลายเรื่องในข้อเดียว ถ้าคนเก่งเรื่องหนึ่งแต่อ่อนอีกเรื่องจะให้คะแนนยาก
@@ -1077,7 +1077,7 @@ function TopicEditor({
               role="radiogroup"
               aria-label="ประเภทคำตอบ"
               onKeyDown={arrowSelect}
-              className="bg-muted inline-flex flex-wrap gap-0.5 rounded-xl p-1"
+              className="bg-muted inline-flex flex-wrap gap-0.5 rounded-lg p-1"
             >
               {TYPE_ORDER.map((t) => (
                 <button
@@ -1112,7 +1112,7 @@ function TopicEditor({
               <span className="text-foreground mb-1.5 block text-sm font-bold">
                 น้ำหนัก
               </span>
-              <div className="border-border inline-flex h-12 items-center overflow-hidden rounded-xl border-[1.5px]">
+              <div className="border-border inline-flex h-12 items-center overflow-hidden rounded-lg border-[1.5px]">
                 <button
                   type="button"
                   aria-label="ลดน้ำหนัก"
@@ -1181,7 +1181,7 @@ function TopicEditor({
             <span className="text-foreground mb-1.5 block text-sm font-bold">
               แต่ละคะแนนหมายถึงพฤติกรรมแบบไหน
             </span>
-            <ul className="border-border overflow-hidden rounded-2xl border">
+            <ul className="border-border overflow-hidden rounded-lg border">
               {[...labels].reverse().map((l) => (
                 <li
                   key={l.score}
@@ -1294,7 +1294,7 @@ function ScaleCard({
   usingSystem: boolean;
 }) {
   return (
-    <Card className="gap-3 rounded-[20px] p-4" aria-label="ระดับคะแนน">
+    <Card className="gap-3 rounded-lg p-4" aria-label="ระดับคะแนน">
       <div className="flex items-center gap-2">
         <h2 className="gv-bar-heading flex items-center gap-2 text-sm font-semibold">ระดับคะแนน</h2>
         <span className="text-muted-foreground ml-auto text-xs tabular-nums">
@@ -1433,7 +1433,7 @@ function PhonePreview({
     : null;
 
   return (
-    <Card className="gap-3 rounded-[20px] p-4" aria-label="ตัวอย่างที่ผู้ประเมินเห็น">
+    <Card className="gap-3 rounded-lg p-4" aria-label="ตัวอย่างที่ผู้ประเมินเห็น">
       <div className="flex items-center gap-2">
         <h2 className="gv-bar-heading flex items-center gap-2 text-sm font-semibold">
           ผู้ประเมินเห็นแบบนี้
@@ -1462,8 +1462,8 @@ function PhonePreview({
           ))}
         </div>
       </div>
-      <div className="mx-auto w-full max-w-[330px] rounded-[34px] bg-[var(--device-frame)] p-2 shadow-[0_24px_44px_-26px_rgba(11,59,56,0.6)]">
-        <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-[27px]">
+      <div className="mx-auto w-full max-w-[330px] rounded-lg bg-[var(--device-frame)] p-2 shadow-sm">
+        <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-lg">
           <div className="sticky top-0 z-[1] bg-[linear-gradient(160deg,var(--on-hero-accent-fg),var(--primary))] px-3.5 pt-3 pb-2.5 text-white">
             <b className="block text-sm">ประเมิน วันชัย (ตัวอย่าง)</b>
             <span className="block truncate text-xs text-white">
@@ -1604,7 +1604,7 @@ function BankPicker({
           {isError && <ErrorState onRetry={() => refetch()} />}
           {isLoading && <TableLoadingState rows={3} />}
           {!isLoading && !isError && items.length === 0 && (
-            <p className="border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-10 text-center text-sm">
+            <p className="border-border text-muted-foreground rounded-lg border border-dashed px-4 py-10 text-center text-sm">
               คลังยังว่าง · หัวข้อจะถูกเก็บเข้าคลังเองเมื่อกด “ยืนยันใช้แบบนี้”
             </p>
           )}
@@ -1619,7 +1619,7 @@ function BankPicker({
             return (
               <div
                 key={b.id}
-                className="border-border bg-card flex items-start gap-3 rounded-2xl border p-3"
+                className="border-border bg-card flex items-start gap-3 rounded-lg border p-3"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm leading-snug font-semibold break-words">{b.text}</p>

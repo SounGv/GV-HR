@@ -62,7 +62,7 @@ export function ReviewCard({
         </Link>
 
         <div className="flex items-center gap-2">
-          <div className={cn("flex flex-col items-center rounded-2xl px-3.5 py-1.5", tone)}>
+          <div className={cn("flex flex-col items-center rounded-lg px-3.5 py-1.5", tone)}>
             <span className="text-2xl font-semibold leading-none tabular-nums">
               {review.overallScore.toFixed(1)}
             </span>

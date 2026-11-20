@@ -182,11 +182,11 @@ export function InstallPrompt() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="gv-install-title"
-        className="gv-lg fixed inset-x-2.5 bottom-[calc(10px+env(safe-area-inset-bottom))] z-[70] rounded-[30px] px-5 pt-2.5 pb-5 md:hidden"
+        className="gv-lg fixed inset-x-2.5 bottom-[calc(10px+env(safe-area-inset-bottom))] z-[70] rounded-lg px-5 pt-2.5 pb-5 md:hidden"
       >
         <div aria-hidden="true" className="mx-auto mb-3 h-[5px] w-10 rounded-full bg-[var(--lg-field)]/50" />
         <div className="flex items-center gap-3.5">
-          <span className="gv-lg-tile flex size-[60px] shrink-0 items-center justify-center overflow-hidden rounded-2xl">
+          <span className="gv-lg-tile flex size-[60px] shrink-0 items-center justify-center overflow-hidden rounded-lg">
             <Logo size={44} className="h-auto w-11" />
           </span>
           <div className="min-w-0">
@@ -282,10 +282,10 @@ function Perk({ icon: Icon, text }: { icon: typeof Zap; text: string }) {
 
 function Step({ n, icon: Icon, children }: { n: number; icon: typeof Zap; children: React.ReactNode }) {
   return (
-    <li className="flex items-center gap-3 rounded-[18px] border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] px-3 py-2.5 text-sm text-foreground">
+    <li className="flex items-center gap-3 rounded-lg border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] px-3 py-2.5 text-sm text-foreground">
       <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground">{n}</span>
       <span className="min-w-0 flex-1">{children}</span>
-      <span className="flex size-[38px] shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
+      <span className="flex size-[38px] shrink-0 items-center justify-center rounded-lg bg-accent text-primary">
         <Icon className="size-[18px]" aria-hidden="true" />
       </span>
     </li>
@@ -298,7 +298,7 @@ function PrimaryButton({ className, ...props }: React.ComponentProps<"button">) 
       type="button"
       autoFocus
       className={cn(
-        "h-[52px] rounded-full bg-[linear-gradient(180deg,#42a5f5,#1565c0)] text-base font-bold text-white shadow-[0_12px_24px_rgba(21,101,192,.36),inset_0_1px_0_rgba(255,255,255,.5)] transition active:scale-[0.99] dark:text-[#06201d] dark:bg-[linear-gradient(180deg,#90caf9,#42a5f5)]",
+        "h-[52px] rounded-full bg-[#1565c0] text-base font-bold text-white shadow-sm transition active:scale-[0.99] dark:text-[#06201d] dark:bg-[#42a5f5]",
         className,
       )}
       {...props}

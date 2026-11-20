@@ -60,7 +60,7 @@ export function IntegrationHub() {
       <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
         <div className="pointer-events-none absolute -top-20 -right-10 size-72 rounded-full bg-primary/25 blur-[90px]" />
         <div className="relative flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
             <Plug className="size-6 text-primary" />
           </span>
           <div className="space-y-1">
@@ -83,7 +83,7 @@ export function IntegrationHub() {
               return (
                 <Card key={i.id} className="gap-3 p-4 transition hover:shadow-md">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="flex size-11 items-center justify-center rounded-xl bg-muted">
+                    <span className="flex size-11 items-center justify-center rounded-lg bg-muted">
                       <Icon className="size-5 text-foreground" />
                     </span>
                     <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", st.cls)}>

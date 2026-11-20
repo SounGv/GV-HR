@@ -104,7 +104,7 @@ export function RecurrenceView() {
         </Button>
       </div>
 
-      <p className="flex gap-2 rounded-xl bg-muted px-3 py-2 text-sm">
+      <p className="flex gap-2 rounded-lg bg-muted px-3 py-2 text-sm">
         <Info className="mt-1 size-4 shrink-0" aria-hidden="true" />
         <span>
           ระบบสร้างรอบเป็นฉบับร่างล่วงหน้า {DRAFT_LEAD_DAYS} วัน แล้วแจ้งในกระดิ่งของ HR ให้ตรวจรายชื่อและผู้ประเมิน HR กดเปิดรอบเอง ระบบไม่เปิดรอบให้
@@ -353,7 +353,7 @@ function Form({ id, initial, onClose }: { id: string | null; initial: Recurrence
           )}
         </div>
 
-        <div className="rounded-xl border border-border px-3 py-2">
+        <div className="rounded-lg border border-border px-3 py-2">
           <h3 className="text-sm font-semibold">3 รอบถัดไปที่ระบบจะสร้าง</h3>
           {preview.length === 0 ? (
             <p className="text-sm text-muted-foreground">กรอกชื่อ ความถี่ และวันเปิดปิดให้ครบ เพื่อดูตัวอย่าง</p>

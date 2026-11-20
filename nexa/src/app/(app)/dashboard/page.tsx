@@ -236,7 +236,7 @@ function StripCell({
     <Link
       href={href}
       aria-label={`${label} ${value} ${unit} ดูรายละเอียด`}
-      className={`${edge} gv-panel-lift group relative block rounded-xl hover:z-10 hover:bg-card focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary`}
+      className={`${edge} gv-panel-lift group relative block rounded-lg hover:z-10 hover:bg-card focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary`}
     >
       {body}
       <ArrowUpRight className="absolute top-3 right-3 size-4 text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true" />
@@ -413,10 +413,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {canSeeCompany && (
       <section
         aria-label="สรุปวันนี้"
-        className="grid items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-card p-3 pr-3.5 shadow-[var(--card-shadow)] lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
+        className="grid items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 pr-3.5 shadow-[var(--card-shadow)] lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
       >
         {/* น้องวีบอท appears once per screen (the sidebar's AI shortcut); here a sparkle marks the AI summary. */}
-        <span className="hidden size-10 items-center justify-center rounded-xl bg-[#eef6fd] text-[#1976d2] ring-1 ring-[#e3f2fd] ring-inset lg:flex">
+        <span className="hidden size-10 items-center justify-center rounded-lg bg-[#eef6fd] text-[#1976d2] ring-1 ring-[#e3f2fd] ring-inset lg:flex">
           <Sparkles className="size-5" aria-hidden="true" />
         </span>
         <p className="text-[13.5px] leading-relaxed">
@@ -444,7 +444,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </>
           )}
         </p>
-        <form action="/ai" className="flex h-10 items-center gap-1.5 rounded-xl border-[1.5px] border-[#cfd6dc] bg-card pr-1 pl-3 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15">
+        <form action="/ai" className="flex h-10 items-center gap-1.5 rounded-lg border-[1.5px] border-[#cfd6dc] bg-card pr-1 pl-3 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15">
           <input
             name="q"
             required
@@ -523,7 +523,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           fallback={
             <section aria-label="การประเมินผล" className="space-y-3">
               <SectionHeading title="การประเมินผล" />
-              <div className="h-40 animate-pulse rounded-2xl border border-border bg-muted/40" />
+              <div className="h-40 animate-pulse rounded-lg border border-border bg-muted/40" />
             </section>
           }
         >
@@ -693,19 +693,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </div>
             {!attendanceToday && (
             <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:w-[220px] lg:grid-cols-1">
-              <div className="gv-teal-surface flex flex-col rounded-2xl p-3">
+              <div className="gv-teal-surface flex flex-col rounded-lg p-3">
                 <span className="text-xs text-white">เข้างานเฉลี่ย</span>
                 <span className="text-2xl font-bold text-white tabular-nums">{avgAttendanceRate}%</span>
               </div>
-              <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
+              <div className="flex flex-col rounded-lg bg-surface-muted p-3">
                 <span className="text-xs" style={{ color: "var(--series-late)" }}>มาสายรวม</span>
                 <span className="text-xl font-bold tabular-nums">{lateSum} ครั้ง</span>
               </div>
-              <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
+              <div className="flex flex-col rounded-lg bg-surface-muted p-3">
                 <span className="text-xs" style={{ color: "var(--series-leave)" }}>ลารวม</span>
                 <span className="text-xl font-bold tabular-nums">{leaveSum} ครั้ง</span>
               </div>
-              <div className="flex flex-col rounded-2xl bg-surface-muted p-3">
+              <div className="flex flex-col rounded-lg bg-surface-muted p-3">
                 <span className="text-xs text-muted-foreground">ไม่มีบันทึกเวลา (คน-วัน)</span>
                 <span className="text-xl font-bold tabular-nums">{absentSum}</span>
               </div>
@@ -736,7 +736,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 {departmentWatchlistRanked.map((w) => {
                   const max = Math.max(...departmentWatchlistRanked.map((r) => r.absent + r.late), 1);
                   return (
-                    <div key={w.name} className="grid grid-cols-[140px_1fr_150px] items-center gap-3 rounded-xl p-2">
+                    <div key={w.name} className="grid grid-cols-[140px_1fr_150px] items-center gap-3 rounded-lg p-2">
                       <span className="truncate text-sm font-medium">{w.name}</span>
                       <div className="flex h-3 overflow-hidden rounded-full bg-surface-muted">
                         <div style={{ width: `${(w.absent / max) * 100}%`, background: "var(--series-norecord)" }} />

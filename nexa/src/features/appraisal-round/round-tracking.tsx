@@ -66,7 +66,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
                   return (
                     <li
                       key={a.id}
-                      className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold", canFill && a.status !== "SUBMITTED" && "max-md:w-full max-md:flex-wrap max-md:rounded-xl", STATUS_CLASS[a.status])}
+                      className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold", canFill && a.status !== "SUBMITTED" && "max-md:w-full max-md:flex-wrap max-md:rounded-lg", STATUS_CLASS[a.status])}
                     >
                       <Icon className="size-3.5" aria-hidden="true" />
                       {RATER_LABEL[a.raterType]}
@@ -108,7 +108,7 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
         description={`${r.code} · ${r.department}`}
         sticky={false}
       />
-      <p className="rounded-xl bg-muted px-4 py-3 text-sm">
+      <p className="rounded-lg bg-muted px-4 py-3 text-sm">
         สรุปคำตอบที่ส่งแล้ว แยกตามมุมมองผู้ประเมิน เป็นค่าเฉลี่ยธรรมดา ยังไม่ถ่วงน้ำหนักและยังไม่มีเกรด (รอ HR ยืนยันสูตร)
         {" "}
         {r.namedComments ? "ข้อความที่ผู้ประเมินเขียนอยู่ในการ์ดความเห็นของผู้ประเมินแต่ละคน พร้อมชื่อผู้เขียน (เห็นเฉพาะ HR)" : "ข้อความที่ผู้ประเมินเขียนแสดงโดยไม่ระบุชื่อ"}

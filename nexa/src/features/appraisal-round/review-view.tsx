@@ -75,7 +75,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
             </li>
           ))}
         </ol>
-        <p className="rounded-xl bg-muted px-3 py-2 text-sm">
+        <p className="rounded-lg bg-muted px-3 py-2 text-sm">
           {r.canAdjust
             ? `ใช้ตรวจก่อนไปอนุมัติผล HR ปรับคะแนนได้ไม่เกิน ${r.thresholds.maxAdjust} จุดจากคะแนนที่คำนวณได้ ต้องเขียนเหตุผลทุกครั้ง และพนักงานไม่เห็นประวัติการปรับ`
             : "หน้านี้ดูอย่างเดียว ไม่เปลี่ยนคะแนนหรือเกรดของใคร ใช้ตรวจก่อนไปอนุมัติผล การปรับคะแนนทำได้เฉพาะ HR"}
@@ -83,7 +83,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
       </Card>
 
       {r.imported && (
-        <p className="rounded-xl bg-muted px-3 py-2 text-sm">
+        <p className="rounded-lg bg-muted px-3 py-2 text-sm">
           รอบนี้นำเข้าจาก Favpo มีเฉพาะคะแนนรวมของแต่ละคน ไม่มีคะแนนแยกตนเองกับหัวหน้า และไม่มีค่าเฉลี่ยของหัวหน้า จึงซ่อนส่วนนั้นไว้
         </p>
       )}
@@ -104,7 +104,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
           <Card className="gap-3 p-4" aria-label="การกระจายเกรด">
             <h2 className="text-base font-semibold">การกระจายเกรด</h2>
             {r.ceiling.flag && (
-              <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted px-3 py-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm">
                 <StatusChip tone="warning" label="คะแนนกระจุกที่เต็ม" />
                 <span className="tabular-nums">
                   {r.ceiling.count} จาก {r.ceiling.total} คนได้ 100% ({pct(r.ceiling.count, r.ceiling.total)}%) จึงแยกคนที่ทำได้ดีกว่ากันไม่ได้ ดูรายคนด้านล่างก่อนอนุมัติ
@@ -112,7 +112,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
               </div>
             )}
             {r.bands.length === 0 ? (
-              <p className="rounded-xl bg-muted px-3 py-2 text-sm">
+              <p className="rounded-lg bg-muted px-3 py-2 text-sm">
                 ยังไม่ได้ตั้งเกณฑ์เกรด จึงยังนับการกระจายไม่ได้{" "}
                 <Link href="/appraisal/settings" className="font-semibold text-primary underline-offset-2 hover:underline">
                   ตั้งเกณฑ์เกรด
@@ -173,7 +173,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
             {r.managers.rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">ยังไม่มีหัวหน้าที่ส่งคำตอบ</p>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-border">
+              <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full min-w-[560px] text-sm">
                   <thead className="bg-muted/50 text-muted-foreground">
                     <tr>
@@ -210,7 +210,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
                 ช่องว่างคือคะแนนตนเองลบคะแนนหัวหน้า ถ้าห่างตั้งแต่ {r.thresholds.selfGap} จุดขึ้นป้าย ควรคุย และถ้าอยู่ห่างขอบเกรดไม่ถึง 1 จุดขึ้นป้าย ใกล้ขอบเกรด คนที่มีป้ายอยู่บนสุด
               </p>
             </div>
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full min-w-[720px] text-sm">
                 <thead className="bg-muted/50 text-muted-foreground">
                   <tr>
@@ -284,7 +284,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
               ) : (
                 <ul className="space-y-2">
                   {r.adjustments.map((a) => (
-                    <li key={a.id} className="rounded-xl border border-border px-3 py-2 text-sm">
+                    <li key={a.id} className="rounded-lg border border-border px-3 py-2 text-sm">
                       <p className="font-medium break-words">
                         {a.name} {a.kind === "ADJUST" ? "ปรับคะแนน" : "ยกเลิกการปรับ"}
                       </p>

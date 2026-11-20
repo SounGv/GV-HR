@@ -119,7 +119,7 @@ export function PayslipDocument({
       {/* Document */}
       <div
         className={cn(
-          "rounded-xl border border-border bg-white text-slate-900 shadow-sm print:border-0 print:shadow-none",
+          "rounded-lg border border-border bg-white text-slate-900 shadow-sm print:border-0 print:shadow-none",
           paper.compact ? "p-4 text-xs print:p-0" : "p-8 print:p-0",
         )}
       >

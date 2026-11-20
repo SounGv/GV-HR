@@ -364,7 +364,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
       ref={gridRef}
       style={!chatFolded && chatWidth !== null ? { gridTemplateColumns: `${chatWidth}px minmax(0,1fr)` } : undefined}
       className={cn(
-        "grid h-[calc(100dvh-8.5rem)] min-h-[560px] overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]",
+        "grid h-[calc(100dvh-8.5rem)] min-h-[560px] overflow-hidden rounded-lg border border-border bg-card shadow-[var(--card-shadow)]",
         chatFolded
           ? "grid-cols-[56px_minmax(0,1fr)]"
           : chatWidth !== null
@@ -535,7 +535,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             </div>
           )}
           {canAttach && <AttachTray files={attach.files} errors={attach.errors} onRemove={attach.remove} />}
-          <div className="flex items-end gap-1.5 rounded-[14px] border-[1.5px] border-[#cfd6dc] bg-card py-1.5 pr-1.5 pl-1.5 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15 dark:border-border">
+          <div className="flex items-end gap-1.5 rounded-lg border-[1.5px] border-[#cfd6dc] bg-card py-1.5 pr-1.5 pl-1.5 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15 dark:border-border">
             {canAttach ? <AttachButton onPick={attach.add} disabled={chat.isPending} className="size-9" /> : <span className="w-1.5 shrink-0" aria-hidden="true" />}
             <textarea
               ref={inputRef}
@@ -567,7 +567,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
       </section>
 
       {/* Right: the selected answer, laid out wide */}
-      <section aria-label="ผลลัพธ์" className="min-w-0 overflow-y-auto bg-[linear-gradient(180deg,#eef3f3_0,var(--background)_220px)] px-6 py-5 dark:bg-none">
+      <section aria-label="ผลลัพธ์" className="min-w-0 overflow-y-auto bg-[#eef3f3] px-6 py-5 dark:bg-none">
         <div className="mb-3 flex justify-end">
           <PanelWidthSwitch value={panelWidth} onChange={(w) => { setChatWidth(null); setPanelWidth(w); }} />
         </div>
@@ -632,11 +632,11 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             {answerParts.summary && answerParts.rest && (
               <MarkdownLite
                 text={answerParts.summary}
-                className="rounded-xl border border-blue-100 bg-blue-50/70 px-3.5 py-2.5 text-[13.5px] text-foreground dark:border-border dark:bg-muted"
+                className="rounded-lg border border-blue-100 bg-blue-50/70 px-3.5 py-2.5 text-[13.5px] text-foreground dark:border-border dark:bg-muted"
               />
             )}
 
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--card-shadow)]">
+            <div className="rounded-lg border border-border bg-card p-4 shadow-[var(--card-shadow)]">
               <MarkdownLite text={panelBody} />
             </div>
           </article>
@@ -674,7 +674,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                     key={p.q}
                     type="button"
                     onClick={() => submit(p.q)}
-                    className="gv-lift flex items-start gap-3 rounded-xl border border-border bg-card px-3.5 py-3 text-left shadow-[var(--card-shadow)] hover:border-[#b9c2c9]"
+                    className="gv-lift flex items-start gap-3 rounded-lg border border-border bg-card px-3.5 py-3 text-left shadow-[var(--card-shadow)] hover:border-[#b9c2c9]"
                   >
                     <span className={cn("flex size-[30px] shrink-0 items-center justify-center rounded-lg border", p.tone)}>
                       <Icon className="size-4" aria-hidden="true" />

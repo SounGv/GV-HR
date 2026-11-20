@@ -8,7 +8,7 @@ import { bangkokParts } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { DUE_SOON_FROM_MONTH, dueSoonItems, type DueSoonItem } from "./due-soon-rules";
 
-const BTN = "inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent";
+const BTN = "inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent";
 
 /** Distinct people who have a leave entitlement row for the year. */
 async function peopleWithEntitlements(companyId: string, year: number): Promise<number> {
@@ -51,7 +51,7 @@ export function DueSoonList({ items }: { items: DueSoonItem[] }) {
   return (
     <section id="due-soon" aria-label="ใกล้ครบกำหนด" className="scroll-mt-24 space-y-3">
       <SectionHeading title="ใกล้ครบกำหนด" hint="ต้องเตรียมให้เสร็จก่อนขึ้นปีใหม่" />
-      <article className="gv-panel rounded-2xl border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5">
+      <article className="gv-panel rounded-lg border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5">
         <ul className="divide-y divide-border">
           {items.map((it) => (
             <li key={it.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5 first:pt-0 last:pb-0">

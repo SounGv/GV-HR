@@ -20,13 +20,13 @@ const TONE: Record<FollowTone, { word: string; num: string; wash: string }> = {
   },
   warn: {
     word: "bg-[#fffbeb] text-[#a9500a] dark:bg-[#3a2a10] dark:text-[#f6b45c]",
-    num: "text-[#0b4f4a] dark:text-[#bbdefb]",
-    wash: "from-[#f0f9f7] dark:from-[#13201e]",
+    num: "text-[#0d47a1] dark:text-[#bbdefb]",
+    wash: "from-[#eef6fd] dark:from-[#0b1626]",
   },
   info: {
     word: "bg-[#eff6ff] text-[#1d4ed8] dark:bg-[#13243a] dark:text-[#9cc3f2]",
-    num: "text-[#0b4f4a] dark:text-[#bbdefb]",
-    wash: "from-[#f0f9f7] dark:from-[#13201e]",
+    num: "text-[#0d47a1] dark:text-[#bbdefb]",
+    wash: "from-[#eef6fd] dark:from-[#0b1626]",
   },
   ok: { word: "bg-[#e4f6ea] text-[#166534] dark:bg-[#12301e] dark:text-[#7ee2a3]", num: "", wash: "" },
 };
@@ -44,7 +44,7 @@ type IconType = ComponentType<{ className?: string; "aria-hidden"?: boolean | "t
 export const FOLLOW_BOARD_CLASS = "flex flex-wrap items-start gap-3.5";
 
 const CARD =
-  "relative flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 overflow-hidden rounded-[20px] border border-border bg-card p-4 shadow-[0_2px_4px_rgba(11,40,37,.06),0_12px_28px_rgba(11,40,37,.10)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(11,40,37,.08),0_18px_36px_rgba(11,40,37,.14)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:shadow-[0_8px_24px_rgba(0,0,0,.45)]";
+  "relative flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 overflow-hidden rounded-lg border border-border bg-card p-4 shadow-[0_2px_4px_rgba(11,40,37,.06),0_12px_28px_rgba(11,40,37,.10)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-sm motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:shadow-sm";
 
 /**
  * One card on the dashboard's "ต้องตามวันนี้" board (owner-approved mock, 14 Nov
@@ -117,7 +117,6 @@ export function FollowRow({
       data-follow-href={link?.href ?? "#follow-up"}
       style={{ order }}
       aria-label={`${title} ${display ?? count} ${unit}`} className={CARD}>
-      <span aria-hidden="true" className={cn("pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b to-transparent", TONE[tone].wash)} />
       <div className="relative flex items-start gap-3">
         <GvIconTile icon={Icon} status={tone} />
         <span className="min-w-0 flex-1 pt-0.5">
@@ -161,8 +160,8 @@ export function FollowRow({
           className={cn(
             "relative mt-auto inline-flex min-h-11 items-center justify-center gap-1 rounded-[13px] border px-3 text-[14px] font-semibold transition-colors",
             tone === "bad"
-              ? "border-transparent bg-[linear-gradient(135deg,#1565c0,#0b4f4a)] text-white shadow-[0_8px_18px_rgba(25,118,210,.22)] hover:brightness-110"
-              : "border-border bg-[#f0f9f7] text-[#0b4f4a] hover:bg-[#ddf3ef] dark:bg-[#13201e] dark:text-[#bbdefb]",
+              ? "border-transparent bg-[#0d47a1] text-white shadow-sm hover:brightness-110"
+              : "border-border bg-[#eef6fd] text-[#0d47a1] hover:bg-[#e3f2fd] dark:bg-[#0b1626] dark:text-[#bbdefb]",
           )}
         >
           {link.label} <ChevronRight className="size-4" aria-hidden="true" />
@@ -178,7 +177,7 @@ export function FollowRowFailed({ icon, title, what, order }: { icon: IconType; 
   return (
     <div style={{ order }} className={cn(CARD, "hover:translate-y-0")}>
       <div className="flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-[14px] bg-muted text-muted-foreground">
+        <span className="flex size-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <Icon className="size-5" aria-hidden="true" />
         </span>
         <span className="min-w-0">
@@ -194,7 +193,7 @@ export function FollowRowFailed({ icon, title, what, order }: { icon: IconType; 
 export function FollowRowLoading({ order }: { order: FollowOrder }) {
   return (
     <div style={{ order }} className={cn(CARD, "min-h-[150px] hover:translate-y-0")}>
-      <span className="size-11 animate-pulse rounded-[14px] bg-muted motion-reduce:animate-none" />
+      <span className="size-11 animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />
       <span className="h-4 w-40 animate-pulse rounded bg-muted motion-reduce:animate-none" />
       <span className="h-4 w-28 animate-pulse rounded bg-muted motion-reduce:animate-none" />
     </div>

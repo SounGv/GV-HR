@@ -42,13 +42,13 @@ export function ServicesGridView() {
         <p className="text-sm text-muted-foreground">ทางลัดไปยังฟังก์ชันที่ใช้บ่อย</p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card px-1.5 py-4">
+      <div className="rounded-lg border border-border bg-card px-1.5 py-4">
       <div className="grid grid-cols-4 gap-x-2 gap-y-5">
         {tiles.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="flex flex-col items-center gap-2 rounded-xl p-1 text-center transition active:scale-95"
+            className="flex flex-col items-center gap-2 rounded-lg p-1 text-center transition active:scale-95"
           >
             <span className="flex size-[42px] items-center justify-center rounded-full border-[1.5px] border-primary bg-card text-primary">
               <item.icon className="size-[19px]" />
@@ -62,7 +62,7 @@ export function ServicesGridView() {
       <button
         type="button"
         onClick={() => setOpenMobile(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-3.5 text-sm font-semibold text-foreground"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card py-3.5 text-sm font-semibold text-foreground"
       >
         <LayoutGrid className="size-4" /> ดูเมนูทั้งหมด
       </button>

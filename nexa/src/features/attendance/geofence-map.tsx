@@ -33,7 +33,7 @@ export function GeofenceMap({
   const center: [number, number] = [branchLat, branchLng];
 
   return (
-    <div className="h-56 w-full overflow-hidden rounded-2xl">
+    <div className="h-56 w-full overflow-hidden rounded-lg">
       <MapContainer
         center={center}
         zoom={17}

@@ -141,7 +141,7 @@ export function GenericImportCenter({
         </div>
 
         <div
-          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 py-8 text-center transition hover:border-primary/40"
+          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 py-8 text-center transition hover:border-primary/40"
           onClick={() => inputRef.current?.click()}
         >
           <Upload className="size-6 text-muted-foreground" />
@@ -182,7 +182,7 @@ export function GenericImportCenter({
 
           <div className="max-h-[420px] overflow-auto rounded-lg border border-border">
             <table className="w-full text-[15px]">
-              <thead className="sticky top-0 bg-muted/80 backdrop-blur">
+              <thead className="sticky top-0 bg-muted/80 ">
                 <tr className="text-left">
                   <th className="px-2 py-2 text-xs font-medium text-muted-foreground">สถานะ</th>
                   {columns.map((c) => (

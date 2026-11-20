@@ -4,8 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { LogOut, ChevronRight } from "lucide-react";
-import { RBell, RGlobe, RPencil, RReceipt, RShield } from "@/components/shared/real-icons";
+import { Bell, ChevronRight, Globe, LogOut, Pencil, Receipt, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { formatCurrency, loginIdentifier, displayName } from "@/lib/format";
 import { useMyProfile } from "@/features/profile/hooks";
@@ -14,10 +13,10 @@ import { MobileScreen } from "./mobile-screen";
 import { MobileModuleCard } from "./mobile-ui";
 
 /** A realistic icon on a small glass disc (one look for every profile row; the old chips used five colours). */
-function MenuIconChip({ icon: Icon }: { icon: ComponentType<{ size?: number }> }) {
+function MenuIconChip({ icon: Icon }: { icon: ComponentType<{ className?: string }> }) {
   return (
-    <span className="gv-lg-tile flex size-11 shrink-0 items-center justify-center rounded-full">
-      <Icon size={30} />
+    <span className="gv-lg-tile flex size-11 shrink-0 items-center justify-center rounded-md text-primary">
+      <Icon className="size-6" />
     </span>
   );
 }
@@ -92,7 +91,7 @@ export function MobileProfileView() {
         <MobileModuleCard className="overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-border px-3.5 py-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-2.5">
-              <MenuIconChip icon={RReceipt} />
+              <MenuIconChip icon={Receipt} />
               รายได้และสวัสดิการ{latestPayslip ? ` · ${latestPayslip.periodLabel}` : ""}
             </span>
           </div>
@@ -138,25 +137,25 @@ export function MobileProfileView() {
           href="#profile-form"
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-sm active:bg-muted"
         >
-          <MenuIconChip icon={RPencil} />
+          <MenuIconChip icon={Pencil} />
           แก้ไขโปรไฟล์ / รูปประจำตัว
         </a>
         <a
           href="#security"
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-sm active:bg-muted"
         >
-          <MenuIconChip icon={RShield} />
+          <MenuIconChip icon={ShieldCheck} />
           ความปลอดภัย (รหัสผ่าน, 2FA)
         </a>
         <Link
           href="/notifications"
           className="flex items-center gap-2.5 border-b border-border px-3.5 py-3 text-sm active:bg-muted"
         >
-          <MenuIconChip icon={RBell} />
+          <MenuIconChip icon={Bell} />
           การแจ้งเตือน
         </Link>
         <div className="flex items-center gap-2.5 px-3.5 py-3 text-sm">
-          <MenuIconChip icon={RGlobe} />
+          <MenuIconChip icon={Globe} />
           <span className="flex-1">ภาษา</span>
           <span className="font-semibold text-foreground">ไทย</span>
         </div>
@@ -165,7 +164,7 @@ export function MobileProfileView() {
       <button
         type="button"
         onClick={handleLogout}
-        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-destructive/20 bg-destructive-muted px-4 py-3 text-sm font-bold text-destructive active:scale-[0.99]"
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded border border-destructive/20 bg-destructive-muted px-4 py-3 text-sm font-bold text-destructive active:scale-[0.99]"
       >
         <LogOut className="size-4" />
         ออกจากระบบ

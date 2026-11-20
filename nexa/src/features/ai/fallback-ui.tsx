@@ -61,7 +61,7 @@ export function EngineBadge({ mode }: { mode: "ai" | "fallback" }) {
 /** Says what changed and what still works, once, at the top of the conversation. */
 export function FallbackBanner({ reason, backup }: { reason?: Reason; backup?: boolean }) {
   return (
-    <div role="status" className="rounded-xl border border-status-late-border bg-status-late-bg px-3 py-2.5 text-sm text-status-late-fg">
+    <div role="status" className="rounded-lg border border-status-late-border bg-status-late-bg px-3 py-2.5 text-sm text-status-late-fg">
       <p className="flex items-center gap-1.5 font-semibold">
         <TriangleAlert className="size-4 shrink-0" aria-hidden="true" /> โหมดสำรอง
       </p>
@@ -151,7 +151,7 @@ export function QuickForm({
           `${FORM_LABEL[kind]}: ${title.trim()}`,
         );
       }}
-      className="space-y-2.5 rounded-xl border border-border bg-card p-3"
+      className="space-y-2.5 rounded-lg border border-border bg-card p-3"
     >
       <div className="flex items-center gap-2">
         <p className="text-sm font-semibold">{FORM_LABEL[kind]}</p>

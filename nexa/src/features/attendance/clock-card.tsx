@@ -62,7 +62,7 @@ type GpsStatus = "locating" | "ready" | "denied" | "error";
 
 const GeofenceMap = dynamic(() => import("./geofence-map").then((m) => m.GeofenceMap), {
   ssr: false,
-  loading: () => <div className="h-44 w-full animate-pulse rounded-2xl bg-white/5" />,
+  loading: () => <div className="h-44 w-full animate-pulse rounded-lg bg-white/5" />,
 });
 
 export function ClockCard() {
@@ -375,7 +375,7 @@ export function ClockCard() {
     : "--:--:--";
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-sidebar p-6 text-white sm:p-8">
+    <section className="relative overflow-hidden rounded-lg bg-sidebar p-6 text-white sm:p-8">
       <div className="pointer-events-none absolute -top-24 -right-16 size-80 rounded-full bg-sidebar-primary/25 blur-[100px]" />
 
       <button
@@ -412,7 +412,7 @@ export function ClockCard() {
 
       {/* Mode toggle — persistent, no dialog needed to reach it */}
       {!isLoading && !hasIn && !hasOut && (
-        <div className="relative mt-5 flex rounded-xl bg-white/5 p-1">
+        <div className="relative mt-5 flex rounded-lg bg-white/5 p-1">
           <button
             type="button"
             onClick={() => setMode("ONSITE")}
@@ -474,7 +474,7 @@ export function ClockCard() {
         {isLoading ? (
           <Skeleton className="h-14 w-full bg-white/10" />
         ) : hasOut ? (
-          <div className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-success text-success-foreground">
+          <div className="flex h-14 items-center justify-center gap-2 rounded-lg bg-success text-success-foreground">
             <CheckCircle2 className="size-5" /> ลงเวลาครบแล้ววันนี้
           </div>
         ) : (
@@ -482,7 +482,7 @@ export function ClockCard() {
             {hasIn ? (
               <Button
                 size="lg"
-                className="h-14 flex-1 gap-2 rounded-2xl bg-white text-base font-semibold text-slate-900 hover:bg-slate-100"
+                className="h-14 flex-1 gap-2 rounded-lg bg-white text-base font-semibold text-slate-900 hover:bg-slate-100"
                 disabled={checking}
                 onClick={() => {
                   setSelectedMood(undefined);
@@ -494,7 +494,7 @@ export function ClockCard() {
             ) : (
               <Button
                 size="lg"
-                className="h-14 flex-1 gap-2 rounded-2xl bg-sidebar-primary text-base font-semibold text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/25 hover:brightness-105 active:brightness-95"
+                className="h-14 flex-1 gap-2 rounded-lg bg-sidebar-primary text-base font-semibold text-sidebar-primary-foreground shadow-sm shadow-sidebar-primary/25 hover:brightness-105 active:brightness-95"
                 disabled={checking}
                 onClick={startClockIn}
               >
@@ -507,7 +507,7 @@ export function ClockCard() {
                 variant="outline"
                 disabled={checking}
                 onClick={() => setQrOpen(true)}
-                className="h-14 flex-1 gap-2 rounded-2xl border-white/15 bg-white/5 text-sm font-semibold text-white hover:bg-white/10"
+                className="h-14 flex-1 gap-2 rounded-lg border-white/15 bg-white/5 text-sm font-semibold text-white hover:bg-white/10"
                 aria-label="สแกน QR ที่สาขา"
               >
                 <QrCode className="size-5" /> สแกน QR
@@ -520,7 +520,7 @@ export function ClockCard() {
             "บันทึกเวลาออกงาน" button below; picking an emoji only highlights
             it, it no longer submits the checkout by itself. */}
         {moodOpen && (
-          <div className="mt-3 space-y-3 rounded-2xl bg-white/5 p-3">
+          <div className="mt-3 space-y-3 rounded-lg bg-white/5 p-3">
             <p className="text-center text-xs text-slate-300">วันนี้เป็นอย่างไรบ้าง?</p>
             <div className="flex items-center justify-between">
               {MOOD_OPTIONS.map((m) => (
@@ -542,7 +542,7 @@ export function ClockCard() {
             </div>
             <Button
               type="button"
-              className="h-12 w-full gap-2 rounded-xl bg-white text-sm font-semibold text-slate-900 hover:bg-slate-100"
+              className="h-12 w-full gap-2 rounded-lg bg-white text-sm font-semibold text-slate-900 hover:bg-slate-100"
               disabled={checking}
               onClick={() => startClockOut(selectedMood)}
             >
@@ -579,7 +579,7 @@ export function ClockCard() {
             type="button"
             variant="outline"
             className={cn(
-              "h-10 w-full gap-2 rounded-xl border-white/15 bg-white/5 text-sm font-medium text-white hover:bg-white/10",
+              "h-10 w-full gap-2 rounded-lg border-white/15 bg-white/5 text-sm font-medium text-white hover:bg-white/10",
               onBreak && "border-warning bg-warning text-warning-foreground hover:bg-warning/90",
             )}
             disabled={startBreakMut.isPending || endBreakMut.isPending}
@@ -629,7 +629,7 @@ export function ClockCard() {
             <DialogTitle>ถ่ายรูปยืนยันตัวตน</DialogTitle>
             <DialogDescription>ใช้สำหรับยืนยันตัวตนเพิ่มเติม — ไม่บังคับ ปิดหน้าต่างนี้ได้ทุกเมื่อ</DialogDescription>
           </DialogHeader>
-          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900">
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-slate-900">
             <video
               ref={photoCam.videoRef}
               playsInline
@@ -687,7 +687,7 @@ export function ClockCard() {
             <DialogTitle>สแกน QR เพื่อ{hasIn ? "ลงเวลาออกงาน" : "ลงเวลาเข้างาน"}</DialogTitle>
             <DialogDescription>เล็งกล้องไปที่ QR ของสาขาที่ติดไว้หน้างาน</DialogDescription>
           </DialogHeader>
-          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900">
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-slate-900">
             <video ref={qrCam.videoRef} playsInline muted className="size-full object-cover" />
             {!qrCam.ready && !qrCam.error && (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-300">
@@ -776,7 +776,7 @@ function GpsStatusChip({
 }) {
   if (status === "locating") {
     return (
-      <div className="relative mt-3 flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs text-slate-300">
+      <div className="relative mt-3 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-slate-300">
         <Loader2 className="size-3.5 shrink-0 animate-spin" /> GPS กำลังค้นหา…
       </div>
     );
@@ -784,7 +784,7 @@ function GpsStatusChip({
 
   if (status === "denied") {
     return (
-      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-white">
+      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-white">
         <span className="flex items-center gap-2">
           <ShieldAlert className="size-3.5 shrink-0 text-warning" /> ยังไม่อนุญาตตำแหน่ง — เปิดสิทธิ์เข้าถึงตำแหน่งในตั้งค่าเบราว์เซอร์
         </span>
@@ -797,7 +797,7 @@ function GpsStatusChip({
 
   if (status === "error") {
     return (
-      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-white">
+      <div className="relative mt-3 flex items-center justify-between gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-white">
         <span className="flex items-center gap-2">
           <AlertTriangle className="size-3.5 shrink-0 text-warning" /> ระบุตำแหน่งไม่ได้ · ลองใหม่{errorMsg ? ` (${errorMsg})` : ""}
         </span>
@@ -810,7 +810,7 @@ function GpsStatusChip({
 
   if (!hasGeofence) {
     return (
-      <div className="relative mt-3 flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs text-slate-300">
+      <div className="relative mt-3 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-slate-300">
         <MapPinned className="size-3.5 shrink-0 text-success" /> GPS พร้อม · สาขานี้ไม่ได้ตั้งเขตพื้นที่ไว้
       </div>
     );
@@ -820,7 +820,7 @@ function GpsStatusChip({
     <div className="relative mt-3 space-y-1.5">
       <div
         className={cn(
-          "flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs",
+          "flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs",
           inRadius ? "bg-success/10 text-success" : "bg-warning/10 text-warning",
         )}
       >

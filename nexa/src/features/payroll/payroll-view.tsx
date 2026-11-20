@@ -92,7 +92,7 @@ function MyPayslips() {
           <div className="pointer-events-none absolute -top-20 -right-12 size-72 rounded-full bg-primary/25 blur-[90px]" />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex size-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+              <span className="flex size-11 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
                 <CircleDollarSign className="size-6 text-primary" />
               </span>
               <div>
@@ -312,7 +312,7 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
         />
       ) : (
         <div className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
               <Briefcase className="size-4" /> สรุปรอบ {period}: เงินรวม {formatCurrency(summary.totalGross)} · สุทธิ {formatCurrency(summary.totalNet)}
             </span>
@@ -324,7 +324,7 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
           {canSendEmail && <PayrollFilingExports records={records} period={period} />}
 
           {canSendEmail && selectedIds.size > 0 && (
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
               <span className="text-sm text-foreground">เลือกแล้ว {selectedIds.size} คน</span>
               <Button size="sm" disabled={sendEmailMut.isPending} onClick={sendEmails}>
                 {sendEmailMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
@@ -333,7 +333,7 @@ function PayrollAdmin({ canPay }: { canPay: boolean }) {
             </div>
           )}
 
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

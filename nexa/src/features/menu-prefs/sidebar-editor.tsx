@@ -107,8 +107,8 @@ function EditableGroup({
   const hrefs = movable.map((i) => i.href);
 
   return (
-    <Reorder.Item value={group.label} dragListener={false} dragControls={controls} className="rounded-xl bg-sidebar select-none">
-      <div onPointerDown={dragFromRow(controls)} className="flex h-10 cursor-grab items-center gap-2 rounded-xl px-1.5 text-[14px] font-semibold text-sidebar-foreground active:cursor-grabbing">
+    <Reorder.Item value={group.label} dragListener={false} dragControls={controls} className="rounded-lg bg-sidebar select-none">
+      <div onPointerDown={dragFromRow(controls)} className="flex h-10 cursor-grab items-center gap-2 rounded-lg px-1.5 text-[14px] font-semibold text-sidebar-foreground active:cursor-grabbing">
         <Handle label={`ย้ายกลุ่ม ${group.label}`} controls={controls} onMove={onMoveGroup} />
         <span className="flex size-6 shrink-0 items-center justify-center rounded-[7px]" style={{ background: group.chipColor }}>
           <group.icon className="size-3.5 text-white" strokeWidth={2.25} />

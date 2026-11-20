@@ -25,7 +25,7 @@ export function MobileAlertBanner({
 }) {
   const { wrap, icon: Icon } = TONE[tone];
   return (
-    <div className={cn("flex gap-2.5 rounded-xl border p-3.5 text-[13px] leading-relaxed", wrap, className)}>
+    <div className={cn("flex gap-2.5 rounded-lg border p-3.5 text-[13px] leading-relaxed", wrap, className)}>
       <Icon className="mt-0.5 size-5 shrink-0" />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
@@ -44,7 +44,7 @@ export function MobileSuccessCard({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6 text-center">
+    <div className="rounded-lg border border-border bg-card p-6 text-center">
       <div className="mx-auto mb-3.5 flex size-14 items-center justify-center rounded-full bg-success-muted">
         <Check className="size-7 text-success" />
       </div>

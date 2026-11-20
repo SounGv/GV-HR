@@ -178,7 +178,7 @@ export function FileDownloads({ files }: { files: OutFile[] | undefined }) {
           key={`${f.name}-${i}`}
           type="button"
           onClick={() => download(f)}
-          className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground transition hover:border-primary"
+          className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-lg border border-border bg-card px-3.5 text-sm font-semibold text-foreground transition hover:border-primary"
         >
           <Download className="size-[18px] shrink-0 text-status-normal-fg" aria-hidden="true" />
           <span className="break-all">{f.name}</span>

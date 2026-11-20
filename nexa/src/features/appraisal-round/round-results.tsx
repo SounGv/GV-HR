@@ -68,10 +68,10 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
         </Link>
       </div>
       {cfg && !cfg.configured && (
-        <p className="rounded-xl bg-muted px-3 py-2 text-sm">ยังไม่ได้ตั้งค่าวิธีคิดคะแนน คำนวณได้ด้วยค่าเริ่มต้น (ถ่วงน้ำหนัก ไม่มีเกรด) ควรตั้งค่าก่อนประกาศผล</p>
+        <p className="rounded-lg bg-muted px-3 py-2 text-sm">ยังไม่ได้ตั้งค่าวิธีคิดคะแนน คำนวณได้ด้วยค่าเริ่มต้น (ถ่วงน้ำหนัก ไม่มีเกรด) ควรตั้งค่าก่อนประกาศผล</p>
       )}
       {allImported && (
-        <p className="rounded-xl bg-muted px-3 py-2 text-sm">นำเข้าจาก Favpo: มีเฉพาะคะแนนรวมของแต่ละคน ไม่มีเกรดและไม่ต้องคำนวณซ้ำ ไปที่ทบทวนผลเพื่อดูการกระจายคะแนน</p>
+        <p className="rounded-lg bg-muted px-3 py-2 text-sm">นำเข้าจาก Favpo: มีเฉพาะคะแนนรวมของแต่ละคน ไม่มีเกรดและไม่ต้องคำนวณซ้ำ ไปที่ทบทวนผลเพื่อดูการกระจายคะแนน</p>
       )}
       <p className="text-sm tabular-nums text-muted-foreground">
         ยังไม่คำนวณ {counts("NOT_CALCULATED")} · คำนวณแล้ว {counts("CALCULATED")} · อนุมัติแล้ว {counts("APPROVED")} · ประกาศแล้ว {counts("PUBLISHED") + counts("ACKNOWLEDGED")}
@@ -100,7 +100,7 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
       )}
       {status !== "CLOSED" && <p className="text-xs text-muted-foreground">ประกาศผลได้เมื่อปิดรอบแล้ว (คำนวณดูระหว่างรอบได้)</p>}
       {band && (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-sm" role="status">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm" role="status">
           <span>
             แสดงเฉพาะคะแนน <b>{bandLabel(band)}</b> · <b className="tabular-nums">{shownRows.length}</b> จาก {rows.length} คน
           </span>
@@ -111,7 +111,7 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
       )}
       {band && shownRows.length === 0 && <p className="text-sm text-muted-foreground">ไม่มีใครอยู่ในช่วงคะแนนนี้</p>}
       {shownRows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-muted-foreground">
               <tr>

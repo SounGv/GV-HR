@@ -234,7 +234,7 @@ export function MobileCalendarView() {
             <EmptyState title="ไม่มีรายการ" description="วันนี้ยังไม่มีกิจกรรม" className="py-8" />
           ) : (
             selectedItems.map((it) => (
-              <div key={it.id} className="flex items-start gap-2 rounded-xl border border-border p-2.5">
+              <div key={it.id} className="flex items-start gap-2 rounded-lg border border-border p-2.5">
                 <span className={cn("mt-1 size-2 shrink-0 rounded-full", SOURCE_DOT[it.source])} />
                 <div className="min-w-0">
                   {it.href ? (
@@ -252,7 +252,7 @@ export function MobileCalendarView() {
           {canManage && selected && (
             <Link
               href={newEventHref}
-              className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground"
+              className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-sm font-medium text-muted-foreground"
             >
               <Plus className="size-4" /> เพิ่มกิจกรรมวันนี้
             </Link>

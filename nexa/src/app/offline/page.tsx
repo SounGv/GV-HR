@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "ออฟไลน์" };
 export default function OfflinePage() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-background px-6 text-center">
-      <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
+      <div className="flex size-16 items-center justify-center rounded-lg bg-muted">
         <WifiOff className="size-8 text-muted-foreground" />
       </div>
       <div className="space-y-1.5">

@@ -235,7 +235,7 @@ export function NewsTicker({ announcement }: { announcement: { id: string; title
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setHovered(true)}
       onBlur={() => setHovered(false)}
-      className="ticker flex min-h-16 items-center gap-2 rounded-2xl bg-black/20 pr-1.5 pl-2.5"
+      className="ticker flex min-h-16 items-center gap-2 rounded-lg bg-black/20 pr-1.5 pl-2.5"
     >
       <div ref={stageRef} className="relative h-16 min-w-0 flex-1 overflow-hidden" aria-hidden={len > 0 ? "true" : undefined}>
         {current && (
@@ -322,7 +322,7 @@ function TickerButton({
       title={label}
       onClick={onClick}
       className={cn(
-        "inline-flex size-11 items-center justify-center rounded-xl border border-white/30 bg-white/15 text-white transition-colors hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none",
+        "inline-flex size-11 items-center justify-center rounded-lg border border-white/30 bg-white/15 text-white transition-colors hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none",
         className,
       )}
     >

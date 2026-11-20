@@ -130,7 +130,7 @@ export function EmployeeAttendanceSheet({
                         { k: "ขาด", v: summary.absent },
                         { k: "ลา", v: summary.leave },
                       ].map((x) => (
-                        <div key={x.k} className="rounded-xl border border-border bg-card px-1 py-2">
+                        <div key={x.k} className="rounded-lg border border-border bg-card px-1 py-2">
                           <dt className="text-xs text-muted-foreground">{x.k}</dt>
                           <dd className="text-xl font-bold tabular-nums">{x.v}</dd>
                         </div>
@@ -157,7 +157,7 @@ export function EmployeeAttendanceSheet({
                 )}
               </section>
 
-              <p className="rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
+              <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
                 ใช้สำหรับพูดคุยกับพนักงานเป็นรายคน ไม่ใช่ตัดสินจากตัวเลข ไม่แสดงรูปถ่ายหรือตำแหน่ง GPS
               </p>
             </div>

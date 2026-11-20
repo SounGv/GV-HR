@@ -47,7 +47,7 @@ export function TemplateFormRenderer({
           <h3 className="text-base font-semibold text-foreground">{section.name}</h3>
           <div className="space-y-3">
             {section.questions.map((q) => (
-              <div key={q.id} className="space-y-2 rounded-xl border border-border p-3.5">
+              <div key={q.id} className="space-y-2 rounded-lg border border-border p-3.5">
                 <p className="text-base font-semibold text-foreground">
                   {q.text}
                   {q.required && <span className="ml-1 text-destructive">*</span>}

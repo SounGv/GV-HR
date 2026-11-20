@@ -82,7 +82,7 @@ export function RecognitionFormPage({
                 type="button"
                 onClick={() => setType(opt.type)}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-medium transition",
+                  "flex flex-col items-center gap-1.5 rounded-lg border p-3 text-xs font-medium transition",
                   active
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border text-muted-foreground hover:bg-muted/50",

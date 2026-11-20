@@ -26,7 +26,7 @@ export function BenefitsHubView() {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Card className="gap-4 p-5">
         <div className="flex items-center gap-3">
-          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-2xl border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
+          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-lg border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
             <BenefitsIcon size={36} />
           </span>
           <div>
@@ -62,7 +62,7 @@ export function BenefitsHubView() {
 
       <Card className="gap-4 p-5">
         <div className="flex items-center gap-3">
-          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-2xl border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
+          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-lg border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
             <ExpenseIcon size={36} />
           </span>
           <div>
@@ -102,7 +102,7 @@ export function BenefitsHubView() {
         </Link>
         {canApprove && (
           <Link href="/benefits/report" className="flex flex-1 items-center gap-3 rounded-lg p-1 hover:bg-muted">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#EC4899]/15 text-[#EC4899]">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-[#EC4899]/15 text-[#EC4899]">
               <BarChart3 className="size-[18px]" strokeWidth={2.5} />
             </span>
             <span className="flex-1 text-base font-semibold text-foreground">รายงานสวัสดิการ (HR/Admin)</span>

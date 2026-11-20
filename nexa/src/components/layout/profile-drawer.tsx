@@ -221,10 +221,10 @@ export function ProfileDrawer() {
                   href={item.href}
                   onClick={handleNavigate}
                   aria-label={item.label}
-                  className="flex min-h-16 items-center gap-3 rounded-xl px-3 py-3 text-[17px] font-semibold text-foreground transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.99] active:bg-muted"
+                  className="flex min-h-16 items-center gap-3 rounded-lg px-3 py-3 text-[17px] font-semibold text-foreground transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.99] active:bg-muted"
                 >
                   <span
-                    className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-sm"
+                    className="relative flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm"
                     style={{ background: item.chipColor }}
                   >
                     <item.icon className="size-[18px] text-white" strokeWidth={3} />
@@ -247,7 +247,7 @@ export function ProfileDrawer() {
                 closeDrawer();
                 logout();
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/20 bg-destructive-muted px-4 py-3 text-sm font-bold text-destructive active:scale-[0.99]"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/20 bg-destructive-muted px-4 py-3 text-sm font-bold text-destructive active:scale-[0.99]"
             >
               <LogOut className="size-4" />
               ออกจากระบบ

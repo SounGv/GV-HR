@@ -80,7 +80,7 @@ export function UsersRoles() {
       ) : isMobile ? (
         <ul className="space-y-3">
           {users.map((u) => (
-            <li key={u.id} className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
+            <li key={u.id} className="rounded-lg bg-card p-4 shadow-sm ring-1 ring-border/60">
               <p className="text-base font-semibold break-words text-foreground">
                 {u.employee ? displayName(u.employee) : loginIdentifier(u)}
               </p>
@@ -122,7 +122,7 @@ export function UsersRoles() {
           ))}
         </ul>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

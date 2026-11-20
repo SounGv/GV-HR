@@ -147,7 +147,7 @@ function Editor({
           {indicators.map((ind, i) => {
             const m = metricOf(ind.metric);
             return (
-              <div key={i} className="space-y-2 rounded-xl border border-border p-3">
+              <div key={i} className="space-y-2 rounded-lg border border-border p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Select value={ind.metric} disabled={!canEdit} onValueChange={(v) => v && setInd(i, { metric: v })}>
                     <SelectTrigger className="h-11 min-w-[200px] md:h-9" aria-label={`ตัวชี้วัดที่ ${i + 1}`}>
@@ -302,7 +302,7 @@ function RunPanel({ profile }: { profile: KpiProfileView }) {
       {result && (
         <>
           <p className="text-sm text-muted-foreground">ช่วง {result.period} · {result.rows.length} คน (เรียงจากคะแนนน้อยไปมาก)</p>
-          <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>

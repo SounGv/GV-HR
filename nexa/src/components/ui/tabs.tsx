@@ -45,12 +45,12 @@ const stickyTabsBacking =
   "flex bg-background group-data-horizontal/tabs:sticky group-data-horizontal/tabs:z-20 group-data-horizontal/tabs:-mt-2 group-data-horizontal/tabs:pt-2 group-data-horizontal/tabs:top-[calc(var(--gv-sticky-top,calc(env(safe-area-inset-top)+4rem))-0.5rem)] md:group-data-horizontal/tabs:top-[var(--gv-band-h,5.75rem)]"
 
 const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit items-center justify-center rounded-xl p-1 text-muted-foreground group-data-horizontal/tabs:h-10 max-md:group-data-horizontal/tabs:h-[54px] group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none data-[variant=line]:border-b data-[variant=line]:border-border",
+  "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-1 text-muted-foreground group-data-horizontal/tabs:h-10 max-md:group-data-horizontal/tabs:h-[54px] group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none data-[variant=line]:border-b data-[variant=line]:border-border",
   {
     variants: {
       variant: {
         // Stays in view while the page scrolls: TabsList wraps it in stickyTabsBacking.
-        default: "bg-muted group-data-horizontal/tabs:shadow-[0_6px_16px_-10px_rgba(15,23,42,0.35)]",
+        default: "bg-muted group-data-horizontal/tabs:shadow-sm",
         line: "gap-1 bg-transparent",
       },
     },

@@ -111,7 +111,7 @@ function PendingSection() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-accent p-4 text-foreground ring-1 ring-border">
+      <div className="rounded-lg bg-accent p-4 text-foreground ring-1 ring-border">
         <p className="text-sm text-muted-foreground">งานประเมินของฉัน</p>
         <p className="mt-1 text-xl font-bold">
           {todo.length > 0 ? `ต้องประเมินอีก ${todo.length} คน` : "ประเมินครบทุกคนแล้ว"}

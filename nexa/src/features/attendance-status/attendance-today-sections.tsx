@@ -114,7 +114,7 @@ function SegmentLine({
 export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
   const { counts, total, scanned } = data;
   return (
-    <section className="gv-teal-surface rounded-2xl p-5">
+    <section className="gv-teal-surface rounded-lg p-5">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-white">การเข้างานวันนี้ · ข้อมูล ณ {data.asOf} น.</p>
@@ -192,7 +192,7 @@ export function AttendanceStatusTiles({ data, departmentIds }: SectionProps) {
           <h2 className="text-[15px] leading-snug font-semibold text-foreground">ใครต้องดูวันนี้</h2>
           <p className="text-xs text-muted-foreground">แตะการ์ดเพื่อดูรายชื่อของแต่ละสถานะ</p>
         </div>
-        <span aria-hidden="true" className="mb-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+        <span aria-hidden="true" className="mb-2 h-px flex-1 bg-border" />
       </div>
       <div className={cn("grid grid-cols-2 gap-3", order.length > 5 ? "md:grid-cols-6" : "md:grid-cols-5")}>
         {order.map((s) => {
@@ -203,7 +203,7 @@ export function AttendanceStatusTiles({ data, departmentIds }: SectionProps) {
             <Link
               key={s}
               href={attendanceListHref(s, departmentIds)}
-              className="gv-lift relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border bg-card p-4 pt-5 shadow-[var(--card-shadow)]"
+              className="gv-lift relative flex flex-col gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 pt-5 shadow-[var(--card-shadow)]"
             >
               <span aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-1", meta.dot)} />
               <span className="flex items-center gap-2 text-sm font-semibold text-foreground">

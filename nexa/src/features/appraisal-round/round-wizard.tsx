@@ -109,7 +109,7 @@ function RoundOverview({ round }: { round: RoundDetail }) {
           </div>
         </dl>
         {round.status === "SCHEDULED" && (
-          <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted px-3 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted px-3 py-2 text-sm">
             <p className="min-w-0 flex-1">ตั้งเวลาไว้แล้ว ระบบจะส่งข้อความหาผู้ประเมินในวันที่ {fmtDay(round.startIso)}</p>
             {can("campaign:update") && (
               <Button variant="outline" className="h-11 md:h-9" disabled={unschedule.isPending} onClick={doUnschedule}>

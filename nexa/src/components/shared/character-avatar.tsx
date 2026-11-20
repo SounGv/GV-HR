@@ -68,7 +68,7 @@ export function CharacterAvatar({ character, seed = "", className }: { character
   const id = useId().replace(/:/g, "");
   if (character === "BOT") {
     return (
-      <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(150deg,#eef6fd,#e3f2fd)]", className)}>
+      <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e3f2fd]", className)}>
         <Logo size={40} className="h-auto w-[76%]" />
       </span>
     );

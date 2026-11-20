@@ -76,8 +76,7 @@ function ScoreIcon({ score, max, small, picked }: { score: number; max: number; 
     <span
       className={cn(
         "relative flex shrink-0 items-center justify-center rounded-full",
-        "bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,.95),rgba(255,255,255,.35)_60%,rgba(255,255,255,.1))] dark:bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,.3),rgba(255,255,255,.08)_60%,rgba(255,255,255,.02))]",
-        "shadow-[inset_0_0_0_1px_rgba(255,255,255,.9),inset_0_-6px_10px_color-mix(in_srgb,var(--primary)_12%,transparent),0_12px_16px_-10px_color-mix(in_srgb,var(--primary)_55%,black)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,.18),0_12px_16px_-10px_rgba(0,0,0,.6)]",
+        "border border-border bg-card",
         small ? "size-10" : "size-14",
         picked && "gv-icon-breathe",
       )}
@@ -258,7 +257,7 @@ export function TaskForm({
         <span className="gv-drop top-[82%] -right-2 hidden h-[26px] w-[22px] md:block" style={{ animationDelay: "-3s", animationDuration: "9s" }} />
       </div>
       {/* Header: who, as whom, progress per question, save state (frosted glass). */}
-      <section className="gv-frost rounded-[26px] p-3.5 sm:p-5" aria-label="งานประเมิน">
+      <section className="gv-frost rounded-lg p-3.5 sm:p-5" aria-label="งานประเมิน">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-base leading-snug font-bold text-balance break-words">
@@ -323,12 +322,12 @@ export function TaskForm({
       </section>
 
       {onBehalfOf && !locked && (
-        <p className="bg-muted rounded-xl px-4 py-3 text-sm">
+        <p className="bg-muted rounded-lg px-4 py-3 text-sm">
           คุณกำลังกรอกแทน <b>{onBehalfOf}</b> ระบบจะบันทึกว่า HR เป็นผู้ส่ง
         </p>
       )}
       {locked && (
-        <p className="border-border bg-muted flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">
+        <p className="border-border bg-muted flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
           <Lock className="size-4 shrink-0" aria-hidden="true" />
           {task.status === "SUBMITTED"
             ? "ส่งผลประเมินแล้ว แก้ไขไม่ได้"
@@ -338,7 +337,7 @@ export function TaskForm({
 
       {view === "start" && (
         <div className="gv-rise space-y-4">
-          <div className="border-border bg-card flex items-center gap-3.5 rounded-[22px] border p-4 shadow-[var(--card-shadow)]">
+          <div className="border-border bg-card flex items-center gap-3.5 rounded-lg border p-4 shadow-[var(--card-shadow)]">
             <PersonAvatar
               name={task.personName}
               gender={task.personGender}
@@ -365,7 +364,7 @@ export function TaskForm({
             <h2 className="text-foreground mb-2 px-0.5 text-sm font-bold text-balance">
               คะแนนแต่ละระดับหมายถึง
             </h2>
-            <ul className="border-border bg-card overflow-hidden rounded-[18px] border">
+            <ul className="border-border bg-card overflow-hidden rounded-lg border">
               {rubric.map((r) => {
                 const words = startDesc.get(r.score) ?? r.desc;
                 return (
@@ -393,7 +392,7 @@ export function TaskForm({
             ].map((t, i) => (
               <li
                 key={t}
-                className="border-border bg-card flex items-start gap-2.5 rounded-[14px] border px-3 py-2.5"
+                className="border-border bg-card flex items-start gap-2.5 rounded-lg border px-3 py-2.5"
               >
                 <span className="bg-accent text-accent-foreground flex size-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold">
                   {i + 1}
@@ -428,7 +427,7 @@ export function TaskForm({
             <h2 className="text-xl font-bold text-balance">{locked ? "คำตอบที่ส่งแล้ว" : "ตรวจทวนก่อนส่ง"}</h2>
             {!locked && <p className="text-muted-foreground text-sm">กดหัวข้อเพื่อแก้</p>}
           </div>
-          <ul className="border-border bg-card overflow-hidden rounded-[18px] border">
+          <ul className="border-border bg-card overflow-hidden rounded-lg border">
             {questions.map((x, i) => {
               const v = values[x.id];
               const done = isAnswered(v);
@@ -507,7 +506,7 @@ export function TaskForm({
             })}
           </ul>
           {!locked && missing.length > 0 && (
-            <p className="rounded-xl border border-status-late-border bg-status-late-bg px-3.5 py-2.5 text-sm text-status-late-fg">
+            <p className="rounded-lg border border-status-late-border bg-status-late-bg px-3.5 py-2.5 text-sm text-status-late-fg">
               ยังส่งไม่ได้ · {missing.join(", ")}
             </p>
           )}
@@ -520,7 +519,7 @@ export function TaskForm({
       )}
 
       {/* Thumb bar: one main action per screen. */}
-      <div className="gv-foot gv-frost fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 rounded-t-[26px] border-x-0 border-b-0 px-4 py-3 md:sticky md:inset-x-auto md:bottom-4 md:rounded-[26px] md:border md:px-3">
+      <div className="gv-foot gv-frost fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 rounded-t-[26px] border-x-0 border-b-0 px-4 py-3 md:sticky md:inset-x-auto md:bottom-4 md:rounded-lg md:border md:px-3">
         <div className="flex items-center gap-2">
           {view === "start" && (
             <Button
@@ -641,7 +640,7 @@ export function QuestionStep({
         <h2 className="mt-2 text-xl leading-snug font-bold break-words text-balance">{q.text}</h2>
       </div>
       {q.helpText && (
-        <div className="gv-frost flex items-start gap-2.5 rounded-[20px] px-3 py-2.5">
+        <div className="gv-frost flex items-start gap-2.5 rounded-lg px-3 py-2.5">
           <span className="bg-accent text-accent-foreground flex size-8 shrink-0 items-center justify-center rounded-full">
             <Info className="size-[18px]" aria-hidden="true" />
           </span>
@@ -689,7 +688,7 @@ export function QuestionStep({
                 disabled={disabled}
                 onClick={() => onValue(r.score)}
                 className={cn(
-                  "bg-card/90 relative flex w-full items-start gap-3 rounded-[26px] border-[1.5px] py-3 pr-3.5 pl-3 text-left shadow-[0_10px_24px_-16px_color-mix(in_srgb,var(--primary)_55%,black),inset_0_1px_0_rgba(255,255,255,.95)] transition-[border-color,box-shadow,transform,opacity] duration-200 active:scale-[0.985] disabled:opacity-60 dark:shadow-none",
+                  "bg-card/90 relative flex w-full items-start gap-3 rounded-lg border-[1.5px] py-3 pr-3.5 pl-3 text-left shadow-sm transition-[border-color,box-shadow,transform,opacity] duration-200 active:scale-[0.985] disabled:opacity-60 dark:shadow-none",
                   on
                     ? low
                       ? "border-destructive border-2 shadow-[0_0_0_4px_var(--status-absent-bg),0_16px_28px_-16px_var(--destructive)] dark:shadow-none"
@@ -749,7 +748,7 @@ export function QuestionStep({
       {q.answerType === "RATING" && (
         <label
           className={cn(
-            "gv-frost block rounded-[22px] px-3.5 py-2.5 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
+            "gv-frost block rounded-lg px-3.5 py-2.5 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
             noteMissing && "border-status-absent-border bg-status-absent-bg/60",
           )}
         >
@@ -812,7 +811,7 @@ export function QuestionStep({
                       )
                 }
                 className={cn(
-                  "bg-card flex min-h-12 w-full items-center gap-3 rounded-2xl border-[1.5px] px-3.5 py-2 text-left text-sm transition-colors disabled:opacity-60",
+                  "bg-card flex min-h-12 w-full items-center gap-3 rounded-lg border-[1.5px] px-3.5 py-2 text-left text-sm transition-colors disabled:opacity-60",
                   picked ? "bg-accent border-primary" : "border-border",
                 )}
               >

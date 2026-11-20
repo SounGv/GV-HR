@@ -33,7 +33,7 @@ export function PersonAvatar({
     ) : (
       <span
         aria-hidden="true"
-        className="flex size-full items-center justify-center rounded-full bg-[linear-gradient(150deg,#e3f2fd,#bbdefb)] font-semibold text-[#1565c0]"
+        className="flex size-full items-center justify-center rounded-full bg-[#bbdefb] font-semibold text-[#1565c0]"
       >
         {avatarInitials(name)}
       </span>

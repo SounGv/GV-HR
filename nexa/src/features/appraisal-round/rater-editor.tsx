@@ -68,7 +68,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
 
   return (
     <section className="mt-6" aria-label="ตั้งผู้ประเมินเอง">
-      <div className="bg-accent flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3">
+      <div className="bg-accent flex flex-wrap items-center gap-2 rounded-lg px-4 py-3">
         <b className="text-sm">ตั้งผู้ประเมินเอง</b>
         {handCount === 0 ? (
           <span className="text-muted-foreground text-sm">ยังไม่ได้ตั้ง ใช้ที่ระบบจับคู่จากผังองค์กร</span>
@@ -105,7 +105,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
         </span>
       </div>
 
-      <div className="border-border mt-3 overflow-x-auto rounded-2xl border">
+      <div className="border-border mt-3 overflow-x-auto rounded-lg border">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="text-muted-foreground text-left text-xs font-bold">

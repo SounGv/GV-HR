@@ -44,7 +44,7 @@ export function AuthBrandPanel({
       <div className="relative max-w-xl space-y-8">
         <div className="space-y-5">
           {eyebrow && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 backdrop-blur">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 ">
               <Sparkles className="size-3.5 text-sidebar-primary" aria-hidden="true" /> {eyebrow}
             </span>
           )}

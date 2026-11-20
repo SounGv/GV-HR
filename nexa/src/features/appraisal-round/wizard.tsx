@@ -260,7 +260,7 @@ export function Wizard({ round }: { round: RoundDetail }) {
       />
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <Card key={step} className="gv-rise gap-0 rounded-[22px] p-5 sm:p-6">
+        <Card key={step} className="gv-rise gap-0 rounded-lg p-5 sm:p-6">
           {step === 0 && <StepSetup draft={draft} update={update} badDates={badDates} />}
           {step === 1 && <StepPeople round={round} draft={draft} update={update} />}
           {step === 2 && (
@@ -491,7 +491,7 @@ function Readiness({
   const circ = 2 * Math.PI * 17;
   return (
     <aside className="grid gap-3 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]" aria-label="ความพร้อมก่อนเปิดรอบ">
-      <Card className="gap-3 rounded-[22px] p-4">
+      <Card className="gap-3 rounded-lg p-4">
         <div className="flex items-center gap-3">
           <svg viewBox="0 0 42 42" className="size-[42px] shrink-0" aria-hidden="true">
             <circle cx="21" cy="21" r="17" fill="none" stroke="var(--muted)" strokeWidth="5" />
@@ -535,7 +535,7 @@ function Readiness({
           ))}
         </ul>
       </Card>
-      <div className="rounded-[18px] border border-status-late-border bg-status-late-bg p-4 text-sm leading-relaxed text-status-late-fg">
+      <div className="rounded-lg border border-status-late-border bg-status-late-bg p-4 text-sm leading-relaxed text-status-late-fg">
         <p className="mb-0.5 text-sm font-semibold">เคล็ดลับ</p>
         ตั้งวันเปิดรอบเป็นวันพรุ่งนี้ ระบบจะตั้งเวลาส่งให้ และยังกด “ยกเลิกการตั้งเวลา”
         กลับมาแก้ได้ก่อนข้อความออก
@@ -658,7 +658,7 @@ function StepSetup({
       )}
 
       <Sub>การแจ้งเตือน</Sub>
-      <div className="divide-border border-border grid divide-y rounded-2xl border">
+      <div className="divide-border border-border grid divide-y rounded-lg border">
         <ToggleRow
           checked={draft.line}
           onChange={(v) => update({ line: v })}
@@ -841,7 +841,7 @@ function StepPeople({
               aria-pressed={on}
               onClick={() => toggle(ids, !on)}
               className={cn(
-                "rounded-2xl border-[1.5px] p-3.5 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
+                "rounded-lg border-[1.5px] p-3.5 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
                 on
                   ? "border-ring bg-[linear-gradient(180deg,var(--accent),var(--card))] shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
                   : some
@@ -920,7 +920,7 @@ function StepPeople({
         </Button>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-accent px-4 py-3 text-foreground">
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-accent px-4 py-3 text-foreground">
         <span className="text-sm">
           <b className="text-[22px] text-primary tabular-nums">
             {selected.size}
@@ -983,7 +983,7 @@ function PeopleList({
   };
 
   return (
-    <details className="group border-border mt-4 rounded-2xl border">
+    <details className="group border-border mt-4 rounded-lg border">
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
         <ChevronRight
           className="text-muted-foreground size-4 transition-transform group-open:rotate-90"
@@ -1224,7 +1224,7 @@ function StepRaters({
             disabled={saving}
             onClick={() => active !== k && pickPreset(k)}
             className={cn(
-              "relative rounded-[18px] border-[1.5px] p-3.5 pb-3 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px disabled:cursor-wait",
+              "relative rounded-lg border-[1.5px] p-3.5 pb-3 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px disabled:cursor-wait",
               active === k
                 ? "border-ring bg-[linear-gradient(180deg,var(--accent),var(--card))] shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
                 : "border-border bg-card hover:border-ring/50",
@@ -1250,14 +1250,14 @@ function StepRaters({
       </div>
 
       {draft.types.includes("PEER") && (
-        <p className="bg-muted text-muted-foreground mt-3 rounded-xl px-3.5 py-2.5 text-sm">
+        <p className="bg-muted text-muted-foreground mt-3 rounded-lg px-3.5 py-2.5 text-sm">
           เพื่อนร่วมงาน = คนที่มีหัวหน้าคนเดียวกัน ระบบเลือกให้คนละไม่เกิน {PEER_LIMIT} คน
         </p>
       )}
 
       <Sub>ผลการจับคู่</Sub>
       {typesSaved.length === 0 || m.rows.length === 0 ? (
-        <p className="border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-6 text-center text-sm">
+        <p className="border-border text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm">
           {m.rows.length === 0
             ? "ยังไม่ได้เลือกคนที่ถูกประเมิน กลับไปขั้น “เลือกคน”"
             : "เลือกรูปแบบด้านบน ระบบจะจับคู่ให้ทันที"}
@@ -1293,7 +1293,7 @@ function StepRaters({
 
       {draft.types.length > 0 && (
         <details
-          className="mt-5 rounded-2xl border border-dashed border-muted-foreground/40 px-4 py-3"
+          className="mt-5 rounded-lg border border-dashed border-muted-foreground/40 px-4 py-3"
           open={!total.ok}
         >
           <summary className="flex min-h-9 cursor-pointer flex-wrap items-center gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden">
@@ -1365,7 +1365,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
   const ready = m.rows.length - missing.length;
 
   return (
-    <div className="border-border overflow-hidden rounded-2xl border">
+    <div className="border-border overflow-hidden rounded-lg border">
       <div className="border-border bg-muted/60 flex flex-wrap items-center gap-2 border-b px-4 py-2.5">
         <span className="rounded-full border border-status-normal-border bg-status-normal-bg px-2.5 py-px text-xs font-bold text-success">
           ✓ {ready} คนพร้อม
@@ -1555,7 +1555,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
       />
       <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div>
-          <ul className="border-border overflow-hidden rounded-2xl border">
+          <ul className="border-border overflow-hidden rounded-lg border">
             {round.checks.map((c) => (
               <li
                 key={c.key}
@@ -1616,7 +1616,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
               ระบบยังไม่ได้ตั้งค่า LINE จึงส่งในแอปอย่างเดียว
             </p>
           )}
-          <p className="bg-muted mt-3 flex gap-2.5 rounded-xl px-3.5 py-3 text-sm leading-relaxed">
+          <p className="bg-muted mt-3 flex gap-2.5 rounded-lg px-3.5 py-3 text-sm leading-relaxed">
             <Lock className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden="true" />
             เมื่อเปิดรอบ ระบบจำแผนกและตำแหน่งของทุกคน ณ วันนั้น และล็อกคำถามของแบบประเมินไว้
             ถ้าย้ายทีมหรือแก้แบบระหว่างรอบ ผลรอบนี้ยังนับตามเดิม
@@ -1632,10 +1632,10 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
 
         {/* What a rater receives: same title and body as sendInvitations(). */}
         <figure
-          className="mx-auto w-full max-w-[280px] rounded-[30px] bg-[var(--device-frame)] p-2.5 shadow-[0_24px_44px_-22px_rgba(0,0,0,0.6)]"
+          className="mx-auto w-full max-w-[280px] rounded-lg bg-[var(--device-frame)] p-2.5 shadow-sm"
           aria-label="ตัวอย่างข้อความที่ผู้ประเมินได้รับ"
         >
-          <div className="min-h-[300px] rounded-[22px] bg-muted px-3 py-3.5 text-foreground">
+          <div className="min-h-[300px] rounded-lg bg-muted px-3 py-3.5 text-foreground">
             <div className="mb-3 flex items-center gap-2 text-xs font-bold text-muted-foreground">
               <span
                 className="flex size-[26px] items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--primary),var(--ring))] text-xs"

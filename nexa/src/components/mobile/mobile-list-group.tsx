@@ -16,7 +16,7 @@ export function MobileListGroup({
       {title && (
         <h2 className="px-1 text-xs font-semibold tracking-wide text-muted-foreground">{title}</h2>
       )}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">{children}</div>
+      <div className="overflow-hidden rounded-lg border border-border bg-card">{children}</div>
     </section>
   );
 }

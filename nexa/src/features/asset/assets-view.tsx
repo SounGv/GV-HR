@@ -129,7 +129,7 @@ export function AssetsView() {
       ) : isMobile ? (
         <ul className="space-y-3">
           {assets.map((a) => (
-            <li key={a.id} className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
+            <li key={a.id} className="rounded-lg bg-card p-4 shadow-sm ring-1 ring-border/60">
               <Link href={`/assets/${a.id}`} className="block">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

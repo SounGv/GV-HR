@@ -9,9 +9,9 @@ import { can } from "@/lib/auth/rbac";
 import { loadEvaluationOverview, type EvaluationOverview, type OpenRound, type ResultsCard } from "./evaluation-overview";
 import { HrEvalTiles, ResultsBoardCard, TemplateCard } from "./hr-eval-panel";
 
-const CARD = "rounded-2xl border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5";
-const BTN = "inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent";
-const BTN_PRIMARY = "inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110";
+const CARD = "rounded-lg border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5";
+const BTN = "inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent";
+const BTN_PRIMARY = "inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110";
 
 const fmtDay = (iso: string) => new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
 
@@ -346,7 +346,7 @@ export function HrOpenRound({ round, faces }: { round: OpenRound; faces: Evaluat
         </>
       )}
       {worst && s.byDepartment.length > 1 && (
-        <p className="mt-3 rounded-xl bg-accent px-3 py-2 text-sm text-accent-foreground">
+        <p className="mt-3 rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground">
           แผนกที่ค้างมากสุด: <b>{worst.department}</b> ค้าง {worst.pending} จาก {worst.total} คน ระบบเตือนผู้ประเมินให้ทุกวัน
         </p>
       )}
@@ -462,7 +462,7 @@ export async function EvaluationOverviewSection({ companyId, session }: { compan
     return (
       <section id="evaluation" aria-label="การประเมินผล" className="scroll-mt-24 space-y-3">
         <SectionHeading title="การประเมินผล" hint="เห็นเฉพาะ HR" />
-        <div className="space-y-3 rounded-[28px] border border-border bg-gradient-to-b from-card to-muted/50 p-3 shadow-[var(--card-shadow)] sm:p-5">
+        <div className="space-y-3 rounded-lg border border-border bg-card p-3 shadow-[var(--card-shadow)] sm:p-5">
           <HrEvalTiles o={o} />
           {o.awaitingReview.length + (o.awaitingCalculation ? 1 : 0) + o.drafts.length > 0 && <HrWorkCard o={o} />}
           {o.open.map((r) => (

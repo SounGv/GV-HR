@@ -103,7 +103,7 @@ export function DivisionTreeChart({
         <button
           type="button"
           onClick={printChart}
-          className="border-border bg-card hidden h-9 items-center gap-1.5 rounded-xl border px-3 text-[13px] font-semibold hover:border-[#1976d2] md:inline-flex"
+          className="border-border bg-card hidden h-9 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-semibold hover:border-[#1976d2] md:inline-flex"
         >
           <Printer className="size-4" aria-hidden="true" />
           พิมพ์ผัง

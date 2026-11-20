@@ -24,7 +24,7 @@ export function ScorePicker({
           aria-pressed={Math.round(value) === s}
           onClick={() => onChange(s)}
           className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-xl text-base font-semibold transition active:scale-95",
+            "flex size-11 shrink-0 items-center justify-center rounded-lg text-base font-semibold transition active:scale-95",
             Math.round(value) === s
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-muted text-muted-foreground hover:bg-muted/80",

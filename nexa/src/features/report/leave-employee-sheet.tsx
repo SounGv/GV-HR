@@ -107,7 +107,7 @@ export function LeaveEmployeeSheet({
                 <>
                   <section aria-label="สิทธิ์ลาและที่ใช้ไป" className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">สิทธิ์ลา ใช้ไป และคงเหลือ (วัน)</h3>
-                    <div className="overflow-x-auto rounded-xl border border-border">
+                    <div className="overflow-x-auto rounded-lg border border-border">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/50 text-muted-foreground">
                           <tr>
@@ -144,7 +144,7 @@ export function LeaveEmployeeSheet({
                       รายการลา <span className="tabular-nums">({detail.requests.length})</span>
                     </h3>
                     {detail.types.some((t) => t.untracked > 0) && (
-                      <p className="rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
+                      <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
                         ยอดที่ใช้ไปบางส่วนยังไม่มีวันที่ในระบบ (ยกยอดมาจากระบบเดิมหรือ HR ปรับให้):{" "}
                         {detail.types
                           .filter((t) => t.untracked > 0)
@@ -155,7 +155,7 @@ export function LeaveEmployeeSheet({
                     {detail.requests.length === 0 ? (
                       <p className="text-sm text-muted-foreground">ปีนี้ยังไม่มีรายการลา</p>
                     ) : (
-                      <ul className="divide-y divide-border rounded-xl border border-border">
+                      <ul className="divide-y divide-border rounded-lg border border-border">
                         {detail.requests.map((r) => (
                           <li key={r.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 py-2.5">
                             <span className="min-w-0">

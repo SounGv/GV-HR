@@ -68,7 +68,7 @@ export function ApprovalsDesk() {
           <h2 className="text-[15px] leading-snug font-semibold">คำขอรออนุมัติ</h2>
           <p className="text-xs text-muted-foreground">เรียงจากรายการที่รอนานที่สุด อนุมัติหรือไม่อนุมัติได้จากแถวนี้เลย</p>
         </div>
-        <span aria-hidden="true" className="mb-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+        <span aria-hidden="true" className="mb-2 h-px flex-1 bg-border" />
       </div>
 
       <Card className="gap-0 py-0">

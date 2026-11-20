@@ -144,7 +144,7 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
         {data.people.length > SHOWN && <p className="text-sm text-muted-foreground">และอีก {data.people.length - SHOWN} คน</p>}
         {canCreateRound && data.people.length > 0 && <ProbationRoundButton />}
         {missing > 0 && (
-          <p className="rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
+          <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
             ตรวจได้ {data.known} จาก {data.total} คน อีก {missing} คนยังไม่มีวันเริ่มงานหรือวันสิ้นสุดทดลองงานในระบบ
             จึงไม่ถูกนับในรายการนี้ (เพิ่มได้ที่หน้าข้อมูลพนักงาน)
           </p>

@@ -335,7 +335,7 @@ function ReportSection({
       {result?.truncatedFrom && (
         <div
           role="status"
-          className="flex items-start gap-2 rounded-xl border border-status-late-border bg-status-late-bg px-4 py-3 text-sm text-status-late-fg"
+          className="flex items-start gap-2 rounded-lg border border-status-late-border bg-status-late-bg px-4 py-3 text-sm text-status-late-fg"
         >
           <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <p>
@@ -758,7 +758,7 @@ export function ReportView() {
         </div>
       </div>
 
-      <div id="report-filters" hidden={!filtersOpen} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-3 print:hidden">
+      <div id="report-filters" hidden={!filtersOpen} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-3 print:hidden">
         <MultiSelectField label="แผนก" placeholder="ทุกแผนก" options={departmentOptions} selected={departmentIds} onChange={setDepartmentIds} />
         <div className="space-y-1">
           <label className="text-sm text-muted-foreground">ประเภทการจ้าง</label>

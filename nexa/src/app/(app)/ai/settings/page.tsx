@@ -40,7 +40,7 @@ export default async function AiSettingsPage() {
         <ArrowLeft className="size-4" aria-hidden="true" /> กลับไปหน้าน้องวีบอท
       </Link>
 
-      <section aria-labelledby="engine-now" className="space-y-3 rounded-2xl border border-border bg-card p-5">
+      <section aria-labelledby="engine-now" className="space-y-3 rounded-lg border border-border bg-card p-5">
         <h2 id="engine-now" className="text-lg font-semibold leading-snug">สถานะตอนนี้</h2>
         {fallback ? (
           <p className="flex flex-wrap items-center gap-2 text-sm">
@@ -62,7 +62,7 @@ export default async function AiSettingsPage() {
         </p>
       </section>
 
-      <section aria-labelledby="engine-usage" className="space-y-3 rounded-2xl border border-border bg-card p-5">
+      <section aria-labelledby="engine-usage" className="space-y-3 rounded-lg border border-border bg-card p-5">
         <h2 id="engine-usage" className="text-lg font-semibold leading-snug">การใช้ AI เดือนนี้</h2>
         {status.cap ? (
           <>
@@ -81,7 +81,7 @@ export default async function AiSettingsPage() {
         )}
       </section>
 
-      <section aria-labelledby="engine-events" className="space-y-3 rounded-2xl border border-border bg-card p-5">
+      <section aria-labelledby="engine-events" className="space-y-3 rounded-lg border border-border bg-card p-5">
         <h2 id="engine-events" className="text-lg font-semibold leading-snug">เหตุการณ์ล่าสุด</h2>
         {events.length === 0 ? (
           <p className="text-sm text-muted-foreground">ยังไม่มีเหตุการณ์ AI หลักทำงานปกติมาตลอด</p>
@@ -97,7 +97,7 @@ export default async function AiSettingsPage() {
         )}
       </section>
 
-      <section aria-labelledby="engine-other" className="space-y-3 rounded-2xl border border-border bg-card p-5">
+      <section aria-labelledby="engine-other" className="space-y-3 rounded-lg border border-border bg-card p-5">
         <h2 id="engine-other" className="text-lg font-semibold leading-snug">AI สำรองภายนอก</h2>
         <label className="flex min-h-11 items-center gap-3 text-sm text-muted-foreground">
           <input type="checkbox" disabled defaultChecked={backupOn} className="size-5" />
@@ -111,7 +111,7 @@ export default async function AiSettingsPage() {
         </p>
       </section>
 
-      <details className="rounded-2xl border border-border bg-card p-5 text-sm">
+      <details className="rounded-lg border border-border bg-card p-5 text-sm">
         <summary className="min-h-11 cursor-pointer font-semibold leading-snug">รายละเอียดสำหรับผู้ดูแลระบบ</summary>
         <dl className="mt-3 space-y-2 text-muted-foreground">
           <div>

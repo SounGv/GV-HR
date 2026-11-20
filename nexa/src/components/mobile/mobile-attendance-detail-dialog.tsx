@@ -42,7 +42,7 @@ function Punch({
 }) {
   if (!at) return null;
   return (
-    <div className="flex gap-3 rounded-xl border border-border p-3">
+    <div className="flex gap-3 rounded-lg border border-border p-3">
       {photoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={photoUrl} alt={label} className="size-16 shrink-0 rounded-lg object-cover" />
@@ -116,7 +116,7 @@ export function MobileAttendanceDetailDialog({
             </div>
 
             {record.note && (
-              <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3 text-sm">
+              <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
                 <StickyNote className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                 <p className="whitespace-pre-line text-foreground">{record.note}</p>
               </div>

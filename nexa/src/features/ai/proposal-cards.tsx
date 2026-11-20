@@ -66,7 +66,7 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
   return (
     <section
       aria-label={`การ์ดยืนยัน: ${card.title}`}
-      className="w-full max-w-[640px] overflow-hidden rounded-2xl border border-border bg-card text-sm text-foreground shadow-sm"
+      className="w-full max-w-[640px] overflow-hidden rounded-lg border border-border bg-card text-sm text-foreground shadow-sm"
     >
       <header className="flex items-center gap-2.5 border-b border-border bg-accent px-4 py-3">
         <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-primary text-primary-foreground">
@@ -89,7 +89,7 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
         </dl>
 
         {card.preview && (
-          <div className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
+          <div className="rounded-lg border border-border bg-muted/40 px-3.5 py-2.5">
             <p className="font-semibold break-words">{card.preview.title}</p>
             <p className="mt-0.5 break-words whitespace-pre-wrap">{card.preview.body}</p>
           </div>

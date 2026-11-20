@@ -33,7 +33,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
   return (
     <section
       aria-label="รอคุณอนุมัติ"
-      className="gv-lift flex flex-col rounded-2xl border border-border bg-card shadow-[var(--card-shadow)]"
+      className="gv-lift flex flex-col rounded-lg border border-border bg-card shadow-[var(--card-shadow)]"
     >
       <div className="flex items-center gap-2 px-4 pt-3.5">
         <h3 className="text-[15px] font-semibold">คำขอทั้งหมด</h3>

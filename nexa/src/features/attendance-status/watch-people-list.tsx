@@ -45,7 +45,7 @@ export function WatchPeopleList({ people, empty }: { people: WatchPerson[]; empt
   if (people.length === 0) return <EmptyState icon={Search} title={empty} description="ไม่มีใครเข้าเกณฑ์ในช่วง 30 วันล่าสุด" />;
   return (
     <>
-      <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+      <ul className="divide-y divide-border rounded-lg border border-border bg-card">
         {people.map((p) => (
           <li key={p.code}>
             <button

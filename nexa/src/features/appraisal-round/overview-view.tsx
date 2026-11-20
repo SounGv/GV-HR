@@ -182,7 +182,7 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
   const published = usePublishedForms();
 
   if (forms.isError) return <ErrorState title="โหลดแบบประเมินไม่สำเร็จ" onRetry={() => forms.refetch()} />;
-  if (forms.isLoading) return <Skeleton className="h-64 w-full rounded-[22px]" />;
+  if (forms.isLoading) return <Skeleton className="h-64 w-full rounded-lg" />;
 
   const list = forms.data?.data ?? [];
   const drafts = list.filter((f) => f.status === "DRAFT");
@@ -541,7 +541,7 @@ export function OverviewView() {
       {rounds.isError ? (
         <ErrorState title="โหลดรอบประเมินไม่สำเร็จ" onRetry={() => rounds.refetch()} />
       ) : rounds.isLoading ? (
-        <Skeleton className="h-64 w-full rounded-[22px]" />
+        <Skeleton className="h-64 w-full rounded-lg" />
       ) : lead ? (
         <OpenRoundHero round={lead} others={open.length - 1} />
       ) : (

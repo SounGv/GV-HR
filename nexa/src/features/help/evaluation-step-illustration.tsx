@@ -20,7 +20,7 @@ export type EvalIllustrationKind =
  */
 export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
   return (
-    <div className="w-full max-w-[260px] rounded-xl border border-border bg-card p-3 shadow-sm">
+    <div className="w-full max-w-[260px] rounded-lg border border-border bg-card p-3 shadow-sm">
       {kind === "open" && (
         <div className="flex items-center gap-2.5">
           <span className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">

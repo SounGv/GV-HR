@@ -46,7 +46,7 @@ export function AttendanceHistory() {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+    <div className="overflow-x-auto rounded-lg border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

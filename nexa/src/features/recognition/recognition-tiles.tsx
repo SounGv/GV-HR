@@ -32,7 +32,7 @@ export function RecognitionTiles() {
         return (
           <div
             key={t.key}
-            className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3"
+            className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
           >
             <span className="text-sm font-medium text-foreground">{t.label}</span>
             <span className="flex items-center gap-1.5">

@@ -160,7 +160,7 @@ export function GvIconTile({ icon: Icon, status, className, iconClassName }: { i
   return (
     <span
       aria-hidden="true"
-      className={cn("relative flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-accent text-primary ring-1 ring-primary/15 ring-inset", className)}
+      className={cn("relative flex size-11 shrink-0 items-center justify-center rounded-lg bg-accent text-primary ring-1 ring-primary/15 ring-inset", className)}
     >
       <Icon className={iconClassName ?? "size-[26px]"} />
       {status && (

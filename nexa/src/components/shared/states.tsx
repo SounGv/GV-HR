@@ -21,7 +21,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-card/50 px-6 py-14 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-6 py-14 text-center",
         className,
       )}
     >
@@ -84,7 +84,7 @@ export function ErrorState({
   if (kind === "no-employee") return <NoEmployeeState description={description} className={className} />;
   if (kind === "forbidden") {
     return (
-      <div className={cn("flex flex-col items-center justify-center gap-3 rounded-xl border border-info/30 bg-info/5 px-6 py-14 text-center", className)}>
+      <div className={cn("flex flex-col items-center justify-center gap-3 rounded-lg border border-info/30 bg-info/5 px-6 py-14 text-center", className)}>
         <div className="flex size-12 items-center justify-center rounded-full bg-info/10 text-info">
           <Lock className="size-6" />
         </div>
@@ -99,7 +99,7 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-14 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-6 py-14 text-center",
         className,
       )}
     >

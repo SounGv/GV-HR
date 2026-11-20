@@ -169,7 +169,7 @@ export function DropZone({
       }}
       className={cn(
         className,
-        "m-1.5 min-h-11 rounded-xl p-2 outline-2 -outline-offset-2 outline-[#d7e3e1] outline-dashed transition-colors motion-reduce:transition-none dark:outline-border",
+        "m-1.5 min-h-11 rounded-lg p-2 outline-2 -outline-offset-2 outline-[#d7e3e1] outline-dashed transition-colors motion-reduce:transition-none dark:outline-border",
         over && "bg-[#ecfdf5] outline-[#1976d2] dark:bg-primary/10 dark:outline-primary",
       )}
     >
@@ -192,7 +192,7 @@ export interface MoveRow {
 }
 
 const TRAY_BTN =
-  "inline-flex h-11 items-center justify-center rounded-xl px-4 text-[13.5px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#90caf9] motion-reduce:transition-none md:h-10";
+  "inline-flex h-11 items-center justify-center rounded-lg px-4 text-[13.5px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#90caf9] motion-reduce:transition-none md:h-10";
 
 /** Fixed dark tray with the unsaved changes; slides up once there is at least one. */
 export function PendingTray({
@@ -211,7 +211,7 @@ export function PendingTray({
       aria-label="การเปลี่ยนผังที่ยังไม่บันทึก"
       inert={!show}
       className={cn(
-        "fixed left-1/2 z-[45] w-[min(860px,calc(100%-32px))] -translate-x-1/2 rounded-2xl bg-[#131516] px-3.5 py-3 text-white shadow-[0_24px_48px_-16px_rgba(0,0,0,.5)] transition-transform duration-300 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none",
+        "fixed left-1/2 z-[45] w-[min(860px,calc(100%-32px))] -translate-x-1/2 rounded-lg bg-[#131516] px-3.5 py-3 text-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none",
         "bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] md:bottom-5",
         show ? "translate-y-0" : "translate-y-[calc(100%+120px)]",
       )}

@@ -232,7 +232,7 @@ function Approvals() {
   return (
     <div className="space-y-2">
       {failed.length > 0 && (
-        <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
           <span className="min-w-0">โหลดคำขอบางประเภทไม่สำเร็จ — รายการด้านล่างอาจไม่ครบ</span>
           <Button variant="outline" size="sm" className="h-11 shrink-0" onClick={retryFailed}>
             ลองใหม่

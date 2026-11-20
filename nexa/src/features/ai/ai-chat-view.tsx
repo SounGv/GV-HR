@@ -208,7 +208,7 @@ export function AiChatView({
   }
 
   return (
-    <div className={cn("flex flex-col overflow-hidden rounded-2xl border border-border bg-card", className)}>
+    <div className={cn("flex flex-col overflow-hidden rounded-lg border border-border bg-card", className)}>
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4" aria-live="polite">
         {fallback && <FallbackBanner reason={engine.reason} backup={engine.backup} />}
         {turns.length === 0 && (
@@ -270,8 +270,8 @@ export function AiChatView({
                 className={cn(
                   "px-4 py-2.5 text-sm leading-relaxed break-words",
                   t.role === "user"
-                    ? "rounded-2xl rounded-br-md bg-[var(--chat-teal)] whitespace-pre-wrap text-white"
-                    : "min-w-0 rounded-2xl rounded-bl-md border border-border bg-card text-foreground shadow-sm",
+                    ? "rounded-lg rounded-br-md bg-[var(--chat-teal)] whitespace-pre-wrap text-white"
+                    : "min-w-0 rounded-lg rounded-bl-md border border-border bg-card text-foreground shadow-sm",
                 )}
               >
                 {t.role === "assistant" ? <MarkdownLite text={t.content} /> : t.content}
@@ -287,14 +287,14 @@ export function AiChatView({
         {quick.isPending && (
           <div className="flex items-end gap-2" role="status">
             <BotAvatar mood="think" />
-            <div className="rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">กำลังดึงข้อมูลจากระบบ…</div>
+            <div className="rounded-lg rounded-bl-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">กำลังดึงข้อมูลจากระบบ…</div>
           </div>
         )}
 
         {chat.isPending && (
           <div className="flex items-end gap-2" role="status">
             <BotAvatar mood="think" />
-            <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-2 rounded-lg rounded-bl-md border border-border bg-card px-4 py-3 shadow-sm">
               <span className="flex gap-1" aria-hidden="true">
                 {[0, 150, 300].map((delay) => (
                   <span
@@ -326,7 +326,7 @@ export function AiChatView({
             e.preventDefault();
             void submit(input);
           }}
-          className="flex items-end gap-2 rounded-3xl border border-border bg-background p-1.5 pl-1.5 transition focus-within:border-[var(--chat-teal)] focus-within:ring-3 focus-within:ring-[var(--chat-teal)]/20"
+          className="flex items-end gap-2 rounded-lg border border-border bg-background p-1.5 pl-1.5 transition focus-within:border-[var(--chat-teal)] focus-within:ring-3 focus-within:ring-[var(--chat-teal)]/20"
         >
           {canAttach ? <AttachButton onPick={attach.add} disabled={chat.isPending} /> : <span className="w-2.5 shrink-0" aria-hidden="true" />}
           <Textarea

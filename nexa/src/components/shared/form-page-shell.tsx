@@ -49,7 +49,7 @@ export function FormPageShell({
         description={description}
         status={status}
       />
-      <Card className={cn("rounded-2xl md:rounded-xl", !wide && "max-w-3xl")}>
+      <Card className={cn("rounded-lg md:rounded-lg", !wide && "max-w-3xl")}>
         <CardContent className="px-4 pt-0 md:px-6 md:pt-6">{children}</CardContent>
       </Card>
       <FormFooter formId={formId} pending={pending} onCancel={onCancel} actions={actions} />

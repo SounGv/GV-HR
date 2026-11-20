@@ -293,7 +293,7 @@ export function QuestionEditor({
   }
 
   return (
-    <div className="space-y-2.5 rounded-xl border border-border bg-card p-3">
+    <div className="space-y-2.5 rounded-lg border border-border bg-card p-3">
       <div className="flex items-start gap-2">
         <button
           type="button"
@@ -520,7 +520,7 @@ function AccordionCategoryCard({
 
   return (
     <Reorder.Item value={section} dragListener={false} dragControls={dragControls}>
-      <div className="rounded-xl border border-border bg-card">
+      <div className="rounded-lg border border-border bg-card">
         <div className="flex items-center gap-2 p-3">
           <button
             type="button"
@@ -675,7 +675,7 @@ export function TopicsAndQuestionsBuilder({
         </div>
 
         <div className="lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]">
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-4">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ตัวอย่างหน้าจอผู้ประเมิน</span>
             <div className="mt-3">
               <TemplateFormRenderer sections={toRendererSections(sections)} mode="preview" />

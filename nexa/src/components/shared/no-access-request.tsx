@@ -20,7 +20,7 @@ export function NoAccessRequest({ what, listHref, listLabel }: { what: string; l
       action={
         <Link
           href={listHref}
-          className="inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent"
+          className="inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent"
         >
           {listLabel}
         </Link>

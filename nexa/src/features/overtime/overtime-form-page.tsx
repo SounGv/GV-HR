@@ -113,7 +113,7 @@ export function OvertimeFormPage() {
             <div className="space-y-1.5" aria-live="polite">
               <p
                 className={cn(
-                  "flex min-h-11 items-center justify-between gap-3 rounded-xl px-4 text-sm font-semibold",
+                  "flex min-h-11 items-center justify-between gap-3 rounded-lg px-4 text-sm font-semibold",
                   dayOffWhy ? "bg-accent text-foreground" : "bg-muted text-foreground",
                 )}
               >

@@ -101,7 +101,7 @@ function Form({ roundId, person, onClose }: { roundId: string; person: ReviewPer
           </p>
         </div>
       ) : (
-        <p className="rounded-xl bg-muted px-3 py-2 text-sm">จะคืนคะแนนเป็น {original}% ตามที่คำนวณได้ และคำนวณเกรดใหม่ตามเกณฑ์ปัจจุบัน</p>
+        <p className="rounded-lg bg-muted px-3 py-2 text-sm">จะคืนคะแนนเป็น {original}% ตามที่คำนวณได้ และคำนวณเกรดใหม่ตามเกณฑ์ปัจจุบัน</p>
       )}
 
       <div className="space-y-1">

@@ -84,7 +84,7 @@ export function MarkdownLite({ text, className }: { text: string; className?: st
       const cardList = (
         <ol className="space-y-1.5 @lg:hidden">
           {body.map((r, ri) => (
-            <li key={ri} className="rounded-xl border border-border bg-card px-3 py-2">
+            <li key={ri} className="rounded-lg border border-border bg-card px-3 py-2">
               <p className="flex items-baseline gap-2 font-semibold text-foreground">
                 {rankCol >= 0 && (
                   <span className="inline-grid size-5 shrink-0 place-items-center rounded-md bg-[#1565c0] text-xs text-white tabular-nums">
@@ -111,7 +111,7 @@ export function MarkdownLite({ text, className }: { text: string; className?: st
       blocks.push(
         <div key={key} className="@container my-1">
         {compactable && cardList}
-        <div className={cn("overflow-x-auto rounded-xl border border-border", compactable && "hidden @lg:block")}>
+        <div className={cn("overflow-x-auto rounded-lg border border-border", compactable && "hidden @lg:block")}>
           <table className="w-full border-collapse text-[13px]">
             <thead>
               <tr>

@@ -269,7 +269,7 @@ function AiShortcut({ active, onClick }: { active: boolean; onClick: () => void 
           active && "border-[#1976d2] ring-2 ring-[#1976d2]/20",
         )}
       >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-[inset_0_0_0_1px_#e3f2fd] group-data-[collapsible=icon]:size-8 dark:bg-background">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-[inset_0_0_0_1px_#e3f2fd] group-data-[collapsible=icon]:size-8 dark:bg-background">
           <VBot mood="hi" className="ai-shortcut-bot gv-wave size-8 group-data-[collapsible=icon]:size-6" />
           <Sparkles className="ai-shortcut-spark size-6 text-[#1976d2] group-data-[collapsible=icon]:size-5" aria-hidden="true" />
         </span>

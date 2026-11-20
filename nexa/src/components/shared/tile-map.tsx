@@ -202,7 +202,7 @@ export function TileMap({
       {children}
 
       {interactive && (
-        <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-[40%] right-3.5 z-10 flex flex-col overflow-hidden rounded-full bg-white/90 text-[#1565c0] shadow-lg">
+        <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-[40%] right-3.5 z-10 flex flex-col overflow-hidden rounded-full bg-white/90 text-[#1565c0] shadow-sm">
           <button type="button" onClick={() => changeZoom(1)} className="flex size-11 items-center justify-center" aria-label="ขยายแผนที่">
             <Plus className="size-5" />
           </button>

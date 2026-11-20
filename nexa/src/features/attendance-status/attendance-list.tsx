@@ -155,7 +155,7 @@ export function AttendanceList({ people, status }: { people: TodayPerson[]; stat
                 type="button"
                 onClick={() => open(p)}
                 className={cn(
-                  "w-full rounded-2xl border border-border bg-card p-3.5 text-left shadow-sm active:brightness-95",
+                  "w-full rounded-lg border border-border bg-card p-3.5 text-left shadow-sm active:brightness-95",
                   STATUS_META[p.status].card,
                 )}
               >
@@ -175,7 +175,7 @@ export function AttendanceList({ people, status }: { people: TodayPerson[]; stat
           ))}
         </ul>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow className="hover:bg-transparent">

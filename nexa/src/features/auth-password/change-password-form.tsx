@@ -92,7 +92,7 @@ export function ChangePasswordForm() {
       {/* Side panel: what this does and what happens after. */}
       {/* .gv-hero is unlayered CSS, so its corner radius is reset inline (a utility class would lose). */}
       <div className="gv-hero relative flex flex-col gap-4 p-5 sm:p-6" style={{ borderRadius: 0, boxShadow: "none" }}>
-        <span className="flex size-12 items-center justify-center rounded-[14px] border border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+        <span className="flex size-12 items-center justify-center rounded-lg border border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
           <LockKeyhole className="size-6" aria-hidden="true" />
         </span>
         <div>
@@ -107,7 +107,7 @@ export function ChangePasswordForm() {
 
       <div className="p-5 sm:p-6">
         {done && (
-          <p className="mb-4 flex items-center gap-2 rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] px-3.5 py-2.5 text-sm font-semibold text-[#15803d]" role="status">
+          <p className="mb-4 flex items-center gap-2 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-3.5 py-2.5 text-sm font-semibold text-[#15803d]" role="status">
             <Check className="size-4 shrink-0" aria-hidden="true" />
             เปลี่ยนรหัสผ่านแล้ว ใช้รหัสใหม่ครั้งถัดไปที่เข้าสู่ระบบ
           </p>
@@ -187,7 +187,7 @@ export function ChangePasswordForm() {
             <button
               type="submit"
               disabled={changePasswordMut.isPending}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#1565c0] px-6 text-[15px] font-semibold text-white shadow-[0_1px_2px_rgba(21,101,192,.2),0_10px_24px_-12px_rgba(21,101,192,.55)] transition-colors hover:bg-[#0d47a1] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none disabled:opacity-60 sm:justify-self-start"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#1565c0] px-6 text-[15px] font-semibold text-white shadow-[0_1px_2px_rgba(21,101,192,.2),0_10px_24px_-12px_rgba(21,101,192,.55)] transition-colors hover:bg-[#0d47a1] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none disabled:opacity-60 sm:justify-self-start"
             >
               {changePasswordMut.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <KeyRound className="size-4" aria-hidden="true" />}
               {changePasswordMut.isPending ? "กำลังบันทึก…" : "เปลี่ยนรหัสผ่าน"}

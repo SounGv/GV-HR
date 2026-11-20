@@ -42,7 +42,7 @@ function Choice<T extends string | number>({
             tabIndex={value === o.v || (oi === 0 && !options.some((x) => x.v === value)) ? 0 : -1}
             onClick={() => onChange(o.v)}
             className={cn(
-              "flex min-h-12 items-start gap-2.5 rounded-xl border px-3 py-2 text-left disabled:opacity-60",
+              "flex min-h-12 items-start gap-2.5 rounded-lg border px-3 py-2 text-left disabled:opacity-60",
               value === o.v ? "border-2 border-primary bg-accent" : "border-muted-foreground/30 bg-card hover:border-ring",
             )}
           >
@@ -107,7 +107,7 @@ function SettingsForm({ initial }: { initial: SettingsView }) {
   return (
     <div className="space-y-4 pb-6">
       {!initial.configured && (
-        <p className="flex items-start gap-2 rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
+        <p className="flex items-start gap-2 rounded-lg bg-warning/10 px-4 py-3 text-sm text-warning">
           <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           ยังไม่ได้ตั้งค่า ตอนนี้ระบบคำนวณผลโดยถ่วงน้ำหนัก ไม่มีเกรด ไม่ต้องอนุมัติ และพนักงานยังไม่เห็นผลของตัวเอง
           ค่าต่างๆ ที่นี่กระทบคะแนนจริงของพนักงาน ควรให้ HR ยืนยันก่อนบันทึก

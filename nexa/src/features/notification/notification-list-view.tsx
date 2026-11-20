@@ -49,7 +49,7 @@ export function NotificationListView() {
       ) : items.length === 0 ? (
         <EmptyState icon={Bell} title="ยังไม่มีการแจ้งเตือน" />
       ) : (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+        <ul className="divide-y divide-border rounded-lg border border-border bg-card">
           {items.map((n) => {
             const body = (
               <div className="flex items-start gap-2.5">

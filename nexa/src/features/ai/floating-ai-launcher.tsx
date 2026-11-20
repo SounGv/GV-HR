@@ -120,7 +120,7 @@ export function AiChatPanel() {
       role="dialog"
       aria-label="AI Assistant"
       style={{ width: size.w, height: size.h }}
-      className="fixed right-6 bottom-6 z-50 hidden max-h-[calc(100dvh-3rem)] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl md:flex"
+      className="fixed right-6 bottom-6 z-50 hidden max-h-[calc(100dvh-3rem)] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-sm md:flex"
     >
       {/* Resize handles: left edge, top edge and the top left corner. Arrow keys also work; Home puts the size back. */}
       <div

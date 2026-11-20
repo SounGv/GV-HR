@@ -137,7 +137,7 @@ function BranchGeofenceCard({ branch }: { branch: Geofence }) {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+        <div className="overflow-hidden rounded-lg border border-border bg-muted/30">
           {hasCoords ? (
             <iframe
               title={`แผนที่ ${branch.name}`}

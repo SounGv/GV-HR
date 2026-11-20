@@ -36,7 +36,7 @@ export function StepIllustration({
   lines?: { label: string; amount: string }[];
 }) {
   return (
-    <div className="flex min-h-24 w-full items-center justify-center rounded-xl border border-border bg-muted/50 p-3">
+    <div className="flex min-h-24 w-full items-center justify-center rounded-lg border border-border bg-muted/50 p-3">
       {kind === "login" && (
         <div className="w-full max-w-[220px] space-y-1.5">
           <div className="h-2 w-16 rounded-full bg-muted-foreground/30" />

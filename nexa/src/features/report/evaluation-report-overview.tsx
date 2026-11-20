@@ -83,7 +83,7 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
 
       <section aria-label="สรุปรายแผนก">
         <h4 className="text-sm font-semibold">สรุปรายแผนก</h4>
-        <div className="border-border mt-2 overflow-x-auto rounded-xl border">
+        <div className="border-border mt-2 overflow-x-auto rounded-lg border">
           <table className="w-full min-w-[480px] text-sm">
             <thead className="bg-muted/50 text-muted-foreground">
               <tr>
@@ -116,7 +116,7 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
 
 function Tile({ label, value, warn, note }: { label: string; value: string; warn?: boolean; note?: string }) {
   return (
-    <div className={cn("rounded-xl border p-3", warn ? "border-status-late-border bg-status-late-bg" : "border-border bg-card")}>
+    <div className={cn("rounded-lg border p-3", warn ? "border-status-late-border bg-status-late-bg" : "border-border bg-card")}>
       <p className={cn("text-xs", warn ? "text-status-late-fg" : "text-muted-foreground")}>{label}</p>
       <p className={cn("text-xl font-bold tabular-nums", warn && "text-status-late-fg")}>{value}</p>
       {note && (

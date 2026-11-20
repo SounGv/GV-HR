@@ -549,7 +549,7 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
           <button
             type="button"
             onClick={onRetake}
-            className={cn(CAM_GLASS, "flex h-[58px] flex-1 flex-col items-center justify-center rounded-full text-sm font-semibold transition active:scale-95 motion-reduce:active:scale-100")}
+            className={cn(CAM_GLASS, "flex h-[58px] flex-1 flex-col items-center justify-center rounded text-sm font-semibold transition active:scale-95 motion-reduce:active:scale-100")}
           >
             <RotateCcw className="size-[18px]" aria-hidden="true" /> ถ่ายใหม่
           </button>
@@ -685,7 +685,7 @@ function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onR
   return (
     <div role="alert" className="flex flex-1 items-center px-[18px] pb-16">
       <div className="gv-lg w-full rounded-lg px-[18px] py-6 text-center">
-        <span className="mx-auto flex size-[68px] items-center justify-center rounded-full bg-[#b42318] text-white shadow-lg">
+        <span className="mx-auto flex size-[68px] items-center justify-center rounded-full bg-[#b42318] text-white shadow-sm">
           <X className="size-8" aria-hidden="true" />
         </span>
         <h2 className="mt-3 text-[22px] leading-snug font-bold">ลงเวลาไม่สำเร็จ</h2>

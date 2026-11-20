@@ -146,7 +146,7 @@ export function PeopleStep({
         </div>
       )}
 
-      <div className="max-h-80 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
+      <div className="max-h-80 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
         {searched.length === 0 ? (
           <p className="p-3 text-sm text-muted-foreground">ไม่พบพนักงานในเงื่อนไขนี้</p>
         ) : (
