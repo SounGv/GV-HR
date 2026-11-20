@@ -218,7 +218,6 @@ export const ROLE_PRESETS: RolePreset[] = [
       "expense:*",
       "report:read",
       "report:export",
-      "ai:read",
     ],
   },
 ];

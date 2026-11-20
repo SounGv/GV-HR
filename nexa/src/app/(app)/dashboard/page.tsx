@@ -464,18 +464,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </section>
       )}
 
-      {attendanceToday && (
-        <LiveHero
-          ticker={<NewsTicker announcement={latestAnnouncement} />}
-          trend={{
-            late: attendanceTrend.map((p) => p.late),
-            absent: attendanceTrend.map((p) => p.absent),
-            leave: attendanceTrend.map((p) => p.leave),
-            present: attendanceTrend.map((p) => p.present),
-          }}
-        />
-      )}
-
       {/* "ต้องตามวันนี้" board (owner-approved mock, 14 Nov 2026): one card per thing to follow, the
           most urgent first, approvals included; things with nothing today are left to the news ticker. */}
       <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-3">
@@ -529,6 +517,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         >
           <EvaluationOverviewSection companyId={user!.companyId} session={session} />
         </Suspense>
+      )}
+
+      {/* Today's attendance in full (ring, late, absent, leave, trend). It comes after the work that is waiting (Favpo order, owner-approved
+          mock 20 Nov 2026): approvals and follow-ups first, then the company's attendance picture. */}
+      {attendanceToday && (
+        <LiveHero
+          ticker={<NewsTicker announcement={latestAnnouncement} />}
+          trend={{
+            late: attendanceTrend.map((p) => p.late),
+            absent: attendanceTrend.map((p) => p.absent),
+            leave: attendanceTrend.map((p) => p.leave),
+            present: attendanceTrend.map((p) => p.present),
+          }}
+        />
       )}
 
       {mine && (
