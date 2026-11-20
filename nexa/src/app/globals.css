@@ -614,7 +614,7 @@
 }
 /* The one teal surface: hero, approvals, AI summary. */
 .gv-teal-surface {
-  background: linear-gradient(150deg, #0d47a1, #1565c0 55%, #1976d2);
+  background: #0d47a1;
   color: #fff;
   box-shadow: 0 1px 2px rgba(21, 101, 192, 0.2), 0 6px 14px -8px rgba(21, 101, 192, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
@@ -658,7 +658,7 @@
   isolation: isolate;
   border-radius: 22px;
   color: #fff;
-  background: linear-gradient(135deg, #0a2f6b 0%, #0d47a1 45%, #1565c0 100%);
+  background: #0d47a1;
   box-shadow: 0 1px 2px rgba(21, 101, 192, 0.2), 0 10px 24px -12px rgba(21, 101, 192, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
@@ -1645,3 +1645,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 .gv-bar-blue [data-slot="button"]:hover { background: rgba(255, 255, 255, 0.15); color: #ffffff; }
 .gv-bar-blue .text-muted-foreground { color: rgba(255, 255, 255, 0.82); }
 .gv-bar-blue .text-foreground { color: #ffffff; }
+
+/* Favpo look: the hero panels have no glow circles. */
+.gv-hero::before,
+.gv-hero::after { display: none; }

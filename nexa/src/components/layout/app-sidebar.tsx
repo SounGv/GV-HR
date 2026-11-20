@@ -30,7 +30,6 @@ import { EMPTY_MENU_PREFS, isDefaultMenuPrefs, isHidden, orderMenu, type MenuPre
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
 import { VBot } from "@/components/shared/v-bot";
-import { GvIconTile } from "@/components/shared/gv-icons";
 import { NavIcon } from "@/components/shared/nav-icon";
 
 
@@ -195,10 +194,8 @@ export function AppSidebar() {
                     type="button"
                     onClick={() => toggle(group.label)}
                     aria-expanded={expanded}
-                    className={cn("flex h-11 w-full items-center gap-3 rounded-xl px-2.5 text-[14.5px] font-semibold text-sidebar-foreground transition-colors hover:bg-sidebar-accent", expanded && "bg-primary/20 text-sidebar-foreground")}
+                    className={cn("flex h-11 w-full items-center gap-3 rounded-md px-3 text-[15px] font-bold text-sidebar-foreground transition-colors hover:bg-sidebar-accent", expanded && "bg-primary/20 text-sidebar-foreground")}
                   >
-                    {/* Same icon set as the home page (gv-icons.tsx); the open group's tile fills solid teal so you can see where you are. */}
-                    <GvIconTile icon={group.icon} className={cn("size-9 rounded-xl", expanded && "bg-primary text-primary-foreground ring-0")} iconClassName="size-[22px]" />
                     <span className="flex-grow text-left">{group.label}</span>
                     <ChevronDown className={cn("size-4 shrink-0 text-[color:var(--muted-strong)] transition-transform", expanded && "rotate-180")} />
                   </button>
@@ -265,9 +262,9 @@ function AiShortcut({ active, onClick }: { active: boolean; onClick: () => void 
         aria-pressed={active}
         aria-label="เปิดน้องวีบอท"
         className={cn(
-          "relative flex w-full items-center gap-2.5 rounded-2xl border border-[#bbdefb] bg-[linear-gradient(135deg,#eef6fd,#ecfeff_60%,#f7fee7)] p-2 pr-3 text-left",
-          "shadow-[0_1px_2px_rgba(21,101,192,0.08),0_8px_18px_-12px_rgba(21,101,192,0.45)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          "hover:-translate-y-px hover:border-[#90caf9] hover:shadow-[0_1px_2px_rgba(21,101,192,0.1),0_12px_24px_-12px_rgba(21,101,192,0.55)] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none motion-reduce:transition-none",
+          "relative flex w-full items-center gap-2.5 rounded-md border border-[#bbdefb] bg-[#eef6fd] p-2 pr-3 text-left",
+          "transition-colors",
+          "hover:border-[#90caf9] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none motion-reduce:transition-none",
           "dark:border-sidebar-border dark:bg-none dark:bg-sidebar-accent group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1",
           active && "border-[#1976d2] ring-2 ring-[#1976d2]/20",
         )}
@@ -319,26 +316,7 @@ function NexaHeaderLogo() {
       <Logo size={40} className="hidden size-10 group-data-[collapsible=icon]:block" />
 
       <div className="relative hidden w-full flex-col group-data-[collapsible=icon]:hidden md:flex">
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-[120px] -left-[110px] h-[260px] w-[330px] rounded-full bg-[radial-gradient(closest-side,rgba(25,118,210,0.16),rgba(25,118,210,0))]"
-        />
-        <div className="group/brand relative flex items-center gap-2.5">
-          <Logo
-            size={56}
-            className="h-auto w-14 drop-shadow-[0_6px_10px_rgba(19,21,22,0.18)] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/brand:-translate-y-0.5 group-hover/brand:-rotate-3 motion-reduce:transition-none"
-          />
-          <span className="min-w-0 leading-tight">
-            <b className="flex items-center gap-1.5 text-[20px] leading-[1.15] font-bold tracking-[-0.02em] whitespace-nowrap text-foreground">
-              GV One
-              <span className="rounded-[5px] bg-[#bbdefb] px-1.5 py-px text-xs leading-[1.4] font-bold tracking-[0.02em] text-[#0d47a1]">
-                HR
-              </span>
-            </b>
-            <span className="mt-0.5 block text-xs text-muted-foreground">Gadget Villa</span>
-          </span>
-        </div>
-        <span className="relative mt-3 flex items-center gap-2 border-t border-[#eef1f3] pt-2.5 text-xs text-muted-foreground dark:border-sidebar-border">
+        <span className="relative flex items-center gap-2 text-xs text-muted-foreground">
           <span className="gv-live" aria-hidden="true" />
           <span>
             วันนี้ <b className="font-semibold text-foreground tabular-nums">{now ? BRAND_DAY.format(now) : "—"}</b>
