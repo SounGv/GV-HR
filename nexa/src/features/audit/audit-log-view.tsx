@@ -122,7 +122,7 @@ export function AuditLogView() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead>วันเวลา</TableHead>
                 <TableHead className="w-full">การกระทำ</TableHead>
                 <TableHead>ประเภทข้อมูล</TableHead>

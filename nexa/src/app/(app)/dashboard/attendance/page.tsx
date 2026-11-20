@@ -105,7 +105,7 @@ export default async function AttendanceTodayPage({
 
       {data.notChecked > 0 && (
         <p className="text-sm text-muted-foreground">
-          ไม่นับ {data.notChecked} คนที่ยังไม่เคยใช้เช็คอินในแอป (ไม่ถือว่าขาดงาน)
+          ไม่นับ {data.notChecked} คนที่ยังไม่เคยใช้ลงเวลาเข้างานในแอป (ไม่ถือว่าขาดงาน)
         </p>
       )}
     </div>

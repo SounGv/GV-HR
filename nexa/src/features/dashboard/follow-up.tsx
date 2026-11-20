@@ -123,7 +123,7 @@ export function FollowRow({
           <span className="block text-[15.5px] leading-snug font-semibold text-foreground">{title}</span>
           {sub && <span className="block text-[12.5px] leading-snug text-muted-foreground">{sub}</span>}
         </span>
-        <span className="shrink-0 text-right leading-none">
+        <span className="shrink-0 text-right leading-snug">
           <span className={cn("block text-[34px] font-bold tabular-nums", TONE[tone].num)}>{display ?? count}</span>
           <span className="mt-1 block text-[12px] leading-snug text-muted-foreground">{unit}</span>
         </span>
@@ -137,7 +137,7 @@ export function FollowRow({
         <ul className="relative flex flex-col">
           {names.slice(0, 3).map((n) => (
             <li key={n} className="flex min-h-9 items-center gap-2 border-t border-dashed border-border text-[13.5px] first:border-t-0">
-              <PersonAvatar name={n} gender={faces.get(n)!.gender} seed={faces.get(n)!.seed} src={faces.get(n)!.photo} className="size-7 border border-border text-[11px] font-bold" />
+              <PersonAvatar name={n} gender={faces.get(n)!.gender} seed={faces.get(n)!.seed} src={faces.get(n)!.photo} className="size-7 border border-border text-xs font-bold" />
               <span className="min-w-0 font-medium break-words">{n}</span>
             </li>
           ))}

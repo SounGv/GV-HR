@@ -519,7 +519,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
               </span>
               AI วิเคราะห์ผลประเมิน · {displayName(participant.employee)}
             </DialogTitle>
-            <DialogDescription>วิเคราะห์โดย AI Assistant จากคะแนน/ความเห็นที่ส่งเข้ามาแล้วเท่านั้น</DialogDescription>
+            <DialogDescription>วิเคราะห์โดย น้องวีบอท จากคะแนน/ความเห็นที่ส่งเข้ามาแล้วเท่านั้น</DialogDescription>
           </DialogHeader>
           {aiLoading ? (
             <div className="flex items-center gap-3 py-8 text-sm text-muted-foreground">

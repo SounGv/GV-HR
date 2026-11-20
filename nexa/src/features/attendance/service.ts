@@ -157,7 +157,7 @@ function resolveOffsite(
     throw new AppError(
       "FORBIDDEN",
       403,
-      `คุณไม่มีสิทธิ์เช็คอินนอกพื้นที่บริษัท (${geo.branchName} — ห่าง ${distance} เมตร) กรุณาติดต่อ HR`,
+      `คุณไม่มีสิทธิ์ลงเวลาเข้างานนอกพื้นที่บริษัท (${geo.branchName} — ห่าง ${distance} เมตร) กรุณาติดต่อ HR`,
       { offsite: true, permitted: false, distance, branchName: geo.branchName },
     );
   }
@@ -300,7 +300,7 @@ export async function clockIn(
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-        throw Conflict("คุณได้เช็คอินแล้ววันนี้");
+        throw Conflict("คุณได้ลงเวลาเข้างานแล้ววันนี้");
       }
       throw err;
     }
@@ -326,7 +326,7 @@ export async function clockIn(
     await broadcastToLineGroups(
       companyId,
       "hr-alerts",
-      `🟢 ${displayName(employee)} เช็คอินแล้ว เวลา ${clockInTimeLabel}` +
+      `🟢 ${displayName(employee)} ลงเวลาเข้างานแล้ว เวลา ${clockInTimeLabel}` +
         (status === "LATE" ? " (มาสาย)" : "") +
         (employee.branch?.name ? `\n${employee.branch.name}` : ""),
         "attendance",
@@ -347,8 +347,8 @@ export async function clockOut(
 
   const bp = bangkokParts();
   const existing = await findOpenAttendanceRecord(employeeId, bp.dateUTC);
-  if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
-  if (existing.clockOutAt) throw Conflict("คุณได้เช็คเอาท์แล้ววันนี้");
+  if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้ลงเวลาเข้างานวันนี้");
+  if (existing.clockOutAt) throw Conflict("คุณได้ลงเวลาออกงานแล้ววันนี้");
 
   const shift = await resolveShiftMinutes(employeeId, existing.workDate);
 
@@ -402,7 +402,7 @@ export async function clockOut(
       updatedById: session.sub,
     },
   });
-  if (count === 0) throw Conflict("คุณได้เช็คเอาท์แล้ววันนี้");
+  if (count === 0) throw Conflict("คุณได้ลงเวลาออกงานแล้ววันนี้");
   const record = await prisma.attendanceRecord.findUniqueOrThrow({
     where: { id: existing.id },
     select: recordSelect,
@@ -422,7 +422,7 @@ export async function clockOut(
     await broadcastToLineGroups(
       companyId,
       "hr-alerts",
-      `🔴 ${displayName(employee)} เช็คเอาท์แล้ว เวลา ${clockOutTimeLabel}` +
+      `🔴 ${displayName(employee)} ลงเวลาออกงานแล้ว เวลา ${clockOutTimeLabel}` +
         (record.earlyLeaveOut ? " (ออกก่อนเวลา)" : "") +
         (employee.branch?.name ? `\n${employee.branch.name}` : ""),
         "attendance",
@@ -437,8 +437,8 @@ export async function startBreak(companyId: string, session: AccessClaims, meta?
   const employeeId = requireEmployeeId(session);
   const { dateUTC } = bangkokParts();
   const existing = await findOpenAttendanceRecord(employeeId, dateUTC);
-  if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้เช็คอินวันนี้");
-  if (existing.clockOutAt) throw BadRequest("เช็คเอาท์แล้ว ไม่สามารถเริ่มพักได้");
+  if (!existing?.clockInAt) throw BadRequest("ยังไม่ได้ลงเวลาเข้างานวันนี้");
+  if (existing.clockOutAt) throw BadRequest("ลงเวลาออกงานแล้ว ไม่สามารถเริ่มพักได้");
   if (existing.breakStartAt && !existing.breakEndAt) throw Conflict("กำลังพักอยู่แล้ว");
   if (existing.breakStartAt) throw Conflict("พักไปแล้ววันนี้ พักได้วันละครั้ง");
 
@@ -447,7 +447,7 @@ export async function startBreak(companyId: string, session: AccessClaims, meta?
     where: { id: existing.id, breakStartAt: null, clockOutAt: null },
     data: { breakStartAt: new Date(), breakEndAt: null, updatedById: session.sub },
   });
-  if (count === 0) throw Conflict("พักไปแล้ววันนี้ หรือเช็คเอาท์แล้ว");
+  if (count === 0) throw Conflict("พักไปแล้ววันนี้ หรือลงเวลาออกงานแล้ว");
   const record = await prisma.attendanceRecord.findUniqueOrThrow({
     where: { id: existing.id },
     select: recordSelect,

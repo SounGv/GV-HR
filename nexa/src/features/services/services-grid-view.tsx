@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { LayoutGrid } from "lucide-react";
+import { PageHeader } from "@/components/shared/page-header";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/features/auth/auth-context";
 import { NAV_GROUPS } from "@/config/navigation";
@@ -37,10 +38,7 @@ export function ServicesGridView() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-lg font-bold text-foreground">บริการ</h2>
-        <p className="text-sm text-muted-foreground">ทางลัดไปยังฟังก์ชันที่ใช้บ่อย</p>
-      </div>
+      <PageHeader title="บริการ" description="ทางลัดไปยังฟังก์ชันที่ใช้บ่อย" />
 
       <div className="rounded-lg border border-border bg-card px-1.5 py-4">
       <div className="grid grid-cols-4 gap-x-2 gap-y-5">

@@ -444,6 +444,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </>
           )}
         </p>
+        {can(user!.permissions, "ai:read") && (
         <form action="/ai" className="flex h-10 items-center gap-1.5 rounded-lg border-[1.5px] border-[#cfd6dc] bg-card pr-1 pl-3 transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15">
           <input
             name="q"
@@ -456,11 +457,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <button
             type="submit"
             aria-label="ส่งคำถาม"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#0d47a1]"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-[#0d47a1]"
           >
             <ArrowUp className="size-4" strokeWidth={2.4} />
           </button>
         </form>
+        )}
       </section>
       )}
 
@@ -540,7 +542,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <MyTile
               icon={CheckInIcon}
               label="เวลาเข้างานวันนี้"
-              value={fmtClock(mine.clockInAt) ?? "ยังไม่เช็คอิน"}
+              value={fmtClock(mine.clockInAt) ?? "ยังไม่ลงเวลาเข้างาน"}
               sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
               href="/attendance"
             />

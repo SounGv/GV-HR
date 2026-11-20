@@ -98,7 +98,7 @@ export function MobileAttendanceDetailDialog({
 
             <div className="space-y-2">
               <Punch
-                label="เช็คอิน"
+                label="ลงเวลาเข้างาน"
                 at={record.clockInAt}
                 lat={record.clockInLat}
                 lng={record.clockInLng}
@@ -106,7 +106,7 @@ export function MobileAttendanceDetailDialog({
                 photoUrl={record.hasClockInPhoto ? attendancePhotoUrl(record.id, "in", record.updatedAt) : null}
               />
               <Punch
-                label="เช็คเอาท์"
+                label="ลงเวลาออกงาน"
                 at={record.clockOutAt}
                 lat={record.clockOutLat}
                 lng={record.clockOutLng}

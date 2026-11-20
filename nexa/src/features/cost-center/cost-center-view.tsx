@@ -56,12 +56,12 @@ export function CostCenterView() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead>รหัส</TableHead>
               <TableHead className="w-full">ชื่อศูนย์ต้นทุน</TableHead>
               <TableHead>รายละเอียด</TableHead>
               <TableHead className="text-center">พนักงาน</TableHead>
-              {canManage && <TableHead className="text-center">Action</TableHead>}
+              {canManage && <TableHead className="text-center">จัดการ</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>

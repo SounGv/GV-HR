@@ -86,7 +86,7 @@ export default async function AttendanceWatchPage({
 
       <p className="rounded-lg bg-muted px-4 py-3 text-sm text-foreground">
         ใช้สำหรับพูดคุยกับพนักงานเป็นรายคน ไม่ใช่ตัดสินจากตัวเลข เข้าเกณฑ์เมื่อสาย ≥ {WATCH_LATE_COUNT} ครั้ง, ขาด ≥{" "}
-        {WATCH_ABSENT_DAYS} วัน หรือลากิจ/ไม่รับค่าจ้าง ≥ {WATCH_LEAVE_COUNT} ครั้ง (ไม่นับลาป่วยและลาตามสิทธิ์) คนที่หยุดเช็คอินในแอป
+        {WATCH_ABSENT_DAYS} วัน หรือลากิจ/ไม่รับค่าจ้าง ≥ {WATCH_LEAVE_COUNT} ครั้ง (ไม่นับลาป่วยและลาตามสิทธิ์) คนที่หยุดลงเวลาเข้างานในแอป
         อาจถูกนับเป็นขาด ควรสอบถามก่อนสรุป
       </p>
 

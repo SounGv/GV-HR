@@ -40,7 +40,7 @@ export function AiAccessFormPage({ user }: { user: AdminUser }) {
   async function onSubmit() {
     try {
       await setMut.mutateAsync({ id: user.id, scope });
-      toast.success("บันทึกสิทธิ์ AI Assistant เรียบร้อย");
+      toast.success("บันทึกสิทธิ์ น้องวีบอท เรียบร้อย");
       router.push(LIST_HREF);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ");
@@ -50,7 +50,7 @@ export function AiAccessFormPage({ user }: { user: AdminUser }) {
   async function onRevoke() {
     try {
       await revokeMut.mutateAsync(user.id);
-      toast.success("ยกเลิกสิทธิ์ AI Assistant เรียบร้อย");
+      toast.success("ยกเลิกสิทธิ์ น้องวีบอท เรียบร้อย");
       router.push(LIST_HREF);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ยกเลิกไม่สำเร็จ");
@@ -62,9 +62,9 @@ export function AiAccessFormPage({ user }: { user: AdminUser }) {
   return (
     <FormPageShell
       wide
-      breadcrumbs={[{ label: "ผู้ดูแลระบบ", href: LIST_HREF }, { label: `สิทธิ์ AI Assistant ของ ${name}` }]}
+      breadcrumbs={[{ label: "ผู้ดูแลระบบ", href: LIST_HREF }, { label: `สิทธิ์ น้องวีบอท ของ ${name}` }]}
       backHref={LIST_HREF}
-      title="สิทธิ์การใช้งาน AI Assistant"
+      title="สิทธิ์การใช้งาน น้องวีบอท"
       description={name}
       formId={FORM_ID}
       pending={setMut.isPending}
@@ -81,12 +81,12 @@ export function AiAccessFormPage({ user }: { user: AdminUser }) {
       >
         {!hasEmployee ? (
           <p className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
-            บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน จึงกำหนดสิทธิ์ AI Assistant รายคนให้ไม่ได้
+            บัญชีนี้ไม่ได้ผูกกับข้อมูลพนักงาน จึงกำหนดสิทธิ์ น้องวีบอท รายคนให้ไม่ได้
           </p>
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              เปิดสิทธิ์ให้ใช้ AI Assistant พร้อมกำหนดขอบเขตข้อมูลที่ AI จะดึงมาตอบให้คนนี้ —
+              เปิดสิทธิ์ให้ใช้ น้องวีบอท พร้อมกำหนดขอบเขตข้อมูลที่ AI จะดึงมาตอบให้คนนี้ —
               ถ้าบทบาทของผู้ใช้มีสิทธิ์ AI อยู่แล้ว (เช่น ผู้บริหาร/การเงิน) การตั้งค่านี้จะกำหนด
               แค่ขอบเขตข้อมูล ไม่ใช่การเปิด-ปิดการใช้งาน
             </p>
@@ -114,7 +114,7 @@ export function AiAccessFormPage({ user }: { user: AdminUser }) {
                 onClick={onRevoke}
                 disabled={revokeMut.isPending}
               >
-                ยกเลิกสิทธิ์ AI Assistant
+                ยกเลิกสิทธิ์ น้องวีบอท
               </Button>
             )}
           </>

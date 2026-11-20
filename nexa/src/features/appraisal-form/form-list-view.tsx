@@ -71,12 +71,12 @@ export function FormListView() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead className="w-full">ชื่อแบบประเมิน</TableHead>
               <TableHead className="text-center">เวอร์ชัน</TableHead>
               <TableHead className="text-center">คำถาม</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

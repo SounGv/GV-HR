@@ -196,7 +196,7 @@ export function dailyPhotoPreview(row: Row, columnKey: string, url: string): Pho
     dash(row.location) ? null : dash(row.distance) ? String(row.location) : `${row.location} (${row.distance} ม.)`;
   return {
     url,
-    title: isIn ? "รูปเช็คอิน" : "รูปเช็คเอาท์",
+    title: isIn ? "รูปลงเวลาเข้างาน" : "รูปลงเวลาออกงาน",
     lines: [`${row.name} (${row.code})`, `${row.date} · ${isIn ? "เข้า" : "ออก"} ${time ?? "-"} น.`, ...(place ? [place] : [])],
   };
 }

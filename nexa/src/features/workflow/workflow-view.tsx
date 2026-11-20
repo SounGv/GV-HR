@@ -68,7 +68,7 @@ function RequestTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-14 text-center">No.</TableHead>
+          <TableHead className="w-14 text-center">ลำดับ</TableHead>
           <TableHead>วันที่ส่ง</TableHead>
           <TableHead className="w-full">เรื่อง</TableHead>
           <TableHead>เวิร์กโฟลว์</TableHead>
@@ -76,7 +76,7 @@ function RequestTable({
           <TableHead className="text-right">จำนวนเงิน</TableHead>
           <TableHead>ขั้นตอนอนุมัติ</TableHead>
           <TableHead className="text-center">สถานะ</TableHead>
-          <TableHead className="text-center">Action</TableHead>
+          <TableHead className="text-center">จัดการ</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -262,11 +262,11 @@ function Templates() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead className="w-full">ชื่อเวิร์กโฟลว์</TableHead>
               <TableHead>สายอนุมัติ</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

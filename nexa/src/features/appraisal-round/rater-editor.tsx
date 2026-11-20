@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Loader2, Plus, TriangleAlert, X } from "lucide-react";
+import { Loader2, Pencil, Plus, TriangleAlert, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -182,11 +182,11 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12 text-center">No.</TableHead>
+                    <TableHead className="w-12 text-center">ลำดับ</TableHead>
                     <TableHead className="w-full">ผู้ถูกประเมิน ของ {raterOpen.name}</TableHead>
                     <TableHead>แผนก</TableHead>
                     <TableHead>บทบาท</TableHead>
-                    <TableHead className="text-center">Action</TableHead>
+                    <TableHead className="text-center">จัดการ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -236,7 +236,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
               <th className="border-border border-r px-4 py-2 text-[13px] font-bold">ผู้ถูกประเมิน</th>
               <th className="border-border border-r px-4 py-2 text-[13px] font-bold">ผู้ประเมิน</th>
               <th className="border-border border-r px-3 py-2 text-[13px] font-bold">จำนวน</th>
-              <th className="px-3 py-2" />
+              <th className="px-3 py-2 text-center text-[13px] font-bold">จัดการ</th>
             </tr>
           </thead>
           <tbody>
@@ -263,9 +263,15 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
                     )}
                   </td>
                   <td className="border-border border-r px-3 py-2 tabular-nums">{r.raters.length} คน</td>
-                  <td className="px-3 py-2">
-                    <Button variant={none ? "default" : "outline"} className="h-11 md:h-8" onClick={() => setEditing(r.employeeId)}>
-                      {none ? "เพิ่มผู้ประเมิน" : "แก้ผู้ประเมิน"}
+                  <td className="px-3 py-2 text-center">
+                    <Button
+                      variant={none ? "default" : "ghost"}
+                      size="icon"
+                      className="size-9"
+                      aria-label={`${none ? "เพิ่ม" : "แก้"}ผู้ประเมินของ ${r.name}`}
+                      onClick={() => setEditing(r.employeeId)}
+                    >
+                      {none ? <Plus className="size-4" aria-hidden="true" /> : <Pencil className="size-4" aria-hidden="true" />}
                     </Button>
                   </td>
                 </tr>

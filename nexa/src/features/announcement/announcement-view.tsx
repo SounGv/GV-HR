@@ -115,11 +115,11 @@ function Manage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead>วันที่</TableHead>
               <TableHead className="w-full">หัวข้อประกาศ</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

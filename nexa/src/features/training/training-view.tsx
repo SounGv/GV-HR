@@ -117,7 +117,7 @@ export function TrainingView() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-14 text-center">No.</TableHead>
+                    <TableHead className="w-14 text-center">ลำดับ</TableHead>
                     <TableHead className="w-full">หลักสูตร</TableHead>
                     <TableHead>หมวด</TableHead>
                     <TableHead className="text-center">ชั่วโมง</TableHead>
@@ -126,7 +126,7 @@ export function TrainingView() {
                     <TableHead>สถานที่</TableHead>
                     <TableHead className="text-center">ผู้ลงทะเบียน</TableHead>
                     <TableHead className="text-center">สถานะ</TableHead>
-                    <TableHead className="text-center">Action</TableHead>
+                    <TableHead className="text-center">จัดการ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -200,14 +200,14 @@ export function TrainingView() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-14 text-center">No.</TableHead>
+                  <TableHead className="w-14 text-center">ลำดับ</TableHead>
                   <TableHead className="w-full">หลักสูตร</TableHead>
                   <TableHead>หมวด</TableHead>
                   <TableHead className="text-center">ชั่วโมง</TableHead>
                   <TableHead>วันที่อบรม</TableHead>
                   <TableHead className="text-center">คะแนน</TableHead>
                   <TableHead className="text-center">สถานะ</TableHead>
-                  <TableHead className="text-center">Action</TableHead>
+                  <TableHead className="text-center">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -20,8 +20,8 @@ const SOURCE_DOT: Record<CalendarSource, string> = {
   holiday: "bg-destructive",
   leave: "bg-warning",
   training: "bg-primary",
-  event: "bg-emerald-500",
-  evaluation: "bg-indigo-600",
+  event: "bg-primary/50",
+  evaluation: "bg-primary",
   meeting: "bg-info",
 };
 const SOURCE_LABEL: Record<CalendarSource, string> = {
@@ -155,7 +155,7 @@ export function MobileCalendarView() {
               <span key={status} className="flex items-center gap-1 text-xs text-muted-foreground">
                 <span
                   className={cn(
-                    "flex size-[18px] items-center justify-center rounded-full text-[11px] font-bold",
+                    "flex size-[18px] items-center justify-center rounded-full text-xs font-bold",
                     MY_STATUS_BADGE[status].className,
                   )}
                 >
@@ -196,7 +196,7 @@ export function MobileCalendarView() {
                       {status && (
                         <span
                           className={cn(
-                            "absolute -top-1.5 -right-1 flex size-[18px] items-center justify-center rounded-full text-[11px] font-bold",
+                            "absolute -top-1.5 -right-1 flex size-[18px] items-center justify-center rounded-full text-xs font-bold",
                             MY_STATUS_BADGE[status].className,
                           )}
                         >

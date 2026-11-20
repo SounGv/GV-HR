@@ -857,7 +857,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       (leaveShown > 0 ? ` · ลางานโดยไม่มีบันทึกเวลา ${leaveShown} วัน` : "") +
       (absentShown > 0 ? ` · ขาดงาน (ไม่มีบันทึกเวลาและไม่มีใบลาอนุมัติ รวมวันที่ยื่นลาแล้วแต่ยังรออนุมัติ) ${absentShown} วัน` : "") +
       (notCheckedCount > 0
-        ? ` · ไม่ได้ตรวจการขาดงานของ ${notCheckedCount} คน ที่ไม่มีบันทึกเวลาเลยในช่วงนี้และ ${ABSENT_ACTIVITY_LOOKBACK_DAYS} วันก่อนหน้า (ยังไม่ได้ใช้เช็คอินในแอป)`
+        ? ` · ไม่ได้ตรวจการขาดงานของ ${notCheckedCount} คน ที่ไม่มีบันทึกเวลาเลยในช่วงนี้และ ${ABSENT_ACTIVITY_LOOKBACK_DAYS} วันก่อนหน้า (ยังไม่ได้ใช้ลงเวลาเข้างานในแอป)`
         : "") +
       (truncatedFrom
         ? ` · ข้อมูลเกินที่แสดงได้ จึงแสดงครบตั้งแต่ ${formatDate(new Date(`${truncatedFrom}T00:00:00.000Z`))} เป็นต้นไป (ลดช่วงวันที่หรือเลือกแผนกเพื่อดูส่วนที่ถูกตัด)`
@@ -877,9 +877,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "shiftStart", label: "เวลาเริ่มกะ" },
         { key: "shiftEnd", label: "เวลาเลิกกะ" },
         { key: "clockIn", label: "เวลาเข้า" },
-        { key: "clockInPhoto", label: "รูปเช็คอิน", photo: true },
+        { key: "clockInPhoto", label: "รูปลงเวลาเข้างาน", photo: true },
         { key: "clockOut", label: "เวลาออก" },
-        { key: "clockOutPhoto", label: "รูปเช็คเอาท์", photo: true },
+        { key: "clockOutPhoto", label: "รูปลงเวลาออกงาน", photo: true },
         { key: "location", label: "สถานที่" },
         { key: "distance", label: "ระยะห่าง (ม.)", numeric: true },
         { key: "breakMinutes", label: "เวลาพัก (นาที)", numeric: true },
@@ -1595,7 +1595,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       if (r.clockInAt && !r.clockOutAt && d < todayIso) {
         findings.push({
           date: formatDate(r.workDate), code: r.employee.employeeCode, name: nameOf(r.employee), department: deptOf(r.employee),
-          issueType: "ไม่มีเวลาออก", detail: `เช็คอิน ${new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(r.clockInAt)} แต่ไม่มีเวลาออก`,
+          issueType: "ไม่มีเวลาออก", detail: `ลงเวลาเข้างาน ${new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(r.clockInAt)} แต่ไม่มีเวลาออก`,
         });
       }
       if (r.clockInAt && r.clockOutAt && r.clockOutAt.getTime() < r.clockInAt.getTime()) {

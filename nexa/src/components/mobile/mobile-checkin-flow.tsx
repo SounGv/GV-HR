@@ -524,7 +524,7 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
           </p>
         )}
         <button type="button" onClick={onNext} autoFocus className={cn(PRIMARY_BTN, "mt-3 flex h-[56px] w-full items-center justify-center gap-2.5 text-[17px]")}>
-          <Camera className="size-6" aria-hidden="true" /> ถ่ายรูปเช็กอิน
+          <Camera className="size-6" aria-hidden="true" /> ถ่ายรูปลงเวลาเข้างาน
         </button>
       </div>
     </div>

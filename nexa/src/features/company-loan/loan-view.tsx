@@ -108,7 +108,7 @@ function MyLoans() {
               <TableHead className="text-right">วงเงินกู้</TableHead>
               <TableHead className="text-center">งวด</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -181,7 +181,7 @@ function Approvals() {
           <TableHead className="w-full">ผู้ขอ</TableHead>
           <TableHead className="text-right">วงเงินกู้</TableHead>
           <TableHead className="text-center">งวด</TableHead>
-          <TableHead className="text-center">Action</TableHead>
+          <TableHead className="text-center">จัดการ</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -240,7 +240,7 @@ function ToPay() {
           <TableHead className="w-full">ผู้ขอ</TableHead>
           <TableHead className="text-right">วงเงินกู้</TableHead>
           <TableHead className="text-center">งวด</TableHead>
-          <TableHead className="text-center">Action</TableHead>
+          <TableHead className="text-center">จัดการ</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

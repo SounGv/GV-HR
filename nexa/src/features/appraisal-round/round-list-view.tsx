@@ -69,6 +69,7 @@ export function RoundListView() {
               <Plus className="size-4" /> สร้างรอบประเมิน
             </Button>
           )}
+          {newRound.dialog}
         </div>
       </div>
 
@@ -90,7 +91,7 @@ export function RoundListView() {
               <TableHead className="text-center">ส่งแล้ว</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
               <TableHead className="text-center">ตั้งค่า</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

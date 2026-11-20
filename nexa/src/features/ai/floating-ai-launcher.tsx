@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
-import { VBot } from "@/components/shared/v-bot";
+import { AiMark } from "@/components/shared/ai-mark";
 
 import { useAiAccess } from "./hooks";
 import { AiChatView } from "./ai-chat-view";
@@ -118,7 +118,7 @@ export function AiChatPanel() {
   return (
     <div
       role="dialog"
-      aria-label="AI Assistant"
+      aria-label="น้องวีบอท"
       style={{ width: size.w, height: size.h }}
       className="fixed right-6 bottom-6 z-50 hidden max-h-[calc(100dvh-3rem)] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-sm md:flex"
     >
@@ -162,16 +162,16 @@ export function AiChatPanel() {
       />
       <div className="flex items-center gap-3 bg-[var(--chat-teal)] px-4 py-3 text-white">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-white/25" aria-hidden="true">
-          <VBot mood="hi" className="h-7 w-8" />
+          <AiMark className="h-7 w-8" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm leading-snug font-semibold">AI Assistant</p>
+          <p className="text-sm leading-snug font-semibold">น้องวีบอท</p>
           <p className="text-xs leading-snug text-white">น้องวีบอท · ตอบจากข้อมูลจริง</p>
         </div>
         <button
           type="button"
           onClick={closePanel}
-          aria-label="ปิด AI Assistant"
+          aria-label="ปิด น้องวีบอท"
           className="flex size-11 items-center justify-center rounded-full text-white transition hover:bg-white/15 hover:text-white md:size-9"
         >
           <X className="size-5" />

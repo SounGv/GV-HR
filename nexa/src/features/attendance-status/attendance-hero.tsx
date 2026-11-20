@@ -78,7 +78,7 @@ function GlassTile({
 }) {
   return (
     <Link href={href} className="gv-glass gv-rise block px-4 py-3.5" style={{ "--i": i + 1 } as React.CSSProperties}>
-      <span className="flex items-center gap-2 text-[13px] font-semibold text-white">
+      <span className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
         <span className={`flex size-8 items-center justify-center rounded-lg ring-1 ring-inset ${TILE_TONE[tone]}`}>
           <Icon className="size-5" aria-hidden="true" />
         </span>
@@ -86,15 +86,15 @@ function GlassTile({
       </span>
       <span className="mt-1.5 block text-[30px] leading-tight font-bold tabular-nums">
         <CountUp value={value} />
-        <span className="ml-1 text-xs font-medium text-white">{unit}</span>
+        <span className="ml-1 text-xs font-medium text-foreground">{unit}</span>
       </span>
       {bar !== undefined && (
-        <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white/15" aria-hidden="true">
+        <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
           <span className="gv-grow block h-full rounded-full bg-[var(--on-hero-accent)]" style={{ width: `${bar}%` }} />
         </span>
       )}
-      {line && <span className="mt-1 block text-xs text-white">{line}</span>}
-      {spark && spark.length > 1 && <MiniSpark values={spark} className="mt-1 h-6 w-full text-white" />}
+      {line && <span className="mt-1 block text-xs text-foreground">{line}</span>}
+      {spark && spark.length > 1 && <MiniSpark values={spark} className="mt-1 h-6 w-full text-foreground" />}
     </Link>
   );
 }
@@ -118,12 +118,12 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
   if (!open) {
     return (
       <section aria-label="การเข้างานวันนี้" className="gv-hero gv-rise flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
-        <span className="flex size-9 items-center justify-center rounded-lg border border-white/20 bg-white/10">
+        <span className="flex size-9 items-center justify-center rounded-lg border border-border bg-muted">
           <Clock className="size-[18px]" aria-hidden="true" />
         </span>
         <span className="min-w-0 basis-52">
           <b className="block text-[16px] leading-snug">การเข้างานวันนี้</b>
-          <span className="block text-sm leading-snug text-white">
+          <span className="block text-sm leading-snug text-foreground">
             {data.weekendActivity && data.weekendActivity.scanned + data.weekendActivity.onLeave > 0 ? (
               <>
                 วันเสาร์ ยังไม่มีตารางว่าใครต้องมา จึงไม่นับขาดงาน สแกนเข้างานแล้ว <b className="tabular-nums">{data.weekendActivity.scanned}</b> คน สาย{" "}
@@ -132,14 +132,14 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
             ) : !data.isWorkingDay ? (
               <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</>
             ) : (
-              <>ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</>
+              <>ยังไม่มีพนักงานที่ใช้ลงเวลาเข้างานในแอปในขอบเขตที่เลือก</>
             )}
           </span>
         </span>
         {ticker ? <div className="order-last min-w-0 basis-full lg:order-none lg:flex-1 lg:basis-0">{ticker}</div> : <span className="flex-1" />}
         <Link
           href="/reports?view=attendance_daily"
-          className="inline-flex min-h-10 items-center rounded-full border border-white/25 bg-white/10 px-4 text-[13px] font-semibold hover:bg-white/20"
+          className="inline-flex min-h-10 items-center rounded-full border border-border bg-card px-4 text-[13px] font-semibold hover:bg-accent"
         >
           ดูประวัติการเข้างาน ›
         </Link>
@@ -151,17 +151,17 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
     <section aria-label="การเข้างานวันนี้" className="gv-hero gv-rise grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
       <div className="min-w-0">
         <div className="flex items-center gap-2.5">
-          <span className="flex size-11 items-center justify-center rounded-lg border border-white/20 bg-white/10">
+          <span className="flex size-11 items-center justify-center rounded-lg border border-border bg-muted">
             <Clock className="size-[22px]" aria-hidden="true" />
           </span>
           <span className="rounded-full bg-[#fde047] px-2.5 py-0.5 text-xs font-bold text-[#3f2d00]">ข้อมูล ณ {data.asOf} น.</span>
         </div>
         <h2 className="mt-4 text-[30px] leading-snug font-bold">การเข้างานวันนี้</h2>
-        <p className="mt-1 text-[13.5px] text-white">
+        <p className="mt-1 text-[13.5px] text-foreground">
           {!data.isWorkingDay ? (
             <>วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</>
           ) : total === 0 ? (
-            <>ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</>
+            <>ยังไม่มีพนักงานที่ใช้ลงเวลาเข้างานในแอปในขอบเขตที่เลือก</>
           ) : (
             <>
               สแกนเข้างานแล้ว <b className="tabular-nums">{scanned}</b> จาก <b className="tabular-nums">{total}</b> คน
@@ -176,7 +176,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
             </div>
             <ul className="gv-rise grid gap-1.5" style={{ "--i": 2 } as React.CSSProperties} aria-label="สีในวงกลม">
               {RING_LEGEND.map((l) => (
-                <li key={l.status} className="flex items-center gap-2 text-[13px] font-semibold text-white">
+                <li key={l.status} className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
                   <span className={`flex size-6 items-center justify-center rounded-lg ring-1 ring-inset ${TILE_TONE[l.tone]}`}>
                     <l.icon className="size-4" aria-hidden="true" />
                   </span>
@@ -253,7 +253,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
           />
         </div>
       ) : (
-        <div className="gv-glass self-center px-5 py-6 text-sm text-white">
+        <div className="gv-glass self-center px-5 py-6 text-sm text-foreground">
           ดูประวัติการเข้างานย้อนหลังได้ที่เมนูเวลาทำงาน
         </div>
       )}

@@ -57,14 +57,14 @@ export function BranchView() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead>รหัส</TableHead>
               <TableHead className="w-full">ชื่อสาขา</TableHead>
               <TableHead>ที่อยู่</TableHead>
               <TableHead>โทรศัพท์</TableHead>
               <TableHead className="text-center">พนักงาน</TableHead>
-              <TableHead className="text-center">geofence</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จำกัดพื้นที่</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,7 +89,7 @@ export function BranchView() {
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-1">
-                    <Button variant="ghost" size="icon" className="size-9" aria-label={`ดู QR เช็คอิน ${b.name}`} render={<Link href={`/branches/${b.id}/qr`} />}>
+                    <Button variant="ghost" size="icon" className="size-9" aria-label={`ดู QR ลงเวลาเข้างาน ${b.name}`} render={<Link href={`/branches/${b.id}/qr`} />}>
                       <QrCode className="size-4" />
                     </Button>
                     {canManage && (

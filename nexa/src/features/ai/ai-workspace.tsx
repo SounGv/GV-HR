@@ -21,7 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { VBot } from "@/components/shared/v-bot";
+import { AiMark } from "@/components/shared/ai-mark";
 import { cn } from "@/lib/utils";
 import { useAiAccess, useChat, useQuick } from "./hooks";
 import { EngineBadge, FallbackBanner, QuickChips, QuickForm, useEngineMode } from "./fallback-ui";
@@ -39,12 +39,12 @@ import type { ChatMessage, ChatStep, OutFile, ProposalCard, QuickRequest } from 
 
 /** Ready-made questions for the empty result panel, grouped by what HR asks most. */
 const PROMPTS = [
-  { icon: Clock, tone: "border-status-late-border bg-status-late-bg text-status-late-fg", q: "เดือนนี้ใครขาด ลา มาสายเยอะที่สุด", hint: "จัดอันดับจากรายงานการลงเวลา" },
-  { icon: Check, tone: "border-blue-100 bg-blue-50 text-blue-800", q: "วันนี้ใครยังไม่สแกนเข้างาน", hint: "แยกตามแผนก" },
-  { icon: CalendarDays, tone: "border-status-leave-border bg-status-leave-bg text-status-leave-fg", q: "สัปดาห์หน้าใครลาบ้าง", hint: "ดูก่อนจัดคนเข้ากะ" },
-  { icon: Zap, tone: "border-violet-200 bg-violet-50 text-violet-700", q: "สรุปชั่วโมง OT เดือนนี้แยกแผนก", hint: "เฉพาะที่อนุมัติแล้ว" },
-  { icon: LogOut, tone: "border-status-late-border bg-status-late-bg text-status-late-fg", q: "ใครลืมสแกนออกในสัปดาห์นี้", hint: "ให้ตามแก้เวลา" },
-  { icon: UsersRound, tone: "border-slate-200 bg-slate-50 text-slate-700", q: "มีพนักงานทั้งหมดกี่คน แยกตามแผนก", hint: "รวมพนักงานรายวัน" },
+  { icon: Clock, tone: "border-border bg-muted text-primary", q: "เดือนนี้ใครขาด ลา มาสายเยอะที่สุด", hint: "จัดอันดับจากรายงานการลงเวลา" },
+  { icon: Check, tone: "border-border bg-muted text-primary", q: "วันนี้ใครยังไม่สแกนเข้างาน", hint: "แยกตามแผนก" },
+  { icon: CalendarDays, tone: "border-border bg-muted text-primary", q: "สัปดาห์หน้าใครลาบ้าง", hint: "ดูก่อนจัดคนเข้ากะ" },
+  { icon: Zap, tone: "border-border bg-muted text-primary", q: "สรุปชั่วโมง OT เดือนนี้แยกแผนก", hint: "เฉพาะที่อนุมัติแล้ว" },
+  { icon: LogOut, tone: "border-border bg-muted text-primary", q: "ใครลืมสแกนออกในสัปดาห์นี้", hint: "ให้ตามแก้เวลา" },
+  { icon: UsersRound, tone: "border-border bg-muted text-primary", q: "มีพนักงานทั้งหมดกี่คน แยกตามแผนก", hint: "รวมพนักงานรายวัน" },
 ];
 
 interface Turn {
@@ -165,7 +165,7 @@ function useElapsed(running: boolean): number {
 }
 
 /**
- * Desktop AI Assistant: chat on the left, the selected answer laid out on a
+ * Desktop น้องวีบอท: chat on the left, the selected answer laid out on a
  * wide result panel on the right (tables and numbers need the width; a chat
  * bubble squeezes them).
  *
@@ -391,7 +391,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         </div>
       )}
       {/* Left: the conversation (kept mounted when folded, so a half-typed question is not lost) */}
-      <section ref={chatSectionRef} aria-label="แชทกับ AI Assistant" className={cn("relative flex min-h-0 flex-col border-r border-border", chatFolded && "hidden")}>
+      <section ref={chatSectionRef} aria-label="แชทกับ น้องวีบอท" className={cn("relative flex min-h-0 flex-col border-r border-border", chatFolded && "hidden")}>
         {/* Drag this edge to make the chat column wider or narrower; arrow keys also work and double click puts it back. */}
         <div
           role="separator"
@@ -434,9 +434,9 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
           <span className="absolute top-1/2 left-1 h-14 w-1 -translate-y-1/2 rounded-full bg-muted-foreground/40 transition-colors group-hover:bg-primary group-focus-visible:bg-primary" aria-hidden="true" />
         </div>
         <header className="flex items-center gap-2.5 border-b border-border px-4 py-3">
-          <VBot mood={chat.isPending ? "think" : "ok"} className="h-8 w-9" />
+          <AiMark className="h-8 w-9" />
           <div className="min-w-0">
-            <h2 className="text-[14.5px] leading-snug font-semibold">AI Assistant</h2>
+            <h2 className="text-[14.5px] leading-snug font-semibold">น้องวีบอท</h2>
             <p className="text-xs text-muted-foreground">ตอบจากข้อมูลจริงในระบบ · ผลลัพธ์แสดงที่แผงขวา</p>
           </div>
           <button
@@ -461,7 +461,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         <div ref={scrollRef} className="flex-1 space-y-3.5 overflow-y-auto p-4" aria-live="polite">
           {fallback && <FallbackBanner reason={engine.reason} backup={engine.backup} />}
           <div className="flex items-start gap-2">
-            <VBot mood="hi" className="h-7 w-8" />
+            <AiMark className="h-7 w-8" />
             <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13.5px] shadow-[var(--card-shadow)]">
               สวัสดีครับ ผมน้องวีบอท ถามเรื่องการเข้างาน การลา OT หรือพนักงานได้เลย ตัวเลขและตารางจะขึ้นที่แผงขวา
             </p>
@@ -478,7 +478,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               </p>
             ) : t.failed ? (
               <div key={i} className="flex items-start gap-2" role="alert">
-                <VBot mood="sorry" className="h-7 w-8" />
+                <AiMark className="h-7 w-8" />
                 <div className="rounded-[4px_14px_14px_14px] border border-status-absent-border bg-status-absent-bg px-3 py-2 text-[13px] text-status-absent-fg">
                   <p className="font-semibold">ตอบไม่สำเร็จ การเชื่อมต่อหลุดระหว่างดึงข้อมูล</p>
                   <p>คำถามยังอยู่ กดลองอีกครั้งได้เลย</p>
@@ -499,14 +499,14 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
 
           {quick.isPending && (
             <div className="flex items-start gap-2" role="status">
-              <VBot mood="think" className="h-7 w-8" />
+              <AiMark className="h-7 w-8" />
               <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13px] text-muted-foreground shadow-[var(--card-shadow)]">กำลังดึงข้อมูลจากระบบ…</p>
             </div>
           )}
 
           {chat.isPending && (
             <div className="flex items-start gap-2" role="status">
-              <VBot mood="think" className="h-7 w-8" />
+              <AiMark className="h-7 w-8" />
               <div className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13px] shadow-[var(--card-shadow)]">
                 <p className="font-medium">กำลังดึงข้อมูลจากระบบ…</p>
                 <p className="text-xs text-muted-foreground tabular-nums">
@@ -549,7 +549,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               }}
               rows={1}
               maxLength={2000}
-              aria-label="พิมพ์คำถามถึง AI Assistant"
+              aria-label="พิมพ์คำถามถึง น้องวีบอท"
               placeholder={fallback ? "พิมพ์คำสั่งสั้น เช่น ใครมาสายวันนี้" : "ถามเรื่องทีม เช่น ใครมาสายเกิน 3 ครั้งเดือนนี้"}
               className="max-h-32 min-h-9 flex-1 resize-none bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground"
             />
@@ -643,7 +643,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         ) : chat.isPending ? (
           <div className="grid h-[calc(100%-2.875rem)] place-items-center text-center" role="status">
             <div>
-              <VBot mood="think" full className="mx-auto h-[118px] w-[100px]" />
+              <AiMark className="mx-auto h-[118px] w-[100px]" />
               <p className="mt-2 text-base font-semibold">กำลังหาคำตอบ</p>
               <p className="text-sm text-muted-foreground tabular-nums">ผ่านไป {elapsed} วินาที</p>
             </div>
@@ -651,7 +651,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         ) : (
           <div className="mx-auto flex min-h-[calc(100%-2.875rem)] max-w-[760px] flex-col justify-center py-4">
             <div className="text-center">
-              <VBot mood="hi" full className="mx-auto h-[122px] w-[104px]" />
+              <AiMark className="mx-auto h-[122px] w-[104px]" />
               <h2 className="mt-2 text-[22px] leading-snug font-bold">วันนี้อยากรู้อะไรเรื่องทีม</h2>
               <p className="text-sm text-muted-foreground">เลือกคำถามด้านล่าง หรือพิมพ์ทางซ้าย ผมจะดึงข้อมูลจริงมาจัดเป็นตารางให้ที่นี่</p>
             </div>
@@ -701,7 +701,7 @@ function AnswerBubble({ turn, active, onShow }: { turn: Turn; active: boolean; o
   const hasDetail = rest.length > 0;
   return (
     <div className="flex items-start gap-2">
-      <VBot mood="ok" className="h-7 w-8" />
+      <AiMark className="h-7 w-8" />
       <div className="min-w-0 rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13.5px] shadow-[var(--card-shadow)]">
         {summary ? <MarkdownLite text={summary} className="text-[13.5px]" /> : !hasDetail && <MarkdownLite text={turn.content} />}
         {hasDetail && (

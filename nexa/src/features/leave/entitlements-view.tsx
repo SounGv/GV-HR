@@ -41,7 +41,7 @@ function Cell({ row, type, year, onSaved }: { row: EntitlementRow; type: PaidTyp
 
   return (
     <TableCell>
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-center gap-2">
         <Input
           type="number"
           min={0}
@@ -56,7 +56,7 @@ function Cell({ row, type, year, onSaved }: { row: EntitlementRow; type: PaidTyp
           onBlur={commit}
           onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
         />
-        <span className="w-20 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+        <span className="w-24 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
           ใช้ {used} · เหลือ {left ?? "-"}
         </span>
       </div>
@@ -111,10 +111,10 @@ export function EntitlementsView() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead className="sticky left-0 bg-card">พนักงาน</TableHead>
               {TYPES.map((t) => (
-                <TableHead key={t.key} className="text-right">
+                <TableHead key={t.key} className="text-center">
                   {t.label} (วัน)
                 </TableHead>
               ))}

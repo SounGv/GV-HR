@@ -21,14 +21,14 @@ export function GeofenceSettings() {
 
   const branches = data?.data ?? [];
   if (branches.length === 0) {
-    return <EmptyState icon={MapPin} title="ยังไม่มีสาขา" description="เพิ่มสาขาก่อนตั้งค่าพื้นที่เช็คอิน" />;
+    return <EmptyState icon={MapPin} title="ยังไม่มีสาขา" description="เพิ่มสาขาก่อนตั้งค่าพื้นที่ลงเวลาเข้างาน" />;
   }
 
   return (
     <div className="space-y-4">
       <Card className="border-info/30 bg-info/5 p-4 text-sm text-info">
-        กำหนดพิกัดและรัศมีของแต่ละสาขา พนักงานจะเช็คอินได้เมื่ออยู่ในรัศมีที่กำหนดเท่านั้น
-        (เว้นว่างพิกัด = ปิด geofence ให้เช็คอินได้ทุกที่)
+        กำหนดพิกัดและรัศมีของแต่ละสาขา พนักงานจะลงเวลาเข้างานได้เมื่ออยู่ในรัศมีที่กำหนดเท่านั้น
+        (เว้นว่างพิกัด = ปิดการจำกัดพื้นที่ ให้ลงเวลาเข้างานได้ทุกที่)
       </Card>
       {branches.map((b) => (
         <BranchGeofenceCard key={b.id} branch={b} />
@@ -77,7 +77,7 @@ function BranchGeofenceCard({ branch }: { branch: Geofence }) {
     }
     try {
       await updateMut.mutateAsync(payload);
-      toast.success(clear ? "ปิด geofence แล้ว" : `บันทึกพื้นที่ ${branch.name} แล้ว`);
+      toast.success(clear ? "ปิดการจำกัดพื้นที่ แล้ว" : `บันทึกพื้นที่ ${branch.name} แล้ว`);
       if (clear) {
         setLat("");
         setLng("");
@@ -103,7 +103,7 @@ function BranchGeofenceCard({ branch }: { branch: Geofence }) {
               : "rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
           }
         >
-          {hasCoords ? "เปิด geofence" : "ปิด (เช็คอินได้ทุกที่)"}
+          {hasCoords ? "เปิดการจำกัดพื้นที่" : "ปิด (ลงเวลาเข้างานได้ทุกที่)"}
         </span>
       </div>
 
@@ -131,7 +131,7 @@ function BranchGeofenceCard({ branch }: { branch: Geofence }) {
             </Button>
             {hasCoords && (
               <Button type="button" variant="ghost" className="text-destructive" onClick={() => save(true)} disabled={updateMut.isPending}>
-                <Trash2 className="size-4" /> ปิด geofence
+                <Trash2 className="size-4" /> ปิดการจำกัดพื้นที่
               </Button>
             )}
           </div>

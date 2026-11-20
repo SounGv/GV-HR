@@ -65,11 +65,11 @@ export function EmployeeDocumentList({ employeeId, canEdit }: { employeeId: stri
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead className="w-full">ชื่อเอกสาร</TableHead>
                 <TableHead>ประเภท</TableHead>
                 <TableHead>วันที่แนบ</TableHead>
-                {canEdit && <TableHead className="text-center">Action</TableHead>}
+                {canEdit && <TableHead className="text-center">จัดการ</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>

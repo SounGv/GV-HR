@@ -42,7 +42,7 @@ export function AttendanceHistory() {
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={6} />;
   if (records.length === 0) {
-    return <EmptyState title="ยังไม่มีประวัติการลงเวลา" description="เมื่อคุณเช็คอิน ประวัติจะแสดงที่นี่" />;
+    return <EmptyState title="ยังไม่มีประวัติการลงเวลา" description="เมื่อคุณลงเวลาเข้างาน ประวัติจะแสดงที่นี่" />;
   }
 
   return (

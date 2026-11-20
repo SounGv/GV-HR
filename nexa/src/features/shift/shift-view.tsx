@@ -115,11 +115,11 @@ function MyScheduleView({ onGoRoster }: { onGoRoster?: () => void }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-14 text-center">No.</TableHead>
+            <TableHead className="w-14 text-center">ลำดับ</TableHead>
             <TableHead>วันที่</TableHead>
             <TableHead>เวร</TableHead>
             <TableHead className="w-full">เวลา</TableHead>
-            <TableHead className="text-center">Action</TableHead>
+            <TableHead className="text-center">จัดการ</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -321,14 +321,14 @@ function SwapRequestList({ rows, actions }: { rows: SwapRequest[]; actions: (req
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead>ผู้ขอ</TableHead>
               <TableHead>ให้ทำแทน</TableHead>
               <TableHead>วันที่</TableHead>
               <TableHead>กะ</TableHead>
               <TableHead className="w-full">เหตุผล</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

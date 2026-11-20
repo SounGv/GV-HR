@@ -23,7 +23,7 @@ export function NotificationBell() {
           <Button variant="ghost" size="icon" className="relative" aria-label="การแจ้งเตือน">
             <Bell className="size-4" />
             {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground ring-2 ring-background">
+              <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold text-destructive-foreground ring-2 ring-background">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}

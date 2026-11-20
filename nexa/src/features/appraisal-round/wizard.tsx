@@ -360,7 +360,7 @@ function Hero({
         : "บันทึกอัตโนมัติเมื่อกดถัดไป";
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" aria-labelledby="round-wizard-title">
-      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-sm text-white md:hidden">
+      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-sm text-foreground md:hidden">
         <BackLink href="/appraisal/rounds" onHero>
           รอบประเมิน
         </BackLink>
@@ -374,11 +374,11 @@ function Hero({
         >
           {draft.name.trim() || round.name}
         </h1>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-xs font-bold">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-bold">
           <span className="size-1.5 rounded-full bg-status-late-dot" aria-hidden="true" /> ฉบับร่าง
         </span>
         <span
-          className="ml-auto inline-flex items-center gap-1.5 text-xs text-white"
+          className="ml-auto inline-flex items-center gap-1.5 text-xs text-foreground"
           aria-live="polite"
         >
           <span
@@ -414,24 +414,24 @@ function Hero({
                 type="button"
                 aria-current={on ? "step" : undefined}
                 onClick={() => goTo(i)}
-                className="grid w-full gap-2 rounded-lg text-left focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none"
+                className="grid w-full gap-2 rounded-lg text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
-                <span className="h-[5px] overflow-hidden rounded-full bg-white/20">
+                <span className="h-[5px] overflow-hidden rounded-full bg-muted">
                   <span
                     className="block h-full rounded-full transition-[width] duration-500"
-                    style={{ width: on || done ? "100%" : 0, background: on ? "#fff" : "var(--on-hero-accent)" }}
+                    style={{ width: on || done ? "100%" : 0, background: "var(--primary)" }}
                   />
                 </span>
                 <span
                   className={cn(
                     "flex min-h-8 items-center gap-2 text-sm font-semibold",
-                    on ? "text-white" : "text-white",
+                    "text-foreground",
                   )}
                 >
                   <span
                     className={cn(
                       "flex size-[22px] shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                      on ? "bg-white text-primary" : done ? "bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]" : "bg-white/15",
+                      on ? "bg-primary text-primary-foreground" : done ? "bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]" : "bg-muted",
                     )}
                     aria-hidden="true"
                   >
@@ -461,7 +461,7 @@ function Tile({
 }) {
   return (
     <div className="gv-glass min-w-0 px-3.5 py-3">
-      <p className="text-xs leading-snug text-white">{label}</p>
+      <p className="text-xs leading-snug text-foreground">{label}</p>
       <p
         className={cn(
           "mt-0.5 leading-snug font-bold tabular-nums",
@@ -469,7 +469,7 @@ function Tile({
         )}
       >
         {value}
-        {unit && <span className="ml-1 text-xs font-medium text-white">{unit}</span>}
+        {unit && <span className="ml-1 text-xs font-medium text-foreground">{unit}</span>}
       </p>
     </div>
   );
@@ -535,7 +535,7 @@ function Readiness({
           ))}
         </ul>
       </Card>
-      <div className="rounded-lg border border-status-late-border bg-status-late-bg p-4 text-sm leading-relaxed text-status-late-fg">
+      <div className="rounded-lg border border-border bg-card p-4 text-sm leading-relaxed">
         <p className="mb-0.5 text-sm font-semibold">เคล็ดลับ</p>
         ตั้งวันเปิดรอบเป็นวันพรุ่งนี้ ระบบจะตั้งเวลาส่งให้ และยังกด “ยกเลิกการตั้งเวลา”
         กลับมาแก้ได้ก่อนข้อความออก
@@ -1638,8 +1638,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
           <div className="min-h-[300px] rounded-lg bg-muted px-3 py-3.5 text-foreground">
             <div className="mb-3 flex items-center gap-2 text-xs font-bold text-muted-foreground">
               <span
-                className="flex size-[26px] items-center justify-center rounded-full bg-primary text-xs"
-                style={{ color: "var(--on-hero-accent)" }}
+                className="flex size-[26px] items-center justify-center rounded-full bg-primary text-xs text-primary-foreground"
               >
                 GV
               </span>

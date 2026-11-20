@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import type { ComponentType } from "react";
 
-import { VBot } from "@/components/shared/v-bot";
+import { AiMark } from "@/components/shared/ai-mark";
 import {
   GvAbsentIcon,
   GvAnnounceIcon,
@@ -248,7 +248,7 @@ export function NewsTicker({ announcement }: { announcement: { id: string; title
             {/* The bot walks out first, with no disc behind it; the glow and the floor shadow come from globals.css. */}
             <span className="ticker-bot relative block h-[60px] w-[51px] shrink-0">
               <span aria-hidden="true" className="ticker-floor absolute inset-x-2 -bottom-0.5 h-[7px] rounded-[50%] bg-black/30 blur-[2px]" />
-              <VBot mood="ok" full className="ticker-walk h-[60px] w-[51px] origin-bottom" />
+              <AiMark className="size-10" />
             </span>
             {/* The message unfolds from the bot when it stops and folds back before it walks off. */}
             <div className="ticker-reveal min-w-0">

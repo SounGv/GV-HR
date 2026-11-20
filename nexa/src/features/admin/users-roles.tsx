@@ -106,7 +106,7 @@ export function UsersRoles() {
                   แก้ไขบทบาท
                 </Button>
                 <Button variant="outline" className="h-11" render={<Link href={`/admin/users/${u.id}/ai-access`} />}>
-                  AI Assistant
+                  น้องวีบอท
                 </Button>
                 <Button
                   variant="outline"
@@ -125,10 +125,10 @@ export function UsersRoles() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead className="w-full">ผู้ใช้</TableHead>
                 <TableHead>บทบาท</TableHead>
-                <TableHead className="text-center">Action</TableHead>
+                <TableHead className="text-center">จัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,7 +165,7 @@ export function UsersRoles() {
                     แก้ไขบทบาท
                   </Button>
                   <Button variant="outline" size="sm" render={<Link href={`/admin/users/${u.id}/ai-access`} />}>
-                    AI Assistant
+                    น้องวีบอท
                   </Button>
                   <Button
                     variant="outline"

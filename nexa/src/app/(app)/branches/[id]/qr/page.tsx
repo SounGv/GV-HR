@@ -8,7 +8,7 @@ import { getBranch } from "@/features/branch/service";
 import { AppError } from "@/lib/api/errors";
 import { Card, CardContent } from "@/components/ui/card";
 
-export const metadata: Metadata = { title: "QR เช็คอินสาขา" };
+export const metadata: Metadata = { title: "QR ลงเวลาเข้างานสาขา" };
 
 export default async function BranchQrPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePagePermission("admin:read");
@@ -29,14 +29,14 @@ export default async function BranchQrPage({ params }: { params: Promise<{ id: s
       <Card className="mx-auto max-w-md print:border-none print:shadow-none">
         <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qr} alt={`QR เช็คอิน ${branch.name}`} width={320} height={320} className="rounded-lg" />
+          <img src={qr} alt={`QR ลงเวลาเข้างาน ${branch.name}`} width={320} height={320} className="rounded-lg" />
           <div>
             <p className="text-lg font-semibold text-foreground">{branch.name}</p>
             <p className="text-sm text-muted-foreground">{branch.code}</p>
             {branch.address && <p className="mt-1 text-sm text-muted-foreground">{branch.address}</p>}
           </div>
           <p className="text-xs text-muted-foreground">
-            สแกน QR นี้ในหน้าเช็คอิน/เช็คเอาท์ของแอป GV One เพื่อยืนยันตำแหน่งโดยไม่ต้องใช้ GPS
+            สแกน QR นี้ในหน้าลงเวลาเข้างาน/ลงเวลาออกงานของแอป GV One เพื่อยืนยันตำแหน่งโดยไม่ต้องใช้ GPS
           </p>
         </CardContent>
       </Card>

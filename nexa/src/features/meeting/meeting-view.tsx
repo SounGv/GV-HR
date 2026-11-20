@@ -85,7 +85,7 @@ function MeetingList({ scope }: { scope: "organizer" | "invitee" }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-14 text-center">No.</TableHead>
+          <TableHead className="w-14 text-center">ลำดับ</TableHead>
           <TableHead>วันและเวลา</TableHead>
           <TableHead className="w-full">เรื่องประชุม</TableHead>
           <TableHead>สถานที่</TableHead>

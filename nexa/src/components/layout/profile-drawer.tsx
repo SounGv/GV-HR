@@ -229,7 +229,7 @@ export function ProfileDrawer() {
                   >
                     <item.icon className="size-[18px] text-white" strokeWidth={3} />
                     {item.badge > 0 && (
-                      <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[9px] font-semibold text-badge-foreground ring-2 ring-card">
+                      <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground ring-2 ring-card">
                         {item.badge > 9 ? "9+" : item.badge}
                       </span>
                     )}

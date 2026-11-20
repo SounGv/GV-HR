@@ -3,7 +3,7 @@ import { requirePagePermission } from "@/lib/auth/page-guard";
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { CompetencyMatrixView } from "@/features/competency-matrix/matrix-view";
 
-export const metadata: Metadata = { title: "Competency Matrix" };
+export const metadata: Metadata = { title: "ตารางสมรรถนะ" };
 
 export default async function CompetencyMatrixPage() {
   await requirePagePermission("campaign:update");
@@ -14,10 +14,10 @@ export default async function CompetencyMatrixPage() {
         breadcrumbs={[
           { label: "ประเมินผลงาน", href: "/performance" },
           { label: "เกณฑ์การประเมิน", href: "/performance/competencies" },
-          { label: "Competency Matrix" },
+          { label: "ตารางสมรรถนะ" },
         ]}
         backHref="/performance/competencies"
-        title="Competency Matrix"
+        title="ตารางสมรรถนะ"
         description="กำหนดระดับสมรรถนะที่แต่ละตำแหน่งต้องมี ใช้เทียบกับระดับจริงของพนักงานแต่ละคน"
       />
       <CompetencyMatrixView />

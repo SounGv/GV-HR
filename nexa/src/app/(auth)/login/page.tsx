@@ -23,7 +23,7 @@ export default function LoginPage() {
       <section className="flex min-h-[190px] flex-col items-center justify-center gap-2 bg-[#0d47a1] px-6 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8 text-center text-white lg:min-h-dvh">
         <p className="text-[44px] leading-[1.15] font-bold tracking-tight lg:text-[64px]">
           GV One
-          <span className="mt-1 block text-[11px] font-medium tracking-[0.32em] text-white/85 lg:text-sm">GADGET VILLA</span>
+          <span className="mt-1 block text-xs font-medium tracking-[0.32em] text-white/85 lg:text-sm">GADGET VILLA</span>
         </p>
         <p className="text-[15px] text-white/90 lg:text-base">ระบบบริหารงานบุคคลและเงินเดือน</p>
       </section>

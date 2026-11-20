@@ -25,12 +25,12 @@ export function AuthBrandPanel({
 }) {
   return (
     <div className="relative hidden flex-col justify-between overflow-hidden bg-[#0d47a1] dark:bg-[#0a2f6b] p-10 text-white lg:flex xl:p-14">
-      {/* ambient glow */}
+      {/* ambient glow */}
 
       {cornerLogo ? (
         <Link href="/login" className="relative flex items-center gap-3">
           <Logo size={44} className="size-11" />
-          <div className="leading-tight">
+          <div className="leading-snug">
             <div className="font-semibold tracking-wide">GV ONE</div>
             <div className="text-xs tracking-[0.18em] text-slate-400">AI WORKFORCE PLATFORM</div>
           </div>

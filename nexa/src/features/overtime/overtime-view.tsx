@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PageActions } from "@/components/layout/page-chrome";
 import { Plus, Check, X, Timer, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
 
@@ -85,9 +86,11 @@ function MyRequests() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติคำขอ OT</h2>
-        <Button render={<Link href="/overtime/new" />}>
-          <Plus className="size-4" /> ขอ OT
-        </Button>
+        <PageActions>
+          <Button render={<Link href="/overtime/new" />}>
+            <Plus className="size-4" /> ขอ OT
+          </Button>
+        </PageActions>
       </div>
 
       {isError ? (
@@ -102,14 +105,14 @@ function MyRequests() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead>วันที่</TableHead>
                 <TableHead>เวลา</TableHead>
                 <TableHead>ชั่วโมง</TableHead>
                 <TableHead>อัตรา</TableHead>
                 <TableHead className="w-full">เหตุผล</TableHead>
                 <TableHead className="text-center">สถานะ</TableHead>
-                <TableHead className="text-center">Action</TableHead>
+                <TableHead className="text-center">จัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -211,14 +214,14 @@ function Approvals() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-14 text-center">No.</TableHead>
+            <TableHead className="w-14 text-center">ลำดับ</TableHead>
             <TableHead>ผู้ขอ</TableHead>
             <TableHead>วันที่</TableHead>
             <TableHead>เวลา</TableHead>
             <TableHead>ชั่วโมง</TableHead>
             <TableHead>อัตรา</TableHead>
             <TableHead className="w-full">เหตุผล</TableHead>
-            <TableHead className="text-center">Action</TableHead>
+            <TableHead className="text-center">จัดการ</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

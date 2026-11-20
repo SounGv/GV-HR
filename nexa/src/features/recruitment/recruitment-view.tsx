@@ -124,7 +124,7 @@ function Jobs({ canManage }: { canManage: boolean }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead className="w-full">ตำแหน่งงาน</TableHead>
               <TableHead>ฝ่าย / แผนก</TableHead>
               <TableHead>ประเภทการจ้าง</TableHead>
@@ -132,7 +132,7 @@ function Jobs({ canManage }: { canManage: boolean }) {
               <TableHead className="text-center">อัตรา</TableHead>
               <TableHead className="text-center">ผู้สมัคร</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              {canManage && <TableHead className="text-center">Action</TableHead>}
+              {canManage && <TableHead className="text-center">จัดการ</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -313,13 +313,13 @@ function Candidates({ canManage }: { canManage: boolean }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead className="w-full">ชื่อผู้สมัคร</TableHead>
               <TableHead>ตำแหน่งที่สมัคร</TableHead>
               <TableHead>อีเมล</TableHead>
               <TableHead>เบอร์โทร</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              {canManage && <TableHead className="text-center">Action</TableHead>}
+              {canManage && <TableHead className="text-center">จัดการ</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>

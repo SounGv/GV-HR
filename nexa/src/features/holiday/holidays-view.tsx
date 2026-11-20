@@ -107,12 +107,12 @@ export function HolidaysView() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead>วันที่</TableHead>
                 <TableHead className="w-full">ชื่อวันหยุด</TableHead>
                 <TableHead>ประเภท</TableHead>
                 <TableHead>การแจ้งเตือน</TableHead>
-                {(canEdit || canDelete) && <TableHead className="text-center">Action</TableHead>}
+                {(canEdit || canDelete) && <TableHead className="text-center">จัดการ</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>

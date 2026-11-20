@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { ArrowUp, FileSpreadsheet, Globe, Loader2, Wrench } from "lucide-react";
 import { toast } from "sonner";
-import { VBot, type VBotMood } from "@/components/shared/v-bot";
+import { AiMark } from "@/components/shared/ai-mark";
 import { MarkdownLite } from "./markdown-lite";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -67,8 +67,8 @@ function DownloadAnswer({ turn }: { turn: Turn }) {
 }
 
 /** The assistant's face: น้องวีบอท, the same on every message so the thread reads as a conversation. */
-function BotAvatar({ className, mood = "ok" }: { className?: string; mood?: VBotMood }) {
-  return <VBot mood={mood} className={cn("h-8 w-9", className)} />;
+function BotAvatar({ className }: { className?: string; mood?: string }) {
+  return <AiMark className={cn("size-8", className)} />;
 }
 
 export function AiChatView({
@@ -217,7 +217,7 @@ export function AiChatView({
               <p className="text-base font-semibold text-foreground">เลือกปุ่มลัด หรือพิมพ์คำสั่งสั้น</p>
             ) : (
               <>
-                <VBot mood="hi" full className="h-24 w-20" />
+                <AiMark className="h-24 w-20" />
                 <div>
                   <p className="text-base font-semibold text-foreground">สวัสดีครับ ผมน้องวีบอท</p>
                   <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
@@ -339,7 +339,7 @@ export function AiChatView({
                 void submit(input);
               }
             }}
-            aria-label="ข้อความถึง AI Assistant"
+            aria-label="ข้อความถึง น้องวีบอท"
             placeholder={fallback ? "พิมพ์คำสั่งสั้น เช่น ใครมาสายวันนี้" : "ถามเรื่องพนักงาน เวลาทำงาน การลา…"}
             rows={1}
             className="max-h-32 min-h-11 flex-1 resize-none border-0 bg-transparent px-0 py-2.5 text-sm shadow-none focus-visible:ring-0 dark:bg-transparent"

@@ -1,17 +1,19 @@
 "use client";
 
-import { useRef, type CSSProperties, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CalendarClock, Check, ClipboardList, FileText, Plus } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, ClipboardList, Eye, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CountUp } from "@/components/shared/count-up";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppraisalForms } from "@/features/appraisal-form/hooks";
 import type { FormListItem, FormStatus } from "@/features/appraisal-form/types";
@@ -52,16 +54,9 @@ function openRoundsBySoonest(rounds: RoundListItem[]) {
 }
 
 const ROUND_TONE: Record<RoundStatus, StatusTone> = { OPEN: "success", SCHEDULED: "warning", DRAFT: "warning", CLOSED: "neutral" };
-const ROUND_EDGE: Record<RoundStatus, string> = {
-  OPEN: "var(--success)",
-  SCHEDULED: "var(--warning)",
-  DRAFT: "var(--warning)",
-  CLOSED: "var(--status-notyet-dot)",
-};
 
 const FORM_LABEL: Record<FormStatus, string> = { DRAFT: "ฉบับร่าง", PUBLISHED: "ใช้งานอยู่", ARCHIVED: "เก็บแล้ว" };
 const FORM_TONE: Record<FormStatus, StatusTone> = { DRAFT: "warning", PUBLISHED: "success", ARCHIVED: "neutral" };
-const FORM_EDGE: Record<FormStatus, string> = { DRAFT: "var(--warning)", PUBLISHED: "var(--success)", ARCHIVED: "var(--status-notyet-dot)" };
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties;
 
@@ -74,22 +69,31 @@ export function useStartNewRound() {
   const router = useRouter();
   const create = useCreateRound();
   const busy = useRef(false);
-  async function start() {
+  const [asking, setAsking] = useState(false);
+  async function confirm() {
     if (busy.current) return;
     busy.current = true;
     try {
-      if (!window.confirm("สร้างรอบประเมินฉบับร่างใหม่? (ยังไม่ส่งถึงใคร จนกว่าจะเปิดรอบ)")) {
-        busy.current = false;
-        return;
-      }
       const res = await create.mutateAsync("รอบประเมินใหม่");
       router.push(`/appraisal/rounds/${res.data.id}`);
     } catch (err) {
       busy.current = false;
+      setAsking(false);
       toast.error(err instanceof ApiError ? err.message : "สร้างรอบไม่สำเร็จ");
     }
   }
-  return { start, pending: create.isPending || create.isSuccess };
+  const dialog = (
+    <ConfirmDialog
+      open={asking}
+      onOpenChange={(o) => !busy.current && setAsking(o)}
+      title="สร้างรอบประเมินฉบับร่างใหม่"
+      description="ยังไม่ส่งถึงใคร จนกว่าจะเปิดรอบ"
+      confirmLabel="สร้างรอบ"
+      loading={create.isPending || create.isSuccess}
+      onConfirm={confirm}
+    />
+  );
+  return { start: () => setAsking(true), dialog, pending: create.isPending || create.isSuccess };
 }
 
 /* ── header actions ─────────────────────────────────────────────────── */
@@ -105,6 +109,7 @@ export function OverviewActions({ className }: { className?: string }) {
           <Plus className="size-4" /> สร้างรอบประเมิน
         </Button>
       )}
+      {newRound.dialog}
     </div>
   );
 }
@@ -114,7 +119,7 @@ export function OverviewActions({ className }: { className?: string }) {
 /** White pill used for the one next action inside the hero. */
 function HeroPill({ href, onClick, disabled, children }: { href?: string; onClick?: () => void; disabled?: boolean; children: ReactNode }) {
   const cls =
-    "inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-4 text-sm font-bold text-[var(--on-hero-accent-fg)] transition-colors hover:bg-white/90 disabled:opacity-60 md:h-9";
+    "inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60 md:h-9";
   if (href) {
     return (
       <Link href={href} className={cls}>
@@ -143,9 +148,8 @@ function Eyebrow({ tone, children }: { tone: "waiting" | "open"; children: React
 type StepState = "done" | "now" | "later";
 
 const NOW_TILE: CSSProperties = {
-  background: "rgba(255,255,255,0.14)",
-  borderColor: "rgba(153,246,228,0.6)",
-  boxShadow: "0 0 0 1px rgba(153,246,228,0.35), inset 0 1px 0 rgba(255,255,255,0.16)",
+  borderColor: "var(--primary)",
+  boxShadow: "inset 3px 0 0 var(--primary)",
 };
 
 function StepTile({ n, state, title, note, action }: { n: number; state: StepState; title: string; note: string; action?: ReactNode }) {
@@ -155,8 +159,8 @@ function StepTile({ n, state, title, note, action }: { n: number; state: StepSta
         <span
           className={cn(
             "grid size-7 flex-none place-items-center rounded-full border text-sm font-bold",
-            state === "later" && "border-white/25 bg-white/15",
-            state === "now" && "border-white bg-white text-[var(--on-hero-accent-fg)]",
+            state === "later" && "border-border bg-muted",
+            state === "now" && "border-primary bg-primary text-primary-foreground",
             state === "done" && "border-[var(--on-hero-accent)] bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]",
           )}
           aria-hidden
@@ -168,7 +172,7 @@ function StepTile({ n, state, title, note, action }: { n: number; state: StepSta
           <span className="sr-only">{state === "done" ? " (เสร็จแล้ว)" : state === "now" ? " (ขั้นปัจจุบัน)" : " (ขั้นถัดไป)"}</span>
         </span>
       </div>
-      <p className="text-sm leading-relaxed break-words text-white">{note}</p>
+      <p className="text-sm leading-relaxed break-words text-foreground">{note}</p>
       {action && <div className="mt-1">{action}</div>}
     </li>
   );
@@ -239,11 +243,12 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
 
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" style={rise(0)} aria-labelledby="appraisal-hero-title">
+      {newRound.dialog}
       <Eyebrow tone="waiting">ยังไม่มีรอบที่เปิดอยู่</Eyebrow>
       <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold sm:text-[26px]">
         เตรียมให้พร้อมใน 3 ขั้น
       </h2>
-      <p className="mt-0.5 text-sm leading-relaxed text-white">{sub}</p>
+      <p className="mt-0.5 text-sm leading-relaxed text-foreground">{sub}</p>
       <ol className="mt-4 grid gap-3 sm:grid-cols-3">
         <StepTile
           n={1}
@@ -262,10 +267,10 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
 function Kpi({ label, value, unit, children }: { label: string; value: ReactNode; unit?: string; children?: ReactNode }) {
   return (
     <div className="gv-glass min-w-0 px-4 py-3.5">
-      <p className="text-sm leading-snug font-semibold text-white">{label}</p>
+      <p className="text-sm leading-snug font-semibold text-foreground">{label}</p>
       <p className="mt-1 text-[26px] leading-snug font-bold tabular-nums sm:text-[28px]">
         {value}
-        {unit && <span className="ml-1 text-xs font-medium text-white">{unit}</span>}
+        {unit && <span className="ml-1 text-xs font-medium text-foreground">{unit}</span>}
       </p>
       {children}
     </div>
@@ -280,7 +285,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
   const total = p?.total ?? round.total;
   const pct = total > 0 ? Math.round((submitted / total) * 100) : 0;
   const left = round.endIso ? daysUntil(round.endIso) : null;
-  const dash = <span className="text-white">–</span>;
+  const dash = <span className="text-foreground">–</span>;
 
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" style={rise(0)} aria-labelledby="appraisal-hero-title">
@@ -288,7 +293,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
       <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold break-words sm:text-[26px]">
         {round.name}
       </h2>
-      <p className="mt-0.5 text-sm leading-relaxed break-words text-white">
+      <p className="mt-0.5 text-sm leading-relaxed break-words text-foreground">
         {round.formName && <>ใช้ &ldquo;{round.formName}&rdquo; </>}
         ประเมิน {round.participantCount} คน
         {others > 0 && ` และยังมีอีก ${others} รอบที่เปิดอยู่`}
@@ -301,7 +306,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={pct}
-            className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15"
+            className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
           >
             <div className="gv-grow h-full rounded-full" style={{ width: `${pct}%`, background: "var(--on-hero-accent)" }} />
           </div>
@@ -317,46 +322,6 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
         )}
       </div>
     </section>
-  );
-}
-
-/* ── list rows ───────────────────────────────────────────────────────── */
-
-function ListRow({
-  href,
-  edge,
-  icon: Icon,
-  title,
-  meta,
-  chip,
-  linkText,
-}: {
-  href: string;
-  edge: string;
-  icon: typeof FileText;
-  title: string;
-  meta: string;
-  chip: ReactNode;
-  linkText: string;
-}) {
-  return (
-    <li className="border-t border-border/70 first:border-t-0">
-      <Link
-        href={href}
-        className="gv-edge grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-3 pr-4 pl-5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:gap-3.5"
-        style={{ "--edge": edge } as CSSProperties}
-      >
-        <span className="grid size-9 place-items-center rounded-lg border border-border bg-accent text-accent-foreground" aria-hidden>
-          <Icon className="size-4" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm leading-snug font-semibold break-words text-foreground">{title}</span>
-          <span className="block text-sm leading-relaxed text-muted-foreground tabular-nums">{meta}</span>
-        </span>
-        {chip}
-        <span className="hidden text-sm font-semibold whitespace-nowrap text-primary sm:inline">{linkText}</span>
-      </Link>
-    </li>
   );
 }
 
@@ -383,27 +348,45 @@ function RoundsSection({ rounds, hasPublished }: { rounds: RoundListItem[]; hasP
           className="gv-rise py-10"
         />
       ) : (
-        <Card className="gv-rise gap-0 py-0" style={rise(1)}>
-          <ul aria-label="รอบประเมิน">
-            {shown.map((r) => (
-              <ListRow
-                key={r.id}
-                href={`/appraisal/rounds/${r.id}`}
-                edge={ROUND_EDGE[r.status]}
-                icon={CalendarClock}
-                title={r.name}
-                meta={`${r.participantCount} คน · ${dateRange(r.startIso, r.endIso)}`}
-                chip={<StatusChip tone={ROUND_TONE[r.status]} label={ROUND_STATUS_LABEL[r.status]} />}
-                linkText="ดูรอบ →"
-              />
-            ))}
-          </ul>
+        <div className="gv-rise" style={rise(1)}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-full">ชื่อรอบ</TableHead>
+                <TableHead className="text-center">ผู้ถูกประเมิน</TableHead>
+                <TableHead>ช่วงเวลา</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead className="text-center">จัดการ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {shown.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="whitespace-normal">
+                    <Link href={`/appraisal/rounds/${r.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                      {r.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-center tabular-nums">{r.participantCount}</TableCell>
+                  <TableCell className="tabular-nums">{dateRange(r.startIso, r.endIso)}</TableCell>
+                  <TableCell className="text-center">
+                    <StatusChip tone={ROUND_TONE[r.status]} label={ROUND_STATUS_LABEL[r.status]} />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Link href={`/appraisal/rounds/${r.id}`} aria-label={`เปิดรอบ ${r.name}`} className={buttonVariants({ variant: "ghost", size: "icon", className: "size-9" })}>
+                      <Eye className="size-4" aria-hidden="true" />
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
           {rounds.length > MAX_ROWS && (
-            <p className="border-t border-border/70 px-5 py-2.5 text-sm text-muted-foreground">
+            <p className="px-1 py-2 text-sm text-muted-foreground">
               แสดง {MAX_ROWS} จาก {rounds.length} รอบ
             </p>
           )}
-        </Card>
+        </div>
       )}
     </section>
   );
@@ -495,22 +478,42 @@ function FormsSection() {
           }
         />
       ) : (
-        <Card className="gv-rise gap-0 py-0" style={rise(2)}>
-          <ul aria-label="แบบประเมิน">
-            {list.slice(0, MAX_ROWS).map((f) => (
-              <ListRow
-                key={f.id}
-                href={`/appraisal/forms/${f.id}`}
-                edge={f.questionCount === 0 ? "var(--destructive)" : FORM_EDGE[f.status]}
-                icon={FileText}
-                title={f.name}
-                meta={`เวอร์ชัน ${f.version} · ${f.questionCount > 0 ? `${f.questionCount} คำถาม` : "ยังไม่มีคำถาม"}`}
-                chip={formChip(f)}
-                linkText={f.questionCount === 0 ? "แก้ไข →" : f.status === "DRAFT" ? "ยืนยันใช้ →" : "ดูแบบ →"}
-              />
-            ))}
-          </ul>
-        </Card>
+        <div className="gv-rise" style={rise(2)}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-full">ชื่อแบบประเมิน</TableHead>
+                <TableHead className="text-center">เวอร์ชัน</TableHead>
+                <TableHead className="text-center">คำถาม</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead className="text-center">จัดการ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {list.slice(0, MAX_ROWS).map((f) => (
+                <TableRow key={f.id}>
+                  <TableCell className="whitespace-normal">
+                    <Link href={`/appraisal/forms/${f.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                      {f.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-center tabular-nums">{f.version}</TableCell>
+                  <TableCell className="text-center tabular-nums">{f.questionCount}</TableCell>
+                  <TableCell className="text-center">{formChip(f)}</TableCell>
+                  <TableCell className="text-center">
+                    <Link
+                      href={`/appraisal/forms/${f.id}`}
+                      aria-label={`${f.questionCount === 0 ? "แก้ไข" : f.status === "DRAFT" ? "ตรวจและยืนยันใช้" : "ดู"}แบบ ${f.name}`}
+                      className={buttonVariants({ variant: "ghost", size: "icon", className: "size-9" })}
+                    >
+                      {f.questionCount === 0 || f.status === "DRAFT" ? <Pencil className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </section>
   );

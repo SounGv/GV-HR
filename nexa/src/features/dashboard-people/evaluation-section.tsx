@@ -356,7 +356,7 @@ export function HrOpenRound({ round, faces }: { round: OpenRound; faces: Evaluat
           <ul className="divide-y divide-border">
             {top.map((p) => (
               <li key={p.employeeId} className="flex items-center gap-3 py-2">
-                <PersonAvatar name={p.name} gender={faces[p.employeeId]?.gender ?? null} seed={p.employeeId} src={faces[p.employeeId]?.photo ?? null} className="size-8 border border-border text-[11px] font-bold" />
+                <PersonAvatar name={p.name} gender={faces[p.employeeId]?.gender ?? null} seed={p.employeeId} src={faces[p.employeeId]?.photo ?? null} className="size-8 border border-border text-xs font-bold" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm leading-snug font-semibold break-words">{p.name}</span>
                   <span className="block text-xs leading-snug text-muted-foreground">{p.department}</span>

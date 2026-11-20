@@ -121,7 +121,7 @@ export function RecurrenceView() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead className="w-full">ชื่อรอบ</TableHead>
               <TableHead>แบบประเมิน</TableHead>
               <TableHead>ผู้ประเมิน</TableHead>
@@ -129,7 +129,7 @@ export function RecurrenceView() {
               <TableHead>3 รอบถัดไป</TableHead>
               <TableHead>สร้างไปแล้ว</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

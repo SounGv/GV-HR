@@ -47,7 +47,8 @@ const csvCell = (v: string | number | null) => `"${String(v ?? "").replace(/"/g,
  */
 export function RoundMatrix({ roundId, canFill = false }: { roundId: string; canFill?: boolean }) {
   const { data, isLoading, isError, refetch } = useRoundMatrix(roundId, true);
-  const [onlyOpen, setOnlyOpen] = useState(true);
+  // Starts on the people still to do; when everyone is done, it lists everyone instead of an empty page.
+  const [onlyOpenPick, setOnlyOpenPick] = useState<boolean | null>(null);
   const rows = useMemo(() => data?.data ?? [], [data]);
 
   const raters = useMemo(() => {
@@ -75,10 +76,11 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
   }, [rows]);
 
   const openRaters = raters.filter((g) => g.lines.some((l) => l.status !== "SUBMITTED"));
+  const onlyOpen = onlyOpenPick ?? openRaters.length > 0;
   const shown = (onlyOpen ? openRaters : raters).map((g) => ({ ...g, lines: onlyOpen ? g.lines.filter((l) => l.status !== "SUBMITTED") : g.lines }));
 
   function downloadExcel() {
-    const head = ["No.", "ผู้ประเมิน", "แผนก", "พนักงานที่ต้องประเมิน", "บทบาท", "สถานะ", "วันที่ส่ง", "คะแนน (%)"];
+    const head = ["ลำดับ", "ผู้ประเมิน", "แผนก", "พนักงานที่ต้องประเมิน", "บทบาท", "สถานะ", "วันที่ส่ง", "คะแนน (%)"];
     const lines: string[] = [head.map(csvCell).join(",")];
     shown.forEach((g, i) => {
       for (const l of g.lines) {
@@ -107,7 +109,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
           <button
             type="button"
             aria-pressed={onlyOpen}
-            onClick={() => setOnlyOpen((v) => !v)}
+            onClick={() => setOnlyOpenPick(!onlyOpen)}
             className={cn("min-h-11 rounded-full border px-4 text-sm font-medium md:min-h-9 md:px-3", onlyOpen ? "border-primary bg-accent" : "border-border bg-card")}
           >
             เฉพาะผู้ประเมินที่ยังไม่ครบ ({openRaters.length})
@@ -126,7 +128,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead>ผู้ประเมิน</TableHead>
               <TableHead>แผนก</TableHead>
               <TableHead className="w-full">พนักงานที่ต้องประเมิน</TableHead>

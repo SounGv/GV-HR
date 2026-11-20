@@ -105,7 +105,7 @@ function SettingsForm({ initial }: { initial: SettingsView }) {
   }
 
   return (
-    <div className="space-y-4 pb-6">
+    <div className="max-w-3xl space-y-4 pb-6">
       {!initial.configured && (
         <p className="flex items-start gap-2 rounded-lg bg-warning/10 px-4 py-3 text-sm text-warning">
           <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />

@@ -15,9 +15,9 @@ import { KIND_LABEL, RejectDialog, detailHref, itemLine, useApprovalQueue, type 
 type Filter = "all" | ReqItem["kind"];
 
 const KIND_TONE: Record<ReqItem["kind"], string> = {
-  leave: "border-status-leave-border bg-status-leave-bg text-status-leave-fg",
-  ot: "border-violet-200 bg-violet-50 text-violet-700",
-  correction: "border-border bg-surface-muted text-muted-foreground",
+  leave: "border-border bg-surface-muted text-foreground",
+  ot: "border-border bg-surface-muted text-foreground",
+  correction: "border-border bg-surface-muted text-foreground",
 };
 
 const DAY_MS = 86_400_000;
@@ -127,13 +127,13 @@ export function ApprovalsDesk() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-14 text-center">No.</TableHead>
+                  <TableHead className="w-14 text-center">ลำดับ</TableHead>
                   <TableHead>ผู้ขอ</TableHead>
                   <TableHead>ประเภท</TableHead>
                   <TableHead className="w-full">รายละเอียด</TableHead>
                   <TableHead>เหตุผล</TableHead>
                   <TableHead>รอมาแล้ว</TableHead>
-                  <TableHead className="text-center">Action</TableHead>
+                  <TableHead className="text-center">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

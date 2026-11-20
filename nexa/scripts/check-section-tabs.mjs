@@ -91,7 +91,7 @@ const SETTINGS = {
     it("ข้อมูลบริษัท", "/company", "x:read", { section: "บริษัท" }),
     it("สาขา", "/branches", "x:read", { section: "บริษัท" }),
     it("ศูนย์ต้นทุน", "/cost-centers", "x:read", { section: "บริษัท" }),
-    it("ตั้งค่าพื้นที่เช็คอิน", "/attendance/settings", "x:read", { section: "เวลาและการลา" }),
+    it("ตั้งค่าพื้นที่ลงเวลาเข้างาน", "/attendance/settings", "x:read", { section: "เวลาและการลา" }),
     it("ตั้งสิทธิ์ลาปีใหม่", "/leave/year-setup", "x:read", { section: "เวลาและการลา" }),
     it("สิทธิ์ลารายคน", "/leave/entitlements", "x:read", { section: "เวลาและการลา" }),
     it("เวิร์กโฟลว์อนุมัติ", "/workflows", "x:read", { section: "เวลาและการลา" }),
@@ -104,7 +104,7 @@ check("a long row is split into the menu's own sections, and the open section ho
   const s = atSettings("/leave/year-setup");
   assert.equal(s.tabs.length, 9, "all tabs are still known");
   assert.deepEqual(s.sections.map((c) => [c.name, c.active]), [["บริษัท", false], ["เวลาและการลา", true], ["ข้อมูล", false], ["ผู้ดูแล", false]]);
-  assert.deepEqual(s.visibleTabs.map((t) => t.label), ["ตั้งค่าพื้นที่เช็คอิน", "ตั้งสิทธิ์ลาปีใหม่", "สิทธิ์ลารายคน", "เวิร์กโฟลว์อนุมัติ"]);
+  assert.deepEqual(s.visibleTabs.map((t) => t.label), ["ตั้งค่าพื้นที่ลงเวลาเข้างาน", "ตั้งสิทธิ์ลาปีใหม่", "สิทธิ์ลารายคน", "เวิร์กโฟลว์อนุมัติ"]);
   assert.equal(s.sections.find((c) => c.name === "ข้อมูล").href, "/import", "a chip goes to the first tab of its section");
 });
 check("the evaluation group for HR is split into three sections; the active one follows the page", () => {

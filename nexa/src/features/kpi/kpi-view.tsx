@@ -125,7 +125,7 @@ export function KpiView() {
                       <div className="mt-2 flex items-center gap-2">
                         <Avatar className="size-6">
                           <AvatarImage src={g.employee.avatarUrl ?? undefined} />
-                          <AvatarFallback className="text-[10px]">
+                          <AvatarFallback className="text-xs">
                             {getInitials(g.employee.firstName, g.employee.lastName)}
                           </AvatarFallback>
                         </Avatar>

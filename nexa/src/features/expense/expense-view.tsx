@@ -122,7 +122,7 @@ function MyClaims() {
               <TableHead>หมวด</TableHead>
               <TableHead className="text-right">จำนวนเงิน</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -200,7 +200,7 @@ function Approvals() {
           <TableHead className="w-full">เรื่อง</TableHead>
           <TableHead>หมวด</TableHead>
           <TableHead className="text-right">จำนวนเงิน</TableHead>
-          <TableHead className="text-center">Action</TableHead>
+          <TableHead className="text-center">จัดการ</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -268,7 +268,7 @@ function ToPay() {
           <TableHead className="w-full">เรื่อง</TableHead>
           <TableHead>หมวด</TableHead>
           <TableHead className="text-right">จำนวนเงิน</TableHead>
-          <TableHead className="text-center">Action</TableHead>
+          <TableHead className="text-center">จัดการ</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

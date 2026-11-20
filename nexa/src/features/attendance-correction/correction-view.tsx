@@ -95,20 +95,20 @@ function MyRequests() {
       ) : isLoading ? (
         <TableLoadingState rows={4} />
       ) : requests.length === 0 ? (
-        <EmptyState icon={Clock3} title="ยังไม่มีคำขอแก้ไขเวลา" description="ส่งคำขอเมื่อลืมเช็คอิน-เอาท์ หรือเวลาผิดพลาด" />
+        <EmptyState icon={Clock3} title="ยังไม่มีคำขอแก้ไขเวลา" description="ส่งคำขอเมื่อลืมลงเวลาเข้างาน-เอาท์ หรือเวลาผิดพลาด" />
       ) : (
         <>
         <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead>วันที่ทำงาน</TableHead>
                 <TableHead>เวลาเข้า</TableHead>
                 <TableHead>เวลาออก</TableHead>
                 <TableHead className="w-full">เหตุผล</TableHead>
                 <TableHead className="text-center">สถานะ</TableHead>
-                <TableHead className="text-center">Action</TableHead>
+                <TableHead className="text-center">จัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -209,13 +209,13 @@ function Approvals() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-14 text-center">No.</TableHead>
+            <TableHead className="w-14 text-center">ลำดับ</TableHead>
             <TableHead>ผู้ขอ</TableHead>
             <TableHead>วันที่ทำงาน</TableHead>
             <TableHead>เวลาเข้า</TableHead>
             <TableHead>เวลาออก</TableHead>
             <TableHead className="w-full">เหตุผล</TableHead>
-            <TableHead className="text-center">Action</TableHead>
+            <TableHead className="text-center">จัดการ</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

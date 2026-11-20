@@ -14,7 +14,6 @@ import {
   Plug,
   type LucideIcon,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -57,22 +56,15 @@ export function IntegrationHub() {
 
   return (
     <div className="space-y-6">
-      {/* Adapter Pattern explainer */}
-      <Card className="relative overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white">
-
-        <div className="relative flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
-            <Plug className="size-6 text-primary" />
-          </span>
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-slate-300">เชื่อมต่อแบบเดียวกันทุกระบบ</p>
-            <p className="max-w-2xl text-sm leading-relaxed text-slate-200">
-              ทุกระบบภายนอกเชื่อมผ่าน<b className="text-white">ช่องทางมาตรฐานเดียว</b> จึงเปลี่ยนระบบบัญชีหรือผู้ให้บริการในอนาคต
-              <b className="text-white"> โดยไม่ต้องแก้โมดูลอื่นเลย</b>
-            </p>
-          </div>
-        </div>
-      </Card>
+      {/* Adapter Pattern explainer: a plain note, not a banner. */}
+      <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-primary">
+          <Plug className="size-5" aria-hidden="true" />
+        </span>
+        <p className="max-w-2xl text-sm leading-relaxed">
+          <b>เชื่อมต่อแบบเดียวกันทุกระบบ</b> ทุกระบบภายนอกเชื่อมผ่านช่องทางมาตรฐานเดียว จึงเปลี่ยนระบบบัญชีหรือผู้ให้บริการในอนาคตโดยไม่ต้องแก้โมดูลอื่น
+        </p>
+      </div>
 
       {CATEGORY_ORDER.filter((c) => grouped.has(c)).map((cat) => (
         <section key={cat} className="space-y-3">
@@ -80,12 +72,12 @@ export function IntegrationHub() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead>ระบบ</TableHead>
                 <TableHead className="w-full">รายละเอียด</TableHead>
                 <TableHead>ความสามารถ</TableHead>
                 <TableHead className="text-center">สถานะ</TableHead>
-                <TableHead className="text-center">Action</TableHead>
+                <TableHead className="text-center">จัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

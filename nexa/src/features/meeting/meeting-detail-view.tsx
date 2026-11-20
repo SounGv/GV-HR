@@ -120,7 +120,7 @@ export function MeetingDetailView({ id }: { id: string }) {
               <span className="flex min-w-0 items-center gap-2">
                 <Avatar className="size-7">
                   {a.employee.avatarUrl && <AvatarImage src={a.employee.avatarUrl} alt={a.employee.firstName} />}
-                  <AvatarFallback className="bg-primary text-[10px] text-primary-foreground">
+                  <AvatarFallback className="bg-primary text-xs text-primary-foreground">
                     {getInitials(a.employee.firstName, a.employee.lastName)}
                   </AvatarFallback>
                 </Avatar>

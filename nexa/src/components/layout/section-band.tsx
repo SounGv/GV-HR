@@ -201,7 +201,7 @@ export function SectionBand() {
                 >
                   {t.label}
                   {count > 0 && (
-                    <span className="min-w-5 rounded-full bg-primary px-1.5 text-center text-[11px] leading-5 font-bold text-primary-foreground tabular-nums">
+                    <span className="min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 font-bold text-primary-foreground tabular-nums">
                       {count > 99 ? "99+" : count}
                     </span>
                   )}

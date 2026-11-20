@@ -68,7 +68,7 @@ export function CompetencyView() {
         {canManage && (
           <div className="flex gap-2">
             <Button variant="outline" render={<Link href="/performance/competencies/matrix" />}>
-              <Grid3x3 className="size-4" /> Competency Matrix
+              <Grid3x3 className="size-4" /> ตารางสมรรถนะ
             </Button>
             <Button render={<Link href="/performance/competencies/new" />}>
               <Plus className="size-4" /> เพิ่มหัวข้อ

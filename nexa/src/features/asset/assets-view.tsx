@@ -186,13 +186,13 @@ export function AssetsView() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead>รหัส</TableHead>
                 <TableHead className="w-full">ทรัพย์สิน</TableHead>
                 <TableHead className="text-center">สถานะ</TableHead>
                 <TableHead>ผู้ถือครอง</TableHead>
                 <TableHead className="text-right">ราคา</TableHead>
-                {canManage && <TableHead className="text-center">Action</TableHead>}
+                {canManage && <TableHead className="text-center">จัดการ</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>

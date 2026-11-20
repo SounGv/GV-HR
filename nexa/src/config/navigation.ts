@@ -187,7 +187,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "ข้อมูลบริษัท", href: "/company", icon: Building2, permission: "admin:read", ready: true, section: "บริษัท" },
       { label: "สาขา", href: "/branches", icon: Building2, permission: "admin:read", ready: true, section: "บริษัท" },
       { label: "ศูนย์ต้นทุน", href: "/cost-centers", icon: Building2, permission: "admin:read", ready: true, section: "บริษัท" },
-      { label: "ตั้งค่าพื้นที่เช็คอิน", href: "/attendance/settings", icon: MapPinned, permission: "attendance:update", ready: true, section: "เวลาและการลา" },
+      { label: "ตั้งค่าพื้นที่ลงเวลาเข้างาน", href: "/attendance/settings", icon: MapPinned, permission: "attendance:update", ready: true, section: "เวลาและการลา" },
       { label: "ตั้งสิทธิ์ลาปีใหม่", href: "/leave/year-setup", icon: CalendarCheck, permission: "employee:update", ready: true, section: "เวลาและการลา" },
       { label: "สิทธิ์ลารายคน", href: "/leave/entitlements", icon: ClipboardList, permission: "employee:update", ready: true, section: "เวลาและการลา" },
       { label: "เวิร์กโฟลว์อนุมัติ", href: "/workflows", icon: GitBranch, permission: "workflow:read", ready: true, section: "เวลาและการลา" },

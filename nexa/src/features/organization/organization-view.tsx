@@ -155,11 +155,11 @@ export function OrganizationView() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead className="w-full">ฝ่าย / แผนก</TableHead>
                 <TableHead>รหัส</TableHead>
                 <TableHead className="text-center">พนักงาน</TableHead>
-                {(canUpdate || canDelete) && <TableHead className="text-center">Action</TableHead>}
+                {(canUpdate || canDelete) && <TableHead className="text-center">จัดการ</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -232,13 +232,13 @@ export function OrganizationView() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead className="w-full">ตำแหน่ง</TableHead>
                 <TableHead>ระดับ</TableHead>
                 <TableHead>รหัส</TableHead>
                 <TableHead>ฝ่าย / แผนก</TableHead>
                 <TableHead className="text-center">พนักงาน</TableHead>
-                {(canUpdate || canDelete) && <TableHead className="text-center">Action</TableHead>}
+                {(canUpdate || canDelete) && <TableHead className="text-center">จัดการ</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>

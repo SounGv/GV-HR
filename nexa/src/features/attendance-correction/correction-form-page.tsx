@@ -163,7 +163,7 @@ export function CorrectionFormPage() {
               <FormItem>
                 <FormLabel>เหตุผล</FormLabel>
                 <FormControl>
-                  <Textarea rows={2} placeholder="เช่น ลืมเช็คอิน / ระบบขัดข้องตอนสแกน" {...field} />
+                  <Textarea rows={2} placeholder="เช่น ลืมลงเวลาเข้างาน / ระบบขัดข้องตอนสแกน" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

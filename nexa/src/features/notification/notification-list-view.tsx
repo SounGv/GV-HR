@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PageActions } from "@/components/layout/page-chrome";
 import { Bell, CheckCheck, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,10 +39,12 @@ export function NotificationListView() {
           <span />
         )}
         {can("notification:create") && (
-          <Button size="sm" className="gap-1.5" render={<Link href="/notifications/new" />}>
-            <Send className="size-3.5" />
-            ส่งแจ้งเตือน
-          </Button>
+          <PageActions>
+            <Button size="sm" className="gap-1.5" render={<Link href="/notifications/new" />}>
+              <Send className="size-3.5" />
+              ส่งแจ้งเตือน
+            </Button>
+          </PageActions>
         )}
       </div>
 
@@ -50,12 +53,12 @@ export function NotificationListView() {
       ) : isLoading ? (
         <TableLoadingState rows={4} />
       ) : items.length === 0 ? (
-        <EmptyState icon={Bell} title="ยังไม่มีการแจ้งเตือน" />
+        <EmptyState icon={Bell} title="ยังไม่มีการแจ้งเตือน" description="เมื่อมีคำขอรออนุมัติหรือประกาศใหม่ จะแสดงที่นี่" />
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead>วันที่</TableHead>
               <TableHead>หัวข้อ</TableHead>
               <TableHead className="w-full">รายละเอียด</TableHead>

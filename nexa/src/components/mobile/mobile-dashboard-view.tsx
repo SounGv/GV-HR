@@ -264,7 +264,7 @@ function TodoIcon({ count, children }: { count: number; children: React.ReactNod
     <span className="relative flex size-10 shrink-0 items-center justify-center text-primary">
       {children}
       {count > 0 && (
-        <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">
+        <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-xs font-bold text-badge-foreground ring-2 ring-card">
           {count > 9 ? "9+" : count}
         </span>
       )}

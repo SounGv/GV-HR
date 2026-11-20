@@ -45,11 +45,11 @@ export interface IntegrationDescriptor {
 }
 
 export const CATEGORY_LABEL: Record<IntegrationCategory, string> = {
-  erp: "ERP / HRIS",
-  productivity: "Productivity",
-  messaging: "Messaging",
-  storage: "Storage",
-  api: "API & Automation",
+  erp: "ระบบบัญชีและบุคคล (ERP)",
+  productivity: "เครื่องมือทำงาน",
+  messaging: "การส่งข้อความ",
+  storage: "ที่เก็บไฟล์",
+  api: "API และระบบอัตโนมัติ",
 };
 
 /**
@@ -78,7 +78,7 @@ export const INTEGRATIONS: IntegrationDescriptor[] = [
     description: "ส่งแจ้งเตือนสลิปเงินเดือน อนุมัติลา และประกาศผ่าน LINE",
     icon: "MessageCircle",
     status: "available",
-    capabilities: ["แจ้งเตือน", "Push message", "Rich menu"],
+    capabilities: ["แจ้งเตือน", "ส่งข้อความเข้าแอป", "เมนูในแอป LINE"],
     configFields: [
       { key: "channelId", label: "Channel ID" },
       { key: "channelSecret", label: "Channel Secret", secret: true },

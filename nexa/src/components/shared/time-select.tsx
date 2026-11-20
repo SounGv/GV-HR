@@ -73,12 +73,12 @@ export function HourMinuteSelect({
   };
   return (
     // No native arrow and centred digits: on a phone two pickers share half a row, and the arrow covered "08" / "59".
-    <div className="flex min-w-0 items-center gap-1">
+    <div className="flex min-w-[10rem] items-center gap-1">
       <select
         id={id}
         aria-label="ชั่วโมง"
         aria-invalid={ariaInvalid}
-        className={cn("min-w-0 flex-1 appearance-none text-center tabular-nums", className)}
+        className={cn("min-w-[3.25rem] flex-1 appearance-none text-center tabular-nums", className)}
         value={h ?? ""}
         onBlur={onBlur}
         onChange={(e) => set(e.target.value, m || "00")}
@@ -94,7 +94,7 @@ export function HourMinuteSelect({
       <select
         aria-label="นาที"
         aria-invalid={ariaInvalid}
-        className={cn("min-w-0 flex-1 appearance-none text-center tabular-nums", className)}
+        className={cn("min-w-[3.25rem] flex-1 appearance-none text-center tabular-nums", className)}
         value={m ?? ""}
         onBlur={onBlur}
         onChange={(e) => set(h || "00", e.target.value)}

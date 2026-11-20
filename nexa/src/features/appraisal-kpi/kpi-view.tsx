@@ -64,11 +64,11 @@ export function KpiView() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-14 text-center">ลำดับ</TableHead>
               <TableHead className="w-full">ชื่อโปรไฟล์</TableHead>
               <TableHead className="text-center">ตัวชี้วัด</TableHead>
               <TableHead className="text-center">แถบสี</TableHead>
-              <TableHead className="text-center">Action</TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -148,7 +148,7 @@ export function StepIllustration({
             <MapPin className="size-2.5" /> อยู่ในระยะ
           </span>
           <div className="flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-primary text-[12px] font-bold text-primary-foreground shadow-sm">
-            <Camera className="size-4" /> เช็คอิน
+            <Camera className="size-4" /> ลงเวลาเข้างาน
           </div>
         </div>
       )}

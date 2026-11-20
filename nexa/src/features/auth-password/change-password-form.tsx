@@ -92,14 +92,14 @@ export function ChangePasswordForm() {
       {/* Side panel: what this does and what happens after. */}
       {/* .gv-hero is unlayered CSS, so its corner radius is reset inline (a utility class would lose). */}
       <div className="gv-hero relative flex flex-col gap-4 p-5 sm:p-6" style={{ borderRadius: 0, boxShadow: "none" }}>
-        <span className="flex size-12 items-center justify-center rounded-lg border border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+        <span className="flex size-12 items-center justify-center rounded-lg border border-border bg-muted ">
           <LockKeyhole className="size-6" aria-hidden="true" />
         </span>
         <div>
           <h2 className="text-[22px] leading-snug font-bold">เปลี่ยนรหัสผ่าน</h2>
-          <p className="mt-1 text-[13.5px] leading-relaxed text-white">ตั้งรหัสใหม่ที่เดาได้ยาก และไม่ใช้ซ้ำกับเว็บอื่น</p>
+          <p className="mt-1 text-[13.5px] leading-relaxed text-foreground">ตั้งรหัสใหม่ที่เดาได้ยาก และไม่ใช้ซ้ำกับเว็บอื่น</p>
         </div>
-        <p className="gv-glass mt-auto flex items-start gap-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-white">
+        <p className="gv-glass mt-auto flex items-start gap-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-foreground">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#90caf9]" aria-hidden="true" />
           หลังเปลี่ยนแล้ว อุปกรณ์อื่นที่เคยเข้าสู่ระบบไว้จะถูกออกจากระบบทั้งหมด ยกเว้นเครื่องนี้
         </p>

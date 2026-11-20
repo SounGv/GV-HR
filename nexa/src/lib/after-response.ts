@@ -2,7 +2,7 @@ import { after } from "next/server";
 
 /**
  * Runs best-effort work (LINE messages) after the response has gone out, so the
- * person tapping "เช็คอิน" or "ส่งคำขอลา" does not wait on LINE. Vercel keeps
+ * person tapping "ลงเวลาเข้างาน" or "ส่งคำขอลา" does not wait on LINE. Vercel keeps
  * the function alive until the work finishes.
  *
  * Outside a request (scripts, cron helpers called directly) there is no

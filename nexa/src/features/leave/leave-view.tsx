@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PageActions } from "@/components/layout/page-chrome";
 import { Plus, Check, X, CalendarDays, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
 
@@ -113,9 +114,11 @@ function MyRequests() {
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติการลา</h2>
-        <Button render={<Link href="/leave/new" />}>
-          <Plus className="size-4" /> ขอลา
-        </Button>
+        <PageActions>
+          <Button render={<Link href="/leave/new" />}>
+            <Plus className="size-4" /> ขอลา
+          </Button>
+        </PageActions>
       </div>
 
       {isError ? (
@@ -130,13 +133,13 @@ function MyRequests() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead>ประเภทการลา</TableHead>
                 <TableHead>วันที่ลา</TableHead>
                 <TableHead>จำนวน</TableHead>
                 <TableHead className="w-full">เหตุผล</TableHead>
                 <TableHead className="text-center">สถานะ</TableHead>
-                <TableHead className="text-center">Action</TableHead>
+                <TableHead className="text-center">จัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -244,13 +247,13 @@ function Approvals() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-14 text-center">No.</TableHead>
+            <TableHead className="w-14 text-center">ลำดับ</TableHead>
             <TableHead>ผู้ขอลา</TableHead>
             <TableHead>ประเภทการลา</TableHead>
             <TableHead>วันที่ลา</TableHead>
             <TableHead>จำนวน</TableHead>
             <TableHead className="w-full">เหตุผล</TableHead>
-            <TableHead className="text-center">Action</TableHead>
+            <TableHead className="text-center">จัดการ</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -373,7 +376,7 @@ function TeamLeaveList({ title, rows, empty }: { title: string; rows: LeaveReque
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead>ผู้ขอลา</TableHead>
                 <TableHead>ประเภทการลา</TableHead>
                 <TableHead>วันที่ลา</TableHead>

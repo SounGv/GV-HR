@@ -126,7 +126,7 @@ export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
           {!data.isWorkingDay ? (
             <p className="mt-3 text-base">วันนี้ไม่ใช่วันทำงาน ({data.nonWorkingReason}) จึงไม่นับสาย ขาด หรือลา</p>
           ) : total === 0 ? (
-            <p className="mt-3 text-base">ยังไม่มีพนักงานที่ใช้เช็คอินในแอปในขอบเขตที่เลือก</p>
+            <p className="mt-3 text-base">ยังไม่มีพนักงานที่ใช้ลงเวลาเข้างานในแอปในขอบเขตที่เลือก</p>
           ) : (
             <ul className="mt-2 flex flex-wrap gap-x-5">
               {STATUS_ORDER.map((s) => (
@@ -144,7 +144,7 @@ export function AttendanceStatusBar({ data, departmentIds }: SectionProps) {
           )}
           {data.notChecked > 0 && (
             <p className="mt-1 text-sm">
-              ไม่นับ {data.notChecked} คนที่ยังไม่เคยใช้เช็คอินในแอป (ไม่ถือว่าขาดงาน)
+              ไม่นับ {data.notChecked} คนที่ยังไม่เคยใช้ลงเวลาเข้างานในแอป (ไม่ถือว่าขาดงาน)
             </p>
           )}
         </div>

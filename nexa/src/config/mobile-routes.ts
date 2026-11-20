@@ -160,7 +160,7 @@ const PATTERNS: RoutePattern[] = [
   { pattern: /^\/assets\/[^/]+$/, meta: { title: "รายละเอียดทรัพย์สิน", backHref: "/assets" } },
   { pattern: /^\/holidays\/[^/]+\/edit$/, meta: { title: "แก้ไขวันหยุด", backHref: "/holidays" } },
   { pattern: /^\/holidays\/[^/]+$/, meta: { title: "รายละเอียดวันหยุด", backHref: "/holidays" } },
-  { pattern: /^\/branches\/[^/]+\/qr$/, meta: { title: "QR เช็คอิน", backHref: "/branches" } },
+  { pattern: /^\/branches\/[^/]+\/qr$/, meta: { title: "QR ลงเวลาเข้างาน", backHref: "/branches" } },
   { pattern: /^\/branches\/[^/]+\/edit$/, meta: { title: "แก้ไขสาขา", backHref: "/branches" } },
   { pattern: /^\/cost-centers\/[^/]+\/edit$/, meta: { title: "แก้ไขศูนย์ต้นทุน", backHref: "/cost-centers" } },
   { pattern: /^\/organization\/departments\/[^/]+\/edit$/, meta: { title: "แก้ไขแผนก", backHref: "/organization" } },

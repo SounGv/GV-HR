@@ -461,9 +461,9 @@ function FormEditor({ form }: { form: FormDetail }) {
                 setName(e.target.value);
                 setDirty(true);
               }}
-              className="min-w-0 flex-1 border-0 border-b-[1.5px] border-dashed border-white/35 bg-transparent py-0.5 text-[22px] leading-snug font-bold text-white outline-none focus:border-[var(--on-hero-accent)] disabled:border-transparent sm:min-w-[260px]"
+              className="min-w-0 flex-1 border-0 border-b-[1.5px] border-dashed border-border bg-transparent py-0.5 text-[22px] leading-snug font-bold text-foreground outline-none focus:border-[var(--on-hero-accent)] disabled:border-transparent sm:min-w-[260px]"
             />
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-xs font-bold">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-bold">
               <span
                 className={cn("size-1.5 rounded-full", locked ? "bg-status-normal-dot" : "bg-status-late-dot")}
                 aria-hidden="true"
@@ -481,12 +481,12 @@ function FormEditor({ form }: { form: FormDetail }) {
             ] as const
           ).map(([k, v]) => (
             <div key={k} className="gv-glass min-w-[64px] px-3 py-2">
-              <dt className="text-xs text-white">{k}</dt>
+              <dt className="text-xs text-foreground">{k}</dt>
               <dd className="text-xl leading-snug font-bold tabular-nums">{v}</dd>
             </div>
           ))}
           <div className="gv-glass min-w-[84px] px-3 py-2">
-            <dt className="text-xs text-white">ความพร้อม</dt>
+            <dt className="text-xs text-foreground">ความพร้อม</dt>
             <dd
               className="pt-0.5 text-base leading-snug font-bold"
               style={{ color: problems.length ? "var(--status-late-dot)" : undefined }}
@@ -499,7 +499,7 @@ function FormEditor({ form }: { form: FormDetail }) {
           <div className="flex w-full gap-2 sm:w-auto">
             <Button
               variant="outline"
-              className="h-11 flex-1 border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
+              className="h-11 flex-1 border-border bg-transparent text-foreground hover:bg-accent hover:text-foreground"
               disabled={busy}
               onClick={async () => {
                 if (await saveDraft()) toast.success("บันทึกฉบับร่างแล้ว");
@@ -508,7 +508,7 @@ function FormEditor({ form }: { form: FormDetail }) {
               {save.isPending ? "กำลังบันทึก…" : dirty ? "บันทึกร่าง •" : "บันทึกร่าง"}
             </Button>
             <Button
-              className="h-11 flex-1 bg-white font-bold text-[var(--on-hero-accent-fg)] hover:bg-white/90"
+              className="h-11 flex-1 bg-primary font-bold text-primary-foreground hover:bg-primary/90"
               disabled={busy || problems.length > 0}
               title={problems.join(" · ")}
               onClick={() => setConfirmPublish(true)}

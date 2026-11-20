@@ -275,7 +275,7 @@ function MedicalTable({ rows }: { rows: MedicalReportRow[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-14 text-center">No.</TableHead>
+          <TableHead className="w-14 text-center">ลำดับ</TableHead>
           <TableHead className="w-full">พนักงาน</TableHead>
           <TableHead>แผนก</TableHead>
           <TableHead className="text-right">วงเงินทั้งหมด</TableHead>
@@ -316,7 +316,7 @@ function LoanTable({ rows }: { rows: LoanReportRow[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-14 text-center">No.</TableHead>
+          <TableHead className="w-14 text-center">ลำดับ</TableHead>
           <TableHead className="w-full">พนักงาน</TableHead>
           <TableHead>แผนก</TableHead>
           <TableHead className="text-right">เงินเดือน ณ วันที่กู้</TableHead>

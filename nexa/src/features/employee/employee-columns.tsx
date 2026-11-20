@@ -99,7 +99,7 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
     },
     {
       id: "actions",
-      header: "Action",
+      header: "จัดการ",
       enableSorting: false,
       cell: ({ row }) => {
         const e = row.original;
