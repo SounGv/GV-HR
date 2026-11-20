@@ -8,7 +8,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className="relative w-full overflow-x-auto rounded-sm border border-border bg-card"
     >
       <table
         data-slot="table"
@@ -32,7 +32,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("bg-[#f8fafb] dark:bg-muted [&_tr]:border-b", className)}
+      className={cn("bg-card [&_tr]:border-b", className)}
       {...props}
     />
   )
@@ -66,7 +66,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "group border-b border-[#eef1f3] transition-colors hover:bg-[#f6f8f9] has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted dark:border-[color:var(--row-divider)] dark:hover:bg-muted/50",
+        "group border-b border-border transition-colors hover:bg-[#f6f9fe] has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted dark:border-[color:var(--row-divider)] dark:hover:bg-muted/50",
         className
       )}
       {...props}
@@ -79,7 +79,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-3 text-left align-middle text-xs font-semibold whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        "h-10 border-r border-border px-3 text-left align-middle text-[13px] font-bold whitespace-nowrap text-foreground last:border-r-0 [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}
@@ -92,7 +92,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "px-3 py-2.5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        "border-r border-border px-3 py-2 align-middle whitespace-nowrap last:border-r-0 [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}

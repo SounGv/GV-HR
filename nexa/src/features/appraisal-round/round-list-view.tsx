@@ -7,7 +7,7 @@ import { CalendarClock, ClipboardList, Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
@@ -79,32 +79,59 @@ export function RoundListView() {
       ) : rounds.length === 0 ? (
         <EmptyState icon={ClipboardList} title="ยังไม่มีรอบประเมิน" description="กด “สร้างรอบประเมิน” เพื่อเริ่ม (ต้องมีแบบประเมินที่ยืนยันใช้แล้วก่อน)" />
       ) : (
-        <Card className="gap-0 divide-y divide-border p-0">
-          {rounds.map((r) => (
-            <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <Link href={`/appraisal/rounds/${r.id}`} className="min-w-0 flex-1 hover:underline">
-                <span className="block text-sm font-semibold break-words text-foreground">{r.name}</span>
-                <span className="block text-sm text-muted-foreground">
-                  {r.formName} · {r.participantCount} คน · {r.startIso || r.endIso ? `${fmt(r.startIso)} – ${fmt(r.endIso)}` : "ยังไม่กำหนดวัน"}
-                  {r.total > 0 && ` · ส่งแล้ว ${r.submitted}/${r.total}`}
-                </span>
-              </Link>
-              <div className="flex items-center gap-2">
-                {r.isTemplate ? <StatusChip tone="info" label="แม่แบบ" /> : <StatusChip tone={TONE[r.status]} label={ROUND_STATUS_LABEL[r.status]} />}
-                {can("campaign:create") && (
-                  <Button variant="ghost" size="icon" className="size-11 md:size-9" aria-label={`สร้างรอบใหม่จาก ${r.name}`} disabled={clone.isPending} onClick={() => copyRound(r)}>
-                    <Copy className="size-4" />
-                  </Button>
-                )}
-                {can("campaign:delete") && r.status === "DRAFT" && (
-                  <Button variant="ghost" size="icon" className="size-11 md:size-9" aria-label={`ลบฉบับร่าง ${r.name}`} onClick={() => setTarget(r)}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>วันที่เริ่ม</TableHead>
+              <TableHead>ถึงวันที่</TableHead>
+              <TableHead className="w-full">ชื่อรอบประเมิน</TableHead>
+              <TableHead>แบบประเมิน</TableHead>
+              <TableHead className="text-center">ผู้ถูกประเมิน</TableHead>
+              <TableHead className="text-center">ส่งแล้ว</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+              <TableHead className="text-center">ตั้งค่า</TableHead>
+              <TableHead className="text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rounds.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="tabular-nums">{fmt(r.startIso)}</TableCell>
+                <TableCell className="tabular-nums">{fmt(r.endIso)}</TableCell>
+                <TableCell className="whitespace-normal">
+                  <Link href={`/appraisal/rounds/${r.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                    {r.name}
+                  </Link>
+                </TableCell>
+                <TableCell>{r.formName}</TableCell>
+                <TableCell className="text-center tabular-nums">{r.participantCount}</TableCell>
+                <TableCell className="text-center tabular-nums">{r.total > 0 ? `${r.submitted}/${r.total}` : "-"}</TableCell>
+                <TableCell className="text-center">
+                  {r.isTemplate ? <StatusChip tone="info" label="แม่แบบ" /> : <StatusChip tone={TONE[r.status]} label={ROUND_STATUS_LABEL[r.status]} />}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Link href={`/appraisal/rounds/${r.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                    ตั้งค่ารอบประเมิน
+                  </Link>
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    {can("campaign:create") && (
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`สร้างรอบใหม่จาก ${r.name}`} disabled={clone.isPending} onClick={() => copyRound(r)}>
+                        <Copy className="size-4" />
+                      </Button>
+                    )}
+                    {can("campaign:delete") && r.status === "DRAFT" && (
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`ลบฉบับร่าง ${r.name}`} onClick={() => setTarget(r)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <ConfirmDialog
