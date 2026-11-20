@@ -195,7 +195,7 @@ function Toggle({
       <span
         aria-hidden="true"
         className={cn(
-          "relative h-6 w-10 rounded-full transition-colors after:absolute after:top-[3px] after:size-[18px] after:rounded-full after:bg-white after:shadow-[0_1px_3px_rgba(0,0,0,.25)] after:transition-[left] after:duration-200 motion-reduce:after:transition-none",
+          "relative h-6 w-10 rounded-full transition-colors after:absolute after:top-[3px] after:size-[18px] after:rounded-full after:bg-white  after:transition-[left] after:duration-200 motion-reduce:after:transition-none",
           on ? "bg-[#1565c0] after:left-[19px]" : "dark:bg-muted bg-[#cfd6dc] after:left-[3px]",
         )}
       />

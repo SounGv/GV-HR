@@ -33,7 +33,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
   return (
     <section
       aria-label="รอคุณอนุมัติ"
-      className="gv-lift flex flex-col rounded-lg border border-border bg-card shadow-[var(--card-shadow)]"
+      className="gv-lift flex flex-col rounded-lg border border-border bg-card "
     >
       <div className="flex items-center gap-2 px-4 pt-3.5">
         <h3 className="text-[15px] font-semibold">คำขอทั้งหมด</h3>
@@ -84,7 +84,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
           {tiles.length > 0 && (
             <Link
               href="/requests?view=approvals"
-              className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0d47a1]"
+              className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white  transition-colors hover:bg-[#0d47a1]"
             >
               ตรวจอนุมัติ <ArrowRight className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
             </Link>

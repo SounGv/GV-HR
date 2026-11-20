@@ -499,7 +499,7 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
         <div className="flex items-center gap-3">
           <span
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-md",
+              "flex size-10 shrink-0 items-center justify-center rounded-full text-white ",
               warn ? "bg-[#b88200]" : "bg-[#1565c0]",
             )}
           >
@@ -631,7 +631,7 @@ function OffsiteStep({
       )}
       <div className="absolute inset-x-3.5 top-[calc(env(safe-area-inset-top)+0.625rem)]">
         <div className="gv-lg flex items-center gap-2.5 rounded-full px-3.5 py-2">
-          <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[#b88200] text-white shadow-md">
+          <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[#b88200] text-white ">
             <AlertTriangle className="size-[18px]" aria-hidden="true" />
           </span>
           <div className="min-w-0">
@@ -685,7 +685,7 @@ function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onR
   return (
     <div role="alert" className="flex flex-1 items-center px-[18px] pb-16">
       <div className="gv-lg w-full rounded-lg px-[18px] py-6 text-center">
-        <span className="mx-auto flex size-[68px] items-center justify-center rounded-full bg-[#b42318] text-white shadow-sm">
+        <span className="mx-auto flex size-[68px] items-center justify-center rounded-full bg-[#b42318] text-white ">
           <X className="size-8" aria-hidden="true" />
         </span>
         <h2 className="mt-3 text-[22px] leading-snug font-bold">ลงเวลาไม่สำเร็จ</h2>
@@ -751,7 +751,7 @@ function SuccessStep({
           insets={{ top: 60, bottom: 400 }}
           className="absolute inset-0"
         >
-          <span className="absolute top-[calc(env(safe-area-inset-top)+0.75rem)] left-3 z-10 inline-flex min-h-[30px] items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-[#17774a] shadow-md">
+          <span className="absolute top-[calc(env(safe-area-inset-top)+0.75rem)] left-3 z-10 inline-flex min-h-[30px] items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-[#17774a] ">
             <CheckCircle2 className="size-4" aria-hidden="true" /> บันทึกที่จุดนี้ {fmtTime(time)}
           </span>
         </TileMap>
@@ -761,7 +761,7 @@ function SuccessStep({
 
       <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-lg px-[18px] pt-5 pb-[18px]">
         <div className="flex items-center gap-3">
-          <span className="gv-confirm flex size-10 shrink-0 items-center justify-center rounded-full bg-[#1565c0] text-white shadow-md">
+          <span className="gv-confirm flex size-10 shrink-0 items-center justify-center rounded-full bg-[#1565c0] text-white ">
             <CheckCircle2 className="size-5" />
           </span>
           <div className="min-w-0">

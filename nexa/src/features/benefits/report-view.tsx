@@ -226,7 +226,7 @@ function MedicalCards({ rows }: { rows: MedicalReportRow[] }) {
   return (
     <ul className="space-y-3">
       {rows.map((r) => (
-        <li key={r.employeeId} className="rounded-lg bg-card p-4 shadow-sm ring-1 ring-border/60">
+        <li key={r.employeeId} className="rounded-lg bg-card p-4  ring-1 ring-border/60">
           <p className="text-base font-semibold break-words text-foreground">{r.employeeName}</p>
           <p className="text-sm text-muted-foreground">
             {r.employeeCode} · {r.department ?? "ไม่มีแผนก"}
@@ -251,7 +251,7 @@ function LoanCards({ rows }: { rows: LoanReportRow[] }) {
   return (
     <ul className="space-y-3">
       {rows.map((r) => (
-        <li key={r.loanId} className="rounded-lg bg-card p-4 shadow-sm ring-1 ring-border/60">
+        <li key={r.loanId} className="rounded-lg bg-card p-4  ring-1 ring-border/60">
           <p className="text-base font-semibold break-words text-foreground">{r.employeeName}</p>
           <p className="text-sm text-muted-foreground">
             {r.employeeCode} · {r.department ?? "ไม่มีแผนก"}

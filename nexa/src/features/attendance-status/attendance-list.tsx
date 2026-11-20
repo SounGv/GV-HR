@@ -155,7 +155,7 @@ export function AttendanceList({ people, status }: { people: TodayPerson[]; stat
                 type="button"
                 onClick={() => open(p)}
                 className={cn(
-                  "w-full rounded-lg border border-border bg-card p-3.5 text-left shadow-sm active:brightness-95",
+                  "w-full rounded-lg border border-border bg-card p-3.5 text-left  active:brightness-95",
                   STATUS_META[p.status].card,
                 )}
               >

@@ -410,7 +410,7 @@ function ReportSection({
                           // so scrolling a wide table right never loses track
                           // of which row belongs to whom.
                           c.key === "code" && "sticky left-0 z-20 w-[72px] bg-card",
-                          c.key === "name" && "sticky left-[72px] z-20 min-w-[160px] bg-card shadow-[2px_0_4px_-2px_rgb(0_0_0_/_0.15)]",
+                          c.key === "name" && "sticky left-[72px] z-20 min-w-[160px] bg-card ",
                         )}
                       >
                         {unitMatch ? (
@@ -444,7 +444,7 @@ function ReportSection({
                               ci === 0 && rowBar,
                               c.key === "code" && `sticky left-0 z-10 w-[72px] ${pinnedBg}`,
                               c.key === "name" &&
-                                `sticky left-[72px] z-10 min-w-[160px] ${pinnedBg} shadow-[2px_0_4px_-2px_rgb(0_0_0_/_0.15)]`,
+                                `sticky left-[72px] z-10 min-w-[160px] ${pinnedBg} `,
                             )}
                           >
                             {c.photo ? (

@@ -51,7 +51,7 @@ export function DueSoonList({ items }: { items: DueSoonItem[] }) {
   return (
     <section id="due-soon" aria-label="ใกล้ครบกำหนด" className="scroll-mt-24 space-y-3">
       <SectionHeading title="ใกล้ครบกำหนด" hint="ต้องเตรียมให้เสร็จก่อนขึ้นปีใหม่" />
-      <article className="gv-panel rounded-lg border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5">
+      <article className="gv-panel rounded-lg border border-border bg-card p-4  sm:p-5">
         <ul className="divide-y divide-border">
           {items.map((it) => (
             <li key={it.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5 first:pt-0 last:pb-0">

@@ -26,7 +26,7 @@ export function ScorePicker({
           className={cn(
             "flex size-11 shrink-0 items-center justify-center rounded-lg text-base font-semibold transition active:scale-95",
             Math.round(value) === s
-              ? "bg-primary text-primary-foreground shadow-sm"
+              ? "bg-primary text-primary-foreground "
               : "bg-muted text-muted-foreground hover:bg-muted/80",
           )}
         >

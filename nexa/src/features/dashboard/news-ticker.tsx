@@ -256,7 +256,7 @@ export function NewsTicker({ announcement }: { announcement: { id: string; title
                 href={current.href}
                 tabIndex={-1}
                 className={cn(
-                  "inline-flex min-h-12 min-w-0 items-center gap-3 rounded-full border-2 border-white/55 py-1 pr-5 pl-[7px] text-base leading-snug shadow-[0_3px_10px_rgba(0,0,0,.22)]",
+                  "inline-flex min-h-12 min-w-0 items-center gap-3 rounded-full border-2 border-white/55 py-1 pr-5 pl-[7px] text-base leading-snug ",
                   PILL[current.tone].pill,
                   current.tone === "bad" && "ticker-pulse-on",
                 )}

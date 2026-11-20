@@ -188,7 +188,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
             {follow > 0 ? (
               <a
                 href="#follow-up"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-[13.5px] font-bold text-[#b91c1c] shadow-[0_0_0_3px_rgba(220,38,38,0.35)] transition-transform hover:-translate-y-px motion-reduce:transition-none"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-[13.5px] font-bold text-[#b91c1c]  transition-transform hover:-translate-y-px motion-reduce:transition-none"
               >
                 <TriangleAlert className="size-4" aria-hidden="true" />
                 วันนี้มี {follow} คนขาดหรือสาย

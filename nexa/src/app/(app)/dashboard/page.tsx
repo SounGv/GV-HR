@@ -413,7 +413,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {canSeeCompany && (
       <section
         aria-label="สรุปวันนี้"
-        className="grid items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 pr-3.5 shadow-[var(--card-shadow)] lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
+        className="grid items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 pr-3.5  lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
       >
         {/* น้องวีบอท appears once per screen (the sidebar's AI shortcut); here a sparkle marks the AI summary. */}
         <span className="hidden size-10 items-center justify-center rounded-lg bg-[#eef6fd] text-[#1976d2] ring-1 ring-[#e3f2fd] ring-inset lg:flex">

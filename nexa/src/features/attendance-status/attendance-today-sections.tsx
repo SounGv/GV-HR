@@ -203,7 +203,7 @@ export function AttendanceStatusTiles({ data, departmentIds }: SectionProps) {
             <Link
               key={s}
               href={attendanceListHref(s, departmentIds)}
-              className="gv-lift relative flex flex-col gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 pt-5 shadow-[var(--card-shadow)]"
+              className="gv-lift relative flex flex-col gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 pt-5 "
             >
               <span aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-1", meta.dot)} />
               <span className="flex items-center gap-2 text-sm font-semibold text-foreground">

@@ -81,7 +81,7 @@ export function UsersRoles() {
       ) : isMobile ? (
         <ul className="space-y-3">
           {users.map((u) => (
-            <li key={u.id} className="rounded-lg bg-card p-4 shadow-sm ring-1 ring-border/60">
+            <li key={u.id} className="rounded-lg bg-card p-4  ring-1 ring-border/60">
               <p className="text-base font-semibold break-words text-foreground">
                 {u.employee ? displayName(u.employee) : loginIdentifier(u)}
               </p>

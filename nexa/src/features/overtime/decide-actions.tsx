@@ -70,7 +70,7 @@ export function OvertimeDecideActions({
             onClick={() => setDayType(value)}
             className={cn(
               "min-h-11 rounded-md px-2.5 text-xs font-semibold transition md:min-h-8",
-              dayType === value ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
+              dayType === value ? "bg-card text-primary " : "text-muted-foreground",
             )}
           >
             {title} <span className="tabular-nums">×{times}</span>

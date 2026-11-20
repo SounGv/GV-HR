@@ -128,7 +128,7 @@ export function MeetingFormPage() {
                 <FormItem>
                   <FormLabel>เริ่ม</FormLabel>
                   <FormControl>
-                    <DateTimeField inputClassName="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                    <DateTimeField inputClassName="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)]  px-2 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -141,7 +141,7 @@ export function MeetingFormPage() {
                 <FormItem>
                   <FormLabel>สิ้นสุด</FormLabel>
                   <FormControl>
-                    <DateTimeField inputClassName="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                    <DateTimeField inputClassName="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)]  px-2 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

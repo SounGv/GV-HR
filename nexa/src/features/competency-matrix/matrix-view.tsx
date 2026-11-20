@@ -121,7 +121,7 @@ export function CompetencyMatrixView() {
 
           {/* md:pr-24 clears the floating AI launcher (fixed bottom-6 right-6 size-14, z-40) */}
           <div className="sticky bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-10 flex justify-end md:bottom-4 md:pr-24">
-            <Button onClick={save} disabled={setReqs.isPending} className="shadow-sm">
+            <Button onClick={save} disabled={setReqs.isPending} className="">
               {setReqs.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               บันทึก
             </Button>

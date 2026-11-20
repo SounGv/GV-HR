@@ -77,7 +77,7 @@ function SessionList({ onSelect }: { onSelect: (id: string) => void }) {
           {sessions.map((s) => (
             <Card
               key={s.id}
-              className="cursor-pointer gap-2 p-4 transition hover:border-primary/40 hover:shadow-sm"
+              className="cursor-pointer gap-2 p-4 transition hover:border-primary/40 "
               onClick={() => onSelect(s.id)}
             >
               <div className="flex items-start justify-between gap-2">

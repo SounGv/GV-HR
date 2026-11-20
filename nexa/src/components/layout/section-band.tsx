@@ -109,27 +109,29 @@ export function SectionBand() {
       </div>
       {/* Favpo page head: a small path row, then one row with the back arrow on the left, the title in the middle and the page's
           buttons on the right (the slot below is where every page's buttons are drawn), the subtitle under the title. */}
-      <nav aria-label="เส้นทางนำทาง" className="flex min-h-8 items-center gap-1 border-b border-border bg-card px-3 text-[13px] sm:px-4">
-        {crumbs.map((c, i) => {
-          const last = i === crumbs.length - 1;
-          return (
-            <Fragment key={i}>
-              {i > 0 && <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
-              {last ? (
-                <span aria-current="page" className="truncate text-foreground">
-                  {c.label}
-                </span>
-              ) : c.href ? (
-                <Link href={c.href} className="truncate text-muted-foreground transition hover:text-foreground">
-                  {c.label}
-                </Link>
-              ) : (
-                <span className="truncate text-muted-foreground">{c.label}</span>
-              )}
-            </Fragment>
-          );
-        })}
-      </nav>
+      {crumbs.length > 0 && (
+        <nav aria-label="เส้นทางนำทาง" className="flex min-h-8 items-center gap-1 border-b border-border bg-card px-3 text-[13px] sm:px-4">
+          {crumbs.map((c, i) => {
+            const last = i === crumbs.length - 1;
+            return (
+              <Fragment key={i}>
+                {i > 0 && <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
+                {last ? (
+                  <span aria-current="page" className="truncate text-foreground">
+                    {c.label}
+                  </span>
+                ) : c.href ? (
+                  <Link href={c.href} className="truncate text-muted-foreground transition hover:text-foreground">
+                    {c.label}
+                  </Link>
+                ) : (
+                  <span className="truncate text-muted-foreground">{c.label}</span>
+                )}
+              </Fragment>
+            );
+          })}
+        </nav>
+      )}
       <div className="grid min-h-14 grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-2 border-b border-border bg-card px-3 py-1 sm:px-4">
         <div className="flex items-center">
           {/* The one back control on a computer, on every page but home: back to the page the person came from, or home when this is

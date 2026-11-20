@@ -848,7 +848,7 @@ function StepPeople({
               className={cn(
                 "rounded-lg border-[1.5px] p-3.5 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
                 on
-                  ? "border-ring bg-accent shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
+                  ? "border-ring bg-accent  dark:shadow-none"
                   : some
                     ? "bg-card border-ring/60"
                     : "border-border bg-card hover:border-ring/50",
@@ -1231,7 +1231,7 @@ function StepRaters({
             className={cn(
               "relative rounded-lg border-[1.5px] p-3.5 pb-3 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px disabled:cursor-wait",
               active === k
-                ? "border-ring bg-accent shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
+                ? "border-ring bg-accent  dark:shadow-none"
                 : "border-border bg-card hover:border-ring/50",
             )}
           >
@@ -1637,7 +1637,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
 
         {/* What a rater receives: same title and body as sendInvitations(). */}
         <figure
-          className="mx-auto w-full max-w-[280px] rounded-lg bg-[var(--device-frame)] p-2.5 shadow-sm"
+          className="mx-auto w-full max-w-[280px] rounded-lg bg-[var(--device-frame)] p-2.5 "
           aria-label="ตัวอย่างข้อความที่ผู้ประเมินได้รับ"
         >
           <div className="min-h-[300px] rounded-lg bg-muted px-3 py-3.5 text-foreground">
@@ -1649,7 +1649,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
               </span>
               GV One HR{round.notifyLine && inv.lineConfigured ? " · LINE" : " · ในแอป"}
             </div>
-            <div className="rounded-[4px_16px_16px_16px] bg-white px-3 py-3 text-sm leading-relaxed shadow-sm">
+            <div className="rounded-[4px_16px_16px_16px] bg-white px-3 py-3 text-sm leading-relaxed ">
               <b className="mb-1 block text-sm break-words">ถึงรอบประเมิน: {round.name}</b>
               คุณมี {ex?.count ?? "–"} คนที่ต้องประเมิน
               {round.endIso ? ` ปิดรอบวันที่ ${fmtLong(round.endIso)}` : ""}

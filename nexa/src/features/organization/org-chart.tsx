@@ -215,7 +215,7 @@ export function OrgChart({
       <div
         role="group"
         aria-label="มุมมองผังองค์กร"
-        className="border-border bg-card inline-flex w-fit max-w-full rounded-lg border p-1 shadow-[var(--card-shadow)]"
+        className="border-border bg-card inline-flex w-fit max-w-full rounded-lg border p-1 "
       >
         {(
           [
@@ -231,7 +231,7 @@ export function OrgChart({
             className={cn(
               "h-[34px] rounded-lg px-3.5 text-[13.5px] font-semibold whitespace-nowrap transition-colors sm:px-4",
               view === value
-                ? "bg-[#1565c0] text-white shadow-sm"
+                ? "bg-[#1565c0] text-white "
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -360,7 +360,7 @@ function DivisionCard({
   const head = useMemo(() => divisionHead(division, people), [division, people]);
   return (
     <div
-      className="gv-rise border-border bg-card overflow-hidden rounded-lg border shadow-[var(--card-shadow)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+      className="gv-rise border-border bg-card overflow-hidden rounded-lg border  transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 "
       style={rise(index)}
     >
       <div className="dark:border-border border-b border-[#e3f2fd] bg-[#eef6fd] px-3.5 py-3 dark:bg-[#0f2744]">
@@ -697,7 +697,7 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
   const className = cn(
     "flex min-w-0 items-center gap-2.5 rounded-lg border bg-card px-3.5 py-2.5 transition-colors",
     top
-      ? "border-[#bbdefb] shadow-[0_0_0_3px_#e3f2fd,var(--card-shadow)] hover:border-[#1976d2] sm:min-w-[230px] dark:border-primary/40 dark:shadow-none"
+      ? "border-[#bbdefb]  hover:border-[#1976d2] sm:min-w-[230px] dark:border-primary/40 dark:shadow-none"
       : "border-[#e3f2fd] bg-[#f8fdfc] hover:border-[#bbdefb] dark:border-border dark:bg-accent/40",
   );
   const avatar = (
@@ -772,7 +772,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
   const hidden = team.members.length - shown.length;
   return (
     <div
-      className="gv-rise border-border bg-card overflow-hidden rounded-lg border shadow-[var(--card-shadow)]"
+      className="gv-rise border-border bg-card overflow-hidden rounded-lg border "
       style={rise(index)}
     >
       <div className="border-border bg-muted/50 flex items-center justify-between gap-2 border-b px-3.5 py-2 text-[13.5px] font-bold">

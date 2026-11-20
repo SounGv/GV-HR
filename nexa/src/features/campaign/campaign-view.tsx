@@ -95,7 +95,7 @@ export function CampaignView() {
           {campaigns.map((c) => (
             <Card
               key={c.id}
-              className="gap-2 p-4 transition hover:border-primary/40 hover:shadow-sm cursor-pointer"
+              className="gap-2 p-4 transition hover:border-primary/40  cursor-pointer"
               onClick={() => router.push(`/performance/campaigns/${c.id}`)}
             >
               <div className="flex items-start justify-between gap-2">

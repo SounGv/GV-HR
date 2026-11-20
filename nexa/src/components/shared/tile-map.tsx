@@ -193,7 +193,7 @@ export function TileMap({
           </svg>
         )}
         {meAt && (
-          <span className="absolute size-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#1565c0] shadow-md" style={{ left: meAt.x, top: meAt.y }}>
+          <span className="absolute size-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#1565c0] " style={{ left: meAt.x, top: meAt.y }}>
             <span className="absolute -inset-3.5 animate-ping rounded-full bg-[#1565c0]/25 motion-reduce:animate-none" />
           </span>
         )}
@@ -202,7 +202,7 @@ export function TileMap({
       {children}
 
       {interactive && (
-        <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-[40%] right-3.5 z-10 flex flex-col overflow-hidden rounded-full bg-white/90 text-[#1565c0] shadow-sm">
+        <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-[40%] right-3.5 z-10 flex flex-col overflow-hidden rounded-full bg-white/90 text-[#1565c0] ">
           <button type="button" onClick={() => changeZoom(1)} className="flex size-11 items-center justify-center" aria-label="ขยายแผนที่">
             <Plus className="size-5" />
           </button>

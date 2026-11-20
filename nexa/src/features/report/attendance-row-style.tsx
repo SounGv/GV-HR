@@ -26,19 +26,19 @@ const TONE: Partial<
 > = {
   LATE: {
     row: "bg-status-late-bg hover:bg-[color-mix(in_oklab,var(--status-late-bg)_92%,var(--foreground))]",
-    bar: "shadow-[inset_5px_0_0_var(--status-late-dot)]",
+    bar: "",
     card: "border-status-late-border bg-status-late-bg",
     header: "border-status-late-border bg-foreground/5",
   },
   ABSENT: {
     row: "bg-status-absent-bg hover:bg-[color-mix(in_oklab,var(--status-absent-bg)_92%,var(--foreground))]",
-    bar: "shadow-[inset_5px_0_0_var(--status-absent-dot)]",
+    bar: "",
     card: "border-status-absent-border bg-status-absent-bg",
     header: "border-status-absent-border bg-foreground/5",
   },
   ON_LEAVE: {
     row: "bg-status-leave-bg hover:bg-[color-mix(in_oklab,var(--status-leave-bg)_92%,var(--foreground))]",
-    bar: "shadow-[inset_5px_0_0_var(--status-leave-dot)]",
+    bar: "",
     card: "border-status-leave-border bg-status-leave-bg",
     header: "border-status-leave-border bg-foreground/5",
   },

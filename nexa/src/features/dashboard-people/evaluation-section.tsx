@@ -9,7 +9,7 @@ import { can } from "@/lib/auth/rbac";
 import { loadEvaluationOverview, type EvaluationOverview, type OpenRound, type ResultsCard } from "./evaluation-overview";
 import { HrEvalTiles, ResultsBoardCard, TemplateCard } from "./hr-eval-panel";
 
-const CARD = "rounded-lg border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5";
+const CARD = "rounded-lg border border-border bg-card p-4  sm:p-5";
 const BTN = "inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent";
 const BTN_PRIMARY = "inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110";
 
@@ -462,7 +462,7 @@ export async function EvaluationOverviewSection({ companyId, session }: { compan
     return (
       <section id="evaluation" aria-label="การประเมินผล" className="scroll-mt-24 space-y-3">
         <SectionHeading title="การประเมินผล" hint="เห็นเฉพาะ HR" />
-        <div className="space-y-3 rounded-lg border border-border bg-card p-3 shadow-[var(--card-shadow)] sm:p-5">
+        <div className="space-y-3 rounded-lg border border-border bg-card p-3  sm:p-5">
           <HrEvalTiles o={o} />
           {o.awaitingReview.length + (o.awaitingCalculation ? 1 : 0) + o.drafts.length > 0 && <HrWorkCard o={o} />}
           {o.open.map((r) => (

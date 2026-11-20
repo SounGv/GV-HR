@@ -10,7 +10,7 @@ import { ScoreGauge } from "./score-gauge";
 /** HR's evaluation panel on the home page: three number tiles, the score spread of the latest results, and the templates to copy. */
 
 // Same glass look and rise on hover as the rest of the home page (see .gv-panel in globals.css).
-const CARD = "gv-panel rounded-lg border border-border bg-card p-4 shadow-[var(--card-shadow)] sm:p-5";
+const CARD = "gv-panel rounded-lg border border-border bg-card p-4  sm:p-5";
 const LIFT = "gv-panel-lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 const fmtDay = (iso: string) => new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));

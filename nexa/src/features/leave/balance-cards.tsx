@@ -76,7 +76,7 @@ export function BalanceCards() {
           const Icon = st.icon;
           const n = note(total, left);
           return (
-            <Card key={b.id} className="gap-3 p-4 transition hover:shadow-md">
+            <Card key={b.id} className="gap-3 p-4 transition ">
               <div className="flex items-center justify-between">
                 <span className="text-base font-semibold">{LEAVE_TYPE_LABEL[b.type]}</span>
                 <span className={cn("flex size-8 items-center justify-center rounded-lg", st.chip)}>

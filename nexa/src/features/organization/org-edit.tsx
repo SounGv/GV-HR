@@ -211,7 +211,7 @@ export function PendingTray({
       aria-label="การเปลี่ยนผังที่ยังไม่บันทึก"
       inert={!show}
       className={cn(
-        "fixed left-1/2 z-[45] w-[min(860px,calc(100%-32px))] -translate-x-1/2 rounded-lg bg-[#131516] px-3.5 py-3 text-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none",
+        "fixed left-1/2 z-[45] w-[min(860px,calc(100%-32px))] -translate-x-1/2 rounded-lg bg-[#131516] px-3.5 py-3 text-white  transition-transform duration-300 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none",
         "bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] md:bottom-5",
         show ? "translate-y-0" : "translate-y-[calc(100%+120px)]",
       )}

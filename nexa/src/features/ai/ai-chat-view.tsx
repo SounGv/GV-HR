@@ -271,7 +271,7 @@ export function AiChatView({
                   "px-4 py-2.5 text-sm leading-relaxed break-words",
                   t.role === "user"
                     ? "rounded-lg rounded-br-md bg-[var(--chat-teal)] whitespace-pre-wrap text-white"
-                    : "min-w-0 rounded-lg rounded-bl-md border border-border bg-card text-foreground shadow-sm",
+                    : "min-w-0 rounded-lg rounded-bl-md border border-border bg-card text-foreground ",
                 )}
               >
                 {t.role === "assistant" ? <MarkdownLite text={t.content} /> : t.content}
@@ -287,14 +287,14 @@ export function AiChatView({
         {quick.isPending && (
           <div className="flex items-end gap-2" role="status">
             <BotAvatar mood="think" />
-            <div className="rounded-lg rounded-bl-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">กำลังดึงข้อมูลจากระบบ…</div>
+            <div className="rounded-lg rounded-bl-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground ">กำลังดึงข้อมูลจากระบบ…</div>
           </div>
         )}
 
         {chat.isPending && (
           <div className="flex items-end gap-2" role="status">
             <BotAvatar mood="think" />
-            <div className="flex items-center gap-2 rounded-lg rounded-bl-md border border-border bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-2 rounded-lg rounded-bl-md border border-border bg-card px-4 py-3 ">
               <span className="flex gap-1" aria-hidden="true">
                 {[0, 150, 300].map((delay) => (
                   <span

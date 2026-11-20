@@ -254,7 +254,7 @@ export function SelfProfileForm() {
 
       {/* md:pr-24 clears the floating AI launcher (fixed bottom-6 right-6 size-14, z-40) */}
       <div className="sticky bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-10 flex justify-end md:bottom-4 md:pr-24">
-        <div className="rounded-lg border border-border bg-background p-2 shadow-sm">
+        <div className="rounded-lg border border-border bg-background p-2 ">
           <Button type="submit" disabled={updateMut.isPending}>
             {updateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             บันทึกโปรไฟล์
@@ -327,7 +327,7 @@ function NativeSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-9 w-full rounded-md border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+      className="h-9 w-full rounded-md border border-[color:var(--field-border)] bg-[var(--field-bg)]  px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40"
     >
       {options.map((o) => (
         <option key={o.v} value={o.v}>

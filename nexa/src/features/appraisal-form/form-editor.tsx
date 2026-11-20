@@ -1101,7 +1101,7 @@ function TopicEditor({
                   }
                   className={cn(
                     "text-muted-foreground min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-60 md:min-h-9",
-                    q.answerType === t && "bg-card text-foreground shadow-sm",
+                    q.answerType === t && "bg-card text-foreground ",
                   )}
                 >
                   {ANSWER_TYPE_LABEL[t]}
@@ -1456,7 +1456,7 @@ function PhonePreview({
               }}
               className={cn(
                 "min-h-8 rounded-full px-2.5 text-xs font-semibold",
-                as === r && "bg-card shadow-sm",
+                as === r && "bg-card ",
               )}
             >
               {RATER_LABEL[r]}
@@ -1464,7 +1464,7 @@ function PhonePreview({
           ))}
         </div>
       </div>
-      <div className="mx-auto w-full max-w-[330px] rounded-lg bg-[var(--device-frame)] p-2 shadow-sm">
+      <div className="mx-auto w-full max-w-[330px] rounded-lg bg-[var(--device-frame)] p-2 ">
         <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-lg">
           <div className="sticky top-0 z-[1] bg-primary px-3.5 pt-3 pb-2.5 text-white">
             <b className="block text-sm">ประเมิน วันชัย (ตัวอย่าง)</b>

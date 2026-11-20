@@ -66,7 +66,7 @@ function ProposalCardView({ card }: { card: ProposalCard }) {
   return (
     <section
       aria-label={`การ์ดยืนยัน: ${card.title}`}
-      className="w-full max-w-[640px] overflow-hidden rounded-lg border border-border bg-card text-sm text-foreground shadow-sm"
+      className="w-full max-w-[640px] overflow-hidden rounded-lg border border-border bg-card text-sm text-foreground "
     >
       <header className="flex items-center gap-2.5 border-b border-border bg-accent px-4 py-3">
         <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">

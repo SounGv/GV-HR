@@ -330,7 +330,7 @@ export function LeaveFormPage() {
                   <FormLabel>เวลาเริ่ม (สิ้นสุด {endTime || "—"} น.)</FormLabel>
                   <FormControl>
                     <TimeSelect
-                      className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)] shadow-[var(--field-shadow)] px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                      className="h-8 w-full min-w-0 rounded-lg border border-[color:var(--field-border)] bg-[var(--field-bg)]  px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
                       {...field}
                       onChange={(e) => {
                         const newStart = e.target.value;

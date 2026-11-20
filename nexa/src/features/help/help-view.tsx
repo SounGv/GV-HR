@@ -18,7 +18,7 @@ function hasIllustration(step: GuideStep): boolean {
 export function HelpView() {
   return (
     <div className="space-y-6">
-      <nav aria-label="สารบัญ" className="rounded-lg border border-border bg-card p-5 shadow-sm">
+      <nav aria-label="สารบัญ" className="rounded-lg border border-border bg-card p-5 ">
         <p className="mb-3 flex items-center gap-1.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
           <ListOrdered className="size-3.5" /> สารบัญ
         </p>
@@ -43,7 +43,7 @@ export function HelpView() {
         <section
           key={section.id}
           id={section.id}
-          className="scroll-mt-20 rounded-lg border border-border bg-card p-5 shadow-sm sm:p-6"
+          className="scroll-mt-20 rounded-lg border border-border bg-card p-5  sm:p-6"
         >
           <div className="mb-5 flex items-start gap-3 border-b border-border pb-4">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -78,7 +78,7 @@ export function HelpView() {
                       }
                     >
                       <div className="flex gap-3 text-sm">
-                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground shadow-sm">
+                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground ">
                           {si + 1}
                         </span>
                         <div className="min-w-0 pt-0.5">

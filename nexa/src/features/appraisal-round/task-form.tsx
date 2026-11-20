@@ -88,12 +88,12 @@ function ScoreIcon({ score, max, small, picked }: { score: number; max: number; 
         height={64}
         unoptimized
         className={cn(
-          "object-contain drop-shadow-[0_5px_5px_rgba(15,40,38,.35)]",
+          "object-contain",
           small ? "size-7" : "size-10",
           picked && "gv-icon-pop",
         )}
       />
-      <span className="bg-card text-foreground absolute -right-1 -bottom-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[12.5px] leading-none font-bold tabular-nums shadow-[0_2px_6px_rgba(0,0,0,.25)]">
+      <span className="bg-card text-foreground absolute -right-1 -bottom-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[12.5px] leading-none font-bold tabular-nums ">
         {score}
       </span>
     </span>
@@ -249,14 +249,7 @@ export function TaskForm({
 
   return (
     <div ref={topRef} className="relative isolate mx-auto max-w-2xl scroll-mt-4 space-y-4 pb-28 md:pb-4">
-      {/* Water drops drifting behind the glass (decoration only, never over text). The box clips them to the column,
-          so they cannot make the page scroll sideways. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <span className="gv-drop top-24 -right-3 h-11 w-[38px]" />
-        <span className="gv-drop top-[58%] -right-4 hidden h-[60px] w-[52px] md:block" style={{ animationDelay: "-5s", animationDuration: "8s" }} />
-        <span className="gv-drop top-[82%] -right-2 hidden h-[26px] w-[22px] md:block" style={{ animationDelay: "-3s", animationDuration: "9s" }} />
-      </div>
-      {/* Header: who, as whom, progress per question, save state (frosted glass). */}
+      {/* Header: who, as whom, progress per question, save state (a flat card). */}
       <section className="gv-frost rounded-lg p-3.5 sm:p-5" aria-label="งานประเมิน">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -337,13 +330,13 @@ export function TaskForm({
 
       {view === "start" && (
         <div className="gv-rise space-y-4">
-          <div className="border-border bg-card flex items-center gap-3.5 rounded-lg border p-4 shadow-[var(--card-shadow)]">
+          <div className="border-border bg-card flex items-center gap-3.5 rounded-lg border p-4 ">
             <PersonAvatar
               name={task.personName}
               gender={task.personGender}
               src={task.personAvatarUrl}
               seed={task.personCode}
-              className="size-14 shadow-[0_0_0_3px_var(--card)]"
+              className="size-14 "
             />
             <div className="min-w-0">
               <p className="text-base leading-snug font-bold break-words">{task.personName}</p>
@@ -688,11 +681,11 @@ export function QuestionStep({
                 disabled={disabled}
                 onClick={() => onValue(r.score)}
                 className={cn(
-                  "bg-card/90 relative flex w-full items-start gap-3 rounded-lg border-[1.5px] py-3 pr-3.5 pl-3 text-left shadow-sm transition-[border-color,box-shadow,transform,opacity] duration-200 active:scale-[0.985] disabled:opacity-60 dark:shadow-none",
+                  "bg-card/90 relative flex w-full items-start gap-3 rounded-lg border-[1.5px] py-3 pr-3.5 pl-3 text-left transition-[border-color,box-shadow,transform,opacity] duration-200 active:scale-[0.985] disabled:opacity-60 dark:shadow-none",
                   on
                     ? low
-                      ? "border-destructive border-2 shadow-[0_0_0_4px_var(--status-absent-bg),0_16px_28px_-16px_var(--destructive)] dark:shadow-none"
-                      : "border-primary border-2 shadow-[0_0_0_4px_var(--accent),0_16px_28px_-16px_var(--primary)] dark:shadow-none"
+                      ? "border-destructive border-2 "
+                      : "border-primary border-2 "
                     : "border-border hover:border-ring/50",
                   picked && !on && "opacity-85",
                 )}

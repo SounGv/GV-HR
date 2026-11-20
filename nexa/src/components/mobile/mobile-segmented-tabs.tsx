@@ -86,13 +86,13 @@ export function MobileSegmentedTabs<T extends string>({
 
                 ? active
 
-                  ? "bg-card text-primary shadow-sm"
+                  ? "bg-card text-primary "
 
                   : "text-primary-foreground/85"
 
                 : active
 
-                  ? "bg-card text-primary shadow-sm"
+                  ? "bg-card text-primary "
 
                   : "text-muted-foreground",
 

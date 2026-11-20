@@ -37,7 +37,7 @@ export function SuccessionView() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {plans.map((p) => (
             <Link key={p.id} href={`/performance/succession/${p.id}`}>
-              <Card className="gap-2 p-4 transition hover:border-primary/40 hover:shadow-sm">
+              <Card className="gap-2 p-4 transition hover:border-primary/40 ">
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">{p.position.title}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">

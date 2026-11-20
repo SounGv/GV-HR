@@ -26,7 +26,7 @@ export function BenefitsHubView() {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Card className="gap-4 p-5">
         <div className="flex items-center gap-3">
-          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-lg border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
+          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-lg border border-border bg-white  dark:bg-[#23262A] dark:shadow-none">
             <BenefitsIcon size={36} />
           </span>
           <div>
@@ -62,7 +62,7 @@ export function BenefitsHubView() {
 
       <Card className="gap-4 p-5">
         <div className="flex items-center gap-3">
-          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-lg border border-border bg-white shadow-[0_1px_2px_rgb(19_21_22_/_0.06)] dark:bg-[#23262A] dark:shadow-none">
+          <span className="flex size-[52px] shrink-0 items-center justify-center rounded-lg border border-border bg-white  dark:bg-[#23262A] dark:shadow-none">
             <ExpenseIcon size={36} />
           </span>
           <div>

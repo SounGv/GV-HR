@@ -44,7 +44,7 @@ type IconType = ComponentType<{ className?: string; "aria-hidden"?: boolean | "t
 export const FOLLOW_BOARD_CLASS = "flex flex-wrap items-start gap-3.5";
 
 const CARD =
-  "relative flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 overflow-hidden rounded-lg border border-border bg-card p-4 shadow-sm transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-sm motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:shadow-sm";
+  "relative flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 overflow-hidden rounded-lg border border-border bg-card p-4  transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5  motion-reduce:transition-none motion-reduce:hover:translate-y-0 ";
 
 /**
  * One card on the dashboard's "ต้องตามวันนี้" board (owner-approved mock, 14 Nov
@@ -160,7 +160,7 @@ export function FollowRow({
           className={cn(
             "relative mt-auto inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border px-3 text-[14px] font-semibold transition-colors",
             tone === "bad"
-              ? "border-transparent bg-[#0d47a1] text-white shadow-sm hover:brightness-110"
+              ? "border-transparent bg-[#0d47a1] text-white  hover:brightness-110"
               : "border-border bg-[#eef6fd] text-[#0d47a1] hover:bg-[#e3f2fd] dark:bg-[#0b1626] dark:text-[#bbdefb]",
           )}
         >

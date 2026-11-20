@@ -47,7 +47,7 @@ export const STATUS_META: Record<TodayStatus, StatusMeta> = {
     segment: "bg-status-late-dot",
     dot: "bg-status-late-dot",
     row: "bg-status-late-bg hover:bg-[color-mix(in_oklab,var(--status-late-bg)_92%,var(--foreground))]",
-    bar: "shadow-[inset_5px_0_0_var(--status-late-dot)]",
+    bar: "",
     card: "border-status-late-border bg-status-late-bg",
   },
   ABSENT: {
@@ -58,7 +58,7 @@ export const STATUS_META: Record<TodayStatus, StatusMeta> = {
     segment: "bg-status-absent-dot",
     dot: "bg-status-absent-dot",
     row: "bg-status-absent-bg hover:bg-[color-mix(in_oklab,var(--status-absent-bg)_92%,var(--foreground))]",
-    bar: "shadow-[inset_5px_0_0_var(--status-absent-dot)]",
+    bar: "",
     card: "border-status-absent-border bg-status-absent-bg",
   },
   ON_LEAVE: {
@@ -69,7 +69,7 @@ export const STATUS_META: Record<TodayStatus, StatusMeta> = {
     segment: "bg-status-leave-dot",
     dot: "bg-status-leave-dot",
     row: "bg-status-leave-bg hover:bg-[color-mix(in_oklab,var(--status-leave-bg)_92%,var(--foreground))]",
-    bar: "shadow-[inset_5px_0_0_var(--status-leave-dot)]",
+    bar: "",
     card: "border-status-leave-border bg-status-leave-bg",
   },
   NOT_YET: {

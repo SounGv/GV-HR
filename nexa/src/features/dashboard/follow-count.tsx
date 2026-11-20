@@ -27,7 +27,7 @@ export function FollowCount() {
       </span>
       <a
         href="#follow-up"
-        className="inline-flex min-h-10 items-center rounded-full bg-[#0d47a1] px-4 text-[13.5px] text-white shadow-sm hover:brightness-110"
+        className="inline-flex min-h-10 items-center rounded-full bg-[#0d47a1] px-4 text-[13.5px] text-white  hover:brightness-110"
       >
         ดู {n} เรื่องด้านล่าง ↓
       </a>

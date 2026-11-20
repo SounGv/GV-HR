@@ -364,7 +364,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
       ref={gridRef}
       style={!chatFolded && chatWidth !== null ? { gridTemplateColumns: `${chatWidth}px minmax(0,1fr)` } : undefined}
       className={cn(
-        "grid h-[calc(100dvh-8.5rem)] min-h-[560px] overflow-hidden rounded-lg border border-border bg-card shadow-[var(--card-shadow)]",
+        "grid h-[calc(100dvh-8.5rem)] min-h-[560px] overflow-hidden rounded-lg border border-border bg-card ",
         chatFolded
           ? "grid-cols-[56px_minmax(0,1fr)]"
           : chatWidth !== null
@@ -462,7 +462,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
           {fallback && <FallbackBanner reason={engine.reason} backup={engine.backup} />}
           <div className="flex items-start gap-2">
             <AiMark className="h-7 w-8" />
-            <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13.5px] shadow-[var(--card-shadow)]">
+            <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13.5px] ">
               สวัสดีครับ ผมน้องวีบอท ถามเรื่องการเข้างาน การลา OT หรือพนักงานได้เลย ตัวเลขและตารางจะขึ้นที่แผงขวา
             </p>
           </div>
@@ -471,7 +471,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             t.role === "user" ? (
               <p
                 key={i}
-                className="ml-auto w-fit max-w-[85%] rounded-[16px_16px_4px_16px] bg-[var(--flip7-teal-dark)] px-3.5 py-2 text-[13.5px] break-words text-white shadow-sm"
+                className="ml-auto w-fit max-w-[85%] rounded-[16px_16px_4px_16px] bg-[var(--flip7-teal-dark)] px-3.5 py-2 text-[13.5px] break-words text-white "
               >
                 {t.content}
                 <SentFiles files={t.files} />
@@ -500,14 +500,14 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
           {quick.isPending && (
             <div className="flex items-start gap-2" role="status">
               <AiMark className="h-7 w-8" />
-              <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13px] text-muted-foreground shadow-[var(--card-shadow)]">กำลังดึงข้อมูลจากระบบ…</p>
+              <p className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13px] text-muted-foreground ">กำลังดึงข้อมูลจากระบบ…</p>
             </div>
           )}
 
           {chat.isPending && (
             <div className="flex items-start gap-2" role="status">
               <AiMark className="h-7 w-8" />
-              <div className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13px] shadow-[var(--card-shadow)]">
+              <div className="rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13px] ">
                 <p className="font-medium">กำลังดึงข้อมูลจากระบบ…</p>
                 <p className="text-xs text-muted-foreground tabular-nums">
                   ผ่านไป {elapsed} วินาที · คำถามที่ต้องดึงรายงานใช้เวลาประมาณ 20–40 วินาที
@@ -601,7 +601,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               {reportStep?.report && (
                 <Link
                   href={`/reports?view=${encodeURIComponent(reportStep.report.type)}`}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0d47a1]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white  transition-colors hover:bg-[#0d47a1]"
                 >
                   เปิดรายงานเต็ม <ExternalLink className="size-3.5" aria-hidden="true" />
                 </Link>
@@ -636,7 +636,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               />
             )}
 
-            <div className="rounded-lg border border-border bg-card p-4 shadow-[var(--card-shadow)]">
+            <div className="rounded-lg border border-border bg-card p-4 ">
               <MarkdownLite text={panelBody} />
             </div>
           </article>
@@ -674,7 +674,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                     key={p.q}
                     type="button"
                     onClick={() => submit(p.q)}
-                    className="gv-lift flex items-start gap-3 rounded-lg border border-border bg-card px-3.5 py-3 text-left shadow-[var(--card-shadow)] hover:border-[#b9c2c9]"
+                    className="gv-lift flex items-start gap-3 rounded-lg border border-border bg-card px-3.5 py-3 text-left  hover:border-[#b9c2c9]"
                   >
                     <span className={cn("flex size-[30px] shrink-0 items-center justify-center rounded-lg border", p.tone)}>
                       <Icon className="size-4" aria-hidden="true" />
@@ -702,7 +702,7 @@ function AnswerBubble({ turn, active, onShow }: { turn: Turn; active: boolean; o
   return (
     <div className="flex items-start gap-2">
       <AiMark className="h-7 w-8" />
-      <div className="min-w-0 rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13.5px] shadow-[var(--card-shadow)]">
+      <div className="min-w-0 rounded-[4px_14px_14px_14px] border border-border bg-card px-3 py-2 text-[13.5px] ">
         {summary ? <MarkdownLite text={summary} className="text-[13.5px]" /> : !hasDetail && <MarkdownLite text={turn.content} />}
         {hasDetail && (
           <button
