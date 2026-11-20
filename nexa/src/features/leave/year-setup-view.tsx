@@ -68,7 +68,7 @@ export function YearSetupView() {
 
   return (
     <div className="space-y-4">
-      <Card className="gap-4 p-4">
+      <Card className="max-w-3xl gap-4 p-4">
         <p className="text-sm text-muted-foreground">
           สร้างสิทธิ์ลาของปีใหม่จากสิทธิ์ของปีเดิม ทุกคนเริ่มด้วยสิทธิ์เท่าเดิมและใช้ไป 0 วัน ลาพักร้อนที่เหลือยกยอดได้ไม่เกินจำนวนที่กำหนด
           ระบบ <b>ไม่แก้แถวที่มีอยู่แล้ว</b> และไม่ปรับสิทธิ์ตามอายุงานให้ (ปรับรายคนได้หลังสร้าง)

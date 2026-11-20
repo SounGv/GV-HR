@@ -61,6 +61,7 @@ export function AiAccessFormPage({ user }: { user: AdminUser }) {
 
   return (
     <FormPageShell
+      wide
       breadcrumbs={[{ label: "ผู้ดูแลระบบ", href: LIST_HREF }, { label: `สิทธิ์ AI Assistant ของ ${name}` }]}
       backHref={LIST_HREF}
       title="สิทธิ์การใช้งาน AI Assistant"

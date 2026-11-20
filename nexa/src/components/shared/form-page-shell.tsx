@@ -3,11 +3,16 @@
 import { PageHeaderBar, type Crumb } from "./page-header-bar";
 import { FormFooter, type FormFooterAction } from "./form-footer";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 /**
  * Standard full-page create/edit scaffold: sticky header + card body + sticky
  * footer. Modules render their `<Form>` (with matching `formId`) as children.
  * Replaces per-module create/edit modals with a consistent route-based page.
+ *
+ * The card is at most 768px wide, so a form of 448 to 672px (every module's own `max-w-*` inside it) sits in a card that
+ * fits it instead of a card as wide as the screen. A form that really needs the width (a builder, a table of permissions)
+ * passes `wide`.
  */
 export function FormPageShell({
   breadcrumbs,
@@ -19,6 +24,7 @@ export function FormPageShell({
   pending,
   onCancel,
   actions,
+  wide = false,
   children,
 }: {
   breadcrumbs?: Crumb[];
@@ -30,6 +36,8 @@ export function FormPageShell({
   pending?: boolean;
   onCancel: () => void;
   actions: FormFooterAction[];
+  /** Let the card use the full width of the page (builders, wide tables); the default is a card of at most 768px. */
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -41,7 +49,7 @@ export function FormPageShell({
         description={description}
         status={status}
       />
-      <Card className="rounded-2xl md:rounded-xl">
+      <Card className={cn("rounded-2xl md:rounded-xl", !wide && "max-w-3xl")}>
         <CardContent className="px-4 pt-0 md:px-6 md:pt-6">{children}</CardContent>
       </Card>
       <FormFooter formId={formId} pending={pending} onCancel={onCancel} actions={actions} />

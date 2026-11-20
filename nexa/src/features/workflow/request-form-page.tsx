@@ -54,6 +54,7 @@ export function RequestFormPage() {
 
   return (
     <FormPageShell
+      wide
       breadcrumbs={[{ label: "เวิร์กโฟลว์อนุมัติ", href: LIST }, { label: "ส่งคำขอ" }]}
       backHref={LIST}
       title="ส่งคำขออนุมัติ"

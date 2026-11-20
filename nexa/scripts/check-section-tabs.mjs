@@ -1,7 +1,7 @@
 // Checks which group a page belongs to and the tabs shown for it.
 // Run: node --experimental-strip-types scripts/check-section-tabs.mjs
 import assert from "node:assert/strict";
-import { bestMatchHref, entriesOf, resolveSection } from "../src/config/section-tabs.ts";
+import { bestMatchHref, entriesOf, groupTabs, resolveSection } from "../src/config/section-tabs.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -64,7 +64,7 @@ check("a group left with one visible page has no tab row", () => {
   assert.equal(at("/admin", all).tabs.length, 0, "log out is not a tab, so the system group has only one page here");
 });
 check("a page outside the menu has no group, title or tabs", () => {
-  assert.deepEqual(at("/profile"), { tabs: [] });
+  assert.deepEqual(at("/profile"), { tabs: [], visibleTabs: [] });
 });
 check("the AI entry and log out are never tabs, and a permission-less page is left out of the tabs", () => {
   const ent = entriesOf(GROUPS, all);
@@ -82,6 +82,53 @@ check("best match: longer path first, a query must agree, nothing matches gives 
   assert.equal(bestMatchHref("/reports", { get: (k) => (k === "view" ? "leave" : null) }, ["/reports", "/reports?view=attendance", "/reports?view=leave"]), "/reports?view=leave");
   assert.equal(bestMatchHref("/zzz", search, ["/a"]), undefined);
   assert.equal(bestMatchHref("/attendance2", search, ["/attendance"]), undefined, "a longer name that merely starts the same is not a match");
+});
+
+// A long row is split into sections: the settings group by the menu's own headings, the evaluation group by fixed sections.
+const SETTINGS = {
+  label: "ตั้งค่าระบบ",
+  items: [
+    it("ข้อมูลบริษัท", "/company", "x:read", { section: "บริษัท" }),
+    it("สาขา", "/branches", "x:read", { section: "บริษัท" }),
+    it("ศูนย์ต้นทุน", "/cost-centers", "x:read", { section: "บริษัท" }),
+    it("ตั้งค่าพื้นที่เช็คอิน", "/attendance/settings", "x:read", { section: "เวลาและการลา" }),
+    it("ตั้งสิทธิ์ลาปีใหม่", "/leave/year-setup", "x:read", { section: "เวลาและการลา" }),
+    it("สิทธิ์ลารายคน", "/leave/entitlements", "x:read", { section: "เวลาและการลา" }),
+    it("เวิร์กโฟลว์อนุมัติ", "/workflows", "x:read", { section: "เวลาและการลา" }),
+    it("นำเข้าข้อมูล", "/import", "x:read", { section: "ข้อมูล" }),
+    it("ผู้ดูแลระบบ", "/admin", "x:read", { section: "ผู้ดูแล" }),
+  ],
+};
+const atSettings = (pathname) => resolveSection([SETTINGS], all, pathname, { get: () => null });
+check("a long row is split into the menu's own sections, and the open section holds the current page", () => {
+  const s = atSettings("/leave/year-setup");
+  assert.equal(s.tabs.length, 9, "all tabs are still known");
+  assert.deepEqual(s.sections.map((c) => [c.name, c.active]), [["บริษัท", false], ["เวลาและการลา", true], ["ข้อมูล", false], ["ผู้ดูแล", false]]);
+  assert.deepEqual(s.visibleTabs.map((t) => t.label), ["ตั้งค่าพื้นที่เช็คอิน", "ตั้งสิทธิ์ลาปีใหม่", "สิทธิ์ลารายคน", "เวิร์กโฟลว์อนุมัติ"]);
+  assert.equal(s.sections.find((c) => c.name === "ข้อมูล").href, "/import", "a chip goes to the first tab of its section");
+});
+check("the evaluation group for HR is split into three sections; the active one follows the page", () => {
+  const hr = at("/appraisal/forms", only("campaign:manage", "campaign:update", "n:read", "training:read"));
+  assert.deepEqual(hr.sections.map((c) => [c.name, c.active]), [["ของฉัน", false], ["จัดการประเมิน", true], ["พัฒนา", false]]);
+  assert.deepEqual(hr.visibleTabs.map((t) => t.label), ["ภาพรวม", "แบบประเมิน", "รอบประเมิน", "KPI", "รอบอัตโนมัติ", "ตั้งค่า"]);
+  const mine = at("/appraisal/my-results", only("campaign:manage", "campaign:update", "n:read", "training:read"));
+  assert.deepEqual(mine.visibleTabs.map((t) => t.label), ["งานประเมินของฉัน", "ผลประเมินของฉัน"]);
+});
+check("a short row stays flat, even when its tabs carry sections", () => {
+  const staff = at("/appraisal/tasks", only("n:read", "training:read"));
+  assert.equal(staff.sections, undefined);
+  assert.equal(staff.visibleTabs.length, staff.tabs.length);
+  assert.equal(at("/attendance").sections, undefined);
+});
+check("groupTabs keeps the row flat when a tab has no section, or there is only one section", () => {
+  const t = (label, section) => ({ label, href: `/${label}`, ...(section ? { section } : {}) });
+  const seven = (section) => ["a", "b", "c", "d", "e", "f", "g"].map((l, i) => t(l, section(i)));
+  assert.equal(groupTabs(seven((i) => (i === 3 ? undefined : "x")), "/a").sections, undefined, "one tab without a section: flat");
+  assert.equal(groupTabs(seven(() => "x"), "/a").sections, undefined, "one section only: flat");
+  const two = groupTabs(seven((i) => (i < 4 ? "x" : "y")), "/g");
+  assert.deepEqual(two.sections.map((c) => c.active), [false, true]);
+  assert.deepEqual(two.visibleTabs.map((x) => x.label), ["e", "f", "g"]);
+  assert.equal(groupTabs(seven((i) => (i < 4 ? "x" : "y")), undefined).sections[0].active, true, "a page that is not a tab opens the first section");
 });
 
 console.log(`\n${n} checks passed`);

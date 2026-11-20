@@ -127,6 +127,7 @@ export function TemplateFormPage({ template }: { template?: TemplateDetail }) {
 
   return (
     <FormPageShell
+      wide
       breadcrumbs={[{ label: "ประเมินผล", href: "/performance" }, { label: "แบบประเมิน", href: LIST }, { label: isEdit ? "แก้ไขแบบประเมิน" : "สร้างแบบประเมิน" }]}
       backHref={isEdit ? LIST : LIST}
       title={isEdit ? "แก้ไขแบบประเมิน" : "สร้างแบบประเมิน"}

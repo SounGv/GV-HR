@@ -37,6 +37,7 @@ export function UserRolesFormPage({ user }: { user: AdminUser }) {
 
   return (
     <FormPageShell
+      wide
       breadcrumbs={[{ label: "ผู้ดูแลระบบ", href: LIST_HREF }, { label: `บทบาทของ ${name}` }]}
       backHref={LIST_HREF}
       title="แก้ไขบทบาทผู้ใช้"

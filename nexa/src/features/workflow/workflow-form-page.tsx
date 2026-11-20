@@ -90,6 +90,7 @@ export function WorkflowFormPage({ workflow }: { workflow?: ApprovalWorkflow }) 
 
   return (
     <FormPageShell
+      wide
       breadcrumbs={[{ label: "เวิร์กโฟลว์อนุมัติ", href: LIST }, { label: isEdit ? "แก้ไข" : "สร้างใหม่" }]}
       backHref={LIST}
       title={isEdit ? "แก้ไขเวิร์กโฟลว์" : "สร้างเวิร์กโฟลว์อนุมัติ"}

@@ -27,7 +27,8 @@ type BandCrumb = { label: React.ReactNode; href?: string };
  *  Row 2: the tabs of this menu group (the sidebar's own entries for it) with the page's main button at the far right.
  * It replaces the old top bar (64px), the page title block (about 76px) and the separate tab rows, so the work area starts
  * about 100px higher and switching to a sibling page is one click. A group without siblings (home) has row 1 only and the
- * page's buttons sit in row 1 instead.
+ * page's buttons sit in row 1 instead. A group with more than six tabs gets a row of section chips between rows 1 and 2, so
+ * the tab row itself stays short (the band is then about 136px).
  */
 export function SectionBand() {
   const pathname = usePathname();
@@ -129,10 +130,32 @@ export function SectionBand() {
         </div>
       </div>
 
+      {/* A long tab row (the settings group, the evaluation group) is split: one chip per section here, the tabs of the open
+          section in the row below. The chips follow the headings the side menu already has. */}
+      {section.sections && (
+        <nav aria-label={section.group ? `ส่วนของ ${section.group}` : "ส่วนของเมนู"} className="flex h-11 items-center gap-2 overflow-x-auto border-t border-border/60 px-3 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {section.sections.map((c) => (
+            <Link
+              key={c.name}
+              href={c.href}
+              aria-current={c.active ? "true" : undefined}
+              className={cn(
+                "flex h-8 shrink-0 items-center rounded-full border px-3.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                c.active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-[color:var(--muted-strong)] hover:bg-muted/60 hover:text-foreground",
+              )}
+            >
+              {c.name}
+            </Link>
+          ))}
+        </nav>
+      )}
+
       {hasTabs && (
         <div className="flex h-11 items-stretch gap-3 border-t border-border/60 px-3 sm:px-4">
           <nav aria-label={section.group ? `เมนูย่อย ${section.group}` : "เมนูย่อย"} className="flex min-w-0 flex-1 items-stretch gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {section.tabs.map((t) => {
+            {section.visibleTabs.map((t) => {
               const active = t.href === section.activeHref;
               const count = t.badgeKey ? badge(t.badgeKey) : 0;
               return (
