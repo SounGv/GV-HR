@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Bell } from "lucide-react";
 
-import { RBell } from "@/components/shared/real-icons";
 import { useMobileTabs } from "@/components/layout/mobile-bottom-nav";
 import { useNotifications } from "@/features/notification/hooks";
 import { cn } from "@/lib/utils";
@@ -15,10 +14,10 @@ export function MobileBell() {
   const { data } = useNotifications();
   const unread = data?.data.unread ?? 0;
   return (
-    <Link href="/notifications" aria-label={unread > 0 ? `การแจ้งเตือน ยังไม่ได้อ่าน ${unread}` : "การแจ้งเตือน"} className="gv-lg relative flex size-11 items-center justify-center rounded-full transition active:scale-95">
-      <RBell size={26} />
+    <Link href="/notifications" aria-label={unread > 0 ? `การแจ้งเตือน ยังไม่ได้อ่าน ${unread}` : "การแจ้งเตือน"} className="relative flex size-11 items-center justify-center rounded-full bg-white/15 text-white transition active:scale-95">
+      <Bell className="size-6" aria-hidden="true" />
       {unread > 0 && (
-        <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground ring-2 ring-card">
+        <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground ring-2 ring-[#0d47a1]">
           {unread > 9 ? "9+" : unread}
         </span>
       )}
@@ -70,7 +69,7 @@ export function MobileHeader({
                 router.push(previous);
               }
             }}
-            className="flex size-11 shrink-0 items-center justify-center rounded-full gv-lg text-foreground transition active:scale-95"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition active:scale-95"
           >
             <ArrowLeft className="size-[18px]" />
           </Link>
@@ -79,13 +78,13 @@ export function MobileHeader({
             type="button"
             aria-label="ย้อนกลับ"
             onClick={onBack}
-            className="flex size-11 shrink-0 items-center justify-center rounded-full gv-lg text-foreground transition active:scale-95"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition active:scale-95"
           >
             <ArrowLeft className="size-[18px]" />
           </button>
         ))}
-      <h1 className="min-w-0 flex-1 truncate text-xl font-bold text-foreground">{title}</h1>
-      {right && <div className="shrink-0 text-foreground">{right}</div>}
+      <h1 className="min-w-0 flex-1 truncate text-xl font-bold text-white">{title}</h1>
+      {right && <div className="shrink-0 text-white">{right}</div>}
     </header>
   );
 }

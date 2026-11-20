@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { Users } from "lucide-react";
+import { NavIcon } from "@/components/shared/nav-icon";
+import { navIconArt } from "@/config/nav-icon-art";
 import type { MobileMenuGroup } from "@/config/mobile-menu";
 
 /**
  * Shared quick-menu tile grid — used by both the Home tab and "บริการ"
  * (/services), so a design change here is a design change everywhere this
- * pattern appears. Every icon is fixed, full-color illustrated artwork
- * (gv-hr-menu-icons.md) — the white icon box (not just bare icons) is what
- * keeps icons with a white detail (paper, calendar) visible in both themes.
+ * pattern appears. Icons are the same single-colour outline set as the side menu
+ * (config/nav-icon-art.ts) in the brand blue; a link the set does not cover keeps its illustrated icon.
  *
  * `hrStartIndex` (from `useMobileMenuGroups`) draws a labeled divider right
  * before the manager/HR sections, so accounts with approval rights see
@@ -39,10 +40,10 @@ export function MobileMenuTileGrid({ groups, hrStartIndex }: { groups: MobileMen
                 <Link
                   key={item.id}
                   href={item.href}
-                  className="flex flex-col items-center gap-2 rounded-xl px-0.5 py-1 text-center transition active:scale-95 active:bg-muted"
+                  className="flex flex-col items-center gap-2 rounded-md px-0.5 py-1 text-center transition active:scale-95 active:bg-muted"
                 >
-                  <span className="gv-lg-tile flex size-[58px] items-center justify-center rounded-[20px]">
-                    <item.icon size={40} />
+                  <span className="gv-lg-tile flex size-[58px] items-center justify-center rounded-md text-primary">
+                    {navIconArt(item.href) ? <NavIcon href={item.href} className="size-7" /> : <item.icon size={40} />}
                   </span>
                   <span className="line-clamp-2 text-xs font-semibold leading-snug text-foreground">
                     {item.label}

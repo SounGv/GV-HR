@@ -2,16 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import {
-  RApprove,
-  RCalendarDays,
-  RChart,
-  RClipboardList,
-  RHome,
-  RStar,
-  RUser,
-  RUsers,
-} from "@/components/shared/real-icons";
+import { BarChart3, CalendarDays, ClipboardCheck, ClipboardList, House, Star, User, UsersRound } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLeave } from "@/features/leave/hooks";
 import { useOvertime } from "@/features/overtime/hooks";
@@ -20,7 +11,7 @@ import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { cn } from "@/lib/utils";
 
 /**
- * 5-slot floating liquid-glass tab bar for phones (a lit drop slides under the active tab) — hidden on md+. Three role-variant
+ * 5-slot flat tab bar for phones (Favpo style: white bar on the screen edge, a blue line over the active tab) — hidden on md+. Three role-variant
  * tab sets per the redesign spec (Employee / Manager / HR), sharing the
  * same live-badge data sources — only which tabs carry which counts (and
  * which pages the middle 3 slots point at) changes per role:
@@ -73,74 +64,74 @@ export function useMobileTabs() {
   };
 
   // The unread count lives on the bell in each page header; the profile tab carries none, so the same number is not shown twice.
-  const profileTab = { href: "/profile", label: "โปรไฟล์", icon: RUser, show: true, badge: 0 };
+  const profileTab = { href: "/profile", label: "โปรไฟล์", icon: User, show: true, badge: 0 };
 
   const tabs = isHrTier
     ? [
-        { href: "/dashboard", label: "หน้าหลัก", icon: RHome, show: true, badge: 0 },
+        { href: "/dashboard", label: "หน้าหลัก", icon: House, show: true, badge: 0 },
         {
           href: "/employees",
           label: "พนักงาน",
-          icon: RUsers,
+          icon: UsersRound,
           show: can("employee:read"),
           badge: 0,
         },
         {
           href: "/requests?view=approvals",
           label: "คำขอ",
-          icon: RClipboardList,
+          icon: ClipboardList,
           show: can("leave:read") || can("overtime:read"),
           badge: pendingCount,
         },
-        { href: "/reports", label: "รายงาน", icon: RChart, show: can("report:read"), badge: 0 },
+        { href: "/reports", label: "รายงาน", icon: BarChart3, show: can("report:read"), badge: 0 },
         profileTab,
       ]
     : isManagerTier
       ? [
-          { href: "/dashboard", label: "หน้าหลัก", icon: RHome, show: true, badge: 0 },
+          { href: "/dashboard", label: "หน้าหลัก", icon: House, show: true, badge: 0 },
           {
             href: "/employees",
             label: "ทีมของฉัน",
-            icon: RUsers,
+            icon: UsersRound,
             show: can("employee:read"),
             badge: 0,
           },
           {
             href: "/requests?view=approvals",
             label: "อนุมัติ",
-            icon: RApprove,
+            icon: ClipboardCheck,
             show: can("leave:read") || can("overtime:read"),
             badge: pendingCount,
           },
           {
             href: reviewHref,
             label: "ประเมิน",
-            icon: RStar,
+            icon: Star,
             show: canReview,
             badge: pendingReviewCount,
           },
           profileTab,
         ]
       : [
-          { href: "/dashboard", label: "หน้าหลัก", icon: RHome, show: true, badge: 0 },
+          { href: "/dashboard", label: "หน้าหลัก", icon: House, show: true, badge: 0 },
           {
             href: "/calendar",
             label: "ปฏิทิน",
-            icon: RCalendarDays,
+            icon: CalendarDays,
             show: can("calendar:read"),
             badge: 0,
           },
           {
             href: "/requests",
             label: "คำขอ",
-            icon: RClipboardList,
+            icon: ClipboardList,
             show: can("leave:read") || can("overtime:read"),
             badge: 0,
           },
           {
             href: reviewHref,
             label: "ประเมิน",
-            icon: RStar,
+            icon: Star,
             show: canReview,
             badge: pendingReviewCount,
           },
@@ -158,29 +149,11 @@ export function MobileBottomNav() {
 
   return (
     <>
-      {/* Content fades out under the bar instead of showing through it, so cards never look stacked behind the tabs. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[15] h-[calc(7.5rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-[var(--lg-bg2)] via-[var(--lg-bg2)]/85 to-transparent md:hidden"
-      />
       <nav
         aria-label="เมนูลัด"
-        className="gv-lg gv-lg-nav fixed inset-x-3.5 bottom-[calc(14px+env(safe-area-inset-bottom))] z-40 h-[68px] rounded-full md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        <div
-          className="relative grid h-full items-center px-1.5"
-          style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
-        >
-          {activeIndex >= 0 && (
-            <span
-              aria-hidden="true"
-              className="gv-lg-drop pointer-events-none absolute top-1 left-1.5 h-[58px] rounded-full"
-              style={{
-                width: `calc((100% - 12px) / ${count})`,
-                transform: `translateX(${activeIndex * 100}%)`,
-              }}
-            />
-          )}
+        <div className="relative grid h-[64px] items-stretch" style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}>
           {visibleTabs.map((t, i) => (
             <NavTab
               key={t.href}
@@ -215,24 +188,20 @@ function NavTab({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative z-10 flex h-[58px] flex-col items-center justify-center gap-0.5 rounded-full transition active:scale-95 motion-reduce:active:scale-100",
-        active ? "text-primary font-bold" : "text-muted-foreground",
+        "relative z-10 flex h-full flex-col items-center justify-center gap-0.5 transition-colors",
+        active ? "font-bold text-[#0d47a1] dark:text-[#90caf9]" : "text-muted-foreground",
       )}
     >
-      <span
-        className={cn(
-          "relative flex items-center justify-center transition-transform duration-500 [transition-timing-function:cubic-bezier(0.34,1.45,0.55,1)]",
-          active && "-translate-y-0.5 scale-110",
-        )}
-      >
-        <Icon size={30} />
+      {active && <span aria-hidden="true" className="absolute inset-x-3 top-0 h-[3px] rounded-b-sm bg-primary" />}
+      <span className="relative flex items-center justify-center">
+        <Icon size={24} />
         {badge > 0 && (
           <span className="bg-badge text-badge-foreground ring-card absolute -top-1.5 -right-3 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold ring-2">
             {badge > 9 ? "9+" : badge}
           </span>
         )}
       </span>
-      <span className="text-[12px] font-semibold whitespace-nowrap">{label}</span>
+      <span className="text-[12px] whitespace-nowrap">{label}</span>
     </Link>
   );
 }

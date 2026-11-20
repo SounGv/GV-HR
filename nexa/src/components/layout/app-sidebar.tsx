@@ -131,7 +131,7 @@ export function AppSidebar() {
           className={cn(
             "h-9 text-[14px] [&_svg]:size-4",
             active
-              ? "data-active:bg-sidebar-primary data-active:font-semibold data-active:text-sidebar-primary-foreground data-active:shadow-[0_1px_2px_rgba(21, 101, 192,.2),0_6px_14px_-8px_rgba(21, 101, 192,.5)] data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
+              ? "data-active:bg-sidebar-primary data-active:font-semibold data-active:text-sidebar-primary-foreground data-active:shadow-[0_1px_2px_rgba(21,101,192,.2),0_6px_14px_-8px_rgba(21,101,192,.5)] data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
               : "font-medium text-sidebar-foreground hover:text-sidebar-foreground",
           )}
           render={
@@ -266,8 +266,8 @@ function AiShortcut({ active, onClick }: { active: boolean; onClick: () => void 
         aria-label="เปิดน้องวีบอท"
         className={cn(
           "relative flex w-full items-center gap-2.5 rounded-2xl border border-[#bbdefb] bg-[linear-gradient(135deg,#eef6fd,#ecfeff_60%,#f7fee7)] p-2 pr-3 text-left",
-          "shadow-[0_1px_2px_rgba(21, 101, 192,0.08),0_8px_18px_-12px_rgba(21, 101, 192,0.45)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          "hover:-translate-y-px hover:border-[#90caf9] hover:shadow-[0_1px_2px_rgba(21, 101, 192,0.1),0_12px_24px_-12px_rgba(21, 101, 192,0.55)] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none motion-reduce:transition-none",
+          "shadow-[0_1px_2px_rgba(21,101,192,0.08),0_8px_18px_-12px_rgba(21,101,192,0.45)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "hover:-translate-y-px hover:border-[#90caf9] hover:shadow-[0_1px_2px_rgba(21,101,192,0.1),0_12px_24px_-12px_rgba(21,101,192,0.55)] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none motion-reduce:transition-none",
           "dark:border-sidebar-border dark:bg-none dark:bg-sidebar-accent group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1",
           active && "border-[#1976d2] ring-2 ring-[#1976d2]/20",
         )}
@@ -321,7 +321,7 @@ function NexaHeaderLogo() {
       <div className="relative hidden w-full flex-col group-data-[collapsible=icon]:hidden md:flex">
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -top-[120px] -left-[110px] h-[260px] w-[330px] rounded-full bg-[radial-gradient(closest-side,rgba(25, 118, 210,0.16),rgba(25, 118, 210,0))]"
+          className="pointer-events-none absolute -top-[120px] -left-[110px] h-[260px] w-[330px] rounded-full bg-[radial-gradient(closest-side,rgba(25,118,210,0.16),rgba(25,118,210,0))]"
         />
         <div className="group/brand relative flex items-center gap-2.5">
           <Logo

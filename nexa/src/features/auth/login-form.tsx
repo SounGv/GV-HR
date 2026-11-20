@@ -124,7 +124,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           placeholder="123456"
           value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value)}
-          className="h-[52px] rounded-full border-[1.5px] border-[var(--lg-field)] !bg-[var(--lg-in)] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[#1976d2] focus-visible:ring-[#1976d2]/25"
+          className="h-12 rounded border border-[var(--lg-field)] !bg-[#eef3fb] text-center text-lg tracking-widest !text-[var(--login-text-primary)] focus-visible:border-[#1976d2] focus-visible:ring-[#1976d2]/25"
         />
         <LoginButton type="submit" loading={submitting} disabled={!mfaCode}>
           ยืนยัน
@@ -199,7 +199,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
         {formError && (
           <p
             role="alert"
-            className="flex items-start gap-2.5 rounded-[18px] border border-[var(--login-error)]/40 bg-[var(--login-error)]/10 px-3.5 py-3 text-sm font-semibold text-[var(--login-error)]"
+            className="flex items-start gap-2.5 rounded border border-[var(--login-error)]/40 bg-[var(--login-error)]/10 px-3.5 py-3 text-sm font-semibold text-[var(--login-error)]"
           >
             <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             {formError}

@@ -431,7 +431,7 @@ function CameraStep({
         <Maximize2 className="size-4 opacity-80" aria-hidden="true" />
       </button>
 
-      <div className={cn(CAM_GLASS, "absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] z-10 rounded-[32px] px-4 pt-3.5 pb-4")}>
+      <div className={cn(CAM_GLASS, "absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] z-10 rounded-lg px-4 pt-3.5 pb-4")}>
         <p className="mb-2.5 text-center text-[13px] text-white/90">ถือให้นิ่ง แล้วกดถ่ายรูป</p>
         <div className="flex items-center justify-center gap-8">
           {torchSupported ? (
@@ -451,10 +451,10 @@ function CameraStep({
             type="button"
             onClick={onCapture}
             disabled={!ready}
-            className="flex size-[78px] items-center justify-center rounded-full border-[1.5px] border-white/70 bg-[radial-gradient(120%_120%_at_30%_0%,rgba(255,255,255,.5),rgba(255,255,255,.14))] shadow-[0_8px_22px_rgba(0,0,0,.4),inset_0_1px_0_rgba(255,255,255,.8)] transition active:scale-95 motion-reduce:active:scale-100 disabled:opacity-40"
+            className="flex size-[78px] items-center justify-center rounded-full border-4 border-white bg-transparent transition active:scale-95 motion-reduce:active:scale-100 disabled:opacity-40"
             aria-label="ถ่ายรูป"
           >
-            <span className="flex size-[60px] items-center justify-center rounded-full bg-gradient-to-b from-white to-[#e3f2fd] text-[#1565c0] shadow-[inset_0_-3px_6px_rgba(21, 101, 192,.18)]">
+            <span className="flex size-[60px] items-center justify-center rounded-full bg-white text-[#1565c0]">
               <Camera className="size-7" />
             </span>
           </button>
@@ -495,12 +495,12 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
           ))}
         </div>
       </div>
-      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] z-10 rounded-[32px] px-[18px] pt-4 pb-[18px]">
+      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] z-10 rounded-lg px-[18px] pt-4 pb-[18px]">
         <div className="flex items-center gap-3">
           <span
             className={cn(
               "flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-md",
-              warn ? "bg-gradient-to-b from-[#f5b700] to-[#b88200]" : "bg-gradient-to-b from-[#42a5f5] to-[#1565c0]",
+              warn ? "bg-[#b88200]" : "bg-[#1565c0]",
             )}
           >
             {warn ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}
@@ -532,9 +532,9 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
 }
 
 const PRIMARY_BTN =
-  "rounded-full bg-[linear-gradient(180deg,#42a5f5,#1565c0)] text-base font-bold text-white shadow-[0_12px_24px_rgba(21, 101, 192,.4),inset_0_1px_0_rgba(255,255,255,.5)] transition active:scale-[0.99] disabled:opacity-40 dark:text-[#06201d] dark:bg-[linear-gradient(180deg,#90caf9,#42a5f5)]";
+  "rounded bg-primary text-base font-bold text-white transition hover:bg-[#1565c0] active:scale-[0.99] disabled:opacity-40 dark:bg-[#42a5f5] dark:text-[#06182c] dark:hover:bg-[#64b5f6]";
 const CAM_PRIMARY_BTN =
-  "rounded-full bg-[linear-gradient(180deg,#90caf9,#64b5f6)] text-[#06201d] font-bold shadow-[0_12px_24px_rgba(21, 101, 192,.4),inset_0_1px_0_rgba(255,255,255,.6)] transition active:scale-95 motion-reduce:active:scale-100";
+  "rounded bg-white text-[#0d47a1] font-bold transition active:scale-95 motion-reduce:active:scale-100";
 
 function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: () => void; onConfirm: () => void }) {
   return (
@@ -543,7 +543,7 @@ function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={photo} alt="รูปถ่ายยืนยันตัวตน" className="absolute inset-0 size-full object-cover" />
 
-      <div className={cn(CAM_GLASS, "absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-4 pt-3.5 pb-4")}>
+      <div className={cn(CAM_GLASS, "absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-lg px-4 pt-3.5 pb-4")}>
         <p className="mb-3 text-center text-[15px] font-semibold text-white">ตรวจรูปให้ชัดก่อนยืนยัน</p>
         <div className="flex gap-2.5">
           <button
@@ -570,12 +570,12 @@ function ProcessingStep({ stage, hasPhoto }: { stage: "gps" | "save"; hasPhoto: 
   ];
   return (
     <div role="status" aria-live="polite" className="flex flex-1 items-center px-[18px] pb-16">
-      <div className="gv-lg w-full rounded-[30px] px-[18px] py-6 text-center">
+      <div className="gv-lg w-full rounded-lg px-[18px] py-6 text-center">
         <h2 className="text-[22px] leading-snug font-bold">{stage === "gps" ? "กำลังตรวจสอบตำแหน่ง" : "กำลังบันทึกเวลา"}</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">รอสักครู่ ไม่ต้องปิดหน้านี้</p>
         <ol className="mt-4 grid gap-2.5 text-left">
           {rows.map((r, i) => (
-            <li key={r.key} className="flex items-center gap-3 rounded-[18px] border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] px-3 py-2.5 text-sm">
+            <li key={r.key} className="flex items-center gap-3 rounded-md border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] px-3 py-2.5 text-sm">
               <span
                 className={cn(
                   "flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold",
@@ -631,7 +631,7 @@ function OffsiteStep({
       )}
       <div className="absolute inset-x-3.5 top-[calc(env(safe-area-inset-top)+0.625rem)]">
         <div className="gv-lg flex items-center gap-2.5 rounded-full px-3.5 py-2">
-          <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#f5b700] to-[#b88200] text-white shadow-md">
+          <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[#b88200] text-white shadow-md">
             <AlertTriangle className="size-[18px]" aria-hidden="true" />
           </span>
           <div className="min-w-0">
@@ -643,7 +643,7 @@ function OffsiteStep({
         </div>
       </div>
 
-      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-[18px] pt-4 pb-[18px]">
+      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-lg px-[18px] pt-4 pb-[18px]">
         {info.permitted ? (
           <>
             <label htmlFor="offsite-reason" className="text-sm font-bold">
@@ -656,10 +656,10 @@ function OffsiteStep({
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
               placeholder="เช่น ไปพบลูกค้า / ปฏิบัติงานนอกสถานที่"
-              className="mt-1.5 w-full rounded-[20px] border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] p-3 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+              className="mt-1.5 w-full rounded-md border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] p-3 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             />
             <div className="mt-3 grid grid-cols-[1fr_1.4fr] gap-2.5">
-              <button type="button" onClick={onCancel} className="h-[54px] rounded-full border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] text-base font-bold text-foreground">
+              <button type="button" onClick={onCancel} className="h-[54px] rounded border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] text-base font-bold text-foreground">
                 ยกเลิก
               </button>
               <button type="button" onClick={onConfirm} disabled={!reason.trim() || pending} className={cn(PRIMARY_BTN, "flex h-[54px] items-center justify-center gap-2 text-[15px]")}>
@@ -684,14 +684,14 @@ function OffsiteStep({
 function ErrorStep({ message, onRetry, onCancel }: { message: string | null; onRetry: () => void; onCancel: () => void }) {
   return (
     <div role="alert" className="flex flex-1 items-center px-[18px] pb-16">
-      <div className="gv-lg w-full rounded-[30px] px-[18px] py-6 text-center">
-        <span className="mx-auto flex size-[68px] items-center justify-center rounded-full bg-gradient-to-b from-[#e4573d] to-[#b42318] text-white shadow-lg">
+      <div className="gv-lg w-full rounded-lg px-[18px] py-6 text-center">
+        <span className="mx-auto flex size-[68px] items-center justify-center rounded-full bg-[#b42318] text-white shadow-lg">
           <X className="size-8" aria-hidden="true" />
         </span>
         <h2 className="mt-3 text-[22px] leading-snug font-bold">ลงเวลาไม่สำเร็จ</h2>
         <p className="mt-1 text-sm text-muted-foreground">{message ?? "ตรวจสัญญาณอินเทอร์เน็ต แล้วกด ลองใหม่ ถ้ายังไม่ได้ แจ้ง HR"}</p>
         <div className="mt-4 grid grid-cols-2 gap-2.5">
-          <button type="button" onClick={onCancel} className="h-[54px] rounded-full border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] text-base font-bold text-foreground">
+          <button type="button" onClick={onCancel} className="h-[54px] rounded border-[1.5px] border-[var(--lg-field)] bg-[var(--lg-in)] text-base font-bold text-foreground">
             ยกเลิก
           </button>
           <button type="button" onClick={onRetry} className={cn(PRIMARY_BTN, "h-[54px]")}>
@@ -759,9 +759,9 @@ function SuccessStep({
         <div className="gv-lg-bg absolute inset-0" />
       )}
 
-      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-[18px] pt-5 pb-[18px]">
+      <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-lg px-[18px] pt-5 pb-[18px]">
         <div className="flex items-center gap-3">
-          <span className="gv-confirm flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#42a5f5] to-[#1565c0] text-white shadow-md">
+          <span className="gv-confirm flex size-10 shrink-0 items-center justify-center rounded-full bg-[#1565c0] text-white shadow-md">
             <CheckCircle2 className="size-5" />
           </span>
           <div className="min-w-0">
@@ -779,7 +779,7 @@ function SuccessStep({
           </p>
           {isLate && <span className="rounded-full bg-[#f5b700]/25 px-3 py-1 text-xs font-bold text-[#8a6100] dark:text-[#f5b700]">มาสาย</span>}
         </div>
-        <dl className="mt-3 grid grid-cols-3 rounded-[20px] border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] py-2.5 text-center">
+        <dl className="mt-3 grid grid-cols-3 rounded-md border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] py-2.5 text-center">
           <div>
             <dt className="text-xs text-muted-foreground">เวลาเข้า</dt>
             <dd className="font-mono text-[15px] font-bold tabular-nums">{fmtTime(record?.clockInAt)}</dd>
@@ -796,7 +796,7 @@ function SuccessStep({
         <div className="mt-3 flex items-center gap-3">
           {photo && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt="รูปที่ถ่าย" className="size-[58px] shrink-0 rounded-[18px] object-cover" />
+            <img src={photo} alt="รูปที่ถ่าย" className="size-[58px] shrink-0 rounded-md object-cover" />
           )}
           <button type="button" onClick={onDone} className={cn(PRIMARY_BTN, "h-[58px] flex-1")}>
             กลับหน้าหลัก

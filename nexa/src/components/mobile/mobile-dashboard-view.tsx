@@ -2,29 +2,42 @@
 
 import { useMenuVisibility } from "./use-menu-visibility";
 import Link from "next/link";
-import { ChevronRight, CheckCircle2 } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardCheck,
+  ClipboardList,
+  ClipboardPen,
+  Clock,
+  HandHeart,
+  LayoutGrid,
+  ScanLine,
+  Timer,
+  TreePalm,
+} from "lucide-react";
 import { useNotifications } from "@/features/notification/hooks";
 import { useEmployeeEvaluationHistory } from "@/features/campaign/hooks";
 import { useMyPendingAppraisalTasks } from "@/features/appraisal-round/hooks";
 import { useAuth } from "@/features/auth/auth-context";
 import type { DashboardActions } from "@/features/dashboard/service";
 import { MobileCheckinCard } from "./mobile-checkin-card";
-import {
-  RApprove, RBell, RCalendarClock, RCalendarDays, RChart, RClipboardList, RClipboardPen, RClock, RGrid, RHandHeart, RPalm, RScan, RTimer,
-} from "@/components/shared/real-icons";
 import { MobileBell } from "./mobile-header";
 
 /** What an employee does most often, rows of four (the last slot is "ทั้งหมด", the full menu). Each item only shows if the account may use it. */
 /** `id` matches the menu ids in config/mobile-menu.ts, so hiding a menu in "ตั้งค่าเมนู" hides it here too. */
 const QUICK_MENU = [
-  { id: "leave", href: "/leave/new", label: "ขอลา", icon: RPalm, permission: "leave:read" },
-  { id: "overtime", href: "/overtime/new", label: "ขอ OT", icon: RTimer, permission: "overtime:read" },
+  { id: "leave", href: "/leave/new", label: "ขอลา", icon: TreePalm, permission: "leave:read" },
+  { id: "overtime", href: "/overtime/new", label: "ขอ OT", icon: Timer, permission: "overtime:read" },
   // The attendance page lists the last 30 days of scans, with each day's in and out times.
-  { id: "checkin", href: "/attendance", label: "ประวัติเข้า-ออกงาน", icon: RScan, permission: "attendance:read" },
-  { id: "timeedit", href: "/attendance/corrections/new", label: "แก้เวลา", icon: RClock, permission: "attendance:create" },
-  { id: "benefits", href: "/benefits/medical/new", label: "เบิกค่ารักษา", icon: RHandHeart, permission: "expense:read" },
-  { id: "shift", href: "/shifts", label: "ตารางกะ", icon: RCalendarClock, permission: "shift:read" },
-  { id: "calendar", href: "/calendar", label: "ปฏิทิน", icon: RCalendarDays, permission: "calendar:read" },
+  { id: "checkin", href: "/attendance", label: "ประวัติเข้า-ออกงาน", icon: ScanLine, permission: "attendance:read" },
+  { id: "timeedit", href: "/attendance/corrections/new", label: "แก้เวลา", icon: Clock, permission: "attendance:create" },
+  { id: "benefits", href: "/benefits/medical/new", label: "เบิกค่ารักษา", icon: HandHeart, permission: "expense:read" },
+  { id: "shift", href: "/shifts", label: "ตารางกะ", icon: CalendarClock, permission: "shift:read" },
+  { id: "calendar", href: "/calendar", label: "ปฏิทิน", icon: CalendarDays, permission: "calendar:read" },
 ] as const;
 
 export interface MobileDashboardSnapshot {
@@ -96,15 +109,14 @@ export function MobileDashboardView({
   return (
     <div className="gv-m gv-lg-bg min-h-full md:hidden">
       <h1 className="sr-only">หน้าหลัก</h1>
-      {/* Header — plain white background, no dark card here: the Attendance
-          Card below is deliberately the only high-emphasis surface on the page. */}
-      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
+      {/* Header: the blue Favpo band with the greeting; the status card below is the one high-emphasis surface on the page. */}
+      <div className="mb-4 flex items-start justify-between gap-3 bg-[#0d47a1] px-4 pt-4 pb-5 text-white dark:bg-[#0a2f6b]">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-gv-dark-green">GV ONE HR</p>
-          <p className="mt-1 truncate text-lg font-semibold text-foreground">
+          <p className="text-xl font-bold">GV One</p>
+          <p className="mt-2 truncate text-lg font-medium">
             {greeting()} {greetName}
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">วันนี้ {today}</p>
+          <p className="mt-0.5 text-sm text-white/85">วันนี้ {today}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <MobileBell />
@@ -130,7 +142,7 @@ export function MobileDashboardView({
               {toApprove > 0 && (
                 <Link href="/requests?view=approvals" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
                   <TodoIcon count={toApprove}>
-                    <RApprove size={34} />
+                    <ClipboardCheck className="size-7" />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">รอคุณอนุมัติ</p>
@@ -142,7 +154,7 @@ export function MobileDashboardView({
               {actions.myPending > 0 && (
                 <Link href="/requests" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
                   <TodoIcon count={actions.myPending}>
-                    <RClipboardList size={34} />
+                    <ClipboardList className="size-7" />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">คำขอของฉันที่รออนุมัติ</p>
@@ -159,7 +171,7 @@ export function MobileDashboardView({
                   className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60"
                 >
                   <TodoIcon count={pendingCount}>
-                    <RClipboardPen size={34} />
+                    <ClipboardPen className="size-7" />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">มีการประเมินที่ต้องทำ</p>
@@ -171,7 +183,7 @@ export function MobileDashboardView({
               {hrNotifCount > 0 && (
                 <Link href="/notifications" className="flex items-center gap-3 p-3.5 active:bg-icon-chip-bg/60">
                   <TodoIcon count={hrNotifCount}>
-                    <RBell size={32} />
+                    <Bell className="size-7" />
                   </TodoIcon>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">แจ้งเตือนจากหัวหน้า/HR</p>
@@ -190,14 +202,14 @@ export function MobileDashboardView({
         <section className="space-y-2">
           <h2 className="px-1 text-[13px] font-bold text-foreground">เมนูด่วน</h2>
           <div className="gv-lg-card grid grid-cols-4 gap-x-1.5 gap-y-3 p-3">
-            {[...QUICK_MENU.filter((item) => can(item.permission) && isMenuVisible(item.id)), { id: "all", href: "/services", label: "ทั้งหมด", icon: RGrid, permission: "" }].map((item) => (
+            {[...QUICK_MENU.filter((item) => can(item.permission) && isMenuVisible(item.id)), { id: "all", href: "/services", label: "ทั้งหมด", icon: LayoutGrid, permission: "" }].map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex min-h-11 flex-col items-center gap-1.5 rounded-2xl text-center active:scale-95"
+                className="flex min-h-11 flex-col items-center gap-1.5 rounded-md text-center active:scale-95"
               >
-                <span className="gv-lg-tile flex size-[58px] items-center justify-center rounded-[20px]">
-                  <item.icon size={40} />
+                <span className="gv-lg-tile flex size-[58px] items-center justify-center rounded-md text-primary">
+                  <item.icon className="size-7" />
                 </span>
                 <span className="text-xs leading-snug font-semibold text-foreground">{item.label}</span>
               </Link>
@@ -229,10 +241,10 @@ export function MobileDashboardView({
             </div>
           </Link>
           <div className="grid grid-cols-2 gap-2">
-            <SummaryTile href="/requests" icon={RClipboardList} label="คำขอของฉัน" value={`${actions.myTotal} รายการ`} />
+            <SummaryTile href="/requests" icon={ClipboardList} label="คำขอของฉัน" value={`${actions.myTotal} รายการ`} />
             <SummaryTile
               href={user.employee ? `/employees/${user.employee.id}/evaluation-history` : "/performance"}
-              icon={RChart}
+              icon={BarChart3}
               label="คะแนนการประเมิน"
               value={scoreLoading ? "…" : latestScore != null ? `${latestScore.toFixed(1)} / 5` : "—"}
               disabled={!canViewEvalHistory}
@@ -249,7 +261,7 @@ export function MobileDashboardView({
  * illustrated icons (fixed size prop) and the one lucide bell (className). */
 function TodoIcon({ count, children }: { count: number; children: React.ReactNode }) {
   return (
-    <span className="relative flex size-10 shrink-0 items-center justify-center">
+    <span className="relative flex size-10 shrink-0 items-center justify-center text-primary">
       {children}
       {count > 0 && (
         <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-bold text-badge-foreground ring-2 ring-card">
@@ -275,8 +287,8 @@ function SummaryTile({
 }) {
   const inner = (
     <div className="flex h-full flex-col gap-1.5 gv-lg-card p-3">
-      <span className="flex size-8 items-center justify-center">
-        <Icon size={30} />
+      <span className="flex size-8 items-center justify-center text-primary">
+        <Icon size={26} />
       </span>
       <p className="truncate text-xs text-muted-foreground">{label}</p>
       <p className="truncate text-sm font-bold text-foreground">{value}</p>

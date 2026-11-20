@@ -584,8 +584,8 @@
 .theme-flip7 .gv-panel {
   background: linear-gradient(180deg, rgb(255 255 255 / 0.88), rgb(255 255 255 / 0.64));
   border: 1px solid rgb(255 255 255 / 0.92);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 18px 34px -22px rgb(5 60 55 / 0.5), 0 2px 6px -2px rgb(5 60 55 / 0.12);
 }
 .theme-flip7 .gv-panel-lift {
@@ -1176,80 +1176,75 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
    Real blur only on the page header, the floating tab bar and the round buttons; cards are near-solid white so their text keeps 4.5:1 and
    mid-range Android phones stay smooth. Without backdrop-filter, or with "reduce transparency", the glass turns into a solid surface. */
 :root {
-  /* Space the floating tab bar takes at the bottom of a phone (14px gap + 68px bar, plus 2px); bars pinned above it use this. */
-  --gv-tabbar: 5.25rem;
-  --lg-glass: rgba(255, 255, 255, 0.62);
-  --lg-glass-strong: rgba(255, 255, 255, 0.82);
-  --lg-card: rgba(255, 255, 255, 0.9);
-  --lg-edge: rgba(255, 255, 255, 0.78);
-  --lg-tile: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(227, 242, 253, 0.72));
-  --lg-bg1: #e6f5f2;
-  --lg-bg2: #f3f6f7;
-  --lg-shadow: 0 10px 30px rgba(15, 70, 64, 0.14);
-  --lg-hi: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(255, 255, 255, 0.25), inset 0 0 22px rgba(255, 255, 255, 0.18);
+  /* Space the flat tab bar takes at the bottom of a phone (64px, edge to edge); bars pinned above it use this. */
+  --gv-tabbar: 4rem;
+  --lg-glass: #ffffff;
+  --lg-glass-strong: #ffffff;
+  --lg-card: #ffffff;
+  --lg-edge: #dee2e6;
+  --lg-tile: #eef3fb;
+  --lg-bg1: #f7f7f7;
+  --lg-bg2: #f7f7f7;
+  --lg-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --lg-hi: 0 0 0 0 transparent;
 }
 .dark {
-  --lg-glass: rgba(34, 40, 42, 0.58);
-  --lg-glass-strong: rgba(34, 40, 42, 0.8);
-  --lg-card: rgba(30, 35, 37, 0.92);
-  --lg-edge: rgba(255, 255, 255, 0.14);
-  --lg-tile: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(100, 181, 246, 0.12));
-  --lg-bg1: #0f1d1c;
+  --lg-glass: #1b1e21;
+  --lg-glass-strong: #1b1e21;
+  --lg-card: #1b1e21;
+  --lg-edge: #2c3136;
+  --lg-tile: #202327;
+  --lg-bg1: #131516;
   --lg-bg2: #131516;
-  --lg-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  --lg-hi: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  --lg-shadow: 0 0 0 0 transparent;
+  --lg-hi: 0 0 0 0 transparent;
 }
 .gv-lg {
   background: var(--lg-glass);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: 1px solid var(--lg-edge);
   box-shadow: var(--lg-shadow), var(--lg-hi);
 }
 .gv-lg-top {
-  background: linear-gradient(180deg, var(--lg-glass-strong), var(--lg-glass));
-  -webkit-backdrop-filter: blur(20px) saturate(170%);
-  backdrop-filter: blur(20px) saturate(170%);
-  border-bottom: 1px solid var(--lg-edge);
+  /* The phone app bar is solid Favpo blue with white text; the buttons inside keep their own look. */
+  background: #0d47a1;
+  color: #ffffff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-bottom: 0;
 }
+.dark .gv-lg-top { background: #0a2f6b; }
 .gv-lg-card {
   background: var(--lg-card);
   border: 1px solid var(--lg-edge);
-  border-radius: 22px;
-  box-shadow: 0 6px 20px rgba(15, 70, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  box-shadow: none;
 }
-.dark .gv-lg-card { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
 /* A glass tile behind a realistic icon (menu tiles, list rows). */
 .gv-lg-tile {
   background: var(--lg-tile);
   border: 1px solid var(--lg-edge);
-  box-shadow: 0 4px 12px rgba(15, 70, 64, 0.12), inset 0 1px 0 #fff;
+  box-shadow: none;
 }
-.dark .gv-lg-tile { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18); }
 /* Page ground with two soft teal glows, so the glass has something to bend. */
 .gv-lg-bg {
-  background:
-    radial-gradient(260px 260px at -10% 18%, rgba(66, 165, 245, 0.28), transparent 70%),
-    radial-gradient(300px 300px at 110% 62%, rgba(110, 231, 183, 0.26), transparent 70%),
-    linear-gradient(180deg, var(--lg-bg1), var(--lg-bg2));
+  background: var(--lg-bg1);
 }
 .dark .gv-lg-bg {
-  background:
-    radial-gradient(260px 260px at -10% 18%, rgba(66, 165, 245, 0.2), transparent 70%),
-    radial-gradient(300px 300px at 110% 62%, rgba(100, 181, 246, 0.12), transparent 70%),
-    linear-gradient(180deg, var(--lg-bg1), var(--lg-bg2));
+  background: var(--lg-bg1);
 }
 /* The drop under the active tab: a lens of lit glass that slides with a small overshoot. */
 .gv-lg-drop {
-  background: radial-gradient(120% 150% at 30% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.4) 55%, rgba(25, 118, 210, 0.16));
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 6px 16px rgba(15, 70, 64, 0.18), inset 0 1px 0 #fff, inset 0 -6px 12px rgba(25, 118, 210, 0.12);
-  transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.55, 1);
+  background: #e3f2fd;
+  border: 0;
+  box-shadow: none;
+  transition: transform 0.25s ease;
 }
 .dark .gv-lg-drop {
-  background: radial-gradient(120% 150% at 30% 0%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06) 55%, rgba(100, 181, 246, 0.2));
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: #0f2744;
+  border: 0;
+  box-shadow: none;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .gv-lg { background: var(--lg-glass-strong); }
@@ -1265,23 +1260,22 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 @media (max-width: 767px) {
   .gv-m [data-slot="card"] {
     border-color: var(--lg-edge);
-    border-radius: 22px;
-    box-shadow: 0 6px 20px rgba(15, 70, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    border-radius: 6px;
+    box-shadow: none;
   }
   /* A card that carries its own meaning colour (warning, success, accent and so on) keeps it; only plain cards turn into glass. */
   .gv-m [data-slot="card"]:not([class*="bg-accent"]):not([class*="bg-warning"]):not([class*="bg-destructive"]):not([class*="bg-success"]):not([class*="bg-info"]):not([class*="bg-primary"]):not([class*="bg-muted"]):not([class*="bg-gradient"]):not([class*="bg-["]) {
     background: var(--lg-card);
   }
-  .dark .gv-m [data-slot="card"] { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
   .gv-m [data-slot="tabs-list"][data-variant="default"] {
     background: var(--lg-glass);
-    -webkit-backdrop-filter: blur(22px) saturate(180%);
-    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     border: 1px solid var(--lg-edge);
-    border-radius: 999px;
-    box-shadow: var(--lg-shadow), var(--lg-hi);
+    border-radius: 8px;
+    box-shadow: none;
   }
-  .gv-m [data-slot="tabs-trigger"] { border-radius: 999px; }
+  .gv-m [data-slot="tabs-trigger"] { border-radius: 6px; }
 }
 
 /* ───────── Sign-in: minimal liquid glass (approved mock, 17 Nov 2026) ───────── */
@@ -1322,8 +1316,8 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   position: relative;
   border-radius: 30px;
   background: var(--lg-glass);
-  -webkit-backdrop-filter: blur(26px) saturate(180%);
-  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: 1px solid var(--lg-edge);
   box-shadow: 0 24px 60px rgba(15, 70, 64, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(255, 255, 255, 0.25), inset 0 0 40px rgba(255, 255, 255, 0.16);
 }
@@ -1350,8 +1344,8 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 @keyframes gv-wave { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-12deg); } 80% { transform: rotate(4deg); } }
 .gv-login-bubble {
   background: var(--lg-glass);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: 1px solid var(--lg-edge);
   box-shadow: 0 8px 22px rgba(15, 70, 64, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   animation: gv-bob 5.5s ease-in-out infinite;
@@ -1365,11 +1359,9 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 
 /* Check-in camera screens: glass over a live picture (always dark, whatever the theme). */
 .gv-lg-cam {
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  background: rgba(13, 71, 161, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: none;
   color: #fff;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -1535,8 +1527,8 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 @layer components {
   .gv-frost {
     background: color-mix(in srgb, var(--card) 62%, transparent);
-    -webkit-backdrop-filter: blur(22px) saturate(180%);
-    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     border: 1px solid color-mix(in srgb, #fff 78%, transparent);
     box-shadow: 0 12px 34px rgba(15, 70, 64, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9),
       inset 0 -1px 0 rgba(255, 255, 255, 0.2);
@@ -1620,4 +1612,30 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 .gv-nav-ico .fine,
 .gv-nav-ico .shadow {
   display: none;
+}
+
+/* ── Sign-in form side (Favpo look, 2026-11-20): always a light, flat panel, whatever the theme, so the form tokens are fixed here. ── */
+.gv-login-light {
+  --login-text-primary: #212529;
+  --login-text-secondary: #5f6b76;
+  --login-link: #1565c0;
+  --login-link-hover: #0d47a1;
+  --login-border: #dee2e6;
+  --login-surface: #ffffff;
+  --login-error: #c62828;
+  --lg-field: #8b939c;
+  --lg-in: #eef3fb;
+  color-scheme: light;
+  background: #ffffff;
+  color: #212529;
+}
+
+/* The thin line that runs across the top of a loading page (loading.tsx). Only transform animates; reduced motion shows it full. */
+.gv-load-bar i { animation: gv-load-run 1.3s ease-in-out infinite; }
+@keyframes gv-load-run {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(280%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gv-load-bar i { animation: none; width: 100%; }
 }

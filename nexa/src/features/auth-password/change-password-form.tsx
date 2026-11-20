@@ -187,7 +187,7 @@ export function ChangePasswordForm() {
             <button
               type="submit"
               disabled={changePasswordMut.isPending}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#1565c0] px-6 text-[15px] font-semibold text-white shadow-[0_1px_2px_rgba(21, 101, 192,.2),0_10px_24px_-12px_rgba(21, 101, 192,.55)] transition-colors hover:bg-[#0d47a1] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none disabled:opacity-60 sm:justify-self-start"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#1565c0] px-6 text-[15px] font-semibold text-white shadow-[0_1px_2px_rgba(21,101,192,.2),0_10px_24px_-12px_rgba(21,101,192,.55)] transition-colors hover:bg-[#0d47a1] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none disabled:opacity-60 sm:justify-self-start"
             >
               {changePasswordMut.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <KeyRound className="size-4" aria-hidden="true" />}
               {changePasswordMut.isPending ? "กำลังบันทึก…" : "เปลี่ยนรหัสผ่าน"}

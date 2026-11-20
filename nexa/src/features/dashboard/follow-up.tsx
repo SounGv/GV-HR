@@ -161,7 +161,7 @@ export function FollowRow({
           className={cn(
             "relative mt-auto inline-flex min-h-11 items-center justify-center gap-1 rounded-[13px] border px-3 text-[14px] font-semibold transition-colors",
             tone === "bad"
-              ? "border-transparent bg-[linear-gradient(135deg,#1565c0,#0b4f4a)] text-white shadow-[0_8px_18px_rgba(25, 118, 210,.22)] hover:brightness-110"
+              ? "border-transparent bg-[linear-gradient(135deg,#1565c0,#0b4f4a)] text-white shadow-[0_8px_18px_rgba(25,118,210,.22)] hover:brightness-110"
               : "border-border bg-[#f0f9f7] text-[#0b4f4a] hover:bg-[#ddf3ef] dark:bg-[#13201e] dark:text-[#bbdefb]",
           )}
         >

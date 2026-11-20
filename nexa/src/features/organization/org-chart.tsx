@@ -231,7 +231,7 @@ export function OrgChart({
             className={cn(
               "h-[34px] rounded-[9px] px-3.5 text-[13.5px] font-semibold whitespace-nowrap transition-colors sm:px-4",
               view === value
-                ? "bg-[#1565c0] text-white shadow-[0_1px_2px_rgba(21, 101, 192,.2),0_10px_24px_-12px_rgba(21, 101, 192,.55)]"
+                ? "bg-[#1565c0] text-white shadow-[0_1px_2px_rgba(21,101,192,.2),0_10px_24px_-12px_rgba(21,101,192,.55)]"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

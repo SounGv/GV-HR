@@ -102,7 +102,7 @@ function MobileCheckinCardForEmployee() {
 
   return (
     <>
-      <section className="gv-lg-card relative overflow-hidden bg-gradient-to-br from-card via-card to-accent p-5 text-foreground">
+      <section className="gv-lg-card relative overflow-hidden p-5 text-foreground">
         <div className="relative flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="size-1.5 rounded-full bg-[#1976d2]" />
@@ -126,7 +126,7 @@ function MobileCheckinCardForEmployee() {
           {isWfh ? WORK_MODE_LABEL.WFH : (branch?.name ?? "ไม่ระบุสาขา")}
         </p>
 
-        <div className="relative mt-4 border-t border-dashed border-foreground/15 pt-4">
+        <div className="relative mt-4 border-t border-[var(--lg-edge)] pt-4">
           <div className={cn("grid gap-3", showDistance ? "grid-cols-2" : "grid-cols-1")}>
             <div>
               <p className="text-xs text-muted-foreground">เวลา ณ ปัจจุบัน</p>
@@ -143,26 +143,26 @@ function MobileCheckinCardForEmployee() {
           </div>
         </div>
 
-        <div className="relative mt-4 border-t border-dashed border-foreground/15 pt-4">
+        <div className="relative mt-4 border-t border-[var(--lg-edge)] pt-4">
           {isLoading ? (
-            <div className="h-13 w-full animate-pulse motion-reduce:animate-none rounded-2xl bg-card/60" />
+            <div className="h-13 w-full animate-pulse motion-reduce:animate-none rounded bg-card/60" />
           ) : isError ? (
             <button
               type="button"
               onClick={() => refetch()}
-              className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl border border-destructive/40 bg-card text-base font-semibold text-destructive"
+              className="flex h-13 w-full items-center justify-center gap-2 rounded border border-destructive/40 bg-card text-base font-semibold text-destructive"
             >
               โหลดเวลาวันนี้ไม่สำเร็จ กดเพื่อลองใหม่
             </button>
           ) : hasOut ? (
-            <div className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-success text-sm font-semibold text-success-foreground">
+            <div className="flex h-13 items-center justify-center gap-2 rounded bg-success text-sm font-semibold text-success-foreground">
               <CheckCircle2 className="size-4.5" /> ลงเวลาครบแล้ววันนี้
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setFlowMode(hasIn ? "out" : "in")}
-              className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-gv-lime text-base font-semibold text-gv-deep-green shadow-sm active:scale-[0.99] active:brightness-95"
+              className="flex h-13 w-full items-center justify-center gap-2 rounded bg-primary text-base font-semibold text-primary-foreground hover:bg-[#1565c0] active:scale-[0.99]"
             >
               <Camera className="size-5" /> {hasIn ? "ลงเวลาออกงาน" : "ลงเวลาเข้างาน"}
             </button>

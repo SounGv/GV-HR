@@ -149,7 +149,18 @@ export const NAV_ICON_BY_HREF: Record<string, NavIconKey> = {
   "/integrations": "integration",
 };
 
+/** Phone-only links that point at the same place as a side-menu entry (a "new" form, a filtered list) borrow that entry's icon. */
+const ICON_ALIAS: Record<string, string> = {
+  "/organization": "/organization?tab=chart",
+  "/appraisal/rounds": "/appraisal",
+  "/benefits": "/benefits/history",
+  "/kpi": "/reports?view=performance",
+  "/performance": "/appraisal/my-results",
+  "/services": "/dashboard",
+};
+
 export function navIconArt(href: string): string | null {
-  const key = NAV_ICON_BY_HREF[href];
+  const bare = href.split("?")[0].replace(/\/new$/, "");
+  const key = NAV_ICON_BY_HREF[href] ?? NAV_ICON_BY_HREF[bare] ?? NAV_ICON_BY_HREF[ICON_ALIAS[bare] ?? ""];
   return key ? NAV_ICON_ART[key] : null;
 }
