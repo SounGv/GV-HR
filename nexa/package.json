@@ -27,6 +27,7 @@
     "check:leave-ranking": "node --experimental-strip-types scripts/check-leave-ranking.mjs",
     "test:eval-home": "node scripts/e2e-ai/build.mjs run-eval-home && node --env-file=.env.local .tmp-e2e/run-eval-home.cjs",
     "test:supervisors": "node scripts/e2e-ai/build.mjs run-supervisors && node --env-file=.env.local .tmp-e2e/run-supervisors.cjs",
+    "test:detail-report": "node scripts/e2e-ai/build.mjs run-detail-report && node --env-file=.env.local .tmp-e2e/run-detail-report.cjs",
     "test:devplan": "node scripts/e2e-ai/build.mjs run-devplan && node --env-file=.env.local .tmp-e2e/run-devplan.cjs",
     "test:adjust": "node scripts/e2e-ai/build.mjs run-adjust && node --env-file=.env.local .tmp-e2e/run-adjust.cjs",
     "test:refresh": "node scripts/e2e-ai/build.mjs run-refresh && node --env-file=.env.local .tmp-e2e/run-refresh.cjs",

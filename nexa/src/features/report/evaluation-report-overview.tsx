@@ -133,6 +133,7 @@ function ReportHub({ hasCompare }: { hasCompare: boolean }) {
         { href: "#score-bands", label: "รายงานสรุปคะแนน (ระดับผลการประเมิน)" },
         { href: "#top-ten", label: "รายงานสรุป 10 อันดับคะแนน" },
         { href: "/performance", label: "9 Box Grid (สมรรถนะ / KPI)", page: true },
+        { href: "/appraisal/report", label: "รายงานประเมินละเอียด (ใครประเมินใคร คะแนน ความเห็น กราฟ)", page: true },
       ],
     },
     {

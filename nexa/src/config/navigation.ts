@@ -176,6 +176,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "สรุปการเข้างานรายเดือน", href: "/reports?view=attendance", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานการลา", href: "/reports?view=leave", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานประเมินผล", href: "/reports?view=performance", icon: BarChart3, permission: "report:read", ready: true },
+      { label: "รายงานประเมินละเอียด", href: "/appraisal/report", icon: BarChart3, permission: "campaign:update", ready: true },
       { label: "รายงานและวิเคราะห์ทั้งหมด", href: "/reports", icon: BarChart3, permission: "report:read", ready: true },
     ],
   },

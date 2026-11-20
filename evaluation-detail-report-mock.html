@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>รายงานประเมินละเอียด (แบบร่าง)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f7f7;--card:#fff;--line:#d9dee3;--text:#1c2024;--muted:#667085;
+  --blue:#1976d2;--blue-d:#1565c0;--blue-l:#e3f0fc;
+  --green:#1a7f4e;--green-l:#e6f4ec;--amber:#8a6100;--amber-l:#fbf1d9;--red:#c62828;--red-l:#fbe9e9;
+  --r:6px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.65 "Anuphan",system-ui,sans-serif}
+.top{background:var(--blue-d);color:#fff;padding:10px 20px;font-weight:600;font-size:18px}
+.note{background:#fff8e1;border-bottom:1px solid #f0d98a;padding:8px 20px;font-size:13px;color:#6b5200}
+.wrap{max-width:1280px;margin:0 auto;padding:16px 20px 60px}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:22px;margin:0 0 2px;line-height:1.4}
+.sub{color:var(--muted);margin:0 0 12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+select,input{font:inherit;height:36px;border:1px solid var(--line);border-radius:var(--r);padding:0 10px;background:#fff}
+.btn{font:inherit;height:36px;border:1px solid var(--line);background:#fff;border-radius:var(--r);padding:0 14px;cursor:pointer}
+.btn.p{background:var(--blue);border-color:var(--blue);color:#fff}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-top:8px}
+.tab{padding:9px 16px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);font-weight:500}
+.tab.on{color:var(--blue);border-color:var(--blue)}
+.pane{display:none;padding-top:14px}.pane.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.card h2{font-size:15px;margin:0 0 2px;line-height:1.45}
+.card .hint{font-size:12px;color:var(--muted);margin:0 0 10px}
+.grid{display:grid;gap:12px}
+.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.split{display:grid;grid-template-columns:270px 1fr;gap:14px}
+@media(max-width:980px){.g3,.g2,.g4,.split{grid-template-columns:1fr}}
+.list{max-height:760px;overflow:auto;padding:0}
+.list .row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #eef0f2;cursor:pointer}
+.list .row.on{background:var(--blue-l)}
+.av{width:32px;height:32px;border-radius:50%;background:#cfd8e3;display:grid;place-items:center;font-size:12px;font-weight:600;color:#44546a;flex:none}
+.av.big{width:56px;height:56px;font-size:18px}
+.nm{flex:1;min-width:0}.nm b{display:block;font-weight:500;line-height:1.4}.nm span{font-size:12px;color:var(--muted)}
+.sc{font-variant-numeric:tabular-nums;font-weight:600}
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi small{color:var(--muted);font-size:12px}.kpi b{font-size:26px;line-height:1.3;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:1px 8px;border-radius:3px;border:1px solid}
+.chip.g{background:var(--green-l);color:var(--green);border-color:#b9dec9}
+.chip.a{background:var(--amber-l);color:var(--amber);border-color:#ecd69a}
+.chip.r{background:var(--red-l);color:var(--red);border-color:#f0b9b9}
+.chip.b{background:var(--blue-l);color:var(--blue-d);border-color:#b6d6f3}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:#fff;font-weight:600}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+td.c{text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+.cm{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:8px}
+.cm .h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.cm p{margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+svg text{font-family:"Anuphan",sans-serif}
+.up{color:var(--green)}.dn{color:var(--red)}
+.mb{margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="top">GV One</div>
+<div class="note"><b>แบบร่างให้ดูก่อนสร้างจริง</b> ชื่อคนและตัวเลขทุกจุดเป็นข้อมูลตัวอย่างที่แต่งขึ้น ไม่ใช่คะแนนจริง หน้าจริงจะดึงจากรอบประเมินในระบบ เห็นได้เฉพาะ HR</div>
+<div class="wrap">
+  <div class="crumb">รายงาน › รายงานประเมินละเอียด</div>
+  <h1>รายงานประเมินละเอียด</h1>
+  <p class="sub">ดูว่าใครประเมินใคร ให้คะแนนเท่าไร เขียนความเห็นอะไร พร้อมกราฟเทียบรายคน รายทีม และย้อนหลังข้ามรอบ (เฉพาะ HR)</p>
+
+  <div class="bar">
+    <label>รอบ <select id="round"><option>พฤศจิกายน 2569 หัวหน้าประเมินลูกน้อง (ตัวอย่าง)</option><option>ตุลาคม 2569 หัวหน้าประเมินลูกน้อง (ตัวอย่าง)</option></select></label>
+    <label>แผนก <select id="dept"><option>ทุกแผนก</option><option>คลังสินค้า Online</option><option>คลังสินค้า Offline</option><option>รับเข้าสินค้า</option></select></label>
+    <span style="flex:1"></span>
+    <button class="btn">พิมพ์</button><button class="btn">ส่งออก Excel</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" data-t="p">รายคน</div>
+    <div class="tab" data-t="t">รายทีม</div>
+    <div class="tab" data-t="c">เทียบข้ามรอบ</div>
+  </div>
+
+  <!-- รายคน -->
+  <div class="pane on" id="p">
+    <div class="split">
+      <div class="card list" id="people"></div>
+      <div>
+        <div class="card mb" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <div class="av big">ส</div>
+          <div style="flex:1;min-width:200px"><h2 style="font-size:18px">สมศรี ตัวอย่างดี (ศรี)</h2><div class="hint" style="margin:0">1003 · ผู้ช่วยหัวหน้าแผนกรับเข้าสินค้า · ผู้ประเมินหลัก: สมชาย ทดสอบ</div></div>
+          <div class="kpi"><small>คะแนนรวม</small><b>86.4%</b></div>
+          <div class="kpi"><small>เกรด</small><b>B+</b></div>
+          <div class="kpi"><small>เทียบแผนก (81.2)</small><b class="up">+5.2</b></div>
+          <div class="kpi"><small>เทียบรอบก่อน</small><b class="up">+3.1</b></div>
+          <div class="kpi"><small>อันดับ</small><b>5 <span style="font-size:14px;color:var(--muted)">จาก 36</span></b></div>
+        </div>
+
+        <div class="grid g3 mb">
+          <div class="card"><h2>คะแนนแยกตามหัวข้อ</h2><p class="hint">เทียบค่าเฉลี่ยแผนก (เส้นประ)</p><svg id="radar" viewBox="0 0 300 250" width="100%"></svg>
+            <div class="legend"><span><i style="background:var(--blue)"></i>สมศรี</span><span><i style="background:#9aa4b2"></i>ค่าเฉลี่ยแผนก</span></div></div>
+          <div class="card"><h2>คะแนนแยกตามมุมมอง</h2><p class="hint">ผู้ประเมินแต่ละกลุ่มให้กี่เปอร์เซ็นต์</p><svg id="bars" viewBox="0 0 300 250" width="100%"></svg>
+            <div class="legend"><span><i style="background:var(--blue)"></i>คนนี้</span><span><i style="background:#c3cad4"></i>ค่าเฉลี่ยบริษัท</span></div></div>
+          <div class="card"><h2>ย้อนหลัง 6 รอบ</h2><p class="hint">คะแนนรวมเทียบค่าเฉลี่ยแผนก</p><svg id="trend" viewBox="0 0 300 250" width="100%"></svg>
+            <div class="legend"><span><i style="background:var(--blue)"></i>สมศรี</span><span><i style="background:#9aa4b2"></i>ค่าเฉลี่ยแผนก</span></div></div>
+        </div>
+
+        <div class="card mb"><h2>ใครประเมินใคร ให้คะแนนเท่าไร</h2><p class="hint">ทุกใบประเมินของคนนี้ในรอบนี้ กดชื่อเพื่อเปิดใบเต็ม</p>
+          <table><thead><tr><th>ผู้ประเมิน</th><th>มุมมอง</th><th>น้ำหนัก</th><th class="n">คะแนน (%)</th><th>ส่งเมื่อ</th><th>สถานะ</th></tr></thead><tbody>
+          <tr><td>สมชาย ทดสอบ (ชาย)</td><td>หัวหน้า</td><td class="n">60%</td><td class="n">88.0</td><td>18 พ.ย. 2569</td><td><span class="chip g">✓ ส่งแล้ว</span></td></tr>
+          <tr><td>สมศรี ตัวอย่างดี (ศรี)</td><td>ตนเอง</td><td class="n">10%</td><td class="n">92.0</td><td>17 พ.ย. 2569</td><td><span class="chip g">✓ ส่งแล้ว</span></td></tr>
+          <tr><td>วิชัย ตัวอย่างใจ (ชัย)</td><td>เพื่อนร่วมงาน</td><td class="n">15%</td><td class="n">80.0</td><td>19 พ.ย. 2569</td><td><span class="chip g">✓ ส่งแล้ว</span></td></tr>
+          <tr><td>มานี ตัวอย่างสุข (นี)</td><td>เพื่อนร่วมงาน</td><td class="n">15%</td><td class="n">—</td><td>—</td><td><span class="chip a">ยังไม่ส่ง</span></td></tr>
+          </tbody></table></div>
+
+        <div class="card mb"><h2>คะแนนรายข้อ แยกตามผู้ประเมิน</h2><p class="hint">สีเข้มขึ้นเมื่อคะแนนสูง ช่องว่างคือผู้ประเมินยังไม่ตอบข้อนั้น</p>
+          <div style="overflow:auto"><table id="matrix"></table></div></div>
+
+        <div class="card"><h2>ความเห็นของผู้ประเมินทุกคน</h2><p class="hint">แสดงชื่อผู้เขียนเฉพาะ HR พนักงานและหัวหน้าไม่เห็นชื่อ</p>
+          <div class="cm"><div class="h"><b>สมชาย ทดสอบ</b><span class="chip b">หัวหน้า</span><span class="chip g">88.0%</span></div><p>(ตัวอย่าง) ทำงานตรงเวลา ประสานงานกับทีมขนส่งได้ดี ควรฝึกสอนน้องใหม่เพิ่ม</p></div>
+          <div class="cm"><div class="h"><b>วิชัย ตัวอย่างใจ</b><span class="chip b">เพื่อนร่วมงาน</span><span class="chip g">80.0%</span></div><p>(ตัวอย่าง) ช่วยงานคนอื่นเสมอ แต่บางวันส่งต่องานช้า</p></div>
+          <div class="cm"><div class="h"><b>สมศรี ตัวอย่างดี</b><span class="chip b">ตนเอง</span><span class="chip g">92.0%</span></div><p>(ตัวอย่าง) อยากได้อบรมเรื่องระบบสต๊อกเพิ่ม</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- รายทีม -->
+  <div class="pane" id="t">
+    <div class="grid g4 mb">
+      <div class="card kpi"><small>ผู้ถูกประเมิน</small><b>36 คน</b></div>
+      <div class="card kpi"><small>ค่าเฉลี่ยบริษัท</small><b>83.3%</b></div>
+      <div class="card kpi"><small>ทีมคะแนนสูงสุด</small><b style="font-size:18px">รับเข้าสินค้า 88.1</b></div>
+      <div class="card kpi"><small>ทีมที่ควรดู</small><b style="font-size:18px">คลัง Offline 76.4</b></div>
+    </div>
+    <div class="grid g2 mb">
+      <div class="card"><h2>ค่าเฉลี่ยรายทีม เทียบทั้งบริษัท</h2><p class="hint">เส้นตั้งคือค่าเฉลี่ยบริษัท จุดคือแต่ละคนในทีม</p><svg id="teambars" viewBox="0 0 520 260" width="100%"></svg></div>
+      <div class="card"><h2>การกระจายคะแนนของแต่ละทีม</h2><p class="hint">จำนวนคนในแต่ละช่วงคะแนน</p><svg id="dist" viewBox="0 0 520 260" width="100%"></svg>
+        <div class="legend"><span><i style="background:#1976d2"></i>คลัง Online</span><span><i style="background:#7fb3e6"></i>คลัง Offline</span><span><i style="background:#0b3d75"></i>รับเข้าสินค้า</span></div></div>
+    </div>
+    <div class="card"><h2>ตารางสรุปรายทีม</h2><p class="hint">คลิกชื่อทีมเพื่อดูรายคนในทีม</p>
+      <table><thead><tr><th>ทีม</th><th class="n">คน</th><th class="n">ค่าเฉลี่ย (%)</th><th class="n">ต่ำสุด</th><th class="n">สูงสุด</th><th class="n">เทียบรอบก่อน</th><th class="n">เทียบบริษัท</th></tr></thead><tbody>
+      <tr><td>รับเข้าสินค้า</td><td class="n">9</td><td class="n">88.1</td><td class="n">79.0</td><td class="n">100</td><td class="n up">▲ 2.4</td><td class="n up">+4.8</td></tr>
+      <tr><td>คลังสินค้า Online</td><td class="n">15</td><td class="n">84.0</td><td class="n">60.0</td><td class="n">100</td><td class="n up">▲ 0.6</td><td class="n up">+0.7</td></tr>
+      <tr><td>คลังสินค้า Offline</td><td class="n">12</td><td class="n">76.4</td><td class="n">55.0</td><td class="n">96.0</td><td class="n dn">▼ 3.9</td><td class="n dn">−6.9</td></tr>
+      </tbody></table></div>
+  </div>
+
+  <!-- เทียบข้ามรอบ -->
+  <div class="pane" id="c">
+    <div class="bar"><label>เทียบ <select><option>ทีม ทั้งหมด</option><option>คนที่เลือก</option></select></label>
+      <label>ช่วง <select><option>6 รอบล่าสุด</option><option>ปีนี้</option><option>ทั้งหมด</option></select></label></div>
+    <div class="card mb"><h2>คะแนนเฉลี่ยของแต่ละทีม ข้ามรอบ</h2><p class="hint">คะแนนเป็นเปอร์เซ็นต์ เทียบกันได้แม้สเกลของแบบประเมินเปลี่ยน (1–5 เป็น 1–3)</p><svg id="multi" viewBox="0 0 900 300" width="100%"></svg>
+      <div class="legend"><span><i style="background:#1976d2"></i>คลัง Online</span><span><i style="background:#7fb3e6"></i>คลัง Offline</span><span><i style="background:#0b3d75"></i>รับเข้าสินค้า</span><span><i style="background:#9aa4b2"></i>ทั้งบริษัท</span></div></div>
+    <div class="card"><h2>เทียบรายคนข้ามรอบ</h2><p class="hint">คนที่ขึ้นมากสุดและลงมากสุดจากรอบก่อน</p>
+      <table><thead><tr><th>พนักงาน</th><th>ทีม</th><th class="n">รอบก่อน</th><th class="n">รอบนี้</th><th class="n">เปลี่ยน</th><th>แนวโน้ม 6 รอบ</th></tr></thead><tbody id="movers"></tbody></table></div>
+  </div>
+</div>
+
+<script>
+const B='#1976d2',G='#9aa4b2';
+const people=[['สมศรี ตัวอย่างดี','รับเข้าสินค้า',86.4],['วิชัย ตัวอย่างใจ','คลัง Online',100],['มานี ตัวอย่างสุข','รับเข้าสินค้า',92.5],['ประสิทธิ์ ทดสอบดี','คลัง Offline',71.0],['นภา ตัวอย่างรัก','คลัง Online',88.0],['ชัยวัฒน์ แบบร่าง','คลัง Offline',64.5],['ปราณี ตัวอย่างงาม','รับเข้าสินค้า',95.0],['อนันต์ ทดลองดี','คลัง Online',79.0]];
+const pl=document.getElementById('people');
+pl.innerHTML='<div style="padding:10px"><input placeholder="ค้นหาชื่อหรือรหัส" style="width:100%"></div>'+people.map((p,i)=>`<div class="row ${i?'':'on'}"><div class="av">${p[0][0]}</div><div class="nm"><b>${p[0]}</b><span>${p[1]}</span></div><span class="sc">${p[2].toFixed(1)}</span></div>`).join('');
+function el(t,a,c){return `<${t} ${Object.entries(a).map(([k,v])=>k+'="'+v+'"').join(' ')}>${c||''}</${t}>`}
+// radar
+(function(){const cx=150,cy=120,R=85,lab=['ผลงาน','คุณภาพ','ทีมเวิร์ก','ความรับผิดชอบ','การเรียนรู้'],me=[.9,.82,.88,.95,.78],av=[.8,.78,.82,.84,.75];
+ let s='';for(let k=1;k<=4;k++){s+=`<polygon points="${lab.map((_,i)=>pt(i,R*k/4)).join(' ')}" fill="none" stroke="#e3e7ec"/>`}
+ function pt(i,r){const a=-Math.PI/2+i*2*Math.PI/lab.length;return (cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1)}
+ lab.forEach((l,i)=>{const [x,y]=pt(i,R+22).split(',');s+=`<line x1="${cx}" y1="${cy}" x2="${pt(i,R).split(',')[0]}" y2="${pt(i,R).split(',')[1]}" stroke="#e3e7ec"/><text x="${x}" y="${y}" font-size="11" text-anchor="middle" fill="#667085">${l}</text>`});
+ s+=`<polygon points="${av.map((v,i)=>pt(i,R*v)).join(' ')}" fill="none" stroke="${G}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+ s+=`<polygon points="${me.map((v,i)=>pt(i,R*v)).join(' ')}" fill="${B}" fill-opacity=".15" stroke="${B}" stroke-width="2"/>`;
+ me.forEach((v,i)=>{const [x,y]=pt(i,R*v).split(',');s+=`<circle cx="${x}" cy="${y}" r="3.5" fill="${B}"/>`});
+ document.getElementById('radar').innerHTML=s})();
+// bars by rater
+(function(){const d=[['หัวหน้า',88,82],['ตนเอง',92,90],['เพื่อน',80,81]];let s='';
+ d.forEach((r,i)=>{const y=30+i*70;s+=`<text x="0" y="${y-8}" font-size="12" fill="#1c2024">${r[0]}</text><rect x="0" y="${y}" width="300" height="14" fill="#f0f2f5"/><rect x="0" y="${y}" width="${r[2]*3}" height="14" fill="#c3cad4"/><rect x="0" y="${y+16}" width="${r[1]*3}" height="14" fill="${B}"/><text x="${r[1]*3-4}" y="${y+27}" font-size="11" fill="#fff" text-anchor="end" font-weight="600">${r[1]}</text><text x="${r[2]*3-4}" y="${y+11}" font-size="10" fill="#44546a" text-anchor="end">${r[2]}</text>`});
+ document.getElementById('bars').innerHTML=s})();
+// trend
+function lineChart(id,W,H,series,labels,min,max){const L=34,Rr=10,T=12,Bt=28,w=W-L-Rr,h=H-T-Bt;let s='';
+ for(let v=min;v<=max;v+=(max-min)/4){const y=T+h-(v-min)/(max-min)*h;s+=`<line x1="${L}" x2="${W-Rr}" y1="${y}" y2="${y}" stroke="#eef0f2"/><text x="${L-5}" y="${y+4}" font-size="10" fill="#667085" text-anchor="end">${Math.round(v)}</text>`}
+ labels.forEach((l,i)=>{const x=L+i*w/(labels.length-1);s+=`<text x="${x}" y="${H-8}" font-size="10" fill="#667085" text-anchor="middle">${l}</text>`});
+ series.forEach(se=>{const pts=se.d.map((v,i)=>[L+i*w/(labels.length-1),T+h-(v-min)/(max-min)*h]);s+=`<polyline fill="none" stroke="${se.c}" stroke-width="${se.w||2}" ${se.dash?'stroke-dasharray="5 4"':''} points="${pts.map(p=>p.join(',')).join(' ')}"/>`;if(!se.dash)pts.forEach((p,i)=>{s+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${se.c}"/>`;if(se.label&&i==pts.length-1)s+=`<text x="${p[0]}" y="${p[1]-8}" font-size="11" font-weight="600" fill="${se.c}" text-anchor="end">${se.d[i]}</text>`})});
+ document.getElementById(id).innerHTML=s}
+const rl=['มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.'];
+lineChart('trend',300,250,[{d:[78,76,81,80,83.3,86.4],c:B,label:1},{d:[77,78,79,79,81.2,81.2],c:G,dash:1}],rl,60,100);
+// matrix
+(function(){const cols=['หัวหน้า','ตนเอง','เพื่อน 1','เพื่อน 2'],qs=[['ผลงานตามเป้าหมาย',[5,5,4,null]],['คุณภาพงาน',[4,5,4,null]],['ทำงานเป็นทีม',[5,4,4,null]],['ความรับผิดชอบ',[5,5,5,null]],['เรียนรู้และพัฒนา',[4,4,3,null]]];
+ const col=v=>v==null?'#fff':['','','#eaf3fc','#cfe3f7','#9cc7ee','#5fa3e0'][v];
+ document.getElementById('matrix').innerHTML='<thead><tr><th>ข้อ</th>'+cols.map(c=>'<th class="c">'+c+'</th>').join('')+'<th class="c">เฉลี่ย</th></tr></thead><tbody>'+qs.map(q=>{const vs=q[1].filter(v=>v!=null);return '<tr><td>'+q[0]+'</td>'+q[1].map(v=>`<td class="c" style="background:${col(v)};${v>=5?'color:#fff':''}">${v==null?'':v}</td>`).join('')+`<td class="c">${(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1)}</td></tr>`}).join('')+'</tbody>'})();
+// team bars
+(function(){const t=[['รับเข้าสินค้า',88.1,[79,82,85,88,90,92,95,100,100]],['คลังสินค้า Online',84,[60,72,80,82,84,86,88,90,92,95,100,100,100,80,78]],['คลังสินค้า Offline',76.4,[55,62,68,72,75,78,80,82,85,88,92,96]]];let s='';const X=140,W=360,mn=40,mx=100,cx=v=>X+(v-mn)/(mx-mn)*W;
+ [40,60,80,100].forEach(v=>s+=`<line x1="${cx(v)}" x2="${cx(v)}" y1="14" y2="226" stroke="#eef0f2"/><text x="${cx(v)}" y="246" font-size="10" fill="#667085" text-anchor="middle">${v}</text>`);
+ t.forEach((r,i)=>{const y=40+i*70;s+=`<text x="0" y="${y+4}" font-size="12">${r[0]}</text><rect x="${X}" y="${y-12}" width="${(r[1]-mn)/(mx-mn)*W}" height="24" fill="${B}" fill-opacity=".85"/><text x="${cx(r[1])-6}" y="${y+4}" font-size="12" fill="#fff" font-weight="600" text-anchor="end">${r[1]}</text>`;
+  r[2].forEach((v,k)=>{s+=`<circle cx="${cx(v)}" cy="${y+22+(k%3)*3}" r="2.6" fill="#44546a" fill-opacity=".55"/>`})});
+ s+=`<line x1="${cx(83.3)}" x2="${cx(83.3)}" y1="10" y2="228" stroke="#c62828" stroke-dasharray="4 3"/><text x="${cx(83.3)+4}" y="12" font-size="10" fill="#c62828">บริษัท 83.3</text>`;
+ document.getElementById('teambars').innerHTML=s})();
+// distribution
+(function(){const bins=['<60','60-69','70-79','80-89','90-99','100'],ser=[[1,1,2,3,3,5],[0,1,1,5,3,5],[1,1,3,4,2,1]],cs=['#1976d2','#7fb3e6','#0b3d75'];let s='';const W=520,H=260,L=24,bw=(W-L)/bins.length;
+ for(let v=0;v<=6;v+=2)s+=`<line x1="${L}" x2="${W}" y1="${220-v*30}" y2="${220-v*30}" stroke="#eef0f2"/><text x="${L-5}" y="${224-v*30}" font-size="10" fill="#667085" text-anchor="end">${v}</text>`;
+ bins.forEach((b,i)=>{s+=`<text x="${L+i*bw+bw/2}" y="240" font-size="11" fill="#667085" text-anchor="middle">${b}</text>`;ser.forEach((se,k)=>{const h=se[i]*30,x=L+i*bw+10+k*((bw-20)/3);s+=`<rect x="${x}" y="${220-h}" width="${(bw-20)/3-2}" height="${h}" fill="${cs[k]}"/>`})});
+ document.getElementById('dist').innerHTML=s})();
+// multi-line
+lineChart('multi',900,300,[{d:[82,83,85,84,86,88.1],c:'#0b3d75',label:1},{d:[80,81,82,83,83,84],c:B,label:1},{d:[78,77,80,79,80.3,76.4],c:'#7fb3e6',label:1},{d:[80,80.5,82,82,83,83.3],c:G,dash:1}],rl,60,100);
+// movers
+document.getElementById('movers').innerHTML=[['ปราณี ตัวอย่างงาม','รับเข้าสินค้า',84,95,[80,82,85,84,84,95]],['มานี ตัวอย่างสุข','รับเข้าสินค้า',86,92.5,[85,84,86,88,86,92.5]],['ประสิทธิ์ ทดสอบดี','คลัง Offline',82,71,[78,80,83,85,82,71]],['ชัยวัฒน์ แบบร่าง','คลัง Offline',75,64.5,[72,74,76,75,75,64.5]]].map(r=>{const d=r[3]-r[2],pts=r[4].map((v,i)=>`${i*14},${24-(v-60)/40*24}`).join(' ');return `<tr><td>${r[0]}</td><td>${r[1]}</td><td class="n">${r[2]}</td><td class="n">${r[3]}</td><td class="n ${d>=0?'up':'dn'}">${d>=0?'▲':'▼'} ${Math.abs(d).toFixed(1)}</td><td><svg width="72" height="26"><polyline fill="none" stroke="${d>=0?'#1a7f4e':'#c62828'}" stroke-width="2" points="${pts}"/></svg></td></tr>`}).join('');
+// tabs
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id===t.dataset.t))});
+</script>
+</body>
+</html>

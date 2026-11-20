@@ -74,3 +74,10 @@ export const fetchHrAssignment = (roundId: string, assignmentId: string) =>
 export const saveHrAssignment = (roundId: string, assignmentId: string, input: { answers: { questionId: string; value: unknown }[]; submit: boolean }) =>
   api.put<Envelope<{ id: string; status: string; answered: number }>>(`/api/appraisal-rounds/${roundId}/assignments/${assignmentId}`, input);
 export const createProbationRound = () => api.post<Envelope<{ id: string; participants: number }>>("/api/appraisal-rounds/probation");
+
+export const fetchDetailOverview = (roundId?: string | null) =>
+  api.get<Envelope<import("./detail-report-types").DetailOverview>>(`/api/appraisal-detail-report${roundId ? `?roundId=${encodeURIComponent(roundId)}` : ""}`);
+export const fetchDetailPerson = (roundId: string, participantId: string) =>
+  api.get<Envelope<import("./detail-report-types").DetailPersonView>>(
+    `/api/appraisal-detail-report?roundId=${encodeURIComponent(roundId)}&participantId=${encodeURIComponent(participantId)}`,
+  );

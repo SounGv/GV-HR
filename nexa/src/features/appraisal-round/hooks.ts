@@ -27,6 +27,8 @@ import {
   saveHrAssignment,
   saveSettings,
   fetchDepartmentProgress,
+  fetchDetailOverview,
+  fetchDetailPerson,
   fetchParticipantResult,
   fetchRoundMatrix,
   fetchPublishedForms,
@@ -191,3 +193,13 @@ export function useCreateProbationRound() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: createProbationRound, onSuccess: () => qc.invalidateQueries({ queryKey: appraisalRoundKeys.all }) });
 }
+
+export const useDetailOverview = (roundId: string | null) =>
+  useQuery({ queryKey: ["appraisal-detail-report", "overview", roundId ?? "latest"], queryFn: () => fetchDetailOverview(roundId), staleTime: 60_000 });
+export const useDetailPerson = (roundId: string | null, participantId: string | null) =>
+  useQuery({
+    queryKey: ["appraisal-detail-report", "person", roundId, participantId],
+    queryFn: () => fetchDetailPerson(roundId as string, participantId as string),
+    enabled: !!roundId && !!participantId,
+    staleTime: 60_000,
+  });

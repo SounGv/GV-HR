@@ -43,6 +43,7 @@ export type NavIconKey =
   | "attendanceMonthly"
   | "leaveReport"
   | "evalReport"
+  | "detailReport"
   | "report"
   | "company"
   | "branch"
@@ -90,6 +91,7 @@ export const NAV_ICON_ART: Record<NavIconKey, string> = {
   attendanceMonthly: "<path class=\"mass\" d=\"M4 20V12h4v8zm6 0V7h4v13zm6 0V10h4v10z\"/><path class=\"detail\" d=\"M3 21h18M4 8l5-3 5 2 6-4\"/><path class=\"fine\" d=\"M4 4h5M17 6h3\"/>",
   leaveReport: "<path class=\"mass\" d=\"M3 12c2.5-6 15.5-6 18 0M12 7v12a3 3 0 0 1-5 2\"/><path class=\"detail\" d=\"M7 12v3m5-3v5m5-5v7\"/>",
   evalReport: "<rect class=\"mass\" x=\"4\" y=\"3\" width=\"16\" height=\"18\" rx=\"3\"/><path class=\"detail\" d=\"M8 17v-3M16 17v-5M12 17V9m0-5 .7 1.4 1.5.2-1.1 1 .3 1.6-1.4-.8-1.4.8.3-1.6-1.1-1 1.5-.2z\"/><path class=\"fine\" d=\"M6 5h3\"/>",
+  detailReport: "<rect class=\"mass\" x=\"4\" y=\"3\" width=\"16\" height=\"18\" rx=\"3\"/><path class=\"detail\" d=\"M7.5 16l3-3.5 2.5 2L16.5 9\"/><circle class=\"fine\" cx=\"16.5\" cy=\"9\" r=\"1\"/><path class=\"fine\" d=\"M7 6h5\"/>",
   report: "<rect class=\"mass\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><path class=\"detail\" d=\"M7 17v-5M12 17V8M17 17v-7\"/><path class=\"fine\" d=\"M5 5h14\"/>",
   company: "<path class=\"mass\" d=\"M4 21V5l10-2v18M14 8h6v13z\"/><path class=\"detail\" d=\"M7 8h3M7 12h3M7 16h3M17 12h1M2 21h20\"/><path class=\"fine\" d=\"m6 6 6-1\"/>",
   branch: "<path class=\"mass\" d=\"M6 5a3 3 0 1 1 6 0c0 2-3 5-3 5S6 7 6 5zM14 17a3 3 0 1 1 6 0c0 2-3 5-3 5s-3-3-3-5z\"/><path class=\"detail\" d=\"M9 10v4h8\"/><circle class=\"fine\" cx=\"9\" cy=\"5\" r=\"1\"/>",
@@ -138,6 +140,7 @@ export const NAV_ICON_BY_HREF: Record<string, NavIconKey> = {
   "/reports?view=attendance": "attendanceMonthly",
   "/reports?view=leave": "leaveReport",
   "/reports?view=performance": "evalReport",
+  "/appraisal/report": "detailReport",
   "/reports": "report",
   "/company": "company",
   "/branches": "branch",
