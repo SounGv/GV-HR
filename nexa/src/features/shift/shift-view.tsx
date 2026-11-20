@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { formatDate } from "@/lib/format";
@@ -108,7 +110,51 @@ function MyScheduleView({ onGoRoster }: { onGoRoster?: () => void }) {
   if (isLoading) return <TableLoadingState rows={4} />;
 
   return (
-    <div className="space-y-2">
+    <>
+    <div className="hidden md:block">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-14 text-center">No.</TableHead>
+            <TableHead>วันที่</TableHead>
+            <TableHead>เวร</TableHead>
+            <TableHead className="w-full">เวลา</TableHead>
+            <TableHead className="text-center">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {days.map((d, i) => {
+            const cell = byDate.get(d);
+            const tpl = cell?.template;
+            const isToday = d === today;
+            return (
+              <TableRow key={d} className={cn(isToday && "bg-primary/5")}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="font-medium tabular-nums">
+                  {WEEKDAYS[new Date(`${d}T00:00:00Z`).getUTCDay()]} {d.slice(8)} {thaiMonth(d)}
+                  {isToday && <span className="ml-1.5 text-primary">(วันนี้)</span>}
+                </TableCell>
+                <TableCell>
+                  {tpl ? (
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-medium text-white"
+                      style={{ backgroundColor: tpl.color }}
+                    >
+                      {tpl.name}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">ไม่มีเวร</span>
+                  )}
+                </TableCell>
+                <TableCell className="tabular-nums">{tpl ? `${tpl.startTime}-${tpl.endTime}` : "-"}</TableCell>
+                <TableCell className="text-center">{cell ? <RequestSwapButton assignment={cell} /> : null}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+    <div className="space-y-2 md:hidden">
       {days.map((d) => {
         const cell = byDate.get(d);
         const tpl = cell?.template;
@@ -142,6 +188,7 @@ function MyScheduleView({ onGoRoster }: { onGoRoster?: () => void }) {
         );
       })}
     </div>
+    </>
   );
 }
 
@@ -259,6 +306,66 @@ function SwapRequestRow({
   );
 }
 
+const SWAP_CHIP_TONE: Record<SwapRequest["status"], StatusTone> = {
+  PENDING: "warning",
+  APPROVED: "success",
+  REJECTED: "danger",
+  CANCELLED: "neutral",
+};
+
+/** Swap requests as a table on desktop and the existing cards on phones. */
+function SwapRequestList({ rows, actions }: { rows: SwapRequest[]; actions: (req: SwapRequest) => React.ReactNode }) {
+  return (
+    <>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead>ผู้ขอ</TableHead>
+              <TableHead>ให้ทำแทน</TableHead>
+              <TableHead>วันที่</TableHead>
+              <TableHead>กะ</TableHead>
+              <TableHead className="w-full">เหตุผล</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+              <TableHead className="text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((req, i) => (
+              <TableRow key={req.id}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="font-medium">
+                  {req.requesterEmployee.firstName} {req.requesterEmployee.lastName}
+                </TableCell>
+                <TableCell>
+                  {req.targetEmployee.firstName} {req.targetEmployee.lastName}
+                </TableCell>
+                <TableCell className="tabular-nums">{formatDate(req.assignment.date)}</TableCell>
+                <TableCell>{req.assignment.template.name}</TableCell>
+                <TableCell className="whitespace-normal break-words text-muted-foreground">{req.reason || "-"}</TableCell>
+                <TableCell className="text-center">
+                  <StatusChip tone={SWAP_CHIP_TONE[req.status]} label={SWAP_STATUS_LABEL[req.status]} />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-center gap-1">{actions(req)}</div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="space-y-2 md:hidden">
+        {rows.map((req) => (
+          <SwapRequestRow key={req.id} req={req}>
+            {actions(req)}
+          </SwapRequestRow>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function SwapRequestsView() {
   const swapHasEmployee = !!useAuth().user.employee;
   const mineQuery = useSwapRequests("mine");
@@ -299,9 +406,10 @@ function SwapRequestsView() {
         ) : mine.length === 0 ? (
           <EmptyState icon={Repeat} title="ยังไม่มีคำขอสลับเวร" />
         ) : (
-          mine.map((req) => (
-            <SwapRequestRow key={req.id} req={req}>
-              {req.status === "PENDING" && (
+          <SwapRequestList
+            rows={mine}
+            actions={(req) =>
+              req.status === "PENDING" && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -311,9 +419,9 @@ function SwapRequestsView() {
                 >
                   ยกเลิก
                 </Button>
-              )}
-            </SwapRequestRow>
-          ))
+              )
+            }
+          />
         )}
       </div>
 
@@ -326,28 +434,31 @@ function SwapRequestsView() {
         ) : inbox.length === 0 ? (
           <EmptyState icon={Repeat} title="ไม่มีคำขอรออนุมัติ" />
         ) : (
-          inbox.map((req) => (
-            <SwapRequestRow key={req.id} req={req}>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="อนุมัติ"
-                disabled={decideMut.isPending}
-                onClick={() => decide(req.id, "approve")}
-              >
-                <Check className="size-4 text-success" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="ไม่อนุมัติ"
-                disabled={decideMut.isPending}
-                onClick={() => decide(req.id, "reject")}
-              >
-                <Ban className="size-4 text-destructive" />
-              </Button>
-            </SwapRequestRow>
-          ))
+          <SwapRequestList
+            rows={inbox}
+            actions={(req) => (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="อนุมัติ"
+                  disabled={decideMut.isPending}
+                  onClick={() => decide(req.id, "approve")}
+                >
+                  <Check className="size-4 text-success" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="ไม่อนุมัติ"
+                  disabled={decideMut.isPending}
+                  onClick={() => decide(req.id, "reject")}
+                >
+                  <Ban className="size-4 text-destructive" />
+                </Button>
+              </>
+            )}
+          />
         )}
       </div>
     </div>
@@ -480,35 +591,34 @@ function RosterGrid() {
       ) : isLoading ? (
         <TableLoadingState rows={6} />
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="sticky left-0 z-10 min-w-40 bg-card px-3 py-2 text-left font-medium">
+        <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="sticky left-0 z-10 min-w-40 bg-card">
                   พนักงาน
-                </th>
+                </TableHead>
                 {days.map((d) => (
-                  <th key={d} className="min-w-28 px-2 py-2 text-center font-medium">
+                  <TableHead key={d} className="min-w-28 text-center">
                     <div className="text-sm text-muted-foreground">
                       {WEEKDAYS[new Date(`${d}T00:00:00Z`).getUTCDay()]}
                     </div>
                     <div>{d.slice(8)}</div>
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {employees.map((emp) => (
-                <tr key={emp.id} className="border-b border-border last:border-0">
-                  <td className="sticky left-0 z-10 bg-card px-3 py-2 font-medium">
+                <TableRow key={emp.id}>
+                  <TableCell className="sticky left-0 z-10 bg-card font-medium">
                     {emp.firstName} {emp.lastName}
                     <span className="ml-1 text-sm text-muted-foreground">({emp.employeeCode})</span>
-                  </td>
+                  </TableCell>
                   {days.map((d) => {
                     const cell = asgMap.get(`${emp.id}|${d}`);
                     const tpl = cell?.template;
                     return (
-                      <td key={d} className="px-1 py-1 text-center">
+                      <TableCell key={d} className="p-1 text-center">
                         {canAssign ? (
                           <Popover>
                             <PopoverTrigger
@@ -567,21 +677,20 @@ function RosterGrid() {
                             {tpl ? tpl.name : "—"}
                           </div>
                         )}
-                      </td>
+                      </TableCell>
                     );
                   })}
-                </tr>
+                </TableRow>
               ))}
               {employees.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-3 py-10 text-center text-sm text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
                     ยังไม่มีพนักงาน
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
-        </Card>
+            </TableBody>
+          </Table>
       )}
 
       <ConfirmDialog

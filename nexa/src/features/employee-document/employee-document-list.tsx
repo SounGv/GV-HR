@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileAttachField } from "@/components/shared/file-attach-field";
@@ -61,35 +62,47 @@ export function EmployeeDocumentList({ employeeId, canEdit }: { employeeId: stri
         ) : documents.length === 0 ? (
           <p className="text-sm text-muted-foreground">ยังไม่มีเอกสารที่แนบไว้</p>
         ) : (
-          <div className="space-y-2">
-            {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5">
-                <AttachmentLink
-                  url={doc.fileUrl}
-                  className="flex min-w-0 flex-1 items-center gap-2.5 text-sm hover:text-primary"
-                >
-                  <FileText className="size-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-foreground">{doc.label}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {EMPLOYEE_DOCUMENT_TYPE_LABEL[doc.type]} · {formatDate(doc.uploadedAt)}
-                    </span>
-                  </span>
-                </AttachmentLink>
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => remove(doc.id)}
-                    disabled={removeMutation.isPending}
-                    aria-label="ลบเอกสาร"
-                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-full">ชื่อเอกสาร</TableHead>
+                <TableHead>ประเภท</TableHead>
+                <TableHead>วันที่แนบ</TableHead>
+                {canEdit && <TableHead className="text-center">Action</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {documents.map((doc, i) => (
+                <TableRow key={doc.id}>
+                  <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                  <TableCell className="whitespace-normal">
+                    <AttachmentLink url={doc.fileUrl} className="inline-flex min-w-0 items-center gap-2 text-sm font-medium hover:text-primary hover:underline">
+                      <FileText className="size-4 shrink-0 text-muted-foreground" />
+                      <span className="break-words">{doc.label}</span>
+                    </AttachmentLink>
+                  </TableCell>
+                  <TableCell>{EMPLOYEE_DOCUMENT_TYPE_LABEL[doc.type]}</TableCell>
+                  <TableCell className="tabular-nums">{formatDate(doc.uploadedAt)}</TableCell>
+                  {canEdit && (
+                    <TableCell className="text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 text-destructive"
+                        onClick={() => remove(doc.id)}
+                        disabled={removeMutation.isPending}
+                        aria-label={`ลบเอกสาร ${doc.label}`}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
 
         {canEdit && (

@@ -3,11 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Plus, Trash2 } from "lucide-react";
+import { ClipboardList, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
@@ -68,32 +68,47 @@ export function FormListView() {
       ) : forms.length === 0 ? (
         <EmptyState icon={ClipboardList} title="ยังไม่มีแบบประเมิน" description="กด “สร้างแบบประเมิน” เพื่อเริ่ม" />
       ) : (
-        <Card className="gap-0 divide-y divide-border p-0">
-          {forms.map((f) => (
-            <div key={f.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <Link href={`/appraisal/forms/${f.id}`} className="min-w-0 flex-1 hover:underline">
-                <span className="block text-sm font-semibold break-words text-foreground">{f.name}</span>
-                <span className="block text-sm text-muted-foreground">
-                  เวอร์ชัน {f.version} · {f.questionCount} คำถาม
-                </span>
-              </Link>
-              <div className="flex items-center gap-2">
-                <StatusChip tone={TONE[f.status]} label={STATUS_LABEL[f.status]} />
-                {canDelete && f.status === "DRAFT" && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-11 md:size-9"
-                    aria-label={`ลบฉบับร่าง ${f.name}`}
-                    onClick={() => setTarget(f)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-full">ชื่อแบบประเมิน</TableHead>
+              <TableHead className="text-center">เวอร์ชัน</TableHead>
+              <TableHead className="text-center">คำถาม</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+              <TableHead className="text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {forms.map((f, i) => (
+              <TableRow key={f.id}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="min-w-56 whitespace-normal">
+                  <Link href={`/appraisal/forms/${f.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                    {f.name}
+                  </Link>
+                </TableCell>
+                <TableCell className="text-center tabular-nums">{f.version}</TableCell>
+                <TableCell className="text-center tabular-nums">{f.questionCount}</TableCell>
+                <TableCell className="text-center">
+                  <StatusChip tone={TONE[f.status]} label={STATUS_LABEL[f.status]} />
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button variant="ghost" size="icon" className="size-9" aria-label={`เปิดแบบประเมิน ${f.name}`} render={<Link href={`/appraisal/forms/${f.id}`} />}>
+                      <Pencil className="size-4" />
+                    </Button>
+                    {canDelete && f.status === "DRAFT" && (
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`ลบฉบับร่าง ${f.name}`} onClick={() => setTarget(f)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <ConfirmDialog

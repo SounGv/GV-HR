@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
@@ -71,8 +71,8 @@ export function ApprovalsDesk() {
         <span aria-hidden="true" className="mb-2 h-px flex-1 bg-border" />
       </div>
 
-      <Card className="gap-0 py-0">
-        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="กรองตามประเภท">
             {chips.map((c) => (
               <button
@@ -99,15 +99,15 @@ export function ApprovalsDesk() {
         </div>
 
         {q.allFailed ? (
-          <div className="border-t border-border p-4">
+          <div>
             <ErrorState onRetry={q.retryFailed} />
           </div>
         ) : q.isLoading ? (
-          <div className="border-t border-border p-4">
+          <div>
             <TableLoadingState rows={3} />
           </div>
         ) : shown.length === 0 && q.failed.length === 0 ? (
-          <div className="border-t border-border p-4">
+          <div>
             <EmptyState
               icon={Check}
               title={filter === "all" ? "ไม่มีคำขอรออนุมัติ" : `ไม่มีคำขอ${chips.find((c) => c.key === filter)?.label ?? ""}รออนุมัติ`}
@@ -115,70 +115,87 @@ export function ApprovalsDesk() {
             />
           </div>
         ) : (
-          <ul>
+          <div className="space-y-2">
             {q.failed.length > 0 && (
-              <li role="alert" className="flex items-center justify-between gap-3 border-t border-border bg-status-late-bg px-4 py-2.5 text-sm">
+              <div role="alert" className="flex items-center justify-between gap-3 rounded-sm border border-border bg-status-late-bg px-4 py-2.5 text-sm">
                 โหลดคำขอบางประเภทไม่สำเร็จ รายการด้านล่างอาจไม่ครบ
                 <Button variant="outline" size="sm" onClick={q.retryFailed}>
                   ลองใหม่
                 </Button>
-              </li>
+              </div>
             )}
-            {shown.map((item) => {
-              const key = `${item.kind}-${item.request.id}`;
-              const busy = q.busyKey === key;
-              const name = displayName(item.request.employee);
-              const days = waitingDays(item.request.createdAt, now);
-              const reason = item.request.reason?.trim();
-              return (
-                <li
-                  key={key}
-                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3.5 border-t border-[#eef1f3] px-4 py-3 transition-colors hover:bg-[#f6f8f9] dark:border-border dark:hover:bg-muted/40"
-                >
-                  <PersonAvatar name={name} gender={item.request.employee.gender ?? null} seed={item.request.employee.id} src={item.request.employee.avatarUrl} />
-                  <Link href={detailHref(item)} className="min-w-0">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="text-[13.5px] font-semibold text-foreground hover:underline">{name}</span>
-                      <span className={cn("rounded-full border px-2 py-px text-xs font-semibold", KIND_TONE[item.kind])}>
-                        {KIND_LABEL[item.kind]}
-                      </span>
-                      {days >= 2 && <span className="text-xs font-semibold text-status-late-fg">รอ {days} วัน</span>}
-                    </span>
-                    <span className="block text-[12.5px] text-muted-foreground">
-                      <span className="font-medium text-foreground">{itemLine(item)}</span>
-                      {reason && <> · {reason}</>}
-                    </span>
-                  </Link>
-                  <span className="flex gap-1.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => {
-                        q.setRejectReason("");
-                        q.setRejectTarget(item);
-                      }}
-                      className="h-8 border-destructive/30 px-3 text-destructive hover:bg-destructive/5 hover:text-destructive"
-                      aria-label={`ไม่อนุมัติคำขอของ ${name}`}
-                    >
-                      <X /> ไม่อนุมัติ
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => q.decide(item, "approve")}
-                      className="h-8 px-3"
-                      aria-label={`อนุมัติคำขอของ ${name}`}
-                    >
-                      {busy ? <Loader2 className="animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check />} อนุมัติ
-                    </Button>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-14 text-center">No.</TableHead>
+                  <TableHead>ผู้ขอ</TableHead>
+                  <TableHead>ประเภท</TableHead>
+                  <TableHead className="w-full">รายละเอียด</TableHead>
+                  <TableHead>เหตุผล</TableHead>
+                  <TableHead>รอมาแล้ว</TableHead>
+                  <TableHead className="text-center">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {shown.map((item, i) => {
+                  const key = `${item.kind}-${item.request.id}`;
+                  const busy = q.busyKey === key;
+                  const name = displayName(item.request.employee);
+                  const days = waitingDays(item.request.createdAt, now);
+                  const reason = item.request.reason?.trim();
+                  return (
+                    <TableRow key={key}>
+                      <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                      <TableCell>
+                        <Link href={detailHref(item)} className="flex items-center gap-2 text-[13.5px] font-semibold text-foreground hover:text-primary hover:underline">
+                          <PersonAvatar name={name} gender={item.request.employee.gender ?? null} seed={item.request.employee.id} src={item.request.employee.avatarUrl} />
+                          {name}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <span className={cn("rounded-full border px-2 py-px text-xs font-semibold", KIND_TONE[item.kind])}>
+                          {KIND_LABEL[item.kind]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="whitespace-normal tabular-nums">{itemLine(item)}</TableCell>
+                      <TableCell className="max-w-64 whitespace-normal break-words text-muted-foreground">{reason || "-"}</TableCell>
+                      <TableCell className="tabular-nums">
+                        {days >= 2 ? <span className="font-semibold text-status-late-fg">รอ {days} วัน</span> : days === 0 ? "วันนี้" : `${days} วัน`}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => {
+                              q.setRejectReason("");
+                              q.setRejectTarget(item);
+                            }}
+                            className="h-8 border-destructive/30 px-3 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                            aria-label={`ไม่อนุมัติคำขอของ ${name}`}
+                          >
+                            <X /> ไม่อนุมัติ
+                          </Button>
+                          <Button
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => q.decide(item, "approve")}
+                            className="h-8 px-3"
+                            aria-label={`อนุมัติคำขอของ ${name}`}
+                          >
+                            {busy ? <Loader2 className="animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" /> : <Check />} อนุมัติ
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </Card>
+      </div>
 
       <RejectDialog
         target={q.rejectTarget}

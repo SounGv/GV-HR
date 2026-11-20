@@ -122,25 +122,26 @@ export function UsersRoles() {
           ))}
         </ul>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>ผู้ใช้</TableHead>
+              <TableRow>
+                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead className="w-full">ผู้ใช้</TableHead>
                 <TableHead>บทบาท</TableHead>
-                <TableHead className="text-right">จัดการ</TableHead>
+                <TableHead className="text-center">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-          {users.map((u) => (
+          {users.map((u, i) => (
             <TableRow key={u.id}>
+              <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
               <TableCell>
                 <div className="font-medium">
                   {u.employee ? displayName(u.employee) : loginIdentifier(u)}
                 </div>
                 <div className="text-xs text-muted-foreground">{u.email ?? `@${u.username}`}</div>
               </TableCell>
-              <TableCell>
+              <TableCell className="whitespace-normal">
                 <div className="flex flex-wrap gap-1">
                   {u.roleNames.length > 0 ? (
                     u.roleNames.map((n) => (
@@ -158,8 +159,8 @@ export function UsersRoles() {
                   )}
                 </div>
               </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-1.5">
+              <TableCell className="text-center">
+                <div className="flex justify-center gap-1.5">
                   <Button variant="outline" size="sm" render={<Link href={`/admin/users/${u.id}/roles`} />}>
                     แก้ไขบทบาท
                   </Button>
@@ -170,6 +171,7 @@ export function UsersRoles() {
                     variant="outline"
                     size="sm"
                     className="text-destructive hover:text-destructive"
+                    aria-label="ลบบัญชีผู้ใช้"
                     onClick={() => setDeleteTarget(u)}
                   >
                     <Trash2 className="size-4" />
@@ -180,7 +182,6 @@ export function UsersRoles() {
           ))}
             </TableBody>
           </Table>
-        </div>
       )}
 
       <ConfirmDialog

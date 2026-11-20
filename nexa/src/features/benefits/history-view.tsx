@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/features/auth/auth-context";
 import { Stethoscope, Landmark } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useExpenses } from "@/features/expense/hooks";
@@ -41,23 +41,32 @@ export function BenefitsHistoryView() {
         {medicalClaims.length === 0 ? (
           <p className="text-sm text-muted-foreground">ยังไม่มีรายการ</p>
         ) : (
-          <div className="space-y-2">
-            {medicalClaims.map((c) => (
-              <Link key={c.id} href={`/expenses/${c.id}`}>
-                <Card className="flex-row items-center justify-between gap-3 p-3.5 transition hover:border-primary/40">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium text-foreground">{c.title}</span>
-                      <ExpenseStatusBadge status={c.status} />
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatDate(c.expenseDate)} · {formatCurrency(c.amount)}
-                    </p>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>วันที่</TableHead>
+                <TableHead className="w-full">เรื่อง</TableHead>
+                <TableHead className="text-right">จำนวนเงิน</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {medicalClaims.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="tabular-nums">{formatDate(c.expenseDate)}</TableCell>
+                  <TableCell className="whitespace-normal">
+                    <Link href={`/expenses/${c.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                      {c.title}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{formatCurrency(c.amount)}</TableCell>
+                  <TableCell className="text-center">
+                    <ExpenseStatusBadge status={c.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </section>
 
@@ -68,23 +77,34 @@ export function BenefitsHistoryView() {
         {loans.length === 0 ? (
           <p className="text-sm text-muted-foreground">ยังไม่มีรายการ</p>
         ) : (
-          <div className="space-y-2">
-            {loans.map((l) => (
-              <Link key={l.id} href={`/benefits/loans/${l.id}`}>
-                <Card className="flex-row items-center justify-between gap-3 p-3.5 transition hover:border-primary/40">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium text-foreground">คำขอกู้เงินบริษัท {l.year}</span>
-                      <LoanStatusBadge status={l.status} />
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatDate(l.createdAt)} · {formatCurrency(l.amount)} · ผ่อน {l.installmentCount} งวด
-                    </p>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>วันที่ยื่น</TableHead>
+                <TableHead className="w-full">คำขอ</TableHead>
+                <TableHead className="text-right">วงเงินกู้</TableHead>
+                <TableHead className="text-center">งวด</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loans.map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell className="tabular-nums">{formatDate(l.createdAt)}</TableCell>
+                  <TableCell className="whitespace-normal">
+                    <Link href={`/benefits/loans/${l.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                      คำขอกู้เงินบริษัท {l.year}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{formatCurrency(l.amount)}</TableCell>
+                  <TableCell className="text-center tabular-nums">{l.installmentCount}</TableCell>
+                  <TableCell className="text-center">
+                    <LoanStatusBadge status={l.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </section>
     </div>

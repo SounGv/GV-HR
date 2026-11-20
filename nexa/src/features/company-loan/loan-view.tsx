@@ -6,7 +6,7 @@ import { Plus, Check, X, Landmark, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
@@ -19,8 +19,18 @@ import { LoanStatusBadge } from "./labels";
 import { useLoans, useCancelLoan, useDecideLoan, usePayLoan } from "./hooks";
 import type { CompanyLoanRequest } from "./types";
 
-function line(r: CompanyLoanRequest) {
-  return `${formatDate(r.createdAt)} · ${formatCurrency(r.amount)} · ผ่อน ${r.installmentCount} งวด`;
+function Requester({ r }: { r: CompanyLoanRequest }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Avatar className="size-8">
+        {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
+        <AvatarFallback className="bg-primary/10 text-xs text-primary">
+          {getInitials(r.employee.firstName, r.employee.lastName)}
+        </AvatarFallback>
+      </Avatar>
+      <span>{displayName(r.employee)}</span>
+    </div>
+  );
 }
 
 export function LoanView() {
@@ -75,7 +85,7 @@ function MyLoans() {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">ประวัติการกู้เงินบริษัท</h2>
         {hasEmployee && (
-          <Button render={<Link href="/benefits/loans/new" />}>
+          <Button size="sm" render={<Link href="/benefits/loans/new" />}>
             <Plus className="size-4" /> ยื่นกู้เงินบริษัท
           </Button>
         )}
@@ -90,26 +100,42 @@ function MyLoans() {
       ) : loans.length === 0 ? (
         <EmptyState icon={Landmark} title="ยังไม่มีคำขอกู้เงินบริษัท" description="เริ่มต้นด้วยการยื่นกู้ครั้งแรก" />
       ) : (
-        <div className="space-y-2">
-          {loans.map((r) => (
-            <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
-              <Link href={`/benefits/loans/${r.id}`} className="min-w-0 flex-1">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-medium text-foreground">คำขอกู้เงินบริษัท {r.year}</span>
-                    <LoanStatusBadge status={r.status} />
-                  </div>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
-                </div>
-              </Link>
-              {r.status === "PENDING" && (
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setCancelTarget(r)}>
-                  ยกเลิก
-                </Button>
-              )}
-            </Card>
-          ))}
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>วันที่ยื่น</TableHead>
+              <TableHead className="w-full">คำขอ</TableHead>
+              <TableHead className="text-right">วงเงินกู้</TableHead>
+              <TableHead className="text-center">งวด</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+              <TableHead className="text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loans.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="tabular-nums">{formatDate(r.createdAt)}</TableCell>
+                <TableCell className="whitespace-normal">
+                  <Link href={`/benefits/loans/${r.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                    คำขอกู้เงินบริษัท {r.year}
+                  </Link>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{formatCurrency(r.amount)}</TableCell>
+                <TableCell className="text-center tabular-nums">{r.installmentCount}</TableCell>
+                <TableCell className="text-center">
+                  <LoanStatusBadge status={r.status} />
+                </TableCell>
+                <TableCell className="text-center">
+                  {r.status === "PENDING" && (
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setCancelTarget(r)}>
+                      ยกเลิก
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <ConfirmDialog
@@ -148,32 +174,41 @@ function Approvals() {
   }
 
   return (
-    <div className="space-y-2">
-      {loans.map((r) => (
-        <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
-          <Link href={`/benefits/loans/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-            <Avatar className="size-9">
-              {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
-              <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                {getInitials(r.employee.firstName, r.employee.lastName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="truncate font-medium text-foreground">{displayName(r.employee)}</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
-            </div>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
-              <X className="size-4" /> ไม่อนุมัติ
-            </Button>
-            <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
-              <Check className="size-4" /> อนุมัติ
-            </Button>
-          </div>
-        </Card>
-      ))}
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>วันที่ยื่น</TableHead>
+          <TableHead className="w-full">ผู้ขอ</TableHead>
+          <TableHead className="text-right">วงเงินกู้</TableHead>
+          <TableHead className="text-center">งวด</TableHead>
+          <TableHead className="text-center">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loans.map((r) => (
+          <TableRow key={r.id}>
+            <TableCell className="tabular-nums">{formatDate(r.createdAt)}</TableCell>
+            <TableCell className="whitespace-normal">
+              <Link href={`/benefits/loans/${r.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                <Requester r={r} />
+              </Link>
+            </TableCell>
+            <TableCell className="text-right tabular-nums">{formatCurrency(r.amount)}</TableCell>
+            <TableCell className="text-center tabular-nums">{r.installmentCount}</TableCell>
+            <TableCell className="text-center">
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
+                  <X className="size-4" /> ไม่อนุมัติ
+                </Button>
+                <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
+                  <Check className="size-4" /> อนุมัติ
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -198,26 +233,35 @@ function ToPay() {
   }
 
   return (
-    <div className="space-y-2">
-      {loans.map((r) => (
-        <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
-          <Link href={`/benefits/loans/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-            <Avatar className="size-9">
-              {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
-              <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                {getInitials(r.employee.firstName, r.employee.lastName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="truncate font-medium text-foreground">{displayName(r.employee)}</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">{line(r)}</p>
-            </div>
-          </Link>
-          <Button size="sm" disabled={payMut.isPending} onClick={() => pay(r.id)}>
-            <Wallet className="size-4" /> จ่ายแล้ว
-          </Button>
-        </Card>
-      ))}
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>วันที่ยื่น</TableHead>
+          <TableHead className="w-full">ผู้ขอ</TableHead>
+          <TableHead className="text-right">วงเงินกู้</TableHead>
+          <TableHead className="text-center">งวด</TableHead>
+          <TableHead className="text-center">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loans.map((r) => (
+          <TableRow key={r.id}>
+            <TableCell className="tabular-nums">{formatDate(r.createdAt)}</TableCell>
+            <TableCell className="whitespace-normal">
+              <Link href={`/benefits/loans/${r.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                <Requester r={r} />
+              </Link>
+            </TableCell>
+            <TableCell className="text-right tabular-nums">{formatCurrency(r.amount)}</TableCell>
+            <TableCell className="text-center tabular-nums">{r.installmentCount}</TableCell>
+            <TableCell className="text-center">
+              <Button size="sm" disabled={payMut.isPending} onClick={() => pay(r.id)}>
+                <Wallet className="size-4" /> จ่ายแล้ว
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

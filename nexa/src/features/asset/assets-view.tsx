@@ -13,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,7 +113,7 @@ export function AssetsView() {
           </Select>
         </div>
         {canManage && (
-          <Button render={<Link href="/assets/new" />} className="max-sm:h-11">
+          <Button size="sm" render={<Link href="/assets/new" />} className="max-sm:h-11">
             <Plus className="size-4" /> เพิ่มทรัพย์สิน
           </Button>
         )}
@@ -183,43 +182,45 @@ export function AssetsView() {
           ))}
         </ul>
       ) : (
-        <Card className="gap-0 overflow-x-auto p-0">
+        <>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-14 text-center">No.</TableHead>
                 <TableHead>รหัส</TableHead>
-                <TableHead>ทรัพย์สิน</TableHead>
-                <TableHead>สถานะ</TableHead>
+                <TableHead className="w-full">ทรัพย์สิน</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
                 <TableHead>ผู้ถือครอง</TableHead>
-                <TableHead>ราคา</TableHead>
-                {canManage && <TableHead className="text-right">จัดการ</TableHead>}
+                <TableHead className="text-right">ราคา</TableHead>
+                {canManage && <TableHead className="text-center">Action</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assets.map((a) => (
+              {assets.map((a, i) => (
                 <TableRow key={a.id}>
-                  <TableCell className="font-mono text-xs">{a.assetCode}</TableCell>
-                  <TableCell>
-                    <Link href={`/assets/${a.id}`} className="block">
-                      <div className="font-medium">{a.name}</div>
+                  <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                  <TableCell className="text-xs tabular-nums">{a.assetCode}</TableCell>
+                  <TableCell className="whitespace-normal">
+                    <Link href={`/assets/${a.id}`} className="block hover:text-primary">
+                      <div className="font-medium break-words">{a.name}</div>
                       <div className="text-xs text-muted-foreground">
                         {a.category}
                         {a.serialNumber ? ` · ${a.serialNumber}` : ""}
                       </div>
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
                     <AssetStatusBadge status={a.status} />
                   </TableCell>
                   <TableCell className="text-sm">
                     {a.assignedTo ? displayName(a.assignedTo) : "-"}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-right text-sm tabular-nums">
                     {a.purchasePrice != null ? formatCurrency(a.purchasePrice) : "-"}
                   </TableCell>
                   {canManage && (
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1">
                         {a.status === "ASSIGNED" ? (
                           <Button
                             variant="ghost"
@@ -236,8 +237,9 @@ export function AssetsView() {
                         )}
                         <Button
                           variant="ghost"
-                          size="icon-sm"
-                          aria-label="แก้ไข"
+                          size="icon"
+                          className="size-9"
+                          aria-label={`แก้ไข ${a.name}`}
                           render={<Link href={`/assets/${a.id}/edit`} />}
                         >
                           <Pencil className="size-4" />
@@ -245,8 +247,9 @@ export function AssetsView() {
                         {canDelete && (
                           <Button
                             variant="ghost"
-                            size="icon-sm"
-                            aria-label="ลบ"
+                            size="icon"
+                            className="size-9"
+                            aria-label={`ลบ ${a.name}`}
                             onClick={() => setDeleteTarget(a)}
                           >
                             <Trash2 className="size-4 text-destructive" />
@@ -259,7 +262,7 @@ export function AssetsView() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </>
       )}
 
       <AssetAssignDialog asset={assignTarget} onClose={() => setAssignTarget(null)} />

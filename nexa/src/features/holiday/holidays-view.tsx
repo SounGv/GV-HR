@@ -7,6 +7,8 @@ import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusChip } from "@/components/shared/status-chip";
 import {
   Select,
   SelectContent,
@@ -100,7 +102,93 @@ export function HolidaysView() {
           description={canManage ? "เพิ่มวันหยุดแรกของปีนี้" : "ยังไม่มีข้อมูลวันหยุดในปีนี้"}
         />
       ) : (
-        <div className="space-y-6">
+        <>
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead>วันที่</TableHead>
+                <TableHead className="w-full">ชื่อวันหยุด</TableHead>
+                <TableHead>ประเภท</TableHead>
+                <TableHead>การแจ้งเตือน</TableHead>
+                {(canEdit || canDelete) && <TableHead className="text-center">Action</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {grouped
+                .flatMap(([, items]) => items)
+                .map((h, i) => (
+                  <TableRow key={h.id}>
+                    <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                    <TableCell className="tabular-nums">
+                      {new Intl.DateTimeFormat("th-TH", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        timeZone: "UTC",
+                      }).format(new Date(h.date))}
+                    </TableCell>
+                    <TableCell>
+                      <Link href={`/holidays/${h.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                        {h.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <StatusChip
+                        tone={h.type === "NATIONAL" ? "info" : "warning"}
+                        label={h.type === "NATIONAL" ? "วันหยุดราชการ" : "วันหยุดบริษัท"}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        {h.notifyEnabled ? (
+                          <>
+                            <Bell className="size-3.5" /> แจ้งเตือน
+                          </>
+                        ) : (
+                          <>
+                            <BellOff className="size-3.5" /> ปิดแจ้งเตือน
+                          </>
+                        )}
+                      </span>
+                    </TableCell>
+                    {(canEdit || canDelete) && (
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          {canEdit && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-9"
+                              aria-label={`แก้ไข ${h.name}`}
+                              title="แก้ไข"
+                              render={<Link href={`/holidays/${h.id}/edit`} />}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-9"
+                              aria-label={`ลบ ${h.name}`}
+                              title="ลบ"
+                              onClick={() => setDeleteTarget(h)}
+                            >
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="space-y-6 md:hidden">
           {grouped.map(([month, items]) => (
             <div key={month} className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground">{MONTHS[month]}</h3>
@@ -181,6 +269,7 @@ export function HolidaysView() {
             </div>
           ))}
         </div>
+        </>
       )}
 
       <ConfirmDialog

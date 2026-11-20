@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
@@ -96,7 +97,57 @@ function MyRequests() {
       ) : requests.length === 0 ? (
         <EmptyState icon={Timer} title="ยังไม่มีคำขอ OT" description="เริ่มต้นด้วยการยื่นคำขอทำงานล่วงเวลา" />
       ) : (
-        <div className="space-y-2">
+        <>
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead>วันที่</TableHead>
+                <TableHead>เวลา</TableHead>
+                <TableHead>ชั่วโมง</TableHead>
+                <TableHead>อัตรา</TableHead>
+                <TableHead className="w-full">เหตุผล</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead className="text-center">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests.map((r, i) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                  <TableCell className="tabular-nums">
+                    <Link href={`/overtime/${r.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                      {formatDate(r.date)}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="tabular-nums">{r.startTime}–{r.endTime}</TableCell>
+                  <TableCell className="tabular-nums">{r.hours} ชม.</TableCell>
+                  <TableCell>{r.multiplier >= 2 ? "วันหยุด 2 เท่า" : "ปกติ"}</TableCell>
+                  <TableCell className="whitespace-normal break-words text-muted-foreground">{r.reason || "-"}</TableCell>
+                  <TableCell className="text-center">
+                    <LeaveStatusBadge status={r.status} />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {r.status === "PENDING" || r.status === "APPROVED" ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 text-destructive"
+                        aria-label={`ยกเลิกคำขอ OT ${formatDate(r.date)}`}
+                        title="ยกเลิกคำขอ"
+                        onClick={() => setCancelTarget(r)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    ) : null}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="space-y-2 md:hidden">
           {requests.map((r) => (
             <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
               <Link href={`/overtime/${r.id}`} className="min-w-0 flex-1">
@@ -116,6 +167,7 @@ function MyRequests() {
             </Card>
           ))}
         </div>
+        </>
       )}
 
       <ConfirmDialog
@@ -154,7 +206,57 @@ function Approvals() {
   }
 
   return (
-    <div className="space-y-2">
+    <>
+    <div className="hidden md:block">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-14 text-center">No.</TableHead>
+            <TableHead>ผู้ขอ</TableHead>
+            <TableHead>วันที่</TableHead>
+            <TableHead>เวลา</TableHead>
+            <TableHead>ชั่วโมง</TableHead>
+            <TableHead>อัตรา</TableHead>
+            <TableHead className="w-full">เหตุผล</TableHead>
+            <TableHead className="text-center">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {requests.map((r, i) => (
+            <TableRow key={r.id}>
+              <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+              <TableCell>
+                <Link href={`/overtime/${r.id}`} className="flex items-center gap-2 font-medium text-foreground hover:text-primary hover:underline">
+                  <Avatar className="size-8">
+                    {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
+                    <AvatarFallback className="bg-transparent p-0">
+                      <CharacterAvatar character={characterFor({ gender: r.employee.gender ?? null })} seed={r.employee.id} className="size-full" />
+                    </AvatarFallback>
+                  </Avatar>
+                  {displayName(r.employee)}
+                </Link>
+              </TableCell>
+              <TableCell className="tabular-nums">{formatDate(r.date)}</TableCell>
+              <TableCell className="tabular-nums">{r.startTime}–{r.endTime}</TableCell>
+              <TableCell className="tabular-nums">{r.hours} ชม.</TableCell>
+              <TableCell>{r.multiplier >= 2 ? "วันหยุด 2 เท่า" : "ปกติ"}</TableCell>
+              <TableCell className="whitespace-normal break-words text-muted-foreground">{r.reason || "-"}</TableCell>
+              <TableCell>
+                <div className="flex items-center justify-center gap-2">
+                  <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
+                    <X className="size-4" /> ไม่อนุมัติ
+                  </Button>
+                  <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
+                    <Check className="size-4" /> อนุมัติ
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+    <div className="space-y-2 md:hidden">
       {requests.map((r) => (
         <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
           <Link href={`/overtime/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
@@ -185,5 +287,6 @@ function Approvals() {
         </Card>
       ))}
     </div>
+    </>
   );
 }

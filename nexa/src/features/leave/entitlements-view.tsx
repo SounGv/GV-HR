@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, ApiError, type Envelope } from "@/lib/api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EntitlementRow } from "./entitlement-service";
@@ -39,7 +40,7 @@ function Cell({ row, type, year, onSaved }: { row: EntitlementRow; type: PaidTyp
   }
 
   return (
-    <td className="px-2 py-2">
+    <TableCell>
       <div className="flex items-center justify-end gap-2">
         <Input
           type="number"
@@ -59,7 +60,7 @@ function Cell({ row, type, year, onSaved }: { row: EntitlementRow; type: PaidTyp
           ใช้ {used} · เหลือ {left ?? "-"}
         </span>
       </div>
-    </td>
+    </TableCell>
   );
 }
 
@@ -107,35 +108,35 @@ export function EntitlementsView() {
       ) : rows.length === 0 ? (
         <EmptyState icon={Search} title="ไม่พบพนักงาน" description="ลองเปลี่ยนคำค้น" />
       ) : (
-        <Card className="gap-0 overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-muted-foreground">
-              <tr>
-                <th scope="col" className="sticky left-0 bg-muted px-3 py-2 text-left font-medium">พนักงาน</th>
-                {TYPES.map((t) => (
-                  <th key={t.key} scope="col" className="px-2 py-2 text-right font-medium">
-                    {t.label} (วัน)
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((r) => (
-                <tr key={r.employeeId}>
-                  <th scope="row" className="sticky left-0 min-w-[200px] bg-card px-3 py-2 text-left font-medium">
-                    {r.name}
-                    <span className="block text-xs font-medium text-muted-foreground">
-                      {r.code} · {r.department}
-                    </span>
-                  </th>
-                  {TYPES.map((t) => (
-                    <Cell key={t.key} row={r} type={t.key} year={year} onSaved={() => qc.invalidateQueries({ queryKey: ["leave-entitlements"] })} />
-                  ))}
-                </tr>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="sticky left-0 bg-card">พนักงาน</TableHead>
+              {TYPES.map((t) => (
+                <TableHead key={t.key} className="text-right">
+                  {t.label} (วัน)
+                </TableHead>
               ))}
-            </tbody>
-          </table>
-        </Card>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r, i) => (
+              <TableRow key={r.employeeId}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="sticky left-0 min-w-[200px] bg-card font-medium">
+                  {r.name}
+                  <span className="block text-xs font-medium text-muted-foreground">
+                    {r.code} · {r.department}
+                  </span>
+                </TableCell>
+                {TYPES.map((t) => (
+                  <Cell key={t.key} row={r} type={t.key} year={year} onSaved={() => qc.invalidateQueries({ queryKey: ["leave-entitlements"] })} />
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   );

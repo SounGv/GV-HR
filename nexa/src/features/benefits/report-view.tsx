@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download, FileSpreadsheet, Printer } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,7 +15,7 @@ import { api, type Envelope } from "@/lib/api/client";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { EXPENSE_STATUS_LABEL } from "@/features/expense/labels";
+import { EXPENSE_STATUS_LABEL, ExpenseStatusBadge } from "@/features/expense/labels";
 import type { ExpenseStatus } from "@/features/expense/types";
 import type { MedicalReportRow, LoanReportRow } from "./report-service";
 
@@ -273,78 +272,80 @@ function LoanCards({ rows }: { rows: LoanReportRow[] }) {
 
 function MedicalTable({ rows }: { rows: MedicalReportRow[] }) {
   return (
-    <Card className="p-0">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>พนักงาน</TableHead>
-            <TableHead>แผนก</TableHead>
-            <TableHead>วงเงินทั้งหมด</TableHead>
-            <TableHead>ครั้งที่เบิก</TableHead>
-            <TableHead>อนุมัติสะสม</TableHead>
-            <TableHead>รออนุมัติ</TableHead>
-            <TableHead>คงเหลือ</TableHead>
-            <TableHead>เบิกล่าสุด</TableHead>
-            <TableHead>ใบลาป่วยอ้างอิง</TableHead>
-            <TableHead>เอกสารแนบ</TableHead>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-14 text-center">No.</TableHead>
+          <TableHead className="w-full">พนักงาน</TableHead>
+          <TableHead>แผนก</TableHead>
+          <TableHead className="text-right">วงเงินทั้งหมด</TableHead>
+          <TableHead className="text-center">ครั้งที่เบิก</TableHead>
+          <TableHead className="text-right">อนุมัติสะสม</TableHead>
+          <TableHead className="text-right">รออนุมัติ</TableHead>
+          <TableHead className="text-right">คงเหลือ</TableHead>
+          <TableHead>เบิกล่าสุด</TableHead>
+          <TableHead className="text-center">ใบลาป่วยอ้างอิง</TableHead>
+          <TableHead className="text-center">เอกสารแนบ</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((r, i) => (
+          <TableRow key={r.employeeId}>
+            <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+            <TableCell>
+              {r.employeeName} <span className="text-muted-foreground tabular-nums">({r.employeeCode})</span>
+            </TableCell>
+            <TableCell>{r.department ?? "-"}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatCurrency(r.totalCap)}</TableCell>
+            <TableCell className="text-center tabular-nums">{r.claimCount}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatCurrency(r.approvedTotal)}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatCurrency(r.pendingTotal)}</TableCell>
+            <TableCell className="text-right font-semibold text-primary tabular-nums">{formatCurrency(r.remaining)}</TableCell>
+            <TableCell className="tabular-nums">{r.lastClaimDate ? formatDate(r.lastClaimDate) : "-"}</TableCell>
+            <TableCell className="text-center tabular-nums">{r.sickLeaveRefs.length > 0 ? `${r.sickLeaveRefs.length} ใบ` : "-"}</TableCell>
+            <TableCell className="text-center tabular-nums">{r.attachments.length > 0 ? `${r.attachments.length} ไฟล์` : "-"}</TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.employeeId}>
-              <TableCell>
-                {r.employeeName} <span className="text-muted-foreground">({r.employeeCode})</span>
-              </TableCell>
-              <TableCell>{r.department ?? "-"}</TableCell>
-              <TableCell>{formatCurrency(r.totalCap)}</TableCell>
-              <TableCell>{r.claimCount}</TableCell>
-              <TableCell>{formatCurrency(r.approvedTotal)}</TableCell>
-              <TableCell>{formatCurrency(r.pendingTotal)}</TableCell>
-              <TableCell className="font-semibold text-primary">{formatCurrency(r.remaining)}</TableCell>
-              <TableCell>{r.lastClaimDate ? formatDate(r.lastClaimDate) : "-"}</TableCell>
-              <TableCell>{r.sickLeaveRefs.length > 0 ? `${r.sickLeaveRefs.length} ใบ` : "-"}</TableCell>
-              <TableCell>{r.attachments.length > 0 ? `${r.attachments.length} ไฟล์` : "-"}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
 function LoanTable({ rows }: { rows: LoanReportRow[] }) {
   return (
-    <Card className="p-0">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>พนักงาน</TableHead>
-            <TableHead>แผนก</TableHead>
-            <TableHead>เงินเดือน ณ วันที่กู้</TableHead>
-            <TableHead>จำนวนเงินกู้</TableHead>
-            <TableHead>วันที่กู้</TableHead>
-            <TableHead>สถานะ</TableHead>
-            <TableHead>ใช้สิทธิ์ปีนี้</TableHead>
-            <TableHead>คงค้าง</TableHead>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-14 text-center">No.</TableHead>
+          <TableHead className="w-full">พนักงาน</TableHead>
+          <TableHead>แผนก</TableHead>
+          <TableHead className="text-right">เงินเดือน ณ วันที่กู้</TableHead>
+          <TableHead className="text-right">จำนวนเงินกู้</TableHead>
+          <TableHead>วันที่กู้</TableHead>
+          <TableHead className="text-center">สถานะ</TableHead>
+          <TableHead className="text-center">ใช้สิทธิ์ปีนี้</TableHead>
+          <TableHead className="text-right">คงค้าง</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((r, i) => (
+          <TableRow key={r.loanId}>
+            <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+            <TableCell>
+              {r.employeeName} <span className="text-muted-foreground tabular-nums">({r.employeeCode})</span>
+            </TableCell>
+            <TableCell>{r.department ?? "-"}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatCurrency(r.salarySnapshot)}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatCurrency(r.amount)}</TableCell>
+            <TableCell className="tabular-nums">{formatDate(r.loanDate)}</TableCell>
+            <TableCell className="text-center">
+              {r.status in EXPENSE_STATUS_LABEL ? <ExpenseStatusBadge status={r.status as ExpenseStatus} /> : r.status}
+            </TableCell>
+            <TableCell className="text-center tabular-nums">{r.usageCountThisYear}</TableCell>
+            <TableCell className="text-right font-semibold text-primary tabular-nums">{formatCurrency(r.outstanding)}</TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.loanId}>
-              <TableCell>
-                {r.employeeName} <span className="text-muted-foreground">({r.employeeCode})</span>
-              </TableCell>
-              <TableCell>{r.department ?? "-"}</TableCell>
-              <TableCell>{formatCurrency(r.salarySnapshot)}</TableCell>
-              <TableCell>{formatCurrency(r.amount)}</TableCell>
-              <TableCell>{formatDate(r.loanDate)}</TableCell>
-              <TableCell>{EXPENSE_STATUS_LABEL[r.status as ExpenseStatus] ?? r.status}</TableCell>
-              <TableCell>{r.usageCountThisYear}</TableCell>
-              <TableCell className="font-semibold text-primary">{formatCurrency(r.outstanding)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

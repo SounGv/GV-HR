@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
   INTEGRATIONS,
@@ -57,7 +58,8 @@ export function IntegrationHub() {
   return (
     <div className="space-y-6">
       {/* Adapter Pattern explainer */}
-      <Card className="relative overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white">
+      <Card className="relative overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white">
+
         <div className="relative flex items-start gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
             <Plug className="size-6 text-primary" />
@@ -75,49 +77,72 @@ export function IntegrationHub() {
       {CATEGORY_ORDER.filter((c) => grouped.has(c)).map((cat) => (
         <section key={cat} className="space-y-3">
           <h2 className="text-sm font-semibold text-foreground">{CATEGORY_LABEL[cat]}</h2>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {grouped.get(cat)!.map((i) => {
-              const Icon = ICONS[i.icon] ?? Plug;
-              const st = STATUS_META[i.status];
-              return (
-                <Card key={i.id} className="gap-3 p-4 transition hover:shadow-md">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="flex size-11 items-center justify-center rounded-lg bg-muted">
-                      <Icon className="size-5 text-foreground" />
-                    </span>
-                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", st.cls)}>
-                      {st.label}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium">{i.name}</p>
-                    <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{i.description}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {i.capabilities.map((c) => (
-                      <span key={c} className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                        {c}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead>ระบบ</TableHead>
+                <TableHead className="w-full">รายละเอียด</TableHead>
+                <TableHead>ความสามารถ</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead className="text-center">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {grouped.get(cat)!.map((i, idx) => {
+                const Icon = ICONS[i.icon] ?? Plug;
+                const st = STATUS_META[i.status];
+                return (
+                  <TableRow key={i.id}>
+                    <TableCell className="text-center tabular-nums">{idx + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                        {i.status === "coming_soon" ? (
+                          <span className="font-medium text-foreground">{i.name}</span>
+                        ) : (
+                          <Link href={`/integrations/${i.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                            {i.name}
+                          </Link>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="min-w-56 whitespace-normal text-muted-foreground">{i.description}</TableCell>
+                    <TableCell className="min-w-40 whitespace-normal">
+                      <div className="flex flex-wrap gap-1">
+                        {i.capabilities.map((c) => (
+                          <span key={c} className="rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium", st.cls)}>
+                        <span className="size-1.5 rounded-full bg-current" aria-hidden />
+                        {st.label}
                       </span>
-                    ))}
-                  </div>
-                  {i.status === "coming_soon" ? (
-                    <Button variant="outline" size="sm" className="mt-1 w-full" disabled>
-                      เร็วๆ นี้
-                    </Button>
-                  ) : (
-                    <Button
-                      variant={i.status === "available" ? "default" : "outline"}
-                      size="sm"
-                      className="mt-1 w-full"
-                      render={<Link href={`/integrations/${i.id}`} />}
-                    >
-                      {i.status === "connected" ? "จัดการ" : "เชื่อมต่อ"}
-                    </Button>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {i.status === "coming_soon" ? (
+                        <Button variant="outline" size="sm" disabled>
+                          เร็วๆ นี้
+                        </Button>
+                      ) : (
+                        <Button
+                          variant={i.status === "available" ? "default" : "outline"}
+                          size="sm"
+                          render={<Link href={`/integrations/${i.id}`} />}
+                        >
+                          {i.status === "connected" ? "จัดการ" : "เชื่อมต่อ"}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </section>
       ))}
 

@@ -119,7 +119,7 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {(onSearchChange || toolbar) && (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           {onSearchChange && (
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -132,7 +132,7 @@ export function DataTable<TData, TValue>({
               />
             </div>
           )}
-          {toolbar && <div className="flex items-center gap-2">{toolbar}</div>}
+          {toolbar && <div className="flex flex-wrap items-center gap-2">{toolbar}</div>}
         </div>
       )}
 
@@ -143,8 +143,7 @@ export function DataTable<TData, TValue>({
       ) : data.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-[var(--card-shadow)]">
-          <Table>
+        <Table>
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="hover:bg-transparent">
@@ -207,8 +206,7 @@ export function DataTable<TData, TValue>({
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        </div>
+        </Table>
       )}
 
       {!loading && !error && total > 0 && (

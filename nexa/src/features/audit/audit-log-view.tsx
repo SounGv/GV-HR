@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, History } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -119,29 +119,36 @@ export function AuditLogView() {
         <EmptyState icon={History} title="ไม่พบบันทึกการใช้งาน" description="ลองปรับตัวกรองใหม่" />
       ) : (
         <>
-          <Card className="divide-y divide-border p-0">
-            {rows.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">{r.action}</span>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      {r.entity}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead>วันเวลา</TableHead>
+                <TableHead className="w-full">การกระทำ</TableHead>
+                <TableHead>ประเภทข้อมูล</TableHead>
+                <TableHead>ผู้ทำรายการ</TableHead>
+                <TableHead>IP</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r, i) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-center tabular-nums">{((meta?.page ?? 1) - 1) * PAGE_SIZE + i + 1}</TableCell>
+                  <TableCell className="tabular-nums">{formatDateTime(r.createdAt)}</TableCell>
+                  <TableCell className="font-medium whitespace-normal break-all text-foreground">{r.action}</TableCell>
+                  <TableCell>{r.entity}</TableCell>
+                  <TableCell>
                     {r.actor
                       ? r.actor.email
                         ? `${r.actor.name ?? r.actor.email} (${r.actor.email})`
                         : (r.actor.name ?? `@${r.actor.username}`)
                       : "ระบบ"}
-                    {r.ip ? ` · ${r.ip}` : ""}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(r.createdAt)}</span>
-              </div>
-            ))}
-          </Card>
+                  </TableCell>
+                  <TableCell className="tabular-nums">{r.ip || "-"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-between text-sm">

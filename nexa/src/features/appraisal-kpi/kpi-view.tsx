@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CircleCheck, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { CircleCheck, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/features/auth/auth-context";
 import { api, ApiError, type Envelope } from "@/lib/api/client";
@@ -52,24 +53,50 @@ export function KpiView() {
       <p className="text-sm text-muted-foreground">
         ใช้ตัวเลขที่ระบบมีอยู่แล้วเป็นตัวชี้วัด แปลงเป็นคะแนนด้วยตารางขั้นบันไดที่ HR เขียนเอง ผลนี้เป็นข้อมูลประกอบ ยังไม่ถูกรวมเข้าคะแนนประเมินใดๆ
       </p>
-      <div className="flex flex-wrap items-center gap-2">
-        {profiles.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            aria-pressed={selected === p.id}
-            onClick={() => setSelected(p.id)}
-            className={cn("min-h-11 rounded-full border px-4 text-sm font-medium md:min-h-9", selected === p.id ? "border-primary bg-accent" : "border-border bg-card")}
-          >
-            {p.name}
-          </button>
-        ))}
-        {canEdit && (
-          <Button variant="outline" className="h-11 md:h-9" onClick={() => setSelected("new")}>
+      {canEdit && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button className="h-11 md:h-9" onClick={() => setSelected("new")}>
             <Plus className="size-4" /> โปรไฟล์ใหม่
           </Button>
-        )}
-      </div>
+        </div>
+      )}
+      {profiles.length > 0 && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-full">ชื่อโปรไฟล์</TableHead>
+              <TableHead className="text-center">ตัวชี้วัด</TableHead>
+              <TableHead className="text-center">แถบสี</TableHead>
+              <TableHead className="text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {profiles.map((p, i) => (
+              <TableRow key={p.id} data-state={selected === p.id ? "selected" : undefined}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="whitespace-normal">
+                  <button
+                    type="button"
+                    aria-pressed={selected === p.id}
+                    onClick={() => setSelected(p.id)}
+                    className="text-left font-medium break-words text-foreground hover:text-primary hover:underline"
+                  >
+                    {p.name}
+                  </button>
+                </TableCell>
+                <TableCell className="text-center tabular-nums">{p.indicators.length}</TableCell>
+                <TableCell className="text-center tabular-nums">{p.bands.length}</TableCell>
+                <TableCell className="text-center">
+                  <Button variant="ghost" size="icon" className="size-9" aria-label={`เปิดโปรไฟล์ ${p.name}`} onClick={() => setSelected(p.id)}>
+                    <Pencil className="size-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       {profiles.length === 0 && selected !== "new" && (
         <EmptyState icon={Plus} title="ยังไม่มีโปรไฟล์ KPI" description="กด “โปรไฟล์ใหม่” เพื่อเลือกตัวชี้วัดและตั้งเกณฑ์" />
@@ -302,36 +329,34 @@ function RunPanel({ profile }: { profile: KpiProfileView }) {
       {result && (
         <>
           <p className="text-sm text-muted-foreground">ช่วง {result.period} · {result.rows.length} คน (เรียงจากคะแนนน้อยไปมาก)</p>
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-muted-foreground">
-                <tr>
-                  <th scope="col" className="px-3 py-2 text-left font-medium">พนักงาน</th>
-                  {profile.indicators.map((i) => (
-                    <th key={i.metric} scope="col" className="px-2 py-2 text-right font-medium">{metricOf(i.metric)?.label}</th>
-                  ))}
-                  <th scope="col" className="px-2 py-2 text-right font-medium">คะแนน</th>
-                  <th scope="col" className="px-3 py-2 text-left font-medium">ระดับ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {result.rows.map((r) => (
-                  <tr key={r.code}>
-                    <th scope="row" className="px-3 py-2 text-left font-medium">
-                      {r.name} <span className="font-medium text-muted-foreground">{r.code}</span>
-                    </th>
-                    {r.parts.map((p) => (
-                      <td key={p.metric} className="px-2 py-2 text-right tabular-nums">{p.value}</td>
-                    ))}
-                    <td className="px-2 py-2 text-right font-semibold tabular-nums">{r.score}</td>
-                    <td className="px-3 py-2">
-                      {r.band ? <span className={cn("inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold", TONE_CLASS[r.band.tone as KpiBand["tone"]])}>{r.band.label}</span> : "-"}
-                    </td>
-                  </tr>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>พนักงาน</TableHead>
+                {profile.indicators.map((i) => (
+                  <TableHead key={i.metric} className="text-right">{metricOf(i.metric)?.label}</TableHead>
                 ))}
-              </tbody>
-            </table>
-          </div>
+                <TableHead className="text-right">คะแนน</TableHead>
+                <TableHead>ระดับ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {result.rows.map((r) => (
+                <TableRow key={r.code}>
+                  <TableCell className="font-medium">
+                    {r.name} <span className="font-medium text-muted-foreground">{r.code}</span>
+                  </TableCell>
+                  {r.parts.map((p) => (
+                    <TableCell key={p.metric} className="text-right tabular-nums">{p.value}</TableCell>
+                  ))}
+                  <TableCell className="text-right font-semibold tabular-nums">{r.score}</TableCell>
+                  <TableCell>
+                    {r.band ? <span className={cn("inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold", TONE_CLASS[r.band.tone as KpiBand["tone"]])}>{r.band.label}</span> : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </>
       )}
     </Card>

@@ -9,7 +9,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { StatusChip } from "@/components/shared/status-chip";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api/client";
@@ -118,74 +118,85 @@ export function RecurrenceView() {
           description="กด เพิ่มการตั้งรอบ เพื่อให้ระบบสร้างรอบประเมินให้ทุกเดือน ไม่ต้องสร้างด้วยมือซ้ำ"
         />
       ) : (
-        items.map((r) => (
-          <Card key={r.id} className="gap-3 p-4" aria-label={r.name}>
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h2 className="text-base font-semibold break-words">{r.name}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {FREQUENCY_LABEL[r.frequency]} เปิดวันที่ {r.openDay} ปิดวันที่ {r.closeDay} ของเดือนที่เปิด
-                </p>
-              </div>
-              <StatusChip tone={r.enabled ? "success" : "neutral"} label={r.enabled ? "เปิดใช้อยู่" : "หยุดอยู่"} />
-            </div>
-
-            <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="text-muted-foreground">แบบประเมิน</dt>
-                <dd className="font-medium break-words">{r.formName}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">ผู้ประเมิน</dt>
-                <dd className="font-medium">{presetName(r.preset)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">ผู้ถูกประเมิน</dt>
-                <dd className="font-medium break-words">{r.departmentNames.length === 0 ? "พนักงานที่ยังทำงานอยู่ทุกคน" : `เฉพาะแผนก ${r.departmentNames.join(", ")}`}</dd>
-              </div>
-            </dl>
-
-            <div>
-              <h3 className="text-sm font-semibold">3 รอบถัดไป</h3>
-              <ul className="mt-1 space-y-1 text-sm">
-                {r.upcoming.map((u) => (
-                  <li key={u.periodKey} className="tabular-nums">
-                    <span className="font-medium">{u.name}</span>{" "}
-                    <span className="text-muted-foreground">
-                      เปิด {fmt(u.startIso)} ปิด {fmt(u.endIso)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              สร้างไปแล้ว {r.roundsMade} รอบ
-              {r.lastRound && (
-                <>
-                  {" "}
-                  ล่าสุด{" "}
-                  <Link href={`/appraisal/rounds/${r.lastRound.id}`} className="font-medium text-foreground underline-offset-2 hover:underline">
-                    {r.lastRound.name}
-                  </Link>{" "}
-                  ({ROUND_STATUS_LABEL[r.lastRound.status]})
-                </>
-              )}
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="h-11 md:h-9" onClick={() => setEditing({ id: r.id, body: toBody(r) })}>
-                <Pencil className="size-4" /> แก้ไข
-              </Button>
-              <Button variant="outline" className="h-11 md:h-9" onClick={() => toggle(r)} disabled={actions.update.isPending}>
-                {r.enabled ? "หยุดชั่วคราว" : "เปิดใช้อีกครั้ง"}
-              </Button>
-              <Button variant="outline" className="h-11 md:h-9" onClick={() => setRemoving(r)}>
-                <Trash2 className="size-4" /> ลบ
-              </Button>
-            </div>
-          </Card>
-        ))
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-full">ชื่อรอบ</TableHead>
+              <TableHead>แบบประเมิน</TableHead>
+              <TableHead>ผู้ประเมิน</TableHead>
+              <TableHead>ผู้ถูกประเมิน</TableHead>
+              <TableHead>3 รอบถัดไป</TableHead>
+              <TableHead>สร้างไปแล้ว</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+              <TableHead className="text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((r, i) => (
+              <TableRow key={r.id}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="min-w-56 whitespace-normal">
+                  <button
+                    type="button"
+                    className="text-left font-medium break-words text-foreground hover:text-primary hover:underline"
+                    onClick={() => setEditing({ id: r.id, body: toBody(r) })}
+                  >
+                    {r.name}
+                  </button>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {FREQUENCY_LABEL[r.frequency]} เปิดวันที่ {r.openDay} ปิดวันที่ {r.closeDay} ของเดือนที่เปิด
+                  </p>
+                </TableCell>
+                <TableCell className="min-w-36 whitespace-normal break-words">{r.formName}</TableCell>
+                <TableCell>{presetName(r.preset)}</TableCell>
+                <TableCell className="min-w-40 whitespace-normal break-words">
+                  {r.departmentNames.length === 0 ? "พนักงานที่ยังทำงานอยู่ทุกคน" : `เฉพาะแผนก ${r.departmentNames.join(", ")}`}
+                </TableCell>
+                <TableCell className="min-w-64 whitespace-normal">
+                  <ul className="space-y-1 text-xs">
+                    {r.upcoming.map((u) => (
+                      <li key={u.periodKey} className="tabular-nums">
+                        <span className="font-medium">{u.name}</span>{" "}
+                        <span className="text-muted-foreground">
+                          เปิด {fmt(u.startIso)} ปิด {fmt(u.endIso)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </TableCell>
+                <TableCell className="min-w-40 whitespace-normal">
+                  <span className="tabular-nums">{r.roundsMade} รอบ</span>
+                  {r.lastRound && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      ล่าสุด{" "}
+                      <Link href={`/appraisal/rounds/${r.lastRound.id}`} className="font-medium text-foreground underline-offset-2 hover:underline">
+                        {r.lastRound.name}
+                      </Link>{" "}
+                      ({ROUND_STATUS_LABEL[r.lastRound.status]})
+                    </p>
+                  )}
+                </TableCell>
+                <TableCell className="text-center">
+                  <StatusChip tone={r.enabled ? "success" : "neutral"} label={r.enabled ? "เปิดใช้อยู่" : "หยุดอยู่"} />
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button variant="ghost" size="icon" className="size-9" aria-label={`แก้ไข ${r.name}`} onClick={() => setEditing({ id: r.id, body: toBody(r) })}>
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => toggle(r)} disabled={actions.update.isPending}>
+                      {r.enabled ? "หยุดชั่วคราว" : "เปิดใช้อีกครั้ง"}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-9" aria-label={`ลบ ${r.name}`} onClick={() => setRemoving(r)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <RecurrenceDialog state={editing} onClose={() => setEditing(null)} />

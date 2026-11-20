@@ -145,7 +145,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
                         <TableCell rowSpan={g.lines.length} className="text-center align-top tabular-nums">
                           {gi + 1}
                         </TableCell>
-                        <TableCell rowSpan={g.lines.length} className="align-top font-medium whitespace-normal">
+                        <TableCell rowSpan={g.lines.length} className="min-w-44 align-top font-medium whitespace-normal">
                           {g.name}
                           <span className="block text-xs font-normal text-muted-foreground">
                             ครบ {g.lines.filter((x) => x.status === "SUBMITTED").length}/{g.lines.length}

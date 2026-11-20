@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusChip } from "@/components/shared/status-chip";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
@@ -110,49 +112,47 @@ function Manage() {
       ) : items.length === 0 ? (
         <EmptyState icon={Megaphone} title="ยังไม่มีประกาศ" description="เริ่มต้นด้วยการสร้างประกาศแรก" />
       ) : (
-        <div className="space-y-2">
-          {items.map((a) => (
-            <Card key={a.id} className="flex-row items-center justify-between gap-3 p-4">
-              <Link href={`/announcements/${a.id}`} className="min-w-0 flex-1">
-                <div className="min-w-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead>วันที่</TableHead>
+              <TableHead className="w-full">หัวข้อประกาศ</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+              <TableHead className="text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((a, i) => (
+              <TableRow key={a.id}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="tabular-nums">{fmtDate(a.publishedAt ?? a.createdAt) || "-"}</TableCell>
+                <TableCell className="min-w-56 whitespace-normal">
                   <div className="flex items-center gap-2">
-                    {a.pinned && <Pin className="size-3.5 text-primary" />}
-                    <span className="truncate font-medium text-foreground">{a.title}</span>
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-xs font-medium",
-                        a.status === "PUBLISHED"
-                          ? "bg-success/10 text-success"
-                          : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {a.status === "PUBLISHED" ? "เผยแพร่" : "ฉบับร่าง"}
-                    </span>
+                    {a.pinned && <Pin className="size-3.5 shrink-0 text-primary" aria-label="ปักหมุด" />}
+                    <Link href={`/announcements/${a.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                      {a.title}
+                    </Link>
                   </div>
-                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{a.body}</p>
-                </div>
-              </Link>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="แก้ไข"
-                  render={<Link href={`/announcements/${a.id}/edit`} />}
-                >
-                  <Pencil className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="ลบ"
-                  onClick={() => setDeleteTarget(a)}
-                >
-                  <Trash2 className="size-4 text-destructive" />
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+                  <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{a.body}</p>
+                </TableCell>
+                <TableCell className="text-center">
+                  <StatusChip tone={a.status === "PUBLISHED" ? "success" : "neutral"} label={a.status === "PUBLISHED" ? "เผยแพร่" : "ฉบับร่าง"} />
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button variant="ghost" size="icon" className="size-9" aria-label={`แก้ไข ${a.title}`} render={<Link href={`/announcements/${a.id}/edit`} />}>
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-9" aria-label={`ลบ ${a.title}`} onClick={() => setDeleteTarget(a)}>
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <ConfirmDialog

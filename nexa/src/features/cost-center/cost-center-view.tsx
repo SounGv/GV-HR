@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Wallet, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
@@ -53,36 +53,49 @@ export function CostCenterView() {
       ) : items.length === 0 ? (
         <EmptyState icon={Wallet} title="ยังไม่มีศูนย์ต้นทุน" description="เพิ่มศูนย์ต้นทุนเพื่อจัดกลุ่มงบประมาณของพนักงาน" />
       ) : (
-        <div className="space-y-2">
-          {items.map((c) => (
-            <Card key={c.id} className="flex-row items-center justify-between gap-3 p-4">
-              <div className="flex min-w-0 items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Wallet className="size-4 text-primary" />
-                </span>
-                <div className="min-w-0">
-                  <p className="font-medium text-foreground">
-                    {c.name} <span className="text-xs text-muted-foreground">({c.code})</span>
-                  </p>
-                  {c.description && <p className="truncate text-xs text-muted-foreground">{c.description}</p>}
-                  <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Users className="size-3" /> {c.employeeCount} คน
-                  </p>
-                </div>
-              </div>
-              {canManage && (
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button variant="ghost" size="icon-sm" aria-label="แก้ไข" render={<Link href={`/cost-centers/${c.id}/edit`} />}>
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label="ลบ" className="text-destructive" onClick={() => setDeleteTarget(c)}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead>รหัส</TableHead>
+              <TableHead className="w-full">ชื่อศูนย์ต้นทุน</TableHead>
+              <TableHead>รายละเอียด</TableHead>
+              <TableHead className="text-center">พนักงาน</TableHead>
+              {canManage && <TableHead className="text-center">Action</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((c, i) => (
+              <TableRow key={c.id}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="tabular-nums">{c.code}</TableCell>
+                <TableCell className="whitespace-normal">
+                  {canManage ? (
+                    <Link href={`/cost-centers/${c.id}/edit`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                      {c.name}
+                    </Link>
+                  ) : (
+                    <span className="font-medium break-words text-foreground">{c.name}</span>
+                  )}
+                </TableCell>
+                <TableCell className="max-w-64 truncate text-muted-foreground" title={c.description ?? undefined}>{c.description || "-"}</TableCell>
+                <TableCell className="text-center tabular-nums">{c.employeeCount} คน</TableCell>
+                {canManage && (
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`แก้ไข ${c.name}`} render={<Link href={`/cost-centers/${c.id}/edit`} />}>
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-9 text-destructive" aria-label={`ลบ ${c.name}`} onClick={() => setDeleteTarget(c)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <ConfirmDialog

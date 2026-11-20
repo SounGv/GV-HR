@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Briefcase, Users, RefreshCcw, ArrowRightLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Briefcase, Users, RefreshCcw, ArrowRightLeft, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusChip } from "@/components/shared/status-chip";
 import {
   Select,
   SelectContent,
@@ -18,7 +21,6 @@ import {
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
-import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/client";
 import { EMPLOYMENT_LABEL } from "@/features/employee/labels";
 
@@ -59,7 +61,13 @@ function Jobs({ canManage }: { canManage: boolean }) {
   const { data, isLoading, isError, refetch } = useJobs();
   const deleteMut = useDeleteJob();
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
+  const [search, setSearch] = useState("");
   const jobs = data?.data ?? [];
+  const visibleJobs = search.trim()
+    ? jobs.filter((j) =>
+        [j.title, j.departmentName, j.location].some((v) => (v ?? "").toLowerCase().includes(search.trim().toLowerCase())),
+      )
+    : jobs;
   const openJobs = jobs.filter((j) => j.status === "OPEN").length;
   const totalCandidates = jobs.reduce((sum, j) => sum + j.candidateCount, 0);
 
@@ -77,27 +85,31 @@ function Jobs({ canManage }: { canManage: boolean }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-2">
-          <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
-            <div className="text-xs text-muted-foreground">ตำแหน่งเปิด</div>
-            <div className="text-lg font-semibold">{openJobs}</div>
-          </Card>
-          <Card className="min-w-[140px] gap-1 border-0 bg-muted/60 p-3">
-            <div className="text-xs text-muted-foreground">ผู้สมัครรวม</div>
-            <div className="text-lg font-semibold">{totalCandidates}</div>
-          </Card>
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ค้นหาตำแหน่งงาน ฝ่าย หรือสถานที่" aria-label="ค้นหาตำแหน่งงาน" className="pl-8" />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCcw className="size-4" /> รีเฟรช
           </Button>
           {canManage && (
-            <Button render={<Link href="/recruitment/jobs/new" />}>
+            <Button size="sm" render={<Link href="/recruitment/jobs/new" />}>
               <Plus className="size-4" /> ประกาศตำแหน่ง
             </Button>
           )}
         </div>
       </div>
+      <dl className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm text-muted-foreground">
+        <div className="flex items-baseline gap-1">
+          <dt>ตำแหน่งเปิด</dt>
+          <dd className="font-semibold text-foreground tabular-nums">{openJobs}</dd>
+        </div>
+        <div className="flex items-baseline gap-1">
+          <dt>ผู้สมัครรวม</dt>
+          <dd className="font-semibold text-foreground tabular-nums">{totalCandidates}</dd>
+        </div>
+      </dl>
 
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
@@ -106,52 +118,57 @@ function Jobs({ canManage }: { canManage: boolean }) {
       ) : jobs.length === 0 ? (
         <EmptyState icon={Briefcase} title="ยังไม่มีตำแหน่งงาน" description={canManage ? "เริ่มต้นด้วยการประกาศรับสมัคร" : "ยังไม่มีข้อมูล"} />
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {jobs.map((j) => (
-            <Card key={j.id} className="gap-2 p-5">
-              <Link href={`/recruitment/jobs/${j.id}`} className="block">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-semibold text-foreground">{j.title}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {[j.departmentName, EMPLOYMENT_LABEL[j.employmentType as keyof typeof EMPLOYMENT_LABEL], j.location]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                      j.status === "OPEN" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {JOB_STATUS_LABEL[j.status]}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    รับ {j.openings} อัตรา · ผู้สมัคร {j.candidateCount} คน
-                  </span>
-                </div>
-              </Link>
-              {canManage && (
-                <div className="mt-2 flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="แก้ไข"
-                    render={<Link href={`/recruitment/jobs/${j.id}/edit`} />}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label="ลบ" onClick={() => setDeleteTarget(j)}>
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
+        visibleJobs.length === 0 ? (
+          <EmptyState icon={Briefcase} title="ไม่พบตำแหน่งงาน" description="ลองเปลี่ยนคำค้นหา" />
+        ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-full">ตำแหน่งงาน</TableHead>
+              <TableHead>ฝ่าย / แผนก</TableHead>
+              <TableHead>ประเภทการจ้าง</TableHead>
+              <TableHead>สถานที่</TableHead>
+              <TableHead className="text-center">อัตรา</TableHead>
+              <TableHead className="text-center">ผู้สมัคร</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+              {canManage && <TableHead className="text-center">Action</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visibleJobs.map((j, i) => (
+              <TableRow key={j.id}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="whitespace-normal">
+                  <Link href={`/recruitment/jobs/${j.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                    {j.title}
+                  </Link>
+                </TableCell>
+                <TableCell>{j.departmentName ?? "-"}</TableCell>
+                <TableCell>{EMPLOYMENT_LABEL[j.employmentType as keyof typeof EMPLOYMENT_LABEL] ?? "-"}</TableCell>
+                <TableCell>{j.location ?? "-"}</TableCell>
+                <TableCell className="text-center tabular-nums">{j.openings}</TableCell>
+                <TableCell className="text-center tabular-nums">{j.candidateCount}</TableCell>
+                <TableCell className="text-center">
+                  <StatusChip tone={j.status === "OPEN" ? "success" : "neutral"} label={JOB_STATUS_LABEL[j.status]} />
+                </TableCell>
+                {canManage && (
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`แก้ไข ${j.title}`} render={<Link href={`/recruitment/jobs/${j.id}/edit`} />}>
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-9 text-destructive" aria-label={`ลบ ${j.title}`} onClick={() => setDeleteTarget(j)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        )
       )}
 
       <ConfirmDialog
@@ -181,7 +198,13 @@ function Candidates({ canManage }: { canManage: boolean }) {
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
   const [stageTarget, setStageTarget] = useState<Candidate | null>(null);
   const [pendingStage, setPendingStage] = useState<CandidateStage | null>(null);
+  const [search, setSearch] = useState("");
   const candidates = data?.data ?? [];
+  const visibleCandidates = search.trim()
+    ? candidates.filter((c) =>
+        [c.name, c.email, c.phone, c.jobPosting.title].some((v) => (v ?? "").toLowerCase().includes(search.trim().toLowerCase())),
+      )
+    : candidates;
   const stageStats = candidates.reduce(
     (acc, c) => {
       acc[c.stage] = (acc[c.stage] ?? 0) + 1;
@@ -217,8 +240,12 @@ function Candidates({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ค้นหาชื่อ อีเมล หรือเบอร์โทร" aria-label="ค้นหาผู้สมัคร" className="pl-8" />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={jobFilter} onValueChange={(v) => setJobFilter(v ?? ALL)}>
             <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
               <SelectValue placeholder="ทุกตำแหน่ง" />
@@ -247,11 +274,11 @@ function Candidates({ canManage }: { canManage: boolean }) {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCcw className="size-4" /> รีเฟรช
           </Button>
           {canManage && (
-            <Button render={<Link href={addCandidateHref} />}>
+            <Button size="sm" render={<Link href={addCandidateHref} />}>
               <Plus className="size-4" /> เพิ่มผู้สมัคร
             </Button>
           )}
@@ -280,50 +307,63 @@ function Candidates({ canManage }: { canManage: boolean }) {
       ) : candidates.length === 0 ? (
         <EmptyState icon={Users} title="ยังไม่มีผู้สมัคร" description="ผู้สมัครในตำแหน่งที่เลือกจะแสดงที่นี่" />
       ) : (
-        <div className="space-y-2">
-          {candidates.map((c) => (
-            <Card key={c.id} className="flex-row items-center justify-between gap-3 p-4">
-              <Link href={`/recruitment/candidates/${c.id}`} className="min-w-0 flex-1">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">{c.name}</span>
-                    <CandidateStageBadge stage={c.stage} />
-                  </div>
-                  <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                    {c.jobPosting.title}
-                    {c.email ? ` · ${c.email}` : ""}
-                    {c.phone ? ` · ${c.phone}` : ""}
-                  </p>
-                </div>
-              </Link>
-              {canManage && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setStageTarget(c);
-                      setPendingStage(c.stage);
-                    }}
-                  >
-                    <ArrowRightLeft className="size-4" /> เลื่อนสถานะ
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="แก้ไข"
-                    render={<Link href={`/recruitment/candidates/${c.id}/edit`} />}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label="ลบ" onClick={() => setDeleteTarget(c)}>
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
+        visibleCandidates.length === 0 ? (
+          <EmptyState icon={Users} title="ไม่พบผู้สมัคร" description="ลองเปลี่ยนคำค้นหา" />
+        ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead className="w-full">ชื่อผู้สมัคร</TableHead>
+              <TableHead>ตำแหน่งที่สมัคร</TableHead>
+              <TableHead>อีเมล</TableHead>
+              <TableHead>เบอร์โทร</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+              {canManage && <TableHead className="text-center">Action</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visibleCandidates.map((c, i) => (
+              <TableRow key={c.id}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="whitespace-normal">
+                  <Link href={`/recruitment/candidates/${c.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                    {c.name}
+                  </Link>
+                </TableCell>
+                <TableCell>{c.jobPosting.title}</TableCell>
+                <TableCell>{c.email ?? "-"}</TableCell>
+                <TableCell className="tabular-nums">{c.phone ?? "-"}</TableCell>
+                <TableCell className="text-center">
+                  <CandidateStageBadge stage={c.stage} />
+                </TableCell>
+                {canManage && (
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setStageTarget(c);
+                          setPendingStage(c.stage);
+                        }}
+                      >
+                        <ArrowRightLeft className="size-4" /> เลื่อนสถานะ
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`แก้ไข ${c.name}`} render={<Link href={`/recruitment/candidates/${c.id}/edit`} />}>
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-9 text-destructive" aria-label={`ลบ ${c.name}`} onClick={() => setDeleteTarget(c)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        )
       )}
 
       <ConfirmDialog

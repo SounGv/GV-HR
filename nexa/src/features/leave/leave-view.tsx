@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
@@ -124,7 +125,55 @@ function MyRequests() {
       ) : requests.length === 0 ? (
         <EmptyState icon={CalendarDays} title="ยังไม่มีคำขอลา" description="เริ่มต้นด้วยการยื่นคำขอลา" />
       ) : (
-        <div className="space-y-2">
+        <>
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead>ประเภทการลา</TableHead>
+                <TableHead>วันที่ลา</TableHead>
+                <TableHead>จำนวน</TableHead>
+                <TableHead className="w-full">เหตุผล</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead className="text-center">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests.map((r, i) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                  <TableCell>
+                    <Link href={`/leave/${r.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                      {LEAVE_TYPE_LABEL[r.type]}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="tabular-nums">{dateRange(r)}</TableCell>
+                  <TableCell className="tabular-nums">{amountLabel(r)}</TableCell>
+                  <TableCell className="whitespace-normal break-words text-muted-foreground">{r.reason || "-"}</TableCell>
+                  <TableCell className="text-center">
+                    <LeaveStatusBadge status={r.status} />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {r.status === "PENDING" || r.status === "APPROVED" ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 text-destructive"
+                        aria-label={`ยกเลิกคำขอ${LEAVE_TYPE_LABEL[r.type]} ${dateRange(r)}`}
+                        title="ยกเลิกคำขอ"
+                        onClick={() => setCancelTarget(r)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    ) : null}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="space-y-2 md:hidden">
           {requests.map((r) => (
             <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
               <Link href={`/leave/${r.id}`} className="min-w-0 flex-1">
@@ -151,6 +200,7 @@ function MyRequests() {
             </Card>
           ))}
         </div>
+        </>
       )}
 
       <ConfirmDialog
@@ -189,7 +239,55 @@ function Approvals() {
   }
 
   return (
-    <div className="space-y-2">
+    <>
+    <div className="hidden md:block">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-14 text-center">No.</TableHead>
+            <TableHead>ผู้ขอลา</TableHead>
+            <TableHead>ประเภทการลา</TableHead>
+            <TableHead>วันที่ลา</TableHead>
+            <TableHead>จำนวน</TableHead>
+            <TableHead className="w-full">เหตุผล</TableHead>
+            <TableHead className="text-center">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {requests.map((r, i) => (
+            <TableRow key={r.id}>
+              <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+              <TableCell>
+                <Link href={`/leave/${r.id}`} className="flex items-center gap-2 font-medium text-foreground hover:text-primary hover:underline">
+                  <Avatar className="size-8">
+                    {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
+                    <AvatarFallback className="bg-transparent p-0">
+                      <CharacterAvatar character={characterFor({ gender: r.employee.gender ?? null })} seed={r.employee.id} className="size-full" />
+                    </AvatarFallback>
+                  </Avatar>
+                  {displayName(r.employee)}
+                </Link>
+              </TableCell>
+              <TableCell>{LEAVE_TYPE_LABEL[r.type]}</TableCell>
+              <TableCell className="tabular-nums">{dateRange(r)}</TableCell>
+              <TableCell className="tabular-nums">{amountLabel(r)}</TableCell>
+              <TableCell className="whitespace-normal break-words text-muted-foreground">{r.reason || "-"}</TableCell>
+              <TableCell>
+                <div className="flex items-center justify-center gap-2">
+                  <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
+                    <X className="size-4" /> ไม่อนุมัติ
+                  </Button>
+                  <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
+                    <Check className="size-4" /> อนุมัติ
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+    <div className="space-y-2 md:hidden">
       {requests.map((r) => (
         <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
           <Link href={`/leave/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
@@ -225,6 +323,7 @@ function Approvals() {
         </Card>
       ))}
     </div>
+    </>
   );
 }
 
@@ -269,7 +368,47 @@ function TeamLeaveList({ title, rows, empty }: { title: string; rows: LeaveReque
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{empty}</p>
       ) : (
-        rows.map((r) => (
+        <>
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14 text-center">No.</TableHead>
+                <TableHead>ผู้ขอลา</TableHead>
+                <TableHead>ประเภทการลา</TableHead>
+                <TableHead>วันที่ลา</TableHead>
+                <TableHead>จำนวน</TableHead>
+                <TableHead className="text-center">สถานะ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r, i) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                  <TableCell className="w-full">
+                    <Link href={`/leave/${r.id}`} className="flex items-center gap-2 font-medium text-foreground hover:text-primary hover:underline">
+                      <Avatar className="size-8">
+                        {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
+                        <AvatarFallback className="bg-transparent p-0">
+                          <CharacterAvatar character={characterFor({ gender: r.employee.gender ?? null })} seed={r.employee.id} className="size-full" />
+                        </AvatarFallback>
+                      </Avatar>
+                      {displayName(r.employee)}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{LEAVE_TYPE_LABEL[r.type]}</TableCell>
+                  <TableCell className="tabular-nums">{dateRange(r)}</TableCell>
+                  <TableCell className="tabular-nums">{amountLabel(r)}</TableCell>
+                  <TableCell className="text-center">
+                    <LeaveStatusBadge status={r.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="space-y-2 md:hidden">
+        {rows.map((r) => (
           <Card key={r.id} className="p-0">
             <Link href={`/leave/${r.id}`} className="flex min-h-11 items-center gap-3 p-4">
               <Avatar className="size-9">
@@ -289,7 +428,9 @@ function TeamLeaveList({ title, rows, empty }: { title: string; rows: LeaveReque
               </div>
             </Link>
           </Card>
-        ))
+        ))}
+        </div>
+        </>
       )}
     </section>
   );

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CheckCheck, ChevronRight, Send } from "lucide-react";
+import { Bell, CheckCheck, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusChip } from "@/components/shared/status-chip";
+import { cn } from "@/lib/utils";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { formatDate } from "@/lib/format";
 import { useAuth } from "@/features/auth/auth-context";
@@ -49,42 +52,51 @@ export function NotificationListView() {
       ) : items.length === 0 ? (
         <EmptyState icon={Bell} title="ยังไม่มีการแจ้งเตือน" />
       ) : (
-        <ul className="divide-y divide-border rounded-lg border border-border bg-card">
-          {items.map((n) => {
-            const body = (
-              <div className="flex items-start gap-2.5">
-                {!n.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />}
-                <div className={n.read ? "min-w-0 flex-1 pl-4" : "min-w-0 flex-1"}>
-                  <p className="text-sm font-medium text-foreground">{n.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatDate(n.createdAt)}</p>
-                </div>
-                {n.link && <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />}
-              </div>
-            );
-            // Following the link (or just opening a link-less one) is itself
-            // the acknowledgment — mark it read right then instead of
-            // leaving the badge stuck until "อ่านทั้งหมด".
-            const onOpen = () => {
-              if (!n.read) markRead.mutate(n.id);
-            };
-            return n.link ? (
-              <Link key={n.id} href={n.link} onClick={onOpen} className={`block px-4 py-3 transition hover:bg-muted/60 ${n.read ? "" : "bg-primary/5"}`}>
-                {body}
-              </Link>
-            ) : (
-              <li key={n.id} className={n.read ? "px-4 py-3" : "bg-primary/5"}>
-                {n.read ? (
-                  body
-                ) : (
-                  <button type="button" onClick={onOpen} className="block w-full px-4 py-3 text-left transition hover:bg-muted/60">
-                    {body}
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead>วันที่</TableHead>
+              <TableHead>หัวข้อ</TableHead>
+              <TableHead className="w-full">รายละเอียด</TableHead>
+              <TableHead className="text-center">สถานะ</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((n, i) => {
+              // Following the link (or just opening a link-less one) is itself
+              // the acknowledgment: mark it read right then instead of
+              // leaving the badge stuck until "อ่านทั้งหมด".
+              const onOpen = () => {
+                if (!n.read) markRead.mutate(n.id);
+              };
+              const titleClass = cn("text-left font-medium break-words hover:text-primary hover:underline", n.read ? "text-muted-foreground" : "text-foreground");
+              return (
+                <TableRow key={n.id} className={n.read ? undefined : "bg-primary/5"}>
+                  <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                  <TableCell className="tabular-nums">{formatDate(n.createdAt)}</TableCell>
+                  <TableCell className="min-w-48 whitespace-normal">
+                    {n.link ? (
+                      <Link href={n.link} onClick={onOpen} className={titleClass}>
+                        {n.title}
+                      </Link>
+                    ) : n.read ? (
+                      <span className={titleClass}>{n.title}</span>
+                    ) : (
+                      <button type="button" onClick={onOpen} className={titleClass}>
+                        {n.title}
+                      </button>
+                    )}
+                  </TableCell>
+                  <TableCell className="min-w-64 whitespace-normal text-muted-foreground">{n.body}</TableCell>
+                  <TableCell className="text-center">
+                    <StatusChip tone={n.read ? "neutral" : "primary"} label={n.read ? "อ่านแล้ว" : "ยังไม่อ่าน"} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
     </div>
   );

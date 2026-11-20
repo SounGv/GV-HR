@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, GraduationCap, Pencil, Trash2, Clock, MapPin, Users, Calendar } from "lucide-react";
+import { Plus, GraduationCap, Pencil, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger, stickyTabsRow } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusChip } from "@/components/shared/status-chip";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
@@ -41,6 +43,11 @@ export function TrainingView() {
   const deleteMut = useDeleteCourse();
 
   const [deleteTarget, setDeleteTarget] = useState<TrainingCourse | null>(null);
+  const [search, setSearch] = useState("");
+  const q = search.trim().toLowerCase();
+  const visibleCourses = q
+    ? courses.filter((c) => [c.title, c.category, c.provider, c.location].some((v) => (v ?? "").toLowerCase().includes(q)))
+    : courses;
 
   async function enroll(id: string) {
     try {
@@ -80,7 +87,7 @@ export function TrainingView() {
             <TabsTrigger value="mine">การอบรมของฉัน</TabsTrigger>
           </TabsList>
           {canCreate && (
-            <Button render={<Link href="/training/new" />}>
+            <Button size="sm" render={<Link href="/training/new" />}>
               <Plus className="size-4" />
               สร้างหลักสูตร
             </Button>
@@ -99,98 +106,81 @@ export function TrainingView() {
               description={canCreate ? "เริ่มต้นด้วยการสร้างหลักสูตรอบรม" : "ยังไม่มีหลักสูตรเปิดอบรม"}
             />
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {courses.map((c) => {
-                const active = c.myEnrollment && c.myEnrollment.status !== "CANCELLED";
-                const full = c.capacity != null && c.enrolledCount >= c.capacity;
-                return (
-                  <Card key={c.id} className="gap-0 p-4">
-                    <Link href={`/training/${c.id}`} className="block">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
-                          {c.category}
-                        </span>
-                      <span
-                        className={`text-xs font-medium ${
-                          c.status === "OPEN" ? "text-success" : "text-muted-foreground"
-                        }`}
-                      >
-                        {c.status === "OPEN" ? "เปิดรับสมัคร" : "ปิดรับสมัคร"}
-                      </span>
-                    </div>
-                      <p className="mt-2 font-medium leading-snug">{c.title}</p>
-                      {c.description && (
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                          {c.description}
-                        </p>
-                      )}
-                      <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="size-3.5" />
-                          {c.hours} ชม.
-                          {c.provider ? ` · ${c.provider}` : ""}
-                        </div>
-                        {c.scheduledDate && (
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="size-3.5" />
-                            {formatDate(c.scheduledDate)}
-                          </div>
-                        )}
-                        {c.location && (
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="size-3.5" />
-                            {c.location}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1.5">
-                          <Users className="size-3.5" />
+            <div className="space-y-3">
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ค้นหาหลักสูตร หมวด หรือสถานที่" aria-label="ค้นหาหลักสูตร" className="pl-8" />
+              </div>
+              {visibleCourses.length === 0 ? (
+                <EmptyState icon={GraduationCap} title="ไม่พบหลักสูตร" description="ลองเปลี่ยนคำค้นหา" />
+              ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-14 text-center">No.</TableHead>
+                    <TableHead className="w-full">หลักสูตร</TableHead>
+                    <TableHead>หมวด</TableHead>
+                    <TableHead className="text-center">ชั่วโมง</TableHead>
+                    <TableHead>ผู้จัด</TableHead>
+                    <TableHead>วันที่อบรม</TableHead>
+                    <TableHead>สถานที่</TableHead>
+                    <TableHead className="text-center">ผู้ลงทะเบียน</TableHead>
+                    <TableHead className="text-center">สถานะ</TableHead>
+                    <TableHead className="text-center">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleCourses.map((c, i) => {
+                    const active = c.myEnrollment && c.myEnrollment.status !== "CANCELLED";
+                    const full = c.capacity != null && c.enrolledCount >= c.capacity;
+                    return (
+                      <TableRow key={c.id}>
+                        <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                        <TableCell className="min-w-[220px] whitespace-normal">
+                          <Link href={`/training/${c.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                            {c.title}
+                          </Link>
+                          {c.description && <p className="line-clamp-2 text-xs text-muted-foreground">{c.description}</p>}
+                        </TableCell>
+                        <TableCell>{c.category}</TableCell>
+                        <TableCell className="text-center tabular-nums">{c.hours}</TableCell>
+                        <TableCell>{c.provider ?? "-"}</TableCell>
+                        <TableCell className="tabular-nums">{c.scheduledDate ? formatDate(c.scheduledDate) : "-"}</TableCell>
+                        <TableCell>{c.location ?? "-"}</TableCell>
+                        <TableCell className="text-center tabular-nums">
                           {c.enrolledCount}
-                          {c.capacity != null ? ` / ${c.capacity}` : ""} คน
-                        </div>
-                      </div>
-                    </Link>
-
-                    <div className="mt-3 flex items-center gap-1">
-                      {active ? (
-                        <span className="flex-1 text-center text-xs font-medium text-primary">
-                          ลงทะเบียนแล้ว
-                        </span>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="flex-1"
-                          disabled={c.status !== "OPEN" || full || enrollMut.isPending}
-                          onClick={() => enroll(c.id)}
-                        >
-                          {full ? "เต็มแล้ว" : "ลงทะเบียน"}
-                        </Button>
-                      )}
-                      {canUpdate && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          render={<Link href={`/training/${c.id}/edit`} />}
-                          aria-label="แก้ไข"
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                      )}
-                      {canDelete && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 text-destructive"
-                          onClick={() => setDeleteTarget(c)}
-                          aria-label="ลบ"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
+                          {c.capacity != null ? ` / ${c.capacity}` : ""}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <StatusChip tone={c.status === "OPEN" ? "success" : "neutral"} label={c.status === "OPEN" ? "เปิดรับสมัคร" : "ปิดรับสมัคร"} />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            {active ? (
+                              <span className="px-2 text-xs font-medium text-primary">ลงทะเบียนแล้ว</span>
+                            ) : (
+                              <Button size="sm" disabled={c.status !== "OPEN" || full || enrollMut.isPending} onClick={() => enroll(c.id)}>
+                                {full ? "เต็มแล้ว" : "ลงทะเบียน"}
+                              </Button>
+                            )}
+                            {canUpdate && (
+                              <Button variant="ghost" size="icon" className="size-9" render={<Link href={`/training/${c.id}/edit`} />} aria-label={`แก้ไข ${c.title}`}>
+                                <Pencil className="size-4" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button variant="ghost" size="icon" className="size-9 text-destructive" onClick={() => setDeleteTarget(c)} aria-label={`ลบ ${c.title}`}>
+                                <Trash2 className="size-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              )}
             </div>
           )}
         </TabsContent>
@@ -207,36 +197,46 @@ export function TrainingView() {
               description="ลงทะเบียนหลักสูตรจากแท็บ “หลักสูตร”"
             />
           ) : (
-            <div className="space-y-2">
-              {enrollments.map((e) => (
-                <Card key={e.id} className="flex-row items-center justify-between gap-3 p-3">
-                  <Link href={`/training/${e.course.id}`} className="min-w-0 flex-1">
-                    <div className="min-w-0">
-                      <p className="font-medium">{e.course.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {e.course.category} · {e.course.hours} ชม.
-                        {e.course.scheduledDate ? ` · ${formatDate(e.course.scheduledDate)}` : ""}
-                        {e.status === "COMPLETED" && e.score != null ? ` · คะแนน ${e.score}` : ""}
-                      </p>
-                    </div>
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    <EnrollmentStatusBadge status={e.status} />
-                    {e.status === "ENROLLED" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-muted-foreground"
-                        onClick={() => cancel(e.id)}
-                        disabled={cancelMut.isPending}
-                      >
-                        ยกเลิก
-                      </Button>
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-14 text-center">No.</TableHead>
+                  <TableHead className="w-full">หลักสูตร</TableHead>
+                  <TableHead>หมวด</TableHead>
+                  <TableHead className="text-center">ชั่วโมง</TableHead>
+                  <TableHead>วันที่อบรม</TableHead>
+                  <TableHead className="text-center">คะแนน</TableHead>
+                  <TableHead className="text-center">สถานะ</TableHead>
+                  <TableHead className="text-center">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {enrollments.map((e, i) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                    <TableCell className="whitespace-normal">
+                      <Link href={`/training/${e.course.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                        {e.course.title}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{e.course.category}</TableCell>
+                    <TableCell className="text-center tabular-nums">{e.course.hours}</TableCell>
+                    <TableCell className="tabular-nums">{e.course.scheduledDate ? formatDate(e.course.scheduledDate) : "-"}</TableCell>
+                    <TableCell className="text-center tabular-nums">{e.status === "COMPLETED" && e.score != null ? e.score : "-"}</TableCell>
+                    <TableCell className="text-center">
+                      <EnrollmentStatusBadge status={e.status} />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {e.status === "ENROLLED" && (
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => cancel(e.id)} disabled={cancelMut.isPending}>
+                          ยกเลิก
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </TabsContent>
       </Tabs>

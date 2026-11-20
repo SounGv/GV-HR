@@ -1,16 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { fullName, formatDate } from "@/lib/format";
 import type { EmployeeListItem } from "./types";
@@ -42,7 +36,9 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
             </Avatar>
             <div className="min-w-[160px]">
               <div className="font-medium break-words whitespace-normal text-foreground">
-                {fullName(e.firstName, e.lastName)}
+                <Link href={`/employees/${e.id}`} onClick={(ev) => ev.stopPropagation()} className="hover:text-primary hover:underline">
+                  {fullName(e.firstName, e.lastName)}
+                </Link>
                 {e.nickname && (
                   <span className="ml-1 text-muted-foreground">({e.nickname})</span>
                 )}
@@ -93,7 +89,7 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
       accessorKey: "hireDate",
       header: "วันเริ่มงาน",
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">{formatDate(row.original.hireDate)}</span>
+        <span className="text-sm tabular-nums">{formatDate(row.original.hireDate)}</span>
       ),
     },
     {
@@ -103,44 +99,26 @@ export function getEmployeeColumns(handlers: ColumnHandlers): ColumnDef<Employee
     },
     {
       id: "actions",
-      header: "",
+      header: "Action",
       enableSorting: false,
       cell: ({ row }) => {
         const e = row.original;
+        const name = fullName(e.firstName, e.lastName);
         return (
-          <div className="flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="เมนู"
-                    onClick={(ev) => ev.stopPropagation()}
-                  />
-                }
-              >
-                <MoreHorizontal className="size-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" onClick={(ev) => ev.stopPropagation()}>
-                <DropdownMenuItem onClick={() => handlers.onView(e)}>
-                  <Eye className="size-4" /> ดูรายละเอียด
-                </DropdownMenuItem>
-                {handlers.canEdit && (
-                  <DropdownMenuItem onClick={() => handlers.onEdit(e)}>
-                    <Pencil className="size-4" /> แก้ไข
-                  </DropdownMenuItem>
-                )}
-                {handlers.canDelete && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive" onClick={() => handlers.onDelete(e)}>
-                      <Trash2 className="size-4" /> ลบ
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center justify-center gap-1">
+            <Button variant="ghost" size="icon" className="size-9" aria-label={`ดูรายละเอียด ${name}`} onClick={(ev) => { ev.stopPropagation(); handlers.onView(e); }}>
+              <Eye className="size-4" />
+            </Button>
+            {handlers.canEdit && (
+              <Button variant="ghost" size="icon" className="size-9" aria-label={`แก้ไข ${name}`} onClick={(ev) => { ev.stopPropagation(); handlers.onEdit(e); }}>
+                <Pencil className="size-4" />
+              </Button>
+            )}
+            {handlers.canDelete && (
+              <Button variant="ghost" size="icon" className="size-9 text-destructive" aria-label={`ลบ ${name}`} onClick={(ev) => { ev.stopPropagation(); handlers.onDelete(e); }}>
+                <Trash2 className="size-4" />
+              </Button>
+            )}
           </div>
         );
       },

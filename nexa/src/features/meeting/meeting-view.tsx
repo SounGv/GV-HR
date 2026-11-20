@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Users, MapPin, Presentation } from "lucide-react";
+import { Plus, Presentation } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger, stickyTabsRow } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
@@ -82,38 +82,51 @@ function MeetingList({ scope }: { scope: "organizer" | "invitee" }) {
   }
 
   return (
-    <div className="space-y-2">
-      {meetings.map((m) => (
-        <Card key={m.id} className="p-4">
-          <Link href={`/meetings/${m.id}`} className="block space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{m.title}</span>
-                  <MeetingStatusBadge status={m.status} />
-                </div>
-                <p className="mt-0.5 text-sm text-muted-foreground">{timeRange(m)}</p>
-              </div>
-              {scope === "invitee" && m.myResponse && <ResponseStatusBadge status={m.myResponse} />}
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-              {m.location && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="size-3.5" /> {m.location}
-                </span>
-              )}
-              <span className="flex items-center gap-1">
-                <Users className="size-3.5" /> {m.attendees.length} ผู้เข้าร่วม
-                {scope === "organizer" &&
-                  ` · ตอบรับแล้ว ${m.attendees.filter((a) => a.status === "ACCEPTED").length}/${m.attendees.length}`}
-              </span>
-              {scope === "organizer" && (
-                <span>โดย {m.organizer.firstName} {m.organizer.lastName}</span>
-              )}
-            </div>
-          </Link>
-        </Card>
-      ))}
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-14 text-center">No.</TableHead>
+          <TableHead>วันและเวลา</TableHead>
+          <TableHead className="w-full">เรื่องประชุม</TableHead>
+          <TableHead>สถานที่</TableHead>
+          <TableHead className="text-center">ผู้เข้าร่วม</TableHead>
+          {scope === "organizer" && <TableHead className="text-center">ตอบรับแล้ว</TableHead>}
+          {scope === "organizer" && <TableHead>ผู้จัด</TableHead>}
+          <TableHead className="text-center">สถานะ</TableHead>
+          {scope === "invitee" && <TableHead className="text-center">การตอบรับของฉัน</TableHead>}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {meetings.map((m, i) => (
+          <TableRow key={m.id}>
+            <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+            <TableCell className="tabular-nums">{timeRange(m)}</TableCell>
+            <TableCell className="min-w-48 whitespace-normal">
+              <Link href={`/meetings/${m.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                {m.title}
+              </Link>
+            </TableCell>
+            <TableCell>{m.location || "-"}</TableCell>
+            <TableCell className="text-center tabular-nums">{m.attendees.length}</TableCell>
+            {scope === "organizer" && (
+              <TableCell className="text-center tabular-nums">
+                {m.attendees.filter((a) => a.status === "ACCEPTED").length}/{m.attendees.length}
+              </TableCell>
+            )}
+            {scope === "organizer" && (
+              <TableCell>
+                {m.organizer.firstName} {m.organizer.lastName}
+              </TableCell>
+            )}
+            <TableCell className="text-center">
+              <MeetingStatusBadge status={m.status} />
+            </TableCell>
+            {scope === "invitee" && (
+              <TableCell className="text-center">{m.myResponse ? <ResponseStatusBadge status={m.myResponse} /> : "-"}</TableCell>
+            )}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

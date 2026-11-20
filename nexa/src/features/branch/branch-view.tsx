@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Building, MapPin, Users, QrCode } from "lucide-react";
+import { Plus, Pencil, Trash2, Building, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusChip } from "@/components/shared/status-chip";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
@@ -53,45 +54,60 @@ export function BranchView() {
       ) : branches.length === 0 ? (
         <EmptyState icon={Building} title="ยังไม่มีสาขา" description="เพิ่มสาขาแรกขององค์กร" />
       ) : (
-        <div className="space-y-2">
-          {branches.map((b) => (
-            <Card key={b.id} className="flex-row items-center justify-between gap-3 p-4">
-              <div className="flex min-w-0 items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Building className="size-4 text-primary" />
-                </span>
-                <div className="min-w-0">
-                  <p className="font-medium text-foreground">
-                    {b.name} <span className="text-xs text-muted-foreground">({b.code})</span>
-                  </p>
-                  {b.address && <p className="truncate text-xs text-muted-foreground">{b.address}</p>}
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><Users className="size-3" /> {b.employeeCount} คน</span>
-                    {b.phone && <span>โทร. {b.phone}</span>}
-                    {b.hasGeofence && (
-                      <span className="inline-flex items-center gap-1 text-success"><MapPin className="size-3" /> geofence</span>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14 text-center">No.</TableHead>
+              <TableHead>รหัส</TableHead>
+              <TableHead className="w-full">ชื่อสาขา</TableHead>
+              <TableHead>ที่อยู่</TableHead>
+              <TableHead>โทรศัพท์</TableHead>
+              <TableHead className="text-center">พนักงาน</TableHead>
+              <TableHead className="text-center">geofence</TableHead>
+              <TableHead className="text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {branches.map((b, i) => (
+              <TableRow key={b.id}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="tabular-nums">{b.code}</TableCell>
+                <TableCell className="whitespace-normal">
+                  {canManage ? (
+                    <Link href={`/branches/${b.id}/edit`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                      {b.name}
+                    </Link>
+                  ) : (
+                    <span className="font-medium break-words text-foreground">{b.name}</span>
+                  )}
+                </TableCell>
+                <TableCell className="max-w-64 truncate text-muted-foreground" title={b.address ?? undefined}>{b.address || "-"}</TableCell>
+                <TableCell className="tabular-nums">{b.phone || "-"}</TableCell>
+                <TableCell className="text-center tabular-nums">{b.employeeCount} คน</TableCell>
+                <TableCell className="text-center">
+                  {b.hasGeofence ? <StatusChip tone="success" label="ตั้งแล้ว" /> : <StatusChip tone="neutral" label="ยังไม่ตั้ง" />}
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button variant="ghost" size="icon" className="size-9" aria-label={`ดู QR เช็คอิน ${b.name}`} render={<Link href={`/branches/${b.id}/qr`} />}>
+                      <QrCode className="size-4" />
+                    </Button>
+                    {canManage && (
+                      <>
+                        <Button variant="ghost" size="icon" className="size-9" aria-label={`แก้ไข ${b.name}`} render={<Link href={`/branches/${b.id}/edit`} />}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="size-9 text-destructive" aria-label={`ลบ ${b.name}`} onClick={() => setDeleteTarget(b)}>
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </>
                     )}
                   </div>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button variant="ghost" size="icon-sm" aria-label="ดู QR เช็คอิน" render={<Link href={`/branches/${b.id}/qr`} />}>
-                  <QrCode className="size-4" />
-                </Button>
-                {canManage && (
-                  <>
-                    <Button variant="ghost" size="icon-sm" aria-label="แก้ไข" render={<Link href={`/branches/${b.id}/edit`} />}>
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon-sm" aria-label="ลบ" className="text-destructive" onClick={() => setDeleteTarget(b)}>
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <ConfirmDialog
