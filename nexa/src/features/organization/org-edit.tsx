@@ -97,7 +97,7 @@ function MoveSelect({ person }: { person: OrgPerson }) {
   return (
     <label
       title="ย้ายไป…"
-      className="relative grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors focus-within:border-[#0d9488] focus-within:text-primary focus-within:ring-2 focus-within:ring-[#0d9488]/40 hover:border-[#0d9488] hover:text-primary md:size-8 dark:focus-within:text-primary dark:hover:text-primary"
+      className="relative grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors focus-within:border-[#1976d2] focus-within:text-primary focus-within:ring-2 focus-within:ring-[#1976d2]/40 hover:border-[#1976d2] hover:text-primary md:size-8 dark:focus-within:text-primary dark:hover:text-primary"
     >
       <ArrowRightLeft className="size-4" aria-hidden="true" />
       <select
@@ -170,7 +170,7 @@ export function DropZone({
       className={cn(
         className,
         "m-1.5 min-h-11 rounded-xl p-2 outline-2 -outline-offset-2 outline-[#d7e3e1] outline-dashed transition-colors motion-reduce:transition-none dark:outline-border",
-        over && "bg-[#ecfdf5] outline-[#0d9488] dark:bg-primary/10 dark:outline-primary",
+        over && "bg-[#ecfdf5] outline-[#1976d2] dark:bg-primary/10 dark:outline-primary",
       )}
     >
       <p className="mb-1 px-1 text-xs font-bold tracking-wide text-muted-foreground">{label}</p>
@@ -192,7 +192,7 @@ export interface MoveRow {
 }
 
 const TRAY_BTN =
-  "inline-flex h-11 items-center justify-center rounded-xl px-4 text-[13.5px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CDEB03] motion-reduce:transition-none md:h-10";
+  "inline-flex h-11 items-center justify-center rounded-xl px-4 text-[13.5px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#90caf9] motion-reduce:transition-none md:h-10";
 
 /** Fixed dark tray with the unsaved changes; slides up once there is at least one. */
 export function PendingTray({
@@ -225,7 +225,7 @@ export function PendingTray({
         <button type="button" onClick={onUndoAll} className={cn(TRAY_BTN, "border border-[#3a4046] hover:bg-white/10")}>
           ย้อนกลับทั้งหมด
         </button>
-        <button type="button" onClick={onReview} className={cn(TRAY_BTN, "bg-[#CDEB03] text-[#131516] hover:bg-[#d8f23a]")}>
+        <button type="button" onClick={onReview} className={cn(TRAY_BTN, "bg-[#bbdefb] text-[#0d47a1] hover:bg-[#90caf9]")}>
           ตรวจและบันทึก →
         </button>
       </div>
@@ -233,7 +233,7 @@ export function PendingTray({
         {rows.map((r) => (
           <li key={r.id} className="min-w-0">
             {r.name}: <span className="text-[#9aa3aa]">{r.before.dept} · {r.before.manager}</span> →{" "}
-            <em className="font-bold text-[#CDEB03] not-italic">
+            <em className="font-bold text-[#90caf9] not-italic">
               {r.after.dept} · {r.after.manager}
             </em>
           </li>

@@ -1,8 +1,8 @@
 "use client";
 
-import { Anuphan } from "next/font/google";
+import { Roboto } from "next/font/google";
 
-const anuphan = Anuphan({ subsets: ["thai", "latin"], weight: ["400", "600"], display: "swap" });
+const roboto = Roboto({ subsets: ["latin"], weight: ["400", "700"], display: "swap" });
 
 /**
  * Root error boundary — catches errors thrown in the root/app layout that the
@@ -20,7 +20,7 @@ export default function GlobalError({
     <html lang="th">
       <body
         style={{
-          fontFamily: `${anuphan.style.fontFamily}, system-ui, sans-serif`,
+          fontFamily: `${roboto.style.fontFamily}, "Leelawadee UI", Tahoma, Thonburi, "Noto Sans Thai", system-ui, sans-serif`,
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
@@ -69,7 +69,7 @@ export default function GlobalError({
         <button
           onClick={reset}
           style={{
-            background: "#0F766E",
+            background: "#1565c0",
             color: "#ffffff",
             border: 0,
             borderRadius: 8,

@@ -131,7 +131,7 @@ export function AppSidebar() {
           className={cn(
             "h-9 text-[14px] [&_svg]:size-4",
             active
-              ? "data-active:bg-sidebar-primary data-active:font-semibold data-active:text-sidebar-primary-foreground data-active:shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)] data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
+              ? "data-active:bg-sidebar-primary data-active:font-semibold data-active:text-sidebar-primary-foreground data-active:shadow-[0_1px_2px_rgba(21, 101, 192,.2),0_6px_14px_-8px_rgba(21, 101, 192,.5)] data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
               : "font-medium text-sidebar-foreground hover:text-sidebar-foreground",
           )}
           render={
@@ -155,7 +155,7 @@ export function AppSidebar() {
         </SidebarMenuButton>
         {!item.ready && <SidebarMenuBadge className="text-xs text-muted-foreground">เร็วๆ นี้</SidebarMenuBadge>}
         {item.ready && badge > 0 && (
-          <SidebarMenuBadge className="bg-[#CDEB03] font-semibold text-[#131516]">{badge > 9 ? "9+" : badge}</SidebarMenuBadge>
+          <SidebarMenuBadge className="bg-[var(--badge)] font-semibold text-white">{badge > 9 ? "9+" : badge}</SidebarMenuBadge>
         )}
       </SidebarMenuItem>
     );
@@ -265,22 +265,22 @@ function AiShortcut({ active, onClick }: { active: boolean; onClick: () => void 
         aria-pressed={active}
         aria-label="เปิดน้องวีบอท"
         className={cn(
-          "relative flex w-full items-center gap-2.5 rounded-2xl border border-[#99f6e4] bg-[linear-gradient(135deg,#f0fdfa,#ecfeff_60%,#f7fee7)] p-2 pr-3 text-left",
-          "shadow-[0_1px_2px_rgba(15,118,110,0.08),0_8px_18px_-12px_rgba(15,118,110,0.45)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          "hover:-translate-y-px hover:border-[#5eead4] hover:shadow-[0_1px_2px_rgba(15,118,110,0.1),0_12px_24px_-12px_rgba(15,118,110,0.55)] focus-visible:ring-3 focus-visible:ring-[#0d9488]/30 focus-visible:outline-none motion-reduce:transition-none",
+          "relative flex w-full items-center gap-2.5 rounded-2xl border border-[#bbdefb] bg-[linear-gradient(135deg,#eef6fd,#ecfeff_60%,#f7fee7)] p-2 pr-3 text-left",
+          "shadow-[0_1px_2px_rgba(21, 101, 192,0.08),0_8px_18px_-12px_rgba(21, 101, 192,0.45)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "hover:-translate-y-px hover:border-[#90caf9] hover:shadow-[0_1px_2px_rgba(21, 101, 192,0.1),0_12px_24px_-12px_rgba(21, 101, 192,0.55)] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none motion-reduce:transition-none",
           "dark:border-sidebar-border dark:bg-none dark:bg-sidebar-accent group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1",
-          active && "border-[#0d9488] ring-2 ring-[#0d9488]/20",
+          active && "border-[#1976d2] ring-2 ring-[#1976d2]/20",
         )}
       >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-[inset_0_0_0_1px_#ccfbf1] group-data-[collapsible=icon]:size-8 dark:bg-background">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-[inset_0_0_0_1px_#e3f2fd] group-data-[collapsible=icon]:size-8 dark:bg-background">
           <VBot mood="hi" className="ai-shortcut-bot gv-wave size-8 group-data-[collapsible=icon]:size-6" />
-          <Sparkles className="ai-shortcut-spark size-6 text-[#0d9488] group-data-[collapsible=icon]:size-5" aria-hidden="true" />
+          <Sparkles className="ai-shortcut-spark size-6 text-[#1976d2] group-data-[collapsible=icon]:size-5" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1 leading-snug group-data-[collapsible=icon]:hidden">
-          <b className="block text-[14px] font-bold text-[#115e59] dark:text-foreground">น้องวีบอท</b>
+          <b className="block text-[14px] font-bold text-[#0d47a1] dark:text-foreground">น้องวีบอท</b>
           <span className="block truncate text-xs text-muted-foreground">ถามได้ทุกเรื่องงาน HR</span>
         </span>
-        <Sparkles className="size-4 shrink-0 text-[#0d9488] group-data-[collapsible=icon]:hidden" aria-hidden="true" />
+        <Sparkles className="size-4 shrink-0 text-[#1976d2] group-data-[collapsible=icon]:hidden" aria-hidden="true" />
       </button>
     </div>
   );
@@ -321,7 +321,7 @@ function NexaHeaderLogo() {
       <div className="relative hidden w-full flex-col group-data-[collapsible=icon]:hidden md:flex">
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -top-[120px] -left-[110px] h-[260px] w-[330px] rounded-full bg-[radial-gradient(closest-side,rgba(13,148,136,0.16),rgba(13,148,136,0))]"
+          className="pointer-events-none absolute -top-[120px] -left-[110px] h-[260px] w-[330px] rounded-full bg-[radial-gradient(closest-side,rgba(25, 118, 210,0.16),rgba(25, 118, 210,0))]"
         />
         <div className="group/brand relative flex items-center gap-2.5">
           <Logo
@@ -331,7 +331,7 @@ function NexaHeaderLogo() {
           <span className="min-w-0 leading-tight">
             <b className="flex items-center gap-1.5 text-[20px] leading-[1.15] font-bold tracking-[-0.02em] whitespace-nowrap text-foreground">
               GV One
-              <span className="rounded-[5px] bg-[#CDEB03] px-1.5 py-px text-xs leading-[1.4] font-bold tracking-[0.02em] text-[#131516] shadow-[0_2px_6px_-2px_rgba(132,152,0,0.6)]">
+              <span className="rounded-[5px] bg-[#bbdefb] px-1.5 py-px text-xs leading-[1.4] font-bold tracking-[0.02em] text-[#0d47a1]">
                 HR
               </span>
             </b>

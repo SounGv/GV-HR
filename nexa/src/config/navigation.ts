@@ -79,7 +79,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ภาพรวม",
     icon: GvHomeIcon,
-    chipColor: "#0D9488",
+    chipColor: "#1976d2",
     items: [
       { label: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read", ready: true },
       { label: "ปฏิทินองค์กร", href: "/calendar", icon: CalendarDays, permission: "calendar:read", ready: true },
@@ -95,7 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "เวลาทำงาน",
     icon: GvTimeIcon,
-    chipColor: "#0D9488",
+    chipColor: "#1976d2",
     items: [
       { label: "เข้างาน / ออกงาน", href: "/attendance", icon: ScanLine, permission: "attendance:read", ready: true },
       { label: "แก้ไขเวลาเข้า-ออกงาน", href: "/attendance/corrections", icon: PencilLine, permission: "attendance:read", ready: true },
@@ -107,7 +107,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "การลาและคำขอ",
     icon: GvLeaveIcon,
-    chipColor: "#0D9488",
+    chipColor: "#1976d2",
     items: [
       { label: "ขอลา", href: "/leave/new", icon: FilePlus2, permission: "leave:read", ready: true },
       { label: "ประวัติการลา", href: "/leave", icon: ClipboardList, permission: "leave:read", ready: true },
@@ -125,7 +125,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "พนักงาน",
     icon: GvPeopleIcon,
-    chipColor: "#0D9488",
+    chipColor: "#1976d2",
     items: [
       { label: "รายชื่อพนักงาน", href: "/employees", icon: UsersRound, permission: "employee:read", ready: true },
       { label: "แผนกและตำแหน่ง", href: "/organization?tab=departments", icon: Building2, permission: "employee:read", ready: true },
@@ -137,7 +137,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "ประเมินและพัฒนา",
     icon: GvEvaluationIcon,
-    chipColor: "#0D9488",
+    chipColor: "#1976d2",
     items: [
       // Kept to four (2026-11-11, the menu had 11 and confused people): the two
       // "ของฉัน" pages for everyone, one entry for HR into the evaluation
@@ -157,7 +157,7 @@ export const NAV_GROUPS: NavGroup[] = [
     // permission: "payroll:read", ready: true } here when ready.
     label: "เบิกจ่าย",
     icon: GvMoneyIcon,
-    chipColor: "#0D9488",
+    chipColor: "#1976d2",
     items: [
       { label: "ประวัติสวัสดิการของฉัน", href: "/benefits/history", icon: History, permission: "expense:read", ready: true },
       { label: "เบิกจ่ายทั่วไป", href: "/expenses", icon: ReceiptText, permission: "expense:read", ready: true },
@@ -169,7 +169,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "รายงาน",
     icon: GvReportIcon,
-    chipColor: "#0D9488",
+    chipColor: "#1976d2",
     items: [
       { label: "สรุปการเข้างานรายเดือน", href: "/reports?view=attendance", icon: BarChart3, permission: "report:read", ready: true },
       { label: "รายงานการลา", href: "/reports?view=leave", icon: BarChart3, permission: "report:read", ready: true },
@@ -182,7 +182,7 @@ export const NAV_GROUPS: NavGroup[] = [
     // (section) show only in the side menu; the tab row at the top lists the same pages in this order.
     label: "ตั้งค่าระบบ",
     icon: GvSystemIcon,
-    chipColor: "#0D9488",
+    chipColor: "#1976d2",
     items: [
       { label: "ข้อมูลบริษัท", href: "/company", icon: Building2, permission: "admin:read", ready: true, section: "บริษัท" },
       { label: "สาขา", href: "/branches", icon: Building2, permission: "admin:read", ready: true, section: "บริษัท" },

@@ -20,12 +20,12 @@ const TONE: Record<FollowTone, { word: string; num: string; wash: string }> = {
   },
   warn: {
     word: "bg-[#fffbeb] text-[#a9500a] dark:bg-[#3a2a10] dark:text-[#f6b45c]",
-    num: "text-[#0b4f4a] dark:text-[#99f6e4]",
+    num: "text-[#0b4f4a] dark:text-[#bbdefb]",
     wash: "from-[#f0f9f7] dark:from-[#13201e]",
   },
   info: {
     word: "bg-[#eff6ff] text-[#1d4ed8] dark:bg-[#13243a] dark:text-[#9cc3f2]",
-    num: "text-[#0b4f4a] dark:text-[#99f6e4]",
+    num: "text-[#0b4f4a] dark:text-[#bbdefb]",
     wash: "from-[#f0f9f7] dark:from-[#13201e]",
   },
   ok: { word: "bg-[#e4f6ea] text-[#166534] dark:bg-[#12301e] dark:text-[#7ee2a3]", num: "", wash: "" },
@@ -161,8 +161,8 @@ export function FollowRow({
           className={cn(
             "relative mt-auto inline-flex min-h-11 items-center justify-center gap-1 rounded-[13px] border px-3 text-[14px] font-semibold transition-colors",
             tone === "bad"
-              ? "border-transparent bg-[linear-gradient(135deg,#0f766e,#0b4f4a)] text-white shadow-[0_8px_18px_rgba(13,148,136,.22)] hover:brightness-110"
-              : "border-border bg-[#f0f9f7] text-[#0b4f4a] hover:bg-[#ddf3ef] dark:bg-[#13201e] dark:text-[#99f6e4]",
+              ? "border-transparent bg-[linear-gradient(135deg,#1565c0,#0b4f4a)] text-white shadow-[0_8px_18px_rgba(25, 118, 210,.22)] hover:brightness-110"
+              : "border-border bg-[#f0f9f7] text-[#0b4f4a] hover:bg-[#ddf3ef] dark:bg-[#13201e] dark:text-[#bbdefb]",
           )}
         >
           {link.label} <ChevronRight className="size-4" aria-hidden="true" />

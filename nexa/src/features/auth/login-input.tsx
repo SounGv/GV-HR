@@ -13,7 +13,7 @@ export const LoginInput = React.forwardRef<HTMLInputElement, React.ComponentProp
         <Input
           ref={ref}
           className={cn(
-            "h-[52px] rounded-full border-[1.5px] border-[var(--lg-field)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] !bg-[var(--lg-in)] pl-12 text-base text-[var(--login-text-primary)] placeholder:text-[var(--login-text-secondary)] focus-visible:border-[#0d9488] focus-visible:ring-[#0d9488]/25",
+            "h-[52px] rounded-full border-[1.5px] border-[var(--lg-field)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] !bg-[var(--lg-in)] pl-12 text-base text-[var(--login-text-primary)] placeholder:text-[var(--login-text-secondary)] focus-visible:border-[#1976d2] focus-visible:ring-[#1976d2]/25",
             className,
           )}
           {...props}

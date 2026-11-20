@@ -40,7 +40,7 @@ import type { ChatMessage, ChatStep, OutFile, ProposalCard, QuickRequest } from 
 /** Ready-made questions for the empty result panel, grouped by what HR asks most. */
 const PROMPTS = [
   { icon: Clock, tone: "border-status-late-border bg-status-late-bg text-status-late-fg", q: "เดือนนี้ใครขาด ลา มาสายเยอะที่สุด", hint: "จัดอันดับจากรายงานการลงเวลา" },
-  { icon: Check, tone: "border-teal-100 bg-teal-50 text-teal-700", q: "วันนี้ใครยังไม่สแกนเข้างาน", hint: "แยกตามแผนก" },
+  { icon: Check, tone: "border-blue-100 bg-blue-50 text-blue-800", q: "วันนี้ใครยังไม่สแกนเข้างาน", hint: "แยกตามแผนก" },
   { icon: CalendarDays, tone: "border-status-leave-border bg-status-leave-bg text-status-leave-fg", q: "สัปดาห์หน้าใครลาบ้าง", hint: "ดูก่อนจัดคนเข้ากะ" },
   { icon: Zap, tone: "border-violet-200 bg-violet-50 text-violet-700", q: "สรุปชั่วโมง OT เดือนนี้แยกแผนก", hint: "เฉพาะที่อนุมัติแล้ว" },
   { icon: LogOut, tone: "border-status-late-border bg-status-late-bg text-status-late-fg", q: "ใครลืมสแกนออกในสัปดาห์นี้", hint: "ให้ตามแก้เวลา" },
@@ -471,7 +471,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             t.role === "user" ? (
               <p
                 key={i}
-                className="ml-auto w-fit max-w-[85%] rounded-[16px_16px_4px_16px] bg-[var(--flip7-teal-dark)] px-3.5 py-2 text-[13.5px] break-words text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)]"
+                className="ml-auto w-fit max-w-[85%] rounded-[16px_16px_4px_16px] bg-[var(--flip7-teal-dark)] px-3.5 py-2 text-[13.5px] break-words text-white shadow-[0_1px_2px_rgba(21, 101, 192,.2),0_6px_14px_-8px_rgba(21, 101, 192,.5)]"
               >
                 {t.content}
                 <SentFiles files={t.files} />
@@ -557,7 +557,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               type="submit"
               aria-label="ส่งคำถาม"
               disabled={chat.isPending || quick.isPending || (!input.trim() && !(canAttach && attach.files.length > 0))}
-              className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#115e59] disabled:bg-muted disabled:text-muted-foreground"
+              className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#0d47a1] disabled:bg-muted disabled:text-muted-foreground"
             >
               <ArrowUp className="size-4" strokeWidth={2.4} />
             </button>
@@ -601,7 +601,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               {reportStep?.report && (
                 <Link
                   href={`/reports?view=${encodeURIComponent(reportStep.report.type)}`}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_6px_14px_-8px_rgba(15,118,110,.5)] transition-colors hover:bg-[#115e59]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(21, 101, 192,.2),0_6px_14px_-8px_rgba(21, 101, 192,.5)] transition-colors hover:bg-[#0d47a1]"
                 >
                   เปิดรายงานเต็ม <ExternalLink className="size-3.5" aria-hidden="true" />
                 </Link>
@@ -632,7 +632,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             {answerParts.summary && answerParts.rest && (
               <MarkdownLite
                 text={answerParts.summary}
-                className="rounded-xl border border-teal-100 bg-teal-50/70 px-3.5 py-2.5 text-[13.5px] text-foreground dark:border-border dark:bg-muted"
+                className="rounded-xl border border-blue-100 bg-blue-50/70 px-3.5 py-2.5 text-[13.5px] text-foreground dark:border-border dark:bg-muted"
               />
             )}
 
@@ -712,7 +712,7 @@ function AnswerBubble({ turn, active, onShow }: { turn: Turn; active: boolean; o
             className={cn(
               "mt-1.5 flex w-full items-center gap-2 rounded-[10px] border px-2.5 py-1.5 text-left text-[12.5px] font-semibold transition-colors",
               active
-                ? "border-teal-200 bg-teal-50 text-primary dark:border-border dark:bg-muted"
+                ? "border-blue-200 bg-blue-50 text-primary dark:border-border dark:bg-muted"
                 : "border-border text-muted-foreground hover:text-foreground",
             )}
           >

@@ -69,7 +69,7 @@ function retryPage(url: URL, attempt: number) {
     : `<p>กำลังต่อเซสชัน รอสักครู่…</p>`;
   const html = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${
     giveUp ? "" : `<meta http-equiv="refresh" content="2;url=${next.pathname}${next.search}">`
-  }<title>GV One</title><style>body{font:16px/1.7 system-ui,sans-serif;display:grid;place-items:center;min-height:100dvh;margin:0;padding:24px;text-align:center;color:#131516}a{color:#0f766e;font-weight:600}</style></head><body><div>${body}</div></body></html>`;
+  }<title>GV One</title><style>body{font:16px/1.7 system-ui,sans-serif;display:grid;place-items:center;min-height:100dvh;margin:0;padding:24px;text-align:center;color:#131516}a{color:#1565c0;font-weight:600}</style></head><body><div>${body}</div></body></html>`;
   return new NextResponse(html, { status: 503, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Retry-After": "2" } });
 }
 

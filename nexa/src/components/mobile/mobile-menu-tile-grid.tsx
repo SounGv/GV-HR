@@ -30,7 +30,7 @@ export function MobileMenuTileGrid({ groups, hrStartIndex }: { groups: MobileMen
             </div>
           )}
           <h2 className="mb-3 flex items-center gap-2 px-1 text-[13px] font-bold text-foreground">
-            <span className="h-3.5 w-1 shrink-0 rounded-full bg-[#0d9488]" />
+            <span className="h-3.5 w-1 shrink-0 rounded-full bg-[#1976d2]" />
             {group.title}
           </h2>
           <div className="gv-lg-card p-3">

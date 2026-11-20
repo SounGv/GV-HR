@@ -167,7 +167,7 @@ export function ProfileDrawer() {
     { href: "/profile", label: "ข้อมูลส่วนตัว", icon: User, show: true, badge: 0, chipColor: "#6366F1" },
     { href: "/notifications", label: "การแจ้งเตือน", icon: Bell, show: true, badge: unreadCount, chipColor: "#F5A524" },
     { href: "/profile#security", label: "ความปลอดภัย", icon: ShieldCheck, show: true, badge: 0, chipColor: "#22A55B" },
-    { href: "/profile#security", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound, show: true, badge: 0, chipColor: "#14B8A6" },
+    { href: "/profile#security", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound, show: true, badge: 0, chipColor: "#42a5f5" },
     { href: "/help", label: "คู่มือการใช้งาน", icon: Settings2, show: canSeeHelp, badge: 0, chipColor: "#64748B" },
   ];
 

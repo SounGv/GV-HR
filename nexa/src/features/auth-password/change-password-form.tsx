@@ -44,7 +44,7 @@ const STRENGTH = [
   { label: "อ่อนมาก", bar: "bg-[#dc2626]" },
   { label: "อ่อน", bar: "bg-[#d97706]" },
   { label: "พอใช้", bar: "bg-[#ca8a04]" },
-  { label: "ผ่านเกณฑ์", bar: "bg-[#0d9488]" },
+  { label: "ผ่านเกณฑ์", bar: "bg-[#1976d2]" },
   { label: "แข็งแรงมาก", bar: "bg-[#15803d]" },
 ];
 
@@ -100,7 +100,7 @@ export function ChangePasswordForm() {
           <p className="mt-1 text-[13.5px] leading-relaxed text-white">ตั้งรหัสใหม่ที่เดาได้ยาก และไม่ใช้ซ้ำกับเว็บอื่น</p>
         </div>
         <p className="gv-glass mt-auto flex items-start gap-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-white">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#CDEB03]" aria-hidden="true" />
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#90caf9]" aria-hidden="true" />
           หลังเปลี่ยนแล้ว อุปกรณ์อื่นที่เคยเข้าสู่ระบบไว้จะถูกออกจากระบบทั้งหมด ยกเว้นเครื่องนี้
         </p>
       </div>
@@ -187,7 +187,7 @@ export function ChangePasswordForm() {
             <button
               type="submit"
               disabled={changePasswordMut.isPending}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0f766e] px-6 text-[15px] font-semibold text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_10px_24px_-12px_rgba(15,118,110,.55)] transition-colors hover:bg-[#115e59] focus-visible:ring-3 focus-visible:ring-[#0d9488]/30 focus-visible:outline-none disabled:opacity-60 sm:justify-self-start"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#1565c0] px-6 text-[15px] font-semibold text-white shadow-[0_1px_2px_rgba(21, 101, 192,.2),0_10px_24px_-12px_rgba(21, 101, 192,.55)] transition-colors hover:bg-[#0d47a1] focus-visible:ring-3 focus-visible:ring-[#1976d2]/30 focus-visible:outline-none disabled:opacity-60 sm:justify-self-start"
             >
               {changePasswordMut.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <KeyRound className="size-4" aria-hidden="true" />}
               {changePasswordMut.isPending ? "กำลังบันทึก…" : "เปลี่ยนรหัสผ่าน"}

@@ -298,7 +298,7 @@ function PrimaryButton({ className, ...props }: React.ComponentProps<"button">) 
       type="button"
       autoFocus
       className={cn(
-        "h-[52px] rounded-full bg-[linear-gradient(180deg,#14b8a6,#0f766e)] text-base font-bold text-white shadow-[0_12px_24px_rgba(15,118,110,.36),inset_0_1px_0_rgba(255,255,255,.5)] transition active:scale-[0.99] dark:text-[#06201d] dark:bg-[linear-gradient(180deg,#5eead4,#14b8a6)]",
+        "h-[52px] rounded-full bg-[linear-gradient(180deg,#42a5f5,#1565c0)] text-base font-bold text-white shadow-[0_12px_24px_rgba(21, 101, 192,.36),inset_0_1px_0_rgba(255,255,255,.5)] transition active:scale-[0.99] dark:text-[#06201d] dark:bg-[linear-gradient(180deg,#90caf9,#42a5f5)]",
         className,
       )}
       {...props}

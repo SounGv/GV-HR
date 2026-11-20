@@ -105,7 +105,7 @@ function MobileCheckinCardForEmployee() {
       <section className="gv-lg-card relative overflow-hidden bg-gradient-to-br from-card via-card to-accent p-5 text-foreground">
         <div className="relative flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-[#0d9488]" />
+            <span className="size-1.5 rounded-full bg-[#1976d2]" />
             สถานะวันนี้
           </span>
           {!hasOut && !isWfh && (

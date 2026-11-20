@@ -66,7 +66,7 @@ export default function LoginPage() {
                 return (
                   <li key={f.text} className="flex items-center gap-3 text-[14.5px] text-[#d5e3e1]">
                     <span className="flex size-8 items-center justify-center rounded-[10px] bg-white/[0.06] ring-1 ring-white/10">
-                      <Icon className="size-4 text-[#2dd4bf]" aria-hidden="true" />
+                      <Icon className="size-4 text-[#64b5f6]" aria-hidden="true" />
                     </span>
                     {f.text}
                   </li>

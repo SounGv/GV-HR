@@ -7,10 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans-thai), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
-  /* Times and codes use the same Anuphan face (one typeface everywhere); callers add tabular-nums so digits still line up. */
+  --font-sans: var(--font-sans-thai), "Leelawadee UI", Tahoma, Thonburi, "Noto Sans Thai", system-ui, sans-serif;
+  /* Times and codes use the same face (one typeface everywhere); callers add tabular-nums so digits still line up. */
   --font-mono: var(--font-sans-thai), ui-monospace, monospace;
-  --font-heading: var(--font-sans-thai), "Sarabun", "TH Sarabun New", "Leelawadee UI", Tahoma, system-ui, sans-serif;
+  --font-heading: var(--font-sans-thai), "Leelawadee UI", Tahoma, Thonburi, "Noto Sans Thai", system-ui, sans-serif;
 
   /* Semantic status colors (GV One) */
   --color-success: var(--success);
@@ -115,16 +115,16 @@
 /* ───────────────── GV One — Light theme (Gadget Villa lime palette) ───────────────── */
 :root {
   /* Menu-group tokens (--gi-soft tints the open group row in app-sidebar.tsx). */
-  --gi-main: #0d9488;
-  --gi-soft: #ccfbf1;
-  --gi-deep: #0f766e;
-  --gi-hi: #5eead4;
-  --gi-line: #99d9d0;
+  --gi-main: #1976d2;
+  --gi-soft: #e3f2fd;
+  --gi-deep: #1565c0;
+  --gi-hi: #90caf9;
+  --gi-line: #bbdefb;
   --gi-paper: #ffffff;
   /* Marks and pill text on the dark teal hero (.gv-hero): same in light and dark mode,
      since the hero is dark in both. Replaces the retired GV lime there. */
-  --on-hero-accent: #99f6e4;
-  --on-hero-accent-fg: #0b3b38;
+  --on-hero-accent: #bbdefb;
+  --on-hero-accent-fg: #0a2f6b;
   /* A phone outline in previews (hardware, not theme). */
   --device-frame: #131516;
   /* News ticker pills on the dark hero: solid fill, white (or dark on yellow) text. */
@@ -135,7 +135,7 @@
   --ticker-ok: #15803d;
   --radius: 0.75rem;
 
-  /* Anuphan via next/font (see layout.tsx) is the single typeface for body and
+  /* Roboto via next/font (see layout.tsx) draws Latin, device font draws Thai: the single typeface for body and
      headings. The stacks live in the @theme block above. Do not redeclare
      --font-sans / --font-heading on :root: the old declaration there read
      next/font variables that were only defined on <body>, so it was invalid
@@ -144,27 +144,27 @@
   /* Surfaces — 2026-09-25 "GV lime" retheme: light-gray page canvas with
      white cards, colors drawn directly from the real Gadget Villa logo
      (see gv-ui-design skill / the J·K·L·M mockup set this replaces). */
-  --background: #f5f6f7;
-  --foreground: #131516;
+  --background: #f7f7f7;
+  --foreground: #212529;
   --card: #ffffff;
-  --card-foreground: #131516;
+  --card-foreground: #212529;
   --popover: #ffffff;
-  --popover-foreground: #131516;
+  --popover-foreground: #212529;
 
   /* Primary actions are teal (2026-11, owner's pick in pages-system-mock):
      one tone with the dashboard, AI page, login and sidebar. White on
-     #0f766e is 5.5:1. Volt lime stays an accent fill only. */
-  --primary: #0f766e;
+     #1565c0 is 5.5:1. Volt lime stays an accent fill only. */
+  --primary: #1976d2;
   --primary-foreground: #ffffff;
-  --secondary: #e0f5f2;
-  --secondary-foreground: #0f766e;
+  --secondary: #e3f2fd;
+  --secondary-foreground: #0d47a1;
   --muted: #eceef0;
   --muted-foreground: #4d555e;
-  --accent: #e0f5f2;
-  --accent-foreground: #0f766e;
+  --accent: #e3f2fd;
+  --accent-foreground: #0d47a1;
   /* AI chat: one teal for the header, your bubbles and the send button (white text on it is 5.5:1 in both themes). */
-  --chat-teal: #0f766e;
-  --chat-teal-bright: #14b8a6;
+  --chat-teal: #1565c0;
+  --chat-teal-bright: #42a5f5;
   --destructive: #c62828;
   --destructive-foreground: #ffffff;
 
@@ -179,14 +179,14 @@
   --info: #1d5fd1;
   --info-foreground: #ffffff;
 
-  --border: #e5e9ed;
-  --input: #e5e9ed;
-  --ring: #0d9488;
+  --border: #dee2e6;
+  --input: #dee2e6;
+  --ring: #1976d2;
 
   /* Edges that can actually be seen: surfaces differ from the page by tone only (1.08:1), so fields,
      outline buttons and cards carry a border or shadow of their own. Field border is 3.1:1 on white. */
   --field-border: #8b939c;
-  --field-bg: #ffffff;
+  --field-bg: #eef3fb;
   --field-shadow: inset 0 1px 2px rgba(19, 21, 22, 0.06);
   /* Depth from two cheap shadows plus a 1px inset top highlight (no blur filters). */
   --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06), 0 4px 10px -6px rgba(19, 21, 22, 0.16),
@@ -201,10 +201,10 @@
      page (no card), charcoal primary button, olive links. */
   --login-brand-green: #131516;
   --login-brand-green-dark: #272b30;
-  --login-brand-lime: #0d9488;
-  --login-brand-lime-light: #e0f5f2;
-  --login-link: #0f766e;
-  --login-link-hover: #115e59;
+  --login-brand-lime: #1976d2;
+  --login-brand-lime-light: #e3f2fd;
+  --login-link: #1565c0;
+  --login-link-hover: #0d47a1;
   --login-text-primary: #131516;
   --login-text-secondary: #5e6670;
   --login-background: #ffffff;
@@ -219,43 +219,43 @@
   --login-button-shadow: 0 12px 26px -14px rgba(19, 21, 22, 0.7);
   --login-logo-shadow: rgba(19, 21, 22, 0.18);
 
-  --chart-1: #0d9488;
+  --chart-1: #1976d2;
   --chart-2: #1a7f4e;
   --chart-3: #8a6100;
-  --chart-4: #0f766e;
+  --chart-4: #1565c0;
   --chart-5: #c62828;
 
   /* Legacy chip pair — menu icons are fixed full-color illustrated artwork
      now (gv-hr-menu-icons.md), not a themed chip; kept for the few plain
      status badges that still reference it. Red is reserved for
      notification-count badges (--badge). */
-  --icon-chip-bg: #e0f5f2;
-  --icon-chip-fg: #0f766e;
+  --icon-chip-bg: #e3f2fd;
+  --icon-chip-fg: #1565c0;
   --tone-profile-bg: #f1f3f5;
   --tone-profile-fg: #374151;
   --badge: #d92d20;
   --badge-foreground: #ffffff;
 
   /* Selected-menu state (sidebar nav item / bottom-nav tab) */
-  --menu-active-bg: #ccfbf1;
-  --menu-active-fg: #115e59;
+  --menu-active-bg: #e3f2fd;
+  --menu-active-fg: #0d47a1;
   --menu-inactive-fg: #374151;
 
   /* Sidebar — charcoal with a Volt-lime active item, per M·GvOneWebDashboard. */
   --sidebar: #131516;
   --sidebar-foreground: #e6e8ea;
-  --sidebar-primary: #14b8a6;
+  --sidebar-primary: #42a5f5;
   --sidebar-primary-foreground: #131516;
   --sidebar-accent: #272b30;
   --sidebar-accent-foreground: #e6e8ea;
   --sidebar-border: #272b30;
-  --sidebar-ring: #14b8a6;
+  --sidebar-ring: #42a5f5;
 
   /* Mobile Home tokens — light-mode only, matches L·GvOneHome2. */
-  --gv-lime: #14b8a6;
+  --gv-lime: #42a5f5;
   --gv-dark-green: #131516;
   --gv-deep-green: #131516;
-  --gv-pale-green: #e0f5f2;
+  --gv-pale-green: #e3f2fd;
   --gv-bg: #ffffff;
   --gv-border: #e5e9ed;
   --gv-notif-red: #e53935;
@@ -272,7 +272,7 @@
   --series-leave: #3b82f6;
   --series-norecord: #8a9199;
   --series-ot: #a855f7;
-  --series-highlight: #0d9488;
+  --series-highlight: #1976d2;
   --chart-grid: #eef0f2;
   --chart-muted-bar: #e5e7ea;
 
@@ -344,12 +344,12 @@
    charcoal on a dark background, unlike in light mode where charcoal is
    the primary button color). */
 .dark {
-  --gi-main: #2dd4bf;
-  --gi-soft: #134e4a;
-  --gi-deep: #5eead4;
-  --gi-hi: #99f6e4;
-  --gi-line: #2a6f68;
-  --gi-paper: #0b1312;
+  --gi-main: #64b5f6;
+  --gi-soft: #0d47a1;
+  --gi-deep: #90caf9;
+  --gi-hi: #bbdefb;
+  --gi-line: #1e4f8a;
+  --gi-paper: #0b1626;
   --background: #131516;
   --foreground: #e6e8ea;
   --card: #1b1e21;
@@ -357,14 +357,14 @@
   --popover: #1b1e21;
   --popover-foreground: #e6e8ea;
 
-  --primary: #14b8a6;
+  --primary: #42a5f5;
   --primary-foreground: #131516;
   --secondary: #272b30;
   --secondary-foreground: #e6e8ea;
   --muted: #202327;
   --muted-foreground: #b8bec4;
-  --accent: #12332f;
-  --accent-foreground: #5eead4;
+  --accent: #0f2744;
+  --accent-foreground: #90caf9;
   --destructive: #e4573d;
   --destructive-foreground: #131516;
 
@@ -388,37 +388,37 @@
   --card-shadow: none;
   --muted-strong: var(--muted-foreground);
   --row-divider: var(--border);
-  --ring: #14b8a6;
+  --ring: #42a5f5;
 
-  --chart-1: #14b8a6;
+  --chart-1: #42a5f5;
   --chart-2: #2fa871;
   --chart-3: #f5b700;
-  --chart-4: #0d9488;
+  --chart-4: #1976d2;
   --chart-5: #e4573d;
 
-  --icon-chip-bg: #12332f;
-  --icon-chip-fg: #5eead4;
+  --icon-chip-bg: #0f2744;
+  --icon-chip-fg: #90caf9;
   --tone-profile-bg: #262b33;
   --tone-profile-fg: #cbd5e1;
   --badge: #ef4444;
   --badge-foreground: #ffffff;
 
-  --menu-active-bg: #14b8a6;
+  --menu-active-bg: #42a5f5;
   --menu-active-fg: #131516;
   --menu-inactive-fg: #c7cde0;
 
   --sidebar: #0e0f10;
   --sidebar-foreground: #e6e8ea;
-  --sidebar-primary: #14b8a6;
+  --sidebar-primary: #42a5f5;
   --sidebar-primary-foreground: #131516;
   --sidebar-accent: #272b30;
   --sidebar-accent-foreground: #e6e8ea;
   --sidebar-border: #272b30;
-  --sidebar-ring: #14b8a6;
+  --sidebar-ring: #42a5f5;
 
   /* Same series tokens as :root, re-tuned for contrast on a dark card —
      lime reads best for "present" here (charcoal would vanish on dark). */
-  --series-present: #14b8a6;
+  --series-present: #42a5f5;
   --series-late: #f5a524;
   --series-leave: #60a5fa;
   --series-norecord: #8a9199;
@@ -509,7 +509,7 @@
 /* ── Dashboard scope (.theme-flip7) — now the SAME single tone as every page ──
    The dashboard used to carry its own teal/gold/coral/sky palette. Per the
    2026-10 "one tone everywhere" decision it now uses the system teal family
-   (#0D9488) only; the old --flip7-* names are kept so the existing call sites
+   (#1976d2) only; the old --flip7-* names are kept so the existing call sites
    keep working, but gold/coral/sky no longer introduce extra hues. Chart
    series keep the same data colours as every other page (late = amber,
    leave = blue, OT = purple from :root). */
@@ -517,17 +517,17 @@
    progress bars); defined on :root so they never resolve to nothing there. */
 :root,
 .theme-flip7 {
-  --flip7-teal: #0d9488;
-  --flip7-teal-light: #14b8a6;
-  --flip7-teal-dark: #0f766e;
+  --flip7-teal: #1976d2;
+  --flip7-teal-light: #42a5f5;
+  --flip7-teal-dark: #1565c0;
   --flip7-teal-bg: var(--background);
-  --flip7-gold: #99f6e4;
-  --flip7-gold-light: #ccfbf1;
-  --flip7-gold-dark: #5eead4;
-  --flip7-coral: #0d9488;
-  --flip7-coral-light: #14b8a6;
-  --flip7-coral-dark: #0f766e;
-  --flip7-cream: #f0fdfa;
+  --flip7-gold: #bbdefb;
+  --flip7-gold-light: #e3f2fd;
+  --flip7-gold-dark: #90caf9;
+  --flip7-coral: #1976d2;
+  --flip7-coral-light: #42a5f5;
+  --flip7-coral-dark: #1565c0;
+  --flip7-cream: #eef6fd;
   --flip7-sky: #3b82f6;
 
 }
@@ -540,7 +540,7 @@
   border-radius: 999px;
   font-weight: 700;
   background: var(--flip7-gold);
-  color: #134e4a;
+  color: #0d47a1;
   transition: transform 0.15s ease;
 }
 .theme-flip7 .flip7-pill-btn:hover {
@@ -562,9 +562,9 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --card-hover-border: #b9c2c9;
   --row-hover: #f0f9f7;
-  --page-band: radial-gradient(1100px 500px at 85% -10%, rgba(13, 148, 136, 0.1), transparent 60%),
-    radial-gradient(800px 420px at -10% 35%, rgba(13, 148, 136, 0.08), transparent 60%),
-    linear-gradient(180deg, #f8fbfb 0, #eff6f5 100%);
+  --page-band: radial-gradient(1100px 500px at 85% -10%, rgba(25, 118, 210, 0.1), transparent 60%),
+    radial-gradient(800px 420px at -10% 35%, rgba(25, 118, 210, 0.08), transparent 60%),
+    linear-gradient(180deg, #f9fafb 0, #eef3fa 100%);
   /* Grey text sits straight on this tinted ground: one step darker keeps it at 4.5:1 or more. */
   --muted-foreground: #444c55;
 }
@@ -574,7 +574,7 @@
   --card-shadow: none;
   --card-hover-border: #3a4047;
   --row-hover: rgba(255, 255, 255, 0.04);
-  --page-band: radial-gradient(1100px 500px at 85% -10%, rgba(45, 212, 191, 0.08), transparent 60%);
+  --page-band: radial-gradient(1100px 500px at 85% -10%, rgba(100, 181, 246, 0.08), transparent 60%);
 }
 .theme-flip7.gv-page-band {
   background: var(--page-band);
@@ -614,9 +614,9 @@
 }
 /* The one teal surface: hero, approvals, AI summary. */
 .gv-teal-surface {
-  background: linear-gradient(150deg, #115e59, #0f766e 55%, #0d9488);
+  background: linear-gradient(150deg, #0d47a1, #1565c0 55%, #1976d2);
   color: #fff;
-  box-shadow: 0 1px 2px rgba(15, 118, 110, 0.2), 0 6px 14px -8px rgba(15, 118, 110, 0.5),
+  box-shadow: 0 1px 2px rgba(21, 101, 192, 0.2), 0 6px 14px -8px rgba(21, 101, 192, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 .gv-lift {
@@ -658,8 +658,8 @@
   isolation: isolate;
   border-radius: 22px;
   color: #fff;
-  background: linear-gradient(135deg, #0b3b38 0%, #0f5f5a 45%, #0f766e 100%);
-  box-shadow: 0 1px 2px rgba(15, 118, 110, 0.2), 0 10px 24px -12px rgba(15, 118, 110, 0.55),
+  background: linear-gradient(135deg, #0a2f6b 0%, #0d47a1 45%, #1565c0 100%);
+  box-shadow: 0 1px 2px rgba(21, 101, 192, 0.2), 0 10px 24px -12px rgba(21, 101, 192, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 /* Headings on the dark teal surfaces take the surface's white, not the base layer's
@@ -681,7 +681,7 @@
   height: 640px;
   left: -200px;
   top: -320px;
-  background: radial-gradient(closest-side, rgba(45, 212, 191, 0.28), rgba(45, 212, 191, 0));
+  background: radial-gradient(closest-side, rgba(100, 181, 246, 0.28), rgba(100, 181, 246, 0));
   animation: gv-drift 16s ease-in-out infinite alternate;
 }
 .gv-hero::after {
@@ -715,7 +715,7 @@ button.gv-glass:hover {
   width: 4px;
   height: 20px;
   border-radius: 2px;
-  background: #0d9488;
+  background: #1976d2;
 }
 /* Row with a coloured severity edge on the left (set --edge). */
 .gv-edge {
@@ -803,11 +803,11 @@ button.gv-glass:hover {
 }
 
 .login-page ::selection {
-  background: #ccfbf1;
-  color: #134e4a;
+  background: #e3f2fd;
+  color: #0d47a1;
 }
 .login-page input {
-  caret-color: #0d9488;
+  caret-color: #1976d2;
 }
 
 /* ── Sidebar, light mode (2026-11, sidebar-options-mock.html option C) ──
@@ -817,12 +817,12 @@ button.gv-glass:hover {
 :root:not(.dark) [data-slot="sidebar"] {
   --sidebar: #ffffff;
   --sidebar-foreground: #2b3238;
-  --sidebar-primary: #0f766e;
+  --sidebar-primary: #1976d2;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f6f8f9;
-  --sidebar-accent-foreground: #131516;
+  --sidebar-accent: #e3f2fd;
+  --sidebar-accent-foreground: #0d47a1;
   --sidebar-border: #e5e9ed;
-  --sidebar-ring: #0d9488;
+  --sidebar-ring: #1976d2;
 }
 
 /* ── Every page (2026-11, pages-system-mock.html) ──
@@ -854,10 +854,10 @@ button.gv-glass:hover {
   border: 1px solid #dde7e8;
   padding: 26px 16px 34px;
   background:
-    radial-gradient(1200px 420px at 50% -120px, rgba(204, 251, 241, 0.75), transparent 70%),
-    radial-gradient(circle at 1px 1px, rgba(15, 118, 110, 0.13) 1px, transparent 1.4px) 0 0 / 22px 22px,
-    linear-gradient(180deg, #fbfdfd, #f4f8f8);
-  box-shadow: inset 0 1px 0 #fff, inset 0 -40px 60px -50px rgba(15, 118, 110, 0.18), var(--ot-e1);
+    radial-gradient(1200px 420px at 50% -120px, rgba(227, 242, 253, 0.75), transparent 70%),
+    radial-gradient(circle at 1px 1px, rgba(21, 101, 192, 0.13) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    linear-gradient(180deg, #fbfcfd, #f4f7fa);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -40px 60px -50px rgba(21, 101, 192, 0.18), var(--ot-e1);
 }
 .dark .gv-otree-board {
   --ot-line: #2f5f5a;
@@ -915,10 +915,10 @@ button.gv-glass:hover {
   padding: 14px 18px 14px 14px;
   border-radius: 20px;
   color: #fff;
-  background: linear-gradient(150deg, #0e4a46 0%, #0f6b64 55%, #14857c 100%);
+  background: linear-gradient(150deg, #0a2f6b 0%, #0d47a1 55%, #1565c0 100%);
   box-shadow: var(--ot-e3), inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -10px 24px -14px rgba(0, 0, 0, 0.45);
 }
-.gv-otree .ot-top .ot-av { border-radius: 999px; box-shadow: 0 0 0 3px #cdeb03, 0 0 0 7px rgba(205, 235, 3, 0.22); }
+.gv-otree .ot-top .ot-av { border-radius: 999px; box-shadow: 0 0 0 3px #90caf9, 0 0 0 7px rgba(144, 202, 249, 0.3); }
 .gv-otree .ot-tops { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .gv-otree .ot-empty {
   display: flex;
@@ -942,8 +942,8 @@ button.gv-glass:hover {
   padding: 11px 14px 11px 11px;
   border-radius: 18px;
   border: 1px solid #bfe9e2;
-  background: linear-gradient(180deg, #ffffff, #f3fbfa);
-  box-shadow: var(--ot-e2), inset 0 1px 0 #fff, 0 0 0 5px rgba(240, 253, 250, 0.9);
+  background: linear-gradient(180deg, #ffffff, #f1f7fd);
+  box-shadow: var(--ot-e2), inset 0 1px 0 #fff, 0 0 0 5px rgba(227, 242, 253, 0.9);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .gv-otree .ot-head::after {
@@ -954,7 +954,7 @@ button.gv-glass:hover {
   top: -1px;
   height: 3px;
   border-radius: 0 0 4px 4px;
-  background: linear-gradient(90deg, #14b8a6, #0f766e);
+  background: linear-gradient(90deg, #42a5f5, #1565c0);
 }
 .gv-otree .ot-head:hover { transform: translateY(-2px); }
 .dark .gv-otree .ot-head { background: var(--card); border-color: var(--border); box-shadow: none; }
@@ -991,7 +991,7 @@ button.gv-glass:hover {
   padding: 10px 12px;
   border-radius: 18px 18px 0 0;
   border-bottom: 1px solid var(--ot-hair);
-  background: linear-gradient(180deg, #ecf9f6, #fff 85%);
+  background: linear-gradient(180deg, #eef6fd, #fff 85%);
 }
 .dark .gv-otree .ot-th { background: transparent; }
 .gv-otree .ot-ic {
@@ -1002,8 +1002,8 @@ button.gv-glass:hover {
   height: 30px;
   border-radius: 10px;
   color: #fff;
-  background: linear-gradient(150deg, #14b8a6, #0f766e 70%);
-  box-shadow: 0 6px 12px -5px rgba(15, 118, 110, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(150deg, #42a5f5, #1565c0 70%);
+  box-shadow: 0 6px 12px -5px rgba(21, 101, 192, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .gv-otree .ot-code {
   display: inline-block;
@@ -1045,8 +1045,8 @@ button.gv-glass:hover {
 .dark .gv-otree .ot-row:hover { background: var(--accent); }
 .gv-otree li.is-asst .ot-row {
   margin-bottom: 3px;
-  background: linear-gradient(90deg, #dcfaf4, rgba(240, 253, 250, 0));
-  box-shadow: inset 3px 0 0 #0d9488;
+  background: linear-gradient(90deg, #e3f2fd, rgba(227, 242, 253, 0));
+  box-shadow: inset 3px 0 0 #1976d2;
 }
 .dark .gv-otree li.is-asst .ot-row { background: var(--accent); }
 .gv-otree .ot-tag {
@@ -1057,7 +1057,7 @@ button.gv-glass:hover {
   font-weight: 700;
   white-space: nowrap;
   color: #fff;
-  background: linear-gradient(180deg, #14b8a6, #0f766e);
+  background: linear-gradient(180deg, #42a5f5, #1565c0);
 }
 .gv-otree .ot-daily {
   margin: 0 10px 10px;
@@ -1093,7 +1093,7 @@ button.gv-glass:hover {
 
 /* Phone: the same tree as an indented list with lines down the left. */
 @media (max-width: 767px) {
-  .gv-otree-board { padding: 16px 12px; overflow: visible; background: linear-gradient(180deg, #fbfdfd, #f4f8f8); }
+  .gv-otree-board { padding: 16px 12px; overflow: visible; background: linear-gradient(180deg, #fbfcfd, #f4f7fa); }
   .dark .gv-otree-board { background: var(--card); }
   .gv-otree { width: auto; }
   .gv-otree .br { display: block; margin-left: 16px; padding: 10px 0 0 16px; border-left: 2px solid var(--ot-line); }
@@ -1145,7 +1145,7 @@ button.gv-glass:hover {
   0%, 100% { transform: scaleX(1); opacity: 0.9; }
   50% { transform: scaleX(0.82); opacity: 0.6; }
 }
-.ticker-bot svg { filter: drop-shadow(0 0 7px rgba(94, 234, 212, 0.55)); }
+.ticker-bot svg { filter: drop-shadow(0 0 7px rgba(144, 202, 249, 0.55)); }
 .ticker-floor { animation: gv-ticker-shadow 0.5s ease-in-out infinite; }
 .ticker-item[data-stand] .ticker-floor,
 .ticker[data-paused] .ticker-floor { animation: none; }
@@ -1182,7 +1182,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   --lg-glass-strong: rgba(255, 255, 255, 0.82);
   --lg-card: rgba(255, 255, 255, 0.9);
   --lg-edge: rgba(255, 255, 255, 0.78);
-  --lg-tile: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(217, 243, 239, 0.72));
+  --lg-tile: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(227, 242, 253, 0.72));
   --lg-bg1: #e6f5f2;
   --lg-bg2: #f3f6f7;
   --lg-shadow: 0 10px 30px rgba(15, 70, 64, 0.14);
@@ -1193,7 +1193,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   --lg-glass-strong: rgba(34, 40, 42, 0.8);
   --lg-card: rgba(30, 35, 37, 0.92);
   --lg-edge: rgba(255, 255, 255, 0.14);
-  --lg-tile: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(45, 212, 191, 0.12));
+  --lg-tile: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(100, 181, 246, 0.12));
   --lg-bg1: #0f1d1c;
   --lg-bg2: #131516;
   --lg-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
@@ -1229,25 +1229,25 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 /* Page ground with two soft teal glows, so the glass has something to bend. */
 .gv-lg-bg {
   background:
-    radial-gradient(260px 260px at -10% 18%, rgba(20, 184, 166, 0.28), transparent 70%),
+    radial-gradient(260px 260px at -10% 18%, rgba(66, 165, 245, 0.28), transparent 70%),
     radial-gradient(300px 300px at 110% 62%, rgba(110, 231, 183, 0.26), transparent 70%),
     linear-gradient(180deg, var(--lg-bg1), var(--lg-bg2));
 }
 .dark .gv-lg-bg {
   background:
-    radial-gradient(260px 260px at -10% 18%, rgba(20, 184, 166, 0.2), transparent 70%),
-    radial-gradient(300px 300px at 110% 62%, rgba(45, 212, 191, 0.12), transparent 70%),
+    radial-gradient(260px 260px at -10% 18%, rgba(66, 165, 245, 0.2), transparent 70%),
+    radial-gradient(300px 300px at 110% 62%, rgba(100, 181, 246, 0.12), transparent 70%),
     linear-gradient(180deg, var(--lg-bg1), var(--lg-bg2));
 }
 /* The drop under the active tab: a lens of lit glass that slides with a small overshoot. */
 .gv-lg-drop {
-  background: radial-gradient(120% 150% at 30% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.4) 55%, rgba(13, 148, 136, 0.16));
+  background: radial-gradient(120% 150% at 30% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.4) 55%, rgba(25, 118, 210, 0.16));
   border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 6px 16px rgba(15, 70, 64, 0.18), inset 0 1px 0 #fff, inset 0 -6px 12px rgba(13, 148, 136, 0.12);
+  box-shadow: 0 6px 16px rgba(15, 70, 64, 0.18), inset 0 1px 0 #fff, inset 0 -6px 12px rgba(25, 118, 210, 0.12);
   transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.55, 1);
 }
 .dark .gv-lg-drop {
-  background: radial-gradient(120% 150% at 30% 0%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06) 55%, rgba(45, 212, 191, 0.2));
+  background: radial-gradient(120% 150% at 30% 0%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06) 55%, rgba(100, 181, 246, 0.2));
   border-color: rgba(255, 255, 255, 0.28);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
@@ -1297,21 +1297,21 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 .dark .gv-login-scope {
   --login-text-primary: #e8ebed;
   --login-text-secondary: #b8bec4;
-  --login-link: #2dd4bf;
-  --login-link-hover: #5eead4;
+  --login-link: #64b5f6;
+  --login-link-hover: #90caf9;
   --login-border: rgba(255, 255, 255, 0.2);
   --login-surface: rgba(255, 255, 255, 0.1);
   --login-error: #ff8a78;
 }
 }
-.gv-login-bg { background: linear-gradient(180deg, #e4f5f1, #f4f7f8); }
-.dark .gv-login-bg { background: linear-gradient(180deg, #0e1b1a, #0f1213); }
+.gv-login-bg { background: linear-gradient(180deg, #e3f2fd, #f4f7f8); }
+.dark .gv-login-bg { background: linear-gradient(180deg, #0b1626, #0f1213); }
 .gv-orb { position: absolute; border-radius: 9999px; pointer-events: none; will-change: transform; animation: gv-orb-drift 22s ease-in-out infinite alternate; }
-.gv-orb-a { width: 420px; height: 420px; left: -120px; top: -100px; background: radial-gradient(circle at 35% 35%, rgba(20, 184, 166, 0.55), transparent 68%); }
+.gv-orb-a { width: 420px; height: 420px; left: -120px; top: -100px; background: radial-gradient(circle at 35% 35%, rgba(66, 165, 245, 0.55), transparent 68%); }
 .gv-orb-b { width: 480px; height: 480px; right: -160px; bottom: -140px; background: radial-gradient(circle at 40% 40%, rgba(110, 231, 183, 0.5), transparent 68%); animation-duration: 28s; animation-delay: -8s; }
 .gv-orb-c { width: 300px; height: 300px; right: 12%; top: 8%; background: radial-gradient(circle at 40% 40%, rgba(125, 211, 252, 0.42), transparent 68%); animation-duration: 34s; animation-delay: -14s; }
-.dark .gv-orb-a { background: radial-gradient(circle at 35% 35%, rgba(20, 184, 166, 0.32), transparent 68%); }
-.dark .gv-orb-b { background: radial-gradient(circle at 40% 40%, rgba(45, 212, 191, 0.2), transparent 68%); }
+.dark .gv-orb-a { background: radial-gradient(circle at 35% 35%, rgba(66, 165, 245, 0.32), transparent 68%); }
+.dark .gv-orb-b { background: radial-gradient(circle at 40% 40%, rgba(100, 181, 246, 0.2), transparent 68%); }
 .dark .gv-orb-c { background: radial-gradient(circle at 40% 40%, rgba(56, 189, 248, 0.16), transparent 68%); }
 @keyframes gv-orb-drift {
   0% { transform: translate3d(0, 0, 0) scale(1); }
@@ -1357,7 +1357,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   animation: gv-bob 5.5s ease-in-out infinite;
   animation-delay: -1.5s;
 }
-.dark .gv-login-bot svg { filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px rgba(45, 212, 191, 0.25)); }
+.dark .gv-login-bot svg { filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px rgba(100, 181, 246, 0.25)); }
 .gv-login-bot svg { filter: drop-shadow(0 10px 14px rgba(10, 60, 56, 0.28)); }
 @media (prefers-reduced-motion: reduce) {
   .gv-orb, .gv-login-bot, .gv-login-bot .vbot-arm, .gv-login-bubble { animation: none; }
@@ -1422,7 +1422,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   height: 900px;
   left: -200px;
   top: -420px;
-  background: radial-gradient(closest-side, rgba(13, 148, 136, 0.55), rgba(13, 148, 136, 0));
+  background: radial-gradient(closest-side, rgba(25, 118, 210, 0.55), rgba(25, 118, 210, 0));
   animation: login-drift 14s ease-in-out infinite alternate;
 }
 .login-glow-b {
@@ -1430,7 +1430,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   height: 700px;
   right: -260px;
   bottom: -320px;
-  background: radial-gradient(closest-side, rgba(45, 212, 191, 0.22), rgba(45, 212, 191, 0));
+  background: radial-gradient(closest-side, rgba(100, 181, 246, 0.22), rgba(100, 181, 246, 0));
   animation: login-drift 18s ease-in-out infinite alternate-reverse;
 }
 @keyframes login-drift {
@@ -1456,15 +1456,15 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   .gv-login-panel, .dark .gv-login-panel {
     --login-text-primary: #131516;
     --login-text-secondary: #5e6670;
-    --login-link: #0f766e;
-    --login-link-hover: #115e59;
+    --login-link: #1565c0;
+    --login-link-hover: #0d47a1;
     --login-border: #d4d9df;
     --login-surface: #ffffff;
     --login-error: #c62828;
     --lg-field: #8c969e;
     --lg-in: rgba(255, 255, 255, 0.8);
     color-scheme: light;
-    background: radial-gradient(110% 55% at 100% 0, #e3f5f1 0, rgba(246, 247, 243, 0) 60%), #f6f7f3;
+    background: radial-gradient(110% 55% at 100% 0, #e3f2fd 0, rgba(246, 247, 243, 0) 60%), #f6f7f3;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1474,7 +1474,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 /* ── Website sign-in hero: the metal watch and the floating bubbles (mock approved in login-hero-mock.html, 17 Nov 2026) ── */
 .lw-stage { position: relative; width: 100%; aspect-ratio: 1; }
 .lw-stage::before { content: ""; position: absolute; left: 8%; right: 8%; bottom: -7%; height: 12%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, 0.65), transparent); filter: blur(6px); }
-.lw-stage::after { content: ""; position: absolute; inset: -14%; border-radius: 50%; background: radial-gradient(closest-side, rgba(45, 212, 191, 0.28), transparent 70%); z-index: -1; }
+.lw-stage::after { content: ""; position: absolute; inset: -14%; border-radius: 50%; background: radial-gradient(closest-side, rgba(100, 181, 246, 0.28), transparent 70%); z-index: -1; }
 .lw-case {
   position: absolute; inset: 0; border-radius: 50%;
   background: conic-gradient(from 200deg, #f6fafa, #8b9c9c 12%, #e8f0f0 24%, #5d6e6e 38%, #f6fafa 50%, #8b9c9c 62%, #e8f0f0 76%, #5d6e6e 88%, #f6fafa);
@@ -1485,20 +1485,20 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 .lw-push-a { top: 24%; transform: rotate(-30deg); }
 .lw-push-b { top: 69%; transform: rotate(30deg); }
 .lw-ring { position: absolute; inset: 3.2%; border-radius: 50%; background: radial-gradient(circle at 50% 30%, #1b2a2a, #070d0d); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12), inset 0 4px 10px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.35); }
-.lw-face { position: absolute; inset: 10%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 42% 34%, #13706a 0, #0c3b39 38%, #071a1a 78%, #050d0d 100%); box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.75), inset 0 0 0 1.5px rgba(0, 0, 0, 0.6); }
+.lw-face { position: absolute; inset: 10%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 42% 34%, #1565c0 0, #0c3b39 38%, #071a1a 78%, #050d0d 100%); box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.75), inset 0 0 0 1.5px rgba(0, 0, 0, 0.6); }
 .lw-face::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.045) 0 3deg, rgba(255, 255, 255, 0) 3deg 6deg); mix-blend-mode: screen; }
 .lw-face::after { content: ""; position: absolute; left: -10%; top: -30%; width: 120%; height: 75%; border-radius: 50%; background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.02) 70%, transparent); transform: rotate(-14deg); pointer-events: none; }
 .lw-dial { position: absolute; inset: 0; width: 100%; height: 100%; font-family: inherit; }
 .lw-glass { position: absolute; inset: 10%; border-radius: 50%; pointer-events: none; z-index: 5; background: linear-gradient(130deg, rgba(255, 255, 255, 0.22) 0, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0) 72%, rgba(255, 255, 255, 0.08) 100%); }
 .lw-hand { transform-origin: 210px 210px; }
 .lw-stage[data-live="true"] .lw-second { transition: transform 0.35s cubic-bezier(0.3, 1.7, 0.5, 1); }
-.lw-bot { position: absolute; right: -8%; bottom: -10%; width: 40%; height: auto; z-index: 6; filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 16px rgba(45, 212, 191, 0.25)); animation: gv-bob 4.5s ease-in-out infinite; }
+.lw-bot { position: absolute; right: -8%; bottom: -10%; width: 40%; height: auto; z-index: 6; filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 16px rgba(100, 181, 246, 0.25)); animation: gv-bob 4.5s ease-in-out infinite; }
 .lw-bot .vbot-arm { transform-origin: 37px 100px; animation: gv-wave 2.4s ease-in-out infinite; }
 
 .lf-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
 .lf { position: absolute; bottom: -80px; border-radius: 50%; will-change: transform, opacity; animation: lf-rise linear infinite; }
-.lf-glass { border: 1px solid rgba(255, 255, 255, 0.28); background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.55) 0, rgba(255, 255, 255, 0.12) 18%, rgba(94, 234, 212, 0.07) 55%, rgba(94, 234, 212, 0.02) 100%); box-shadow: inset 0 -8px 16px rgba(45, 212, 191, 0.12), 0 0 18px rgba(45, 212, 191, 0.08); }
-.lf-orb { background: radial-gradient(circle at 35% 35%, rgba(94, 234, 212, 0.9), rgba(13, 148, 136, 0.25) 60%, transparent 72%); filter: blur(1.5px); }
+.lf-glass { border: 1px solid rgba(255, 255, 255, 0.28); background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.55) 0, rgba(255, 255, 255, 0.12) 18%, rgba(144, 202, 249, 0.07) 55%, rgba(144, 202, 249, 0.02) 100%); box-shadow: inset 0 -8px 16px rgba(100, 181, 246, 0.12), 0 0 18px rgba(100, 181, 246, 0.08); }
+.lf-orb { background: radial-gradient(circle at 35% 35%, rgba(144, 202, 249, 0.9), rgba(25, 118, 210, 0.25) 60%, transparent 72%); filter: blur(1.5px); }
 .lf-bokeh { background: radial-gradient(circle, rgba(205, 235, 3, 0.5), rgba(205, 235, 3, 0.12) 55%, transparent 70%); filter: blur(3px); }
 .lf-spark { width: 10px; height: 10px; border-radius: 0; background: #cdeb03; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: lf-rise linear infinite, lf-twinkle 2.6s ease-in-out infinite; }
 @keyframes lf-rise {
@@ -1556,13 +1556,13 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   position: absolute;
   pointer-events: none;
   border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0 9%, rgba(255, 255, 255, 0.35) 22%, rgba(94, 234, 212, 0.3) 55%, rgba(13, 148, 136, 0.38) 100%);
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0 9%, rgba(255, 255, 255, 0.35) 22%, rgba(144, 202, 249, 0.3) 55%, rgba(25, 118, 210, 0.38) 100%);
   box-shadow: inset -3px -5px 8px rgba(11, 90, 84, 0.25), inset 2px 3px 6px rgba(255, 255, 255, 0.7),
     0 10px 14px -8px rgba(11, 90, 84, 0.45);
   animation: gv-float 7s ease-in-out infinite;
 }
 .dark .gv-drop {
-  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.7) 0 9%, rgba(255, 255, 255, 0.14) 24%, rgba(45, 212, 191, 0.22) 58%, rgba(20, 184, 166, 0.3) 100%);
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.7) 0 9%, rgba(255, 255, 255, 0.14) 24%, rgba(100, 181, 246, 0.22) 58%, rgba(66, 165, 245, 0.3) 100%);
   box-shadow: inset -3px -5px 8px rgba(0, 0, 0, 0.35), inset 2px 3px 6px rgba(255, 255, 255, 0.3),
     0 10px 14px -8px rgba(0, 0, 0, 0.6);
 }

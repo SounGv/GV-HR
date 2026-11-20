@@ -416,7 +416,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         className="grid items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-card p-3 pr-3.5 shadow-[var(--card-shadow)] lg:grid-cols-[auto_minmax(0,1fr)_minmax(280px,420px)]"
       >
         {/* น้องวีบอท appears once per screen (the sidebar's AI shortcut); here a sparkle marks the AI summary. */}
-        <span className="hidden size-10 items-center justify-center rounded-xl bg-[#f0fdfa] text-[#0d9488] ring-1 ring-[#ccfbf1] ring-inset lg:flex">
+        <span className="hidden size-10 items-center justify-center rounded-xl bg-[#eef6fd] text-[#1976d2] ring-1 ring-[#e3f2fd] ring-inset lg:flex">
           <Sparkles className="size-5" aria-hidden="true" />
         </span>
         <p className="text-[13.5px] leading-relaxed">
@@ -456,7 +456,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <button
             type="submit"
             aria-label="ส่งคำถาม"
-            className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#115e59]"
+            className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#0d47a1]"
           >
             <ArrowUp className="size-4" strokeWidth={2.4} />
           </button>

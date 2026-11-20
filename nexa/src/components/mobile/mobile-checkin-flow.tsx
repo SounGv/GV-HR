@@ -328,7 +328,7 @@ function FlowHeader({ title, stepIndex, dark, onClose }: { title: string; stepIn
             className={cn(
               "h-1.5 rounded-full transition-[width,background-color]",
               i === stepIndex ? "w-[30px]" : "w-[18px]",
-              i <= stepIndex ? (dark ? "bg-[#5eead4]" : "bg-primary") : dark ? "bg-white/35" : "bg-foreground/20",
+              i <= stepIndex ? (dark ? "bg-[#90caf9]" : "bg-primary") : dark ? "bg-white/35" : "bg-foreground/20",
             )}
           />
         ))}
@@ -398,10 +398,10 @@ function CameraStep({
 
       {/* Corner marks to help line the face up; they only guide the eye, nothing checks the face. */}
       <div aria-hidden="true" className="pointer-events-none absolute top-[54%] left-1/2 h-[230px] w-[250px] -translate-x-1/2 -translate-y-1/2">
-        <span className="absolute top-0 left-0 size-9 rounded-tl-[18px] border-t-[3px] border-l-[3px] border-[#5eead4]" />
-        <span className="absolute top-0 right-0 size-9 rounded-tr-[18px] border-t-[3px] border-r-[3px] border-[#5eead4]" />
-        <span className="absolute bottom-0 left-0 size-9 rounded-bl-[18px] border-b-[3px] border-l-[3px] border-[#5eead4]" />
-        <span className="absolute right-0 bottom-0 size-9 rounded-br-[18px] border-r-[3px] border-b-[3px] border-[#5eead4]" />
+        <span className="absolute top-0 left-0 size-9 rounded-tl-[18px] border-t-[3px] border-l-[3px] border-[#90caf9]" />
+        <span className="absolute top-0 right-0 size-9 rounded-tr-[18px] border-t-[3px] border-r-[3px] border-[#90caf9]" />
+        <span className="absolute bottom-0 left-0 size-9 rounded-bl-[18px] border-b-[3px] border-l-[3px] border-[#90caf9]" />
+        <span className="absolute right-0 bottom-0 size-9 rounded-br-[18px] border-r-[3px] border-b-[3px] border-[#90caf9]" />
       </div>
 
       <button
@@ -442,7 +442,7 @@ function CameraStep({
               aria-label="แฟลช"
               aria-pressed={torchOn}
             >
-              {torchOn ? <Zap className="size-5 text-[#5eead4]" /> : <ZapOff className="size-5" />}
+              {torchOn ? <Zap className="size-5 text-[#90caf9]" /> : <ZapOff className="size-5" />}
             </button>
           ) : (
             <span className="size-11" />
@@ -454,7 +454,7 @@ function CameraStep({
             className="flex size-[78px] items-center justify-center rounded-full border-[1.5px] border-white/70 bg-[radial-gradient(120%_120%_at_30%_0%,rgba(255,255,255,.5),rgba(255,255,255,.14))] shadow-[0_8px_22px_rgba(0,0,0,.4),inset_0_1px_0_rgba(255,255,255,.8)] transition active:scale-95 motion-reduce:active:scale-100 disabled:opacity-40"
             aria-label="ถ่ายรูป"
           >
-            <span className="flex size-[60px] items-center justify-center rounded-full bg-gradient-to-b from-white to-[#d9f3ef] text-[#0f766e] shadow-[inset_0_-3px_6px_rgba(15,118,110,.18)]">
+            <span className="flex size-[60px] items-center justify-center rounded-full bg-gradient-to-b from-white to-[#e3f2fd] text-[#1565c0] shadow-[inset_0_-3px_6px_rgba(21, 101, 192,.18)]">
               <Camera className="size-7" />
             </span>
           </button>
@@ -500,7 +500,7 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
           <span
             className={cn(
               "flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-md",
-              warn ? "bg-gradient-to-b from-[#f5b700] to-[#b88200]" : "bg-gradient-to-b from-[#14b8a6] to-[#0f766e]",
+              warn ? "bg-gradient-to-b from-[#f5b700] to-[#b88200]" : "bg-gradient-to-b from-[#42a5f5] to-[#1565c0]",
             )}
           >
             {warn ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}
@@ -532,9 +532,9 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
 }
 
 const PRIMARY_BTN =
-  "rounded-full bg-[linear-gradient(180deg,#14b8a6,#0f766e)] text-base font-bold text-white shadow-[0_12px_24px_rgba(15,118,110,.4),inset_0_1px_0_rgba(255,255,255,.5)] transition active:scale-[0.99] disabled:opacity-40 dark:text-[#06201d] dark:bg-[linear-gradient(180deg,#5eead4,#14b8a6)]";
+  "rounded-full bg-[linear-gradient(180deg,#42a5f5,#1565c0)] text-base font-bold text-white shadow-[0_12px_24px_rgba(21, 101, 192,.4),inset_0_1px_0_rgba(255,255,255,.5)] transition active:scale-[0.99] disabled:opacity-40 dark:text-[#06201d] dark:bg-[linear-gradient(180deg,#90caf9,#42a5f5)]";
 const CAM_PRIMARY_BTN =
-  "rounded-full bg-[linear-gradient(180deg,#7ff1de,#2dd4bf)] text-[#06201d] font-bold shadow-[0_12px_24px_rgba(15,118,110,.4),inset_0_1px_0_rgba(255,255,255,.6)] transition active:scale-95 motion-reduce:active:scale-100";
+  "rounded-full bg-[linear-gradient(180deg,#90caf9,#64b5f6)] text-[#06201d] font-bold shadow-[0_12px_24px_rgba(21, 101, 192,.4),inset_0_1px_0_rgba(255,255,255,.6)] transition active:scale-95 motion-reduce:active:scale-100";
 
 function PreviewStep({ photo, onRetake, onConfirm }: { photo: string; onRetake: () => void; onConfirm: () => void }) {
   return (
@@ -761,7 +761,7 @@ function SuccessStep({
 
       <div className="gv-lg absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] rounded-[32px] px-[18px] pt-5 pb-[18px]">
         <div className="flex items-center gap-3">
-          <span className="gv-confirm flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#14b8a6] to-[#0f766e] text-white shadow-md">
+          <span className="gv-confirm flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#42a5f5] to-[#1565c0] text-white shadow-md">
             <CheckCircle2 className="size-5" />
           </span>
           <div className="min-w-0">

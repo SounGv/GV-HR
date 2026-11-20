@@ -170,7 +170,7 @@ export function TileMap({
           <span
             className={cn(
               "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2",
-              fence?.outside ? "border-dashed border-[#b42318] bg-[#b42318]/10" : "border-[#0d9488] bg-[#0d9488]/15",
+              fence?.outside ? "border-dashed border-[#b42318] bg-[#b42318]/10" : "border-[#1976d2] bg-[#1976d2]/15",
             )}
             style={{ left: fenceBox.x, top: fenceBox.y, width: fenceSize, height: fenceSize }}
           />
@@ -188,13 +188,13 @@ export function TileMap({
         )}
         {pinAt && (
           <svg viewBox="0 0 24 24" className="absolute size-[30px] -translate-x-1/2 -translate-y-full drop-shadow-md" style={{ left: pinAt.x, top: pinAt.y }} aria-hidden="true">
-            <path d="M12 22s7.5-6.4 7.5-12A7.5 7.5 0 0 0 4.5 10c0 5.6 7.5 12 7.5 12Z" fill="#0f766e" stroke="#fff" strokeWidth="1.6" />
+            <path d="M12 22s7.5-6.4 7.5-12A7.5 7.5 0 0 0 4.5 10c0 5.6 7.5 12 7.5 12Z" fill="#1565c0" stroke="#fff" strokeWidth="1.6" />
             <circle cx="12" cy="10" r="3" fill="#fff" />
           </svg>
         )}
         {meAt && (
-          <span className="absolute size-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#0f766e] shadow-md" style={{ left: meAt.x, top: meAt.y }}>
-            <span className="absolute -inset-3.5 animate-ping rounded-full bg-[#0f766e]/25 motion-reduce:animate-none" />
+          <span className="absolute size-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#1565c0] shadow-md" style={{ left: meAt.x, top: meAt.y }}>
+            <span className="absolute -inset-3.5 animate-ping rounded-full bg-[#1565c0]/25 motion-reduce:animate-none" />
           </span>
         )}
       </div>
@@ -202,7 +202,7 @@ export function TileMap({
       {children}
 
       {interactive && (
-        <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-[40%] right-3.5 z-10 flex flex-col overflow-hidden rounded-full bg-white/90 text-[#0f766e] shadow-lg">
+        <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-[40%] right-3.5 z-10 flex flex-col overflow-hidden rounded-full bg-white/90 text-[#1565c0] shadow-lg">
           <button type="button" onClick={() => changeZoom(1)} className="flex size-11 items-center justify-center" aria-label="ขยายแผนที่">
             <Plus className="size-5" />
           </button>

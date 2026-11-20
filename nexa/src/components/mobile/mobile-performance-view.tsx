@@ -124,7 +124,7 @@ function PendingSection() {
           aria-valuemax={total}
           aria-label={`ส่งแล้ว ${done.length} จาก ${total} คน`}
         >
-          <div className="h-full rounded-full bg-[#0d9488]" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-[#1976d2]" style={{ width: `${pct}%` }} />
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           ส่งแล้ว {done.length} จาก {total} คน
@@ -135,7 +135,7 @@ function PendingSection() {
       {todo.length > 0 && (
         <section className="space-y-2">
           <h2 className="flex items-center gap-1.5 text-base font-semibold text-foreground">
-            <ListChecks className="size-4 text-[#0d9488]" aria-hidden="true" /> ต้องทำ ({todo.length})
+            <ListChecks className="size-4 text-[#1976d2]" aria-hidden="true" /> ต้องทำ ({todo.length})
           </h2>
           {todo.map(({ item, days }) => (
             <AssignmentRow key={item.id} item={item} days={days} />

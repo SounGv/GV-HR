@@ -21,7 +21,7 @@ const SOURCE_DOT: Record<CalendarSource, string> = {
   leave: "bg-warning",
   training: "bg-primary",
   event: "bg-emerald-500",
-  evaluation: "bg-lime-600",
+  evaluation: "bg-indigo-600",
   meeting: "bg-info",
 };
 const SOURCE_LABEL: Record<CalendarSource, string> = {

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 
-const THEME_COLOR = { light: "#0D9488", dark: "#0A0E1A" };
+const THEME_COLOR = { light: "#0d47a1", dark: "#0A0E1A" };
 /** The sign-in page opens on its dark hero, so the phone's status bar matches it instead of teal. */
 const LOGIN_COLOR = "#0b1414";
 

@@ -231,7 +231,7 @@ export function OrgChart({
             className={cn(
               "h-[34px] rounded-[9px] px-3.5 text-[13.5px] font-semibold whitespace-nowrap transition-colors sm:px-4",
               view === value
-                ? "bg-[#0f766e] text-white shadow-[0_1px_2px_rgba(15,118,110,.2),0_10px_24px_-12px_rgba(15,118,110,.55)]"
+                ? "bg-[#1565c0] text-white shadow-[0_1px_2px_rgba(21, 101, 192,.2),0_10px_24px_-12px_rgba(21, 101, 192,.55)]"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -363,13 +363,13 @@ function DivisionCard({
       className="gv-rise border-border bg-card overflow-hidden rounded-2xl border shadow-[var(--card-shadow)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(19,21,22,.06),0_14px_28px_-14px_rgba(19,21,22,.25)]"
       style={rise(index)}
     >
-      <div className="dark:border-border border-b border-[#e6f4f1] bg-[linear-gradient(180deg,#f0fdfa,transparent)] px-3.5 py-3 dark:bg-[linear-gradient(180deg,#12332f,transparent)]">
+      <div className="dark:border-border border-b border-[#e6f4f1] bg-[linear-gradient(180deg,#eef6fd,transparent)] px-3.5 py-3 dark:bg-[linear-gradient(180deg,#0f2744,transparent)]">
         <b className="block text-[14.5px] leading-snug">{division.name}</b>
         <div className="text-muted-foreground mt-1.5 flex items-center justify-between gap-2 text-xs">
           <span className="truncate">
             {division.isOther ? `ฝ่ายเล็กไม่มีแผนกย่อย (≤${OTHER_MAX_PEOPLE} คน)` : division.code}
           </span>
-          <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-primary tabular-nums">
+          <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#e3f2fd] px-2.5 text-xs font-bold text-primary tabular-nums">
             {division.headcount} คน
           </span>
         </div>
@@ -411,7 +411,7 @@ function DivisionCard({
         <button
           type="button"
           onClick={() => onOpen(division.key)}
-          className="dark:border-border inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-[#cfd6dc] px-3.5 text-[12.5px] font-semibold transition-colors hover:border-[#0d9488] hover:text-primary"
+          className="dark:border-border inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-[#cfd6dc] px-3.5 text-[12.5px] font-semibold transition-colors hover:border-[#1976d2] hover:text-primary"
         >
           {division.isOther ? "เปิดผัง →" : "เปิดผังฝ่าย →"}
         </button>
@@ -549,7 +549,7 @@ function DivisionView({
                 "h-9 shrink-0 rounded-full border-[1.5px] px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors",
                 on
                   ? "border-[#131516] bg-[#131516] text-white dark:border-white dark:bg-white dark:text-[#131516]"
-                  : "bg-card dark:border-border border-[#cfd6dc] hover:border-[#0d9488]",
+                  : "bg-card dark:border-border border-[#cfd6dc] hover:border-[#1976d2]",
               )}
             >
               {d.name}
@@ -577,7 +577,7 @@ function DivisionView({
               onClick={editButton.onToggle}
               className={cn(
                 "mt-3 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-[13.5px] font-bold transition-[translate,background-color] duration-200 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 md:h-9",
-                editButton.editing ? "bg-[#CDEB03] text-[#131516]" : "bg-white text-[#0f766e]",
+                editButton.editing ? "bg-[#bbdefb] text-[#0d47a1]" : "bg-white text-[#1565c0]",
               )}
             >
               {editButton.editing ? (
@@ -697,8 +697,8 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
   const className = cn(
     "flex min-w-0 items-center gap-2.5 rounded-[14px] border bg-card px-3.5 py-2.5 transition-colors",
     top
-      ? "border-[#99f6e4] shadow-[0_0_0_3px_#ccfbf1,var(--card-shadow)] hover:border-[#0d9488] sm:min-w-[230px] dark:border-primary/40 dark:shadow-none"
-      : "border-[#e6f4f1] bg-[#f8fdfc] hover:border-[#99f6e4] dark:border-border dark:bg-accent/40",
+      ? "border-[#bbdefb] shadow-[0_0_0_3px_#e3f2fd,var(--card-shadow)] hover:border-[#1976d2] sm:min-w-[230px] dark:border-primary/40 dark:shadow-none"
+      : "border-[#e6f4f1] bg-[#f8fdfc] hover:border-[#bbdefb] dark:border-border dark:bg-accent/40",
   );
   const avatar = (
     <PersonAvatar
@@ -718,7 +718,7 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
     </span>
   );
   const tagEl = (
-    <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
+    <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#e3f2fd] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
       {tag}
     </span>
   );
@@ -777,7 +777,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
     >
       <div className="border-border bg-muted/50 flex items-center justify-between gap-2 border-b px-3.5 py-2 text-[13.5px] font-bold">
         <span className="min-w-0 truncate">{team.name}</span>
-        <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#ccfbf1] px-2.5 text-xs font-bold text-primary tabular-nums">
+        <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#e3f2fd] px-2.5 text-xs font-bold text-primary tabular-nums">
           {team.count}
         </span>
       </div>

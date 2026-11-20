@@ -23,11 +23,11 @@ export function FollowCount() {
   return (
     <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px] font-semibold">
       <span>
-        วันนี้มี <span className="text-[#0b4f4a] dark:text-[#5eead4]">{n} เรื่อง</span>ที่ควรดู
+        วันนี้มี <span className="text-[#0b4f4a] dark:text-[#90caf9]">{n} เรื่อง</span>ที่ควรดู
       </span>
       <a
         href="#follow-up"
-        className="inline-flex min-h-10 items-center rounded-full bg-[linear-gradient(135deg,#0f766e,#0b4f4a)] px-4 text-[13.5px] text-white shadow-[0_6px_16px_rgba(13,148,136,.22)] hover:brightness-110"
+        className="inline-flex min-h-10 items-center rounded-full bg-[linear-gradient(135deg,#1565c0,#0b4f4a)] px-4 text-[13.5px] text-white shadow-[0_6px_16px_rgba(25, 118, 210,.22)] hover:brightness-110"
       >
         ดู {n} เรื่องด้านล่าง ↓
       </a>

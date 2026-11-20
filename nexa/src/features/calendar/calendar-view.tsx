@@ -27,7 +27,7 @@ const SOURCE_STYLE: Record<CalendarSource, string> = {
   leave: "bg-warning/15 text-warning",
   training: "bg-primary/15 text-primary",
   event: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  evaluation: "bg-lime-600/15 text-lime-700 dark:text-lime-400",
+  evaluation: "bg-indigo-600/15 text-indigo-800 dark:text-indigo-300",
   meeting: "bg-info/15 text-info",
 };
 const SOURCE_DOT: Record<CalendarSource, string> = {
@@ -35,7 +35,7 @@ const SOURCE_DOT: Record<CalendarSource, string> = {
   leave: "bg-warning",
   training: "bg-primary",
   event: "bg-emerald-500",
-  evaluation: "bg-lime-600",
+  evaluation: "bg-indigo-600",
   meeting: "bg-info",
 };
 const SOURCE_LABEL: Record<CalendarSource, string> = {

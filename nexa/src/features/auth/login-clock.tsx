@@ -31,7 +31,7 @@ export function LoginClock() {
     <p className="flex min-h-6 items-center gap-2 text-[13px] text-[var(--login-text-secondary)]">
       {now && (
         <>
-          <span className="size-2 rounded-full bg-[#0d9488] shadow-[0_0_0_3px_rgba(13,148,136,0.18)]" aria-hidden="true" />
+          <span className="size-2 rounded-full bg-[#1976d2] shadow-[0_0_0_3px_rgba(25, 118, 210,0.18)]" aria-hidden="true" />
           {fmtDate.format(now)}
           <span className="font-semibold text-[var(--login-text-primary)] tabular-nums">{fmtTime.format(now)} น.</span>
         </>

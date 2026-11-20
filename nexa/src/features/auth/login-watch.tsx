@@ -122,7 +122,7 @@ export function LoginWatch({ className }: { className?: string }) {
               <g transform="translate(210 290)">
                 <circle r="38" fill="#06100f" stroke="rgba(255,255,255,.18)" strokeWidth="1.5" />
                 <circle r="30" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="5" />
-                <circle r="30" fill="none" stroke="#2dd4bf" strokeWidth="5" strokeLinecap="round" strokeDasharray="136 189" transform="rotate(-90)" />
+                <circle r="30" fill="none" stroke="#64b5f6" strokeWidth="5" strokeLinecap="round" strokeDasharray="136 189" transform="rotate(-90)" />
                 <path d="M-14 1 L-5 11 L15 -11" fill="none" stroke="#CDEB03" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
               </g>
 
@@ -135,9 +135,9 @@ export function LoginWatch({ className }: { className?: string }) {
                 <path d="M209.2 220 L209.2 70 L210.8 70 L210.8 220Z" fill="#CDEB03" />
               </g>
               <g className="lw-hand lw-second" filter="url(#lw-shadow)" style={{ transform: `rotate(${secondAngle}deg)` }}>
-                <rect x="208.6" y="34" width="2.8" height="196" rx="1.4" fill="#2dd4bf" />
-                <rect x="206.5" y="226" width="7" height="34" rx="3" fill="#2dd4bf" />
-                <circle cx="210" cy="86" r="8" fill="#0b1414" stroke="#2dd4bf" strokeWidth="3" />
+                <rect x="208.6" y="34" width="2.8" height="196" rx="1.4" fill="#64b5f6" />
+                <rect x="206.5" y="226" width="7" height="34" rx="3" fill="#64b5f6" />
+                <circle cx="210" cy="86" r="8" fill="#0b1414" stroke="#64b5f6" strokeWidth="3" />
               </g>
               <circle cx="210" cy="210" r="11" fill="url(#lw-hub)" stroke="#0b1414" strokeWidth="2" />
               <circle cx="210" cy="210" r="4" fill="#0b1414" />

@@ -12,7 +12,7 @@ export function LoginButton({
     <Button
       size="lg"
       className={cn(
-        "h-[54px] w-full rounded-full bg-[linear-gradient(180deg,#14b8a6,#0f766e)] text-[17px] font-bold text-white shadow-[0_12px_26px_rgba(15,118,110,.38),inset_0_1px_0_rgba(255,255,255,.5),inset_0_-2px_6px_rgba(0,0,0,.12)] hover:brightness-105 active:scale-[0.98] motion-reduce:active:scale-100",
+        "h-[54px] w-full rounded-full bg-[linear-gradient(180deg,#42a5f5,#1565c0)] text-[17px] font-bold text-white shadow-[0_12px_26px_rgba(21, 101, 192,.38),inset_0_1px_0_rgba(255,255,255,.5),inset_0_-2px_6px_rgba(0,0,0,.12)] hover:brightness-105 active:scale-[0.98] motion-reduce:active:scale-100",
         className,
       )}
       disabled={loading || props.disabled}

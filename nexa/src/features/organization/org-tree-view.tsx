@@ -77,7 +77,7 @@ export function DivisionTreeChart({
       <div className="ot-noprint flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="text-muted-foreground mr-auto flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px]">
           <span className="inline-flex items-center gap-1.5">
-            <i className="inline-block size-3 rounded-[4px] bg-[#0f766e]" aria-hidden="true" />
+            <i className="inline-block size-3 rounded-[4px] bg-[#1565c0]" aria-hidden="true" />
             ผู้ช่วยหัวหน้า
           </span>
           {tree.dailyCount > 0 && (
@@ -103,7 +103,7 @@ export function DivisionTreeChart({
         <button
           type="button"
           onClick={printChart}
-          className="border-border bg-card hidden h-9 items-center gap-1.5 rounded-xl border px-3 text-[13px] font-semibold hover:border-[#0d9488] md:inline-flex"
+          className="border-border bg-card hidden h-9 items-center gap-1.5 rounded-xl border px-3 text-[13px] font-semibold hover:border-[#1976d2] md:inline-flex"
         >
           <Printer className="size-4" aria-hidden="true" />
           พิมพ์ผัง
@@ -196,7 +196,7 @@ function Toggle({
         aria-hidden="true"
         className={cn(
           "relative h-6 w-10 rounded-full transition-colors after:absolute after:top-[3px] after:size-[18px] after:rounded-full after:bg-white after:shadow-[0_1px_3px_rgba(0,0,0,.25)] after:transition-[left] after:duration-200 motion-reduce:after:transition-none",
-          on ? "bg-[#0f766e] after:left-[19px]" : "dark:bg-muted bg-[#cfd6dc] after:left-[3px]",
+          on ? "bg-[#1565c0] after:left-[19px]" : "dark:bg-muted bg-[#cfd6dc] after:left-[3px]",
         )}
       />
       {label}
@@ -222,7 +222,7 @@ function TopCard({ node, outer }: { node: PersonNode; outer?: boolean }) {
         <small className="block text-[12.5px] leading-snug text-white break-words">
           {p.positionTitle ?? "หัวหน้าฝ่าย"}
         </small>
-        <span className="mt-1 inline-block rounded-md bg-[#CDEB03] px-2 text-xs font-bold text-[#131516] tabular-nums">
+        <span className="mt-1 inline-block rounded-md bg-[#bbdefb] px-2 text-xs font-bold text-[#0d47a1] tabular-nums">
           {outer ? "ดูแลฝ่ายนี้" : "ดูแล"} {node.under} คน
         </span>
       </span>
@@ -247,7 +247,7 @@ function HeadCard({ lead, index }: { lead: TreeLead; index: number }) {
           {p.positionTitle ?? "หัวหน้า"}
         </small>
       </span>
-      <span className="dark:bg-accent dark:text-primary ml-auto shrink-0 rounded-full bg-[#ccfbf1] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
+      <span className="dark:bg-accent dark:text-primary ml-auto shrink-0 rounded-full bg-[#e3f2fd] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
         ดูแล {lead.under} คน
       </span>
     </Link>

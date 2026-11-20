@@ -1,25 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Anuphan } from "next/font/google";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { appBaseUrl } from "@/lib/app-url";
 
-/** The one app-wide typeface (mobile and desktop alike), for body and
- * headings. Anuphan (2026-11, owner's pick) is a modern, softer Thai sans with
- * Thai and Latin cuts, so numerals match the Thai text; it replaced IBM Plex
- * Sans Thai, which read stiff, and before that Prompt, whose small sizes looked
- * thin in tables.
+/** The app-wide typeface (mobile and desktop alike), for body and headings.
+ * Roboto draws Latin letters and digits, as in Favpo, the evaluation tool HR
+ * already uses (owner's pick, 2026-11-20). Roboto has no Thai glyphs, so Thai
+ * text uses the device's own Thai font through the fallback list in
+ * globals.css (Leelawadee UI on Windows, Thonburi on Apple, Noto Sans Thai on
+ * Android); its look therefore varies a little by device. Before this the app
+ * used Anuphan for both scripts.
  *
  * The next/font class (which defines `--font-sans-thai`) must sit on <html>, not
  * <body>: globals.css reads the variable from `:root`, and a variable that
  * only exists on a descendant is invalid there, which silently dropped the
  * whole stack to the browser's serif default. */
-const sansThai = Anuphan({
+const sansThai = Roboto({
   variable: "--font-sans-thai",
-  subsets: ["thai", "latin"],
-  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
@@ -61,7 +63,7 @@ export const viewport: Viewport = {
   // in sync with the actual resolved app theme client-side, which can differ
   // from OS-level prefers-color-scheme (e.g. mobile forced into dark by
   // default). Two media-scoped tags here would fight that override.
-  themeColor: "#0D9488",
+  themeColor: "#0d47a1",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
