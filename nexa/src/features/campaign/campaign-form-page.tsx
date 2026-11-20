@@ -192,7 +192,7 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
     >
       <Form {...form}>
         <form id={FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <FormField
               control={form.control}
               name="name"

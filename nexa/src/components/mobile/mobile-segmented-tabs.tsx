@@ -144,7 +144,7 @@ export function MobileFilterChip({
 
       className={cn(
 
-        "rounded-full border px-3 py-1.5 text-xs font-semibold transition active:scale-95",
+        "rounded-sm border px-3 py-1.5 text-xs font-semibold transition active:scale-95",
 
         active
 

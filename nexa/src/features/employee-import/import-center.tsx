@@ -189,11 +189,11 @@ export function ImportCenter() {
         <Card className="gap-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 font-medium text-success">
+              <span className="inline-flex items-center gap-1.5 rounded-sm bg-success/10 px-2.5 py-1 font-medium text-success">
                 <CheckCircle2 className="size-4" /> พร้อมนำเข้า {validCount}
               </span>
               {errorCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1 font-medium text-destructive">
+                <span className="inline-flex items-center gap-1.5 rounded-sm bg-destructive/10 px-2.5 py-1 font-medium text-destructive">
                   <AlertTriangle className="size-4" /> ผิดพลาด {errorCount}
                 </span>
               )}

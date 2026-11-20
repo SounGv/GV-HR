@@ -48,11 +48,11 @@ const REASON_TEXT: Record<Reason, string> = {
 /** The small status pill: AI normal, or fallback. Icon plus words, never colour alone. */
 export function EngineBadge({ mode }: { mode: "ai" | "fallback" }) {
   return mode === "ai" ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs whitespace-nowrap font-medium text-accent-foreground">
+    <span className="inline-flex items-center gap-1 rounded-sm bg-accent px-2 py-0.5 text-xs whitespace-nowrap font-medium text-accent-foreground">
       <CheckCircle2 className="size-3.5" aria-hidden="true" /> AI พร้อมใช้
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full border border-status-late-border bg-status-late-bg px-2 py-0.5 text-xs whitespace-nowrap font-medium text-status-late-fg">
+    <span className="inline-flex items-center gap-1 rounded-sm border border-status-late-border bg-status-late-bg px-2 py-0.5 text-xs whitespace-nowrap font-medium text-status-late-fg">
       <TriangleAlert className="size-3.5" aria-hidden="true" /> โหมดสำรอง
     </span>
   );
@@ -107,7 +107,7 @@ export function QuickChips({
                 else if (a.needs === "form") onOpenForm(a.id as "announce" | "notify");
                 else onRun({ action: a.id }, a.label);
               }}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-sm text-foreground transition hover:border-[var(--chat-teal)] hover:bg-accent hover:text-accent-foreground disabled:opacity-60 md:min-h-9 md:px-3 md:text-[13px]"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-border bg-card px-3.5 text-sm text-foreground transition hover:border-[var(--chat-teal)] hover:bg-accent hover:text-accent-foreground disabled:opacity-60 md:min-h-9 md:px-3 md:text-[13px]"
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
               {a.label}

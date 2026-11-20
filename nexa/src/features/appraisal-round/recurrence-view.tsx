@@ -1,5 +1,6 @@
 "use client";
 
+import { PageActions } from "@/components/layout/page-chrome";
 import { useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Info, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
@@ -96,12 +97,9 @@ export function RecurrenceView() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/appraisal/rounds" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-2 hover:underline md:min-h-0">
-          กลับไปรอบประเมิน
-        </Link>
-        <Button className="h-11 md:h-9" onClick={() => setEditing({ id: null, body: EMPTY })}>
+        <PageActions><Button className="h-11 md:h-9" onClick={() => setEditing({ id: null, body: EMPTY })}>
           <Plus className="size-4" /> เพิ่มการตั้งรอบ
-        </Button>
+        </Button></PageActions>
       </div>
 
       <p className="flex gap-2 rounded-lg bg-muted px-3 py-2 text-sm">
@@ -353,7 +351,7 @@ function Form({ id, initial, onClose }: { id: string | null; initial: Recurrence
                     key={d}
                     type="button"
                     aria-pressed={on}
-                    className={cn("min-h-11 rounded-full border px-3 text-sm md:min-h-9", on ? "border-foreground bg-foreground text-background" : "border-border bg-card")}
+                    className={cn("min-h-11 rounded-sm border px-3 text-sm md:min-h-9", on ? "border-foreground bg-foreground text-background" : "border-border bg-card")}
                     onClick={() => set({ departmentNames: on ? body.departmentNames.filter((x) => x !== d) : [...body.departmentNames, d] })}
                   >
                     {d}

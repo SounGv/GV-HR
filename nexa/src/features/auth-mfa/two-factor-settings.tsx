@@ -86,7 +86,7 @@ export function TwoFactorSettings() {
           </p>
         </div>
         {enabled && step === "idle" && (
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+          <span className="flex shrink-0 items-center gap-1 rounded-sm bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
             <ShieldCheck className="size-3.5" /> เปิดใช้งานอยู่
           </span>
         )}

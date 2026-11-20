@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { DateInput } from "@/components/ui/date-input";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { TimeSelect } from "@/components/shared/time-select";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "@/features/leave/schema";
@@ -385,24 +386,23 @@ export function MobileLeaveForm() {
               <div className="grid grid-cols-2 gap-2">
                 <label className="rounded-lg border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                   <span className="block text-sm text-muted-foreground">เริ่มลา</span>
-                  <input
-                    type="date"
-                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
-                    {...form.register("startDate", {
-                      onChange: (e) => {
-                        const next = e.target.value as string;
-                        const currentEnd = form.getValues("endDate");
-                        if (!currentEnd || currentEnd < next) form.setValue("endDate", next);
-                      },
-                    })}
+                  <DateInput
+                    className="mt-0.5 h-7 [&_input[type=text]]:border-0 [&_input[type=text]]:bg-transparent [&_input[type=text]]:px-0 [&_input[type=text]]:pl-0 [&_input[type=text]]:text-base [&_input[type=text]]:font-semibold"
+                    value={form.watch("startDate")}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      form.setValue("startDate", next, { shouldValidate: true, shouldDirty: true });
+                      const currentEnd = form.getValues("endDate");
+                      if (!currentEnd || currentEnd < next) form.setValue("endDate", next, { shouldValidate: true });
+                    }}
                   />
                 </label>
                 <label className="rounded-lg border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                   <span className="block text-sm text-muted-foreground">ถึงวันที่</span>
-                  <input
-                    type="date"
-                    className="mt-0.5 w-full border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
-                    {...form.register("endDate")}
+                  <DateInput
+                    className="mt-0.5 h-7 [&_input[type=text]]:border-0 [&_input[type=text]]:bg-transparent [&_input[type=text]]:px-0 [&_input[type=text]]:pl-0 [&_input[type=text]]:text-base [&_input[type=text]]:font-semibold"
+                    value={form.watch("endDate")}
+                    onChange={(e) => form.setValue("endDate", e.target.value, { shouldValidate: true, shouldDirty: true })}
                   />
                 </label>
               </div>
@@ -412,12 +412,13 @@ export function MobileLeaveForm() {
               <p className="mb-2 mt-3 text-[15px] font-semibold text-foreground">วันที่ลา</p>
               <label className="block rounded-lg border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                 <span className="block text-sm text-muted-foreground">วันที่</span>
-                <input
-                  type="date"
-                  className="mt-0.5 w-full appearance-none border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
-                  {...form.register("startDate", {
-                    onChange: (e) => form.setValue("endDate", e.target.value),
-                  })}
+                <DateInput
+                  className="mt-0.5 h-7 [&_input[type=text]]:border-0 [&_input[type=text]]:bg-transparent [&_input[type=text]]:px-0 [&_input[type=text]]:pl-0 [&_input[type=text]]:text-base [&_input[type=text]]:font-semibold"
+                  value={form.watch("startDate")}
+                  onChange={(e) => {
+                    form.setValue("startDate", e.target.value, { shouldValidate: true, shouldDirty: true });
+                    form.setValue("endDate", e.target.value, { shouldValidate: true });
+                  }}
                 />
               </label>
             </>

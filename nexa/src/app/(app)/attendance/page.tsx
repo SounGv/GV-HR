@@ -23,7 +23,7 @@ export default async function AttendancePage() {
     // This path has its own phone layout, so the phone needs its own header here too, or the message is a dead end with no way back.
     return (
       <>
-        <MobileScreen title="เวลาเข้า-ออกงาน" backHref="/dashboard" contentClassName="p-4">
+        <MobileScreen title="ลงเวลาทำงาน" backHref="/dashboard" contentClassName="p-4">
           {state}
         </MobileScreen>
         <div className="hidden space-y-6 md:block">

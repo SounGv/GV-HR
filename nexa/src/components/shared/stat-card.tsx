@@ -60,7 +60,7 @@ export function StatCard({
         {delta && (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-medium",
+              "inline-flex items-center gap-0.5 rounded-sm px-1.5 py-0.5 text-xs font-medium",
               positive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
             )}
           >

@@ -168,7 +168,7 @@ export function AttendanceFollowChips({ data, departmentIds }: SectionProps) {
             key={s}
             href={attendanceListHref(s, departmentIds)}
             className={cn(
-              "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold",
+              "inline-flex min-h-11 items-center gap-1.5 rounded-sm border px-3.5 text-sm font-semibold",
               STATUS_META[s].surface,
             )}
           >
@@ -345,7 +345,7 @@ export function DepartmentBreakdownCard({ data, departmentIds }: SectionProps) {
                     return d.counts[s] > 0 ? (
                       <span
                         key={s}
-                        className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold", STATUS_META[s].surface)}
+                        className={cn("inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-xs font-semibold", STATUS_META[s].surface)}
                       >
                         <Icon className="size-3.5" aria-hidden="true" />
                         {STATUS_META[s].label} {d.counts[s]}

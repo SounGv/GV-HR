@@ -22,7 +22,7 @@ export function AttendanceStatusTabs({ tabs, label }: { tabs: StatusTab[]; label
           href={t.href}
           aria-current={t.active ? "page" : undefined}
           className={cn(
-            "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
+            "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-sm border px-4 text-sm font-semibold transition",
             t.active
               ? "border-transparent bg-[var(--flip7-teal-dark)] text-white"
               : "border-border bg-card text-foreground hover:bg-muted",
@@ -31,7 +31,7 @@ export function AttendanceStatusTabs({ tabs, label }: { tabs: StatusTab[]; label
           {t.label}
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 text-xs tabular-nums",
+              "rounded-sm px-2 py-0.5 text-xs tabular-nums",
               t.active ? "bg-black/25 text-white" : "bg-muted text-muted-foreground",
             )}
           >

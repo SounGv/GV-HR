@@ -90,12 +90,12 @@ function GapBadge({ gap }: { gap: number | null }) {
   if (gap == null) return <span className="text-xs text-muted-foreground">ยังไม่ประเมิน</span>;
   if (gap <= 0)
     return (
-      <span className="flex items-center gap-1 rounded-full bg-success-muted px-2 py-0.5 text-xs font-semibold text-success">
+      <span className="flex items-center gap-1 rounded-sm bg-success-muted px-2 py-0.5 text-xs font-semibold text-success">
         <TrendingUp className="size-3" /> ผ่านเกณฑ์
       </span>
     );
   return (
-    <span className="flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">
+    <span className="flex items-center gap-1 rounded-sm bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">
       {gap >= 2 ? <TrendingDown className="size-3" /> : <Minus className="size-3" />} ขาด {gap} ระดับ
     </span>
   );

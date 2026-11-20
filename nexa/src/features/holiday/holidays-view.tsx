@@ -212,7 +212,7 @@ export function HolidaysView() {
                           <div className="mt-0.5 flex items-center gap-2">
                             <span
                               className={cn(
-                                "rounded-full px-2 py-0.5 text-xs font-medium",
+                                "rounded-sm px-2 py-0.5 text-xs font-medium",
                                 h.type === "NATIONAL"
                                   ? "bg-info/10 text-info"
                                   : "bg-warning/10 text-warning",

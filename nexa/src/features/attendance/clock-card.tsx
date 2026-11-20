@@ -392,17 +392,17 @@ export function ClockCard() {
           <span className="font-mono text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">{clockLabel}</span>
           {record && <AttendanceStatusBadge status={record.status} />}
           {record?.workMode === "WFH" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
+            <span className="inline-flex items-center gap-1 rounded-sm bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
               <Home className="size-3" /> {WORK_MODE_LABEL.WFH}
             </span>
           )}
           {record?.workMode === "OUTSIDE" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
+            <span className="inline-flex items-center gap-1 rounded-sm bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
               <MapPin className="size-3" /> {WORK_MODE_LABEL.OUTSIDE}
             </span>
           )}
           {record?.earlyLeaveOut && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
+            <span className="inline-flex items-center gap-1 rounded-sm bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
               ออกก่อนเวลา
             </span>
           )}

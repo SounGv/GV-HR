@@ -102,7 +102,7 @@ export function ParticipantList({
                 </div>
               )}
               {p.finalizedAt ? (
-                <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+                <span className="rounded-sm bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                   สรุปผลแล้ว
                 </span>
               ) : (

@@ -81,7 +81,7 @@ export function ApprovalsDesk() {
                 onClick={() => setFilter(c.key)}
                 aria-pressed={filter === c.key}
                 className={cn(
-                  "h-8 rounded-full border px-3 text-[12.5px] font-medium transition-colors",
+                  "h-8 rounded-sm border px-3 text-[12.5px] font-medium transition-colors",
                   filter === c.key
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-card text-foreground hover:border-[#b9c2c9]",
@@ -92,7 +92,7 @@ export function ApprovalsDesk() {
             ))}
           </div>
           {stale > 0 && (
-            <span className="ml-auto rounded-full border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold text-status-late-fg">
+            <span className="ml-auto rounded-sm border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold text-status-late-fg">
               ค้างเกิน 2 วัน <span className="tabular-nums">{stale}</span> รายการ
             </span>
           )}
@@ -153,7 +153,7 @@ export function ApprovalsDesk() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <span className={cn("rounded-full border px-2 py-px text-xs font-semibold", KIND_TONE[item.kind])}>
+                        <span className={cn("rounded-sm border px-2 py-px text-xs font-semibold", KIND_TONE[item.kind])}>
                           {KIND_LABEL[item.kind]}
                         </span>
                       </TableCell>

@@ -191,7 +191,7 @@ function Delta({ value, min = TREND_MIN_POINTS }: { value: number | null; min?: 
   const t = trendOf(value, min);
   const Icon = TREND_ICON[t];
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-px text-xs font-semibold tabular-nums", TREND_CLASS[t])}>
+    <span className={cn("inline-flex items-center gap-1 rounded-sm border px-2 py-px text-xs font-semibold tabular-nums", TREND_CLASS[t])}>
       <Icon className="size-3" aria-hidden="true" />
       {TREND_TEXT[t]} {value > 0 ? "+" : ""}
       {fmt(value)}

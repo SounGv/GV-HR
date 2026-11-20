@@ -65,13 +65,12 @@ const MY_STATUS_LEGEND: { status: MyDayStatus; label: string }[] = [
   { status: "ABSENT", label: "ไม่ลงเวลา" },
 ];
 
+// Bangkok date on server and browser alike: the server runs in UTC, so a plain Date() disagreed with the browser between 00:00 and 07:00 (hydration error #418).
 function todayIso(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
 }
 function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return todayIso().slice(0, 7);
 }
 function addMonth(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number);

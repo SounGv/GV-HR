@@ -1,5 +1,6 @@
 "use client";
 
+import { PageActions } from "@/components/layout/page-chrome";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Building2, Upload, X, Save, Loader2, Palette, MapPin, Phone, Globe2, ClockAlert, CalendarRange, HeartPulse } from "lucide-react";
 import { toast } from "sonner";
@@ -121,13 +122,13 @@ export function CompanyProfileForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form id="company-form" onSubmit={onSubmit} className="max-w-3xl space-y-6">
       {/* Branding */}
       <Section icon={Palette} title="โลโก้และแบรนด์" desc="ใช้ทั่วทั้งระบบ สลิป รายงาน และอีเมล">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <ImageField label="โลโก้ (พื้นสว่าง)" value={form.logoUrl} onPick={(f) => onPickImage("logoUrl", f)} onClear={() => set("logoUrl", "")} disabled={!canEdit} />
           <ImageField label="โลโก้ (พื้นมืด)" dark value={form.logoDarkUrl} onPick={(f) => onPickImage("logoDarkUrl", f)} onClear={() => set("logoDarkUrl", "")} disabled={!canEdit} />
-          <ImageField label="Favicon" value={form.faviconUrl} onPick={(f) => onPickImage("faviconUrl", f)} onClear={() => set("faviconUrl", "")} disabled={!canEdit} />
+          <ImageField label="ไอคอนเว็บไซต์" value={form.faviconUrl} onPick={(f) => onPickImage("faviconUrl", f)} onClear={() => set("faviconUrl", "")} disabled={!canEdit} />
           <ImageField label="ลายเซ็นผู้มีอำนาจ" value={form.signatureUrl} onPick={(f) => onPickImage("signatureUrl", f)} onClear={() => set("signatureUrl", "")} disabled={!canEdit} />
           <ImageField label="ตราประทับบริษัท" value={form.stampUrl} onPick={(f) => onPickImage("stampUrl", f)} onClear={() => set("stampUrl", "")} disabled={!canEdit} />
           <Field label="สีแบรนด์ (HEX)" error={errors.brandColor}>
@@ -197,7 +198,7 @@ export function CompanyProfileForm() {
             <Input value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} inputMode="numeric" maxLength={5} disabled={!canEdit} />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="ลิงก์ Google Maps" error={errors.googleMapsUrl}>
+            <Field label="ลิงก์แผนที่" error={errors.googleMapsUrl}>
               <Input value={form.googleMapsUrl} onChange={(e) => set("googleMapsUrl", e.target.value)} placeholder="https://maps.google.com/..." disabled={!canEdit} />
             </Field>
           </div>
@@ -337,18 +338,13 @@ export function CompanyProfileForm() {
         </div>
       </Section>
 
-      {/* Sticky save bar — md:pr-24 leaves room in case the AI chat panel
-          (AiChatPanel, fixed bottom-6 right-6, opened from the sidebar) is
-          open at the same time, same reservation as FormFooter's. */}
-      <div className="sticky bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-10 -mx-4 flex justify-end border-t border-border bg-card px-4 py-2 md:bottom-0 md:-mx-6 md:px-6 md:pr-24">
-        <div className="flex items-center gap-2">
-          {!canEdit && <span className="px-2 text-xs text-muted-foreground">คุณไม่มีสิทธิ์แก้ไข</span>}
-          <Button type="submit" disabled={!canEdit || updateMut.isPending}>
-            {updateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            บันทึกข้อมูลบริษัท
-          </Button>
-        </div>
-      </div>
+      <PageActions>
+        {!canEdit && <span className="px-2 text-xs text-muted-foreground">คุณไม่มีสิทธิ์แก้ไข</span>}
+        <Button type="submit" form="company-form" disabled={!canEdit || updateMut.isPending}>
+          {updateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+          บันทึกข้อมูลบริษัท
+        </Button>
+      </PageActions>
     </form>
   );
 }

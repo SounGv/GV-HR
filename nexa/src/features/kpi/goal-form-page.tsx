@@ -165,7 +165,7 @@ export function GoalFormPage({ goal, parentGoal }: { goal?: Goal; parentGoal?: P
               <b>{parentGoal!.title}</b> · รอบ {parentGoal!.cycle}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <FormField
                 control={form.control}
                 name="employeeId"

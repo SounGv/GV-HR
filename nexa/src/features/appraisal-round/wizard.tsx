@@ -379,7 +379,7 @@ function Hero({
         >
           {draft.name.trim() || round.name}
         </h1>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-bold">
+        <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted px-2.5 py-0.5 text-xs font-bold">
           <span className="size-1.5 rounded-full bg-status-late-dot" aria-hidden="true" /> ฉบับร่าง
         </span>
         <span
@@ -493,31 +493,16 @@ function Readiness({
 }) {
   const passed = round.checks.filter((c) => c.ok).length;
   const total = round.checks.length;
-  const circ = 2 * Math.PI * 17;
   return (
     <aside className="grid gap-3 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]" aria-label="ความพร้อมก่อนเปิดรอบ">
       <Card className="gap-3 rounded-lg p-4">
-        <div className="flex items-center gap-3">
-          <svg viewBox="0 0 42 42" className="size-[42px] shrink-0" aria-hidden="true">
-            <circle cx="21" cy="21" r="17" fill="none" stroke="var(--muted)" strokeWidth="5" />
-            <circle
-              cx="21"
-              cy="21"
-              r="17"
-              fill="none"
-              stroke={passed === total ? "var(--success)" : "var(--ring)"}
-              strokeWidth="5"
-              strokeLinecap="round"
-              strokeDasharray={`${(passed / total) * circ} ${circ}`}
-              transform="rotate(-90 21 21)"
-              className="transition-[stroke-dasharray] duration-500"
-            />
-          </svg>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">ความพร้อมก่อนเปิดรอบ</p>
-            <p className="text-muted-foreground text-xs tabular-nums">
-              ผ่าน {passed} จาก {total} ข้อ{dirty ? " · ยังไม่ได้บันทึกการแก้ล่าสุด" : ""}
-            </p>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">ความพร้อมก่อนเปิดรอบ</p>
+          <p className="text-muted-foreground text-xs tabular-nums">
+            ผ่าน {passed} จาก {total} ข้อ{dirty ? " · ยังไม่ได้บันทึกการแก้ล่าสุด" : ""}
+          </p>
+          <div className="bg-muted mt-2 h-1.5 overflow-hidden rounded-sm" role="progressbar" aria-label="ความพร้อม" aria-valuemin={0} aria-valuemax={total} aria-valuenow={passed}>
+            <div className="h-full bg-primary transition-[width] duration-500" style={{ width: `${total ? (passed / total) * 100 : 0}%` }} />
           </div>
         </div>
         <ul className="grid gap-0.5">
@@ -591,7 +576,7 @@ function StepSetup({
   return (
     <div>
       <SectionHeading title="ตั้งรอบ" hint="ชื่อ แบบประเมิน ช่วงเวลา และการแจ้งเตือน" />
-      <div className="mt-5 grid max-w-3xl gap-4 md:grid-cols-2">
+      <div className="mt-5 grid max-w-3xl min-w-0 gap-4 md:grid-cols-2 [&>*]:min-w-0">
         <label className="grid gap-1.5 text-sm font-medium">
           ชื่อรอบ
           <Input
@@ -658,7 +643,7 @@ function StepSetup({
       {draft.start && draft.end && !badDates && (
         <>
           <Sub>ไทม์ไลน์ของรอบ</Sub>
-          <Timeline start={draft.start} end={draft.end} remind={draft.remind} />
+          <div className="min-w-0 overflow-x-auto"><Timeline start={draft.start} end={draft.end} remind={draft.remind} /></div>
         </>
       )}
 
@@ -936,7 +921,7 @@ function StepPeople({
           {chosenDivs.map((d) => d.name).join(" · ") || "ยังไม่ได้เลือก"}
         </span>
         {noManager > 0 && (
-          <span className="ml-auto rounded-full bg-status-late-bg px-2.5 py-px text-xs font-bold text-status-late-fg">
+          <span className="ml-auto rounded-sm bg-status-late-bg px-2.5 py-px text-xs font-bold text-status-late-fg">
             {noManager} คนยังไม่มีหัวหน้า
           </span>
         )}
@@ -1071,7 +1056,7 @@ function PeopleList({
                         {p.name} <span className="text-muted-foreground">{p.code}</span>
                       </span>
                       {!p.hasManager && (
-                        <span className="shrink-0 rounded-full bg-status-late-bg px-2 py-px text-xs font-semibold text-status-late-fg">
+                        <span className="shrink-0 rounded-sm bg-status-late-bg px-2 py-px text-xs font-semibold text-status-late-fg">
                           ไม่มีหัวหน้า
                         </span>
                       )}
@@ -1121,74 +1106,6 @@ function PeopleList({
 
 /* ───────────────────────── step 3: who rates whom ───────────────────────── */
 
-/** Small "who rates you" picture for a preset card: manager above, peers beside, a report below, you in the middle. */
-function PresetDiagram({ level }: { level: number }) {
-  const node = (x: number, y: number, label: string, on: boolean) => (
-    <g>
-      <circle cx={x} cy={y} r="11" fill={on ? "var(--primary)" : "var(--muted)"} />
-      <text
-        x={x}
-        y={y + 3.5}
-        textAnchor="middle"
-        fontSize="8.5"
-        fontWeight="700"
-        fill={on ? "#fff" : "var(--muted-foreground)"}
-      >
-        {label}
-      </text>
-    </g>
-  );
-  const arrow = (x1: number, y1: number, x2: number, y2: number, on: boolean) => (
-    <line
-      x1={x1}
-      y1={y1}
-      x2={x2}
-      y2={y2}
-      stroke={on ? "var(--ring)" : "var(--border)"}
-      strokeWidth="2"
-      markerEnd={on ? "url(#pd-ah)" : undefined}
-    />
-  );
-  return (
-    <svg viewBox="0 0 160 86" className="my-1.5 block h-[82px] w-full" aria-hidden="true">
-      <defs>
-        <marker
-          id="pd-ah"
-          viewBox="0 0 8 8"
-          refX="6"
-          refY="4"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto"
-        >
-          <path d="M0 0L8 4L0 8z" fill="var(--ring)" />
-        </marker>
-      </defs>
-      {arrow(80, 24, 80, 32, true)}
-      {arrow(40, 43, 66, 43, level >= 2)}
-      {arrow(120, 43, 94, 43, level >= 2)}
-      {arrow(80, 74, 80, 58, level >= 3)}
-      {node(80, 13, "หน.", true)}
-      {node(28, 43, "เพื่อน", level >= 2)}
-      {node(132, 43, "เพื่อน", level >= 2)}
-      {node(80, 74, "ลูก", level >= 3)}
-      <circle cx="80" cy="45" r="12" fill="var(--primary)" />
-      <text x="80" y="48.5" textAnchor="middle" fontSize="8.5" fontWeight="700" fill="var(--primary-foreground)">
-        คุณ
-      </text>
-      {level >= 1 && (
-        <path
-          d="M92 40c10-8 12 6 1 9"
-          fill="none"
-          stroke="var(--ring)"
-          strokeWidth="2"
-          markerEnd="url(#pd-ah)"
-        />
-      )}
-    </svg>
-  );
-}
-
 function StepRaters({
   round,
   draft,
@@ -1221,7 +1138,7 @@ function StepRaters({
         aria-label="รูปแบบการประเมิน"
         className="mt-5 grid grid-cols-2 gap-2.5 xl:grid-cols-4"
       >
-        {PRESET_KEYS.map((k, i) => (
+        {PRESET_KEYS.map((k) => (
           <button
             key={k}
             type="button"
@@ -1237,7 +1154,7 @@ function StepRaters({
           >
             {k === "90" && (
               <span
-                className="absolute top-3 right-3 rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground"
+                className="absolute top-3 right-3 rounded-sm bg-primary px-2 text-xs font-bold text-primary-foreground"
               >
                 แนะนำรายเดือน
               </span>
@@ -1246,7 +1163,7 @@ function StepRaters({
             <span className="ml-1.5 text-sm font-bold text-primary">
               {PRESET_TEXT[k].name}
             </span>
-            <PresetDiagram level={i} />
+            <span className="my-1.5 block text-sm">ผู้ประเมิน: {PRESETS[k].map((x) => RATER_LABEL[x]).join(" · ")}</span>
             <span className="text-muted-foreground block min-h-[34px] text-xs leading-snug">
               {PRESET_TEXT[k].hint}
             </span>
@@ -1372,11 +1289,11 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
   return (
     <div className="border-border overflow-hidden rounded-lg border">
       <div className="border-border bg-muted/60 flex flex-wrap items-center gap-2 border-b px-4 py-2.5">
-        <span className="rounded-full border border-status-normal-border bg-status-normal-bg px-2.5 py-px text-xs font-bold text-success">
+        <span className="rounded-sm border border-status-normal-border bg-status-normal-bg px-2.5 py-px text-xs font-bold text-success">
           ✓ {ready} คนพร้อม
         </span>
         {missing.length > 0 && (
-          <span className="rounded-full border border-status-late-border bg-status-late-bg px-2.5 py-px text-xs font-bold text-status-late-fg">
+          <span className="rounded-sm border border-status-late-border bg-status-late-bg px-2.5 py-px text-xs font-bold text-status-late-fg">
             {missing.length} คนยังไม่มีหัวหน้าประเมิน
           </span>
         )}
@@ -1474,7 +1391,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
 
 function Pill({ children }: { children: ReactNode }) {
   return (
-    <span className="bg-muted inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap">
+    <span className="bg-muted inline-flex rounded-sm px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap">
       {children}
     </span>
   );
@@ -1637,7 +1554,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
 
         {/* What a rater receives: same title and body as sendInvitations(). */}
         <figure
-          className="mx-auto w-full max-w-[280px] rounded-lg bg-[var(--device-frame)] p-2.5 "
+          className="mx-auto w-full max-w-[280px] rounded-sm border border-border bg-card p-0 "
           aria-label="ตัวอย่างข้อความที่ผู้ประเมินได้รับ"
         >
           <div className="min-h-[300px] rounded-lg bg-muted px-3 py-3.5 text-foreground">

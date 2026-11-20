@@ -329,10 +329,10 @@ export function TaskForm({
                 <p className="text-muted-foreground text-sm">{task.personRole}</p>
               )}
               <p className="mt-1.5 flex flex-wrap gap-1.5">
-                <span className="rounded-full bg-accent px-2.5 text-xs font-bold text-primary">
+                <span className="rounded-sm bg-accent px-2.5 text-xs font-bold text-primary">
                   {questions.length} หัวข้อ
                 </span>
-                <span className="rounded-full bg-accent px-2.5 text-xs font-bold text-primary">
+                <span className="rounded-sm bg-accent px-2.5 text-xs font-bold text-primary">
                   ราว {Math.max(2, Math.ceil(questions.length * 0.6))} นาที
                 </span>
               </p>
@@ -610,7 +610,7 @@ export function QuestionStep({
   return (
     <div className="gv-rise space-y-3.5">
       <div>
-        <span className="inline-flex rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-primary tabular-nums">
+        <span className="inline-flex rounded-sm bg-accent px-2.5 py-0.5 text-xs font-bold text-primary tabular-nums">
           ข้อ {index + 1} จาก {total}
           {q.section ? ` · ${q.section}` : ""}
           {!q.required && " · ไม่บังคับ"}
@@ -682,7 +682,7 @@ export function QuestionStep({
                     {on && (
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-full px-2 text-xs leading-relaxed font-bold",
+                          "inline-flex items-center gap-1 rounded-sm px-2 text-xs leading-relaxed font-bold",
                           low
                             ? "bg-status-absent-bg text-status-absent-fg"
                             : "bg-accent text-accent-foreground",

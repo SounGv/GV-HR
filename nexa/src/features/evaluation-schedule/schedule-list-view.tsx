@@ -79,7 +79,7 @@ export function ScheduleTemplateListView() {
                   <div className="flex items-center gap-2">
                     <span className="truncate font-medium text-foreground">{t.name}</span>
                     {!t.active && (
-                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      <span className="shrink-0 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                         หยุดชั่วคราว
                       </span>
                     )}

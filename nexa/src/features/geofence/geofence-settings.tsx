@@ -99,8 +99,8 @@ function BranchGeofenceCard({ branch }: { branch: Geofence }) {
         <span
           className={
             hasCoords
-              ? "rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success"
-              : "rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
+              ? "rounded-sm bg-success/10 px-2.5 py-1 text-xs font-medium text-success"
+              : "rounded-sm bg-muted px-2.5 py-1 text-xs text-muted-foreground"
           }
         >
           {hasCoords ? "เปิดการจำกัดพื้นที่" : "ปิด (ลงเวลาเข้างานได้ทุกที่)"}
@@ -110,10 +110,10 @@ function BranchGeofenceCard({ branch }: { branch: Geofence }) {
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Labeled label="ละติจูด (Latitude)">
+            <Labeled label="ละติจูด">
               <Input value={lat} onChange={(e) => setLat(e.target.value)} inputMode="decimal" placeholder="13.736717" aria-label="ละติจูด" />
             </Labeled>
-            <Labeled label="ลองจิจูด (Longitude)">
+            <Labeled label="ลองจิจูด">
               <Input value={lng} onChange={(e) => setLng(e.target.value)} inputMode="decimal" placeholder="100.523186" aria-label="ลองจิจูด" />
             </Labeled>
             <Labeled label="รัศมี (เมตร)">

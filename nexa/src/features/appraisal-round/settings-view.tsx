@@ -1,5 +1,6 @@
 "use client";
 
+import { PageActions } from "@/components/layout/page-chrome";
 import { useState } from "react";
 import { Check, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -188,11 +189,11 @@ function SettingsForm({ initial }: { initial: SettingsView }) {
         </div>
 
         {canEdit ? (
-          <div className="flex justify-end">
+          <PageActions>
             <Button className="h-11 md:h-9" onClick={onSave} disabled={save.isPending}>
               บันทึกการตั้งค่า
             </Button>
-          </div>
+          </PageActions>
         ) : (
           <p className="text-sm text-muted-foreground">คุณดูได้อย่างเดียว การแก้ไขต้องมีสิทธิ์แก้ไขรอบประเมิน</p>
         )}

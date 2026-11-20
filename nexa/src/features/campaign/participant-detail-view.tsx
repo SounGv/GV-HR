@@ -811,7 +811,7 @@ function ResponseCard({
               <AttachmentLink
                 key={i}
                 url={url}
-                className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/70"
+                className="flex items-center gap-1 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/70"
               >
                 <FileText className="size-3.5" /> หลักฐาน {i + 1}
               </AttachmentLink>

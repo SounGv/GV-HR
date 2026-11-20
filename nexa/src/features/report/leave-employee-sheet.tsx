@@ -166,7 +166,7 @@ export function LeaveEmployeeSheet({
                             </span>
                             <span
                               className={cn(
-                                "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                                "inline-flex rounded-sm border px-2.5 py-0.5 text-xs font-semibold",
                                 STATUS_TONE[r.status] ?? "border-border bg-muted text-muted-foreground",
                               )}
                             >

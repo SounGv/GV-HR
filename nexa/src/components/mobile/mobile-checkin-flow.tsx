@@ -408,7 +408,7 @@ function CameraStep({
         type="button"
         onClick={onOpenMap}
         aria-label="กลับไปดูแผนที่"
-        className={cn(CAM_GLASS, "absolute top-[calc(env(safe-area-inset-top)+4.75rem)] left-1/2 z-10 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-full px-4 text-sm font-semibold active:scale-95")}
+        className={cn(CAM_GLASS, "absolute top-[calc(env(safe-area-inset-top)+4.75rem)] left-1/2 z-10 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-sm px-4 text-sm font-semibold active:scale-95")}
       >
         {geo.distance != null && geo.radius != null ? (
           geo.distance <= geo.radius ? (
@@ -479,7 +479,7 @@ function FullMapView({ geo, stepIndex, onClose, onNext }: { geo: Geo; stepIndex:
       ) : (
         <div className="absolute inset-0 gv-lg-bg" />
       )}
-      <div className="gv-lg absolute inset-x-3.5 top-[calc(env(safe-area-inset-top)+0.625rem)] z-10 flex items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5">
+      <div className="gv-lg absolute inset-x-3.5 top-[calc(env(safe-area-inset-top)+0.625rem)] z-10 flex items-center gap-2.5 rounded-sm py-1.5 pr-4 pl-1.5">
         <button type="button" onClick={onClose} aria-label="ยกเลิก" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--lg-glass-strong)] active:scale-95">
           <X className="size-5" />
         </button>
@@ -630,7 +630,7 @@ function OffsiteStep({
         <div className="absolute inset-0 gv-lg-bg" />
       )}
       <div className="absolute inset-x-3.5 top-[calc(env(safe-area-inset-top)+0.625rem)]">
-        <div className="gv-lg flex items-center gap-2.5 rounded-full px-3.5 py-2">
+        <div className="gv-lg flex items-center gap-2.5 rounded-sm px-3.5 py-2">
           <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[#b88200] text-white ">
             <AlertTriangle className="size-[18px]" aria-hidden="true" />
           </span>
@@ -751,7 +751,7 @@ function SuccessStep({
           insets={{ top: 60, bottom: 400 }}
           className="absolute inset-0"
         >
-          <span className="absolute top-[calc(env(safe-area-inset-top)+0.75rem)] left-3 z-10 inline-flex min-h-[30px] items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-[#17774a] ">
+          <span className="absolute top-[calc(env(safe-area-inset-top)+0.75rem)] left-3 z-10 inline-flex min-h-[30px] items-center gap-1.5 rounded-sm bg-white/90 px-2.5 text-xs font-bold text-[#17774a] ">
             <CheckCircle2 className="size-4" aria-hidden="true" /> บันทึกที่จุดนี้ {fmtTime(time)}
           </span>
         </TileMap>
@@ -777,7 +777,7 @@ function SuccessStep({
           <p className="text-[34px] leading-tight font-bold tabular-nums">
             {fmtTime(time)} <span className="text-base font-semibold">น.</span>
           </p>
-          {isLate && <span className="rounded-full bg-[#f5b700]/25 px-3 py-1 text-xs font-bold text-[#8a6100] dark:text-[#f5b700]">มาสาย</span>}
+          {isLate && <span className="rounded-sm bg-[#f5b700]/25 px-3 py-1 text-xs font-bold text-[#8a6100] dark:text-[#f5b700]">มาสาย</span>}
         </div>
         <dl className="mt-3 grid grid-cols-3 rounded-md border border-[var(--lg-edge)] bg-[var(--lg-glass-strong)] py-2.5 text-center">
           <div>

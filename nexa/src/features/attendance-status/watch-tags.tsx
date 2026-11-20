@@ -26,7 +26,7 @@ export function WatchTags({ person }: { person: WatchPerson }) {
           <span
             key={key}
             className={cn(
-              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold",
+              "inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-xs font-semibold",
               strong ? meta.surface : "border-border bg-card text-muted-foreground",
             )}
           >

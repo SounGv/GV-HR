@@ -165,7 +165,7 @@ function MyRequests() {
               type="button"
               aria-pressed={showCancelled}
               onClick={() => setShowCancelled((v) => !v)}
-              className="inline-flex min-h-11 items-center rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground aria-pressed:border-transparent aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+              className="inline-flex min-h-11 items-center rounded-sm border border-border bg-card px-4 text-sm font-semibold text-foreground aria-pressed:border-transparent aria-pressed:bg-primary aria-pressed:text-primary-foreground"
             >
               {showCancelled ? "ซ่อนที่ยกเลิก" : `แสดงที่ยกเลิก (${cancelledCount})`}
             </button>

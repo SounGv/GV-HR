@@ -168,7 +168,7 @@ export function BenefitsReportView() {
             <SelectContent>
               {YEARS.map((y) => (
                 <SelectItem key={y} value={String(y)}>
-                  ปี {y}
+                  ปี {y + 543}
                 </SelectItem>
               ))}
             </SelectContent>

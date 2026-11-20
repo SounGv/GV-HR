@@ -137,7 +137,7 @@ function MyScheduleView({ onGoRoster }: { onGoRoster?: () => void }) {
                 <TableCell>
                   {tpl ? (
                     <span
-                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-medium text-white"
+                      className="inline-flex items-center gap-1.5 rounded-sm px-2.5 py-0.5 text-sm font-medium text-white"
                       style={{ backgroundColor: tpl.color }}
                     >
                       {tpl.name}
@@ -174,7 +174,7 @@ function MyScheduleView({ onGoRoster }: { onGoRoster?: () => void }) {
             <div className="flex items-center gap-2">
               {tpl ? (
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium text-white"
+                  className="inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-sm font-medium text-white"
                   style={{ backgroundColor: tpl.color }}
                 >
                   {tpl.name} · {tpl.startTime}-{tpl.endTime}
@@ -297,7 +297,7 @@ function SwapRequestRow({
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className={cn("rounded-full px-2 py-0.5 text-sm font-medium", SWAP_STATUS_TONE[req.status])}>
+        <span className={cn("rounded-sm px-2 py-0.5 text-sm font-medium", SWAP_STATUS_TONE[req.status])}>
           {SWAP_STATUS_LABEL[req.status]}
         </span>
         {children}
@@ -536,7 +536,7 @@ function RosterGrid() {
         {templates.map((t) => (
           <span
             key={t.id}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border py-0.5 pr-0.5 pl-3 text-sm"
+            className="inline-flex items-center gap-1.5 rounded-sm border border-border py-0.5 pr-0.5 pl-3 text-sm"
           >
             <span className="size-2.5 rounded-full" style={{ backgroundColor: t.color }} />
             <span className="font-medium">{t.name}</span>

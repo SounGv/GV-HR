@@ -1,5 +1,6 @@
 "use client";
 
+import { roleLabel as roleName } from "@/lib/role-label";
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -39,7 +40,7 @@ function Stepper({ req }: { req: ApprovalRequest }) {
               <span className={cn("font-medium", isCurrent && "text-primary")}>
                 {i + 1}. {s.name}
               </span>
-              <span className="ml-1 text-xs text-muted-foreground">({s.approverRole})</span>
+              <span className="ml-1 text-xs text-muted-foreground">({roleName(s.approverRole)})</span>
               {s.decidedByName && (
                 <span className="ml-1 text-xs text-muted-foreground">
                   · {s.status === "APPROVED" ? "อนุมัติโดย" : "ไม่อนุมัติโดย"} {s.decidedByName}

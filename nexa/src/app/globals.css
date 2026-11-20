@@ -186,10 +186,10 @@
   /* Edges that can actually be seen: surfaces differ from the page by tone only (1.08:1), so fields,
      outline buttons and cards carry a border or shadow of their own. Field border is 3.1:1 on white. */
   --field-border: #8b939c;
-  --field-bg: #eef3fb;
-  --field-shadow: inset 0 1px 2px rgba(19, 21, 22, 0.06);
+  --field-bg: #ffffff;
+  --field-shadow: none;
   /* Depth from two cheap shadows plus a 1px inset top highlight (no blur filters). */
-  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06);
+  --card-shadow: none;
   /* Secondary text that must stay easy to read at 14px (inactive tabs): 8.8:1 on white. */
   --muted-strong: #444b54;
   /* Lines between table rows: visible but quiet (1.4:1). */
@@ -556,7 +556,7 @@
 .theme-flip7 {
   /* Owner-approved home depth (home-assistant-mock.html, 14 Nov 2026): raised white cards
      on a teal-tinted ground with two soft glows, still blur-free. */
-  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06);
+  --card-shadow: none;
   --card-hover-border: #b9c2c9;
   --row-hover: #eef6fd;
   --page-band: #f7f7f7;
@@ -579,7 +579,7 @@
 .theme-flip7 .gv-panel {
   background: var(--card);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 .theme-flip7 .gv-panel-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -607,8 +607,7 @@
 .gv-teal-surface {
   background: #0d47a1;
   color: #fff;
-  box-shadow: 0 1px 2px rgba(21, 101, 192, 0.2), 0 6px 14px -8px rgba(21, 101, 192, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  box-shadow: none;
 }
 .gv-lift {
   transition: border-color 0.15s ease;

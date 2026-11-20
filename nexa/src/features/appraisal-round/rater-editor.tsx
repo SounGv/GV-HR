@@ -94,10 +94,10 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
           <span className="text-muted-foreground text-sm">ยังไม่ได้ตั้ง ใช้ที่ระบบจับคู่จากผังองค์กร</span>
         ) : (
           <>
-            <span className="rounded-full border border-primary bg-card px-2.5 py-px text-xs font-semibold text-primary tabular-nums">เพิ่ม {m.manual.added} คู่</span>
-            <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-px text-xs font-semibold tabular-nums">ตัดออก {m.manual.removed} คู่</span>
+            <span className="rounded-sm border border-primary bg-card px-2.5 py-px text-xs font-semibold text-primary tabular-nums">เพิ่ม {m.manual.added} คู่</span>
+            <span className="bg-muted text-muted-foreground rounded-sm px-2.5 py-px text-xs font-semibold tabular-nums">ตัดออก {m.manual.removed} คู่</span>
             {m.manual.ignored > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-status-late-bg px-2.5 py-px text-xs font-semibold text-status-late-fg tabular-nums">
+              <span className="inline-flex items-center gap-1 rounded-sm bg-status-late-bg px-2.5 py-px text-xs font-semibold text-status-late-fg tabular-nums">
                 <TriangleAlert className="size-3" aria-hidden="true" /> ใช้ไม่ได้ {m.manual.ignored} คู่ (ประเภทที่รอบนี้ไม่ได้เลือก หรือผู้ประเมินไม่ได้ทำงานแล้ว)
               </span>
             )}
@@ -255,7 +255,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
                   </td>
                   <td className="border-border border-r px-4 py-2">
                     {r.raters.length === 0 ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-status-late-bg px-2.5 py-px text-xs font-semibold text-status-late-fg">
+                      <span className="inline-flex items-center gap-1 rounded-sm bg-status-late-bg px-2.5 py-px text-xs font-semibold text-status-late-fg">
                         <X className="size-3" aria-hidden="true" /> ยังไม่มีผู้ประเมิน
                       </span>
                     ) : (
@@ -327,7 +327,7 @@ function RaterChips({
       {row.raters.map((x) => (
         <li
           key={`${x.id}-${x.type}`}
-          className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-px text-sm", x.manual ? "border-primary bg-accent" : "border-border bg-card")}
+          className={cn("inline-flex items-center gap-1 rounded-sm border px-2.5 py-px text-sm", x.manual ? "border-primary bg-accent" : "border-border bg-card")}
         >
           <span className="text-muted-foreground text-xs">{RATER_LABEL[x.type]}</span>
           <span>{x.id === row.employeeId ? "ตนเอง" : x.name}</span>
@@ -494,7 +494,7 @@ function ImportPairsDialog({
           </div>
           {text.trim() && (
             <div className="space-y-1.5 text-sm" aria-live="polite">
-              <p className="inline-flex items-center gap-1 rounded-full bg-status-normal-bg px-2.5 py-px text-xs font-semibold text-success tabular-nums">✓ ใช้ได้ {usable.length} คู่</p>
+              <p className="inline-flex items-center gap-1 rounded-sm bg-status-normal-bg px-2.5 py-px text-xs font-semibold text-success tabular-nums">✓ ใช้ได้ {usable.length} คู่</p>
               {notInRound > 0 && <p className="text-status-late-fg text-xs">{notInRound} คู่ข้าม เพราะผู้ถูกประเมินไม่ได้อยู่ในรอบนี้ (เพิ่มในขั้น “เลือกคน” ก่อน)</p>}
               {typeNotUsed > 0 && <p className="text-status-late-fg text-xs">{typeNotUsed} คู่ข้าม เพราะรอบนี้ไม่ได้เลือกประเภทนั้น</p>}
               {parsed.problems.length > 0 && (

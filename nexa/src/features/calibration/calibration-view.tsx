@@ -87,7 +87,7 @@ function SessionList({ onSelect }: { onSelect: (id: string) => void }) {
                     {s.campaign.name} · {s.campaign.cycle}
                   </p>
                 </div>
-                <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-medium", STATUS_TONE[s.status])}>
+                <span className={cn("shrink-0 rounded-sm px-2 py-0.5 text-xs font-medium", STATUS_TONE[s.status])}>
                   {STATUS_LABEL[s.status]}
                 </span>
               </div>
@@ -280,7 +280,7 @@ function ParticipantRow({
           <p className="text-xs text-muted-foreground">
             {participant.employee.employeeCode} · คะแนนเดิม {participant.overallScore ?? "-"}{" "}
             {participant.band && (
-              <span className={cn("ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium", toneClass(bandTone(participant.band)))}>
+              <span className={cn("ml-1 rounded-sm px-1.5 py-0.5 text-xs font-medium", toneClass(bandTone(participant.band)))}>
                 {participant.band}
               </span>
             )}

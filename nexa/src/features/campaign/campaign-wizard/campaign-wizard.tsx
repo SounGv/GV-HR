@@ -168,7 +168,7 @@ export function CampaignWizard() {
           <span
             key={s}
             className={
-              "rounded-full px-2.5 py-1 text-xs font-medium " +
+              "rounded-sm px-2.5 py-1 text-xs font-medium " +
               (i === stepIndex ? "bg-primary text-primary-foreground" : i < stepIndex ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")
             }
           >

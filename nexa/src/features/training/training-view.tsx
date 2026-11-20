@@ -1,5 +1,6 @@
 "use client";
 
+import { PageActions } from "@/components/layout/page-chrome";
 import { useState } from "react";
 import Link from "next/link";
 import { Plus, GraduationCap, Pencil, Trash2, Search } from "lucide-react";
@@ -87,10 +88,10 @@ export function TrainingView() {
             <TabsTrigger value="mine">การอบรมของฉัน</TabsTrigger>
           </TabsList>
           {canCreate && (
-            <Button size="sm" render={<Link href="/training/new" />}>
+            <PageActions><Button size="sm" render={<Link href="/training/new" />}>
               <Plus className="size-4" />
               สร้างหลักสูตร
-            </Button>
+            </Button></PageActions>
           )}
         </div>
 

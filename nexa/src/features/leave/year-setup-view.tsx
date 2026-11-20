@@ -55,7 +55,7 @@ export function YearSetupView() {
         carryAnnualCap: cap,
         expectedInsert: plan.to_insert,
       });
-      toast.success(`สร้างสิทธิ์ลาปี ${toYear} แล้ว ${res.data.inserted} แถว`);
+      toast.success(`สร้างสิทธิ์ลาปี ${toYear + 543} แล้ว ${res.data.inserted} แถว`);
       setConfirm(false);
       await runPreview();
     } catch (err) {
@@ -77,10 +77,12 @@ export function YearSetupView() {
           <label className="space-y-1.5 text-sm font-medium">
             จากปี
             <Input type="number" className="h-11 md:h-9" value={fromYear} onChange={(e) => setFromYear(Number(e.target.value))} />
+            <span className="text-muted-foreground block text-xs">พ.ศ. {fromYear + 543}</span>
           </label>
           <label className="space-y-1.5 text-sm font-medium">
             เป็นปี
             <Input type="number" className="h-11 md:h-9" value={toYear} onChange={(e) => setToYear(Number(e.target.value))} />
+            <span className="text-muted-foreground block text-xs">พ.ศ. {toYear + 543}</span>
           </label>
           <label className="space-y-1.5 text-sm font-medium">
             ยกยอดลาพักร้อนได้ไม่เกิน (วัน)
@@ -97,7 +99,7 @@ export function YearSetupView() {
       {plan && (
         <Card className="gap-4 p-4" aria-label="ตัวอย่างสิ่งที่จะสร้าง">
           <h2 className="text-base font-semibold">
-            ตัวอย่าง: ปี {plan.fromYear} → ปี {plan.toYear}
+            ตัวอย่าง: ปี {plan.fromYear + 543} ไปปี {plan.toYear + 543}
           </h2>
           <dl className="grid gap-3 text-sm sm:grid-cols-3">
             <div>
@@ -169,7 +171,7 @@ export function YearSetupView() {
               {fresh ? "ตัวอย่างตรงกับค่าที่ตั้งไว้" : "เปลี่ยนค่าแล้ว กรุณากด “ดูตัวอย่าง” ใหม่"}
             </p>
             <Button className="h-11 md:h-9" disabled={!fresh || plan.to_insert === 0} onClick={() => setConfirm(true)}>
-              สร้างสิทธิ์ลาปี {plan.toYear}
+              สร้างสิทธิ์ลาปี {plan.toYear + 543}
             </Button>
           </div>
         </Card>
@@ -178,7 +180,7 @@ export function YearSetupView() {
       <ConfirmDialog
         open={confirm}
         onOpenChange={setConfirm}
-        title={`สร้างสิทธิ์ลาปี ${toYear}?`}
+        title={`สร้างสิทธิ์ลาปี ${toYear + 543}?`}
         description={plan ? `จะสร้างแถวใหม่ ${plan.to_insert} แถว ไม่แก้ไขหรือลบแถวเดิม` : undefined}
         confirmLabel="สร้างสิทธิ์"
         onConfirm={apply}

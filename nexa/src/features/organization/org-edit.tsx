@@ -38,7 +38,7 @@ const MOVED_ROW = "border-[#fde68a] bg-[#fffbeb] dark:border-amber-500/40 dark:b
 
 export function MovedTag() {
   return (
-    <span className="shrink-0 rounded-full bg-[#fef3c7] px-1.5 text-xs leading-[18px] font-bold text-[#92400e] dark:bg-amber-500/20 dark:text-amber-200">
+    <span className="shrink-0 rounded-sm bg-[#fef3c7] px-1.5 text-xs leading-[18px] font-bold text-[#92400e] dark:bg-amber-500/20 dark:text-amber-200">
       ย้ายแล้ว
     </span>
   );

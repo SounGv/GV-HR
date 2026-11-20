@@ -21,47 +21,22 @@ type ReportStatus = AttendanceStatus;
  * Class names are written out in full on purpose — Tailwind only generates
  * classes it can find as whole strings.
  */
-const TONE: Partial<
-  Record<ReportStatus, { row: string; bar: string; card: string; header: string }>
-> = {
-  LATE: {
-    row: "bg-status-late-bg hover:bg-[color-mix(in_oklab,var(--status-late-bg)_92%,var(--foreground))]",
-    bar: "",
-    card: "border-status-late-border bg-status-late-bg",
-    header: "border-status-late-border bg-foreground/5",
-  },
-  ABSENT: {
-    row: "bg-status-absent-bg hover:bg-[color-mix(in_oklab,var(--status-absent-bg)_92%,var(--foreground))]",
-    bar: "",
-    card: "border-status-absent-border bg-status-absent-bg",
-    header: "border-status-absent-border bg-foreground/5",
-  },
-  ON_LEAVE: {
-    row: "bg-status-leave-bg hover:bg-[color-mix(in_oklab,var(--status-leave-bg)_92%,var(--foreground))]",
-    bar: "",
-    card: "border-status-leave-border bg-status-leave-bg",
-    header: "border-status-leave-border bg-foreground/5",
-  },
-};
-
-function toneOf(row: Row) {
-  const key = row.statusKey as ReportStatus | undefined;
-  return key ? TONE[key] : undefined;
-}
-
 /** Full-row tint for a daily-report table row (undefined for a normal day). */
 export function dailyRowClass(row: Row): string | undefined {
-  return toneOf(row)?.row;
+  // No colour on the whole row (Favpo shows status as a word, not a tinted row); the status chip carries it.
+  void row;
+  return undefined;
 }
 
 /** Thick left edge, applied to the first cell of a tinted row. */
 export function dailyRowBarClass(row: Row): string | undefined {
-  return toneOf(row)?.bar;
+  void row;
+  return undefined;
 }
 
 export function dailyCardClass(row: Row): { card?: string; header?: string } {
-  const t = toneOf(row);
-  return { card: t?.card, header: t?.header };
+  void row;
+  return {};
 }
 
 const BADGE: Record<ReportStatus, { icon: typeof Clock; className: string }> = {
@@ -85,7 +60,7 @@ export function ReportStatusBadge({ statusKey, fallback }: { statusKey?: string;
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
         style.className,
       )}
     >

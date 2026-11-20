@@ -85,7 +85,7 @@ function ScanGroup({ label, why, bad, rows, sub }: { label: string; why: string;
   return (
     <div className="space-y-1 py-1.5">
       <p className="flex flex-wrap items-center gap-2 text-xs leading-relaxed text-muted-foreground">
-        <span className={cn("rounded-full border px-2 py-0.5 font-semibold", bad ? STATUS_META.ABSENT.surface : STATUS_META.LATE.surface)}>
+        <span className={cn("rounded-sm border px-2 py-0.5 font-semibold", bad ? STATUS_META.ABSENT.surface : STATUS_META.LATE.surface)}>
           {bad ? "✕" : "!"} {label} {rows.length}
         </span>
         {why}
@@ -100,7 +100,7 @@ function ScanGroup({ label, why, bad, rows, sub }: { label: string; why: string;
             seed={r.employeeId}
             sub={`${r.department} · ${sub(r)}`}
             tag={
-              <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums", STATUS_META.LATE.surface)}>
+              <span className={cn("shrink-0 rounded-sm border px-2 py-0.5 text-xs font-semibold tabular-nums", STATUS_META.LATE.surface)}>
                 {fmtDay(r.dayIso)}
               </span>
             }
@@ -184,7 +184,7 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
               tag={
                 <span
                   className={cn(
-                    "shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold",
+                    "shrink-0 rounded-sm border px-2 py-0.5 text-xs font-semibold",
                     r.status === "APPROVED" ? STATUS_META.NORMAL.surface : STATUS_META.NOT_YET.surface,
                   )}
                 >

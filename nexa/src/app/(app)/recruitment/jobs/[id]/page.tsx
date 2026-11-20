@@ -45,7 +45,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         status={
           <span
             className={cn(
-              "inline-flex rounded-full px-2.5 py-1 text-xs font-medium",
+              "inline-flex rounded-sm px-2.5 py-1 text-xs font-medium",
               job.status === "OPEN" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
             )}
           >

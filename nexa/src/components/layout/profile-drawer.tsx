@@ -200,11 +200,11 @@ export function ProfileDrawer() {
                   {user.employee?.department?.name ? ` · ${user.employee.department.name}` : ""}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-foreground ring-1 ring-border">
+                  <span className="rounded-sm bg-card px-2 py-0.5 text-xs font-semibold text-foreground ring-1 ring-border">
                     {roleLabel}
                   </span>
                   {statusLabel && (
-                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
+                    <span className="rounded-sm bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
                       {statusLabel}
                     </span>
                   )}

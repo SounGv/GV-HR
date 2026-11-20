@@ -237,6 +237,8 @@ function ReportSection({
   onOpenPhoto: (photo: PhotoPreview) => void;
 }) {
   const [showExtraColumns, setShowExtraColumns] = useState(false);
+  // A long report (the daily one has hundreds of rows, each with photos) draws 100 rows and a button for the next 100.
+  const [rowLimit, setRowLimit] = useState(100);
   // Charts start hidden so the table is the first thing on screen; the button shows them.
   const [showChart, setShowChart] = useState(false);
   const isMobile = useIsMobile();
@@ -427,7 +429,7 @@ function ReportSection({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {result.rows.map((row, i) => {
+                {result.rows.slice(0, rowLimit).map((row, i) => {
                   const rowTone = isDaily ? dailyRowClass(row) : undefined;
                   const rowBar = isDaily ? dailyRowBarClass(row) : undefined;
                   // Pinned cells need the row's own tint, otherwise they cover it with the card colour.
@@ -494,6 +496,12 @@ function ReportSection({
             />
           )}
         </>
+      )}
+
+      {result && result.rows.length > rowLimit && (
+        <Button variant="outline" className="hidden h-9 w-full md:flex" onClick={() => setRowLimit((n) => n + 100)}>
+          แสดงเพิ่ม (เหลือ {result.rows.length - rowLimit} จาก {result.rows.length})
+        </Button>
       )}
 
       {result && result.rows.length > 0 && (
@@ -728,7 +736,7 @@ export function ReportView() {
                 <SelectContent alignItemWithTrigger={false}>
                   {REPORT_YEARS.map((y) => (
                     <SelectItem key={y} value={String(y)}>
-                      ปี {y}
+                      ปี {y + 543}
                     </SelectItem>
                   ))}
                 </SelectContent>

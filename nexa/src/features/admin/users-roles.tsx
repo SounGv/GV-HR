@@ -89,7 +89,7 @@ export function UsersRoles() {
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {u.roleNames.length > 0 ? (
                   u.roleNames.map((n) => (
-                    <span key={n} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                    <span key={n} className="rounded-sm bg-primary/10 px-2.5 py-1 text-xs text-primary">
                       {roleName(n)}
                     </span>
                   ))
@@ -97,7 +97,7 @@ export function UsersRoles() {
                   <span className="text-xs text-muted-foreground">— ไม่มีบทบาท —</span>
                 )}
                 {u.aiAccessScope && (
-                  <span className="rounded-full bg-info/10 px-2.5 py-1 text-xs text-info">
+                  <span className="rounded-sm bg-info/10 px-2.5 py-1 text-xs text-info">
                     {AI_SCOPE_LABEL[u.aiAccessScope]}
                   </span>
                 )}
@@ -146,7 +146,7 @@ export function UsersRoles() {
                 <div className="flex flex-wrap gap-1">
                   {u.roleNames.length > 0 ? (
                     u.roleNames.map((n) => (
-                      <span key={n} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                      <span key={n} className="rounded-sm bg-primary/10 px-2 py-0.5 text-xs text-primary">
                         {roleName(n)}
                       </span>
                     ))
@@ -154,7 +154,7 @@ export function UsersRoles() {
                     <span className="text-xs text-muted-foreground">— ไม่มีบทบาท —</span>
                   )}
                   {u.aiAccessScope && (
-                    <span className="rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
+                    <span className="rounded-sm bg-info/10 px-2 py-0.5 text-xs text-info">
                       {AI_SCOPE_LABEL[u.aiAccessScope]}
                     </span>
                   )}

@@ -369,7 +369,7 @@ function DivisionCard({
           <span className="truncate">
             {division.isOther ? `ฝ่ายเล็กไม่มีแผนกย่อย (≤${OTHER_MAX_PEOPLE} คน)` : division.code}
           </span>
-          <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#e3f2fd] px-2.5 text-xs font-bold text-primary tabular-nums">
+          <span className="dark:bg-accent dark:text-primary shrink-0 rounded-sm bg-[#e3f2fd] px-2.5 text-xs font-bold text-primary tabular-nums">
             {division.headcount} คน
           </span>
         </div>
@@ -411,7 +411,7 @@ function DivisionCard({
         <button
           type="button"
           onClick={() => onOpen(division.key)}
-          className="dark:border-border inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-[#cfd6dc] px-3.5 text-[12.5px] font-semibold transition-colors hover:border-[#1976d2] hover:text-primary"
+          className="dark:border-border inline-flex h-8 items-center gap-1.5 rounded-sm border-[1.5px] border-[#cfd6dc] px-3.5 text-[12.5px] font-semibold transition-colors hover:border-[#1976d2] hover:text-primary"
         >
           {division.isOther ? "เปิดผัง →" : "เปิดผังฝ่าย →"}
         </button>
@@ -546,7 +546,7 @@ function DivisionView({
               aria-pressed={on}
               onClick={() => onSelect(d.key)}
               className={cn(
-                "h-9 shrink-0 rounded-full border-[1.5px] px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors",
+                "h-9 shrink-0 rounded-sm border-[1.5px] px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors",
                 on
                   ? "border-[#131516] bg-[#131516] text-white dark:border-white dark:bg-white dark:text-[#131516]"
                   : "bg-card dark:border-border border-[#cfd6dc] hover:border-[#1976d2]",
@@ -718,7 +718,7 @@ function PersonCard({ node, tag, top }: { node: PersonNode; tag: string; top?: b
     </span>
   );
   const tagEl = (
-    <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#e3f2fd] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
+    <span className="dark:bg-accent dark:text-primary shrink-0 rounded-sm bg-[#e3f2fd] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
       {tag}
     </span>
   );
@@ -777,7 +777,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
     >
       <div className="border-border bg-muted/50 flex items-center justify-between gap-2 border-b px-3.5 py-2 text-[13.5px] font-bold">
         <span className="min-w-0 truncate">{team.name}</span>
-        <span className="dark:bg-accent dark:text-primary shrink-0 rounded-full bg-[#e3f2fd] px-2.5 text-xs font-bold text-primary tabular-nums">
+        <span className="dark:bg-accent dark:text-primary shrink-0 rounded-sm bg-[#e3f2fd] px-2.5 text-xs font-bold text-primary tabular-nums">
           {team.count}
         </span>
       </div>

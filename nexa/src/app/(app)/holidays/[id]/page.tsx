@@ -40,7 +40,7 @@ export default async function HolidayDetailPage({ params }: { params: Promise<{ 
         title={holiday.name}
         description={typeLabel}
         status={
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
             <Sparkles className="size-3" />
             {typeLabel}
           </span>

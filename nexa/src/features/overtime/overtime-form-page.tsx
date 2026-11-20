@@ -129,7 +129,7 @@ export function OvertimeFormPage() {
               </p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <FormField
               control={form.control}
               name="startTime"

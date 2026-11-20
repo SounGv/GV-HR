@@ -43,7 +43,7 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
         title={course.title}
         description={`${course.category} · ${course.hours} ชม.`}
         status={
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {course.status === "OPEN" ? "เปิดรับสมัคร" : "ปิดรับสมัคร"}
           </span>
         }

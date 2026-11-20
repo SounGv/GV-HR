@@ -44,14 +44,14 @@ export default async function AiSettingsPage() {
         <h2 id="engine-now" className="text-lg font-semibold leading-snug">สถานะตอนนี้</h2>
         {fallback ? (
           <p className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="inline-flex items-center gap-1 rounded-full border border-status-late-border bg-status-late-bg px-2.5 py-1 font-medium text-status-late-fg">
+            <span className="inline-flex items-center gap-1 rounded-sm border border-status-late-border bg-status-late-bg px-2.5 py-1 font-medium text-status-late-fg">
               <TriangleAlert className="size-4" aria-hidden="true" /> โหมดสำรอง
             </span>
             <span>{REASON_TEXT[status.decision.mode === "fallback" ? status.decision.reason : "credit"]} ผู้ใช้ยังใช้ปุ่มลัดได้ตามปกติ</span>
           </p>
         ) : (
           <p className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 font-medium text-accent-foreground">
+            <span className="inline-flex items-center gap-1 rounded-sm bg-accent px-2.5 py-1 font-medium text-accent-foreground">
               <CheckCircle2 className="size-4" aria-hidden="true" /> AI พร้อมใช้
             </span>
             <span>{configured ? "น้องวีบอทตอบด้วย AI ตามปกติ" : "ยังไม่ได้ตั้งค่าการเชื่อมต่อ AI ผู้ใช้จึงเห็นโหมดสำรอง"}</span>

@@ -50,7 +50,7 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         // Stays in view while the page scrolls: TabsList wraps it in stickyTabsBacking.
-        default: "bg-muted group-data-horizontal/tabs:shadow-sm",
+        default: "bg-muted",
         line: "gap-1 bg-transparent",
       },
     },

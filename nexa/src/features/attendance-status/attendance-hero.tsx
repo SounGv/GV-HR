@@ -139,7 +139,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
         {ticker ? <div className="order-last min-w-0 basis-full lg:order-none lg:flex-1 lg:basis-0">{ticker}</div> : <span className="flex-1" />}
         <Link
           href="/reports?view=attendance_daily"
-          className="inline-flex min-h-10 items-center rounded-full border border-border bg-card px-4 text-[13px] font-semibold hover:bg-accent"
+          className="inline-flex min-h-10 items-center rounded-sm border border-border bg-card px-4 text-[13px] font-semibold hover:bg-accent"
         >
           ดูประวัติการเข้างาน ›
         </Link>
@@ -154,7 +154,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
           <span className="flex size-11 items-center justify-center rounded-lg border border-border bg-muted">
             <Clock className="size-[22px]" aria-hidden="true" />
           </span>
-          <span className="rounded-full bg-[#fde047] px-2.5 py-0.5 text-xs font-bold text-[#3f2d00]">ข้อมูล ณ {data.asOf} น.</span>
+          <span className="rounded-sm bg-[#fde047] px-2.5 py-0.5 text-xs font-bold text-[#3f2d00]">ข้อมูล ณ {data.asOf} น.</span>
         </div>
         <h2 className="mt-4 text-[30px] leading-snug font-bold">การเข้างานวันนี้</h2>
         <p className="mt-1 text-[13.5px] text-foreground">
@@ -188,14 +188,14 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
             {follow > 0 ? (
               <a
                 href="#follow-up"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-[13.5px] font-bold text-[#b91c1c]  transition-transform hover:-translate-y-px motion-reduce:transition-none"
+                className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-white px-4 text-[13.5px] font-bold text-[#b91c1c]  transition-transform hover:-translate-y-px motion-reduce:transition-none"
               >
                 <TriangleAlert className="size-4" aria-hidden="true" />
                 วันนี้มี {follow} คนขาดหรือสาย
                 <ArrowDown className="size-4" aria-hidden="true" />
               </a>
             ) : (
-              <span className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--on-hero-accent)] px-4 text-[13.5px] font-bold text-[var(--on-hero-accent-fg)]">
+              <span className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-[var(--on-hero-accent)] px-4 text-[13.5px] font-bold text-[var(--on-hero-accent-fg)]">
                 <Check className="size-4" aria-hidden="true" />
                 ยังไม่มีคนขาดหรือสาย
               </span>

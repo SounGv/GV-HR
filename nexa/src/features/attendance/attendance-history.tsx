@@ -70,7 +70,7 @@ export function AttendanceHistory() {
                 <div className="flex flex-wrap items-center gap-1.5">
                   <AttendanceStatusBadge status={r.status} />
                   {r.earlyLeaveOut && (
-                    <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                    <span className="rounded-sm bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
                       ออกก่อนเวลา
                     </span>
                   )}

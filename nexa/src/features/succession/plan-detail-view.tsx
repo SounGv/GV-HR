@@ -121,7 +121,7 @@ function CandidateRow({
             </SelectContent>
           </Select>
         ) : (
-          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", READINESS_TONE[candidate.readiness])}>
+          <span className={cn("rounded-sm px-2 py-0.5 text-xs font-medium", READINESS_TONE[candidate.readiness])}>
             {READINESS_LABEL[candidate.readiness]}
           </span>
         )}

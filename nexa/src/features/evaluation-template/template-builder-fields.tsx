@@ -386,7 +386,7 @@ export function QuestionEditor({
                   type="button"
                   onClick={() => toggleVisibleTo(opt.value)}
                   className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                    "rounded-sm border px-2.5 py-1 text-xs font-medium transition",
                     question.visibleTo.includes(opt.value)
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border bg-card text-muted-foreground hover:bg-muted",
@@ -536,7 +536,7 @@ function AccordionCategoryCard({
             value={section.name}
             onChange={(e) => onChange({ ...section, name: e.target.value })}
           />
-          <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+          <span className="shrink-0 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
             {section.questions.length} ข้อ{categoryWeight > 0 ? ` · ${categoryWeight}%` : ""}
           </span>
           <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={onToggle} aria-label={isOpen ? "ยุบหมวด" : "ขยายหมวด"}>
@@ -615,7 +615,7 @@ export function TopicsAndQuestionsBuilder({
               type="button"
               title={tpl.description}
               onClick={() => (isBlankDraft ? applyQuickStart(tpl.id) : setPendingQuickStart(tpl.id))}
-              className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+              className="rounded-sm border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               {tpl.name}
             </button>
@@ -640,7 +640,7 @@ export function TopicsAndQuestionsBuilder({
             <span className="text-sm font-semibold text-foreground">หมวดหัวข้อประเมิน</span>
             <span
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-semibold",
+                "rounded-sm px-3 py-1 text-xs font-semibold",
                 weightOk ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
               )}
             >

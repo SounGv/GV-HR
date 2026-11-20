@@ -119,7 +119,7 @@ export function OverviewActions({ className }: { className?: string }) {
 /** White pill used for the one next action inside the hero. */
 function HeroPill({ href, onClick, disabled, children }: { href?: string; onClick?: () => void; disabled?: boolean; children: ReactNode }) {
   const cls =
-    "inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60 md:h-9";
+    "inline-flex h-11 items-center gap-1.5 rounded-sm bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60 md:h-9";
   if (href) {
     return (
       <Link href={href} className={cls}>
@@ -137,7 +137,7 @@ function HeroPill({ href, onClick, disabled, children }: { href?: string; onClic
 function Eyebrow({ tone, children }: { tone: "waiting" | "open"; children: ReactNode }) {
   return (
     <span
-      className="inline-block rounded-full px-2.5 py-0.5 text-xs font-bold"
+      className="inline-block rounded-sm px-2.5 py-0.5 text-xs font-bold"
       style={tone === "open" ? { background: "var(--on-hero-accent)", color: "var(--on-hero-accent-fg)" } : { background: "var(--status-late-bg)", color: "var(--status-late-fg)" }}
     >
       {children}

@@ -108,7 +108,7 @@ export function TemplateFormPage({ template }: { template?: ShiftTemplate }) {
               </FormItem>
             )}
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <FormField
               control={form.control}
               name="startTime"
@@ -136,7 +136,7 @@ export function TemplateFormPage({ template }: { template?: ShiftTemplate }) {
               )}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <FormField
               control={form.control}
               name="color"

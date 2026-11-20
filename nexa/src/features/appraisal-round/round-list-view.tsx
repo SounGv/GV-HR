@@ -1,5 +1,6 @@
 "use client";
 
+import { PageActions } from "@/components/layout/page-chrome";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -58,6 +59,7 @@ export function RoundListView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">สร้างรอบใน 4 ขั้น: ตั้งรอบ (แบบประเมินและวันเปิดปิด) เลือกคน จับคู่ผู้ประเมิน แล้วตรวจและเปิดรอบ</p>
+        <PageActions>
         <div className="flex flex-wrap gap-2">
           {can("campaign:update") && (
             <Link href="/appraisal/recurring" className={buttonVariants({ variant: "outline", className: "h-11 md:h-9" })}>
@@ -71,6 +73,7 @@ export function RoundListView() {
           )}
           {newRound.dialog}
         </div>
+        </PageActions>
       </div>
 
       {isError ? (

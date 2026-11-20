@@ -1,5 +1,6 @@
 "use client";
 
+import { PageActions } from "@/components/layout/page-chrome";
 import { useState } from "react";
 import { CircleCheck, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -55,9 +56,9 @@ export function KpiView() {
       </p>
       {canEdit && (
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button className="h-11 md:h-9" onClick={() => setSelected("new")}>
+          <PageActions><Button className="h-11 md:h-9" onClick={() => setSelected("new")}>
             <Plus className="size-4" /> โปรไฟล์ใหม่
-          </Button>
+          </Button></PageActions>
         </div>
       )}
       {profiles.length > 0 && (
@@ -351,7 +352,7 @@ function RunPanel({ profile }: { profile: KpiProfileView }) {
                   ))}
                   <TableCell className="text-right font-semibold tabular-nums">{r.score}</TableCell>
                   <TableCell>
-                    {r.band ? <span className={cn("inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold", TONE_CLASS[r.band.tone as KpiBand["tone"]])}>{r.band.label}</span> : "-"}
+                    {r.band ? <span className={cn("inline-flex rounded-sm border px-2.5 py-0.5 text-xs font-semibold", TONE_CLASS[r.band.tone as KpiBand["tone"]])}>{r.band.label}</span> : "-"}
                   </TableCell>
                 </TableRow>
               ))}

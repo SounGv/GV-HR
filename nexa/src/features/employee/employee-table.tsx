@@ -315,9 +315,9 @@ export function EmployeeTable({ summary }: { summary?: EmployeeSummary } = {}) {
         onSortingChange={setSorting}
         toolbar={filters}
         onRowClick={(row) => router.push(`/employees/${row.id}`)}
-        emptyTitle="ยังไม่มีพนักงาน"
+        emptyTitle={search || status !== ALL ? "ไม่พบพนักงานที่ตรงกับคำค้นหรือตัวกรอง" : "ยังไม่มีพนักงาน"}
         emptyDescription={
-          canCreate ? "เริ่มต้นด้วยการเพิ่มพนักงานคนแรก" : "ยังไม่มีข้อมูลพนักงานในระบบ"
+          search || status !== ALL ? "ลองเปลี่ยนคำค้นหรือกดล้างตัวกรอง" : canCreate ? "เริ่มต้นด้วยการเพิ่มพนักงานคนแรก" : "ยังไม่มีข้อมูลพนักงานในระบบ"
         }
       />
       </div>
@@ -418,7 +418,7 @@ export function EmployeeTable({ summary }: { summary?: EmployeeSummary } = {}) {
 
       {/* subtle background-refetch hint */}
       {isFetching && !isLoading && (
-        <div className="pointer-events-none fixed right-4 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] rounded-full md:bottom-4 bg-primary px-3 py-1 text-xs text-primary-foreground opacity-80">
+        <div className="pointer-events-none fixed right-4 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] rounded-sm md:bottom-4 bg-primary px-3 py-1 text-xs text-primary-foreground opacity-80">
           กำลังอัปเดต…
         </div>
       )}

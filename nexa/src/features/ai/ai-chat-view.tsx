@@ -235,7 +235,7 @@ export function AiChatView({
                   key={s}
                   type="button"
                   onClick={() => submit(s)}
-                  className="min-h-11 rounded-full border border-border bg-card px-4 text-sm text-foreground transition hover:border-[var(--chat-teal)] hover:bg-accent hover:text-accent-foreground md:min-h-9 md:px-3.5 md:text-xs"
+                  className="min-h-11 rounded-sm border border-border bg-card px-4 text-sm text-foreground transition hover:border-[var(--chat-teal)] hover:bg-accent hover:text-accent-foreground md:min-h-9 md:px-3.5 md:text-xs"
                 >
                   {s}
                 </button>
@@ -254,7 +254,7 @@ export function AiChatView({
                   {t.steps.map((step, si) => (
                     <li
                       key={si}
-                      className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs text-accent-foreground"
+                      className="inline-flex max-w-full items-center gap-1.5 rounded-sm bg-accent px-2.5 py-1 text-xs text-accent-foreground"
                     >
                       {step.tool === "web_search" ? (
                         <Globe className="size-3 shrink-0" aria-hidden="true" />

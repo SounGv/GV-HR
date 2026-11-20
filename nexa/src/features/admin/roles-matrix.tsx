@@ -26,6 +26,8 @@ const ACTION_LABEL: Record<string, string> = {
   approve: "อนุมัติ",
   export: "ส่งออก",
   offsite: "ลงเวลาเข้างานนอกพื้นที่",
+  manage: "จัดการ",
+  attach: "แนบไฟล์",
 };
 
 export function RolesMatrix() {
@@ -148,7 +150,7 @@ export function RolesMatrix() {
                 <div className="flex items-center gap-2 font-medium">
                   {roleName(selected.name)}
                   {selected.isSystem && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       <Lock className="size-3" /> บทบาทระบบ
                     </span>
                   )}

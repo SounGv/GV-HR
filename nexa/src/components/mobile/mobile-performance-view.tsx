@@ -73,26 +73,26 @@ function dueLabel(days: number): string {
 function StatusChip({ submitted, days }: { submitted: boolean; days: number }) {
   if (submitted) {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success-muted px-2.5 py-1 text-xs font-semibold text-success">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-success-muted px-2.5 py-1 text-xs font-semibold text-success">
         <Check className="size-3.5" aria-hidden="true" /> ส่งแล้ว
       </span>
     );
   }
   if (days < 0) {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive-muted px-2.5 py-1 text-xs font-semibold text-destructive">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-destructive-muted px-2.5 py-1 text-xs font-semibold text-destructive">
         <Clock className="size-3.5" aria-hidden="true" /> {dueLabel(days)}
       </span>
     );
   }
   if (days <= 7) {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">
         <Clock className="size-3.5" aria-hidden="true" /> {dueLabel(days)}
       </span>
     );
   }
-  return <span className="inline-flex shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">รอทำ</span>;
+  return <span className="inline-flex shrink-0 rounded-sm bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">รอทำ</span>;
 }
 
 /** My evaluation jobs in open rounds of the current evaluation system (the old campaign pages now only redirect). */

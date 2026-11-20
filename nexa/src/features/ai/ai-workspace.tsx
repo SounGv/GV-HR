@@ -613,7 +613,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                 {answer.steps.map((s, si) => (
                   <li
                     key={si}
-                    className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground"
+                    className="inline-flex max-w-full items-center gap-1.5 rounded-sm border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground"
                   >
                     {s.tool === "web_search" ? (
                       <Globe className="size-3 shrink-0 text-primary" aria-hidden="true" />

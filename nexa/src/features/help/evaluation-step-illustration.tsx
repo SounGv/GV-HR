@@ -126,7 +126,7 @@ export function EvalStepIllustration({ kind }: { kind: EvalIllustrationKind }) {
               <p className="text-xs text-muted-foreground">คะแนนรวม (ถ่วงน้ำหนัก)</p>
               <p className="text-[15px] font-bold text-foreground">82.4%</p>
             </div>
-            <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-bold text-success">ดี/ดีเยี่ยม</span>
+            <span className="rounded-sm bg-success/15 px-2 py-0.5 text-xs font-bold text-success">ดี/ดีเยี่ยม</span>
           </div>
           <div className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-bold text-primary-foreground shadow-sm">
             <ThumbsUp className="size-3.5" /> รับทราบผลประเมิน

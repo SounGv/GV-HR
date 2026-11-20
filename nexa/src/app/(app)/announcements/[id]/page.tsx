@@ -49,7 +49,7 @@ export default async function AnnouncementDetailPage({ params }: { params: Promi
         title={announcement.title}
         description={announcement.authorName ? `โดย ${announcement.authorName}` : "ประกาศจากองค์กร"}
         status={
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {announcement.pinned && <Pin className="size-3" />}
             {statusLabel}
           </span>

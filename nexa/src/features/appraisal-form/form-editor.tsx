@@ -465,7 +465,7 @@ function FormEditor({ form }: { form: FormDetail }) {
               }}
               className="min-w-0 flex-1 border-0 border-b-[1.5px] border-dashed border-border bg-transparent py-0.5 text-[22px] leading-snug font-bold text-foreground outline-none focus:border-[var(--on-hero-accent)] disabled:border-transparent sm:min-w-[260px]"
             />
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-bold">
+            <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted px-2.5 py-0.5 text-xs font-bold">
               <span
                 className={cn("size-1.5 rounded-full", locked ? "bg-status-normal-dot" : "bg-status-late-dot")}
                 aria-hidden="true"
@@ -822,7 +822,7 @@ function Outline({
                   </b>
                 )}
                 {sw > 0 && (
-                  <span className="shrink-0 rounded-full bg-accent px-2 text-xs font-bold text-primary tabular-nums">
+                  <span className="shrink-0 rounded-sm bg-accent px-2 text-xs font-bold text-primary tabular-nums">
                     {pct}%
                   </span>
                 )}
@@ -1167,7 +1167,7 @@ function TopicEditor({
                     })
                   }
                   className={cn(
-                    "min-h-9 rounded-full border-[1.5px] px-3.5 text-sm font-semibold disabled:opacity-60",
+                    "min-h-9 rounded-sm border-[1.5px] px-3.5 text-sm font-semibold disabled:opacity-60",
                     on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
                   )}
                 >
@@ -1310,7 +1310,7 @@ function ScaleCard({
               key={n}
               type="button"
               onClick={() => onPreset(n)}
-              className="border-border min-h-8 rounded-full border-[1.5px] px-3 text-xs font-semibold hover:border-ring"
+              className="border-border min-h-8 rounded-sm border-[1.5px] px-3 text-xs font-semibold hover:border-ring"
             >
               ชุด {n} ระดับ
             </button>
@@ -1320,7 +1320,7 @@ function ScaleCard({
             aria-pressed={usingSystem}
             onClick={onSystem}
             className={cn(
-              "min-h-8 rounded-full border-[1.5px] px-3 text-xs font-semibold hover:border-ring",
+              "min-h-8 rounded-sm border-[1.5px] px-3 text-xs font-semibold hover:border-ring",
               usingSystem ? "border-primary bg-accent text-accent-foreground" : "border-border",
             )}
           >
@@ -1443,7 +1443,7 @@ function PhonePreview({
         <div
           role="group"
           aria-label="ดูในมุมของ"
-          className="bg-muted ml-auto flex gap-0.5 rounded-full p-0.5"
+          className="bg-muted ml-auto flex gap-0.5 rounded-sm p-0.5"
         >
           {(["MANAGER", "SELF", "PEER"] as RaterType[]).map((r) => (
             <button
@@ -1455,7 +1455,7 @@ function PhonePreview({
                 setManual(null);
               }}
               className={cn(
-                "min-h-8 rounded-full px-2.5 text-xs font-semibold",
+                "min-h-8 rounded-sm px-2.5 text-xs font-semibold",
                 as === r && "bg-card ",
               )}
             >
@@ -1464,7 +1464,7 @@ function PhonePreview({
           ))}
         </div>
       </div>
-      <div className="mx-auto w-full max-w-[330px] rounded-lg bg-[var(--device-frame)] p-2 ">
+      <div className="mx-auto w-full max-w-[330px] rounded-sm border border-border bg-card p-0 ">
         <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-lg">
           <div className="sticky top-0 z-[1] bg-primary px-3.5 pt-3 pb-2.5 text-white">
             <b className="block text-sm">ประเมิน วันชัย (ตัวอย่าง)</b>
@@ -1591,7 +1591,7 @@ function BankPicker({
                 aria-pressed={section === s}
                 onClick={() => setSection(s)}
                 className={cn(
-                  "min-h-8 shrink-0 rounded-full border-[1.5px] px-3 text-xs font-semibold whitespace-nowrap",
+                  "min-h-8 shrink-0 rounded-sm border-[1.5px] px-3 text-xs font-semibold whitespace-nowrap",
                   section === s
                     ? "border-foreground bg-foreground text-background"
                     : "border-border",

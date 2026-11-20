@@ -25,7 +25,7 @@ export default async function RequestsPage({
         <ApprovalsDesk />
         <div className="grid gap-3 sm:grid-cols-3">
           <Link href="/leave">
-            <Card className="gv-lift flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
+            <Card className="flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
               <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-primary">
                 <CalendarDays className="size-5" />
               </span>
@@ -36,7 +36,7 @@ export default async function RequestsPage({
             </Card>
           </Link>
           <Link href="/overtime">
-            <Card className="gv-lift flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
+            <Card className="flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
               <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-primary">
                 <Timer className="size-5" />
               </span>
@@ -47,7 +47,7 @@ export default async function RequestsPage({
             </Card>
           </Link>
           <Link href="/attendance/corrections">
-            <Card className="gv-lift flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
+            <Card className="flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
               <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-primary">
                 <PencilLine className="size-5" />
               </span>

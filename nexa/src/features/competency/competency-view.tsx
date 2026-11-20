@@ -112,12 +112,12 @@ export function CompetencyView() {
                       <div className="flex items-center gap-2">
                         <span className="truncate font-medium text-foreground">{c.name}</span>
                         {!c.active && (
-                          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          <span className="shrink-0 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                             ปิดใช้งาน
                           </span>
                         )}
                         {c.usageCount > 0 && (
-                          <span className="shrink-0 rounded-full bg-icon-chip-bg px-2 py-0.5 text-xs text-icon-chip-fg">
+                          <span className="shrink-0 rounded-sm bg-icon-chip-bg px-2 py-0.5 text-xs text-icon-chip-fg">
                             ใช้อยู่ {c.usageCount} จุด
                           </span>
                         )}
@@ -222,7 +222,7 @@ function CategoryManagementPanel() {
           {categories.map((cat) => (
             <span
               key={cat.id}
-              className="flex items-center gap-1 rounded-full border border-border py-0.5 pr-0.5 pl-3 text-xs md:gap-1.5 md:py-1 md:pr-1"
+              className="flex items-center gap-1 rounded-sm border border-border py-0.5 pr-0.5 pl-3 text-xs md:gap-1.5 md:py-1 md:pr-1"
             >
               {cat.name}
               <Link

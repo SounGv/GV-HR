@@ -55,7 +55,9 @@ export function SectionBand() {
   const section = useMemo(() => resolveSection(NAV_GROUPS, canSee, pathname, search), [canSee, pathname, search]);
 
   const isHome = pathname === HOME_PATH;
-  const hasTabs = section.tabs.length > 0;
+  // The rater's answering screen is one focused task: no menu tabs around it.
+  const focused = /\/fill\/|^\/appraisal\/tasks\/[^/]+/.test(pathname);
+  const hasTabs = section.tabs.length > 0 && !focused;
   const title = chrome?.title ?? section.title;
   const crumbs: BandCrumb[] =
     chrome?.crumbs && chrome.crumbs.length > 0
@@ -164,7 +166,7 @@ export function SectionBand() {
 
       {/* A long tab row (the settings group, the evaluation group) is split: one chip per section here, the tabs of the open
           section in the row below. The chips follow the headings the side menu already has. */}
-      {section.sections && (
+      {section.sections && !focused && (
         <nav aria-label={section.group ? `ส่วนของ ${section.group}` : "ส่วนของเมนู"} className="flex h-11 items-center gap-2 overflow-x-auto border-b border-border bg-card px-3 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {section.sections.map((c) => (
             <Link
@@ -172,7 +174,7 @@ export function SectionBand() {
               href={c.href}
               aria-current={c.active ? "page" : undefined}
               className={cn(
-                "flex h-10 shrink-0 items-center rounded-full border px-3.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                "flex h-10 shrink-0 items-center rounded-sm border px-3.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 c.active
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-[color:var(--muted-strong)] hover:bg-muted/60 hover:text-foreground",

@@ -110,7 +110,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
             type="button"
             aria-pressed={onlyOpen}
             onClick={() => setOnlyOpenPick(!onlyOpen)}
-            className={cn("min-h-11 rounded-full border px-4 text-sm font-medium md:min-h-9 md:px-3", onlyOpen ? "border-primary bg-accent" : "border-border bg-card")}
+            className={cn("min-h-11 rounded-sm border px-4 text-sm font-medium md:min-h-9 md:px-3", onlyOpen ? "border-primary bg-accent" : "border-border bg-card")}
           >
             เฉพาะผู้ประเมินที่ยังไม่ครบ ({openRaters.length})
           </button>
@@ -163,7 +163,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
                     </TableCell>
                     <TableCell>{RATER_LABEL[l.raterType]}</TableCell>
                     <TableCell>
-                      <span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold", STATUS_CLASS[l.status])}>
+                      <span className={cn("inline-flex items-center gap-1 rounded-sm border px-2.5 py-0.5 text-xs font-semibold", STATUS_CLASS[l.status])}>
                         <Icon className="size-3.5" aria-hidden="true" />
                         {ASSIGNMENT_STATUS_LABEL[l.status]}
                         {l.submittedAt && ` ${formatDate(l.submittedAt)}`}

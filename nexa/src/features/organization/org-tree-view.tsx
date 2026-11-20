@@ -247,7 +247,7 @@ function HeadCard({ lead, index }: { lead: TreeLead; index: number }) {
           {p.positionTitle ?? "หัวหน้า"}
         </small>
       </span>
-      <span className="dark:bg-accent dark:text-primary ml-auto shrink-0 rounded-full bg-[#e3f2fd] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
+      <span className="dark:bg-accent dark:text-primary ml-auto shrink-0 rounded-sm bg-[#e3f2fd] px-2 text-xs font-bold whitespace-nowrap text-primary tabular-nums">
         ดูแล {lead.under} คน
       </span>
     </Link>

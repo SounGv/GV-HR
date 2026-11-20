@@ -53,7 +53,7 @@ export function HelpView() {
               <h2 className="font-heading text-xl font-bold text-foreground sm:text-2xl">
                 {i + 1}. {section.title}
               </h2>
-              <span className="mt-1 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-secondary-foreground">
+              <span className="mt-1 inline-block rounded-sm bg-secondary px-2.5 py-0.5 text-xs font-bold text-secondary-foreground">
                 {section.roleLabel}
               </span>
               {section.intro && <p className="mt-2 text-sm text-muted-foreground">{section.intro}</p>}

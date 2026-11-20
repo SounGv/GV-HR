@@ -1,5 +1,6 @@
 "use client";
 
+import { PageActions } from "@/components/layout/page-chrome";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -55,9 +56,9 @@ export function FormListView() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">แบบที่ใช้งานอยู่แก้ไม่ได้ ถ้าจะเปลี่ยนคำถาม ให้สร้างเวอร์ชันใหม่</p>
         {canCreate && (
-          <Button className="h-11 md:h-9" onClick={startNew} disabled={create.isPending}>
+          <PageActions><Button className="h-11 md:h-9" onClick={startNew} disabled={create.isPending}>
             <Plus className="size-4" /> สร้างแบบประเมิน
-          </Button>
+          </Button></PageActions>
         )}
       </div>
 

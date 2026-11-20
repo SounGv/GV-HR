@@ -68,7 +68,7 @@ export function StepIllustration({
             {(chips ?? ["ข้อมูลส่วนตัว", "การจ้างงาน", "เงินเดือน"]).map((c, i) => (
               <span
                 key={c}
-                className={cn("rounded-full px-2 py-1", i === 0 ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
+                className={cn("rounded-sm px-2 py-1", i === 0 ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
               >
                 {c}
               </span>
@@ -96,7 +96,7 @@ export function StepIllustration({
             <span
               key={c}
               className={cn(
-                "rounded-full px-2.5 py-1 text-xs font-medium",
+                "rounded-sm px-2.5 py-1 text-xs font-medium",
                 i === 0 ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground ring-1 ring-border",
               )}
             >
@@ -144,7 +144,7 @@ export function StepIllustration({
 
       {kind === "checkin" && (
         <div className="flex w-full max-w-[220px] flex-col items-center gap-2">
-          <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">
+          <span className="flex items-center gap-1 rounded-sm bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">
             <MapPin className="size-2.5" /> อยู่ในระยะ
           </span>
           <div className="flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-primary text-[12px] font-bold text-primary-foreground shadow-sm">

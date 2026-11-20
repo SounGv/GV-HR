@@ -93,6 +93,7 @@ export function EntitlementsView() {
           <label className="space-y-1.5 text-sm font-medium">
             ปี
             <Input type="number" className="h-11 w-28 md:h-9" value={year} onChange={(e) => setYear(Number(e.target.value) || THIS_YEAR)} />
+            <span className="text-muted-foreground block text-xs font-normal">พ.ศ. {year + 543}</span>
           </label>
           <div className="relative min-w-[220px] flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />

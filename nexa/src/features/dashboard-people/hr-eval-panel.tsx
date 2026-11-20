@@ -148,7 +148,7 @@ export function TemplateCard({ templates }: { templates: EvaluationOverview["tem
           <p className="text-sm text-muted-foreground">ใช้แม่แบบที่มีรายชื่อ “ใครประเมินใคร” พร้อมแล้ว</p>
           <ol className="my-3 flex flex-wrap gap-2">
             {STEPS.map((s, i) => (
-              <li key={s} className="flex items-center gap-2 rounded-full border border-border bg-muted/50 py-0.5 pr-3 pl-1 text-sm font-semibold">
+              <li key={s} className="flex items-center gap-2 rounded-sm border border-border bg-muted/50 py-0.5 pr-3 pl-1 text-sm font-semibold">
                 <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{i + 1}</span>
                 {s}
               </li>
