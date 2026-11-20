@@ -2,6 +2,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
 import { ok, handleApiError } from "@/lib/api/response";
 import { suggestNextEmployeeCode, teamScopeFilter } from "@/features/employee/service";
+import { avatarPaths } from "@/lib/avatar-server";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,8 @@ export async function GET() {
         lastName: true,
         nickname: true,
         employeeCode: true,
+        status: true,
+        gender: true,
         managerId: true,
         departmentId: true,
         employmentType: true,
@@ -41,9 +44,12 @@ export async function GET() {
       orderBy: { firstName: "asc" },
       take: 2000,
     });
+    // Each person's picture (short photo address) and gender, so every picker built on this list can draw it.
+    const photos = await avatarPaths(managers.map((m) => m.id));
+    const withPhotos = managers.map((m) => ({ ...m, avatarUrl: photos.get(m.id) ?? null }));
     const nextEmployeeCode = await suggestNextEmployeeCode(companyId);
 
-    return ok({ departments, positions, branches, costCenters, managers, nextEmployeeCode });
+    return ok({ departments, positions, branches, costCenters, managers: withPhotos, nextEmployeeCode });
   } catch (err) {
     return handleApiError(err);
   }

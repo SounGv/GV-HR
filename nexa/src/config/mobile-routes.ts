@@ -49,6 +49,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/dashboard/attendance/watch": { title: "ควรติดตาม", backHref: "/dashboard/attendance" },
   "/employees": { title: "รายชื่อพนักงาน", backHref: "/dashboard" },
   "/employees/new": { title: "เพิ่มพนักงาน", backHref: "/employees" },
+  "/employees/supervisors": { title: "หัวหน้างาน", backHref: "/employees" },
   "/employees/import": { title: "นำเข้าพนักงาน", backHref: "/employees" },
   "/expenses": { title: "เบิกค่าใช้จ่าย", backHref: "/services" },
   "/expenses/new": { title: "เบิกค่าใช้จ่าย", backHref: "/expenses" },

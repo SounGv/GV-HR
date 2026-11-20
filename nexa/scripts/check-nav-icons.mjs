@@ -23,7 +23,7 @@ const entries = [...nav.matchAll(/label: "([^"]+)",\s*href: "([^"]+)"([^}]*)\}/g
   .filter((e) => !e.featured);
 
 check("every side-menu entry has an icon", () => {
-  assert.equal(entries.length, 43, "the menu has 43 entries besides the AI shortcut");
+  assert.equal(entries.length, 44, "the menu has 44 entries besides the AI shortcut");
   const missing = entries.filter((e) => !NAV_ICON_BY_HREF[e.href]).map((e) => e.label);
   assert.deepEqual(missing, []);
 });

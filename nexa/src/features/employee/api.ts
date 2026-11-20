@@ -35,7 +35,8 @@ export function createEmployee(input: EmployeeFormValues) {
   return api.post<Envelope<EmployeeDetail>>("/api/employees", input);
 }
 
-export function updateEmployee(id: string, input: Partial<EmployeeFormValues>) {
+/** `managerId: null` takes the person out of their supervisor's team (the server stores a cleared link as null). */
+export function updateEmployee(id: string, input: Partial<EmployeeFormValues> | { managerId: string | null }) {
   return api.patch<Envelope<EmployeeDetail>>(`/api/employees/${id}`, input);
 }
 

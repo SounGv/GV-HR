@@ -132,6 +132,10 @@ export interface OrgOptions {
     lastName: string;
     nickname: string | null;
     employeeCode: string;
+    status: EmployeeStatus;
+    gender: string | null;
+    /** Short photo address, null when the person has no photo. */
+    avatarUrl?: string | null;
     managerId: string | null;
     departmentId: string | null;
     employmentType: EmploymentType;

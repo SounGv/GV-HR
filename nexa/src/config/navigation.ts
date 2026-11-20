@@ -33,6 +33,7 @@ import {
   Plug,
   Settings2,
   Bot,
+  Users,
 } from "lucide-react";
 
 export interface NavItem {
@@ -128,6 +129,7 @@ export const NAV_GROUPS: NavGroup[] = [
     chipColor: "#1976d2",
     items: [
       { label: "รายชื่อพนักงาน", href: "/employees", icon: UsersRound, permission: "employee:read", ready: true },
+      { label: "หัวหน้างาน", href: "/employees/supervisors", icon: Users, permission: "employee:read", ready: true },
       { label: "แผนกและตำแหน่ง", href: "/organization?tab=departments", icon: Building2, permission: "employee:read", ready: true },
       { label: "โครงสร้างองค์กร", href: "/organization?tab=chart", icon: Network, permission: "employee:read", ready: true },
       { label: "สรรหาพนักงาน", href: "/recruitment", icon: UserPlus, permission: "recruitment:read", ready: true },
@@ -144,9 +146,9 @@ export const NAV_GROUPS: NavGroup[] = [
       // system (its own tabs: ภาพรวม / แบบประเมิน / รอบประเมิน / KPI / ตั้งค่า),
       // and training. The old /performance and /kpi pages (2 old reviews, 6
       // goals, no rounds) stay reachable by address but leave the menu.
+      { label: "จัดการประเมิน", href: "/appraisal", icon: Settings2, permission: "campaign:manage", ready: true },
       { label: "งานประเมินของฉัน", href: "/appraisal/tasks", icon: ClipboardCheck, permission: "notification:read", ready: true, badgeKey: "pendingReviews" },
       { label: "ผลประเมินของฉัน", href: "/appraisal/my-results", icon: ClipboardList, permission: "notification:read", ready: true },
-      { label: "จัดการประเมิน", href: "/appraisal", icon: Settings2, permission: "campaign:manage", ready: true },
       { label: "อบรมและพัฒนา", href: "/training", icon: GraduationCap, permission: "training:read", ready: true },
     ],
   },

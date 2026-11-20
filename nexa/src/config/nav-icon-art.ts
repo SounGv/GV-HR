@@ -26,6 +26,7 @@ export type NavIconKey =
   | "ot"
   | "approvals"
   | "people"
+  | "supervisors"
   | "departments"
   | "orgChart"
   | "recruit"
@@ -72,6 +73,7 @@ export const NAV_ICON_ART: Record<NavIconKey, string> = {
   ot: "<circle class=\"mass\" cx=\"11\" cy=\"13\" r=\"8\"/><path class=\"detail\" d=\"M11 8v5l3 2M8 2h6M11 5V3M18 4l2 2\"/><path class=\"fine\" d=\"M6 9a6 6 0 0 1 5-2\"/>",
   approvals: "<rect class=\"mass\" x=\"5\" y=\"4\" width=\"14\" height=\"17\" rx=\"3\"/><rect class=\"mass\" x=\"9\" y=\"2\" width=\"6\" height=\"4\" rx=\"1.5\"/><path class=\"detail\" d=\"m8.5 14 2.5 2.5 5-6\"/><path class=\"fine\" d=\"M8 8h8\"/>",
   people: "<rect class=\"mass\" x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"3\"/><circle class=\"detail\" cx=\"9\" cy=\"10\" r=\"2.3\"/><path class=\"detail\" d=\"M5.5 16c.7-2 2-3 3.5-3s2.8 1 3.5 3M15 9h3M15 13h3\"/><path class=\"fine\" d=\"M5 6.5h14\"/>",
+  supervisors: "<circle class=\"mass\" cx=\"12\" cy=\"6\" r=\"3.5\"/><path class=\"detail\" d=\"M12 11v3M6 14h12M6 14v2M18 14v2\"/><circle class=\"mass\" cx=\"6\" cy=\"19\" r=\"2.5\"/><circle class=\"mass\" cx=\"18\" cy=\"19\" r=\"2.5\"/>",
   departments: "<circle class=\"mass\" cx=\"7\" cy=\"7\" r=\"3\"/><circle class=\"mass\" cx=\"17\" cy=\"7\" r=\"3\"/><rect class=\"mass\" x=\"9\" y=\"16\" width=\"6\" height=\"5\" rx=\"2\"/><path class=\"detail\" d=\"M7 10v3h10v-3M12 13v3\"/>",
   orgChart: "<rect class=\"mass\" x=\"9\" y=\"3\" width=\"6\" height=\"5\" rx=\"2\"/><rect class=\"mass\" x=\"3\" y=\"16\" width=\"6\" height=\"5\" rx=\"2\"/><rect class=\"mass\" x=\"15\" y=\"16\" width=\"6\" height=\"5\" rx=\"2\"/><path class=\"detail\" d=\"M12 8v4M6 16v-4h12v4\"/>",
   recruit: "<circle class=\"mass\" cx=\"9\" cy=\"8\" r=\"4\"/><path class=\"detail\" d=\"M3 21c0-4 2.5-6 6-6s6 2 6 6M18 8v6M15 11h6\"/><path class=\"fine\" d=\"M6 7a3 3 0 0 1 3-2\"/>",
@@ -119,6 +121,7 @@ export const NAV_ICON_BY_HREF: Record<string, NavIconKey> = {
   "/overtime": "ot",
   "/requests?view=approvals": "approvals",
   "/employees": "people",
+  "/employees/supervisors": "supervisors",
   "/organization?tab=departments": "departments",
   "/organization?tab=chart": "orgChart",
   "/recruitment": "recruit",

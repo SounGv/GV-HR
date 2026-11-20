@@ -24,6 +24,15 @@ const MANAGER_CHIP: Record<ManagerStatus, { tone: StatusTone; label: string }> =
   few: { tone: "neutral", label: "ข้อมูลน้อย ไม่แสดงค่า" },
 };
 
+/** The ten highest totals, ranked 1, 2, 2, 4 ... (people with the same score share a rank). More than ten rows only when the tenth place is tied. */
+function topTen(people: ReviewPerson[]): { rank: number; person: ReviewPerson }[] {
+  const sorted = [...people].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "th"));
+  const ranked = sorted.map((person, i) => ({ rank: i > 0 && person.total === sorted[i - 1]!.total ? 0 : i + 1, person }));
+  for (let i = 1; i < ranked.length; i++) if (ranked[i]!.rank === 0) ranked[i]!.rank = ranked[i - 1]!.rank;
+  const tenth = ranked[9]?.person.total;
+  return ranked.filter((x, i) => i < 10 || (tenth !== undefined && x.person.total === tenth));
+}
+
 const signed = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}`;
 const when = (iso: string) => new Date(iso).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -66,7 +75,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
               key={s}
               aria-current={i === 1 ? "step" : undefined}
               className={cn(
-                "flex items-center gap-2 rounded-full border py-0.5 pr-3 pl-1 text-sm",
+                "flex items-center gap-2 rounded-sm border py-0.5 pr-3 pl-1 text-sm",
                 i === 1 ? "border-primary bg-accent font-semibold text-accent-foreground" : "border-border bg-card text-muted-foreground",
               )}
             >
@@ -128,7 +137,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
                       aria-pressed={dept === d}
                       onClick={() => setDept(d)}
                       className={cn(
-                        "min-h-11 rounded-full border px-4 text-sm font-medium md:min-h-9",
+                        "min-h-11 rounded-sm border px-4 text-sm font-medium md:min-h-9",
                         dept === d ? "border-foreground bg-foreground text-background" : "border-border bg-card",
                       )}
                     >
@@ -160,6 +169,43 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
               </>
             )}
           </Card>
+
+          {r.people.length >= 3 && (
+            <Card className="gap-3 p-4" aria-label="10 อันดับคะแนนสูงสุด">
+              <div>
+                <h2 className="text-base font-semibold">10 อันดับคะแนนสูงสุด</h2>
+                <p className="text-sm text-muted-foreground">เรียงตามคะแนนรวมของรอบนี้ ใช้ดูอย่างเดียว ไม่เปลี่ยนคะแนนหรือเกรด คนที่คะแนนเท่ากันได้อันดับเดียวกัน</p>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-left">
+                    <tr>
+                      <th className="w-16 px-3 py-2 font-semibold">อันดับ</th>
+                      <th className="px-3 py-2 font-semibold">พนักงาน</th>
+                      <th className="px-3 py-2 font-semibold">แผนก</th>
+                      <th className="px-3 py-2 text-right font-semibold">คะแนน (%)</th>
+                      {r.bands.length > 0 && <th className="px-3 py-2 font-semibold">เกรด</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {topTen(r.people).map((x) => (
+                      <tr key={x.person.participantId}>
+                        <td className="px-3 py-2 tabular-nums">{x.rank}</td>
+                        <td className="px-3 py-2">
+                          <Link href={`/appraisal/rounds/${roundId}/people/${x.person.participantId}`} className="font-medium text-primary hover:underline">
+                            {x.person.name}
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2">{x.person.department}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{x.person.total.toFixed(1)}</td>
+                        {r.bands.length > 0 && <td className="px-3 py-2">{x.person.grade ?? "-"}</td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
 
           {!r.imported && (
           <Card className="gap-3 p-4" aria-label="ค่าเฉลี่ยที่หัวหน้าแต่ละคนให้">
