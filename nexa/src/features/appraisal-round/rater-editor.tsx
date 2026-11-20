@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,9 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
   const [clearing, setClearing] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [q, setQ] = useState("");
+  const [view, setView] = useState<"ratee" | "rater">("ratee");
+  const [raterSel, setRaterSel] = useState<string | null>(null);
+  const [dept, setDept] = useState("");
   const ov: RaterPairOverrides = round.overrides;
   const m = round.matching;
   const noRater = useMemo(() => new Set(m.exceptions.filter((e) => e.kind === "NO_RATER").map((e) => e.employeeId)), [m.exceptions]);
@@ -52,6 +56,22 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
   }, [m.rows, noRater, q]);
   const visible = showAll || q.trim() ? rows : rows.slice(0, Math.max(MAX_SHOWN, [...noRater].length));
   const editRow = editing ? m.rows.find((r) => r.employeeId === editing) : undefined;
+  const departments = useMemo(() => [...new Set(m.rows.map((r) => r.department).filter(Boolean))].sort((a, b) => a.localeCompare(b, "th")), [m.rows]);
+  // The same pairs seen from the other side (Favpo "จับคู่ประเมิน (ผู้ประเมิน)"): every rater with the people that rater has to rate.
+  const byRater = useMemo(() => {
+    const by = new Map<string, { id: string; name: string; lines: { row: MatchRow; rater: MatchRow["raters"][number] }[] }>();
+    for (const r of m.rows) {
+      if (dept && r.department !== dept) continue;
+      for (const x of r.raters) {
+        const g = by.get(x.id) ?? { id: x.id, name: x.name, lines: [] };
+        g.lines.push({ row: r, rater: x });
+        by.set(x.id, g);
+      }
+    }
+    const term = q.trim();
+    return [...by.values()].filter((g) => !term || g.name.includes(term)).sort((a, b) => a.name.localeCompare(b.name, "th"));
+  }, [m.rows, dept, q]);
+  const raterOpen = byRater.find((g) => g.id === raterSel) ?? byRater[0];
 
   async function apply(next: RaterPairOverrides, done: string) {
     try {
@@ -98,20 +118,124 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
         ใช้เมื่อผังองค์กรไม่ตรงกับที่ทำจริง เช่น หัวหน้าประเมินคนต่างฝ่าย หรือลูกน้องเลือกประเมินหัวหน้าหลายคน ป้ายเขียว = ตั้งเอง ป้ายขาว = ระบบจับคู่จากผังองค์กร
       </p>
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 inline-flex overflow-hidden rounded-sm border border-border" role="group" aria-label="มุมมองการจับคู่">
+        {([
+          ["ratee", "ตามผู้ถูกประเมิน"],
+          ["rater", "ตามผู้ประเมิน"],
+        ] as const).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            aria-pressed={view === k}
+            onClick={() => setView(k)}
+            className={cn("min-h-11 px-4 text-sm font-medium md:min-h-9", view === k ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted")}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "rater" && (
+        <div className="mt-3 grid gap-3 md:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1.7fr)]">
+          <div className="space-y-2 rounded-sm border border-border p-3">
+            <label className="block text-sm font-medium" htmlFor="rater-q">
+              ค้นหาผู้ประเมิน
+            </label>
+            <Input id="rater-q" className="h-11 md:h-9" placeholder="ชื่อ" value={q} onChange={(e) => setQ(e.target.value)} />
+            <label className="block pt-1 text-sm font-medium" htmlFor="rater-dept">
+              แผนกของผู้ถูกประเมิน
+            </label>
+            <select id="rater-dept" value={dept} onChange={(e) => setDept(e.target.value)} className="border-input bg-background h-11 w-full rounded-md border px-2 text-sm md:h-9">
+              <option value="">ทุกแผนก</option>
+              {departments.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+            <p className="text-muted-foreground text-xs tabular-nums">ผู้ประเมิน {byRater.length} คน</p>
+          </div>
+          <div className="max-h-[32rem] overflow-y-auto rounded-sm border border-border">
+            <p className="bg-card border-border sticky top-0 border-b px-3 py-2 text-sm font-bold">ผู้ประเมิน (จำนวนที่ต้องประเมิน)</p>
+            {byRater.length === 0 ? (
+              <p className="text-muted-foreground px-3 py-4 text-sm">ไม่พบผู้ประเมิน</p>
+            ) : (
+              <ul>
+                {byRater.map((g) => (
+                  <li key={g.id}>
+                    <button
+                      type="button"
+                      aria-pressed={raterOpen?.id === g.id}
+                      onClick={() => setRaterSel(g.id)}
+                      className={cn("border-border flex min-h-11 w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm hover:bg-[#f6f9fe]", raterOpen?.id === g.id && "bg-accent font-bold")}
+                    >
+                      <span className="min-w-0 break-words">{g.name}</span>
+                      <span className="text-muted-foreground tabular-nums">{g.lines.length}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="overflow-x-auto rounded-sm">
+            {raterOpen ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12 text-center">No.</TableHead>
+                    <TableHead className="w-full">ผู้ถูกประเมิน ของ {raterOpen.name}</TableHead>
+                    <TableHead>แผนก</TableHead>
+                    <TableHead>บทบาท</TableHead>
+                    <TableHead className="text-center">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {raterOpen.lines.map(({ row, rater }, i) => (
+                    <TableRow key={`${row.employeeId}-${rater.type}`}>
+                      <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                      <TableCell className="whitespace-normal">
+                        {row.name}
+                        {rater.manual && <span className="text-primary ml-2 text-xs font-semibold">ตั้งเอง</span>}
+                      </TableCell>
+                      <TableCell>{row.department}</TableCell>
+                      <TableCell>{RATER_LABEL[rater.type]}</TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-9"
+                          disabled={save.isPending}
+                          aria-label={`ตัด ${raterOpen.name} ออกจากผู้ประเมินของ ${row.name}`}
+                          onClick={() => apply(removePair(ov, { participantId: row.employeeId, raterId: rater.id, raterType: rater.type }), "ตัดผู้ประเมินออกแล้ว")}
+                        >
+                          <X className="size-4" aria-hidden="true" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-muted-foreground rounded-sm border border-border px-3 py-6 text-center text-sm">เลือกผู้ประเมินทางซ้ายเพื่อดูว่าต้องประเมินใครบ้าง</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className={cn("mt-3 flex items-center gap-2", view === "rater" && "hidden")}>
         <Input className="h-11 max-w-xs md:h-9" placeholder="ค้นหาชื่อ" aria-label="ค้นหาผู้ถูกประเมิน" value={q} onChange={(e) => setQ(e.target.value)} />
         <span className="text-muted-foreground text-xs tabular-nums">
           แสดง {visible.length} จาก {rows.length} คน
         </span>
       </div>
 
-      <div className="border-border mt-3 overflow-x-auto rounded-lg border">
-        <table className="w-full min-w-[640px] text-sm">
+      <div className={cn("border-border mt-3 overflow-x-auto rounded-sm border", view === "rater" && "hidden")}>
+        <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
             <tr className="text-muted-foreground text-left text-xs font-bold">
-              <th className="px-4 py-2 font-bold">ผู้ถูกประเมิน</th>
-              <th className="px-4 py-2 font-bold">ผู้ประเมิน</th>
-              <th className="px-3 py-2 font-bold">จำนวน</th>
+              <th className="border-border border-r px-4 py-2 text-[13px] font-bold">ผู้ถูกประเมิน</th>
+              <th className="border-border border-r px-4 py-2 text-[13px] font-bold">ผู้ประเมิน</th>
+              <th className="border-border border-r px-3 py-2 text-[13px] font-bold">จำนวน</th>
               <th className="px-3 py-2" />
             </tr>
           </thead>
@@ -120,7 +244,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
               const none = noRater.has(r.employeeId);
               return (
                 <tr key={r.employeeId} className={cn("border-border border-t align-top", none && "bg-status-late-bg/60")}>
-                  <td className="px-4 py-2">
+                  <td className="border-border border-r px-4 py-2">
                     <span className="flex items-center gap-2.5">
                       <PersonAvatar name={r.name} gender={r.gender} seed={r.employeeId} src={r.avatarUrl} />
                       <span className="min-w-0">
@@ -129,7 +253,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
                       </span>
                     </span>
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="border-border border-r px-4 py-2">
                     {r.raters.length === 0 ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-status-late-bg px-2.5 py-px text-xs font-semibold text-status-late-fg">
                         <X className="size-3" aria-hidden="true" /> ยังไม่มีผู้ประเมิน
@@ -138,7 +262,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
                       <RaterChips row={r} onRemove={(x) => apply(removePair(ov, { participantId: r.employeeId, raterId: x.id, raterType: x.type }), "ตัดผู้ประเมินออกแล้ว")} busy={save.isPending} onlyManual />
                     )}
                   </td>
-                  <td className="px-3 py-2 tabular-nums">{r.raters.length} คน</td>
+                  <td className="border-border border-r px-3 py-2 tabular-nums">{r.raters.length} คน</td>
                   <td className="px-3 py-2">
                     <Button variant={none ? "default" : "outline"} className="h-11 md:h-8" onClick={() => setEditing(r.employeeId)}>
                       {none ? "เพิ่มผู้ประเมิน" : "แก้ผู้ประเมิน"}
@@ -157,7 +281,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
           </tbody>
         </table>
       </div>
-      {!q.trim() && rows.length > visible.length && (
+      {view === "ratee" && !q.trim() && rows.length > visible.length && (
         <Button variant="ghost" className="mt-2 h-11 md:h-9" onClick={() => setShowAll(true)}>
           ดูทั้งหมด {rows.length} คน
         </Button>

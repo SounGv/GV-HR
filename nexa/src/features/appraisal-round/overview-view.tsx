@@ -525,6 +525,50 @@ function FormsSection() {
  * department progress of that open round) and every form. Each block loads
  * and fails on its own, so one bad request never blanks the page.
  */
+/** The Favpo project hub: three groups of plain link rows (form, rounds, reports) that reach every part of the evaluation setup in one click. */
+function FavpoHub() {
+  const groups: { title: string; links: { href: string; label: string }[] }[] = [
+    {
+      title: "แบบประเมิน",
+      links: [
+        { href: "/appraisal/forms", label: "สร้างและแก้แบบประเมิน" },
+        { href: "/appraisal/settings", label: "ตั้งค่าคะแนนและการแสดงผล" },
+        { href: "/appraisal/kpi", label: "KPI" },
+      ],
+    },
+    {
+      title: "รอบประเมิน",
+      links: [
+        { href: "/appraisal/rounds", label: "รอบประเมินทั้งหมด (ตั้งค่ารอบ ตรวจเช็ค จับคู่ผู้ประเมิน)" },
+        { href: "/appraisal/recurring", label: "รอบอัตโนมัติ (เปิดรอบซ้ำทุกเดือน)" },
+      ],
+    },
+    {
+      title: "รายงาน",
+      links: [
+        { href: "/reports?view=performance", label: "รายงานประเมินผล" },
+        { href: "/appraisal/my-results", label: "ผลประเมินของฉัน" },
+      ],
+    },
+  ];
+  return (
+    <section aria-label="ศูนย์รวมการประเมิน" className="grid gap-4 rounded-lg border border-border bg-card p-4 md:grid-cols-3">
+      {groups.map((g) => (
+        <div key={g.title}>
+          <h2 className="mb-2 text-base font-medium">{g.title}</h2>
+          <div className="divide-y divide-border rounded-sm border border-border">
+            {g.links.map((l) => (
+              <Link key={l.href} href={l.href} className="flex min-h-11 items-center px-3 py-2 text-sm text-foreground transition-colors hover:bg-[#f6f9fe] hover:text-primary">
+                {l.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export function OverviewView() {
   const rounds = useRounds();
   const forms = useAppraisalForms();
@@ -537,6 +581,8 @@ export function OverviewView() {
   return (
     <div className="space-y-6">
       <OverviewActions className="md:hidden" />
+
+      <FavpoHub />
 
       {rounds.isError ? (
         <ErrorState title="โหลดรอบประเมินไม่สำเร็จ" onRetry={() => rounds.refetch()} />
