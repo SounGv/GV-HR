@@ -58,6 +58,8 @@ export interface RoundInsight {
   /** Same for `bottom`. */
   bottomTied: number;
   departments: DepartmentInsight[];
+  /** Everyone in the round (the same rows the table below lists), by name; used to compare with the round before. */
+  everyone: ScoredPerson[];
 }
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -119,5 +121,64 @@ export function summarizeRound(id: string, name: string, people: readonly Scored
     topTied: tiedBeyond(highFirst),
     bottomTied: tiedBeyond(lowFirst),
     departments,
+    everyone: shown([...people].sort(byName)),
+  };
+}
+
+/** Points of average change that count as "better" or "worse" between two rounds. Starting value, HR confirms it (it only labels, nothing is scored from it). */
+export const TREND_MIN_POINTS = 3;
+/** A person whose own score fell by at least this many points is listed as worth a look. Starting value, HR confirms it. */
+export const DROP_LOOK_POINTS = 5;
+
+export type Trend = "up" | "down" | "same";
+export const trendOf = (delta: number, min = TREND_MIN_POINTS): Trend => (delta >= min ? "up" : delta <= -min ? "down" : "same");
+
+export interface RoundComparison {
+  previous: RoundInsight;
+  /** Average now minus average before, in points, over everyone in the current round. */
+  averageDelta: number;
+  departments: { name: string; now: number; before: number | null; delta: number | null }[];
+  /** People in both rounds whose score fell by DROP_LOOK_POINTS or more, biggest fall first. */
+  drops: { name: string; department: string; now: number; before: number; delta: number }[];
+  /** People in both rounds whose score rose, biggest rise first (at most `limit`). */
+  rises: { name: string; department: string; now: number; before: number; delta: number }[];
+  /** How many people are in both rounds. */
+  shared: number;
+}
+
+/**
+ * The round to compare with: of the rounds listed after this one (older), the one that shares the most people with it, at least
+ * half of this round's people. Two rounds that ask different people (a manager rating staff, staff rating the manager) share
+ * almost nobody, so they are never compared with each other.
+ */
+export function previousRoundOf(rounds: readonly RoundInsight[], currentId: string): RoundInsight | undefined {
+  const i = rounds.findIndex((r) => r.id === currentId);
+  if (i < 0) return undefined;
+  const cur = rounds[i]!;
+  const codes = new Set(cur.everyone.map((p) => p.code));
+  let best: RoundInsight | undefined;
+  let bestShared = 0;
+  for (const r of rounds.slice(i + 1)) {
+    const shared = r.everyone.filter((p) => codes.has(p.code)).length;
+    if (shared > bestShared) {
+      best = r;
+      bestShared = shared;
+    }
+  }
+  return best && bestShared * 2 >= cur.count ? best : undefined;
+}
+
+export function compareRounds(cur: RoundInsight, prev: RoundInsight, limit = 5): RoundComparison {
+  const before = new Map(prev.everyone.map((p) => [p.code, p]));
+  const both = cur.everyone.filter((p) => before.has(p.code));
+  const rows = both.map((p) => ({ name: p.name, department: p.department, now: p.percent, before: before.get(p.code)!.percent, delta: r1(p.percent - before.get(p.code)!.percent) }));
+  const prevDept = new Map(prev.departments.map((d) => [d.name, d.average]));
+  return {
+    previous: prev,
+    averageDelta: r1(cur.average - prev.average),
+    departments: cur.departments.map((d) => ({ name: d.name, now: d.average, before: prevDept.get(d.name) ?? null, delta: prevDept.has(d.name) ? r1(d.average - prevDept.get(d.name)!) : null })),
+    drops: rows.filter((x) => x.delta <= -DROP_LOOK_POINTS).sort((a, b) => a.delta - b.delta || a.name.localeCompare(b.name, "th")),
+    rises: rows.filter((x) => x.delta > 0).sort((a, b) => b.delta - a.delta || a.name.localeCompare(b.name, "th")).slice(0, limit),
+    shared: both.length,
   };
 }

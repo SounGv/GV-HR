@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import { ArrowDown, ArrowUp, Minus, TriangleAlert } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CEILING_MIN_PEOPLE, CEILING_SHARE } from "@/features/appraisal-round/review-rules";
 import { cn } from "@/lib/utils";
-import type { RoundInsight, ScoredPerson } from "./result-insights";
+import { compareRounds, DROP_LOOK_POINTS, previousRoundOf, TREND_MIN_POINTS, trendOf, type RoundComparison, type RoundInsight, type ScoredPerson, type Trend } from "./result-insights";
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 const share = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
@@ -22,6 +22,8 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
   const r = rounds.find((x) => x.id === id) ?? rounds[0];
   if (!r) return null;
   const ceiling = r.count >= CEILING_MIN_PEOPLE && r.atTop / r.count >= CEILING_SHARE;
+  const prev = previousRoundOf(rounds, r.id);
+  const cmp = prev ? compareRounds(r, prev) : undefined;
 
   return (
     <Card className="gap-4 p-4 print:break-inside-avoid" aria-label="ภาพรวมผลประเมิน">
@@ -81,6 +83,8 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
         <Ranking title="คะแนนต่ำสุด" people={r.bottom} tied={r.bottomTied} />
       </div>
 
+      {cmp && <Comparison cmp={cmp} currentName={r.name} />}
+
       <section aria-label="สรุปรายแผนก">
         <h4 className="text-sm font-semibold">สรุปรายแผนก</h4>
         <div className="border-border mt-2 overflow-x-auto rounded-lg border">
@@ -111,6 +115,99 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
         </div>
       </section>
     </Card>
+  );
+}
+
+const TREND_TEXT: Record<Trend, string> = { up: "ดีขึ้น", down: "ลดลง", same: "เท่าเดิม" };
+const TREND_ICON = { up: ArrowUp, down: ArrowDown, same: Minus } as const;
+const TREND_CLASS: Record<Trend, string> = {
+  up: "border-status-normal-border bg-status-normal-bg text-status-normal-fg",
+  down: "border-status-absent-border bg-status-absent-bg text-status-absent-fg",
+  same: "border-border bg-muted text-muted-foreground",
+};
+
+/** A change in points with an arrow and a word (never colour alone). `min` is how many points count as a real change. */
+function Delta({ value, min = TREND_MIN_POINTS }: { value: number | null; min?: number }) {
+  if (value === null) return <span className="text-muted-foreground">ไม่มีรอบก่อน</span>;
+  const t = trendOf(value, min);
+  const Icon = TREND_ICON[t];
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-px text-xs font-semibold tabular-nums", TREND_CLASS[t])}>
+      <Icon className="size-3" aria-hidden="true" />
+      {TREND_TEXT[t]} {value > 0 ? "+" : ""}
+      {fmt(value)}
+    </span>
+  );
+}
+
+/** "เทียบกับรอบก่อน": average and each department against the round before, plus the people whose score fell or rose most. */
+function Comparison({ cmp, currentName }: { cmp: RoundComparison; currentName: string }) {
+  return (
+    <section aria-label="เทียบกับรอบก่อน" className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <h4 className="text-sm font-semibold">เทียบกับรอบก่อน</h4>
+        <Delta value={cmp.averageDelta} />
+        <span className="text-muted-foreground text-xs">
+          {currentName} เทียบกับ {cmp.previous.name} · มีคนอยู่ในทั้งสองรอบ {cmp.shared} คน
+        </span>
+      </div>
+      <div className="border-border overflow-x-auto rounded-sm border">
+        <table className="w-full min-w-[480px] border-collapse text-sm">
+          <thead>
+            <tr>
+              <th scope="col" className="border-border border-r border-b px-3 py-2 text-left text-[13px] font-bold">แผนก</th>
+              <th scope="col" className="border-border border-r border-b px-2 py-2 text-right text-[13px] font-bold">รอบก่อน (%)</th>
+              <th scope="col" className="border-border border-r border-b px-2 py-2 text-right text-[13px] font-bold">รอบนี้ (%)</th>
+              <th scope="col" className="border-border border-b px-3 py-2 text-left text-[13px] font-bold">เปลี่ยนแปลง</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cmp.departments.map((d) => (
+              <tr key={d.name}>
+                <td className="border-border border-r border-b px-3 py-2 break-words">{d.name}</td>
+                <td className="border-border border-r border-b px-2 py-2 text-right tabular-nums">{d.before === null ? "-" : fmt(d.before)}</td>
+                <td className="border-border border-r border-b px-2 py-2 text-right tabular-nums">{fmt(d.now)}</td>
+                <td className="border-border border-b px-3 py-2">
+                  <Delta value={d.delta} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <MoveList title={`คะแนนลดลงตั้งแต่ ${DROP_LOOK_POINTS} จุด (ควรดู)`} people={cmp.drops} empty="ไม่มีใครลดลงถึงเกณฑ์" />
+        <MoveList title="คะแนนเพิ่มขึ้นมากสุด" people={cmp.rises} empty="ไม่มีใครเพิ่มขึ้น" />
+      </div>
+      <p className="text-muted-foreground text-xs">
+        เกณฑ์ตั้งต้น (รอ HR ยืนยัน): ถือว่าดีขึ้นหรือลดลงเมื่อค่าเฉลี่ยเปลี่ยน {TREND_MIN_POINTS} จุดขึ้นไป และเรียกว่า “ควรดู” เมื่อคะแนนรายคนลดลง {DROP_LOOK_POINTS} จุดขึ้นไป ตัวเลขนี้ใช้เป็นป้ายเท่านั้น ไม่มีผลกับคะแนนหรือเกรด
+      </p>
+    </section>
+  );
+}
+
+function MoveList({ title, people, empty }: { title: string; people: RoundComparison["drops"]; empty: string }) {
+  return (
+    <div>
+      <h5 className="text-sm font-semibold">{title}</h5>
+      {people.length === 0 ? (
+        <p className="text-muted-foreground mt-1 text-sm">{empty}</p>
+      ) : (
+        <ol className="mt-1 space-y-1.5">
+          {people.slice(0, 10).map((p) => (
+            <li key={`${p.name}-${p.department}`} className="flex items-center gap-2 text-sm">
+              <span className="min-w-0 flex-1 break-words">
+                {p.name} <span className="text-muted-foreground text-xs">{p.department}</span>
+              </span>
+              <span className="text-muted-foreground text-xs tabular-nums">
+                {fmt(p.before)} ถึง {fmt(p.now)}
+              </span>
+              <Delta value={p.delta} min={1} />
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
   );
 }
 

@@ -3,13 +3,14 @@
 import { Fragment, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, Sparkles } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { previousOf, readTrail } from "@/components/mobile/nav-trail";
 import { NAV_GROUPS } from "@/config/navigation";
 import { resolveSection } from "@/config/section-tabs";
 import { useAuth } from "@/features/auth/auth-context";
+import { useAiPanel } from "@/features/ai/ai-panel-context";
 import { useAiAccess } from "@/features/ai/hooks";
 import { cn } from "@/lib/utils";
 import { HOME_PATH } from "./app-shell-nav";
@@ -39,6 +40,7 @@ export function SectionBand() {
   const { data: aiAccess } = useAiAccess();
   const badge = useNavBadges();
   const chrome = usePublishedChrome();
+  const { toggle: toggleAiPanel, open: aiPanelOpen } = useAiPanel();
   const setSlot = useSlotSetter();
   const rootRef = useRef<HTMLElement>(null);
   const activeRef = useRef<HTMLAnchorElement>(null);
@@ -48,6 +50,8 @@ export function SectionBand() {
     () => (permission: string) => can(permission) || (permission === "ai:read" && !!aiAccess?.data.allowed),
     [can, aiAccess?.data.allowed],
   );
+  // Same rule as the side menu: only an account that may use the assistant (managers, HR, or a person HR granted) sees the button.
+  const showAi = NAV_GROUPS.some((g) => g.items.some((i) => i.featured && i.opensAiPanel && canSee(i.permission)));
   const section = useMemo(() => resolveSection(NAV_GROUPS, canSee, pathname, search), [canSee, pathname, search]);
 
   const isHome = pathname === HOME_PATH;
@@ -86,6 +90,17 @@ export function SectionBand() {
           GV One
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+          {showAi && (
+            <button
+              type="button"
+              onClick={toggleAiPanel}
+              aria-pressed={aiPanelOpen}
+              className="mr-1 inline-flex min-h-11 items-center gap-1.5 rounded-md bg-white px-3 text-sm font-medium text-[#0d47a1] transition hover:bg-[#e3f2fd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">ถามน้องวีบอท</span>
+            </button>
+          )}
           <NotificationBell />
           <ThemeToggle />
           <Separator orientation="vertical" className="mx-1 h-5 bg-white/30" />
