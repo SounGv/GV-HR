@@ -35,8 +35,9 @@ export interface MobileDashboardSnapshot {
   recognition: { star: number; award: number; heart: number; point: number };
 }
 
+/** Bangkok wall-clock hour: the server renders in UTC, so getHours() disagreed with the browser and caused a hydration mismatch. */
 function greeting(): string {
-  const h = new Date().getHours();
+  const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Asia/Bangkok" }).format(new Date()));
   if (h < 12) return "สวัสดีตอนเช้า";
   if (h < 17) return "สวัสดีตอนบ่าย";
   return "สวัสดีตอนเย็น";
@@ -79,7 +80,7 @@ export function MobileDashboardView({
   const latestEval = evalHistory?.data?.[0];
   const latestScore = latestEval ? latestEval.calibratedScore ?? latestEval.overallScore : null;
 
-  const today = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric" }).format(new Date());
+  const today = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok" }).format(new Date());
   const greetName = user.employee ? `คุณ${user.employee.firstName}` : name ?? "";
 
   // Sick, personal and annual leave are not interchangeable, so each type is shown on its own
