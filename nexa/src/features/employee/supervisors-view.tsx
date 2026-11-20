@@ -113,7 +113,7 @@ export function SupervisorsView({ canEdit }: { canEdit: boolean }) {
   const fromOthers = moving.filter((p) => p.managerId).length;
 
   return (
-    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
       {/* Left: supervisors */}
       <section aria-label="หัวหน้างาน" className="space-y-3 rounded-lg border border-border bg-card p-3">
         <div className="relative">

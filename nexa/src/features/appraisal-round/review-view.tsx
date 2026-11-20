@@ -176,7 +176,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
                 <h2 className="text-base font-semibold">10 อันดับคะแนนสูงสุด</h2>
                 <p className="text-sm text-muted-foreground">เรียงตามคะแนนรวมของรอบนี้ ใช้ดูอย่างเดียว ไม่เปลี่ยนคะแนนหรือเกรด คนที่คะแนนเท่ากันได้อันดับเดียวกัน</p>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-border">
+              <div className="relative overflow-x-auto rounded-lg border border-border">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 text-left">
                     <tr>
@@ -219,7 +219,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
             {r.managers.rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">ยังไม่มีหัวหน้าที่ส่งคำตอบ</p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-border">
+              <div className="relative overflow-x-auto rounded-lg border border-border">
                 <table className="w-full min-w-[560px] text-sm">
                   <thead className="bg-muted/50 text-muted-foreground">
                     <tr>
@@ -256,7 +256,7 @@ export function RoundReviewPage({ roundId }: { roundId: string }) {
                 ช่องว่างคือคะแนนตนเองลบคะแนนหัวหน้า ถ้าห่างตั้งแต่ {r.thresholds.selfGap} จุดขึ้นป้าย ควรคุย และถ้าอยู่ห่างขอบเกรดไม่ถึง 1 จุดขึ้นป้าย ใกล้ขอบเกรด คนที่มีป้ายอยู่บนสุด
               </p>
             </div>
-            <div className="overflow-x-auto rounded-lg border border-border">
+            <div className="relative overflow-x-auto rounded-lg border border-border">
               <table className="w-full min-w-[720px] text-sm">
                 <thead className="bg-muted/50 text-muted-foreground">
                   <tr>
