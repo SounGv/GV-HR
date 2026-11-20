@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -31,7 +30,6 @@ import {
   type AnswerValue,
   type SnapQuestion,
 } from "./answers";
-import { scoreIconSrc } from "./score-icon";
 import { RATER_LABEL, type TaskDetail } from "./types";
 
 /*
@@ -71,31 +69,18 @@ export function scoreTone(score: number, max: number) {
   return "bg-muted text-foreground";
 }
 
-function ScoreIcon({ score, max, small, picked }: { score: number; max: number; small?: boolean; picked?: boolean }) {
+/** The score as a plain number in a square (Favpo shows numbers, not pictures); the picked one is filled blue. */
+function ScoreIcon({ score, small, picked }: { score: number; max: number; small?: boolean; picked?: boolean }) {
   return (
     <span
+      aria-hidden="true"
       className={cn(
-        "relative flex shrink-0 items-center justify-center rounded-full",
-        "border border-border bg-card",
-        small ? "size-10" : "size-14",
-        picked && "gv-icon-breathe",
+        "flex shrink-0 items-center justify-center rounded-sm border font-bold tabular-nums",
+        small ? "size-9 text-base" : "size-12 text-xl",
+        picked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground",
       )}
     >
-      <Image
-        src={scoreIconSrc(score, max)}
-        alt=""
-        width={64}
-        height={64}
-        unoptimized
-        className={cn(
-          "object-contain",
-          small ? "size-7" : "size-10",
-          picked && "gv-icon-pop",
-        )}
-      />
-      <span className="bg-card text-foreground absolute -right-1 -bottom-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[12.5px] leading-none font-bold tabular-nums ">
-        {score}
-      </span>
+      {score}
     </span>
   );
 }
