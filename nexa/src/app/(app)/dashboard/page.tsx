@@ -1,3 +1,4 @@
+import { CalendarView } from "@/features/calendar/calendar-view";
 import type { Metadata } from "next";
 import { Suspense, type ComponentType, type ReactNode } from "react";
 import Link from "next/link";
@@ -244,25 +245,6 @@ function StripCell({
   );
 }
 
-/** Bangkok wall-clock hour: the server runs in UTC, so getHours() alone greeted people with the wrong part of the day. */
-function bangkokHour(): number {
-  return Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Asia/Bangkok" }).format(new Date()));
-}
-
-/** e.g. "วันพุธที่ 11 พฤศจิกายน 2569" (Buddhist year, Bangkok date). */
-function todayLabel(): string {
-  return new Intl.DateTimeFormat("th-TH", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" })
-    .format(new Date());
-}
-
-function greeting(): string {
-  const h = bangkokHour();
-  if (h < 12) return "สวัสดีตอนเช้า";
-  if (h < 17) return "สวัสดีตอนบ่าย";
-  return "สวัสดีตอนเย็น";
-}
-
-
 async function AttendanceWatchSection({
   companyId,
   session,
@@ -293,6 +275,24 @@ async function AttendanceWatchSection({
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** One of the four plain boxes at the top of the home page: a label and one figure, a link when the viewer may open it. */
+function CountBox({ label, value, sub, href }: { label: string; value: React.ReactNode; sub?: string; href?: string }) {
+  const body = (
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl leading-snug tabular-nums">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+    </div>
+  );
+  return href ? (
+    <Link href={href} className="block hover:[&>div]:border-primary">
+      {body}
+    </Link>
+  ) : (
+    body
+  );
+}
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ dept?: string }> }) {
   const user = await getCurrentUser();
@@ -385,29 +385,23 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <MobileDashboardView name={name} mine={mine} actions={actions} />
       <LiveTodayProvider initial={attendanceToday} departmentIds={deptIds}>
       <div className="theme-flip7 gv-page-band hidden space-y-6 md:-mx-6 md:-mt-6 md:block md:px-6 md:pt-6">
-      {/* Greeting, date and the page-wide controls on one row. */}
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="min-w-0">
-            <h2 className="font-heading text-[26px] leading-snug font-bold">
-              {greeting()}, {name}
-            </h2>
-            <p className="text-[13px] text-muted-foreground">
-              {todayLabel()} · {user?.company?.name}
-            </p>
-            {/* Counts the cards on the board below as they stream in (follow-count.tsx). */}
-            <div className="mt-2.5">
-              <FollowCount />
-            </div>
-          </div>
-        </div>
-        {attendanceToday && (
-          <div className="ml-auto flex flex-wrap items-center gap-3">
-            <LiveStamp />
-            <DepartmentFilter departments={departmentOptions} selected={deptIds[0] ?? null} />
-          </div>
-        )}
+      {/* Favpo home: the company name, four plain count boxes, then the month calendar. Everything that needs doing today
+          (approvals, follow-up board, evaluations) follows below. */}
+      <p className="text-base font-medium">{user?.company?.name}</p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <CountBox label="พนักงาน" value={`${s.headcount} คน`} href={can(user!.permissions, "employee:read") ? "/employees?status=ACTIVE" : undefined} />
+        <CountBox label="ลงเวลาวันนี้" value={`${s.presentToday} คน`} sub={`มาสาย ${s.lateToday} · ลา ${s.onLeaveToday}`} href={can(user!.permissions, "report:read") ? "/reports?view=attendance_daily" : undefined} />
+        <CountBox label="รอคุณอนุมัติ" value={`${pendingApprovals} รายการ`} href="/requests?view=approvals" />
+        <CountBox label="ต้องตามวันนี้" value={<FollowCount />} href="#follow-up" />
       </div>
+      {attendanceToday && (
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <LiveStamp />
+          <DepartmentFilter departments={departmentOptions} selected={deptIds[0] ?? null} />
+        </div>
+      )}
+
+      {can(user!.permissions, "calendar:read") && <CalendarView />}
 
       {/* AI: one-line summary plus an ask box that opens the AI page with the question. */}
       {canSeeCompany && (
