@@ -2,6 +2,7 @@
 
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
+import { DateInput } from "@/components/ui/date-input";
 
 /** "00:00", "00:30", … "23:30" — every half hour of the day. */
 export const HALF_HOUR_TIMES: string[] = Array.from({ length: 48 }, (_, i) => {
@@ -141,12 +142,11 @@ export function DateTimeField({
   const [date = "", time = ""] = (value ?? "").split("T");
   return (
     <div className="space-y-1.5">
-      <input
+      <DateInput
         id={id}
-        type="date"
         aria-label="วันที่"
         aria-invalid={ariaInvalid}
-        className={inputClassName}
+        className="h-8"
         value={date}
         onBlur={onBlur}
         onChange={(e) => onChange(e.target.value ? `${e.target.value}T${time || "09:00"}` : "")}

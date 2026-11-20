@@ -82,7 +82,7 @@ function Cell({ employees, compact }: { employees: NineBoxEmployee[]; compact?: 
           <Link
             key={e.id}
             href={`/employees/${e.id}/evaluation-history`}
-            className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs hover:bg-muted"
+            className="flex min-h-11 items-center gap-1.5 rounded-md px-1.5 py-1 text-xs hover:bg-muted md:min-h-0"
           >
             <Avatar size="sm">
               <AvatarImage src={e.avatarUrl ?? undefined} />

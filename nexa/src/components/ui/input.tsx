@@ -2,8 +2,11 @@ import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
+import { DateInput } from "@/components/ui/date-input"
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  // Dates read day/month/Buddhist year whatever the browser language is; the value is still an ISO string (see date-input.tsx).
+  if (type === "date") return <DateInput className={className} {...props} />
   return (
     <InputPrimitive
       type={type}
