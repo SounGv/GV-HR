@@ -1597,3 +1597,27 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   .gv-icon-pop { animation: none; transform: scale(1.1) rotate(-3deg); }
   .gv-icon-breathe { animation: none; }
 }
+
+/* Menu icons in front of side-menu entries (nav-icon.tsx, art in config/nav-icon-art.ts): a 16px outline that follows the
+   text colour, so it is white on the open entry and light in dark mode. The thicker line keeps small shapes readable. */
+.gv-nav-ico .mass {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.gv-nav-ico .detail {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.gv-nav-ico .solid {
+  fill: currentColor;
+}
+.gv-nav-ico .fine,
+.gv-nav-ico .shadow {
+  display: none;
+}

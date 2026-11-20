@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
 import { VBot } from "@/components/shared/v-bot";
 import { GvIconTile } from "@/components/shared/gv-icons";
+import { NavIcon } from "@/components/shared/nav-icon";
 
 
 export function AppSidebar() {
@@ -143,7 +144,8 @@ export function AppSidebar() {
             )
           }
         >
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-2">
+            <NavIcon href={item.href} />
             {prefs.pinned.includes(item.href) && (
               // A starred item sits first in its group; the small star says why.
               <Star className={cn("size-3! shrink-0", !active && "text-sidebar-primary")} fill="currentColor" aria-label="ปักหมุดไว้" />
