@@ -17,7 +17,7 @@ export function MobileBell() {
     <Link href="/notifications" aria-label={unread > 0 ? `การแจ้งเตือน ยังไม่ได้อ่าน ${unread}` : "การแจ้งเตือน"} className="relative flex size-11 items-center justify-center rounded-full bg-white/15 text-white transition active:scale-95">
       <Bell className="size-6" aria-hidden="true" />
       {unread > 0 && (
-        <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground ring-2 ring-[#0d47a1]">
+        <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-badge px-1 text-xs font-semibold text-badge-foreground ring-2 ring-[#0d47a1] dark:ring-[#0a2f6b]">
           {unread > 9 ? "9+" : unread}
         </span>
       )}

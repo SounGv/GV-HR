@@ -12,7 +12,7 @@ export function characterFor(employee: { gender?: string | null } | null | undef
   return "OTHER";
 }
 
-const LIME = "#CDEB03";
+const LIME = "#90caf9";
 /** Skin, its shade, hair and shirt palettes; the person's seed picks one of each so a list never looks cloned. */
 const SKINS: [string, string][] = [
   ["#f6cfaa", "#e9b78f"],
@@ -20,7 +20,7 @@ const SKINS: [string, string][] = [
   ["#d9a27c", "#c48b64"],
 ];
 const HAIRS = ["#2b2320", "#3d2a20", "#1c1917"];
-const SHIRTS = ["#0f766e", "#115e59", "#0d9488"];
+const SHIRTS = ["#1565c0", "#0d47a1", "#1976d2"];
 
 /** Stable small number from a string (employee id or name), so the same person always looks the same. */
 function hashSeed(seed: string): number {
@@ -68,7 +68,7 @@ export function CharacterAvatar({ character, seed = "", className }: { character
   const id = useId().replace(/:/g, "");
   if (character === "BOT") {
     return (
-      <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(150deg,#ecfeff,#ccfbf1)]", className)}>
+      <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(150deg,#eef6fd,#e3f2fd)]", className)}>
         <Logo size={40} className="h-auto w-[76%]" />
       </span>
     );
@@ -78,7 +78,7 @@ export function CharacterAvatar({ character, seed = "", className }: { character
   const hair = HAIRS[(h >>> 3) % HAIRS.length];
   const shirt = SHIRTS[(h >>> 6) % SHIRTS.length];
   const style = (h >>> 9) % 3;
-  const bg = character === "FEMALE" ? ["#fdf2f8", "#ccfbf1"] : ["#ecfeff", "#ccfbf1"];
+  const bg = character === "FEMALE" ? ["#fdf2f8", "#e3f2fd"] : ["#eef6fd", "#e3f2fd"];
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false" className={cn("shrink-0 rounded-full", className)}>
       <defs>

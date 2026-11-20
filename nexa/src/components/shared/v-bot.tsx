@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 /** น้องวีบอท's moods, one per chat state. */
 export type VBotMood = "hi" | "think" | "ok" | "sorry";
 
-const LIME = "#CDEB03";
-const MINT = "#5eead4";
+const LIME = "#90caf9";
+const MINT = "#90caf9";
 const INK = "#0b1414";
-const TEAL_DARK = "#0f766e";
+const TEAL_DARK = "#1565c0";
 
 function sparkPath(x: number, y: number, r: number): string {
   const k = r * 0.32;
@@ -111,9 +111,9 @@ export function VBot({ mood = "ok", full = false, className }: { mood?: VBotMood
     >
       <defs>
         <linearGradient id={`vbot-${id}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#2dd4bf" />
-          <stop offset=".55" stopColor="#0d9488" />
-          <stop offset="1" stopColor="#0f766e" />
+          <stop offset="0" stopColor="#64b5f6" />
+          <stop offset=".55" stopColor="#1976d2" />
+          <stop offset="1" stopColor="#1565c0" />
         </linearGradient>
       </defs>
       {full && (
@@ -131,7 +131,7 @@ export function VBot({ mood = "ok", full = false, className }: { mood?: VBotMood
           {mood === "hi" ? (
             <g className="vbot-arm">
               <path d="M37 100L22 82" stroke={TEAL_DARK} strokeWidth="8" strokeLinecap="round" />
-              <circle cx="20" cy="79" r="6" fill="#2dd4bf" />
+              <circle cx="20" cy="79" r="6" fill="#64b5f6" />
             </g>
           ) : (
             <path d="M37 100L27 116" stroke={TEAL_DARK} strokeWidth="8" strokeLinecap="round" />

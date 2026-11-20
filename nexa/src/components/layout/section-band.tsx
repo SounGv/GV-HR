@@ -81,7 +81,7 @@ export function SectionBand() {
   return (
     <header ref={rootRef} className="print:hidden">
       <div className="gv-bar-blue flex h-14 items-center gap-2 bg-[#0d47a1] px-3 text-white sm:px-4 dark:bg-[#0a2f6b]">
-        <SidebarTrigger className="-ml-1 size-10" />
+        <SidebarTrigger className="-ml-1 size-11" />
         <Link href={HOME_PATH} aria-label="GV One หน้าหลัก" className="text-[22px] leading-none font-bold tracking-tight text-white hover:text-white">
           GV One
         </Link>
@@ -99,7 +99,7 @@ export function SectionBand() {
           <button
             type="button"
             onClick={() => router.push(previousOf(readTrail()) ?? HOME_PATH)}
-            className="flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
+            className="flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             ย้อนกลับ
@@ -146,9 +146,9 @@ export function SectionBand() {
             <Link
               key={c.name}
               href={c.href}
-              aria-current={c.active ? "true" : undefined}
+              aria-current={c.active ? "page" : undefined}
               className={cn(
-                "flex h-8 shrink-0 items-center rounded-full border px-3.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                "flex h-10 shrink-0 items-center rounded-full border px-3.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 c.active
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-[color:var(--muted-strong)] hover:bg-muted/60 hover:text-foreground",

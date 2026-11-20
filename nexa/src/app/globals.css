@@ -133,7 +133,8 @@
   --ticker-warn-fg: #3b2300;
   --ticker-info: #1d4ed8;
   --ticker-ok: #15803d;
-  --radius: 0.75rem;
+  /* Favpo look: small corners everywhere (4-8px). Every rounded-* step is derived from this one value in the @theme block. */
+  --radius: 0.5rem;
 
   /* Roboto via next/font (see layout.tsx) draws Latin, device font draws Thai: the single typeface for body and
      headings. The stacks live in the @theme block above. Do not redeclare
@@ -189,8 +190,7 @@
   --field-bg: #eef3fb;
   --field-shadow: inset 0 1px 2px rgba(19, 21, 22, 0.06);
   /* Depth from two cheap shadows plus a 1px inset top highlight (no blur filters). */
-  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06), 0 4px 10px -6px rgba(19, 21, 22, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06);
   /* Secondary text that must stay easy to read at 14px (inactive tabs): 8.8:1 on white. */
   --muted-strong: #444b54;
   /* Lines between table rows: visible but quiet (1.4:1). */
@@ -558,8 +558,7 @@
 .theme-flip7 {
   /* Owner-approved home depth (home-assistant-mock.html, 14 Nov 2026): raised white cards
      on a teal-tinted ground with two soft glows, still blur-free. */
-  --card-shadow: 0 2px 4px rgba(11, 40, 37, 0.06), 0 12px 28px rgba(11, 40, 37, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --card-shadow: 0 1px 2px rgba(19, 21, 22, 0.06);
   --card-hover-border: #b9c2c9;
   --row-hover: #f0f9f7;
   --page-band: radial-gradient(1100px 500px at 85% -10%, rgba(25, 118, 210, 0.1), transparent 60%),
@@ -1248,10 +1247,9 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .gv-lg { background: var(--lg-glass-strong); }
-  .gv-lg-top { background: var(--lg-glass-strong); }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .gv-lg, .gv-lg-top { background: var(--lg-glass-strong); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .gv-lg { background: var(--lg-glass-strong); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .gv-lg-drop { transition: none; }

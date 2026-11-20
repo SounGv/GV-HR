@@ -120,7 +120,8 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
         </p>
         <Input
           autoFocus
-          inputMode="numeric"
+          autoComplete="one-time-code"
+          aria-label="รหัสยืนยัน 6 หลัก หรือรหัสสำรอง"
           placeholder="123456"
           value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value)}
@@ -135,7 +136,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
             setMfaToken(null);
             setMfaCode("");
           }}
-          className="w-full text-center text-xs text-[var(--login-text-secondary)] hover:underline"
+          className="min-h-11 w-full text-center text-sm text-[var(--login-text-secondary)] hover:underline"
         >
           กลับไปเข้าสู่ระบบใหม่
         </button>
@@ -157,6 +158,8 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
                   icon={<Mail className="size-4" />}
                   type="text"
                   autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   placeholder="name@gadgetvilla.co.th"
                   {...field}
                 />

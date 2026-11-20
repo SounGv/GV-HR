@@ -45,7 +45,6 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, React.ComponentP
             onClick={() => setVisible((v) => !v)}
             className="absolute top-1/2 right-1 flex size-11 -translate-y-1/2 items-center justify-center text-[var(--login-text-secondary)] hover:text-[var(--login-text-primary)]"
             aria-label={visible ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-            tabIndex={-1}
           >
             {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
