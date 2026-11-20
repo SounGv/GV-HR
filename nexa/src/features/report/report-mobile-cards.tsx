@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PhotoCell, type PhotoPreview } from "./report-photo-cell";
 import { ReportStatusBadge, dailyCardClass, dailyPhotoPreview, type DisplayColumn } from "./attendance-row-style";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,7 @@ function photoMeta(row: Record<string, string | number>, key: string) {
   return { title, lines };
 }
 
+const PAGE_SIZE = 30;
 const HEADER_KEYS = ["name", "code"];
 const SUBHEADER_KEYS = ["date", "status"];
 
@@ -62,9 +65,13 @@ export function ReportMobileCards({
   const usedKeys = new Set([...headerCols, ...subheaderCols].map((c) => c.key));
   const bodyCols = all.filter((c) => !usedKeys.has(c.key));
 
+  // A long report (87 people) used to be one endless scroll; the phone shows 30 cards and a button for the next 30.
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const shown = result.rows.slice(0, limit);
+
   return (
     <div className="space-y-3 md:hidden">
-      {result.rows.map((row, i) => {
+      {shown.map((row, i) => {
         const tone = isDaily ? dailyCardClass(row) : {};
         return (
         <Card key={i} className={cn("gap-0 overflow-hidden p-0", tone.card)}>
@@ -145,6 +152,11 @@ export function ReportMobileCards({
         </Card>
         );
       })}
+      {result.rows.length > limit && (
+        <Button variant="outline" className="h-11 w-full" onClick={() => setLimit((n) => n + PAGE_SIZE)}>
+          แสดงเพิ่ม (เหลือ {result.rows.length - limit} จาก {result.rows.length})
+        </Button>
+      )}
     </div>
   );
 }

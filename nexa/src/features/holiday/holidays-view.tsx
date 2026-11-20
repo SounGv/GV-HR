@@ -208,7 +208,7 @@ export function HolidaysView() {
                           <span className="text-xs">{weekday}</span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate font-medium text-foreground">{h.name}</div>
+                          <div className="font-medium break-words text-foreground">{h.name}</div>
                           <div className="mt-0.5 flex items-center gap-2">
                             <span
                               className={cn(

@@ -27,7 +27,7 @@ export function HelpView() {
             <li key={s.id}>
               <a
                 href={`#${s.id}`}
-                className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-foreground transition hover:bg-secondary hover:text-secondary-foreground"
+                className="flex min-h-11 items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-foreground transition hover:bg-secondary hover:text-secondary-foreground"
               >
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <s.icon className="size-4" />

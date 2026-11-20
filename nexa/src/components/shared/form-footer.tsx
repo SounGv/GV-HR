@@ -59,11 +59,11 @@ export function FormFooter({
           // form a small row on top; the primary action gets its own full-width
           // row at the very bottom, in the thumb-reachable spot — the same
           // pattern MobilePrimaryButton already uses elsewhere (e.g. leave).
-          "gv-foot border-border bg-card md:bg-background fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-20 flex flex-col gap-2 border-t px-4 py-3 md:sticky md:inset-x-auto md:bottom-0 md:-mx-6 md:flex-row md:flex-wrap md:items-center md:justify-end md:py-3 md:pr-24 md:pl-6",
+          "gv-foot border-border bg-card md:bg-background fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-20 flex items-center gap-2 border-t px-4 py-2 md:sticky md:inset-x-auto md:bottom-0 md:-mx-6 md:flex-row md:flex-wrap md:items-center md:justify-end md:py-3 md:pr-24 md:pl-6",
           className,
         )}
       >
-        <div className="flex items-center gap-2 md:contents">
+        <div className="flex shrink-0 items-center gap-2 md:contents">
           <Button
             type="button"
             variant="ghost"
@@ -99,7 +99,7 @@ export function FormFooter({
               variant="default"
               onClick={a.onClick}
               disabled={pending}
-              className="w-full md:w-auto"
+              className="min-w-0 flex-1 md:w-auto md:flex-none"
             >
               {pending && <Spinner />}
               {a.label}

@@ -261,7 +261,7 @@ function Approvals() {
     </div>
     <div className="space-y-2 md:hidden">
       {requests.map((r) => (
-        <Card key={r.id} className="flex-row items-center justify-between gap-3 p-4">
+        <Card key={r.id} className="gap-3 p-4">
           <Link href={`/overtime/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
             <Avatar className="size-9">
               {r.employee.avatarUrl && <AvatarImage src={r.employee.avatarUrl} alt={r.employee.firstName} />}
@@ -270,7 +270,7 @@ function Approvals() {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <p className="truncate font-medium text-foreground">
+              <p className="font-medium break-words text-foreground">
                 {displayName(r.employee)}
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">
@@ -279,11 +279,11 @@ function Approvals() {
               </p>
             </div>
           </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" className="h-11" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
               <X className="size-4" /> ไม่อนุมัติ
             </Button>
-            <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
+            <Button className="h-11" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
               <Check className="size-4" /> อนุมัติ
             </Button>
           </div>
