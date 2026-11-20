@@ -1639,3 +1639,23 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 /* Favpo look: the hero panels have no glow circles. */
 .gv-hero::before,
 .gv-hero::after { display: none; }
+
+/* Favpo form rows (the label on the left, the field on the right) for the create and edit pages in a form card of normal width; a wide
+   builder keeps its own layout. Only a form item that has a label is rearranged, so a checkbox row or a bare control is untouched. */
+@media (min-width: 768px) {
+  .gv-favpo-form [data-slot="form-item"]:has(> [data-slot="form-label"]) {
+    grid-template-columns: 11rem minmax(0, 1fr);
+    column-gap: 1rem;
+    row-gap: 0.25rem;
+    align-items: start;
+  }
+  .gv-favpo-form [data-slot="form-item"]:has(> [data-slot="form-label"]) > [data-slot="form-label"] {
+    grid-column: 1;
+    grid-row: 1;
+    padding-top: 0.625rem;
+    font-weight: 500;
+  }
+  .gv-favpo-form [data-slot="form-item"]:has(> [data-slot="form-label"]) > :not([data-slot="form-label"]) {
+    grid-column: 2;
+  }
+}

@@ -60,7 +60,7 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
   if (results.isLoading) return <TableLoadingState rows={3} />;
 
   return (
-    <Card className="gap-3 p-4" aria-label="ผลคะแนน">
+    <Card id="results" className="scroll-mt-48 gap-3 p-4" aria-label="ผลคะแนน">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold">ผลคะแนน</h2>
         <Link href="/appraisal/settings" className="text-sm font-semibold text-primary underline-offset-2 hover:underline">

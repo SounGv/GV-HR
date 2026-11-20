@@ -50,7 +50,7 @@ export function FormPageShell({
         status={status}
       />
       <Card className={cn("rounded-lg md:rounded-lg", !wide && "max-w-3xl")}>
-        <CardContent className="px-4 pt-0 md:px-6 md:pt-6">{children}</CardContent>
+        <CardContent className={cn("px-4 pt-0 md:px-6 md:pt-6", !wide && "gv-favpo-form")}>{children}</CardContent>
       </Card>
       <FormFooter formId={formId} pending={pending} onCancel={onCancel} actions={actions} />
     </div>

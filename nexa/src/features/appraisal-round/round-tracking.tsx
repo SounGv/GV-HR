@@ -98,7 +98,7 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
   if (isLoading) return <TableLoadingState rows={4} />;
 
   return (
-    <Card className="gap-3 p-4" aria-label="ตรวจเช็คการประเมิน">
+    <Card id="check" className="scroll-mt-48 gap-3 p-4" aria-label="ตรวจเช็คการประเมิน">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-base font-semibold">
           <ListChecks className="size-5" aria-hidden="true" /> ตรวจเช็คการประเมิน

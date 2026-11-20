@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +46,33 @@ function Header({ round, backTitle }: { round: RoundDetail; backTitle?: string }
 }
 
 /* ───────────────────────── overview (opened rounds) ───────────────────────── */
+
+/** The Favpo hub: a box of plain link rows under a small heading (approved layout, Favpo round setting page). */
+function HubBox({ children }: { children: React.ReactNode }) {
+  return <div className="divide-y divide-border rounded-sm border border-border">{children}</div>;
+}
+
+const HUB_ROW = "flex min-h-11 w-full items-center px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-[#f6f9fe] hover:text-primary disabled:opacity-50";
+
+function HubLink({ href, next, children }: { href: string; next?: boolean; children: React.ReactNode }) {
+  return next ? (
+    <Link href={href} className={HUB_ROW}>
+      {children}
+    </Link>
+  ) : (
+    <a href={href} className={HUB_ROW}>
+      {children}
+    </a>
+  );
+}
+
+function HubButton({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={HUB_ROW}>
+      {children}
+    </button>
+  );
+}
 
 function RoundOverview({ round }: { round: RoundDetail }) {
   const { can } = useAuth();
@@ -119,6 +147,46 @@ function RoundOverview({ round }: { round: RoundDetail }) {
           </div>
         )}
       </Card>
+
+      {live && !imported && (
+        <section aria-label="ศูนย์รวมของรอบนี้" className="grid gap-4 rounded-lg border border-border bg-card p-4 md:grid-cols-3">
+          <div>
+            <h2 className="mb-2 text-base font-medium">ผู้ประเมิน</h2>
+            <HubBox>
+              <HubLink href="#check">ตรวจเช็คการประเมิน (เรียงตามผู้ประเมิน)</HubLink>
+              <HubLink href="#check">
+                ผู้ประเมินที่ยังไม่ส่ง{p ? ` (${p.inProgress + p.pending} งาน)` : ""}
+              </HubLink>
+            </HubBox>
+          </div>
+          <div>
+            <h2 className="mb-2 text-base font-medium">ผลคะแนน</h2>
+            <HubBox>
+              <HubLink href="#results">ผลคะแนนและเกณฑ์เกรด</HubLink>
+              {can("campaign:update") && (
+                <HubLink href={`/appraisal/rounds/${round.id}/review`} next>
+                  ทบทวนผลก่อนประกาศ
+                </HubLink>
+              )}
+            </HubBox>
+          </div>
+          <div>
+            <h2 className="mb-2 text-base font-medium">แจ้งเตือนและปิดรอบ</h2>
+            <HubBox>
+              {round.status === "OPEN" && can("campaign:update") ? (
+                <>
+                  <HubButton onClick={doRemind} disabled={remind.isPending}>
+                    เตือนทุกคนที่ยังไม่ส่ง
+                  </HubButton>
+                  <HubButton onClick={() => setConfirmClose(true)}>ปิดรอบ</HubButton>
+                </>
+              ) : (
+                <p className="px-3 py-2 text-sm text-muted-foreground">รอบนี้ปิดแล้ว ไม่มีการเตือนหรือปิดรอบเพิ่ม</p>
+              )}
+            </HubBox>
+          </div>
+        </section>
+      )}
 
       {live && (
         <Card className="gap-3 p-4" aria-label="ความคืบหน้า">
