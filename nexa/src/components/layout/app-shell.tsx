@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               starts below it. env() is 0 everywhere else, so nothing changes off iOS. */}
           <div
             aria-hidden="true"
-            className="fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-[#1976d2] dark:bg-[#0A0E1A]"
+            className="fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-[#0d47a1] dark:bg-[#0a2f6b]"
           />
           <SidebarInset className="bg-background pt-[env(safe-area-inset-top)]">
             {/* The wrapper itself sticks: a sticky header inside a plain div scrolls away with it. One layer only:

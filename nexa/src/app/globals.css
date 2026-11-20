@@ -1639,3 +1639,9 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 @media (prefers-reduced-motion: reduce) {
   .gv-load-bar i { animation: none; width: 100%; }
 }
+
+/* The blue bar at the top of the computer layout (section-band.tsx): its buttons are white on the blue, whatever theme the page is in. */
+.gv-bar-blue [data-slot="button"] { color: #ffffff; }
+.gv-bar-blue [data-slot="button"]:hover { background: rgba(255, 255, 255, 0.15); color: #ffffff; }
+.gv-bar-blue .text-muted-foreground { color: rgba(255, 255, 255, 0.82); }
+.gv-bar-blue .text-foreground { color: #ffffff; }

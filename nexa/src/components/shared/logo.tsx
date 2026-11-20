@@ -2,11 +2,10 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
- * The one shared logo component — every header/sidebar/auth-page logo
- * renders through this instead of an ad-hoc `<img>`, so a future brand
- * asset swap is a one-file change. Source is the real GV mark (icon only,
- * no wordmark), a true transparent PNG (720×431 native, ~2.08:1) so it
- * sits directly on any surface — light or dark — without a variant swap.
+ * The one shared logo component — every header/sidebar/auth-page logo renders through this, so a brand change is a one-file
+ * change. Since 2026-11-20 (owner: no green logo) it is the white "GV" on the Favpo blue, the same tile as the app icon, drawn in
+ * text so it needs no image and sits on any surface. `size` is the width and height in px; the inline style wins over a caller's
+ * size classes.
  */
 export function Logo({
   size = 40,
@@ -16,14 +15,14 @@ export function Logo({
   className?: string;
 }) {
   return (
-    <Image
-      src="/gv-mark.png"
-      alt="Gadget Villa"
-      width={size}
-      height={Math.round(size * (231 / 480))}
-      priority
-      className={cn("shrink-0 object-contain", className)}
-    />
+    <span
+      role="img"
+      aria-label="GV One"
+      style={{ width: size, height: size, lineHeight: `${size}px`, fontSize: Math.round(size * 0.42) }}
+      className={cn("shrink-0 rounded-md bg-[#0d47a1] text-center font-bold tracking-tight text-white", className)}
+    >
+      GV
+    </span>
   );
 }
 

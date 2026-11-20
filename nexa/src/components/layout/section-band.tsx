@@ -22,8 +22,9 @@ import { usePublishedChrome, useSlotSetter } from "./page-chrome";
 type BandCrumb = { label: React.ReactNode; href?: string };
 
 /**
- * The band at the top of every page on a computer: two rows, 92px, one sticky layer.
- *  Row 1: side menu button, where you are (group, then page title), notifications, theme, account.
+ * The band at the top of every page on a computer, one sticky layer, in the Favpo look (approved mocks, 20 Nov 2026):
+ *  Bar:   solid blue, 56px: side menu button, the GV One wordmark, then notifications, theme and account on the right.
+ *  Row 1: back, where you are (group, then page title) and the page's buttons when the group has no tabs.
  *  Row 2: the tabs of this menu group (the sidebar's own entries for it) with the page's main button at the far right.
  * It replaces the old top bar (64px), the page title block (about 76px) and the separate tab rows, so the work area starts
  * about 100px higher and switching to a sibling page is one click. A group without siblings (home) has row 1 only and the
@@ -78,9 +79,20 @@ export function SectionBand() {
   }, [section.activeHref]);
 
   return (
-    <header ref={rootRef} className="border-b border-border bg-card print:hidden">
-      <div className="flex h-12 items-center gap-2 px-3 sm:px-4">
+    <header ref={rootRef} className="print:hidden">
+      <div className="gv-bar-blue flex h-14 items-center gap-2 bg-[#0d47a1] px-3 text-white sm:px-4 dark:bg-[#0a2f6b]">
         <SidebarTrigger className="-ml-1 size-10" />
+        <Link href={HOME_PATH} aria-label="GV One หน้าหลัก" className="text-[22px] leading-none font-bold tracking-tight text-white hover:text-white">
+          GV One
+        </Link>
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <NotificationBell />
+          <ThemeToggle />
+          <Separator orientation="vertical" className="mx-1 h-5 bg-white/30" />
+          <UserMenu />
+        </div>
+      </div>
+      <div className="flex h-12 items-center gap-2 border-b border-border bg-card px-3 sm:px-4">
         {/* The one back control on a computer, on every page but home (as the old top bar had it): back to the page the person
             came from, or home when this is where they started. */}
         {!isHome && (
@@ -123,17 +135,13 @@ export function SectionBand() {
         {chrome?.status && <span className="shrink-0">{chrome.status}</span>}
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           {!hasTabs && <div ref={setSlot ?? undefined} className="flex items-center gap-2 pr-2" />}
-          <NotificationBell />
-          <ThemeToggle />
-          <Separator orientation="vertical" className="mx-1 h-5" />
-          <UserMenu />
         </div>
       </div>
 
       {/* A long tab row (the settings group, the evaluation group) is split: one chip per section here, the tabs of the open
           section in the row below. The chips follow the headings the side menu already has. */}
       {section.sections && (
-        <nav aria-label={section.group ? `ส่วนของ ${section.group}` : "ส่วนของเมนู"} className="flex h-11 items-center gap-2 overflow-x-auto border-t border-border/60 px-3 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <nav aria-label={section.group ? `ส่วนของ ${section.group}` : "ส่วนของเมนู"} className="flex h-11 items-center gap-2 overflow-x-auto border-b border-border bg-card px-3 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {section.sections.map((c) => (
             <Link
               key={c.name}
@@ -153,7 +161,7 @@ export function SectionBand() {
       )}
 
       {hasTabs && (
-        <div className="flex h-11 items-stretch gap-3 border-t border-border/60 px-3 sm:px-4">
+        <div className="flex h-12 items-stretch gap-3 border-b border-border bg-card px-3 sm:px-4">
           <nav aria-label={section.group ? `เมนูย่อย ${section.group}` : "เมนูย่อย"} className="flex min-w-0 flex-1 items-stretch gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {section.visibleTabs.map((t) => {
               const active = t.href === section.activeHref;
