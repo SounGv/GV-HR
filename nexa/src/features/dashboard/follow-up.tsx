@@ -158,7 +158,7 @@ export function FollowRow({
         <Link
           href={link.href}
           className={cn(
-            "relative mt-auto inline-flex min-h-11 items-center justify-center gap-1 rounded-[13px] border px-3 text-[14px] font-semibold transition-colors",
+            "relative mt-auto inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border px-3 text-[14px] font-semibold transition-colors",
             tone === "bad"
               ? "border-transparent bg-[#0d47a1] text-white shadow-sm hover:brightness-110"
               : "border-border bg-[#eef6fd] text-[#0d47a1] hover:bg-[#e3f2fd] dark:bg-[#0b1626] dark:text-[#bbdefb]",

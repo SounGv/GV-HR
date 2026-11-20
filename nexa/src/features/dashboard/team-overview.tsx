@@ -167,7 +167,7 @@ export function TeamOverview({
                       className="gv-grow block h-full rounded-full"
                       style={{
                         width: `${(d.count / max) * 100}%`,
-                        background: top ? "linear-gradient(90deg, #64b5f6, #1565c0)" : "#b8c2c9",
+                        background: top ? "#1976d2" : "#b8c2c9",
                       }}
                     />
                   </div>

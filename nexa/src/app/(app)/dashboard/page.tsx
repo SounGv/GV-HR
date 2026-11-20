@@ -456,7 +456,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <button
             type="submit"
             aria-label="ส่งคำถาม"
-            className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#0d47a1]"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#0d47a1]"
           >
             <ArrowUp className="size-4" strokeWidth={2.4} />
           </button>

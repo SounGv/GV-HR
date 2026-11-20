@@ -229,7 +229,7 @@ export function OrgChart({
             aria-pressed={view === value}
             onClick={() => setView(value)}
             className={cn(
-              "h-[34px] rounded-[9px] px-3.5 text-[13.5px] font-semibold whitespace-nowrap transition-colors sm:px-4",
+              "h-[34px] rounded-lg px-3.5 text-[13.5px] font-semibold whitespace-nowrap transition-colors sm:px-4",
               view === value
                 ? "bg-[#1565c0] text-white shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -321,7 +321,7 @@ function CompanyView({
               className="gv-hero gv-rise flex w-full items-center gap-3 rounded-lg px-5 py-3.5 sm:inline-flex sm:w-auto"
               style={rise(0)}
             >
-              <span className="grid size-[38px] shrink-0 place-items-center rounded-[11px] border border-white/20 bg-white/10">
+              <span className="grid size-[38px] shrink-0 place-items-center rounded-lg border border-white/20 bg-white/10">
                 <Building2 className="size-5" aria-hidden="true" />
               </span>
               <span className="min-w-0">
@@ -434,7 +434,7 @@ function DeptLine({
   return (
     <div
       className={cn(
-        "hover:bg-muted/60 flex items-center justify-between gap-2 rounded-[10px] py-1.5 pr-2 text-[13px]",
+        "hover:bg-muted/60 flex items-center justify-between gap-2 rounded-lg py-1.5 pr-2 text-[13px]",
         muted && "text-muted-foreground",
       )}
       style={{ paddingLeft: 8 + (depth - 1) * 12 }}
@@ -826,7 +826,7 @@ function TeamBox({ team, index }: { team: TeamColumn; index: number }) {
 function MemberLink({ person, className }: { person: OrgPerson; className?: string }) {
   const edit = useOrgEdit();
   const rowClass = cn(
-    "flex min-w-0 items-center gap-2 rounded-[10px] py-1.5 pr-1.5 pl-[18px] text-[13px] hover:bg-muted/60",
+    "flex min-w-0 items-center gap-2 rounded-lg py-1.5 pr-1.5 pl-[18px] text-[13px] hover:bg-muted/60",
     className,
   );
   const body = (moved: boolean) => (

@@ -100,7 +100,7 @@ export function AttachButton({ onPick, disabled, className }: { onPick: (files: 
 
 function Chip({ name, size, onRemove, className }: { name: string; size: number; onRemove?: () => void; className?: string }) {
   return (
-    <span className={cn("inline-flex max-w-full items-center gap-1.5 rounded-[10px] border px-2.5 py-0.5 text-[13px] leading-snug", className)}>
+    <span className={cn("inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-[13px] leading-snug", className)}>
       <FileText className="size-[15px] shrink-0" aria-hidden="true" />
       <span className="break-all">{name}</span>
       <span className="text-xs whitespace-nowrap opacity-75">{sizeText(size)}</span>

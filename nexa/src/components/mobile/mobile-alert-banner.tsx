@@ -50,7 +50,7 @@ export function MobileSuccessCard({
       </div>
       <h2 className="text-base font-bold text-foreground">{title}</h2>
       {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-      <div className="mt-4 space-y-2 rounded-[10px] bg-surface-muted p-3.5 text-left text-[13px]">
+      <div className="mt-4 space-y-2 rounded-lg bg-surface-muted p-3.5 text-left text-[13px]">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between gap-3">
             <span className="text-muted-foreground">{row.label}</span>

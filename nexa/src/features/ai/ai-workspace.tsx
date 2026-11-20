@@ -129,7 +129,7 @@ function useChatWidth(): [number | null, (w: number | null) => void] {
 /** Three-way width switch for the result panel. */
 function PanelWidthSwitch({ value, onChange }: { value: PanelWidth; onChange: (w: PanelWidth) => void }) {
   return (
-    <div role="radiogroup" aria-label="ความกว้างของแผงผลลัพธ์" onKeyDown={arrowSelect} className="inline-flex items-center gap-0.5 rounded-[10px] border border-border bg-card p-0.5">
+    <div role="radiogroup" aria-label="ความกว้างของแผงผลลัพธ์" onKeyDown={arrowSelect} className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-card p-0.5">
       {PANEL_WIDTHS.map((w, wi) => (
         <button
           key={w.id}
@@ -381,7 +381,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             onClick={() => setPanelWidth("wide")}
             aria-label="เปิดช่องแชท"
             title="เปิดช่องแชท เพื่อถามต่อ"
-            className="flex size-10 items-center justify-center rounded-[10px] border border-border text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+            className="flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
           >
             <MessageSquare className="size-[18px]" aria-hidden="true" />
           </button>
@@ -443,7 +443,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
             type="button"
             onClick={newChat}
             disabled={chat.isPending || turns.length === 0}
-            className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[10px] border border-border px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors hover:border-[#b9c2c9] disabled:opacity-50"
+            className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors hover:border-[#b9c2c9] disabled:opacity-50"
           >
             <Plus className="size-3.5" aria-hidden="true" /> แชทใหม่
           </button>
@@ -557,7 +557,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               type="submit"
               aria-label="ส่งคำถาม"
               disabled={chat.isPending || quick.isPending || (!input.trim() && !(canAttach && attach.files.length > 0))}
-              className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#0d47a1] disabled:bg-muted disabled:text-muted-foreground"
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--flip7-teal-dark)] text-white transition-colors hover:bg-[#0d47a1] disabled:bg-muted disabled:text-muted-foreground"
             >
               <ArrowUp className="size-4" strokeWidth={2.4} />
             </button>
@@ -584,7 +584,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               <button
                 type="button"
                 onClick={copyAnswer}
-                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#cfd6dc] bg-card px-3 text-[13px] font-medium transition-colors hover:border-[#b9c2c9] dark:border-border"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#cfd6dc] bg-card px-3 text-[13px] font-medium transition-colors hover:border-[#b9c2c9] dark:border-border"
               >
                 {copied ? <Check className="size-4 text-success" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
                 {copied ? "คัดลอกแล้ว" : "คัดลอก"}
@@ -593,7 +593,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
                 type="button"
                 onClick={downloadExcel}
                 disabled={exporting}
-                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#cfd6dc] bg-card px-3 text-[13px] font-medium transition-colors hover:border-[#b9c2c9] disabled:opacity-60 dark:border-border"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#cfd6dc] bg-card px-3 text-[13px] font-medium transition-colors hover:border-[#b9c2c9] disabled:opacity-60 dark:border-border"
               >
                 {exporting ? <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" aria-hidden="true" /> : <FileSpreadsheet className="size-4 text-[#15803d]" aria-hidden="true" />}
                 {exporting ? "กำลังสร้างไฟล์…" : "ดาวน์โหลด Excel"}
@@ -601,7 +601,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
               {reportStep?.report && (
                 <Link
                   href={`/reports?view=${encodeURIComponent(reportStep.report.type)}`}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0d47a1]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0d47a1]"
                 >
                   เปิดรายงานเต็ม <ExternalLink className="size-3.5" aria-hidden="true" />
                 </Link>
@@ -710,7 +710,7 @@ function AnswerBubble({ turn, active, onShow }: { turn: Turn; active: boolean; o
             onClick={onShow}
             aria-pressed={active}
             className={cn(
-              "mt-1.5 flex w-full items-center gap-2 rounded-[10px] border px-2.5 py-1.5 text-left text-[12.5px] font-semibold transition-colors",
+              "mt-1.5 flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-[12.5px] font-semibold transition-colors",
               active
                 ? "border-blue-200 bg-blue-50 text-primary dark:border-border dark:bg-muted"
                 : "border-border text-muted-foreground hover:text-foreground",

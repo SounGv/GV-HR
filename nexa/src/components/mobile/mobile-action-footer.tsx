@@ -50,7 +50,7 @@ export function MobilePrimaryButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex h-[50px] w-full items-center justify-center rounded-[10px] text-sm font-bold transition active:scale-[0.99] disabled:cursor-not-allowed",
+        "flex h-[50px] w-full items-center justify-center rounded-lg text-sm font-bold transition active:scale-[0.99] disabled:cursor-not-allowed",
         disabled
           ? "bg-surface-muted text-muted-foreground"
           : "bg-primary text-primary-foreground shadow-sm shadow-primary/20 active:brightness-95",

@@ -44,7 +44,7 @@ export function MobileSegmentedTabs<T extends string>({
 
       className={cn(
 
-        "flex gap-1 rounded-[10px] p-1",
+        "flex gap-1 rounded-lg p-1",
 
         onPrimary ? "bg-white/15" : "bg-surface-muted",
 

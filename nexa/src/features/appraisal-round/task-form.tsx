@@ -311,7 +311,7 @@ export function TaskForm({
               style={{
                 background:
                   view === "q" && i === cur
-                    ? "linear-gradient(90deg, var(--ring), var(--primary))"
+                    ? "var(--ring)"
                     : isAnswered(values[x.id])
                       ? "var(--primary)"
                       : "color-mix(in srgb, var(--primary) 16%, transparent)",
@@ -460,7 +460,7 @@ export function TaskForm({
                   >
                     <span
                       className={cn(
-                        "flex size-8 shrink-0 items-center justify-center rounded-[10px] text-sm font-bold",
+                        "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold",
                         !done
                           ? x.required
                             ? "border border-dashed border-status-late-border bg-status-late-bg text-status-late-fg"
@@ -519,7 +519,7 @@ export function TaskForm({
       )}
 
       {/* Thumb bar: one main action per screen. */}
-      <div className="gv-foot gv-frost fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 rounded-t-[26px] border-x-0 border-b-0 px-4 py-3 md:sticky md:inset-x-auto md:bottom-4 md:rounded-lg md:border md:px-3">
+      <div className="gv-foot gv-frost fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 rounded-t-lg border-x-0 border-b-0 px-4 py-3 md:sticky md:inset-x-auto md:bottom-4 md:rounded-lg md:border md:px-3">
         <div className="flex items-center gap-2">
           {view === "start" && (
             <Button

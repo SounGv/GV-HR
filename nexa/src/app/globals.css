@@ -650,11 +650,10 @@
   overflow: hidden;
   overflow: clip;
   isolation: isolate;
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   color: #fff;
   background: #0d47a1;
-  box-shadow: 0 1px 2px rgba(21, 101, 192, 0.2), 0 10px 24px -12px rgba(21, 101, 192, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 2px rgba(13, 71, 161, 0.2);
 }
 /* Headings on the dark teal surfaces take the surface's white, not the base layer's
    text-foreground (it left "การเข้างานวันนี้" near-black on dark teal, contrast 1.5:1). */
@@ -691,7 +690,7 @@
 }
 /* Translucent tile inside .gv-hero. */
 .gv-glass {
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);

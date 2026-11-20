@@ -79,7 +79,7 @@ function GlassTile({
   return (
     <Link href={href} className="gv-glass gv-rise block px-4 py-3.5" style={{ "--i": i + 1 } as React.CSSProperties}>
       <span className="flex items-center gap-2 text-[13px] font-semibold text-white">
-        <span className={`flex size-8 items-center justify-center rounded-[10px] ring-1 ring-inset ${TILE_TONE[tone]}`}>
+        <span className={`flex size-8 items-center justify-center rounded-lg ring-1 ring-inset ${TILE_TONE[tone]}`}>
           <Icon className="size-5" aria-hidden="true" />
         </span>
         {label}
@@ -118,7 +118,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
   if (!open) {
     return (
       <section aria-label="การเข้างานวันนี้" className="gv-hero gv-rise flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
-        <span className="flex size-9 items-center justify-center rounded-[11px] border border-white/20 bg-white/10">
+        <span className="flex size-9 items-center justify-center rounded-lg border border-white/20 bg-white/10">
           <Clock className="size-[18px]" aria-hidden="true" />
         </span>
         <span className="min-w-0 basis-52">
@@ -151,7 +151,7 @@ export function AttendanceHero({ data, departmentIds, ticker, trend }: HeroProps
     <section aria-label="การเข้างานวันนี้" className="gv-hero gv-rise grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
       <div className="min-w-0">
         <div className="flex items-center gap-2.5">
-          <span className="flex size-11 items-center justify-center rounded-[13px] border border-white/20 bg-white/10">
+          <span className="flex size-11 items-center justify-center rounded-lg border border-white/20 bg-white/10">
             <Clock className="size-[22px]" aria-hidden="true" />
           </span>
           <span className="rounded-full bg-[#fde047] px-2.5 py-0.5 text-xs font-bold text-[#3f2d00]">ข้อมูล ณ {data.asOf} น.</span>

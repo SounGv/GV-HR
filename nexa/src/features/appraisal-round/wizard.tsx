@@ -843,7 +843,7 @@ function StepPeople({
               className={cn(
                 "rounded-lg border-[1.5px] p-3.5 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
                 on
-                  ? "border-ring bg-[linear-gradient(180deg,var(--accent),var(--card))] shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
+                  ? "border-ring bg-accent shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
                   : some
                     ? "bg-card border-ring/60"
                     : "border-border bg-card hover:border-ring/50",
@@ -1226,7 +1226,7 @@ function StepRaters({
             className={cn(
               "relative rounded-lg border-[1.5px] p-3.5 pb-3 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px disabled:cursor-wait",
               active === k
-                ? "border-ring bg-[linear-gradient(180deg,var(--accent),var(--card))] shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
+                ? "border-ring bg-accent shadow-[0_0_0_3px_var(--accent)] dark:shadow-none"
                 : "border-border bg-card hover:border-ring/50",
             )}
           >
@@ -1638,7 +1638,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
           <div className="min-h-[300px] rounded-lg bg-muted px-3 py-3.5 text-foreground">
             <div className="mb-3 flex items-center gap-2 text-xs font-bold text-muted-foreground">
               <span
-                className="flex size-[26px] items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--primary),var(--ring))] text-xs"
+                className="flex size-[26px] items-center justify-center rounded-full bg-primary text-xs"
                 style={{ color: "var(--on-hero-accent)" }}
               >
                 GV
@@ -1649,7 +1649,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
               <b className="mb-1 block text-sm break-words">ถึงรอบประเมิน: {round.name}</b>
               คุณมี {ex?.count ?? "–"} คนที่ต้องประเมิน
               {round.endIso ? ` ปิดรอบวันที่ ${fmtLong(round.endIso)}` : ""}
-              <span className="mt-2.5 block rounded-[10px] bg-primary py-2 text-center font-bold text-white">
+              <span className="mt-2.5 block rounded-lg bg-primary py-2 text-center font-bold text-white">
                 เปิดงานประเมิน →
               </span>
             </div>

@@ -143,7 +143,7 @@ function Eyebrow({ tone, children }: { tone: "waiting" | "open"; children: React
 type StepState = "done" | "now" | "later";
 
 const NOW_TILE: CSSProperties = {
-  background: "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.09))",
+  background: "rgba(255,255,255,0.14)",
   borderColor: "rgba(153,246,228,0.6)",
   boxShadow: "0 0 0 1px rgba(153,246,228,0.35), inset 0 1px 0 rgba(255,255,255,0.16)",
 };
@@ -346,7 +346,7 @@ function ListRow({
         className="gv-edge grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-3 pr-4 pl-5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:gap-3.5"
         style={{ "--edge": edge } as CSSProperties}
       >
-        <span className="grid size-9 place-items-center rounded-[10px] border border-border bg-accent text-accent-foreground" aria-hidden>
+        <span className="grid size-9 place-items-center rounded-lg border border-border bg-accent text-accent-foreground" aria-hidden>
           <Icon className="size-4" />
         </span>
         <span className="min-w-0">

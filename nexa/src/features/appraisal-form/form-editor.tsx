@@ -848,7 +848,7 @@ function Outline({
                   aria-hidden="true"
                 >
                   <span
-                    className="block h-full rounded-full bg-[linear-gradient(90deg,var(--ring),var(--primary))] transition-[width] duration-500"
+                    className="block h-full rounded-full bg-primary transition-[width] duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -1098,7 +1098,7 @@ function TopicEditor({
                     })
                   }
                   className={cn(
-                    "text-muted-foreground min-h-11 rounded-[9px] px-3 text-sm font-semibold disabled:opacity-60 md:min-h-9",
+                    "text-muted-foreground min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-60 md:min-h-9",
                     q.answerType === t && "bg-card text-foreground shadow-sm",
                   )}
                 >
@@ -1189,7 +1189,7 @@ function TopicEditor({
                 >
                   <span
                     className={cn(
-                      "flex size-9 items-center justify-center rounded-[11px] text-base font-bold",
+                      "flex size-9 items-center justify-center rounded-lg text-base font-bold",
                       scoreTone(l.score, labels.length),
                     )}
                   >
@@ -1336,7 +1336,7 @@ function ScaleCard({
           <li key={l.score} className="flex items-center gap-2">
             <span
               className={cn(
-                "flex size-9 shrink-0 items-center justify-center rounded-[11px] font-bold",
+                "flex size-9 shrink-0 items-center justify-center rounded-lg font-bold",
                 scoreTone(l.score, labels.length),
               )}
             >
@@ -1464,7 +1464,7 @@ function PhonePreview({
       </div>
       <div className="mx-auto w-full max-w-[330px] rounded-lg bg-[var(--device-frame)] p-2 shadow-sm">
         <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-lg">
-          <div className="sticky top-0 z-[1] bg-[linear-gradient(160deg,var(--on-hero-accent-fg),var(--primary))] px-3.5 pt-3 pb-2.5 text-white">
+          <div className="sticky top-0 z-[1] bg-primary px-3.5 pt-3 pb-2.5 text-white">
             <b className="block text-sm">ประเมิน วันชัย (ตัวอย่าง)</b>
             <span className="block truncate text-xs text-white">
               {formName} · ในฐานะ{RATER_LABEL[as]}

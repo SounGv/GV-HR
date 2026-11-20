@@ -227,7 +227,7 @@ export function AppSidebar() {
           <button
             type="button"
             onClick={startEditing}
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#cfd6dc] text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground dark:border-sidebar-border"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[#cfd6dc] text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground dark:border-sidebar-border"
           >
             <ArrowUpDown className="size-4" />
             จัดเรียงเมนู
@@ -236,7 +236,7 @@ export function AppSidebar() {
           <button
             type="button"
             onClick={() => logout()}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] text-[13.5px] font-semibold text-[color:var(--muted-strong)] transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-sidebar-ring"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg text-[13.5px] font-semibold text-[color:var(--muted-strong)] transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-sidebar-ring"
           >
             <LogOut className="size-4" aria-hidden="true" />
             ออกจากระบบ

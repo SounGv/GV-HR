@@ -55,8 +55,8 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
               const Icon = t.icon;
               return (
                 <li key={t.key}>
-                  <Link href={t.href} className="gv-row flex items-center gap-2.5 rounded-[10px] px-2 py-1.5 text-sm">
-                    <GvIconTile icon={Icon} className="size-8 rounded-[10px]" iconClassName="size-5" />
+                  <Link href={t.href} className="gv-row flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm">
+                    <GvIconTile icon={Icon} className="size-8 rounded-lg" iconClassName="size-5" />
                     {t.label}
                     <span className="ml-auto text-[15px] font-semibold tabular-nums">{data.approvals[t.key]}</span>
                   </Link>
@@ -84,7 +84,7 @@ export function ActionCenter({ data }: { data: DashboardActions }) {
           {tiles.length > 0 && (
             <Link
               href="/requests?view=approvals"
-              className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0d47a1]"
+              className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--flip7-teal-dark)] px-3.5 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0d47a1]"
             >
               ตรวจอนุมัติ <ArrowRight className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
             </Link>
@@ -121,8 +121,8 @@ export function ApprovalsFollowCard({ data }: { data: DashboardActions }) {
           const Icon = t.icon;
           return (
             <li key={t.key}>
-              <Link href={t.href} className="gv-row flex min-h-11 items-center gap-2.5 rounded-[10px] px-1 text-sm">
-                <GvIconTile icon={Icon} className="size-8 rounded-[10px]" iconClassName="size-5" />
+              <Link href={t.href} className="gv-row flex min-h-11 items-center gap-2.5 rounded-lg px-1 text-sm">
+                <GvIconTile icon={Icon} className="size-8 rounded-lg" iconClassName="size-5" />
                 {t.label}
                 <span className="ml-auto text-[15px] font-semibold tabular-nums">{data.approvals[t.key]}</span>
               </Link>

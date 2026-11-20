@@ -345,7 +345,7 @@ export function MobileLeaveForm() {
                     if (!canTakeHourly(t) && form.getValues("unit") === "HOUR") onDurationChange("FULL_DAY");
                   }}
                   className={cn(
-                    "rounded-[10px] border-[1.5px] p-3 text-left transition active:scale-[0.99]",
+                    "rounded-lg border-[1.5px] p-3 text-left transition active:scale-[0.99]",
                     selected
                       ? "border-primary bg-accent text-accent-foreground"
                       : "border-border bg-card text-foreground",
@@ -359,7 +359,7 @@ export function MobileLeaveForm() {
           </div>
 
           <p className="mb-2 mt-4 text-[15px] font-semibold text-foreground">ระยะเวลาลา</p>
-          <label className="block rounded-[10px] border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+          <label className="block rounded-lg border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
             <span className="block text-sm text-muted-foreground">เลือกระยะเวลา</span>
             <select
               className="mt-0.5 w-full border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
@@ -383,7 +383,7 @@ export function MobileLeaveForm() {
             <>
               <p className="mb-2 mt-3 text-[15px] font-semibold text-foreground">ช่วงวันที่ลา</p>
               <div className="grid grid-cols-2 gap-2">
-                <label className="rounded-[10px] border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                <label className="rounded-lg border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                   <span className="block text-sm text-muted-foreground">เริ่มลา</span>
                   <input
                     type="date"
@@ -397,7 +397,7 @@ export function MobileLeaveForm() {
                     })}
                   />
                 </label>
-                <label className="rounded-[10px] border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                <label className="rounded-lg border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                   <span className="block text-sm text-muted-foreground">ถึงวันที่</span>
                   <input
                     type="date"
@@ -410,7 +410,7 @@ export function MobileLeaveForm() {
           ) : (
             <>
               <p className="mb-2 mt-3 text-[15px] font-semibold text-foreground">วันที่ลา</p>
-              <label className="block rounded-[10px] border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+              <label className="block rounded-lg border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                 <span className="block text-sm text-muted-foreground">วันที่</span>
                 <input
                   type="date"
@@ -426,7 +426,7 @@ export function MobileLeaveForm() {
           {isHourly && (
             <>
               <p className="mb-2 mt-3 text-[15px] font-semibold text-foreground">เวลาเริ่ม</p>
-              <label className="block rounded-[10px] border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+              <label className="block rounded-lg border border-[var(--field-border)] px-3 py-2.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                 <span className="block text-sm text-muted-foreground">เวลาเริ่ม (สิ้นสุด {endTime || "—"} น.)</span>
                 <TimeSelect
                   className="mt-0.5 w-full border-0 bg-transparent p-0 text-base font-semibold text-foreground outline-none"
@@ -456,7 +456,7 @@ export function MobileLeaveForm() {
             rows={3}
             placeholder="ระบุเหตุผลการลา"
             aria-label="เหตุผลการลา"
-            className="min-h-[72px] w-full resize-none rounded-[10px] border border-[var(--field-border)] bg-transparent px-3 py-2.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="min-h-[72px] w-full resize-none rounded-lg border border-[var(--field-border)] bg-transparent px-3 py-2.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             {...form.register("reason")}
           />
 
