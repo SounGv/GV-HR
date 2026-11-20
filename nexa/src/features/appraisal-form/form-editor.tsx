@@ -1,5 +1,6 @@
 "use client";
 
+import { PageChromePublisher } from "@/components/layout/page-chrome";
 import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
 import { BackLink } from "@/components/shared/back-link";
 import { useRouter } from "next/navigation";
@@ -442,6 +443,7 @@ function FormEditor({ form }: { form: FormDetail }) {
 
   return (
     <div className="space-y-4 pb-10">
+      <PageChromePublisher title={name.trim() || "แบบประเมิน"} />
       {/* Header: name, state, counts, the two actions. */}
       <section
         className="gv-hero flex flex-wrap items-center gap-4 p-4 sm:p-5"

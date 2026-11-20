@@ -1,5 +1,6 @@
 "use client";
 
+import { PageChromePublisher } from "@/components/layout/page-chrome";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { BackLink } from "@/components/shared/back-link";
 import Link from "next/link";
@@ -248,6 +249,10 @@ export function Wizard({ round }: { round: RoundDetail }) {
 
   return (
     <div className="space-y-5 pb-4">
+      <PageChromePublisher
+        title={draft.name.trim() || round.name}
+        crumbs={[{ label: "ประเมิน", href: "/appraisal/rounds" }, { label: "รอบประเมิน", href: "/appraisal/rounds" }, { label: "สร้างรอบ" }]}
+      />
       <Hero
         round={round}
         draft={draft}
@@ -586,7 +591,7 @@ function StepSetup({
   return (
     <div>
       <SectionHeading title="ตั้งรอบ" hint="ชื่อ แบบประเมิน ช่วงเวลา และการแจ้งเตือน" />
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-5 grid max-w-3xl gap-4 md:grid-cols-2">
         <label className="grid gap-1.5 text-sm font-medium">
           ชื่อรอบ
           <Input

@@ -1,5 +1,6 @@
 "use client";
 
+import { roleLabel as roleName } from "@/lib/role-label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import Link from "next/link";
@@ -45,7 +46,7 @@ export function MobileProfileView() {
   const nameLabel = user.employee ? displayName(user.employee) : loginIdentifier(user);
   const subtitle = user.employee
     ? `${user.employee.position?.title ?? "พนักงาน"} • ${user.employee.department?.name ?? "—"}`
-    : user.roles.join(", ") || "—";
+    : user.roles.map(roleName).join(", ") || "—";
 
   return (
     <MobileScreen title="โปรไฟล์" backHref="/dashboard" contentClassName="space-y-3.5 p-3.5">

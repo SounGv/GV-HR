@@ -191,7 +191,7 @@ export function EmployeeForm({
 
   return (
     <Form {...form}>
-      <form id={formId} onSubmit={form.handleSubmit(submit)}>
+      <form id={formId} onSubmit={form.handleSubmit(submit)} className="gv-favpo-form max-w-3xl">
         <Tabs defaultValue="personal" className="gap-6">
           <div className={cn("overflow-x-auto bg-background", stickyTabsRow)}>
             <TabsList variant="line" className="h-auto flex-nowrap">
@@ -347,7 +347,7 @@ function PayMismatchNote({ message }: { message: string | null }) {
 }
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
+  return <div className="grid grid-cols-1 gap-4">{children}</div>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

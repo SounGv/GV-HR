@@ -74,7 +74,7 @@ export interface SearchLike {
 /**
  * The href that best matches the current URL. A longer path outranks a shorter one it starts with ("/attendance/corrections"
  * over "/attendance"); a href with a query only matches when the URL carries the same values ("/reports?view=leave"), and
- * each matching key adds a point. Returns undefined when nothing matches.
+ * each matching key adds a point. When the page is opened without the query, the first entry with that exact path wins. Returns undefined when nothing matches.
  */
 export function bestMatchHref(pathname: string, search: SearchLike, hrefs: readonly string[]): string | undefined {
   const scored: { href: string; score: number }[] = [];
@@ -86,7 +86,10 @@ export function bestMatchHref(pathname: string, search: SearchLike, hrefs: reado
     const queryMatches = query.every(([key, value]) => search.get(key) === value);
     if (pathMatches && queryMatches) scored.push({ href, score: path.length * 10 + query.length });
   }
-  return scored.sort((a, b) => b.score - a.score)[0]?.href;
+  const best = scored.sort((a, b) => b.score - a.score)[0]?.href;
+  if (best) return best;
+  // The page opened without its query ("/requests"): the first entry that points at that exact page still names it.
+  return hrefs.find((href) => new URL(href, "http://x").pathname === pathname);
 }
 
 const pathOf = (href: string) => new URL(href, "http://x").pathname;

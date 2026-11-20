@@ -1,5 +1,6 @@
 "use client";
 
+import { roleLabel as roleName } from "@/lib/role-label";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -131,7 +132,7 @@ export function RolesMatrix() {
           >
             <span className="flex items-center gap-1.5">
               {r.isSystem ? <ShieldCheck className="size-3.5" /> : null}
-              {r.name}
+              {roleName(r.name)}
             </span>
             <span className="text-xs text-muted-foreground">{r.userCount}</span>
           </button>
@@ -145,7 +146,7 @@ export function RolesMatrix() {
             <div className="flex items-center justify-between border-b border-border p-4">
               <div>
                 <div className="flex items-center gap-2 font-medium">
-                  {selected.name}
+                  {roleName(selected.name)}
                   {selected.isSystem && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       <Lock className="size-3" /> บทบาทระบบ

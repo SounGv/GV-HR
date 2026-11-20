@@ -1,5 +1,6 @@
 "use client";
 
+import { roleLabel as roleName } from "@/lib/role-label";
 import { useState } from "react";
 import Link from "next/link";
 import { Search, Trash2 } from "lucide-react";
@@ -89,7 +90,7 @@ export function UsersRoles() {
                 {u.roleNames.length > 0 ? (
                   u.roleNames.map((n) => (
                     <span key={n} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
-                      {n}
+                      {roleName(n)}
                     </span>
                   ))
                 ) : (
@@ -146,7 +147,7 @@ export function UsersRoles() {
                   {u.roleNames.length > 0 ? (
                     u.roleNames.map((n) => (
                       <span key={n} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                        {n}
+                        {roleName(n)}
                       </span>
                     ))
                   ) : (

@@ -37,7 +37,7 @@ export default async function RequestsPage({
           </Link>
           <Link href="/overtime">
             <Card className="gv-lift flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
-              <span className="flex size-10 items-center justify-center rounded-lg bg-warning/10 text-warning">
+              <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-primary">
                 <Timer className="size-5" />
               </span>
               <div>
@@ -48,7 +48,7 @@ export default async function RequestsPage({
           </Link>
           <Link href="/attendance/corrections">
             <Card className="gv-lift flex-row items-center gap-3 p-4 hover:border-[#b9c2c9]">
-              <span className="flex size-10 items-center justify-center rounded-lg bg-info/10 text-info">
+              <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-primary">
                 <PencilLine className="size-5" />
               </span>
               <div>

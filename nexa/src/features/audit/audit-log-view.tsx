@@ -1,5 +1,6 @@
 "use client";
 
+import { auditActionLabel, auditEntityLabel } from "@/lib/audit-label";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, History } from "lucide-react";
 
@@ -135,8 +136,11 @@ export function AuditLogView() {
                 <TableRow key={r.id}>
                   <TableCell className="text-center tabular-nums">{((meta?.page ?? 1) - 1) * PAGE_SIZE + i + 1}</TableCell>
                   <TableCell className="tabular-nums">{formatDateTime(r.createdAt)}</TableCell>
-                  <TableCell className="font-medium whitespace-normal break-all text-foreground">{r.action}</TableCell>
-                  <TableCell>{r.entity}</TableCell>
+                  <TableCell className="font-medium whitespace-normal text-foreground">
+                    {auditActionLabel(r.action)}
+                    <span className="block text-xs font-normal break-all text-muted-foreground">{r.action}</span>
+                  </TableCell>
+                  <TableCell>{auditEntityLabel(r.entity)}</TableCell>
                   <TableCell>
                     {r.actor
                       ? r.actor.email

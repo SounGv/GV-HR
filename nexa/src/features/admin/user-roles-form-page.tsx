@@ -1,5 +1,6 @@
 "use client";
 
+import { roleLabel as roleName } from "@/lib/role-label";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -69,7 +70,7 @@ export function UserRolesFormPage({ user }: { user: AdminUser }) {
               }
             />
             <span className="flex-1">
-              <span className="font-medium">{r.name}</span>
+              <span className="font-medium">{roleName(r.name)}</span>
               {r.description && <span className="ml-1 text-xs text-muted-foreground">· {r.description}</span>}
             </span>
           </label>

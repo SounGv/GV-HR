@@ -1,5 +1,6 @@
 "use client";
 
+import { roleLabel as roleName } from "@/lib/role-label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CharacterAvatar, characterFor } from "@/components/shared/character-avatar";
 import { useEffect, useRef } from "react";
@@ -158,7 +159,7 @@ export function ProfileDrawer() {
   }
 
   const nameLabel = user.employee ? displayName(user.employee) : loginIdentifier(user);
-  const roleLabel = user.roles[0] ?? "ผู้ใช้งาน";
+  const roleLabel = user.roles[0] ? roleName(user.roles[0]) : "ผู้ใช้งาน";
   const statusLabel = user.employee ? STATUS_LABEL[user.employee.status as EmployeeStatus] ?? user.employee.status : null;
 
   // Same per-topic chip colors as MenuIconChip in mobile-profile-view.tsx,

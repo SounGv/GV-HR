@@ -1,5 +1,6 @@
 "use client";
 
+import { roleLabel as roleName } from "@/lib/role-label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/features/auth/auth-context";
@@ -14,7 +15,7 @@ export function UserMenu() {
   const { openDrawer } = useProfileDrawer();
   const emp = user.employee;
   const name = emp ? displayName(emp) : loginIdentifier(user);
-  const role = user.roles[0] ?? "ผู้ใช้งาน";
+  const role = user.roles[0] ? roleName(user.roles[0]) : "ผู้ใช้งาน";
 
   return (
     <Button variant="ghost" className="h-9 gap-2 px-1.5 sm:px-2" onClick={openDrawer} aria-label="เปิดเมนูโปรไฟล์">
