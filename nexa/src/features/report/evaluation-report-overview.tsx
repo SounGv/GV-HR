@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
 import { ArrowDown, ArrowUp, Minus, TriangleAlert } from "lucide-react";
 
@@ -46,6 +48,9 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
         </span>
       </div>
 
+
+      <ReportHub hasCompare={!!cmp} />
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Tile label="คนที่ถูกประเมิน" value={`${r.count} คน`} />
         <Tile label="คะแนนเฉลี่ย" value={`${fmt(r.average)}%`} />
@@ -58,7 +63,7 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
         />
       </div>
 
-      <section aria-label="การกระจายคะแนน">
+      <section id="score-bands" className="scroll-mt-48" aria-label="การกระจายคะแนน">
         <h4 className="text-sm font-semibold">การกระจายคะแนน</h4>
         <ul className="mt-2 space-y-2">
           {r.bands.map((b, i) => {
@@ -78,43 +83,97 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
         </ul>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div id="top-ten" className="grid scroll-mt-48 gap-4 md:grid-cols-2">
         <Ranking title="คะแนนสูงสุด" people={r.top} tied={r.topTied} />
         <Ranking title="คะแนนต่ำสุด" people={r.bottom} tied={r.bottomTied} />
       </div>
 
       {cmp && <Comparison cmp={cmp} currentName={r.name} />}
 
-      <section aria-label="สรุปรายแผนก">
+      <section id="departments" className="scroll-mt-48" aria-label="สรุปรายแผนก">
         <h4 className="text-sm font-semibold">สรุปรายแผนก</h4>
-        <div className="border-border mt-2 overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[480px] text-sm">
-            <thead className="bg-muted/50 text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-3 py-2 text-left font-medium">แผนก</th>
-                <th scope="col" className="px-2 py-2 text-right font-medium">คน</th>
-                <th scope="col" className="px-2 py-2 text-right font-medium">เฉลี่ย (%)</th>
-                <th scope="col" className="px-2 py-2 text-right font-medium">ต่ำสุด</th>
-                <th scope="col" className="px-2 py-2 text-right font-medium">สูงสุด</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">ได้ 100%</th>
-              </tr>
-            </thead>
-            <tbody className="divide-border divide-y">
+        <div className="mt-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>แผนก</TableHead>
+                <TableHead className="text-right">คน</TableHead>
+                <TableHead className="text-right">เฉลี่ย (%)</TableHead>
+                <TableHead className="text-right">ต่ำสุด</TableHead>
+                <TableHead className="text-right">สูงสุด</TableHead>
+                <TableHead className="text-right">ได้ 100%</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {r.departments.map((d) => (
-                <tr key={d.name}>
-                  <td className="px-3 py-2 break-words">{d.name}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{d.count}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{fmt(d.average)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{fmt(d.min)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{fmt(d.max)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{d.atTop}</td>
-                </tr>
+                <TableRow key={d.name}>
+                  <TableCell className="whitespace-normal">{d.name}</TableCell>
+                  <TableCell className="text-right tabular-nums">{d.count}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fmt(d.average)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fmt(d.min)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fmt(d.max)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{d.atTop}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
     </Card>
+  );
+}
+
+/** Favpo's report page: three boxes of plain link rows (per person, per department, comparison) that jump to the report on this page or open the page that has it. */
+function ReportHub({ hasCompare }: { hasCompare: boolean }) {
+  const groups: { title: string; links: { href: string; label: string; page?: boolean }[] }[] = [
+    {
+      title: "สรุป (พนักงาน)",
+      links: [
+        { href: "#report-table", label: "รายงานสรุปรายพนักงาน" },
+        { href: "#score-bands", label: "รายงานสรุปคะแนน (ระดับผลการประเมิน)" },
+        { href: "#top-ten", label: "รายงานสรุป 10 อันดับคะแนน" },
+        { href: "/performance", label: "9 Box Grid (สมรรถนะ / KPI)", page: true },
+      ],
+    },
+    {
+      title: "สรุป (แผนก / ระดับพนักงาน / ตำแหน่ง)",
+      links: [
+        { href: "#departments", label: "รายงานสรุปคะแนนรายแผนก" },
+        { href: "#score-bands", label: "รายงานสรุปจำนวนระดับผลการประเมิน (ข้อมูล)" },
+      ],
+    },
+    {
+      title: "รายงานเปรียบเทียบ",
+      links: hasCompare
+        ? [{ href: "#compare", label: "รายงานเปรียบเทียบกับรอบก่อน (รายแผนก / รายพนักงาน)" }]
+        : [],
+    },
+  ];
+  return (
+    <section aria-label="รายงานประเมินพนักงาน" className="grid gap-4 md:grid-cols-3 print:hidden">
+      {groups.map((g) => (
+        <div key={g.title}>
+          <h4 className="mb-2 text-base font-medium">{g.title}</h4>
+          <div className="divide-border border-border divide-y rounded-sm border">
+            {g.links.length === 0 ? (
+              <p className="text-muted-foreground px-3 py-2 text-sm">ยังไม่มีรอบก่อนที่เทียบได้</p>
+            ) : (
+              g.links.map((l) =>
+                l.page ? (
+                  <Link key={l.label} href={l.href} className="hover:text-primary flex min-h-11 items-center px-3 py-2 text-sm hover:bg-[#f6f9fe]">
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a key={l.label} href={l.href} className="hover:text-primary flex min-h-11 items-center px-3 py-2 text-sm hover:bg-[#f6f9fe]">
+                    {l.label}
+                  </a>
+                ),
+              )
+            )}
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -143,7 +202,7 @@ function Delta({ value, min = TREND_MIN_POINTS }: { value: number | null; min?: 
 /** "เทียบกับรอบก่อน": average and each department against the round before, plus the people whose score fell or rose most. */
 function Comparison({ cmp, currentName }: { cmp: RoundComparison; currentName: string }) {
   return (
-    <section aria-label="เทียบกับรอบก่อน" className="space-y-3">
+    <section id="compare" aria-label="เทียบกับรอบก่อน" className="scroll-mt-48 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <h4 className="text-sm font-semibold">เทียบกับรอบก่อน</h4>
         <Delta value={cmp.averageDelta} />

@@ -369,7 +369,7 @@ function ReportSection({
       ) : (
         <>
           {!isMobile && (
-          <Card className="gap-0 overflow-x-auto p-0">
+          <Card id="report-table" className="scroll-mt-48 gap-0 overflow-x-auto p-0">
             <Table>
               <TableHeader>
                 {displayColumns.some((c) => c.group) && (
