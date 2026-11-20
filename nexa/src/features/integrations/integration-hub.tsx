@@ -57,8 +57,7 @@ export function IntegrationHub() {
   return (
     <div className="space-y-6">
       {/* Adapter Pattern explainer */}
-      <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
-        <div className="pointer-events-none absolute -top-20 -right-10 size-72 rounded-full bg-primary/25 blur-[90px]" />
+      <Card className="relative overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white">
         <div className="relative flex items-start gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
             <Plug className="size-6 text-primary" />

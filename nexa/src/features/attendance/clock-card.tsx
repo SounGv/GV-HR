@@ -375,8 +375,7 @@ export function ClockCard() {
     : "--:--:--";
 
   return (
-    <section className="relative overflow-hidden rounded-lg bg-sidebar p-6 text-white sm:p-8">
-      <div className="pointer-events-none absolute -top-24 -right-16 size-80 rounded-full bg-sidebar-primary/25 blur-[100px]" />
+    <section className="relative overflow-hidden rounded-lg bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white sm:p-8">
 
       <button
         type="button"
@@ -494,7 +493,7 @@ export function ClockCard() {
             ) : (
               <Button
                 size="lg"
-                className="h-14 flex-1 gap-2 rounded-lg bg-sidebar-primary text-base font-semibold text-sidebar-primary-foreground shadow-sm shadow-sidebar-primary/25 hover:brightness-105 active:brightness-95"
+                className="h-14 flex-1 gap-2 rounded-lg bg-white text-base font-semibold text-[#0d47a1] hover:bg-[#e3f2fd] active:bg-[#bbdefb]"
                 disabled={checking}
                 onClick={startClockIn}
               >

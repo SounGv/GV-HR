@@ -124,8 +124,7 @@ export function SelfProfileForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {/* Header + avatar */}
-      <Card className="relative overflow-hidden border-0 bg-sidebar p-6 text-white">
-        <div className="pointer-events-none absolute -top-16 -right-10 size-60 rounded-full bg-primary/25 blur-[90px]" />
+      <Card className="relative overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white">
         <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:items-center">
           <div className="relative">
             <Avatar className="size-20 ring-2 ring-white/15">

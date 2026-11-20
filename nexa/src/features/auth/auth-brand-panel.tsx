@@ -24,10 +24,8 @@ export function AuthBrandPanel({
   cornerLogo?: boolean;
 }) {
   return (
-    <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-white lg:flex xl:p-14">
-      {/* ambient glow */}
-      <div className="pointer-events-none absolute -top-32 -left-24 size-96 rounded-full bg-sidebar-primary/20 blur-[110px]" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 size-96 rounded-full bg-sidebar-primary/10 blur-[120px]" />
+    <div className="relative hidden flex-col justify-between overflow-hidden bg-[#0d47a1] dark:bg-[#0a2f6b] p-10 text-white lg:flex xl:p-14">
+      {/* ambient glow */}
 
       {cornerLogo ? (
         <Link href="/login" className="relative flex items-center gap-3">

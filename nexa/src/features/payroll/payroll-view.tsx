@@ -88,8 +88,7 @@ function MyPayslips() {
   return (
     <>
       {latest && (
-        <Card className="relative mb-4 overflow-hidden border-0 bg-sidebar p-6 text-white">
-          <div className="pointer-events-none absolute -top-20 -right-12 size-72 rounded-full bg-primary/25 blur-[90px]" />
+        <Card className="relative mb-4 overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white">
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="flex size-11 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">

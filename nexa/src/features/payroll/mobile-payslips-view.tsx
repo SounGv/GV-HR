@@ -33,8 +33,7 @@ export function MobileMyPayslips() {
 
   return (
     <div className="space-y-4">
-      <Card className="relative gap-1 overflow-hidden border-0 bg-sidebar p-5 text-white">
-        <div className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-primary/25 blur-[80px]" />
+      <Card className="relative gap-1 overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-5 text-white">
         <p className="relative text-xs font-medium tracking-wider text-slate-400 uppercase">
           รายได้สุทธิล่าสุด · {latest.periodLabel}
         </p>
