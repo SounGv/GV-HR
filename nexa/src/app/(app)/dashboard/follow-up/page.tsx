@@ -26,9 +26,8 @@ import {
 } from "@/features/dashboard-people/people-sections";
 import { DueSoonSection } from "@/features/dashboard-people/due-soon-section";
 import { Card } from "@/components/ui/card";
-import { LeaveIcon, StarIllustrationIcon } from "@/components/shared/illustrated-icons";
-import { CheckInIcon } from "@/components/shared/menu-icons";
-import type { MenuIcon } from "@/config/mobile-menu";
+import { CalendarDays, ScanLine, Star } from "lucide-react";
+import type { ComponentType } from "react";
 
 export const metadata: Metadata = { title: "ต้องตามวันนี้" };
 
@@ -40,7 +39,7 @@ function LeaveBalanceTile({ balances, href }: { balances: LeaveBalanceSummary[];
     <Link href={href}>
       <Card className="gv-lift gap-0 p-4">
         <div className="flex items-center gap-2">
-          <LeaveIcon size={32} />
+          <CalendarDays className="size-6 text-primary" aria-hidden="true" />
           <span className="truncate text-xs text-muted-foreground">วันลาคงเหลือ</span>
         </div>
         <div className="mt-2 grid grid-cols-3 gap-1 text-center">
@@ -68,14 +67,14 @@ function MyTile({
   label: string;
   value: string;
   sub?: string;
-  icon: MenuIcon;
+  icon: ComponentType<{ className?: string }>;
   href: string;
 }) {
   return (
     <Link href={href}>
       <Card className="gv-lift gap-0 p-4">
         <div className="flex items-center gap-2">
-          <Icon size={32} />
+          <Icon className="size-6 text-primary" />
           <span className="truncate text-xs text-muted-foreground">{label}</span>
         </div>
         <div className="mt-2 truncate text-lg font-semibold tracking-tight">{value}</div>
@@ -179,14 +178,14 @@ export default async function FollowUpPage({ searchParams }: { searchParams: Pro
           <SectionHeading title="ของฉันวันนี้" hint="เวลาเข้างาน วันลา และคะแนนของคุณ" />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <MyTile
-              icon={CheckInIcon}
+              icon={ScanLine}
               label="เวลาเข้างานวันนี้"
               value={fmtClock(mine.clockInAt) ?? "ยังไม่ลงเวลาเข้างาน"}
               sub={fmtClock(mine.clockOutAt) ? `ออก ${fmtClock(mine.clockOutAt)}` : undefined}
               href="/attendance"
             />
             <MyTile
-              icon={StarIllustrationIcon}
+              icon={Star}
               label="คะแนนให้กำลังใจ"
               value={`${mine.recognition.star + mine.recognition.award + mine.recognition.heart}`}
               sub={`+${mine.recognition.point} คะแนน`}

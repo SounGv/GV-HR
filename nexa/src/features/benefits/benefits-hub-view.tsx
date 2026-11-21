@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/auth-context";
 import { useMedicalSummary } from "@/features/expense/hooks";
 import { useLoanEligibility } from "@/features/company-loan/hooks";
-import { BenefitsIcon, ExpenseIcon, LeaveOverviewIcon } from "@/components/shared/menu-icons";
+import { History, Landmark, Stethoscope } from "lucide-react";
 
 /** The "สวัสดิการ" landing — one shared component for desktop (a grid of
  * cards) and mobile (big stacked cards), matching the spec's mobile mockup
@@ -27,7 +27,7 @@ export function BenefitsHubView() {
       <Card className="gap-4 p-5">
         <div className="flex items-center gap-3">
           <span className="flex size-[52px] shrink-0 items-center justify-center rounded-lg border border-border bg-white  dark:bg-[#23262A] dark:shadow-none">
-            <BenefitsIcon size={36} />
+            <Stethoscope className="size-7 text-primary" aria-hidden="true" />
           </span>
           <div>
             <p className="text-lg font-semibold text-foreground">ค่ารักษาพยาบาล</p>
@@ -63,7 +63,7 @@ export function BenefitsHubView() {
       <Card className="gap-4 p-5">
         <div className="flex items-center gap-3">
           <span className="flex size-[52px] shrink-0 items-center justify-center rounded-lg border border-border bg-white  dark:bg-[#23262A] dark:shadow-none">
-            <ExpenseIcon size={36} />
+            <Landmark className="size-7 text-primary" aria-hidden="true" />
           </span>
           <div>
             <p className="text-lg font-semibold text-foreground">กู้เงินบริษัท</p>
@@ -95,7 +95,7 @@ export function BenefitsHubView() {
       <Card className="flex-row items-center gap-3 p-4 sm:col-span-2">
         <Link href="/benefits/history" className="flex flex-1 items-center gap-3 rounded-lg p-1 hover:bg-muted">
           <span className="flex size-10 items-center justify-center">
-            <LeaveOverviewIcon size={28} />
+            <History className="size-6 text-primary" aria-hidden="true" />
           </span>
           <span className="flex-1 text-base font-semibold text-foreground">ประวัติสวัสดิการของฉัน</span>
           <ChevronRight className="size-4 text-muted-foreground" />

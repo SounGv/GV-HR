@@ -51,12 +51,12 @@ const SOURCE_LABEL: Record<CalendarSource, string> = {
 
 /** Small corner badge on each day cell — the viewer's own attendance status. */
 const MY_STATUS_BADGE: Record<MyDayStatus, { label: string; className: string }> = {
-  PRESENT: { label: "✓", className: "bg-success text-success-foreground" },
-  LATE: { label: "!", className: "bg-warning text-warning-foreground" },
-  LEAVE: { label: "ล", className: "bg-warning text-warning-foreground" },
-  HOLIDAY: { label: "ป", className: "bg-destructive text-destructive-foreground" },
-  WEEKEND: { label: "หย", className: "bg-muted-foreground text-white" },
-  ABSENT: { label: "✕", className: "bg-destructive text-destructive-foreground" },
+  PRESENT: { label: "✓", className: "bg-primary text-primary-foreground" },
+  LATE: { label: "!", className: "border border-border bg-card text-foreground" },
+  LEAVE: { label: "ล", className: "border border-border bg-card text-foreground" },
+  HOLIDAY: { label: "ป", className: "bg-muted text-foreground" },
+  WEEKEND: { label: "หย", className: "bg-muted text-foreground" },
+  ABSENT: { label: "✕", className: "border border-destructive bg-card text-destructive" },
 };
 const MY_STATUS_LEGEND: { status: MyDayStatus; label: string }[] = [
   { status: "PRESENT", label: "มาทำงาน" },
