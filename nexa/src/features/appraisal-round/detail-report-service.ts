@@ -6,7 +6,7 @@ import { commentsFor, parseImportedComments } from "./imported-comments";
 import { pickForm, type RoundSnapshot } from "./form-snapshot";
 import { sheetPercent } from "./rater-sheet";
 import type { Answer, SnapQuestion } from "./answers";
-import { deltaOf, meanOf, previousDepartmentMean, previousScore, ranksFor, sectionPercents, type RoundStamp, type ScoredRow } from "./detail-report-rules";
+import { deltaOf, meanOf, monthLabelFromName, previousDepartmentMean, previousScore, ranksFor, sectionPercents, type RoundStamp, type ScoredRow } from "./detail-report-rules";
 import type { DetailHistory, DetailOverview, DetailPerson, DetailPersonView, DetailRoundOption, DetailRoundPoint, DetailTeam } from "./detail-report-types";
 import type { RaterType } from "./types";
 
@@ -53,7 +53,7 @@ async function loadScored(companyId: string) {
     const when = r.round.startDate ?? r.round.openedAt ?? r.round.createdAt;
     const cur = rounds.get(r.roundId);
     if (cur) cur.people += 1;
-    else rounds.set(r.roundId, { id: r.roundId, name: r.round.name, status: r.round.status, dateIso: when.toISOString().slice(0, 10), people: 1, at: when.getTime(), label: monthLabel(when) });
+    else rounds.set(r.roundId, { id: r.roundId, name: r.round.name, status: r.round.status, dateIso: when.toISOString().slice(0, 10), people: 1, at: when.getTime(), label: monthLabelFromName(r.round.name) ?? monthLabel(when) });
     const types = (r.scoreBreakdown as { types?: { raterType: string; percent: number }[] } | null)?.types ?? [];
     scored.push({
       roundId: r.roundId,

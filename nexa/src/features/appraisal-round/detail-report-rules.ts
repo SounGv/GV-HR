@@ -95,3 +95,30 @@ export const SCORE_TONES: readonly { tone: ScoreTone; label: string; from: numbe
 export function toneOf(percent: number): ScoreTone {
   return (SCORE_TONES.find((x) => percent >= x.from) ?? SCORE_TONES[SCORE_TONES.length - 1]!).tone;
 }
+
+const MONTHS: [string, string][] = [
+  ["มกราคม", "ม.ค."],
+  ["กุมภาพันธ์", "ก.พ."],
+  ["มีนาคม", "มี.ค."],
+  ["เมษายน", "เม.ย."],
+  ["พฤษภาคม", "พ.ค."],
+  ["มิถุนายน", "มิ.ย."],
+  ["กรกฎาคม", "ก.ค."],
+  ["สิงหาคม", "ส.ค."],
+  ["กันยายน", "ก.ย."],
+  ["ตุลาคม", "ต.ค."],
+  ["พฤศจิกายน", "พ.ย."],
+  ["ธันวาคม", "ธ.ค."],
+];
+
+/**
+ * The month a round is about, read from its name when the name starts with a Thai month and a Buddhist year
+ * ("กันยายน 2569 หัวหน้าประเมินลูกน้อง" gives "ก.ย. 69"), otherwise null. A round about September is often opened in October,
+ * so the start date alone would put it under the wrong month in the comparison columns.
+ */
+export function monthLabelFromName(name: string): string | null {
+  const m = /^\s*(\S+)\s+(25\d{2})(?!\d)/.exec(name);
+  if (!m) return null;
+  const hit = MONTHS.find(([full]) => full === m[1]);
+  return hit ? `${hit[1]} ${m[2]!.slice(2)}` : null;
+}

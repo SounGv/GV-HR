@@ -1,7 +1,7 @@
 // Checks the pure helpers of the detailed evaluation report.
 // Run: node --experimental-strip-types scripts/check-detail-report.mjs
 import assert from "node:assert/strict";
-import { deltaOf, meanOf, previousDepartmentMean, previousScore, ranksFor, sectionPercents, toneOf } from "../src/features/appraisal-round/detail-report-rules.ts";
+import { deltaOf, meanOf, previousDepartmentMean, previousScore, ranksFor, sectionPercents, toneOf, monthLabelFromName } from "../src/features/appraisal-round/detail-report-rules.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -9,6 +9,13 @@ const check = (name, fn) => {
   n++;
   console.log(`ok  ${name}`);
 };
+
+check("a round's month is read from its name when it starts with a Thai month and year", () => {
+  assert.equal(monthLabelFromName("กันยายน 2569 หัวหน้าประเมินลูกน้อง (นำเข้าจาก Favpo)"), "ก.ย. 69");
+  assert.equal(monthLabelFromName("พฤศจิกายน 2569 ลูกน้องประเมินหัวหน้า"), "พ.ย. 69");
+  assert.equal(monthLabelFromName("รอบประเมินใหม่"), null);
+  assert.equal(monthLabelFromName("แม่แบบ หัวหน้าประเมินลูกน้อง"), null);
+});
 
 check("score colour groups follow the HR sheets: 100, 90-99, 80-89, below 80", () => {
   assert.equal(toneOf(100), "full");
