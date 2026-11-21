@@ -132,7 +132,7 @@ export function DetailReportView() {
           <TabsTrigger value="overview">ภาพรวม</TabsTrigger>
           <TabsTrigger value="people">สรุปรายคน</TabsTrigger>
           <TabsTrigger value="months">เทียบรายรอบ</TabsTrigger>
-          <TabsTrigger value="sections">คะแนนรายหมวด</TabsTrigger>
+          <TabsTrigger value="sections">รายหมวดและความเห็น</TabsTrigger>
           <TabsTrigger value="team">รายทีม</TabsTrigger>
           <TabsTrigger value="person">ดูรายคน</TabsTrigger>
         </TabsList>

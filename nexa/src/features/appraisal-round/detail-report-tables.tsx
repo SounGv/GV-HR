@@ -38,7 +38,7 @@ export function Delta({ value, className }: { value: number | null; className?: 
 /** The score colour of the HR sheets: the number always stays in the cell, the colour only says which group it is in (see the legend). */
 const TONE_CLASS: Record<ScoreTone, string> = {
   full: "bg-status-normal-bg text-status-normal-fg",
-  high: "bg-status-normal-bg/40 text-status-normal-fg",
+  high: "bg-status-normal-bg/60 text-status-normal-fg",
   mid: "bg-status-late-bg text-status-late-fg",
   low: "bg-status-absent-bg text-status-absent-fg",
 };
@@ -183,7 +183,7 @@ export function OverviewTab({ data }: { data: DetailOverview }) {
             </div>
           </>
         ) : (
-          <p className="py-10 text-center text-sm text-muted-foreground">ตอนนี้มีรอบที่คำนวณผลแล้วถึงรอบนี้เพียงรอบเดียว กราฟแนวโน้มจะขึ้นเมื่อมีรอบที่สอง</p>
+          <p className="py-4 text-center text-sm text-muted-foreground">ตอนนี้มีรอบที่คำนวณผลแล้วถึงรอบนี้เพียงรอบเดียว กราฟแนวโน้มจะขึ้นเมื่อมีรอบที่สอง</p>
         )}
       </ChartCard>
 
@@ -207,7 +207,7 @@ export function OverviewTab({ data }: { data: DetailOverview }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {h.teams.map((t) => (
+                {[...h.teams].sort((a, b) => (b.values[b.values.length - 1] ?? -1) - (a.values[a.values.length - 1] ?? -1)).map((t) => (
                   <TableRow key={t.department}>
                     <TableCell className="whitespace-normal">{t.department}</TableCell>
                     {t.values.map((v, i) => (
@@ -240,7 +240,7 @@ export function PeopleTab({ data, people, onOpen }: { data: DetailOverview; peop
           onClick={() =>
             downloadCsv(
               `สรุปรายคน ${data.roundName}.csv`,
-              ["No.", "ชื่อเล่น", "แผนก", "จำนวนผู้ประเมิน", "%", "รอบก่อน (%)"],
+              ["No.", "ชื่อ (ชื่อเล่น)", "แผนก", "จำนวนผู้ประเมิน", "%", "รอบก่อน (%)"],
               people.map((p, i) => [i + 1, p.name, p.department, p.raters, fmt(p.total), fmt(p.prev)]),
             )
           }
@@ -252,7 +252,7 @@ export function PeopleTab({ data, people, onOpen }: { data: DetailOverview; peop
         <TableHeader>
           <TableRow>
             <RankHead />
-            <TableHead>ชื่อเล่น</TableHead>
+            <TableHead>ชื่อ (ชื่อเล่น)</TableHead>
             <TableHead>แผนก</TableHead>
             <TableHead className="text-center">จำนวนผู้ประเมิน</TableHead>
             <TableHead className="text-center">%</TableHead>
@@ -320,7 +320,7 @@ export function MonthsTab({ data, people, onOpen, children }: { data: DetailOver
           variant="outline"
           className="ml-auto h-11 md:h-9 print:hidden"
           disabled={people.length === 0}
-          onClick={() => downloadCsv(`เทียบรายเดือน ${data.roundName}.csv`, ["No.", "ชื่อเล่น", "แผนก", ...heads], people.map((p, i) => [i + 1, p.name, p.department, ...(byEmployee.get(p.employeeId) ?? heads.map(() => null)).map((v) => fmt(v))]))}
+          onClick={() => downloadCsv(`เทียบรายเดือน ${data.roundName}.csv`, ["No.", "ชื่อ (ชื่อเล่น)", "แผนก", ...heads], people.map((p, i) => [i + 1, p.name, p.department, ...(byEmployee.get(p.employeeId) ?? heads.map(() => null)).map((v) => fmt(v))]))}
         >
           <Download className="size-4" /> Export
         </Button>
@@ -329,7 +329,7 @@ export function MonthsTab({ data, people, onOpen, children }: { data: DetailOver
         <TableHeader>
           <TableRow>
             <RankHead />
-            <TableHead>ชื่อเล่น</TableHead>
+            <TableHead>ชื่อ (ชื่อเล่น)</TableHead>
             <TableHead>แผนก</TableHead>
             {heads.map((l, i) => (
               <TableHead key={l} className="text-center" title={labels[i]?.name}>
@@ -360,6 +360,7 @@ export function MonthsTab({ data, people, onOpen, children }: { data: DetailOver
           )}
         </TableBody>
       </Table>
+      {heads.length < 2 && <p className="rounded-sm border border-border bg-card px-3 py-2 text-sm text-muted-foreground">ตอนนี้มีรอบที่คำนวณผลแล้วเพียงรอบเดียว คอลัมน์จะเพิ่มเมื่อมีรอบถัดไป (รอบเก่าที่นำเข้าจาก Favpo ดูได้ที่หน้ารายงานสรุปรายพนักงาน)</p>}
       <p className="text-xs text-muted-foreground">แต่ละคอลัมน์คือหนึ่งรอบ เรียงจากเก่าไปใหม่ (วางเมาส์ที่หัวคอลัมน์เพื่อดูชื่อรอบ) เรียงแถวตามคะแนนรอบที่เลือก “-” คือไม่ได้ถูกประเมินในรอบนั้น</p>
       {children}
     </div>
@@ -369,9 +370,9 @@ export function MonthsTab({ data, people, onOpen, children }: { data: DetailOver
 /* ─────────────────────────────── คะแนนรายหมวดและความเห็น ─────────────────────────────── */
 
 export function SectionsTab({ data, people, onOpen }: { data: DetailOverview; people: DetailPerson[]; onOpen: (id: string) => void }) {
-  const names = data.sectionNames;
-  if (names.length === 0)
-    return <p className="rounded-sm border border-border bg-card p-4 text-sm text-muted-foreground">รอบนี้ไม่มีคะแนนแยกตามหมวด (คะแนนอาจนำเข้าจากระบบเดิม มีเฉพาะคะแนนรวมกับความเห็น) ดูคะแนนรวมได้ที่แท็บ สรุปรายคน</p>;
+  // A form with no sections gives one catch-all column that only repeats the total, so it is left out; the comments still show.
+  const idx = data.sectionNames.length > 1 ? data.sectionNames.map((_, k) => k) : [];
+  const names = idx.map((k) => data.sectionNames[k]!);
   const avgOf = (k: number) => mean(people.map((p) => p.sections[k]).filter((v): v is number => v !== null && v !== undefined));
   return (
     <div className="space-y-3">
@@ -381,16 +382,17 @@ export function SectionsTab({ data, people, onOpen }: { data: DetailOverview; pe
           variant="outline"
           className="ml-auto h-11 md:h-9 print:hidden"
           disabled={people.length === 0}
-          onClick={() => downloadCsv(`คะแนนรายหมวด ${data.roundName}.csv`, ["No.", "ชื่อเล่น", "แผนก", ...names, "คะแนนรวม (%)", "ความเห็น"], people.map((p, i) => [i + 1, p.name, p.department, ...names.map((_, k) => fmt(p.sections[k])), fmt(p.total), p.comment]))}
+          onClick={() => downloadCsv(`คะแนนรายหมวด ${data.roundName}.csv`, ["No.", "ชื่อ (ชื่อเล่น)", "แผนก", ...names, "คะแนนรวม (%)", "ความเห็น"], people.map((p, i) => [i + 1, p.name, p.department, ...idx.map((k) => fmt(p.sections[k])), fmt(p.total), p.comment]))}
         >
           <Download className="size-4" /> Export
         </Button>
       </div>
+      {names.length === 0 && <p className="rounded-sm border border-border bg-card px-3 py-2 text-sm text-muted-foreground">แบบประเมินของรอบนี้ไม่ได้แบ่งหมวด จึงมีเฉพาะคะแนนรวมกับความเห็น</p>}
       <Table>
         <TableHeader>
           <TableRow>
             <RankHead />
-            <TableHead>ชื่อเล่น</TableHead>
+            <TableHead>ชื่อ (ชื่อเล่น)</TableHead>
             {names.map((s) => (
               <TableHead key={s} className="min-w-24 text-center whitespace-normal">
                 {s}
@@ -407,11 +409,11 @@ export function SectionsTab({ data, people, onOpen }: { data: DetailOverview; pe
               <TableCell>
                 <NameButton p={p} onOpen={onOpen} />
               </TableCell>
-              {names.map((s, k) => (
-                <ScoreCell key={s} value={p.sections[k] ?? null} suffix="" only={["low"]} />
+              {idx.map((k) => (
+                <ScoreCell key={k} value={p.sections[k] ?? null} suffix="" only={["low"]} />
               ))}
               <ScoreCell value={p.total} />
-              <TableCell className="max-w-[22rem] min-w-56 whitespace-normal text-sm">
+              <TableCell className="max-w-[26rem] min-w-56 whitespace-normal text-sm">
                 <span className="line-clamp-3" title={p.comment}>
                   {p.comment || "-"}
                 </span>
@@ -430,8 +432,8 @@ export function SectionsTab({ data, people, onOpen }: { data: DetailOverview; pe
           <TableFooter>
             <TableRow>
               <TableCell colSpan={2}>เฉลี่ยทั้งรอบ</TableCell>
-              {names.map((s, k) => (
-                <TableCell key={s} className="text-center tabular-nums">
+              {idx.map((k) => (
+                <TableCell key={k} className="text-center tabular-nums">
                   {fmt(avgOf(k))}
                 </TableCell>
               ))}
@@ -441,7 +443,9 @@ export function SectionsTab({ data, people, onOpen }: { data: DetailOverview; pe
           </TableFooter>
         )}
       </Table>
-      <p className="text-xs text-muted-foreground">คะแนนแต่ละหมวดเป็นเปอร์เซ็นต์ของคะแนนเต็ม ระบายสีเฉพาะช่องที่ต่ำกว่า 80 เพื่อให้เห็นว่าใครควรดู ความเห็นแสดงสามบรรทัดแรก เอาเมาส์วางเพื่ออ่านทั้งหมด หรือกดชื่อเพื่อเปิดใบเต็ม</p>
+      <p className="text-xs text-muted-foreground">
+        {names.length > 0 ? "คะแนนแต่ละหมวดเป็นเปอร์เซ็นต์ของคะแนนเต็ม ระบายสีเฉพาะช่องที่ต่ำกว่า 80 เพื่อให้เห็นว่าใครควรดู " : ""}ความเห็นแสดงสามบรรทัดแรก เอาเมาส์วางเพื่ออ่านทั้งหมด หรือกดชื่อเพื่อเปิดใบเต็ม
+      </p>
     </div>
   );
 }
@@ -519,7 +523,7 @@ export function TeamTab({ data }: { data: DetailOverview }) {
             <TableHeader>
               <TableRow>
                 <RankHead />
-                <TableHead>ชื่อเล่น</TableHead>
+                <TableHead>ชื่อ (ชื่อเล่น)</TableHead>
                 <TableHead className="text-center">จำนวนผู้ประเมิน</TableHead>
                 <TableHead className="text-center">%</TableHead>
                 <TableHead className="text-center">เทียบรอบก่อน</TableHead>

@@ -64,9 +64,9 @@ export function DistributionChart({ bands }: { bands: { label: string; count: nu
 
 /** One bar per team from zero to 100, with the company average as a dashed line. Teams at or above it are the deeper blue. */
 export function TeamBars({ teams, company }: { teams: { name: string; count: number; avg: number }[]; company: number }) {
-  const W = 520;
+  const W = 580;
   const rowH = 38;
-  const L = 130;
+  const L = 190;
   const R = 56;
   const Tp = 28;
   const H = Tp + teams.length * rowH + 22;
@@ -88,7 +88,7 @@ export function TeamBars({ teams, company }: { teams: { name: string; count: num
           return (
             <g key={t.name}>
               <text x={L - 8} y={y + 19} textAnchor="end" fontSize="13" className="fill-foreground">
-                {t.name.length > 16 ? `${t.name.slice(0, 15)}…` : t.name}
+                {t.name.length > 24 ? `${t.name.slice(0, 23)}…` : t.name}
               </text>
               <text x={L - 8} y={y + 34} textAnchor="end" fontSize="12" className="fill-muted-foreground">
                 {t.count} คน
