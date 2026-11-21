@@ -27,7 +27,6 @@ import {
   ProbationDueSection,
   UpcomingLeavesSection,
 } from "@/features/dashboard-people/people-sections";
-import { EvaluationOverviewSection } from "@/features/dashboard-people/evaluation-section";
 import { DueSoonSection } from "@/features/dashboard-people/due-soon-section";
 import { Card } from "@/components/ui/card";
 import { loginIdentifier, displayName } from "@/lib/format";
@@ -140,10 +139,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // approve = HR company-wide, manage = a manager's own team (the rows narrow to the team); same check as the sidebar badge.
   const canSeeLeaves = can(user!.permissions, "leave:approve") || can(user!.permissions, "leave:manage");
   const canSeeProbation = can(user!.permissions, "employee:update") || can(user!.permissions, "leave:approve");
-  const canSeeEvaluation =
-    can(user!.permissions, "campaign:manage") ||
-    can(user!.permissions, "campaign:update") ||
-    can(user!.permissions, "campaign:approve");
   const canSeeDueSoon = can(user!.permissions, "employee:update") || can(user!.permissions, "holiday:create");
   const canSeeOvertime = can(user!.permissions, "overtime:approve") || can(user!.permissions, "overtime:manage");
   const canSeeMeetings = can(user!.permissions, "meeting:read");
@@ -216,18 +211,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </Suspense>
       )}
 
-      {canSeeEvaluation && (
-        <Suspense
-          fallback={
-            <section aria-label="การประเมินผล" className="space-y-3">
-              <SectionHeading title="การประเมินผล" />
-              <div className="h-40 animate-pulse rounded-lg border border-border bg-muted/40" />
-            </section>
-          }
-        >
-          <EvaluationOverviewSection companyId={user!.companyId} session={session} />
-        </Suspense>
-      )}
+      {/* The evaluation rounds and their results are on the evaluation pages (ประเมินและพัฒนา), not repeated on the home page. */}
 
       {mine && (
         <section className="space-y-3">
