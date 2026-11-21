@@ -34,7 +34,9 @@ const tooltipStyle = {
 const BLUE = "var(--chart-1)";
 const GREY = "#98a2b3";
 const RED = "var(--chart-5)";
-const SERIES = ["var(--chart-1)", "#0b3d75", "#7fb3e6", "var(--chart-2)", "var(--chart-3)", "#6b4fbb"];
+// One blue family plus greys, told apart by shade and by dash pattern (see DASHES), so the chart stays inside the one-accent rule.
+const SERIES = ["#0d47a1", "#1976d2", "#64b5f6", "#455a64", "#90a4ae", "#1565c0"];
+const DASHES = [undefined, "6 3", undefined, "2 3", "6 3", "2 3"];
 
 /** Up or down arrow with the size of the change; the word "เท่าเดิม" when nothing moved, "-" when there is nothing to compare. */
 function Delta({ value, className }: { value: number | null; className?: string }) {
@@ -636,7 +638,7 @@ function TrendTab({ data }: { data: DetailOverview }) {
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Line type="monotone" dataKey="company" name="ทั้งบริษัท" stroke={GREY} strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls />
                 {h.teams.map((t, i) =>
-                  on.includes(t.department) ? <Line key={t.department} type="monotone" dataKey={t.department} stroke={SERIES[i % SERIES.length]} strokeWidth={2.5} dot={{ r: 3 }} connectNulls /> : null,
+                  on.includes(t.department) ? <Line key={t.department} type="monotone" dataKey={t.department} stroke={SERIES[i % SERIES.length]} strokeDasharray={DASHES[i % DASHES.length]} strokeWidth={2.5} dot={{ r: 3 }} connectNulls /> : null,
                 )}
               </LineChart>
             </ResponsiveContainer>
