@@ -17,8 +17,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger, stickyTabsRow } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
@@ -192,18 +190,9 @@ export function EmployeeForm({
   return (
     <Form {...form}>
       <form id={formId} onSubmit={form.handleSubmit(submit)} className="gv-favpo-form max-w-3xl">
-        <Tabs defaultValue="personal" className="gap-6">
-          <div className={cn("overflow-x-auto bg-background", stickyTabsRow)}>
-            <TabsList variant="line" className="h-auto flex-nowrap">
-              <TabsTrigger value="personal">ข้อมูลส่วนตัว</TabsTrigger>
-              <TabsTrigger value="employment">การจ้างงาน</TabsTrigger>
-              <TabsTrigger value="payroll">เงินเดือน &amp; บัญชี</TabsTrigger>
-              <TabsTrigger value="tax">ลดหย่อนภาษี</TabsTrigger>
-              <TabsTrigger value="address">ที่อยู่</TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="personal" keepMounted>
+        <div className="space-y-8">
+          <section aria-labelledby="emp-personal" className="space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-0">
+            <h3 id="emp-personal" className="text-base font-medium">ข้อมูลส่วนตัว</h3>
             <div className="mb-4 flex items-center gap-4">
               <div className="relative">
                 <Avatar className="size-16">
@@ -249,9 +238,10 @@ export function EmployeeForm({
               <TextField form={form} name="email" label="อีเมล" type="email" />
               <TextField form={form} name="phone" label="เบอร์โทร" />
             </FieldGrid>
-          </TabsContent>
+          </section>
 
-          <TabsContent value="employment" keepMounted>
+          <section aria-labelledby="emp-employment" className="space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-0">
+            <h3 id="emp-employment" className="text-base font-medium">การจ้างงาน</h3>
             <FieldGrid>
               <SelectField form={form} name="branchId" label="สาขา" placeholder="เลือกสาขา" clearable
                 options={(orgOptions?.branches ?? []).map((b) => ({ value: b.id, label: b.name }))} />
@@ -274,9 +264,10 @@ export function EmployeeForm({
               <DateField form={form} name="probationEndDate" label="สิ้นสุดทดลองงาน" />
             </FieldGrid>
             <PayMismatchNote message={payMismatch} />
-          </TabsContent>
+          </section>
 
-          <TabsContent value="payroll" keepMounted>
+          <section aria-labelledby="emp-payroll" className="space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-0">
+            <h3 id="emp-payroll" className="text-base font-medium">เงินเดือนและบัญชี</h3>
             <FieldGrid>
               <SelectField form={form} name="compensationType" label="ประเภทค่าจ้าง"
                 options={COMPENSATION_TYPES.map((t) => ({ value: t, label: COMPENSATION_LABEL[t] }))} />
@@ -291,9 +282,10 @@ export function EmployeeForm({
               <TextField form={form} name="bankAccountNo" label="เลขที่บัญชี" />
             </FieldGrid>
             <PayMismatchNote message={payMismatch} />
-          </TabsContent>
+          </section>
 
-          <TabsContent value="tax" keepMounted>
+          <section aria-labelledby="emp-tax" className="space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-0">
+            <h3 id="emp-tax" className="text-base font-medium">ลดหย่อนภาษี</h3>
             <p className="mb-4 text-sm text-muted-foreground">
               ใช้คำนวณภาษีหัก ณ ที่จ่ายรายเดือนให้ตรงกับสถานการณ์จริงของพนักงานแต่ละคน — ไม่กรอกจะถือว่าไม่มีค่าลดหย่อนส่วนนี้
             </p>
@@ -317,17 +309,18 @@ export function EmployeeForm({
               <TextField form={form} name="taxLifeInsurance" label="เบี้ยประกันชีวิต/ปี (บาท)" type="number" />
               <TextField form={form} name="taxHealthInsurance" label="เบี้ยประกันสุขภาพ/ปี (บาท)" type="number" />
             </FieldGrid>
-          </TabsContent>
+          </section>
 
-          <TabsContent value="address" keepMounted>
+          <section aria-labelledby="emp-address" className="space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-0">
+            <h3 id="emp-address" className="text-base font-medium">ที่อยู่</h3>
             <FieldGrid>
               <TextField form={form} name="addressLine" label="ที่อยู่" className="sm:col-span-2" />
               <TextField form={form} name="district" label="อำเภอ/เขต" />
               <TextField form={form} name="province" label="จังหวัด" />
               <TextField form={form} name="postalCode" label="รหัสไปรษณีย์" />
             </FieldGrid>
-          </TabsContent>
-        </Tabs>
+          </section>
+        </div>
       </form>
     </Form>
   );

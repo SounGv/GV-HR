@@ -33,12 +33,12 @@ const SOURCE_STYLE: Record<CalendarSource, string> = {
   meeting: "bg-primary text-primary-foreground",
 };
 const SOURCE_DOT: Record<CalendarSource, string> = {
-  holiday: "bg-destructive",
-  leave: "bg-warning",
+  holiday: "border border-border bg-muted",
+  leave: "bg-primary",
   training: "bg-primary",
-  event: "bg-primary/50",
+  event: "bg-primary",
   evaluation: "bg-primary",
-  meeting: "bg-info",
+  meeting: "bg-primary",
 };
 const SOURCE_LABEL: Record<CalendarSource, string> = {
   holiday: "วันหยุด",
