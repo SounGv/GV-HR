@@ -225,7 +225,7 @@ export function ProfileDrawer() {
                   className="flex min-h-16 items-center gap-3 rounded-lg px-3 py-3 text-[17px] font-semibold text-foreground transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.99] active:bg-muted"
                 >
                   <span
-                    className="relative flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent"
+                    className="relative flex size-10 shrink-0 items-center justify-center"
                   >
                     <item.icon className="size-[18px] text-primary" strokeWidth={2} />
                     {item.badge > 0 && (

@@ -58,7 +58,7 @@ export function IntegrationHub() {
     <div className="space-y-6">
       {/* Adapter Pattern explainer: a plain note, not a banner. */}
       <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-primary">
+        <span className="flex size-9 shrink-0 items-center justify-center text-primary">
           <Plug className="size-5" aria-hidden="true" />
         </span>
         <p className="max-w-2xl text-sm leading-relaxed">

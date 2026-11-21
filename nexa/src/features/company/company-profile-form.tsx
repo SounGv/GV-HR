@@ -363,7 +363,7 @@ function Section({
   return (
     <Card className="gap-4 p-5">
       <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+        <span className="flex size-9 shrink-0 items-center justify-center">
           <Icon className="size-4 text-primary" />
         </span>
         <div>

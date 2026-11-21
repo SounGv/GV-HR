@@ -1095,7 +1095,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   --lg-glass-strong: #ffffff;
   --lg-card: #ffffff;
   --lg-edge: #dee2e6;
-  --lg-tile: #eef3fb;
+  --lg-tile: #ffffff;
   --lg-bg1: #f7f7f7;
   --lg-bg2: #f7f7f7;
   --lg-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -1312,7 +1312,7 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   --login-surface: #ffffff;
   --login-error: #c62828;
   --lg-field: #8b939c;
-  --lg-in: #eef3fb;
+  --lg-in: #ffffff;
   color-scheme: light;
   background: #ffffff;
   color: #212529;
@@ -1351,3 +1351,12 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
   .gv-favpo-form [data-slot="form-item"]:has(> [data-slot="form-label"]) > :not([data-slot="form-label"]) {
     grid-column: 2;
   }}
+/* Phone: a link inside a table row (a name, a code) is at least 44px tall, so it can be hit with a thumb. */
+@media (max-width: 767px) {
+  [data-slot="table"] a,
+  [data-slot="table-container"] a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+  }
+}

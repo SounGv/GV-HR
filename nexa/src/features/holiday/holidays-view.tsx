@@ -203,7 +203,7 @@ export function HolidaysView() {
                   return (
                     <div key={h.id} className="flex items-center gap-4 px-4 py-3">
                       <Link href={`/holidays/${h.id}`} className="flex min-w-0 flex-1 items-center gap-4">
-                        <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-sm border border-border text-primary">
                           <span className="text-base font-semibold leading-none">{day}</span>
                           <span className="text-xs">{weekday}</span>
                         </div>
