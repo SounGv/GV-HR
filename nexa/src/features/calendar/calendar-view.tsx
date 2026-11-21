@@ -23,13 +23,14 @@ const THAI_MONTHS = [
 ];
 const WEEKDAYS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
+// Favpo draws every event as a solid blue bar; a holiday is a plain grey one. The kind is read from the legend and the words in the bar.
 const SOURCE_STYLE: Record<CalendarSource, string> = {
-  holiday: "bg-destructive/15 text-destructive",
-  leave: "bg-warning/15 text-warning",
-  training: "bg-primary/15 text-primary",
-  event: "bg-accent text-primary",
-  evaluation: "bg-primary/20 text-primary",
-  meeting: "bg-info/15 text-info",
+  holiday: "border border-border bg-muted text-foreground",
+  leave: "bg-primary text-primary-foreground",
+  training: "bg-primary text-primary-foreground",
+  event: "bg-primary text-primary-foreground",
+  evaluation: "bg-primary text-primary-foreground",
+  meeting: "bg-primary text-primary-foreground",
 };
 const SOURCE_DOT: Record<CalendarSource, string> = {
   holiday: "bg-destructive",
