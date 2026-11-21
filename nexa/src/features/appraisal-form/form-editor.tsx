@@ -33,6 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/auth-context";
@@ -535,6 +536,23 @@ function FormEditor({ form }: { form: FormDetail }) {
         </div>
       )}
 
+      <TopicsTable
+        sections={sections}
+        ratingWeight={ratingWeight}
+        canEdit={canEdit}
+        onSelect={setSel}
+        onAddSection={addSection}
+        onRenameSection={(k, v) => edit((ss) => ss.map((s) => (s.key === k ? { ...s, name: v } : s)))}
+        onMoveUp={(k) =>
+          edit((ss) => {
+            const i = ss.findIndex((s) => s.key === k);
+            if (i > 0) [ss[i - 1], ss[i]] = [ss[i], ss[i - 1]];
+            return ss;
+          })
+        }
+        onDeleteSection={deleteSection}
+      />
+
       <div className="grid items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[290px_minmax(0,1fr)_340px]">
         <Outline
           sections={sections}
@@ -713,6 +731,105 @@ function FormEditor({ form }: { form: FormDetail }) {
 }
 
 /* ───────────────────────── outline ───────────────────────── */
+
+/** Favpo's form page: the topics as a plain table (weight, type, name, question count, order, edit and delete), with Add New in its title row. Works on the same sections as the outline below. */
+function TopicsTable({
+  sections,
+  ratingWeight,
+  canEdit,
+  onSelect,
+  onAddSection,
+  onRenameSection,
+  onMoveUp,
+  onDeleteSection,
+}: {
+  sections: Section[];
+  ratingWeight: number;
+  canEdit: boolean;
+  onSelect: (uiKey: string) => void;
+  onAddSection: () => void;
+  onRenameSection: (k: string, v: string) => void;
+  onMoveUp: (k: string) => void;
+  onDeleteSection: (k: string) => void;
+}) {
+  return (
+    <section aria-label="หัวข้อของแบบประเมิน" className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-base font-medium">หัวข้อของแบบประเมิน</h2>
+        {canEdit && (
+          <Button variant="outline" size="sm" className="ml-auto h-9" onClick={onAddSection}>
+            <Plus className="size-4" aria-hidden="true" /> เพิ่มหัวข้อ
+          </Button>
+        )}
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-14 text-center">ลำดับ</TableHead>
+            <TableHead className="text-right">ค่าน้ำหนัก</TableHead>
+            <TableHead>ประเภทข้อมูล</TableHead>
+            <TableHead className="w-full">ชื่อหัวข้อ</TableHead>
+            <TableHead className="text-center">คำถาม</TableHead>
+            {canEdit && <TableHead className="text-center">เรียง</TableHead>}
+            <TableHead className="text-center">จัดการ</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sections.map((s, i) => {
+            const sw = s.qs.filter((q) => q.answerType === "RATING").reduce((a, q) => a + q.weight, 0);
+            const pct = Math.round((sw / ratingWeight) * 100);
+            return (
+              <TableRow key={s.key}>
+                <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                <TableCell className="text-right tabular-nums">{sw > 0 ? `${pct}%` : "0%"}</TableCell>
+                <TableCell>{sw > 0 ? "ให้คะแนน" : "ข้อความ"}</TableCell>
+                <TableCell className="min-w-56 whitespace-normal">
+                  {canEdit ? (
+                    <Input
+                      aria-label={`ชื่อหัวข้อที่ ${i + 1}`}
+                      className="h-9"
+                      value={s.name}
+                      maxLength={80}
+                      placeholder="ไม่จัดหมวด"
+                      onChange={(e) => onRenameSection(s.key, e.target.value)}
+                    />
+                  ) : (
+                    s.name || "ไม่จัดหมวด"
+                  )}
+                </TableCell>
+                <TableCell className="text-center tabular-nums">{s.qs.length}</TableCell>
+                {canEdit && (
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ขึ้น`} disabled={i === 0} onClick={() => onMoveUp(s.key)}>
+                        <ArrowUp className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ลง`} disabled={i === sections.length - 1} onClick={() => onMoveUp(sections[i + 1]!.key)}>
+                        <ArrowDown className="size-4" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button variant="ghost" size="icon" className="size-9" aria-label={`เปิดคำถามในหัวข้อที่ ${i + 1}`} disabled={s.qs.length === 0} onClick={() => s.qs[0] && onSelect(s.qs[0].uiKey)}>
+                      <Pencil className="size-4" aria-hidden="true" />
+                    </Button>
+                    {canEdit && (
+                      <Button variant="ghost" size="icon" className="size-9" aria-label={`ลบหัวข้อที่ ${i + 1}`} onClick={() => onDeleteSection(s.key)}>
+                        <Trash2 className="size-4" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </section>
+  );
+}
 
 function Outline({
   sections,
