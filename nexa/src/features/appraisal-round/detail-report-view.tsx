@@ -128,7 +128,7 @@ export function DetailReportView() {
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as string)} className="gap-3">
-        <TabsList variant="line" className="w-fit max-w-full justify-start overflow-x-auto print:hidden">
+        <TabsList variant="line" className="w-fit max-w-full justify-start overflow-x-auto [scrollbar-width:none] print:hidden [&::-webkit-scrollbar]:hidden">
           <TabsTrigger value="overview">ภาพรวม</TabsTrigger>
           <TabsTrigger value="people">สรุปรายคน</TabsTrigger>
           <TabsTrigger value="months">เทียบรายรอบ</TabsTrigger>
@@ -137,7 +137,7 @@ export function DetailReportView() {
           <TabsTrigger value="person">ดูรายคน</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
-          <div className="mb-2 flex justify-end print:hidden">
+          <div className="mb-2 hidden justify-end md:flex print:hidden">
             <Button variant="outline" className="h-11 md:h-9" onClick={() => window.print()}>
               <Printer className="size-4" /> พิมพ์ / บันทึก PDF
             </Button>

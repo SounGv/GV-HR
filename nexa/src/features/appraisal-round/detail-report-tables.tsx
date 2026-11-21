@@ -76,11 +76,21 @@ function downloadCsv(fileName: string, head: string[], rows: (string | number)[]
   URL.revokeObjectURL(url);
 }
 
-const NameButton = ({ p, onOpen }: { p: DetailPerson; onOpen: (id: string) => void }) => (
-  <button type="button" onClick={() => onOpen(p.participantId)} className="inline-flex min-h-11 items-center text-left font-medium whitespace-nowrap text-primary hover:underline md:min-h-0">
+const NameButton = ({ p, onOpen, wrap }: { p: DetailPerson; onOpen: (id: string) => void; wrap?: boolean }) => (
+  <button type="button" onClick={() => onOpen(p.participantId)} className={cn("inline-flex min-h-11 items-center text-left font-medium text-primary hover:underline md:min-h-0", wrap ? "whitespace-normal" : "whitespace-nowrap")}>
     {p.name}
   </button>
 );
+
+/** The score colour as a small pill, for the phone lists (the tables colour whole cells instead). */
+function ScorePill({ value, suffix = "%", only }: { value: number | null | undefined; suffix?: string; only?: ScoreTone[] }) {
+  if (value === null || value === undefined) return <span className="inline-block min-w-12 text-center text-sm text-muted-foreground">-</span>;
+  const tone = toneOf(value);
+  return <span className={cn("inline-block min-w-14 rounded-sm px-2 py-0.5 text-center text-sm font-medium tabular-nums", (!only || only.includes(tone)) && TONE_CLASS[tone])}>{`${fmt(value)}${suffix}`}</span>;
+}
+
+const PHONE_LIST = "divide-y divide-border rounded-sm border border-border bg-card md:hidden";
+const Rank = ({ n }: { n: number }) => <span className="w-6 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{n}</span>;
 
 const RankHead = () => <TableHead className="w-12 text-center">No.</TableHead>;
 
@@ -195,6 +205,8 @@ export function OverviewTab({ data }: { data: DetailOverview }) {
           {h.rounds.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">ยังไม่มีข้อมูลรอบ</p>
           ) : (
+            <>
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -217,6 +229,23 @@ export function OverviewTab({ data }: { data: DetailOverview }) {
                 ))}
               </TableBody>
             </Table>
+            </div>
+            <ul className={PHONE_LIST}>
+              {[...h.teams].sort((x, y) => (y.values[y.values.length - 1] ?? -1) - (x.values[x.values.length - 1] ?? -1)).map((tm) => (
+                <li key={tm.department} className="px-3 py-2">
+                  <p className="text-sm font-medium">{tm.department}</p>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                    {labels.map((l, k) => (
+                      <span key={`${l}-${k}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" title={h.rounds[k]?.name}>
+                        {l}
+                        <ScorePill value={tm.values[k] ?? null} />
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            </>
           )}
           <ToneLegend />
         </ChartCard>
@@ -248,6 +277,7 @@ export function PeopleTab({ data, people, onOpen }: { data: DetailOverview; peop
           <Download className="size-4" /> Export
         </Button>
       </div>
+      <div className="hidden md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -293,6 +323,33 @@ export function PeopleTab({ data, people, onOpen }: { data: DetailOverview; peop
           </TableFooter>
         )}
       </Table>
+      </div>
+      <ul className={PHONE_LIST}>
+        {people.map((p, i) => (
+          <li key={p.participantId} className="flex items-center gap-3 px-3 py-2">
+            <Rank n={i + 1} />
+            <div className="min-w-0 flex-1">
+              <NameButton p={p} onOpen={onOpen} wrap />
+              <p className="text-xs text-muted-foreground">
+                {p.department} · ผู้ประเมิน {p.raters || "-"} คน
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <ScorePill value={p.total} />
+              <div className="mt-0.5 text-xs">
+                <Delta value={p.delta} />
+              </div>
+            </div>
+          </li>
+        ))}
+        {people.length === 0 && <li className="px-3 py-3 text-sm text-muted-foreground">ไม่พบคนที่ค้นหา</li>}
+        {people.length > 0 && (
+          <li className="flex justify-between bg-muted/50 px-3 py-2 text-sm font-medium">
+            <span>รวม {people.length} คน</span>
+            <span className="tabular-nums">เฉลี่ย {fmt(avg)}%</span>
+          </li>
+        )}
+      </ul>
       <p className="text-xs text-muted-foreground">เรียงจากคะแนนสูงไปต่ำ กดชื่อเพื่อเปิดรายละเอียดของคนนั้น (ใครประเมินใคร ให้กี่คะแนน ความเห็น)</p>
     </div>
   );
@@ -325,6 +382,7 @@ export function MonthsTab({ data, people, onOpen, children }: { data: DetailOver
           <Download className="size-4" /> Export
         </Button>
       </div>
+      <div className="hidden md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -360,6 +418,29 @@ export function MonthsTab({ data, people, onOpen, children }: { data: DetailOver
           )}
         </TableBody>
       </Table>
+      </div>
+      <ul className={PHONE_LIST}>
+        {people.map((p, i) => (
+          <li key={p.participantId} className="px-3 py-2">
+            <div className="flex items-center gap-3">
+              <Rank n={i + 1} />
+              <div className="min-w-0 flex-1">
+                <NameButton p={p} onOpen={onOpen} wrap />
+                <p className="text-xs text-muted-foreground">{p.department}</p>
+              </div>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 pl-9">
+              {heads.map((l, k) => (
+                <span key={l} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" title={labels[k]?.name}>
+                  {l}
+                  <ScorePill value={byEmployee.get(p.employeeId)?.[k] ?? null} />
+                </span>
+              ))}
+            </div>
+          </li>
+        ))}
+        {people.length === 0 && <li className="px-3 py-3 text-sm text-muted-foreground">ไม่พบคนที่ค้นหา</li>}
+      </ul>
       {heads.length < 2 && <p className="rounded-sm border border-border bg-card px-3 py-2 text-sm text-muted-foreground">ตอนนี้มีรอบที่คำนวณผลแล้วเพียงรอบเดียว คอลัมน์จะเพิ่มเมื่อมีรอบถัดไป (รอบเก่าที่นำเข้าจาก Favpo ดูได้ที่หน้ารายงานสรุปรายพนักงาน)</p>}
       <p className="text-xs text-muted-foreground">แต่ละคอลัมน์คือหนึ่งรอบ เรียงจากเก่าไปใหม่ (วางเมาส์ที่หัวคอลัมน์เพื่อดูชื่อรอบ) เรียงแถวตามคะแนนรอบที่เลือก “-” คือไม่ได้ถูกประเมินในรอบนั้น</p>
       {children}
@@ -388,6 +469,7 @@ export function SectionsTab({ data, people, onOpen }: { data: DetailOverview; pe
         </Button>
       </div>
       {names.length === 0 && <p className="rounded-sm border border-border bg-card px-3 py-2 text-sm text-muted-foreground">แบบประเมินของรอบนี้ไม่ได้แบ่งหมวด จึงมีเฉพาะคะแนนรวมกับความเห็น</p>}
+      <div className="hidden md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -443,6 +525,33 @@ export function SectionsTab({ data, people, onOpen }: { data: DetailOverview; pe
           </TableFooter>
         )}
       </Table>
+      </div>
+      <ul className={PHONE_LIST}>
+        {people.map((p, i) => (
+          <li key={p.participantId} className="px-3 py-2">
+            <div className="flex items-center gap-3">
+              <Rank n={i + 1} />
+              <div className="min-w-0 flex-1">
+                <NameButton p={p} onOpen={onOpen} wrap />
+                <p className="text-xs text-muted-foreground">{p.department}</p>
+              </div>
+              <ScorePill value={p.total} />
+            </div>
+            {names.length > 0 && (
+              <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 pl-9 text-xs">
+                {idx.map((k) => (
+                  <div key={k} className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 text-muted-foreground">{data.sectionNames[k]}</span>
+                    <ScorePill value={p.sections[k] ?? null} suffix="" only={["low"]} />
+                  </div>
+                ))}
+              </div>
+            )}
+            {p.comment && <p className="mt-1.5 line-clamp-4 pl-9 text-sm">{p.comment}</p>}
+          </li>
+        ))}
+        {people.length === 0 && <li className="px-3 py-3 text-sm text-muted-foreground">ไม่พบคนที่ค้นหา</li>}
+      </ul>
       <p className="text-xs text-muted-foreground">
         {names.length > 0 ? "คะแนนแต่ละหมวดเป็นเปอร์เซ็นต์ของคะแนนเต็ม ระบายสีเฉพาะช่องที่ต่ำกว่า 80 เพื่อให้เห็นว่าใครควรดู " : ""}ความเห็นแสดงสามบรรทัดแรก เอาเมาส์วางเพื่ออ่านทั้งหมด หรือกดชื่อเพื่อเปิดใบเต็ม
       </p>
@@ -469,6 +578,7 @@ export function TeamTab({ data }: { data: DetailOverview }) {
           <Download className="size-4" /> Export
         </Button>
       </div>
+      <div className="hidden md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -513,12 +623,40 @@ export function TeamTab({ data }: { data: DetailOverview }) {
           </TableRow>
         </TableFooter>
       </Table>
+      </div>
+      <ul className={PHONE_LIST}>
+        {data.teams.map((tm, i) => (
+          <li key={tm.department} className="flex items-center gap-3 px-3 py-2">
+            <Rank n={i + 1} />
+            <div className="min-w-0 flex-1">
+              <button type="button" aria-expanded={team === tm.department} className="inline-flex min-h-11 items-center text-left font-medium text-primary hover:underline" onClick={() => setTeam(team === tm.department ? null : tm.department)}>
+                {tm.department}
+              </button>
+              <p className="text-xs text-muted-foreground">
+                {tm.count} คน · ต่ำสุด {fmt(tm.min)} · สูงสุด {fmt(tm.max)}
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <ScorePill value={tm.avg} />
+              <div className="mt-0.5 flex items-center justify-end gap-1 text-xs">
+                <Delta value={company === null ? null : r1(tm.avg - company)} />
+                <span className="text-muted-foreground">จากบริษัท</span>
+              </div>
+            </div>
+          </li>
+        ))}
+        <li className="flex justify-between bg-muted/50 px-3 py-2 text-sm font-medium">
+          <span>ทั้งบริษัท {data.people.length} คน</span>
+          <span className="tabular-nums">{fmt(company)}%</span>
+        </li>
+      </ul>
       <p className="text-xs text-muted-foreground">เรียงจากทีมที่เฉลี่ยสูงไปต่ำ กดชื่อทีมเพื่อดูรายคนในทีม</p>
       {team && (
         <div>
           <h4 className="mb-1.5 text-sm font-semibold">
             คนในทีม {team} ({members.length} คน)
           </h4>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -543,6 +681,24 @@ export function TeamTab({ data }: { data: DetailOverview }) {
               ))}
             </TableBody>
           </Table>
+          </div>
+          <ul className={PHONE_LIST}>
+            {members.map((m, i) => (
+              <li key={m.participantId} className="flex items-center gap-3 px-3 py-2">
+                <Rank n={i + 1} />
+                <div className="min-w-0 flex-1 text-sm font-medium">
+                  {m.name}
+                  <p className="text-xs font-normal text-muted-foreground">ผู้ประเมิน {m.raters || "-"} คน</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <ScorePill value={m.total} />
+                  <div className="mt-0.5 text-xs">
+                    <Delta value={m.delta} />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
