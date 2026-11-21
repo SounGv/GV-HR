@@ -88,8 +88,10 @@ export function SectionBand() {
     <header ref={rootRef} className="print:hidden">
       <div className="gv-bar-blue flex h-14 items-center gap-2 bg-[#0d47a1] px-3 text-white sm:px-4 dark:bg-[#0a2f6b]">
         <SidebarTrigger className="-ml-1 size-11" />
-        <Link href={HOME_PATH} aria-label="GV One หน้าหลัก" className="text-[22px] leading-none font-bold tracking-tight text-white hover:text-white">
-          GV One
+        <Link href={HOME_PATH} aria-label="GV One หน้าหลัก" className="flex items-center text-white hover:text-white">
+          {/* The company lockup (white icon, company name) from the owner's file; it sits on the blue bar in every theme. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/gv-company-header-lockup.svg" alt="บริษัท แก็ดเจ็ต วิลล่า จำกัด" width={300} height={40} className="h-9 w-auto max-w-[56vw]" />
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           {showAi && (

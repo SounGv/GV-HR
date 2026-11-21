@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="64" viewBox="0 0 480 64" role="img" aria-labelledby="title desc">
+  <title id="title">Gadget Villa company header</title>
+  <desc id="desc">White organization icon with Gadget Villa company name for use on a dark blue header</desc>
+  <g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M31 3 53 15.5v25L31 53 9 40.5v-25Z" opacity=".95"/>
+    <circle cx="31" cy="20" r="5.2"/>
+    <circle cx="19" cy="35.5" r="4.2"/>
+    <circle cx="43" cy="35.5" r="4.2"/>
+    <path d="M31 25.5v5.5M26.8 29.8 22 32.5M35.2 29.8 40 32.5"/>
+    <path d="M24.5 46v-2.2c0-4-2.5-6.1-5.5-6.1s-5.5 2.1-5.5 6.1V46M48.5 46v-2.2c0-4-2.5-6.1-5.5-6.1s-5.5 2.1-5.5 6.1V46" opacity=".9"/>
+  </g>
+  <g fill="#fff">
+    <text x="68" y="28" font-family="'Noto Sans Thai','Leelawadee UI',Tahoma,sans-serif" font-size="19" font-weight="700">บริษัท แก็ดเจ็ต วิลล่า จำกัด</text>
+    <rect x="68" y="36" width="34" height="2" rx="1" opacity=".95"/>
+    <text x="110" y="43" font-family="Inter, Arial, sans-serif" font-size="10.5" font-weight="600" letter-spacing="1.7" opacity=".82">GADGET VILLA</text>
+  </g>
+</svg>
