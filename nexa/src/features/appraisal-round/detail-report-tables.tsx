@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DROP_LOOK_POINTS } from "@/features/report/result-insights";
+import { CEILING_MIN_PEOPLE, CEILING_SHARE } from "./review-rules";
 import { cn } from "@/lib/utils";
 import { DistributionChart, MoveBars, TeamBars, TrendLines, type TrendSeries } from "./detail-report-charts";
 import { SCORE_TONES, toneOf, type ScoreTone } from "./detail-report-rules";
@@ -96,12 +97,12 @@ const RankHead = () => <TableHead className="w-12 text-center">No.</TableHead>;
 
 /* ─────────────────────────────── ภาพรวม (ผู้บริหาร) ─────────────────────────────── */
 
-function Kpi({ label, value, note }: { label: string; value: string; note?: React.ReactNode }) {
+function Kpi({ label, value, note, warn }: { label: string; value: string; note?: React.ReactNode; warn?: boolean }) {
   return (
-    <div className="rounded-sm border border-border bg-card px-3 py-2.5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-3xl leading-snug font-bold tabular-nums">{value}</p>
-      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+    <div className={cn("rounded-sm border px-3 py-2.5", warn ? "border-status-late-border bg-status-late-bg" : "border-border bg-card")}>
+      <p className={cn("text-xs", warn ? "text-status-late-fg" : "text-muted-foreground")}>{label}</p>
+      <p className={cn("text-3xl leading-snug font-bold tabular-nums", warn && "text-status-late-fg")}>{value}</p>
+      {note && <p className={cn("text-xs", warn ? "text-status-late-fg" : "text-muted-foreground")}>{note}</p>}
     </div>
   );
 }
@@ -123,18 +124,32 @@ export function OverviewTab({ data }: { data: DetailOverview }) {
   const n = people.length;
   const avg = data.companyAvg ?? 0;
   const h = data.history;
+  const labels = h.rounds.map((r) => r.label);
   const prevAvg = h.rounds.length >= 2 ? h.company[h.company.length - 2] ?? null : null;
   const change = prevAvg === null ? null : r1(avg - prevAvg);
   const full = people.filter((p) => p.total >= 100).length;
   const low = people.filter((p) => p.total < 80).length;
+  const ceiling = n >= CEILING_MIN_PEOPLE && full / n >= CEILING_SHARE;
   const bands = data.bins.map((b) => ({ label: b.label, count: people.filter((p) => p.total >= b.from && p.total <= b.to).length }));
   const teams = data.teams.map((t) => ({ name: t.department, count: t.count, avg: t.avg }));
-  const movers = people.filter((p) => p.delta !== null && p.delta !== 0);
-  const ups = movers.filter((p) => (p.delta as number) > 0).sort((a, b) => (b.delta as number) - (a.delta as number)).slice(0, 4);
-  const downs = movers.filter((p) => (p.delta as number) < 0).sort((a, b) => (a.delta as number) - (b.delta as number)).slice(0, 4);
-  const falls = movers.filter((p) => (p.delta as number) <= -DROP_LOOK_POINTS).sort((a, b) => (a.delta as number) - (b.delta as number));
+  const falls = people.filter((p) => p.delta !== null && p.delta <= -DROP_LOOK_POINTS).sort((a, b) => (a.delta as number) - (b.delta as number));
   const best = data.teams[0];
   const worst = data.teams[data.teams.length - 1];
+  const sent = data.progress;
+
+  // Who moved most between two rounds the reader picks (default: the last two).
+  const [from, setFrom] = useState(Math.max(0, h.rounds.length - 2));
+  const [to, setTo] = useState(Math.max(0, h.rounds.length - 1));
+  const byEmployee = new Map(h.people.map((x) => [x.employeeId, x.values]));
+  const pairRows = people.flatMap((p) => {
+    const v = byEmployee.get(p.employeeId);
+    const a = v?.[from] ?? null;
+    const b = v?.[to] ?? null;
+    return a === null || b === null || b === a ? [] : [{ name: p.name, team: p.department, delta: r1(b - a) }];
+  });
+  const ups = pairRows.filter((r) => r.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 5);
+  const downs = pairRows.filter((r) => r.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 5);
+  const roundSelect = "h-11 rounded-sm border border-input bg-background px-2 text-sm md:h-9";
 
   const pick = data.teams.length >= 3 ? [data.teams[0]!, data.teams[1]!, data.teams[data.teams.length - 1]!] : data.teams;
   const palette: Pick<TrendSeries, "color" | "dash">[] = [{ color: "#1976d2" }, { color: "#90caf9" }, { color: "#455a64", dash: "6 4" }];
@@ -142,15 +157,15 @@ export function OverviewTab({ data }: { data: DetailOverview }) {
     { name: "ทั้งบริษัท", values: h.company, color: "#0d47a1", width: 3.5 },
     ...pick.map((t, i) => ({ name: t.department, values: h.teams.find((x) => x.department === t.department)?.values ?? [], width: 2.5, ...palette[i]! })),
   ];
-  const labels = h.rounds.map((r) => r.label);
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Kpi label="ผู้ถูกประเมิน" value={`${n} คน`} note={`${data.teams.length} ทีม`} />
         <Kpi label="ค่าเฉลี่ยบริษัท" value={`${fmt(avg)}%`} note={change === null ? "ยังไม่มีรอบก่อนให้เทียบ" : <><Delta value={change} /> จากรอบก่อน</>} />
-        <Kpi label="ได้เต็ม 100%" value={`${full} คน`} note={n ? `${Math.round((full / n) * 100)}% ของทั้งหมด` : undefined} />
+        <Kpi label="ได้เต็ม 100%" value={`${full} คน`} note={n ? `${Math.round((full / n) * 100)}% ของทั้งหมด` : undefined} warn={ceiling} />
         <Kpi label="คะแนนต่ำกว่า 80" value={`${low} คน`} note="ควรคุยหรือดูแลเพิ่ม" />
+        <Kpi label="ส่งใบประเมินแล้ว" value={`${sent.submitted}/${sent.total}`} note={sent.total ? (sent.submitted >= sent.total ? "ครบทุกใบ" : `ยังค้าง ${sent.total - sent.submitted} ใบ`) : "ไม่มีใบประเมินในระบบ"} warn={sent.total > 0 && sent.submitted < sent.total} />
       </div>
 
       <div className="rounded-sm border border-border border-l-4 border-l-primary bg-card px-4 py-3 text-sm">
@@ -167,41 +182,64 @@ export function OverviewTab({ data }: { data: DetailOverview }) {
               ? `คะแนนลดลงตั้งแต่ ${DROP_LOOK_POINTS} จุด ${falls.length} คน: ${falls.slice(0, 5).map((p) => `${p.name} (ลง ${fmt(-(p.delta as number))})`).join(", ")}${falls.length > 5 ? " และอีกหลายคน" : ""}`
               : "ไม่มีใครคะแนนลดลงถึงเกณฑ์ที่ควรดู"}
           </li>
+          {ceiling && <li className="text-status-late-fg">คะแนนกระจุกที่เต็ม {full} คน ({Math.round((full / n) * 100)}%) แยกคนที่ทำได้ดีกว่ากันไม่ได้</li>}
+          {sent.total > 0 && sent.submitted < sent.total && <li className="text-status-late-fg">ยังมีใบประเมินค้าง {sent.total - sent.submitted} ใบ ตัวเลขนี้ยังไม่ครบ</li>}
         </ul>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
-        <ChartCard title="การกระจายคะแนน" hint="จำนวนคนในแต่ละช่วงคะแนน">
-          <DistributionChart bands={bands} />
+        <ChartCard title="แนวโน้มคะแนนเฉลี่ย" hint="บริษัทเทียบทีมสูงสุด ทีมรองลงมา และทีมต่ำสุด เป็นเปอร์เซ็นต์ของคะแนนเต็ม จึงเทียบกันได้แม้สเกลแบบประเมินเปลี่ยน">
+          {labels.length >= 2 ? (
+            <>
+              <TrendLines labels={labels} series={series} />
+              <div className="flex flex-wrap gap-2 text-xs">
+                {series.map((s) => (
+                  <span key={s.name} className="inline-flex items-center gap-1.5 rounded-sm border border-border px-2 py-0.5">
+                    <span className="inline-block w-5 border-t-[3px]" style={{ borderColor: s.color, borderTopStyle: s.dash ? "dashed" : "solid" }} aria-hidden="true" />
+                    {s.name}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="py-4 text-center text-sm text-muted-foreground">ตอนนี้มีรอบที่คำนวณผลแล้วถึงรอบนี้เพียงรอบเดียว กราฟแนวโน้มจะขึ้นเมื่อมีรอบที่สอง</p>
+          )}
         </ChartCard>
-        <ChartCard title="ค่าเฉลี่ยรายทีม เทียบทั้งบริษัท" hint="เส้นประคือค่าเฉลี่ยบริษัท">
+        <ChartCard title="ทีมไหนสูงกว่าหรือต่ำกว่าค่าเฉลี่ยบริษัท" hint="เส้นประคือค่าเฉลี่ยบริษัท">
           <TeamBars teams={teams} company={avg} />
         </ChartCard>
       </div>
 
-      <ChartCard title="แนวโน้มคะแนนเฉลี่ยรายรอบ" hint="เทียบกันได้แม้สเกลแบบประเมินเปลี่ยน เพราะใช้เปอร์เซ็นต์ของคะแนนเต็ม แสดงบริษัท ทีมสูงสุด ทีมรองลงมา และทีมต่ำสุด">
-        {labels.length >= 2 ? (
-          <>
-            <TrendLines labels={labels} series={series} />
-            <div className="flex flex-wrap gap-2 text-xs">
-              {series.map((s) => (
-                <span key={s.name} className="inline-flex items-center gap-1.5 rounded-sm border border-border px-2 py-0.5">
-                  <span className="inline-block w-5 border-t-[3px]" style={{ borderColor: s.color, borderTopStyle: s.dash ? "dashed" : "solid" }} aria-hidden="true" />
-                  {s.name}
-                </span>
+      <ChartCard title="ใครเปลี่ยนไปมากที่สุด" hint="ขึ้นฝั่งขวา ลงฝั่งซ้าย แสดง 5 คนที่ขึ้นมากสุดและ 5 คนที่ลงมากสุด เฉพาะคนที่ถูกประเมินทั้งสองรอบ">
+        {h.rounds.length >= 2 && (
+          <div className="flex flex-wrap items-center gap-2 text-sm print:hidden">
+            <span>เทียบจาก</span>
+            <select value={from} onChange={(e) => setFrom(Number(e.target.value))} className={roundSelect} aria-label="รอบเริ่มต้น">
+              {labels.map((l, i) => (
+                <option key={`${l}-${i}`} value={i}>
+                  {l}
+                  {h.rounds[i]?.name ? ` (${h.rounds[i]!.name.slice(0, 40)})` : ""}
+                </option>
               ))}
-            </div>
-          </>
-        ) : (
-          <p className="py-4 text-center text-sm text-muted-foreground">ตอนนี้มีรอบที่คำนวณผลแล้วถึงรอบนี้เพียงรอบเดียว กราฟแนวโน้มจะขึ้นเมื่อมีรอบที่สอง</p>
+            </select>
+            <span>ไปเป็น</span>
+            <select value={to} onChange={(e) => setTo(Number(e.target.value))} className={roundSelect} aria-label="รอบปลายทาง">
+              {labels.map((l, i) => (
+                <option key={`${l}-${i}`} value={i}>
+                  {l}
+                  {h.rounds[i]?.name ? ` (${h.rounds[i]!.name.slice(0, 40)})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
+        <MoveBars rows={[...ups, ...downs]} />
       </ChartCard>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
-        <ChartCard title="เปลี่ยนแปลงจากรอบก่อน" hint="คนที่ขึ้นและลงมากที่สุด (จุดเปอร์เซ็นต์) เทียบกับรอบก่อนหน้าที่คนนั้นถูกประเมิน">
-          <MoveBars rows={[...ups, ...downs].map((p) => ({ name: p.name, team: p.department, delta: p.delta as number }))} />
-        </ChartCard>
-        <ChartCard title="ตารางสีรายทีมรายรอบ" hint="แบบเดียวกับชีตของฝ่ายบุคคล">
+      <details className="rounded-sm border border-border bg-card p-3 print:hidden">
+        <summary className="min-h-11 cursor-pointer text-sm font-medium md:min-h-0">ภาคผนวก: ตารางสีรายทีมรายรอบ และการกระจายคะแนน</summary>
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
+          <ChartCard title="ตารางสีรายทีมรายรอบ" hint="แบบเดียวกับชีตของฝ่ายบุคคล">
           {h.rounds.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">ยังไม่มีข้อมูลรอบ</p>
           ) : (
@@ -247,9 +285,13 @@ export function OverviewTab({ data }: { data: DetailOverview }) {
             </ul>
             </>
           )}
-          <ToneLegend />
-        </ChartCard>
-      </div>
+            <ToneLegend />
+          </ChartCard>
+          <ChartCard title="การกระจายคะแนน" hint="จำนวนคนในแต่ละช่วงคะแนน">
+            <DistributionChart bands={bands} />
+          </ChartCard>
+        </div>
+      </details>
     </div>
   );
 }

@@ -69,6 +69,8 @@ export interface DetailOverview {
   companyAvg: number | null;
   /** Counts of people per score band 0-59, 60-69, 70-79, 80-89, 90-99 and 100. */
   bins: { label: string; from: number; to: number }[];
+  /** Answer sheets of the round: how many were submitted out of how many were asked (all raters of all people in it). */
+  progress: { submitted: number; total: number };
   /** Section names of the round's forms, the columns of the by-section table. */
   sectionNames: string[];
   people: DetailPerson[];

@@ -142,7 +142,7 @@ export function DetailReportView() {
               <Printer className="size-4" /> พิมพ์ / บันทึก PDF
             </Button>
           </div>
-          <OverviewTab data={data} />
+          <OverviewTab key={data.roundId} data={data} />
         </TabsContent>
         <TabsContent value="people">
           <PeopleTab data={data} people={filtered} onOpen={open} />

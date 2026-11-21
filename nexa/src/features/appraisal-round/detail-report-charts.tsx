@@ -174,7 +174,7 @@ export function TrendLines({ labels, series }: { labels: string[]; series: Trend
         const narrow = W < NARROW;
         const H = narrow ? 260 : 300;
         const L = 34;
-        const R = narrow ? 56 : 230;
+        const R = narrow ? 56 : Math.min(230, Math.round(W * 0.3));
         const Tp = 14;
         const Bm = 30;
         const all = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
@@ -225,7 +225,7 @@ export function TrendLines({ labels, series }: { labels: string[]; series: Trend
                 </text>
                 {!narrow && (
                   <text x={W - R + 56} y={e.y + 4} fontSize="12" className="fill-muted-foreground">
-                    {cut(e.name, 20)}
+                    {cut(e.name, 16)}
                   </text>
                 )}
               </g>

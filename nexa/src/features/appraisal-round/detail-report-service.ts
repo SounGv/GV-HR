@@ -110,6 +110,7 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
     bins: BINS,
     people: [],
     teams: [],
+    progress: { submitted: 0, total: 0 },
     sectionNames: [],
     history: { rounds: [], company: [], teams: [], people: [] },
   };
@@ -175,6 +176,10 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
     })
     .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name, "th"));
 
+  // Every rater of everyone in the round, by status (the question "is the picture complete").
+  const byStatus = await prisma.appraisalAssignment.groupBy({ by: ["status"], where: { participant: { roundId: round.id } }, _count: { _all: true } });
+  const progress = { submitted: byStatus.find((x) => x.status === "SUBMITTED")?._count._all ?? 0, total: byStatus.reduce((s, x) => s + x._count._all, 0) };
+
   const departments = [...new Set(mine.map((s) => s.department))];
   const teams: DetailTeam[] = departments
     .map((department) => {
@@ -193,6 +198,7 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
     ratingMax: form?.ratingMax ?? 5,
     companyAvg: meanOf(mine.map((s) => s.score)),
     bins: BINS,
+    progress,
     sectionNames,
     people,
     teams,
