@@ -2,6 +2,10 @@
  *  pulling in `next/headers` (which only works in the Node request scope). */
 export const ACCESS_COOKIE = "nexa_at";
 export const REFRESH_COOKIE = "nexa_rt";
+// Holds no secret: only says "a refresh token exists". The refresh cookie itself is limited to /api/auth, so the browser
+// never sends it with a page request and edge middleware cannot see it; this marker (path "/", same lifetime) is what
+// lets middleware send a reopened app through /api/auth/refresh instead of the sign-in page.
+export const SESSION_MARKER_COOKIE = "nexa_rs";
 export const OAUTH_STATE_COOKIE = "nexa_oauth_state";
 // Double-submit CSRF token — deliberately NOT httpOnly so client JS can read
 // it and echo it back as a header; the header/cookie pair is unforgeable

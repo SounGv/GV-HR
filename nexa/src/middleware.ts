@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAccessToken } from "@/lib/auth/jwt";
-import { ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE, CSRF_HEADER } from "@/lib/auth/constants";
+import { ACCESS_COOKIE, SESSION_MARKER_COOKIE, CSRF_COOKIE, CSRF_HEADER } from "@/lib/auth/constants";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -62,7 +62,8 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const accessToken = req.cookies.get(ACCESS_COOKIE)?.value;
-  const hasRefresh = !!req.cookies.get(REFRESH_COOKIE)?.value;
+  // The refresh cookie only travels to /api/auth, so page requests carry the marker instead (see constants.ts).
+  const hasRefresh = !!req.cookies.get(SESSION_MARKER_COOKIE)?.value;
   const claims = accessToken ? await verifyAccessToken(accessToken) : null;
   const isApi = pathname.startsWith("/api");
 

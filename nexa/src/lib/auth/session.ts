@@ -7,9 +7,9 @@ import {
   REFRESH_TTL_SECONDS,
   type AccessClaims,
 } from "./jwt";
-import { ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE } from "./constants";
+import { ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE, SESSION_MARKER_COOKIE } from "./constants";
 
-export { ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE };
+export { ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE, SESSION_MARKER_COOKIE };
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -47,6 +47,10 @@ export function setSessionCookies(
     // Refresh token is only ever sent to the refresh endpoint.
     path: "/api/auth",
   });
+  res.cookies.set(SESSION_MARKER_COOKIE, "1", {
+    ...baseCookie,
+    ...(persistent ? { maxAge: REFRESH_TTL_SECONDS } : {}),
+  });
   res.cookies.set(CSRF_COOKIE, randomBytes(24).toString("hex"), {
     ...baseCookie,
     httpOnly: false, // client JS must be able to read this one
@@ -57,6 +61,7 @@ export function setSessionCookies(
 export function clearSessionCookies(res: NextResponse) {
   res.cookies.set(ACCESS_COOKIE, "", { ...baseCookie, maxAge: 0 });
   res.cookies.set(REFRESH_COOKIE, "", { ...baseCookie, path: "/api/auth", maxAge: 0 });
+  res.cookies.set(SESSION_MARKER_COOKIE, "", { ...baseCookie, maxAge: 0 });
   res.cookies.set(CSRF_COOKIE, "", { ...baseCookie, httpOnly: false, maxAge: 0 });
 }
 
