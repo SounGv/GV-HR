@@ -617,7 +617,7 @@ function TrendTab({ data }: { data: DetailOverview }) {
                 type="button"
                 aria-pressed={checked}
                 onClick={() => setOn(checked ? on.filter((x) => x !== t.department) : [...on, t.department])}
-                className={cn("min-h-11 rounded-sm border px-3 text-sm md:min-h-8", checked ? "border-foreground bg-foreground text-background" : "border-border bg-card")}
+                className={cn("min-h-11 rounded-sm border px-3 text-sm md:min-h-8", checked ? "border-primary bg-accent text-foreground" : "border-border bg-card")}
               >
                 <span className="mr-1.5 inline-block size-2 rounded-full align-middle" style={{ background: SERIES[i % SERIES.length] }} aria-hidden="true" />
                 {t.department}

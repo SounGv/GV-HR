@@ -245,7 +245,7 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
     <section className="gv-hero gv-rise p-5 sm:p-6" style={rise(0)} aria-labelledby="appraisal-hero-title">
       {newRound.dialog}
       <Eyebrow tone="waiting">ยังไม่มีรอบที่เปิดอยู่</Eyebrow>
-      <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold sm:text-[26px]">
+      <h2 id="appraisal-hero-title" className="mt-2 text-lg leading-snug font-semibold">
         เตรียมให้พร้อมใน 3 ขั้น
       </h2>
       <p className="mt-0.5 text-sm leading-relaxed text-foreground">{sub}</p>
@@ -268,7 +268,7 @@ function Kpi({ label, value, unit, children }: { label: string; value: ReactNode
   return (
     <div className="gv-glass min-w-0 px-4 py-3.5">
       <p className="text-sm leading-snug font-semibold text-foreground">{label}</p>
-      <p className="mt-1 text-[26px] leading-snug font-bold tabular-nums sm:text-[28px]">
+      <p className="mt-1 text-2xl leading-snug font-medium tabular-nums">
         {value}
         {unit && <span className="ml-1 text-xs font-medium text-foreground">{unit}</span>}
       </p>
@@ -290,7 +290,7 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" style={rise(0)} aria-labelledby="appraisal-hero-title">
       <Eyebrow tone="open">เปิดอยู่{round.endIso ? ` · ปิด ${fmtDate(round.endIso, true)}` : ""}</Eyebrow>
-      <h2 id="appraisal-hero-title" className="mt-2.5 text-[22px] leading-snug font-bold break-words sm:text-[26px]">
+      <h2 id="appraisal-hero-title" className="mt-2 text-lg leading-snug font-semibold break-words">
         {round.name}
       </h2>
       <p className="mt-0.5 text-sm leading-relaxed break-words text-foreground">
@@ -549,7 +549,8 @@ function FavpoHub() {
     {
       title: "รายงาน",
       links: [
-        { href: "/reports?view=performance", label: "รายงานประเมินผล" },
+        { href: "/reports?view=performance", label: "รายงานประเมินผล (สรุป)" },
+        { href: "/appraisal/report", label: "รายงานประเมินละเอียด (รายคน รายทีม เทียบข้ามรอบ)" },
         { href: "/appraisal/my-results", label: "ผลประเมินของฉัน" },
       ],
     },
