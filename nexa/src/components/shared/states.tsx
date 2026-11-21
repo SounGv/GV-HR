@@ -25,8 +25,8 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <Icon className="size-6" />
+      <div className="flex items-center justify-center text-muted-foreground">
+        <Icon className="size-9" strokeWidth={1.25} />
       </div>
       <div className="space-y-1">
         <p className="font-medium text-foreground">{title}</p>
@@ -85,8 +85,8 @@ export function ErrorState({
   if (kind === "forbidden") {
     return (
       <div className={cn("flex flex-col items-center justify-center gap-3 rounded-lg border border-info/30 bg-info/5 px-6 py-14 text-center", className)}>
-        <div className="flex size-12 items-center justify-center rounded-full bg-info/10 text-info">
-          <Lock className="size-6" />
+        <div className="flex items-center justify-center text-muted-foreground">
+          <Lock className="size-9" strokeWidth={1.25} />
         </div>
         <div className="space-y-1">
           <p className="font-medium text-foreground">{title ?? "บัญชีนี้ยังไม่มีสิทธิ์ดูหน้านี้"}</p>
@@ -103,8 +103,8 @@ export function ErrorState({
         className,
       )}
     >
-      <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-        <AlertCircle className="size-6" />
+      <div className="flex items-center justify-center text-destructive">
+        <AlertCircle className="size-9" strokeWidth={1.25} />
       </div>
       <div className="space-y-1">
         <p className="font-medium text-foreground">{title ?? (server ? "ระบบขัดข้อง โหลดข้อมูลไม่สำเร็จ" : "โหลดข้อมูลไม่สำเร็จ")}</p>
