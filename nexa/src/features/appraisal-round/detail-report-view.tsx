@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Minus, Search } from "lucide-react";
+import { Printer, Search } from "lucide-react";
 import { CartesianGrid, Legend, Line, LineChart, PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Bar, BarChart } from "recharts";
 
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { StatusChip } from "@/components/shared/status-chip";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,10 +16,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useDetailOverview, useDetailPerson } from "./hooks";
-import type { DetailOverview, DetailPerson, DetailPersonView, DetailTeam } from "./detail-report-types";
+import type { DetailOverview, DetailPerson, DetailPersonView } from "./detail-report-types";
 import { RATER_LABEL } from "./types";
+import { Delta, fmt, MonthsTab, OverviewTab, PeopleTab, SectionsTab, TeamTab } from "./detail-report-tables";
 
-const fmt = (n: number | null | undefined) => (n === null || n === undefined ? "-" : Number.isInteger(n) ? String(n) : n.toFixed(1));
 const dateTh = (iso: string | null) =>
   iso ? new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : "-";
 
@@ -38,29 +39,6 @@ const RED = "var(--chart-5)";
 const SERIES = ["#0d47a1", "#1976d2", "#64b5f6", "#455a64", "#90a4ae", "#1565c0"];
 const DASHES = [undefined, "6 3", undefined, "2 3", "6 3", "2 3"];
 
-/** Up or down arrow with the size of the change; the word "เท่าเดิม" when nothing moved, "-" when there is nothing to compare. */
-function Delta({ value, className }: { value: number | null; className?: string }) {
-  if (value === null) return <span className={cn("text-muted-foreground", className)}>-</span>;
-  if (value === 0) return <span className={cn("inline-flex items-center gap-1 text-muted-foreground", className)}><Minus className="size-3.5" aria-hidden="true" />เท่าเดิม</span>;
-  const up = value > 0;
-  return (
-    <span className={cn("inline-flex items-center gap-1 tabular-nums", up ? "text-success" : "text-destructive", className)}>
-      {up ? <ArrowUp className="size-3.5" aria-hidden="true" /> : <ArrowDown className="size-3.5" aria-hidden="true" />}
-      {up ? "ขึ้น" : "ลง"} {fmt(Math.abs(value))}
-    </span>
-  );
-}
-
-function Tile({ label, value, note }: { label: string; value: React.ReactNode; note?: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2.5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-2xl leading-snug font-semibold tabular-nums">{value}</p>
-      {note && <p className="text-xs text-muted-foreground">{note}</p>}
-    </div>
-  );
-}
-
 function ChartCard({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <Card className="gap-2 p-4 print:break-inside-avoid">
@@ -77,18 +55,33 @@ function ChartCard({ title, hint, children }: { title: string; hint?: string; ch
 export function DetailReportView() {
   const [roundId, setRoundId] = useState<string | null>(null);
   const q = useDetailOverview(roundId);
-  const [tab, setTab] = useState("person");
+  const [tab, setTab] = useState("overview");
   const [pick, setPick] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [dept, setDept] = useState("");
   const data = q.data?.data;
+
+  // The search and department filter of the three person tables (the chart page and the team table are never filtered).
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    return (data?.people ?? []).filter((p) => (!dept || p.department === dept) && (!s || `${p.name} ${p.code} ${p.department}`.toLowerCase().includes(s)));
+  }, [data?.people, search, dept]);
 
   if (q.isLoading) return <TableLoadingState rows={8} />;
   if (q.isError || !data) return <ErrorState error={q.error} onRetry={() => q.refetch()} title="โหลดรายงานไม่สำเร็จ" />;
   if (data.rounds.length === 0)
     return <EmptyState title="ยังไม่มีผลประเมินให้ดู" description="รายงานนี้ดึงจากรอบที่เปิดหรือปิดแล้วและคำนวณผลแล้ว ไปที่หน้ารอบประเมินแล้วกด คำนวณผล ก่อน" />;
 
+  const open = (id: string) => {
+    setPick(id);
+    setTab("person");
+  };
+  const filterable = tab === "people" || tab === "months" || tab === "sections";
+  const departments = [...new Set(data.people.map((p) => p.department))].sort((a, b) => a.localeCompare(b, "th"));
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
         <span className="text-sm text-muted-foreground">รอบ</span>
         <Select
           value={data.roundId ?? ""}
@@ -110,23 +103,68 @@ export function DetailReportView() {
             ))}
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground print:hidden">เห็นได้เฉพาะ HR · ตัวเลขเป็นคะแนนที่คำนวณไว้แล้ว ไม่เปลี่ยนคะแนนของใคร</span>
+        {filterable && (
+          <>
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ค้นหาชื่อเล่นหรือแผนก" className="h-11 w-56 pl-8 md:h-9" aria-label="ค้นหาคน" />
+            </div>
+            <Select value={dept || "__all"} onValueChange={(v) => setDept(!v || v === "__all" ? "" : (v as string))} items={[{ value: "__all", label: "ทุกแผนก" }, ...departments.map((d) => ({ value: d, label: d }))]}>
+              <SelectTrigger className="h-11 max-w-[min(80vw,260px)] md:h-9" aria-label="เลือกแผนก">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">ทุกแผนก</SelectItem>
+                {departments.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground">เห็นได้เฉพาะ HR · ตัวเลขเป็นคะแนนที่คำนวณไว้แล้ว ไม่เปลี่ยนคะแนนของใคร</span>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as string)} className="gap-3">
-        <TabsList variant="line" className="w-fit max-w-full justify-start overflow-x-auto">
-          <TabsTrigger value="person">รายคน</TabsTrigger>
+        <TabsList variant="line" className="w-fit max-w-full justify-start overflow-x-auto print:hidden">
+          <TabsTrigger value="overview">ภาพรวม</TabsTrigger>
+          <TabsTrigger value="people">สรุปรายคน</TabsTrigger>
+          <TabsTrigger value="months">เทียบรายรอบ</TabsTrigger>
+          <TabsTrigger value="sections">คะแนนรายหมวด</TabsTrigger>
           <TabsTrigger value="team">รายทีม</TabsTrigger>
-          <TabsTrigger value="trend">เทียบข้ามรอบ</TabsTrigger>
+          <TabsTrigger value="person">ดูรายคน</TabsTrigger>
         </TabsList>
-        <TabsContent value="person">
-          <PersonTab data={data} pick={pick} setPick={setPick} />
+        <TabsContent value="overview">
+          <div className="mb-2 flex justify-end print:hidden">
+            <Button variant="outline" className="h-11 md:h-9" onClick={() => window.print()}>
+              <Printer className="size-4" /> พิมพ์ / บันทึก PDF
+            </Button>
+          </div>
+          <OverviewTab data={data} />
+        </TabsContent>
+        <TabsContent value="people">
+          <PeopleTab data={data} people={filtered} onOpen={open} />
+        </TabsContent>
+        <TabsContent value="months">
+          <MonthsTab data={data} people={filtered} onOpen={open}>
+            <details className="rounded-sm border border-border bg-card p-3">
+              <summary className="min-h-11 cursor-pointer text-sm font-medium md:min-h-0">ดูเป็นกราฟรายทีมข้ามรอบ และคนที่ขึ้นลงมากที่สุด</summary>
+              <div className="mt-3">
+                <TrendTab data={data} />
+              </div>
+            </details>
+          </MonthsTab>
+        </TabsContent>
+        <TabsContent value="sections">
+          <SectionsTab data={data} people={filtered} onOpen={open} />
         </TabsContent>
         <TabsContent value="team">
           <TeamTab data={data} />
         </TabsContent>
-        <TabsContent value="trend">
-          <TrendTab data={data} />
+        <TabsContent value="person">
+          <PersonTab data={data} pick={pick} setPick={setPick} />
         </TabsContent>
       </Tabs>
     </div>
@@ -225,68 +263,6 @@ function PersonBody({ roundId, d }: { roundId: string; d: DetailPersonView }) {
 
   return (
     <>
-      <div className={cn("grid grid-cols-[minmax(0,1fr)] gap-4", radar.length >= 2 ? "xl:grid-cols-3" : "lg:grid-cols-2")}>
-        {radar.length >= 2 && (
-        <ChartCard title="คะแนนแยกตามหมวด" hint="เทียบค่าเฉลี่ยของแผนกเดียวกัน (เส้นเทา)">
-          {radar.length >= 3 ? (
-            <div role="img" aria-label="กราฟใยแมงมุมคะแนนแยกตามหมวด" className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radar} outerRadius="72%">
-                  <PolarGrid stroke={GRID} />
-                  <PolarAngleAxis dataKey="name" tick={TICK} />
-                  <Radar name="คนนี้" dataKey="me" stroke={BLUE} fill={BLUE} fillOpacity={0.18} strokeWidth={2} />
-                  <Radar name="ค่าเฉลี่ยแผนก" dataKey="dept" stroke={GREY} fill="none" strokeDasharray="4 3" strokeWidth={1.5} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${fmt(Number(v))}%`} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <SectionBars rows={d.sections} />
-          )}
-        </ChartCard>
-        )}
-        <ChartCard title="คะแนนแยกตามมุมมอง" hint="ผู้ประเมินแต่ละกลุ่มให้กี่เปอร์เซ็นต์ เทียบค่าเฉลี่ยทั้งรอบ">
-          {types.length ? (
-            <div role="img" aria-label="กราฟแท่งคะแนนแยกตามมุมมอง" className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={types} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid stroke={GRID} vertical={false} />
-                  <XAxis dataKey="name" tick={TICK} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={TICK} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${fmt(Number(v))}%`} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="me" name="คนนี้" fill={BLUE} radius={[3, 3, 0, 0]} maxBarSize={48} />
-                  <Bar dataKey="company" name="ค่าเฉลี่ยทั้งรอบ" fill="#c3cad4" radius={[3, 3, 0, 0]} maxBarSize={48} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="py-10 text-center text-sm text-muted-foreground">รอบนี้ไม่มีคะแนนแยกตามมุมมอง</p>
-          )}
-        </ChartCard>
-        <ChartCard title="ย้อนหลัง" hint="คะแนนรวมเทียบค่าเฉลี่ยแผนกและบริษัท ต่อรอบ">
-          {hasHistory ? (
-            <div role="img" aria-label="กราฟเส้นคะแนนย้อนหลัง" className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trend} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-                  <CartesianGrid stroke={GRID} vertical={false} />
-                  <XAxis dataKey="name" tick={TICK} tickLine={false} />
-                  <YAxis domain={["dataMin - 5", 100]} tick={TICK} tickLine={false} axisLine={false} tickFormatter={(v) => String(Math.round(v))} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${fmt(Number(v))}%`} labelFormatter={(_, p) => p?.[0]?.payload?.full ?? ""} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="me" name="คนนี้" stroke={BLUE} strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
-                  <Line type="monotone" dataKey="dept" name="เฉลี่ยแผนก" stroke={GREY} strokeDasharray="5 4" dot={false} connectNulls />
-                  <Line type="monotone" dataKey="company" name="เฉลี่ยบริษัท" stroke={RED} strokeDasharray="2 3" dot={false} connectNulls />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="py-10 text-center text-sm text-muted-foreground">คนนี้ถูกประเมินแค่รอบเดียว กราฟย้อนหลังจะขึ้นเมื่อมีรอบที่สอง</p>
-          )}
-        </ChartCard>
-      </div>
-
       <Card className="gap-3 p-4">
         <div>
           <h3 className="text-sm font-semibold">ใครประเมินใคร ให้คะแนนเท่าไร</h3>
@@ -387,6 +363,74 @@ function PersonBody({ roundId, d }: { roundId: string; d: DetailPersonView }) {
           </div>
         )}
       </Card>
+
+      <details className="rounded-sm border border-border bg-card p-3 print:hidden">
+        <summary className="min-h-11 cursor-pointer text-sm font-medium md:min-h-0">ดูเป็นกราฟ (หมวด มุมมอง ย้อนหลัง)</summary>
+        <div className="mt-3">
+      <div className={cn("grid grid-cols-[minmax(0,1fr)] gap-4", radar.length >= 2 ? "xl:grid-cols-3" : "lg:grid-cols-2")}>
+            {radar.length >= 2 && (
+            <ChartCard title="คะแนนแยกตามหมวด" hint="เทียบค่าเฉลี่ยของแผนกเดียวกัน (เส้นเทา)">
+              {radar.length >= 3 ? (
+                <div role="img" aria-label="กราฟใยแมงมุมคะแนนแยกตามหมวด" className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radar} outerRadius="72%">
+                      <PolarGrid stroke={GRID} />
+                      <PolarAngleAxis dataKey="name" tick={TICK} />
+                      <Radar name="คนนี้" dataKey="me" stroke={BLUE} fill={BLUE} fillOpacity={0.18} strokeWidth={2} />
+                      <Radar name="ค่าเฉลี่ยแผนก" dataKey="dept" stroke={GREY} fill="none" strokeDasharray="4 3" strokeWidth={1.5} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${fmt(Number(v))}%`} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <SectionBars rows={d.sections} />
+              )}
+            </ChartCard>
+            )}
+            <ChartCard title="คะแนนแยกตามมุมมอง" hint="ผู้ประเมินแต่ละกลุ่มให้กี่เปอร์เซ็นต์ เทียบค่าเฉลี่ยทั้งรอบ">
+              {types.length ? (
+                <div role="img" aria-label="กราฟแท่งคะแนนแยกตามมุมมอง" className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={types} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                      <CartesianGrid stroke={GRID} vertical={false} />
+                      <XAxis dataKey="name" tick={TICK} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={TICK} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${fmt(Number(v))}%`} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="me" name="คนนี้" fill={BLUE} radius={[3, 3, 0, 0]} maxBarSize={48} />
+                      <Bar dataKey="company" name="ค่าเฉลี่ยทั้งรอบ" fill="#c3cad4" radius={[3, 3, 0, 0]} maxBarSize={48} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="py-10 text-center text-sm text-muted-foreground">รอบนี้ไม่มีคะแนนแยกตามมุมมอง</p>
+              )}
+            </ChartCard>
+            <ChartCard title="ย้อนหลัง" hint="คะแนนรวมเทียบค่าเฉลี่ยแผนกและบริษัท ต่อรอบ">
+              {hasHistory ? (
+                <div role="img" aria-label="กราฟเส้นคะแนนย้อนหลัง" className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trend} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                      <CartesianGrid stroke={GRID} vertical={false} />
+                      <XAxis dataKey="name" tick={TICK} tickLine={false} />
+                      <YAxis domain={["dataMin - 5", 100]} tick={TICK} tickLine={false} axisLine={false} tickFormatter={(v) => String(Math.round(v))} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${fmt(Number(v))}%`} labelFormatter={(_, p) => p?.[0]?.payload?.full ?? ""} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Line type="monotone" dataKey="me" name="คนนี้" stroke={BLUE} strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+                      <Line type="monotone" dataKey="dept" name="เฉลี่ยแผนก" stroke={GREY} strokeDasharray="5 4" dot={false} connectNulls />
+                      <Line type="monotone" dataKey="company" name="เฉลี่ยบริษัท" stroke={RED} strokeDasharray="2 3" dot={false} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="py-10 text-center text-sm text-muted-foreground">คนนี้ถูกประเมินแค่รอบเดียว กราฟย้อนหลังจะขึ้นเมื่อมีรอบที่สอง</p>
+              )}
+            </ChartCard>
+          </div>
+
+        </div>
+      </details>
     </>
   );
 }
@@ -456,140 +500,6 @@ function MatrixCard({ d }: { d: DetailPersonView }) {
         </Table>
       </div>
     </Card>
-  );
-}
-
-/* ─────────────────────────────── รายทีม ─────────────────────────────── */
-
-function TeamTab({ data }: { data: DetailOverview }) {
-  const [team, setTeam] = useState<string | null>(null);
-  const best = data.teams[0];
-  const worst = data.teams[data.teams.length - 1];
-  const lo = Math.max(0, Math.floor((Math.min(...data.teams.map((t) => t.min), data.companyAvg ?? 100) - 5) / 10) * 10);
-  const dist = data.bins.map((b) => ({
-    name: b.label,
-    all: data.people.filter((p) => p.total >= b.from && p.total <= b.to).length,
-    team: team ? data.people.filter((p) => p.department === team && p.total >= b.from && p.total <= b.to).length : 0,
-  }));
-  const members = team ? data.people.filter((p) => p.department === team) : [];
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Tile label="ผู้ถูกประเมิน" value={`${data.people.length} คน`} note={`${data.teams.length} ทีม`} />
-        <Tile label="ค่าเฉลี่ยบริษัท" value={`${fmt(data.companyAvg)}%`} />
-        <Tile label="ทีมคะแนนสูงสุด" value={<span className="text-base">{best?.department}</span>} note={best ? `เฉลี่ย ${fmt(best.avg)}%` : undefined} />
-        <Tile label="ทีมคะแนนต่ำสุด" value={<span className="text-base">{worst?.department}</span>} note={worst ? `เฉลี่ย ${fmt(worst.avg)}%` : undefined} />
-      </div>
-
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
-        <ChartCard title="ค่าเฉลี่ยรายทีม เทียบทั้งบริษัท" hint="แท่งคือค่าเฉลี่ยทีม จุดคือแต่ละคน เส้นแดงคือค่าเฉลี่ยบริษัท กดชื่อทีมเพื่อดูรายคน">
-          <ul className="space-y-3">
-            {data.teams.map((t) => (
-              <TeamBar key={t.department} t={t} lo={lo} company={data.companyAvg} active={team === t.department} onPick={() => setTeam(team === t.department ? null : t.department)} />
-            ))}
-          </ul>
-          <div className="mt-1 flex justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
-            <span>{lo}</span>
-            <span>100</span>
-          </div>
-        </ChartCard>
-        <ChartCard title="การกระจายคะแนน" hint={team ? `ทั้งบริษัท (เทา) และ ${team} (น้ำเงิน)` : "จำนวนคนในแต่ละช่วงคะแนน กดชื่อทีมด้านซ้ายเพื่อซ้อนทีมนั้น"}>
-          <div role="img" aria-label="กราฟแท่งการกระจายคะแนน" className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dist} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={GRID} vertical={false} />
-                <XAxis dataKey="name" tick={TICK} tickLine={false} />
-                <YAxis allowDecimals={false} tick={TICK} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${v} คน`} />
-                <Bar dataKey="all" name="ทั้งบริษัท" fill="#c3cad4" radius={[3, 3, 0, 0]} maxBarSize={56} />
-                {team && <Bar dataKey="team" name={team} fill={BLUE} radius={[3, 3, 0, 0]} maxBarSize={56} />}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
-      </div>
-
-      <Card className="gap-3 p-4">
-        <h3 className="text-sm font-semibold">ตารางสรุปรายทีม</h3>
-        <div className="relative overflow-x-auto rounded-lg border border-border">
-          <Table className="min-w-[560px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>ทีม</TableHead>
-                <TableHead className="text-right">คน</TableHead>
-                <TableHead className="text-right">เฉลี่ย (%)</TableHead>
-                <TableHead className="text-right">ต่ำสุด</TableHead>
-                <TableHead className="text-right">สูงสุด</TableHead>
-                <TableHead className="text-right">เทียบรอบก่อน</TableHead>
-                <TableHead className="text-right">เทียบบริษัท</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.teams.map((t) => (
-                <TableRow key={t.department}>
-                  <TableCell>
-                    <button type="button" className="font-medium text-primary hover:underline" onClick={() => setTeam(team === t.department ? null : t.department)}>
-                      {t.department}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{t.count}</TableCell>
-                  <TableCell className="text-right font-semibold tabular-nums">{fmt(t.avg)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmt(t.min)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmt(t.max)}</TableCell>
-                  <TableCell className="text-right">
-                    <Delta value={t.delta} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Delta value={data.companyAvg === null ? null : Math.round((t.avg - data.companyAvg) * 10) / 10} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        {team && (
-          <div>
-            <h4 className="mb-1.5 text-sm font-semibold">
-              คนในทีม {team} ({members.length} คน)
-            </h4>
-            <ul className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-              {members.map((m) => (
-                <li key={m.participantId} className="flex items-center gap-2 border-b border-border py-1">
-                  <PersonAvatar name={m.name} gender={m.gender} seed={m.employeeId} src={m.avatarUrl} className="size-6" />
-                  <span className="min-w-0 flex-1 leading-snug">{m.name}</span>
-                  <span className="font-semibold tabular-nums">{fmt(m.total)}</span>
-                  <Delta value={m.delta} className="w-20 justify-end text-xs" />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
-
-function TeamBar({ t, lo, company, active, onPick }: { t: DetailTeam; lo: number; company: number | null; active: boolean; onPick: () => void }) {
-  const pos = (v: number) => `${Math.min(100, Math.max(0, ((v - lo) / (100 - lo)) * 100))}%`;
-  return (
-    <li>
-      <button type="button" onClick={onPick} aria-pressed={active} className={cn("block w-full rounded-md px-1 py-1 text-left", active && "bg-primary/10")}>
-        <div className="flex justify-between text-sm">
-          <span>{t.department}</span>
-          <span className="font-semibold tabular-nums">
-            {fmt(t.avg)}% <span className="font-normal text-muted-foreground">({t.count} คน)</span>
-          </span>
-        </div>
-        <div className="relative mt-1 h-9 rounded-sm bg-muted">
-          <div className="absolute top-1.5 left-0 h-2.5 rounded-sm bg-primary" style={{ width: pos(t.avg) }} />
-          {t.scores.map((s, i) => (
-            <span key={i} className="absolute size-1.5 rounded-full bg-foreground/60" style={{ left: pos(s), top: `${19 + (i % 3) * 5}px`, transform: "translateX(-50%)" }} />
-          ))}
-          {company !== null && <div className="absolute inset-y-[-3px] w-0.5 bg-destructive" style={{ left: pos(company) }} title={`ค่าเฉลี่ยบริษัท ${fmt(company)}`} />}
-        </div>
-      </button>
-    </li>
   );
 }
 

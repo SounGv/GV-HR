@@ -1,7 +1,7 @@
 // Checks the pure helpers of the detailed evaluation report.
 // Run: node --experimental-strip-types scripts/check-detail-report.mjs
 import assert from "node:assert/strict";
-import { deltaOf, meanOf, previousDepartmentMean, previousScore, ranksFor, sectionPercents } from "../src/features/appraisal-round/detail-report-rules.ts";
+import { deltaOf, meanOf, previousDepartmentMean, previousScore, ranksFor, sectionPercents, toneOf } from "../src/features/appraisal-round/detail-report-rules.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -9,6 +9,16 @@ const check = (name, fn) => {
   n++;
   console.log(`ok  ${name}`);
 };
+
+check("score colour groups follow the HR sheets: 100, 90-99, 80-89, below 80", () => {
+  assert.equal(toneOf(100), "full");
+  assert.equal(toneOf(99.99), "high");
+  assert.equal(toneOf(90), "high");
+  assert.equal(toneOf(89.9), "mid");
+  assert.equal(toneOf(80), "mid");
+  assert.equal(toneOf(79.99), "low");
+  assert.equal(toneOf(0), "low");
+});
 
 check("mean is rounded to one decimal and empty is null", () => {
   assert.equal(meanOf([100, 80, 90]), 90);

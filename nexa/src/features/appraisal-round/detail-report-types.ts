@@ -25,6 +25,12 @@ export interface DetailPerson {
   /** Score in the nearest earlier round this person was scored in. */
   prev: number | null;
   delta: number | null;
+  /** How many raters' sheets were submitted for this person in the round. */
+  raters: number;
+  /** Mean percent per section, in the order of `DetailOverview.sectionNames`; null where the person's form has no such section. */
+  sections: (number | null)[];
+  /** What the raters wrote (typed answers and imported comments), joined, for the sheet-style table. */
+  comment: string;
 }
 
 export interface DetailTeam {
@@ -50,6 +56,8 @@ export interface DetailHistory {
   rounds: DetailRoundPoint[];
   company: (number | null)[];
   teams: { department: string; values: (number | null)[] }[];
+  /** Each person of the chosen round, with the score they had in each of `rounds` (null where not scored). */
+  people: { employeeId: string; values: (number | null)[] }[];
 }
 
 export interface DetailOverview {
@@ -61,6 +69,8 @@ export interface DetailOverview {
   companyAvg: number | null;
   /** Counts of people per score band 0-59, 60-69, 70-79, 80-89, 90-99 and 100. */
   bins: { label: string; from: number; to: number }[];
+  /** Section names of the round's forms, the columns of the by-section table. */
+  sectionNames: string[];
   people: DetailPerson[];
   teams: DetailTeam[];
   history: DetailHistory;

@@ -76,6 +76,7 @@ function historyUpTo(
   scored: Scored[],
   roundId: string,
   departments: string[],
+  employeeIds: string[],
   limit = 6,
 ): DetailHistory {
   const upTo = rounds
@@ -89,6 +90,10 @@ function historyUpTo(
     teams: departments.map((department) => ({
       department,
       values: upTo.map((r) => meanOf(scored.filter((s) => s.roundId === r.id && s.department === department).map((s) => s.score))),
+    })),
+    people: employeeIds.map((employeeId) => ({
+      employeeId,
+      values: upTo.map((r) => scored.find((s) => s.roundId === r.id && s.employeeId === employeeId)?.score ?? null),
     })),
   };
 }
@@ -105,7 +110,8 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
     bins: BINS,
     people: [],
     teams: [],
-    history: { rounds: [], company: [], teams: [] },
+    sectionNames: [],
+    history: { rounds: [], company: [], teams: [], people: [] },
   };
   if (rounds.length === 0) return empty;
   const round = rounds.find((r) => r.id === roundId) ?? rounds[0];
@@ -114,11 +120,33 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
     where: { roundId: round.id, id: { in: mine.map((s) => s.participantId) } },
     select: {
       id: true,
+      formId: true,
       positionName: true,
+      importedComments: true,
       employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
+      assignments: { where: { status: "SUBMITTED" }, select: { answers: true } },
     },
   });
   const byId = new Map(detail.map((d) => [d.id, d]));
+  const snap = await prisma.appraisalRound.findUnique({ where: { id: round.id }, select: { formSnapshot: true } });
+  const snapshot = snap?.formSnapshot as unknown as RoundSnapshot | null;
+  const form = pickForm(snapshot, null);
+  // Per person: the mean of each section over their submitted sheets (their own form), and the words the raters wrote.
+  const sectionNames: string[] = [];
+  const perPerson = new Map<string, { sections: Map<string, number>; comment: string; raters: number }>();
+  for (const d of detail) {
+    const f = pickForm(snapshot, d.formId);
+    const qs = (f?.questions ?? []) as SnapQuestion[];
+    const sheets = d.assignments.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : []));
+    const sections = sectionPercents(qs, sheets, f?.ratingMax ?? 5);
+    for (const name of sections.keys()) if (!sectionNames.includes(name)) sectionNames.push(name);
+    const textIds = new Set(qs.filter((q) => q.answerType === "SHORT_TEXT" || q.answerType === "PARAGRAPH").map((q) => q.id));
+    const typed = sheets.flatMap((sheet) => sheet.filter((x) => textIds.has(x.questionId) && typeof x.value === "string" && x.value.trim()).map((x) => (x.value as string).trim()));
+    const importedRaw = parseImportedComments(d.importedComments);
+    const imported = commentsFor(importedRaw, true)?.texts ?? [];
+    // A round copied from Favpo has no sheets of its own; it carries the number of raters Favpo reported.
+    perPerson.set(d.id, { sections, comment: [...typed, ...imported].join(" / "), raters: sheets.length || importedRaw?.raters || 0 });
+  }
   const photo = await faces(mine.map((s) => s.employeeId));
   const stamp = stamps(rounds);
   const ranks = ranksFor(mine.map((s) => s.score));
@@ -140,6 +168,9 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
         rank: ranks[i],
         prev,
         delta: deltaOf(s.score, prev),
+        raters: perPerson.get(s.participantId)?.raters ?? 0,
+        sections: sectionNames.map((n) => perPerson.get(s.participantId)?.sections.get(n) ?? null),
+        comment: perPerson.get(s.participantId)?.comment ?? "",
       };
     })
     .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name, "th"));
@@ -154,9 +185,6 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
     })
     .sort((a, b) => b.avg - a.avg);
 
-  const snap = await prisma.appraisalRound.findUnique({ where: { id: round.id }, select: { formSnapshot: true } });
-  const form = pickForm(snap?.formSnapshot as unknown as RoundSnapshot | null, null);
-
   return {
     rounds: rounds.map((r) => ({ id: r.id, name: r.name, status: r.status, dateIso: r.dateIso, people: r.people })),
     roundId: round.id,
@@ -165,9 +193,10 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
     ratingMax: form?.ratingMax ?? 5,
     companyAvg: meanOf(mine.map((s) => s.score)),
     bins: BINS,
+    sectionNames,
     people,
     teams,
-    history: historyUpTo(rounds, scored, round.id, departments),
+    history: historyUpTo(rounds, scored, round.id, departments, mine.map((s) => s.employeeId)),
   };
 }
 

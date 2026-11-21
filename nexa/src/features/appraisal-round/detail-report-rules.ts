@@ -81,3 +81,17 @@ export function sectionPercents(
   for (const [k, v] of sums) out.set(k, r1(v.reduce((s, x) => s + x, 0) / v.length));
   return out;
 }
+
+/** The colour group of a score on the report tables, as in the HR sheets (full marks green, then pale green, yellow, pink). Display only. */
+export type ScoreTone = "full" | "high" | "mid" | "low";
+
+export const SCORE_TONES: readonly { tone: ScoreTone; label: string; from: number }[] = [
+  { tone: "full", label: "100", from: 100 },
+  { tone: "high", label: "90-99", from: 90 },
+  { tone: "mid", label: "80-89", from: 80 },
+  { tone: "low", label: "ต่ำกว่า 80", from: 0 },
+];
+
+export function toneOf(percent: number): ScoreTone {
+  return (SCORE_TONES.find((x) => percent >= x.from) ?? SCORE_TONES[SCORE_TONES.length - 1]!).tone;
+}

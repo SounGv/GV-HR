@@ -9,7 +9,7 @@ export default async function AppraisalDetailReportPage() {
   await requirePagePermission("campaign:update");
   return (
     <div className="space-y-4">
-      <PageHeader title="รายงานประเมินละเอียด" description="ดูว่าใครประเมินใคร ให้คะแนนเท่าไร เขียนความเห็นอะไร พร้อมกราฟเทียบรายคน รายทีม และข้ามรอบ" />
+      <PageHeader title="รายงานประเมินละเอียด" description="ภาพรวมสำหรับผู้บริหาร ตารางเรียงอันดับรายคนแบบชีต HR เทียบรายรอบ คะแนนรายหมวดพร้อมความเห็น และรายทีม" />
       <DetailReportView />
     </div>
   );
