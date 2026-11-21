@@ -125,7 +125,7 @@ export function CompanyProfileForm() {
     <form id="company-form" onSubmit={onSubmit} className="max-w-3xl space-y-6">
       {/* Branding */}
       <Section icon={Palette} title="โลโก้และแบรนด์" desc="ใช้ทั่วทั้งระบบ สลิป รายงาน และอีเมล">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4">
           <ImageField label="โลโก้ (พื้นสว่าง)" value={form.logoUrl} onPick={(f) => onPickImage("logoUrl", f)} onClear={() => set("logoUrl", "")} disabled={!canEdit} />
           <ImageField label="โลโก้ (พื้นมืด)" dark value={form.logoDarkUrl} onPick={(f) => onPickImage("logoDarkUrl", f)} onClear={() => set("logoDarkUrl", "")} disabled={!canEdit} />
           <ImageField label="ไอคอนเว็บไซต์" value={form.faviconUrl} onPick={(f) => onPickImage("faviconUrl", f)} onClear={() => set("faviconUrl", "")} disabled={!canEdit} />
@@ -149,7 +149,7 @@ export function CompanyProfileForm() {
 
       {/* Company info */}
       <Section icon={Building2} title="ข้อมูลบริษัท" desc="ชื่อและเลขทะเบียน">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <Field label="ชื่อบริษัท" required error={errors.name}>
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} disabled={!canEdit} />
           </Field>
@@ -164,7 +164,7 @@ export function CompanyProfileForm() {
 
       {/* Contact */}
       <Section icon={Phone} title="ช่องทางติดต่อ" desc="โทรศัพท์ อีเมล เว็บไซต์">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4">
           <Field label="โทรศัพท์" error={errors.phone}>
             <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} disabled={!canEdit} />
           </Field>
@@ -179,7 +179,7 @@ export function CompanyProfileForm() {
 
       {/* Address */}
       <Section icon={MapPin} title="ที่อยู่" desc="ที่อยู่สำนักงานใหญ่และแผนที่">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <div className="sm:col-span-2">
             <Field label="ที่อยู่ (บ้านเลขที่ ถนน)" error={errors.addressLine}>
               <Textarea value={form.addressLine} onChange={(e) => set("addressLine", e.target.value)} rows={2} disabled={!canEdit} />
@@ -207,7 +207,7 @@ export function CompanyProfileForm() {
 
       {/* Locale */}
       <Section icon={Globe2} title="ภูมิภาคและสกุลเงิน" desc="เขตเวลา สกุลเงิน ภาษา">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4">
           <Field label="เขตเวลา">
             <NativeSelect value={form.timezone} onChange={(v) => set("timezone", v)} disabled={!canEdit} options={TIMEZONES.map((t) => ({ v: t, label: t }))} />
           </Field>
@@ -240,7 +240,7 @@ export function CompanyProfileForm() {
             disabled={!canEdit}
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <Field label="หักเงินต่อการมาสาย 1 ครั้ง (บาท)" error={errors.lateDeductionPerOccurrence}>
             <Input
               type="number"
@@ -259,7 +259,7 @@ export function CompanyProfileForm() {
         title="โควตาวันลาต่อปี"
         desc="ค่าเริ่มต้นที่ใช้กับพนักงานทุกคน — เปลี่ยนแล้วมีผลกับปีถัดไปหรือคนที่ยังไม่เคยลาประเภทนั้นในปีนี้ ไม่กระทบสิทธิ์ที่พนักงานใช้ไปแล้ว"
       >
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4">
           <Field label="ลาพักร้อน (วัน/ปี)" error={errors.leaveQuotaAnnualDays}>
             <Input
               type="number"
@@ -294,7 +294,7 @@ export function CompanyProfileForm() {
         <p className="mt-4 text-xs text-muted-foreground">
           โควตาลาเป็นชั่วโมง (แยกจากโควตาวันด้านบน — ใส่ 0 = ไม่เปิดให้ลาเป็นชั่วโมงสำหรับประเภทนั้น)
         </p>
-        <div className="mt-2 grid gap-4 sm:grid-cols-3">
+        <div className="mt-2 grid gap-4">
           <Field label="ลาป่วย (ชม./ปี)" error={errors.leaveQuotaSickHours}>
             <Input
               type="number"
@@ -324,7 +324,7 @@ export function CompanyProfileForm() {
         title="สวัสดิการพนักงาน"
         desc="วงเงินเบิกค่ารักษาพยาบาล — เฉพาะพนักงานที่ผ่านทดลองงานและทำงานครบ 1 ปีแล้ว นับใหม่ทุกปีตามวันที่ในรายการเบิก"
       >
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4">
           <Field label="ค่ารักษาพยาบาล (บาท/ปี)" error={errors.medicalExpenseCapAmount}>
             <Input
               type="number"
@@ -389,8 +389,8 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block space-y-1.5">
-        <span className="block text-xs font-medium text-muted-foreground">
+      <label className="block space-y-1.5 md:grid md:grid-cols-[11rem_minmax(0,1fr)] md:items-start md:gap-x-4 md:space-y-0">
+        <span className="block text-sm font-medium text-foreground md:pt-2">
           {label} {required && <span className="text-destructive">*</span>}
         </span>
         {children}

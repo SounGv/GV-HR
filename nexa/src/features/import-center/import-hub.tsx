@@ -27,7 +27,7 @@ export function ImportHub() {
 
   return (
     <Tabs defaultValue={visible[0].key} className="space-y-4">
-      <TabsList>
+      <TabsList className="max-w-full justify-start overflow-x-auto">
         {visible.map((t) => (
           <TabsTrigger key={t.key} value={t.key}>
             {t.label}

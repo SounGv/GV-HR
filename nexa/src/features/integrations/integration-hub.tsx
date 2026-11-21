@@ -72,10 +72,10 @@ export function IntegrationHub() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14 text-center">ลำดับ</TableHead>
+                <TableHead className="w-14 text-center max-md:hidden">ลำดับ</TableHead>
                 <TableHead>ระบบ</TableHead>
-                <TableHead className="w-full">รายละเอียด</TableHead>
-                <TableHead>ความสามารถ</TableHead>
+                <TableHead className="w-full max-md:hidden">รายละเอียด</TableHead>
+                <TableHead className="max-md:hidden">ความสามารถ</TableHead>
                 <TableHead className="text-center">สถานะ</TableHead>
                 <TableHead className="text-center">จัดการ</TableHead>
               </TableRow>
@@ -86,7 +86,7 @@ export function IntegrationHub() {
                 const st = STATUS_META[i.status];
                 return (
                   <TableRow key={i.id}>
-                    <TableCell className="text-center tabular-nums">{idx + 1}</TableCell>
+                    <TableCell className="text-center tabular-nums max-md:hidden">{idx + 1}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -99,8 +99,8 @@ export function IntegrationHub() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="min-w-56 whitespace-normal text-muted-foreground">{i.description}</TableCell>
-                    <TableCell className="min-w-40 whitespace-normal">
+                    <TableCell className="min-w-56 whitespace-normal text-muted-foreground max-md:hidden">{i.description}</TableCell>
+                    <TableCell className="min-w-40 whitespace-normal max-md:hidden">
                       <div className="flex flex-wrap gap-1">
                         {i.capabilities.map((c) => (
                           <span key={c} className="rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
