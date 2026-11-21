@@ -9,7 +9,7 @@ import {
   getActionCenter,
   getMySnapshot,
   } from "@/features/dashboard/service";
-import { loginIdentifier, displayName } from "@/lib/format";
+import { accountName } from "@/lib/format";
 
 export const metadata: Metadata = { title: "หน้าหลัก" };
 
@@ -43,7 +43,7 @@ export default async function DashboardPage() {
   // Company-wide numbers (who is late, which departments, headcount) are for HR,
   // managers and finance, not for every employee (owner's decision, 2026-11-13).
 
-  const name = user?.employee ? displayName(user.employee) : loginIdentifier(user ?? {});
+  const name = accountName(user ?? {});
   const fmtClock = (iso: string | null) =>
     iso ? new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : null;
 

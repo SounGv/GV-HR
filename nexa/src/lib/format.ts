@@ -50,6 +50,11 @@ export function loginIdentifier(user: { email?: string | null; username?: string
   return user.email ?? user.username ?? "ผู้ใช้งาน";
 }
 
+/** The name to greet a signed-in account with: the linked employee's name and nickname, else the login (email or username). */
+export function accountName(user: { employee?: { firstName?: string | null; lastName?: string | null; nickname: string | null | undefined } | null; email?: string | null; username?: string | null }): string {
+  return user.employee ? displayName(user.employee) : loginIdentifier(user);
+}
+
 export function formatCurrency(value: number | null | undefined, currency = "THB"): string {
   if (value == null) return "-";
   return new Intl.NumberFormat("th-TH", {

@@ -45,6 +45,7 @@ const EXACT: Record<string, MobileRouteMeta> = {
   "/company": { title: "ตั้งค่าองค์กร", backHref: "/services" },
   "/cost-centers": { title: "ศูนย์ต้นทุน", backHref: "/company" },
   "/cost-centers/new": { title: "เพิ่มศูนย์ต้นทุน", backHref: "/cost-centers" },
+  "/dashboard/follow-up": { title: "ต้องตามวันนี้", backHref: "/dashboard" },
   "/dashboard/attendance": { title: "การเข้างานวันนี้", backHref: "/dashboard" },
   "/dashboard/attendance/watch": { title: "ควรติดตาม", backHref: "/dashboard/attendance" },
   "/employees": { title: "รายชื่อพนักงาน", backHref: "/dashboard" },
