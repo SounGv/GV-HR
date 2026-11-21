@@ -69,7 +69,7 @@ export default async function DashboardPage() {
         {pendingApprovals > 0 || canSeeCompany ? <CountBox label="รอคุณอนุมัติ" value={`${pendingApprovals} รายการ`} href="/requests?view=approvals" /> : null}
         <CountBox label="ต้องตามวันนี้" value="เปิดดูรายการ" sub="คนลืมสแกน ลา ครบทดลองงาน ประชุม" href="/dashboard/follow-up" />
       </div>
-      {can(user!.permissions, "calendar:read") && <CalendarView />}
+      {can(user!.permissions, "calendar:read") && <CalendarView bare />}
 
       </div>
     </>

@@ -4,7 +4,7 @@ import { PageActions } from "@/components/layout/page-chrome";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarClock, ClipboardList, Copy, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, ClipboardList, Copy, Download, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -20,10 +20,30 @@ import { ROUND_STATUS_LABEL, type RoundListItem, type RoundStatus } from "./type
 
 const TONE: Record<RoundStatus, StatusTone> = { DRAFT: "warning", SCHEDULED: "info", OPEN: "success", CLOSED: "neutral" };
 
+/** "Q4" for a start date in October to December; "-" when the round has no dates yet. */
+const quarterOf = (iso: string | null) => (iso ? `Q${Math.floor((Number(iso.slice(5, 7)) - 1) / 3) + 1}` : "-");
+
 const fmt = (iso: string | null) =>
   iso ? new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`)) : "-";
 
 /** All appraisal rounds, newest first. A new round opens straight in the 5-step wizard. */
+/** The list as a CSV file Excel opens (UTF-8 with a BOM so Thai reads right). */
+function exportRounds(rounds: RoundListItem[]) {
+  const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const head = ["วันที่เริ่ม", "ถึงวันที่", "ไตรมาส", "ชื่อรอบประเมิน", "แบบประเมิน", "รูปแบบ", "ผู้ถูกประเมิน", "ส่งแล้ว", "สถานะ"];
+  const lines = [head.map(cell).join(",")];
+  for (const r of rounds) {
+    lines.push([r.startIso ?? "", r.endIso ?? "", quarterOf(r.startIso), r.name, r.formName, r.ratingType, r.participantCount, r.total > 0 ? `${r.submitted}/${r.total}` : "", ROUND_STATUS_LABEL[r.status]].map(cell).join(","));
+  }
+  const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "รอบประเมิน.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function RoundListView() {
   const router = useRouter();
   const { can } = useAuth();
@@ -61,6 +81,9 @@ export function RoundListView() {
         <p className="text-sm text-muted-foreground">สร้างรอบใน 4 ขั้น: ตั้งรอบ (แบบประเมินและวันเปิดปิด) เลือกคน จับคู่ผู้ประเมิน แล้วตรวจและเปิดรอบ</p>
         <PageActions>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="h-11 md:h-9" disabled={rounds.length === 0} onClick={() => exportRounds(rounds)}>
+            <Download className="size-4" /> Export
+          </Button>
           {can("campaign:update") && (
             <Link href="/appraisal/recurring" className={buttonVariants({ variant: "outline", className: "h-11 md:h-9" })}>
               <CalendarClock className="size-4" /> รอบอัตโนมัติ
@@ -88,8 +111,10 @@ export function RoundListView() {
             <TableRow>
               <TableHead>วันที่เริ่ม</TableHead>
               <TableHead>ถึงวันที่</TableHead>
+              <TableHead className="text-center">ไตรมาส</TableHead>
               <TableHead className="w-full">ชื่อรอบประเมิน</TableHead>
               <TableHead>แบบประเมิน</TableHead>
+              <TableHead className="text-center">รูปแบบ</TableHead>
               <TableHead className="text-center">ผู้ถูกประเมิน</TableHead>
               <TableHead className="text-center">ส่งแล้ว</TableHead>
               <TableHead className="text-center">สถานะ</TableHead>
@@ -102,12 +127,14 @@ export function RoundListView() {
               <TableRow key={r.id}>
                 <TableCell className="tabular-nums">{fmt(r.startIso)}</TableCell>
                 <TableCell className="tabular-nums">{fmt(r.endIso)}</TableCell>
+                <TableCell className="text-center tabular-nums">{quarterOf(r.startIso)}</TableCell>
                 <TableCell className="whitespace-normal">
                   <Link href={`/appraisal/rounds/${r.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
                     {r.name}
                   </Link>
                 </TableCell>
                 <TableCell>{r.formName}</TableCell>
+                <TableCell className="text-center tabular-nums">{r.ratingType}</TableCell>
                 <TableCell className="text-center tabular-nums">{r.participantCount}</TableCell>
                 <TableCell className="text-center tabular-nums">{r.total > 0 ? `${r.submitted}/${r.total}` : "-"}</TableCell>
                 <TableCell className="text-center">

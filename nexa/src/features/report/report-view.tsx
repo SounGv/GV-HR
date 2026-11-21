@@ -75,7 +75,7 @@ import {
 } from "./attendance-row-style";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { columnLabel, type ReportColumn, type ReportResult } from "./types";
-import { EvaluationReportOverview } from "./evaluation-report-overview";
+import { EvaluationReportOverview, type EvalSection } from "./evaluation-report-overview";
 import { LeaveEmployeeSheet, type LeaveSheetTarget } from "./leave-employee-sheet";
 
 const ALL_TYPE = "ALL";
@@ -239,6 +239,8 @@ function ReportSection({
   const [showExtraColumns, setShowExtraColumns] = useState(false);
   // A long report (the daily one has hundreds of rows, each with photos) draws 100 rows and a button for the next 100.
   const [rowLimit, setRowLimit] = useState(100);
+  // The evaluation report page is a list of reports (Favpo's); the chosen one opens below it.
+  const [evalSection, setEvalSection] = useState<EvalSection | null>(null);
   // Charts start hidden so the table is the first thing on screen; the button shows them.
   const [showChart, setShowChart] = useState(false);
   const isMobile = useIsMobile();
@@ -360,9 +362,9 @@ function ReportSection({
           unit={result.secondarySummaryUnit}
         />
       )}
-      {result?.evaluation && <EvaluationReportOverview rounds={result.evaluation.rounds} />}
+      {result?.evaluation && <EvaluationReportOverview rounds={result.evaluation.rounds} section={evalSection} onSection={setEvalSection} />}
 
-      {isError ? (
+      {result?.evaluation && evalSection !== "people" ? null : isError ? (
         <ErrorState onRetry={refetch} />
       ) : isLoading ? (
         <TableLoadingState rows={8} />
@@ -498,7 +500,7 @@ function ReportSection({
         </>
       )}
 
-      {result && result.rows.length > rowLimit && (
+      {result && !(result.evaluation && evalSection !== "people") && result.rows.length > rowLimit && (
         <Button variant="outline" className="hidden h-9 w-full md:flex" onClick={() => setRowLimit((n) => n + 100)}>
           แสดงเพิ่ม (เหลือ {result.rows.length - rowLimit} จาก {result.rows.length})
         </Button>

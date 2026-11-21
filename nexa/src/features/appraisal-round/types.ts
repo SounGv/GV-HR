@@ -32,6 +32,8 @@ export interface RoundListItem {
   status: RoundStatus;
   /** A draft kept only to be copied each month; it is never opened itself. */
   isTemplate: boolean;
+  /** "90°" … "360°" or "กำหนดเอง". */
+  ratingType: string;
   formName: string;
   startIso: string | null;
   endIso: string | null;

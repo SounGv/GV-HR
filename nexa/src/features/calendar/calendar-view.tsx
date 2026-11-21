@@ -79,7 +79,8 @@ function addMonth(month: string, delta: number): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-export function CalendarView() {
+/** `bare` is the home page version (Favpo's): no side panel for the chosen day, taller day cells, today tinted cream. */
+export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
   const { can } = useAuth();
   const canManage = can("calendar:create");
 
@@ -169,7 +170,7 @@ export function CalendarView() {
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        <div className={cn("grid gap-4", !bare && "lg:grid-cols-[1fr_320px]")}>
           <Card className="p-2 sm:p-3">
             <div className="mb-2 flex flex-wrap items-center gap-3 px-1">
               <span className="text-xs font-medium text-muted-foreground">ของฉัน:</span>
@@ -194,7 +195,7 @@ export function CalendarView() {
                 </div>
               ))}
               {isLoading
-                ? Array.from({ length: 42 }, (_, i) => <Skeleton key={i} className="h-20 rounded-md" />)
+                ? Array.from({ length: 42 }, (_, i) => <Skeleton key={i} className={cn("rounded-md", bare ? "h-28" : "h-20")} />)
                 : cells.map((c) => {
                     const dayItems = bucket.get(c.iso) ?? [];
                     const status = myStatus[c.iso];
@@ -203,8 +204,9 @@ export function CalendarView() {
                         key={c.iso}
                         onClick={() => setSelected(c.iso)}
                         className={cn(
-                          "relative flex h-20 flex-col gap-0.5 rounded-md border p-1 text-left transition",
-                          c.inMonth ? "bg-card" : "bg-muted/30 text-muted-foreground",
+                          "relative flex flex-col gap-0.5 rounded-md border p-1 text-left transition",
+                          bare ? "h-28" : "h-20",
+                          c.inMonth ? (bare && c.iso === today ? "bg-[#fff8e1]" : "bg-card") : "bg-muted/30 text-muted-foreground",
                           selected === c.iso ? "border-primary ring-1 ring-primary" : "border-border",
                         )}
                       >
@@ -249,6 +251,7 @@ export function CalendarView() {
             </div>
           </Card>
 
+          {!bare && (
           <Card className="h-fit p-4">
             <p className="text-sm font-semibold">
               {selected ? `รายการวันที่ ${selected.slice(8)} ${THAI_MONTHS[Number(selected.slice(5, 7)) - 1]}` : "เลือกวันที่"}
@@ -307,6 +310,7 @@ export function CalendarView() {
               )}
             </div>
           </Card>
+          )}
         </div>
       )}
 

@@ -25,6 +25,7 @@ import {
   type RaterPairOverrides,
   type RaterType,
   type RosterPerson,
+  PRESETS,
 } from "./rules";
 import type { RoundUpdateInput } from "./schema";
 import { makeDueRecurringRounds } from "./recurrence-service";
@@ -43,6 +44,16 @@ const fmtDay = (isoDay: string) =>
 const asWeights = (v: Prisma.JsonValue | null): Partial<Record<RaterType, number>> =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Partial<Record<RaterType, number>>) : {};
 
+/** "90°" … "360°" when the round asks exactly the people of one preset, else "กำหนดเอง". */
+function presetNameOf(types: RaterType[] | null): string {
+  const set = new Set(types ?? []);
+  for (const k of Object.keys(PRESETS) as (keyof typeof PRESETS)[]) {
+    const want = PRESETS[k];
+    if (want.length === set.size && want.every((x) => set.has(x))) return `${k}°`;
+  }
+  return "กำหนดเอง";
+}
+
 /* ───────────────────────────── HR side ───────────────────────────── */
 
 export async function listRounds(companyId: string) {
@@ -55,6 +66,7 @@ export async function listRounds(companyId: string) {
       startDate: true,
       endDate: true,
       isTemplate: true,
+      raterTypes: true,
       form: { select: { name: true, version: true } },
       _count: { select: { participants: true } },
     },
@@ -82,6 +94,7 @@ export async function listRounds(companyId: string) {
       name: r.name,
       status: r.status,
       isTemplate: r.isTemplate,
+      ratingType: presetNameOf(r.raterTypes as RaterType[]),
       formName: `${r.form.name} เวอร์ชัน ${r.form.version}`,
       startIso: r.startDate ? iso(r.startDate) : null,
       endIso: r.endDate ? iso(r.endDate) : null,

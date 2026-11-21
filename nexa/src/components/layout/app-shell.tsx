@@ -10,7 +10,6 @@ import { AppBadgeSync } from "@/components/pwa/app-badge-sync";
 import { AppSidebar } from "./app-sidebar";
 import { SectionBand } from "./section-band";
 import { PageChromeProvider } from "./page-chrome";
-import { HOME_PATH } from "./app-shell-nav";
 import { MobileBottomNav } from "./mobile-bottom-nav";
 import { ProfileDrawer } from "./profile-drawer";
 import { ProfileDrawerProvider } from "./profile-drawer-context";
@@ -22,9 +21,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // different default) so navigating away from home always collapses it
   // even if someone had it manually toggled open.
   const pathname = usePathname();
-  const isHome = pathname === HOME_PATH;
-  const [sidebarOpen, setSidebarOpen] = useState(isHome);
-  useEffect(() => setSidebarOpen(isHome), [isHome]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Closed on every page, like Favpo; the menu button in the top bar opens it, and moving to another page closes it again.
+  useEffect(() => setSidebarOpen(false), [pathname]);
 
   return (
     <ProfileDrawerProvider>

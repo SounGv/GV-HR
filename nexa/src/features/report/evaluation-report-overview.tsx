@@ -19,7 +19,10 @@ const share = (n: number, total: number) => (total > 0 ? Math.round((n / total) 
  * department. It uses the same rows as the table below (approved or published results only), so nobody sees a score here that the
  * table would not show them, and it works before any grade bands are set.
  */
-export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] }) {
+/** Which report of the hub is open (null = only the list of reports, as in Favpo). "people" is the per-person table of the page itself. */
+export type EvalSection = "people" | "bands" | "top" | "departments" | "compare";
+
+export function EvaluationReportOverview({ rounds, section, onSection }: { rounds: RoundInsight[]; section: EvalSection | null; onSection: (s: EvalSection | null) => void }) {
   const [id, setId] = useState(rounds[0]?.id ?? "");
   const r = rounds.find((x) => x.id === id) ?? rounds[0];
   if (!r) return null;
@@ -49,8 +52,9 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
       </div>
 
 
-      <ReportHub hasCompare={!!cmp} />
+      <ReportHub hasCompare={!!cmp} active={section} onSection={onSection} />
 
+      {section === "bands" && (
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Tile label="คนที่ถูกประเมิน" value={`${r.count} คน`} />
         <Tile label="คะแนนเฉลี่ย" value={`${fmt(r.average)}%`} />
@@ -62,7 +66,9 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
           note={ceiling ? "คะแนนกระจุกที่เต็ม แยกคนที่ทำได้ดีกว่ากันไม่ได้" : undefined}
         />
       </div>
+      )}
 
+      {section === "bands" && (
       <section id="score-bands" className="scroll-mt-48" aria-label="การกระจายคะแนน">
         <h4 className="text-sm font-semibold">การกระจายคะแนน</h4>
         <ul className="mt-2 space-y-2">
@@ -82,14 +88,18 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
           })}
         </ul>
       </section>
+      )}
 
+      {section === "top" && (
       <div id="top-ten" className="grid scroll-mt-48 gap-4 md:grid-cols-2">
         <Ranking title="คะแนนสูงสุด" people={r.top} tied={r.topTied} />
         <Ranking title="คะแนนต่ำสุด" people={r.bottom} tied={r.bottomTied} />
       </div>
+      )}
 
-      {cmp && <Comparison cmp={cmp} currentName={r.name} />}
+      {section === "compare" && cmp && <Comparison cmp={cmp} currentName={r.name} />}
 
+      {section === "departments" && (
       <section id="departments" className="scroll-mt-48" aria-label="สรุปรายแผนก">
         <h4 className="text-sm font-semibold">สรุปรายแผนก</h4>
         <div className="mt-2">
@@ -119,61 +129,68 @@ export function EvaluationReportOverview({ rounds }: { rounds: RoundInsight[] })
           </Table>
         </div>
       </section>
+      )}
     </Card>
   );
 }
 
 /** Favpo's report page: three boxes of plain link rows (per person, per department, comparison) that jump to the report on this page or open the page that has it. */
-function ReportHub({ hasCompare }: { hasCompare: boolean }) {
-  const groups: { title: string; links: { href: string; label: string; page?: boolean }[] }[] = [
+function ReportHub({ hasCompare, active, onSection }: { hasCompare: boolean; active: EvalSection | null; onSection: (s: EvalSection | null) => void }) {
+  const groups: { title: string; links: { key?: EvalSection; href?: string; label: string }[] }[] = [
     {
       title: "สรุป (พนักงาน)",
       links: [
-        { href: "#report-table", label: "รายงานสรุปรายพนักงาน" },
-        { href: "#score-bands", label: "รายงานสรุปคะแนน (ระดับผลการประเมิน)" },
-        { href: "#top-ten", label: "รายงานสรุป 10 อันดับคะแนน" },
-        { href: "/performance", label: "9 Box Grid (สมรรถนะ / KPI)", page: true },
-        { href: "/appraisal/report", label: "รายงานประเมินละเอียด (ใครประเมินใคร คะแนน ความเห็น กราฟ)", page: true },
+        { key: "people", label: "รายงานสรุปรายพนักงาน" },
+        { key: "bands", label: "รายงานสรุปคะแนน (ระดับผลการประเมิน)" },
+        { key: "top", label: "รายงานสรุป 10 อันดับคะแนน" },
+        { href: "/performance", label: "9 Box Grid (สมรรถนะ / KPI)" },
+        { href: "/appraisal/report", label: "รายงานประเมินละเอียด (ใครประเมินใคร คะแนน ความเห็น กราฟ)" },
       ],
     },
     {
       title: "สรุป (แผนก / ระดับพนักงาน / ตำแหน่ง)",
       links: [
-        { href: "#departments", label: "รายงานสรุปคะแนนรายแผนก" },
-        { href: "#score-bands", label: "รายงานสรุปจำนวนระดับผลการประเมิน (ข้อมูล)" },
+        { key: "departments", label: "รายงานสรุปคะแนนรายแผนก" },
+        { key: "bands", label: "รายงานสรุปจำนวนระดับผลการประเมิน (ข้อมูล)" },
       ],
     },
     {
       title: "รายงานเปรียบเทียบ",
-      links: hasCompare
-        ? [{ href: "#compare", label: "รายงานเปรียบเทียบกับรอบก่อน (รายแผนก / รายพนักงาน)" }]
-        : [],
+      links: hasCompare ? [{ key: "compare", label: "รายงานเปรียบเทียบกับรอบก่อน (รายแผนก / รายพนักงาน)" }] : [],
     },
   ];
+  const row = "flex min-h-11 w-full items-center px-3 py-2 text-left text-sm hover:bg-[#f6f9fe] hover:text-primary";
   return (
-    <section aria-label="รายงานประเมินพนักงาน" className="grid gap-4 md:grid-cols-3 print:hidden">
-      {groups.map((g) => (
-        <div key={g.title}>
-          <h4 className="mb-2 text-base font-medium">{g.title}</h4>
-          <div className="divide-border border-border divide-y rounded-sm border">
-            {g.links.length === 0 ? (
-              <p className="text-muted-foreground px-3 py-2 text-sm">ยังไม่มีรอบก่อนที่เทียบได้</p>
-            ) : (
-              g.links.map((l) =>
-                l.page ? (
-                  <Link key={l.label} href={l.href} className="hover:text-primary flex min-h-11 items-center px-3 py-2 text-sm hover:bg-[#f6f9fe]">
-                    {l.label}
-                  </Link>
-                ) : (
-                  <a key={l.label} href={l.href} className="hover:text-primary flex min-h-11 items-center px-3 py-2 text-sm hover:bg-[#f6f9fe]">
-                    {l.label}
-                  </a>
-                ),
-              )
-            )}
+    <section aria-label="รายงานประเมินพนักงาน" className="space-y-3 print:hidden">
+      <div className="grid gap-4 md:grid-cols-3">
+        {groups.map((g) => (
+          <div key={g.title}>
+            <h4 className="mb-2 text-base font-medium">{g.title}</h4>
+            <div className="divide-border border-border divide-y rounded-sm border">
+              {g.links.length === 0 ? (
+                <p className="text-muted-foreground px-3 py-2 text-sm">ยังไม่มีรอบก่อนที่เทียบได้</p>
+              ) : (
+                g.links.map((l) =>
+                  l.href ? (
+                    <Link key={l.label} href={l.href} className={row}>
+                      {l.label}
+                    </Link>
+                  ) : (
+                    <button key={l.label} type="button" aria-pressed={active === l.key} onClick={() => onSection(active === l.key ? null : l.key!)} className={cn(row, active === l.key && "bg-accent font-medium text-primary")}>
+                      {l.label}
+                    </button>
+                  ),
+                )
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+      {active && (
+        <button type="button" onClick={() => onSection(null)} className="text-primary inline-flex min-h-11 items-center text-sm font-medium hover:underline md:min-h-9">
+          ปิดรายงานนี้ กลับไปรายการรายงาน
+        </button>
+      )}
     </section>
   );
 }

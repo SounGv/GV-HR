@@ -1,8 +1,7 @@
 "use client";
 
-import { PageChromePublisher } from "@/components/layout/page-chrome";
+import { PageActions, PageChromePublisher } from "@/components/layout/page-chrome";
 import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
-import { BackLink } from "@/components/shared/back-link";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
@@ -445,64 +444,35 @@ function FormEditor({ form }: { form: FormDetail }) {
   return (
     <div className="space-y-4 pb-10">
       <PageChromePublisher title={name.trim() || "แบบประเมิน"} />
-      {/* Header: name, state, counts, the two actions. */}
-      <section
-        className="gv-hero flex flex-wrap items-center gap-4 p-4 sm:p-5"
-        aria-label="แบบประเมิน"
-      >
-        <div className="min-w-0 flex-1">
-          <BackLink href="/appraisal/forms" onHero>
-            แบบประเมิน
-          </BackLink>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <input
-              aria-label="ชื่อแบบประเมิน"
-              value={name}
-              disabled={!canEdit}
-              maxLength={200}
-              onChange={(e) => {
-                setName(e.target.value);
-                setDirty(true);
-              }}
-              className="min-w-0 flex-1 border-0 border-b-[1.5px] border-dashed border-border bg-transparent py-0.5 text-[22px] leading-snug font-bold text-foreground outline-none focus:border-[var(--on-hero-accent)] disabled:border-transparent sm:min-w-[260px]"
-            />
-            <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted px-2.5 py-0.5 text-xs font-bold">
-              <span
-                className={cn("size-1.5 rounded-full", locked ? "bg-status-normal-dot" : "bg-status-late-dot")}
-                aria-hidden="true"
-              />
-              {STATUS_LABEL[form.status]} · เวอร์ชัน {form.version}
-            </span>
-          </div>
-        </div>
-        <dl className="grid grid-cols-4 gap-2">
-          {(
-            [
-              ["หัวข้อ", flat.length],
-              ["หมวด", sections.filter((s) => s.name.trim()).length],
-              ["ระดับ", ratingMax],
-            ] as const
-          ).map(([k, v]) => (
-            <div key={k} className="gv-glass min-w-[64px] px-3 py-2">
-              <dt className="text-xs text-foreground">{k}</dt>
-              <dd className="text-xl leading-snug font-bold tabular-nums">{v}</dd>
-            </div>
-          ))}
-          <div className="gv-glass min-w-[84px] px-3 py-2">
-            <dt className="text-xs text-foreground">ความพร้อม</dt>
-            <dd
-              className="pt-0.5 text-base leading-snug font-bold"
-              style={{ color: problems.length ? "var(--status-late-dot)" : undefined }}
-            >
-              {problems.length ? `ขาด ${problems.length}` : "พร้อม ✓"}
-            </dd>
-          </div>
-        </dl>
+      {/* Favpo's form page head: the form's name and state on one line, its buttons in the title row at the right. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Input
+          aria-label="ชื่อแบบประเมิน"
+          value={name}
+          disabled={!canEdit}
+          maxLength={200}
+          onChange={(e) => {
+            setName(e.target.value);
+            setDirty(true);
+          }}
+          className="h-9 w-full md:max-w-xl"
+        />
+        <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted px-2 py-0.5 text-xs font-semibold">
+          {locked && <Lock className="size-3" aria-hidden="true" />}
+          {STATUS_LABEL[form.status]} · เวอร์ชัน {form.version}
+        </span>
+        <span className="text-sm text-muted-foreground tabular-nums">
+          หัวข้อ {flat.length} · ระดับคะแนน {ratingMax} · {problems.length ? `ยังขาด ${problems.length} อย่าง` : "พร้อมใช้งาน"}
+        </span>
+      </div>
+      {locked && <p className="text-sm text-muted-foreground">แบบนี้ถูกใช้งานแล้ว แก้ไขไม่ได้ ถ้าต้องการเปลี่ยน ให้สร้างเวอร์ชันใหม่</p>}
+
+      <PageActions>
         {canEdit && (
-          <div className="flex w-full gap-2 sm:w-auto">
+          <>
             <Button
               variant="outline"
-              className="h-11 flex-1 border-border bg-transparent text-foreground hover:bg-accent hover:text-foreground"
+              className="h-9"
               disabled={busy}
               onClick={async () => {
                 if (await saveDraft()) toast.success("บันทึกฉบับร่างแล้ว");
@@ -510,31 +480,17 @@ function FormEditor({ form }: { form: FormDetail }) {
             >
               {save.isPending ? "กำลังบันทึก…" : dirty ? "บันทึกร่าง •" : "บันทึกร่าง"}
             </Button>
-            <Button
-              className="h-11 flex-1 bg-primary font-bold text-primary-foreground hover:bg-primary/90"
-              disabled={busy || problems.length > 0}
-              title={problems.join(" · ")}
-              onClick={() => setConfirmPublish(true)}
-            >
+            <Button className="h-9" disabled={busy || problems.length > 0} title={problems.join(" · ")} onClick={() => setConfirmPublish(true)}>
               ยืนยันใช้แบบนี้
             </Button>
-          </div>
+          </>
         )}
-      </section>
-
-      {locked && (
-        <div className="border-border bg-muted flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 text-sm">
-          <Lock className="size-4 shrink-0" aria-hidden="true" />
-          <p className="min-w-0 flex-1">
-            แบบนี้ถูกใช้งานแล้ว แก้ไขไม่ได้ ถ้าต้องการเปลี่ยน ให้สร้างเวอร์ชันใหม่
-          </p>
-          {can("campaign:create") && form.status === "PUBLISHED" && (
-            <Button className="h-11 md:h-9" onClick={onNewVersion} disabled={newVersion.isPending}>
-              สร้างเวอร์ชันใหม่
-            </Button>
-          )}
-        </div>
-      )}
+        {locked && can("campaign:create") && form.status === "PUBLISHED" && (
+          <Button className="h-9" onClick={onNewVersion} disabled={newVersion.isPending}>
+            สร้างเวอร์ชันใหม่
+          </Button>
+        )}
+      </PageActions>
 
       <TopicsTable
         sections={sections}
