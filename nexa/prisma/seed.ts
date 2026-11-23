@@ -28,19 +28,22 @@ const DEPARTMENTS: { code: string; name: string; parent?: string }[] = [
   { code: "HR", name: "ฝ่ายทรัพยากรบุคคล" },
   // 4) จัดซื้อต่างประเทศ
   { code: "PUR-INT", name: "ฝ่ายจัดซื้อต่างประเทศ" },
-  // 5) Logistics & Warehouse
-  { code: "LOG", name: "ฝ่าย Logistics & Warehouse" },
+  // 5) คลังสินค้า (ขนส่งแยกฝ่ายต่างหาก — ไม่รวมกับทีมคลัง)
+  { code: "LOG", name: "ฝ่ายคลังสินค้า" },
   { code: "LOG-IN", name: "ฝ่ายรับเข้าสินค้า", parent: "LOG" },
-  { code: "WH", name: "ฝ่ายคลังสินค้า", parent: "LOG" },
-  { code: "LOG-OUT", name: "ฝ่ายขนส่ง", parent: "LOG" },
-  // 6) เซอร์วิส & เคลม
+  { code: "WH", name: "แผนกคลังสินค้า", parent: "LOG" },
+  // 6) ขนส่ง (root แยกจากคลัง)
+  { code: "LOG-OUT", name: "ฝ่ายขนส่ง" },
+  // 7) เซอร์วิส & เคลม
   { code: "SVC-CLM", name: "ฝ่ายเซอร์วิส & เคลม" },
   { code: "SVC", name: "ฝ่ายเซอร์วิส", parent: "SVC-CLM" },
   { code: "CLM", name: "ฝ่ายเคลมสินค้า", parent: "SVC-CLM" },
-  // 7) แม่บ้าน
+  // 8) แม่บ้าน
   { code: "HOUSE", name: "แม่บ้าน" },
-  // 8) IT
+  // 9) IT
   { code: "IT", name: "ฝ่าย IT" },
+  // 10) Data Engineer
+  { code: "DATA-ENG", name: "ฝ่าย Data Engineer" },
 ];
 
 async function main() {
