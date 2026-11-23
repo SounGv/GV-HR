@@ -65,6 +65,14 @@ check("พี่โน๊ต is จุฑามาส เลื่อนศั�
   assert.equal(matchesAlias(chakkraphong, PEOPLE_ALIASES.note), false);
 });
 
+check("พี่ใหม่ is ชัยณรงค์ เลาหโกญจน ใหม่ (บัญชี)", () => {
+  const mai = person("m", "ใหม่ (บัญชี)", null, null, { firstName: "ชัยณรงค์", lastName: "เลาหโกญจน" });
+  assert.equal(matchesAlias(mai, PEOPLE_ALIASES.mai), true);
+  const byName = person("m2", null, null, null, { firstName: "ชัยณรงค์", lastName: "เลาหโกญจน" });
+  assert.equal(matchesAlias(byName, PEOPLE_ALIASES.mai), true);
+  assert.equal(matchesAlias(person("m3", "ใหม่", null), PEOPLE_ALIASES.mai), false);
+});
+
 check("descendantsOf walks the reporting tree", () => {
   const people = [
     person("ting", "เติ้ง", "sales"),
@@ -107,7 +115,7 @@ check("plan splits transport, moves Ob/Mai, sets Note as approver", () => {
   const people = [
     person("beer", "เบียร์", "log"),
     person("ob", "โอ๊ต", "clm"),
-    person("mai", "ใหม่", "acc"),
+    person("mai", "ใหม่ (บัญชี)", "acc"),
     person("note", "โน๊ต", "acc"),
     person("ting", "เติ้ง", "sales"),
     person("th1", "หัวเติ้ง", "sales", "ting", { positionTitle: "ผู้จัดการ" }),
@@ -155,7 +163,7 @@ check("plan splits transport, moves Ob/Mai, sets Note as approver", () => {
 
 check("ambiguous nickname is unresolved (no silent pick)", () => {
   const plan = planOrgRestructure(
-    [person("a", "ใหม่", "acc"), person("b", "ใหม่", "acc2"), person("note", "โน๊ต", "acc")],
+    [person("a", "ใหม่ (บัญชี)", "acc"), person("b", "ใหม่ (บัญชี)", "acc2"), person("note", "โน๊ต", "acc")],
     [dept("acc", "แผนกบัญชี", "ACC"), dept("clm", "แผนกเคลม", "CLM")],
   );
   assert.ok(plan.unresolved.some((u) => /พี่ใหม่/.test(u)));

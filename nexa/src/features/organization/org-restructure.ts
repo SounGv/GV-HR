@@ -61,7 +61,8 @@ const labelOf = (p: RestructurePerson) => displayName(p);
 /** Nickname / short-name tokens used on the live org chart. */
 export const PEOPLE_ALIASES = {
   ob: ["โอ๊ป", "โอ๊บ", "ธนวัตร มัณฑนานนท์", "oab", "ob"],
-  mai: ["ใหม่", "mai"],
+  // ชัยณรงค์ เลาหโกญจน ใหม่ (บัญชี), ผจก.ฝ่ายบัญชีและการเงิน.
+  mai: ["ใหม่ (บัญชี)", "ชัยณรงค์ เลาหโกญจน"],
   // จุฑามาส เลื่อนศักดิ์ (โน๊ต), จนท.ฝ่ายบุคคล. Not จักรพงศ์ (โน้ต), head of accounting & finance.
   note: ["จุฑามาส เลื่อนศักดิ์", "โน๊ต"],
   ting: ["เติ้ง", "วีรวรรณ สุกณาวรรณ", "ting"],
@@ -265,6 +266,12 @@ export function planOrgRestructure(
     });
   }
   if (mai && claims) {
+    const maiReports = people.filter((p) => p.managerId === mai.id && p.departmentId !== claims.id);
+    if (maiReports.length > 0) {
+      notes.push(
+        `คำเตือน: ${labelOf(mai)} มีลูกน้อง ${maiReports.length} คนนอกแผนกเคลม (เช่น ทีมบัญชี) — ย้ายแผนกแล้วลูกน้องยังขึ้นตรงกับเขา ตรวจก่อน --yes`,
+      );
+    }
     personMoves.push({
       employeeId: mai.id,
       label: labelOf(mai),
