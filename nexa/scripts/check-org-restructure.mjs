@@ -43,6 +43,19 @@ check("พี่โอ๊บ is ธนวัตร มัณฑนานนท�
   assert.equal(matchesAlias(person("3", "โอ๊ต", null), PEOPLE_ALIASES.ob), false);
 });
 
+check("Ting, Lisha and Beer match their names from the org chart", () => {
+  const ting = person("t", "เติ้ง", null, null, { firstName: "วีรวรรณ", lastName: "สุกณาวรรณ" });
+  assert.equal(matchesAlias(ting, PEOPLE_ALIASES.ting), true);
+  const tingByName = person("t2", null, null, null, { firstName: "วีรวรรณ", lastName: "สุกณาวรรณ" });
+  assert.equal(matchesAlias(tingByName, PEOPLE_ALIASES.ting), true);
+  const lisha = person("l", "Elisa", null, null, { firstName: "Miss.Ho", lastName: "Yi-Hsuan" });
+  assert.equal(matchesAlias(lisha, PEOPLE_ALIASES.lisha), true);
+  const beer = person("b", "เบียร์รับเข้า", null, null, { firstName: "วันชัย", lastName: "ไชยหงษ์" });
+  assert.equal(matchesAlias(beer, PEOPLE_ALIASES.beer), true);
+  const beerByName = person("b2", null, null, null, { firstName: "วันชัย", lastName: "ไชยหงษ์" });
+  assert.equal(matchesAlias(beerByName, PEOPLE_ALIASES.beer), true);
+});
+
 check("descendantsOf walks the reporting tree", () => {
   const people = [
     person("ting", "เติ้ง", "sales"),

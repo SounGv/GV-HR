@@ -63,9 +63,9 @@ export const PEOPLE_ALIASES = {
   ob: ["โอ๊ป", "โอ๊บ", "ธนวัตร มัณฑนานนท์", "oab", "ob"],
   mai: ["ใหม่", "mai"],
   note: ["โน้ต", "โน๊ต", "โน้ค", "โน๊ค", "note"],
-  ting: ["เติ้ง", "ting"],
-  lisha: ["ลิช่า", "ลิชา", "elisa", "lisha"],
-  beer: ["เบียร์", "beer"],
+  ting: ["เติ้ง", "วีรวรรณ สุกณาวรรณ", "ting"],
+  lisha: ["Elisa", "ลิช่า", "ลิชา", "Miss.Ho Yi-Hsuan", "lisha"],
+  beer: ["เบียร์รับเข้า", "วันชัย ไชยหงษ์", "เบียร์", "beer"],
   jaoDeng: ["เจาเด้ง", "เจ้าเด้ง", "jaodeng", "jao deng"],
 } as const;
 
