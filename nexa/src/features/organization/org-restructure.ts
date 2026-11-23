@@ -68,7 +68,8 @@ export const PEOPLE_ALIASES = {
   ting: ["เติ้ง", "วีรวรรณ สุกณาวรรณ", "ting"],
   lisha: ["Elisa", "ลิช่า", "ลิชา", "Miss.Ho Yi-Hsuan", "lisha"],
   beer: ["เบียร์รับเข้า", "วันชัย ไชยหงษ์", "เบียร์", "beer"],
-  jaoDeng: ["เจาเด้ง", "เจ้าเด้ง", "jaodeng", "jao deng"],
+  // เมธา ทองหมี (เจา), จนท.ฝ่ายขนส่ง.
+  jaoDeng: ["เมธา ทองหมี", "เจา", "เจาเด้ง", "เจ้าเด้ง"],
 } as const;
 
 function norm(s: string): string {

@@ -73,6 +73,14 @@ check("พี่ใหม่ is ชัยณรงค์ เลาหโกญ�
   assert.equal(matchesAlias(person("m3", "ใหม่", null), PEOPLE_ALIASES.mai), false);
 });
 
+check("เจา is เมธา ทองหมี (จนท.ฝ่ายขนส่ง)", () => {
+  const jao = person("j", "เจา", null, null, { firstName: "เมธา", lastName: "ทองหมี" });
+  assert.equal(matchesAlias(jao, PEOPLE_ALIASES.jaoDeng), true);
+  const byName = person("j2", null, null, null, { firstName: "เมธา", lastName: "ทองหมี" });
+  assert.equal(matchesAlias(byName, PEOPLE_ALIASES.jaoDeng), true);
+  assert.equal(matchesAlias(person("j3", "เจนนี่", null), PEOPLE_ALIASES.jaoDeng), false);
+});
+
 check("descendantsOf walks the reporting tree", () => {
   const people = [
     person("ting", "เติ้ง", "sales"),
