@@ -46,6 +46,7 @@ export async function listCompetencies(companyId: string, query: CompetencyListQ
       ...(query.departmentId ? { departmentId: query.departmentId } : {}),
       ...(query.positionId ? { positionId: query.positionId } : {}),
       ...(query.evaluationType ? { evaluationType: query.evaluationType } : {}),
+      ...(query.kind ? { kind: query.kind } : {}),
       ...(query.search
         ? {
             OR: [

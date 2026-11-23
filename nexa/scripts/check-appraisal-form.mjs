@@ -3,7 +3,11 @@
 import assert from "node:assert/strict";
 import {
   METHOD_TEMPLATES,
+  hasOnlyStarterQuestions,
+  isSourceImportKind,
   parseSectionKind,
+  questionFromCompetency,
+  questionFromDuty,
   templateFor,
 } from "../src/features/appraisal-form/method-templates.ts";
 import {
@@ -89,6 +93,41 @@ check("unknown section kinds become CUSTOM", () => {
   assert.equal(parseSectionKind("CUSTOM"), "CUSTOM");
   assert.equal(parseSectionKind("nope"), "CUSTOM");
   assert.equal(parseSectionKind(null), "CUSTOM");
+});
+check("competency library rows copy into form questions without a live link", () => {
+  const rating = questionFromCompetency({
+    name: "ความรับผิดชอบ",
+    exampleBehavior: "รับงานแล้วทำให้จบ",
+    questionType: "RATING_1_TO_5",
+    defaultWeight: 4,
+    isRequired: true,
+  });
+  assert.equal(rating.answerType, "RATING");
+  assert.equal(rating.weight, 4);
+  assert.equal(rating.helpText, "รับงานแล้วทำให้จบ");
+  const yesNo = questionFromCompetency({ name: "ผ่านเกณฑ์?", questionType: "YES_NO" });
+  assert.equal(yesNo.answerType, "CHOICE");
+  assert.equal(yesNo.options.length, 2);
+  const file = questionFromCompetency({ name: "หลักฐาน", questionType: "FILE_EVIDENCE" });
+  assert.equal(file.answerType, "FILE_EVIDENCE");
+  assert.equal(file.weight, 0);
+});
+check("position duties copy into Task rating questions", () => {
+  const q = questionFromDuty({ title: "ปิดการขาย", description: "ทำตามกระบวนการจนปิดดีล" });
+  assert.equal(q.answerType, "RATING");
+  assert.equal(q.text, "ปิดการขาย");
+  assert.equal(q.helpText, "ทำตามกระบวนการจนปิดดีล");
+  assert.ok(isSourceImportKind("TASK"));
+  assert.ok(isSourceImportKind("COMPETENCY_CORE"));
+  assert.equal(isSourceImportKind("KPI"), false);
+});
+check("importing from a source replaces untouched starter questions", () => {
+  const starters = METHOD_TEMPLATES.find((t) => t.kind === "COMPETENCY_CORE").questions.map(
+    (q) => q.text,
+  );
+  assert.equal(hasOnlyStarterQuestions(starters, "COMPETENCY_CORE"), true);
+  assert.equal(hasOnlyStarterQuestions([...starters, "หัวข้อเพิ่ม"], "COMPETENCY_CORE"), false);
+  assert.equal(hasOnlyStarterQuestions(starters.slice(1), "COMPETENCY_CORE"), false);
 });
 check("each method template has starter ratings; Task includes file evidence", () => {
   for (const t of METHOD_TEMPLATES) {

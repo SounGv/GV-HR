@@ -719,7 +719,13 @@ function FavpoHub() {
       links: [
         { href: "/appraisal/forms", label: "สร้างและแก้แบบประเมิน" },
         { href: "/appraisal/settings", label: "ตั้งค่าคะแนนและการแสดงผล" },
-        { href: "/appraisal/kpi", label: "KPI" },
+        { href: "/appraisal/kpi", label: "KPI เวลาทำงาน (สาย ลา OT)" },
+        { href: "/kpi", label: "เป้าหมาย KPI / OKR ของพนักงาน" },
+        {
+          href: "/performance/competencies",
+          label: "คลังสมรรถนะ (Core / Functional / Leadership)",
+        },
+        { href: "/organization?tab=departments", label: "ตำแหน่งและหน้าที่งาน" },
       ],
     },
     {
@@ -776,6 +782,8 @@ function MethodsExplainer() {
       <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
         แบบประเมินหนึ่งใบผสมวิธีได้ — KPI, OKR, สมรรถนะหลัก / ตามหน่วยงาน / ผู้นำ,
         และผลงานตามหน้าที่ — แล้วรวมเป็นคะแนนสุดท้ายตามน้ำหนักหัวข้อและมุมมองผู้ประเมิน
+        ตอนสร้างแบบดึงหัวข้อจากคลังสมรรถนะและหน้าที่ของตำแหน่งมาใส่ได้ (คัดลอกมา แก้ได้อิสระ
+        ไม่ลิงก์สด) ตัวเลขเป้า KPI/OKR ของแต่ละคนแสดงตอนประเมิน
       </p>
       <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {METHOD_TEMPLATES.map((t) => (

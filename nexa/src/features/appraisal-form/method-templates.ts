@@ -246,3 +246,89 @@ export function parseSectionKind(value: unknown): SectionKind {
 export function templateFor(kind: SectionKind): MethodTemplate {
   return METHOD_TEMPLATES.find((t) => t.kind === kind) ?? CUSTOM_SECTION;
 }
+
+/** Form section → competency library kind. Absent = this section is not filled from the competency bank. */
+export const SECTION_TO_COMPETENCY_KIND: Partial<
+  Record<SectionKind, "CORE" | "FUNCTIONAL" | "LEADERSHIP">
+> = {
+  COMPETENCY_CORE: "CORE",
+  COMPETENCY_FUNCTIONAL: "FUNCTIONAL",
+  COMPETENCY_LEADERSHIP: "LEADERSHIP",
+};
+
+export function isSourceImportKind(kind: SectionKind): boolean {
+  return kind === "TASK" || kind in SECTION_TO_COMPETENCY_KIND;
+}
+
+/** True when the section still has only the method template's starter questions. */
+export function hasOnlyStarterQuestions(texts: string[], kind: SectionKind): boolean {
+  const starters = templateFor(kind).questions.map((q) => q.text);
+  return texts.length === starters.length && texts.every((t, i) => t === starters[i]);
+}
+
+export interface SourceQuestionDraft {
+  text: string;
+  helpText: string;
+  answerType: MethodAnswerType;
+  weight: number;
+  required: boolean;
+  options: { value: string; label: string }[];
+}
+
+/** Copy a competency library row into a form question. The form does not keep a live link. */
+export function questionFromCompetency(c: {
+  name: string;
+  description?: string | null;
+  exampleBehavior?: string | null;
+  questionType?: string;
+  defaultWeight?: number;
+  isRequired?: boolean;
+}): SourceQuestionDraft {
+  const helpText = (c.exampleBehavior || c.description || "").trim();
+  const required = c.isRequired !== false;
+  const weight = Math.max(1, Math.trunc(c.defaultWeight ?? 1));
+  switch (c.questionType) {
+    case "SHORT_TEXT":
+      return { text: c.name, helpText, answerType: "SHORT_TEXT", weight: 0, required, options: [] };
+    case "LONG_TEXT":
+      return { text: c.name, helpText, answerType: "PARAGRAPH", weight: 0, required, options: [] };
+    case "FILE_EVIDENCE":
+      return {
+        text: c.name,
+        helpText,
+        answerType: "FILE_EVIDENCE",
+        weight: 0,
+        required,
+        options: [],
+      };
+    case "YES_NO":
+      return {
+        text: c.name,
+        helpText,
+        answerType: "CHOICE",
+        weight: 0,
+        required,
+        options: [
+          { value: "yes", label: "ใช่" },
+          { value: "no", label: "ไม่ใช่" },
+        ],
+      };
+    default:
+      return { text: c.name, helpText, answerType: "RATING", weight, required, options: [] };
+  }
+}
+
+/** Copy a position duty into a Task Achievement rating question. */
+export function questionFromDuty(d: {
+  title: string;
+  description?: string | null;
+}): SourceQuestionDraft {
+  return {
+    text: d.title,
+    helpText: (d.description ?? "").trim(),
+    answerType: "RATING",
+    weight: 3,
+    required: true,
+    options: [],
+  };
+}

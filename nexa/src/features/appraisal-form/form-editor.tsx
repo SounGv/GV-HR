@@ -2,6 +2,7 @@
 
 import { PageActions, PageChromePublisher } from "@/components/layout/page-chrome";
 import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
@@ -10,6 +11,7 @@ import {
   Copy,
   GripVertical,
   Library,
+  Link2,
   Lock,
   Pencil,
   Plus,
@@ -42,7 +44,12 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/auth-context";
+import { fetchCompetencies } from "@/features/competency/api";
+import { competencyKeys } from "@/features/competency/hooks";
+import { fetchPosition, fetchPositions } from "@/features/organization/api";
+import { orgKeys } from "@/features/organization/hooks";
 import { QuestionStep, scoreTone } from "@/features/appraisal-round/task-form";
 import type { AnswerValue, SnapQuestion } from "@/features/appraisal-round/answers";
 import { ApiError } from "@/lib/api/client";
@@ -62,8 +69,14 @@ import {
   CUSTOM_SECTION,
   METHOD_TEMPLATES,
   SECTION_KIND_LABEL,
+  SECTION_TO_COMPETENCY_KIND,
+  hasOnlyStarterQuestions,
+  isSourceImportKind,
   parseSectionKind,
+  questionFromCompetency,
+  questionFromDuty,
   type SectionKind,
+  type SourceQuestionDraft,
 } from "./method-templates";
 import {
   ANSWER_TYPE_LABEL,
@@ -243,6 +256,7 @@ function FormEditor({ form }: { form: FormDetail }) {
 
   /* ── sections and topics ── */
   const [methodOpen, setMethodOpen] = useState(false);
+  const [importTarget, setImportTarget] = useState<{ key: string; kind: SectionKind } | null>(null);
   function addSection(kind: SectionKind = "CUSTOM") {
     const tmpl =
       kind === "CUSTOM"
@@ -265,6 +279,48 @@ function FormEditor({ form }: { form: FormDetail }) {
     edit((ss) => [...ss, s]);
     setSel(s.qs[0]?.uiKey ?? null);
     setMethodOpen(false);
+    if (isSourceImportKind(kind)) setImportTarget({ key: s.key, kind });
+    else if (kind === "KPI" || kind === "OKR") {
+      toast.message("ตัวเลขเป้าของแต่ละคนจะแสดงตอนประเมิน จากเป้าหมาย KPI/OKR ในระบบ");
+    }
+  }
+  function applySourceDrafts(sectionKey: string, drafts: SourceQuestionDraft[]) {
+    let added: QuestionValues[] = [];
+    edit((ss) =>
+      ss.map((s) => {
+        if (s.key !== sectionKey) return s;
+        const base = hasOnlyStarterQuestions(
+          s.qs.map((q) => q.text),
+          s.kind,
+        )
+          ? []
+          : s.qs;
+        const used = new Set(base.map((q) => q.text.trim()).filter(Boolean));
+        added = [];
+        for (const d of drafts) {
+          const text = d.text.trim();
+          if (!text || used.has(text)) continue;
+          used.add(text);
+          added.push({
+            ...blankQuestion(),
+            text,
+            helpText: d.helpText,
+            answerType: d.answerType,
+            weight: d.weight,
+            required: d.required,
+            options: d.options.length ? d.options : [],
+          });
+        }
+        if (!added.length) return s;
+        return { ...s, qs: [...base, ...added] };
+      }),
+    );
+    if (!added.length) {
+      toast.message("ไม่มีหัวข้อใหม่ให้เพิ่ม (มีในหมวดนี้แล้ว หรือต้นทางว่าง)");
+      return;
+    }
+    setSel(added[0]!.uiKey);
+    toast.success(`ดึงจากต้นทาง ${added.length} หัวข้อ`);
   }
   function addTopic(sectionKey: string, q: QuestionValues = blankQuestion()) {
     edit((ss) => ss.map((s) => (s.key === sectionKey ? { ...s, qs: [...s.qs, q] } : s)));
@@ -579,6 +635,7 @@ function FormEditor({ form }: { form: FormDetail }) {
           onDeleteSection={deleteSection}
           onDrop={dropTopic}
           onOpenBank={() => setBankOpen(true)}
+          onImportSource={(key, kind) => setImportTarget({ key, kind })}
         />
 
         <Card className="gap-0 rounded-lg p-0" aria-label="แก้ไขหัวข้อ">
@@ -692,6 +749,14 @@ function FormEditor({ form }: { form: FormDetail }) {
           />
         </aside>
       </div>
+
+      <SourcePicker
+        target={importTarget}
+        onOpenChange={(open) => {
+          if (!open) setImportTarget(null);
+        }}
+        onImport={applySourceDrafts}
+      />
 
       <BankPicker
         open={bankOpen}
@@ -914,6 +979,7 @@ function Outline({
   onDeleteSection,
   onDrop,
   onOpenBank,
+  onImportSource,
 }: {
   sections: Section[];
   sel: string | null;
@@ -927,6 +993,7 @@ function Outline({
   onDeleteSection: (k: string) => void;
   onDrop: (key: string, target: { beforeKey?: string; sectionKey?: string }) => void;
   onOpenBank: () => void;
+  onImportSource: (sectionKey: string, kind: SectionKind) => void;
 }) {
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
@@ -1121,6 +1188,15 @@ function Outline({
                     <Plus className="size-3.5" aria-hidden="true" /> เพิ่มหัวข้อ
                     {s.name ? `ใน${s.name}` : ""}
                   </button>
+                  {isSourceImportKind(s.kind) && (
+                    <button
+                      type="button"
+                      onClick={() => onImportSource(s.key, s.kind)}
+                      className="text-muted-foreground hover:text-primary mt-0.5 flex min-h-9 w-full items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold"
+                    >
+                      <Link2 className="size-3.5" aria-hidden="true" /> ดึงจากต้นทาง
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1728,6 +1804,194 @@ function PhonePreview({
         </Button>
       </div>
     </Card>
+  );
+}
+
+/* ───────────────────────── source import (competency / duties) ───────────────────────── */
+
+function SourcePicker({
+  target,
+  onOpenChange,
+  onImport,
+}: {
+  target: { key: string; kind: SectionKind } | null;
+  onOpenChange: (open: boolean) => void;
+  onImport: (sectionKey: string, drafts: SourceQuestionDraft[]) => void;
+}) {
+  const competencyKind = target ? SECTION_TO_COMPETENCY_KIND[target.kind] : undefined;
+  const isTask = target?.kind === "TASK";
+  const comps = useQuery({
+    queryKey: competencyKeys.list({ kind: competencyKind }),
+    queryFn: () => fetchCompetencies({ kind: competencyKind }),
+    enabled: !!competencyKind,
+  });
+  const positions = useQuery({
+    queryKey: orgKeys.positions,
+    queryFn: fetchPositions,
+    enabled: !!isTask,
+  });
+  const [positionId, setPositionId] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const position = useQuery({
+    queryKey: [...orgKeys.positions, "detail", positionId],
+    queryFn: () => fetchPosition(positionId as string),
+    enabled: !!isTask && !!positionId,
+  });
+
+  useEffect(() => {
+    setPicked(new Set());
+    setPositionId(null);
+  }, [target?.key, target?.kind]);
+
+  const competencyRows = (comps.data?.data ?? []).filter((c) => c.active);
+  const duties = position.data?.data?.duties ?? [];
+  const rows = isTask
+    ? duties.map((d) => ({ id: d.id, title: d.title, hint: d.description }))
+    : competencyRows.map((c) => ({
+        id: c.id,
+        title: c.name,
+        hint: c.exampleBehavior || c.description,
+      }));
+
+  function toggle(id: string) {
+    setPicked((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function importPicked() {
+    if (!target) return;
+    if (isTask) {
+      onImport(target.key, duties.filter((d) => picked.has(d.id)).map(questionFromDuty));
+    } else {
+      onImport(
+        target.key,
+        competencyRows.filter((c) => picked.has(c.id)).map(questionFromCompetency),
+      );
+    }
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={!!target} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[88vh] gap-3 overflow-hidden sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            {isTask
+              ? "ดึงหน้าที่ตามตำแหน่ง"
+              : `ดึงจากคลังสมรรถนะ (${target ? SECTION_KIND_LABEL[target.kind] : ""})`}
+          </DialogTitle>
+          <DialogDescription>
+            คัดลอกมาเป็นหัวข้อในแบบนี้ แก้ได้อิสระ ไม่ลิงก์สดกับต้นทาง
+          </DialogDescription>
+        </DialogHeader>
+        {isTask && (
+          <label className="grid gap-1.5 text-sm font-medium">
+            ตำแหน่ง
+            <select
+              className="border-border bg-background h-11 rounded-lg border px-3 text-sm"
+              value={positionId ?? ""}
+              onChange={(e) => setPositionId(e.target.value || null)}
+              aria-label="ตำแหน่ง"
+            >
+              <option value="">เลือกตำแหน่ง</option>
+              {(positions.data?.data ?? []).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title} ({p.code})
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <div className="-mx-1 max-h-[48vh] space-y-1.5 overflow-y-auto px-1">
+          {((isTask && positionId && position.isLoading) || (!isTask && comps.isLoading)) && (
+            <TableLoadingState rows={3} />
+          )}
+          {!isTask && comps.isError && <ErrorState onRetry={() => comps.refetch()} />}
+          {isTask && positionId && position.isError && (
+            <ErrorState onRetry={() => position.refetch()} />
+          )}
+          {isTask && !positionId && (
+            <p className="text-muted-foreground py-6 text-center text-sm">
+              เลือกตำแหน่งเพื่อดูหน้าที่งาน
+            </p>
+          )}
+          {isTask && positionId && !position.isLoading && duties.length === 0 && (
+            <p className="text-muted-foreground py-6 text-center text-sm">
+              ตำแหน่งนี้ยังไม่มีหน้าที่ —{" "}
+              <Link
+                href="/organization?tab=departments"
+                className="text-primary font-semibold hover:underline"
+              >
+                เพิ่มที่แผนกและตำแหน่ง
+              </Link>
+            </p>
+          )}
+          {!isTask && !comps.isLoading && competencyRows.length === 0 && (
+            <p className="text-muted-foreground py-6 text-center text-sm">
+              คลังสมรรถนะชนิดนี้ยังว่าง —{" "}
+              <Link
+                href="/performance/competencies"
+                className="text-primary font-semibold hover:underline"
+              >
+                เปิดคลังสมรรถนะ
+              </Link>
+            </p>
+          )}
+          {rows.map((r) => {
+            const on = picked.has(r.id);
+            return (
+              <button
+                key={r.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggle(r.id)}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-lg border p-3 text-left",
+                  on ? "border-ring bg-accent" : "border-border bg-card",
+                )}
+              >
+                <span
+                  className={cn(
+                    "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] font-bold",
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-border",
+                  )}
+                  aria-hidden="true"
+                >
+                  {on ? "✓" : ""}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold">{r.title}</span>
+                  {r.hint && (
+                    <span className="text-muted-foreground mt-0.5 block text-xs">{r.hint}</span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center justify-end gap-2">
+          {rows.length > 0 && (
+            <Button
+              variant="ghost"
+              className="mr-auto"
+              onClick={() => setPicked(new Set(rows.map((r) => r.id)))}
+            >
+              เลือกทั้งหมด
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            ใช้เทมเพลตที่มี
+          </Button>
+          <Button disabled={picked.size === 0} onClick={importPicked}>
+            เพิ่มที่เลือก ({picked.size})
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -9,6 +9,7 @@ import {
   updateDepartment,
   deleteDepartment,
   fetchPositions,
+  fetchPosition,
   createPosition,
   updatePosition,
   deletePosition,
@@ -32,6 +33,13 @@ export function useOrgPeople() {
 }
 export function usePositions() {
   return useQuery({ queryKey: orgKeys.positions, queryFn: fetchPositions });
+}
+export function usePosition(id: string | null) {
+  return useQuery({
+    queryKey: [...orgKeys.positions, "detail", id],
+    queryFn: () => fetchPosition(id as string),
+    enabled: !!id,
+  });
 }
 
 function useInvalidate() {
@@ -57,12 +65,16 @@ export function useSaveOrgMoves() {
 
 export function useCreateDepartment() {
   const invalidate = useInvalidate();
-  return useMutation({ mutationFn: (i: DepartmentFormValues) => createDepartment(i), onSuccess: invalidate });
+  return useMutation({
+    mutationFn: (i: DepartmentFormValues) => createDepartment(i),
+    onSuccess: invalidate,
+  });
 }
 export function useUpdateDepartment() {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: (v: { id: string; input: Partial<DepartmentFormValues> }) => updateDepartment(v.id, v.input),
+    mutationFn: (v: { id: string; input: Partial<DepartmentFormValues> }) =>
+      updateDepartment(v.id, v.input),
     onSuccess: invalidate,
   });
 }
@@ -73,12 +85,16 @@ export function useDeleteDepartment() {
 
 export function useCreatePosition() {
   const invalidate = useInvalidate();
-  return useMutation({ mutationFn: (i: PositionFormValues) => createPosition(i), onSuccess: invalidate });
+  return useMutation({
+    mutationFn: (i: PositionFormValues) => createPosition(i),
+    onSuccess: invalidate,
+  });
 }
 export function useUpdatePosition() {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: (v: { id: string; input: Partial<PositionFormValues> }) => updatePosition(v.id, v.input),
+    mutationFn: (v: { id: string; input: Partial<PositionFormValues> }) =>
+      updatePosition(v.id, v.input),
     onSuccess: invalidate,
   });
 }

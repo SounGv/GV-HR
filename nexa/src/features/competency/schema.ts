@@ -41,5 +41,6 @@ export const competencyListQuerySchema = z.object({
   departmentId: z.string().uuid().optional(),
   positionId: z.string().uuid().optional(),
   evaluationType: z.string().trim().max(60).optional(),
+  kind: z.enum(["CORE", "FUNCTIONAL", "LEADERSHIP"]).optional(),
 });
 export type CompetencyListQuery = z.infer<typeof competencyListQuerySchema>;
