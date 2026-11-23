@@ -35,6 +35,14 @@ check("matchesAlias hits nickname and ignores case/space", () => {
   assert.equal(matchesAlias(person("1", "พล", null), PEOPLE_ALIASES.ob), false);
 });
 
+check("พี่โอ๊บ is ธนวัตร มัณฑนานนท์ (โอ๊ป) and not โอ๊ต", () => {
+  const oap = person("1", "โอ๊ป", null, null, { firstName: "ธนวัตร", lastName: "มัณฑนานนท์" });
+  assert.equal(matchesAlias(oap, PEOPLE_ALIASES.ob), true);
+  const byName = person("2", null, null, null, { firstName: "ธนวัตร", lastName: "มัณฑนานนท์" });
+  assert.equal(matchesAlias(byName, PEOPLE_ALIASES.ob), true);
+  assert.equal(matchesAlias(person("3", "โอ๊ต", null), PEOPLE_ALIASES.ob), false);
+});
+
 check("descendantsOf walks the reporting tree", () => {
   const people = [
     person("ting", "เติ้ง", "sales"),

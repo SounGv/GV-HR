@@ -60,7 +60,7 @@ const labelOf = (p: RestructurePerson) => displayName(p);
 
 /** Nickname / short-name tokens used on the live org chart. */
 export const PEOPLE_ALIASES = {
-  ob: ["โอ๊บ", "โอ๊ต", "อ๊อบ", "oat", "ob"],
+  ob: ["โอ๊ป", "โอ๊บ", "ธนวัตร มัณฑนานนท์", "oab", "ob"],
   mai: ["ใหม่", "mai"],
   note: ["โน้ต", "โน๊ต", "โน้ค", "โน๊ค", "note"],
   ting: ["เติ้ง", "ting"],
