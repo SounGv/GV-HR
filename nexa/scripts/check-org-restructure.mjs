@@ -172,6 +172,23 @@ check("plan splits transport, moves Ob/Mai, sets Note as approver", () => {
   assert.equal(lp1Move.managerId, "note");
 });
 
+check("warehouse Online / Offline departments are renamed to Thai ฝ่าย names", () => {
+  const depts = [
+    dept("wh", "แผนกคลังสินค้า", "WH"),
+    dept("off", "แผนกคลังสินค้า Offline", "ST-OF"),
+    dept("on", "แผนกคลังสินค้า Online", "ST-ON"),
+    dept("tr", "แผนกขนส่ง", "TR"),
+    dept("clm", "แผนกเคลม", "CLM"),
+  ];
+  const plan = planOrgRestructure([person("note", "โน๊ต", null)], depts);
+  const renames = Object.fromEntries(
+    plan.deptChanges.filter((c) => c.kind === "rename").map((c) => [c.id, c.name]),
+  );
+  assert.equal(renames.on, "ฝ่ายคลังสินค้า ออนไลน์");
+  assert.equal(renames.off, "ฝ่ายคลังสินค้า ออฟไลน์");
+  assert.equal(renames.wh, undefined);
+});
+
 check("ambiguous nickname is unresolved (no silent pick)", () => {
   const plan = planOrgRestructure(
     [person("a", "ใหม่ (บัญชี)", "acc"), person("b", "ใหม่ (บัญชี)", "acc2"), person("note", "โน๊ต", "acc")],

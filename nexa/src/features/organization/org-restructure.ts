@@ -238,6 +238,25 @@ export function planOrgRestructure(
   }
   if (beer) notes.push(`พี่เบียร์อยู่ที่: ${labelOf(beer)} — คลังยังเป็นทีมเดิม`);
 
+  // Warehouse online / offline groups: Thai suffix to match the position titles
+  // (พนักงานคลังสินค้า-ออนไลน์ / -ออฟไลน์), and ฝ่าย instead of แผนก.
+  for (const [pattern, suffix] of [
+    [/online|ออนไลน์/i, "ออนไลน์"],
+    [/offline|ออฟไลน์/i, "ออฟไลน์"],
+  ] as const) {
+    const d = depts.find((x) => /คลังสินค้า/.test(x.name) && pattern.test(x.name));
+    if (!d) continue;
+    const name = `ฝ่ายคลังสินค้า ${suffix}`;
+    if (d.name !== name) {
+      deptChanges.push({
+        kind: "rename",
+        id: d.id,
+        name,
+        reason: `เรียกกลุ่มคลัง ${suffix} เป็นภาษาไทยและเป็นฝ่าย`,
+      });
+    }
+  }
+
   // —— 2) Data Engineer home for Ob ——
   const dataDept = dataEngineerDept(depts);
   if (!dataDept) {
