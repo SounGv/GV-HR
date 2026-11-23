@@ -266,23 +266,13 @@ export function planOrgRestructure(
       reason: "ย้ายพี่โอ๊บออกจากเคลมไป Data Engineer",
     });
   }
-  if (mai && claims) {
-    const maiReports = people.filter((p) => p.managerId === mai.id && p.departmentId !== claims.id);
-    if (maiReports.length > 0) {
-      notes.push(
-        `คำเตือน: ${labelOf(mai)} มีลูกน้อง ${maiReports.length} คนนอกแผนกเคลม (เช่น ทีมบัญชี) — ย้ายแผนกแล้วลูกน้องยังขึ้นตรงกับเขา ตรวจก่อน --yes`,
-      );
-    }
-    personMoves.push({
-      employeeId: mai.id,
-      label: labelOf(mai),
-      departmentId: claims.id,
-      managerId: mai.managerId,
-      reason: "ให้พี่ใหม่อยู่แผนกเคลมแทนพี่โอ๊บ",
-    });
+  if (mai && claims && mai.departmentId !== claims.id) {
+    notes.push(
+      `${labelOf(mai)} เป็นหัวหน้าทั้งฝ่ายบัญชีและฝ่ายเคลม — ไม่ย้ายแผนกของเขา แค่ให้ลูกน้องเคลมขึ้นตรงกับเขา`,
+    );
   }
 
-  // Claims people who reported to Ob → report to Mai (when both known).
+  // Claims people who reported to Ob → report to Mai, who keeps his accounting department.
   if (ob && mai && claims) {
     for (const p of people) {
       if (p.id === ob.id || p.id === mai.id) continue;

@@ -153,8 +153,11 @@ check("plan splits transport, moves Ob/Mai, sets Note as approver", () => {
   const obMove = plan.personMoves.find((m) => m.employeeId === "ob");
   assert.equal(obMove.departmentId, "__CREATE_DATA_ENG__");
 
-  const maiMove = plan.personMoves.find((m) => m.employeeId === "mai");
-  assert.equal(maiMove.departmentId, "clm");
+  assert.equal(
+    plan.personMoves.some((m) => m.employeeId === "mai"),
+    false,
+    "พี่ใหม่ heads accounting and claims, so his department is not moved",
+  );
 
   const claimReassign = plan.personMoves.find((m) => m.employeeId === "claim1");
   assert.equal(claimReassign.managerId, "mai");
