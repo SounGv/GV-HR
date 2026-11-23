@@ -236,7 +236,7 @@ export function planOrgRestructure(
   if (beer) notes.push(`พี่เบียร์อยู่ที่: ${labelOf(beer)} — คลังยังเป็นทีมเดิม`);
 
   // —— 2) Data Engineer home for Ob ——
-  let dataDept = dataEngineerDept(depts);
+  const dataDept = dataEngineerDept(depts);
   if (!dataDept) {
     deptChanges.push({
       kind: "create",
