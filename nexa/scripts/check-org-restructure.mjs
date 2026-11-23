@@ -29,7 +29,7 @@ const person = (id, nickname, departmentId, managerId = null, extras = {}) => ({
 const dept = (id, name, code, parentId = null) => ({ id, name, code, parentId });
 
 check("matchesAlias hits nickname and ignores case/space", () => {
-  assert.equal(matchesAlias(person("1", "โน้ต", null), PEOPLE_ALIASES.note), true);
+  assert.equal(matchesAlias(person("1", "โน๊ต", null), PEOPLE_ALIASES.note), true);
   assert.equal(matchesAlias(person("1", "Elisa", null), PEOPLE_ALIASES.lisha), true);
   assert.equal(matchesAlias(person("1", "เบียร์", null), PEOPLE_ALIASES.beer), true);
   assert.equal(matchesAlias(person("1", "พล", null), PEOPLE_ALIASES.ob), false);
@@ -54,6 +54,15 @@ check("Ting, Lisha and Beer match their names from the org chart", () => {
   assert.equal(matchesAlias(beer, PEOPLE_ALIASES.beer), true);
   const beerByName = person("b2", null, null, null, { firstName: "วันชัย", lastName: "ไชยหงษ์" });
   assert.equal(matchesAlias(beerByName, PEOPLE_ALIASES.beer), true);
+});
+
+check("พี่โน๊ต is จุฑามาส เลื่อนศักดิ์, not จักรพงศ์ (โน้ต) of accounting", () => {
+  const jutamas = person("j", "โน๊ต", null, null, { firstName: "จุฑามาส", lastName: "เลื่อนศักดิ์" });
+  assert.equal(matchesAlias(jutamas, PEOPLE_ALIASES.note), true);
+  const byName = person("j2", "โน้ต", null, null, { firstName: "จุฑามาส", lastName: "เลื่อนศักดิ์" });
+  assert.equal(matchesAlias(byName, PEOPLE_ALIASES.note), true);
+  const chakkraphong = person("c", "โน้ต", null, null, { firstName: "จักรพงศ์", lastName: "เสาหิรัญกุล" });
+  assert.equal(matchesAlias(chakkraphong, PEOPLE_ALIASES.note), false);
 });
 
 check("descendantsOf walks the reporting tree", () => {
@@ -99,7 +108,7 @@ check("plan splits transport, moves Ob/Mai, sets Note as approver", () => {
     person("beer", "เบียร์", "log"),
     person("ob", "โอ๊ต", "clm"),
     person("mai", "ใหม่", "acc"),
-    person("note", "โน้ต", "acc"),
+    person("note", "โน๊ต", "acc"),
     person("ting", "เติ้ง", "sales"),
     person("th1", "หัวเติ้ง", "sales", "ting", { positionTitle: "ผู้จัดการ" }),
     person("te1", "ลูกเติ้ง", "sales", "th1"),
@@ -146,7 +155,7 @@ check("plan splits transport, moves Ob/Mai, sets Note as approver", () => {
 
 check("ambiguous nickname is unresolved (no silent pick)", () => {
   const plan = planOrgRestructure(
-    [person("a", "ใหม่", "acc"), person("b", "ใหม่", "acc2"), person("note", "โน้ต", "acc")],
+    [person("a", "ใหม่", "acc"), person("b", "ใหม่", "acc2"), person("note", "โน๊ต", "acc")],
     [dept("acc", "แผนกบัญชี", "ACC"), dept("clm", "แผนกเคลม", "CLM")],
   );
   assert.ok(plan.unresolved.some((u) => /พี่ใหม่/.test(u)));
