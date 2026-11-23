@@ -1,7 +1,14 @@
 // Checks the pure scoring rules with made-up questions and answers only.
 // Run: node --experimental-strip-types scripts/check-appraisal-scoring.mjs
 import assert from "node:assert/strict";
-import { bandsProblem, computeResult, gradeFor, raterPercent } from "../src/features/appraisal-round/scoring.ts";
+import {
+  bandsProblem,
+  computeResult,
+  gradeFor,
+  methodMix,
+  methodPercent,
+  raterPercent,
+} from "../src/features/appraisal-round/scoring.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -19,13 +26,19 @@ const ans = (...pairs) => pairs.map(([questionId, value]) => ({ questionId, valu
 
 check("weighted: a rater's percentage is weight × (score / top) over the answered ratings", () => {
   // a=5/5 (w2), b=3/5 (w1) -> (2*1 + 1*0.6) / 3 = 86.67
-  assert.equal(Math.round(raterPercent(Q, "SELF", ans(["a", 5], ["b", 3]), 5, "WEIGHTED") * 100) / 100, 86.67);
+  assert.equal(
+    Math.round(raterPercent(Q, "SELF", ans(["a", 5], ["b", 3]), 5, "WEIGHTED") * 100) / 100,
+    86.67,
+  );
 });
 check("simple: every rating counts the same", () => {
   assert.equal(raterPercent(Q, "SELF", ans(["a", 5], ["b", 3]), 5, "SIMPLE"), 80);
 });
 check("text answers, unknown questions and out-of-scale scores are ignored", () => {
-  assert.equal(raterPercent(Q, "SELF", ans(["t", "ดี"], ["ghost", 5], ["a", 9], ["b", 0]), 5, "WEIGHTED"), null);
+  assert.equal(
+    raterPercent(Q, "SELF", ans(["t", "ดี"], ["ghost", 5], ["a", 9], ["b", 0]), 5, "WEIGHTED"),
+    null,
+  );
 });
 check("a question hidden from this rater type does not count", () => {
   assert.equal(raterPercent(Q, "SELF", ans(["c", 5]), 5, "WEIGHTED"), null);
@@ -42,7 +55,10 @@ check("overall: perspectives are weighted and the number is a percentage of the 
     ],
     perspectiveWeights: { MANAGER: 70, SELF: 30 },
     mode: "WEIGHTED",
-    bands: [{ label: "ดี", minPercent: 75 }, { label: "ดีเยี่ยม", minPercent: 90 }],
+    bands: [
+      { label: "ดี", minPercent: 75 },
+      { label: "ดีเยี่ยม", minPercent: 90 },
+    ],
   });
   assert.equal(r.scorePercent, 86);
   assert.equal(r.overallScore, 4.3);
@@ -87,22 +103,74 @@ check("if the answering perspectives have no weight they count equally", () => {
   assert.equal(r.scorePercent, 80);
 });
 check("nobody has rated anything yet gives no result", () => {
-  assert.equal(computeResult({ questions: Q, ratingMax: 5, raters: [{ raterType: "SELF", answers: [] }], perspectiveWeights: {}, mode: "WEIGHTED" }), null);
+  assert.equal(
+    computeResult({
+      questions: Q,
+      ratingMax: 5,
+      raters: [{ raterType: "SELF", answers: [] }],
+      perspectiveWeights: {},
+      mode: "WEIGHTED",
+    }),
+    null,
+  );
 });
 
 check("grade: the highest band reached, none when no bands or below all of them", () => {
-  const bands = [{ label: "ควรปรับปรุง", minPercent: 0 }, { label: "ดี", minPercent: 75 }, { label: "ดีเยี่ยม", minPercent: 90 }];
+  const bands = [
+    { label: "ควรปรับปรุง", minPercent: 0 },
+    { label: "ดี", minPercent: 75 },
+    { label: "ดีเยี่ยม", minPercent: 90 },
+  ];
   assert.equal(gradeFor(90, bands), "ดีเยี่ยม");
   assert.equal(gradeFor(89.9, bands), "ดี");
   assert.equal(gradeFor(10, bands), "ควรปรับปรุง");
   assert.equal(gradeFor(50, []), null);
   assert.equal(gradeFor(50, [{ label: "ดี", minPercent: 75 }]), null);
 });
+check("method mix scores KPI and Task separately and skips CUSTOM-only forms", () => {
+  const mixed = [
+    { id: "k", answerType: "RATING", weight: 1, visibleTo: [], sectionKind: "KPI" },
+    { id: "t", answerType: "RATING", weight: 1, visibleTo: [], sectionKind: "TASK" },
+    { id: "x", answerType: "RATING", weight: 1, visibleTo: [], sectionKind: "CUSTOM" },
+  ];
+  const raters = [{ raterType: "MANAGER", answers: ans(["k", 5], ["t", 3], ["x", 1]) }];
+  const input = {
+    questions: mixed,
+    ratingMax: 5,
+    raters,
+    perspectiveWeights: { MANAGER: 100 },
+    mode: "WEIGHTED",
+  };
+  assert.equal(methodPercent(mixed, "KPI", "MANAGER", raters[0].answers, 5, "WEIGHTED"), 100);
+  assert.equal(methodPercent(mixed, "TASK", "MANAGER", raters[0].answers, 5, "WEIGHTED"), 60);
+  const mix = methodMix(input);
+  assert.deepEqual(
+    mix.map((m) => m.kind),
+    ["KPI", "TASK"],
+  );
+  assert.equal(mix.find((m) => m.kind === "KPI")?.percent, 100);
+  assert.equal(mix.find((m) => m.kind === "TASK")?.percent, 60);
+  const r = computeResult({ ...input, bands: [{ label: "ดี", minPercent: 70 }] });
+  assert.equal(r?.methods.length, 2);
+  const plain = computeResult({
+    questions: Q,
+    ratingMax: 5,
+    raters: [{ raterType: "MANAGER", answers: ans(["a", 4], ["b", 4]) }],
+    perspectiveWeights: { MANAGER: 100 },
+    mode: "WEIGHTED",
+  });
+  assert.deepEqual(plain?.methods, []);
+});
 check("bands need a name, 0-100 and distinct starting points", () => {
   assert.equal(bandsProblem([{ label: "ดี", minPercent: 75 }]), null);
   assert.ok(bandsProblem([{ label: " ", minPercent: 75 }]));
   assert.ok(bandsProblem([{ label: "ก", minPercent: 101 }]));
-  assert.ok(bandsProblem([{ label: "ก", minPercent: 50 }, { label: "ข", minPercent: 50 }]));
+  assert.ok(
+    bandsProblem([
+      { label: "ก", minPercent: 50 },
+      { label: "ข", minPercent: 50 },
+    ]),
+  );
 });
 
 console.log(`\n${n} checks passed`);

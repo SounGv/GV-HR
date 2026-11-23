@@ -1,4 +1,5 @@
 import type { AnswerType, FormStatus } from "./rules";
+import type { SectionKind } from "./method-templates";
 
 export type { AnswerType, FormStatus };
 export type RaterType = "SELF" | "MANAGER" | "PEER" | "SUBORDINATE";
@@ -9,6 +10,7 @@ export const ANSWER_TYPE_LABEL: Record<AnswerType, string> = {
   MULTI_CHOICE: "เลือกได้หลายข้อ",
   SHORT_TEXT: "คำตอบสั้น",
   PARAGRAPH: "ย่อหน้า",
+  FILE_EVIDENCE: "แนบหลักฐาน",
 };
 
 export const RATER_LABEL: Record<RaterType, string> = {
@@ -48,6 +50,8 @@ export interface QuestionDetail {
   levelDescriptions: { score: number; text: string }[] | null;
   /** Section (หมวด) name; null = none. */
   section: string | null;
+  /** Evaluation method of the section; CUSTOM when the form predates kinds. */
+  sectionKind: SectionKind;
 }
 
 /** One reusable question in the bank (คลังหัวข้อ). */

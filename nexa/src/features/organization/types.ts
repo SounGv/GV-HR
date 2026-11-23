@@ -42,9 +42,16 @@ export interface DepartmentFormValues {
   parentId: string | null;
 }
 
+export interface PositionDuty {
+  id?: string;
+  title: string;
+  description: string | null;
+}
+
 export interface PositionFormValues {
   title: string;
   code: string;
   level: string;
   departmentId: string | null;
+  duties?: PositionDuty[];
 }

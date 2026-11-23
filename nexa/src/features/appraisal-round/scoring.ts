@@ -15,6 +15,8 @@ export interface ScoredQuestion {
   weight: number;
   /** Rater types that are asked this question; empty means everyone. */
   visibleTo: string[];
+  /** Evaluation method of the section; absent on older snapshots. */
+  sectionKind?: string | null;
 }
 
 export interface RaterAnswers {
@@ -37,12 +39,21 @@ export interface TypeResult {
   weightUsed: number;
 }
 
+export interface MethodResult {
+  kind: string;
+  percent: number;
+  /** Sum of rating weights in this method (or the count of ratings in SIMPLE mode). */
+  weightUsed: number;
+}
+
 export interface PersonResult {
   scorePercent: number;
   overallScore: number;
   grade: string | null;
   mode: CalcMode;
   types: TypeResult[];
+  /** Per-method percentages (KPI / OKR / competency / task). Empty when every rating is CUSTOM. */
+  methods: MethodResult[];
 }
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -57,7 +68,13 @@ export function raterPercent(
   mode: CalcMode,
 ): number | null {
   const asked = new Map(
-    questions.filter((q) => q.answerType === "RATING" && (q.visibleTo.length === 0 || q.visibleTo.includes(raterType))).map((q) => [q.id, q]),
+    questions
+      .filter(
+        (q) =>
+          q.answerType === "RATING" &&
+          (q.visibleTo.length === 0 || q.visibleTo.includes(raterType)),
+      )
+      .map((q) => [q.id, q]),
   );
   let earned = 0;
   let possible = 0;
@@ -73,25 +90,27 @@ export function raterPercent(
 }
 
 /** The highest band the percentage reaches, or null when there are no bands or none is reached. */
-export function gradeFor(percent: number, bands: readonly Band[] | null | undefined): string | null {
+export function gradeFor(
+  percent: number,
+  bands: readonly Band[] | null | undefined,
+): string | null {
   if (!bands || bands.length === 0) return null;
-  const hit = [...bands].sort((a, b) => b.minPercent - a.minPercent).find((b) => percent >= b.minPercent);
+  const hit = [...bands]
+    .sort((a, b) => b.minPercent - a.minPercent)
+    .find((b) => percent >= b.minPercent);
   return hit ? hit.label : null;
 }
 
-/**
- * Overall result for one person. Rater types with no usable answers are left out and the remaining
- * perspective weights are re-balanced; if none of the answering types has a weight, they count equally.
- * Returns null when nobody has given a rating yet.
- */
-export function computeResult(input: {
+type ScoreInput = {
   questions: readonly ScoredQuestion[];
   ratingMax: number;
   raters: readonly RaterAnswers[];
   perspectiveWeights: Partial<Record<string, number>>;
   mode: CalcMode;
   bands?: readonly Band[] | null;
-}): PersonResult | null {
+};
+
+function scoreCore(input: ScoreInput): Omit<PersonResult, "methods"> | null {
   const byType = new Map<string, number[]>();
   for (const r of input.raters) {
     const p = raterPercent(input.questions, r.raterType, r.answers, input.ratingMax, input.mode);
@@ -124,6 +143,63 @@ export function computeResult(input: {
       weightUsed: r1(((equal ? 1 : r.weight) / total) * 100),
     })),
   };
+}
+
+/**
+ * Overall result for one person. Rater types with no usable answers are left out and the remaining
+ * perspective weights are re-balanced; if none of the answering types has a weight, they count equally.
+ * Returns null when nobody has given a rating yet.
+ */
+export function computeResult(input: ScoreInput): PersonResult | null {
+  const core = scoreCore(input);
+  if (!core) return null;
+  return { ...core, methods: methodMix(input) };
+}
+
+/** One rater's percentage on the questions of a single method, or null when they rated none of them. */
+export function methodPercent(
+  questions: readonly ScoredQuestion[],
+  kind: string,
+  raterType: string,
+  answers: RaterAnswers["answers"],
+  ratingMax: number,
+  mode: CalcMode,
+): number | null {
+  return raterPercent(
+    questions.filter((q) => (q.sectionKind || "CUSTOM") === kind),
+    raterType,
+    answers,
+    ratingMax,
+    mode,
+  );
+}
+
+/** Combined per-method scores across raters, using the same perspective weights as the overall number. */
+export function methodMix(input: {
+  questions: readonly ScoredQuestion[];
+  ratingMax: number;
+  raters: readonly RaterAnswers[];
+  perspectiveWeights: Partial<Record<string, number>>;
+  mode: CalcMode;
+}): MethodResult[] {
+  const kinds = [
+    ...new Set(
+      input.questions
+        .filter((q) => q.answerType === "RATING")
+        .map((q) => q.sectionKind || "CUSTOM"),
+    ),
+  ];
+  const named = kinds.filter((k) => k !== "CUSTOM");
+  if (!named.length) return [];
+  return named.flatMap((kind) => {
+    const subset = input.questions.filter((q) => (q.sectionKind || "CUSTOM") === kind);
+    const inner = scoreCore({ ...input, questions: subset, bands: null });
+    if (!inner) return [];
+    const weightUsed = subset
+      .filter((q) => q.answerType === "RATING")
+      .reduce((s, q) => s + (input.mode === "SIMPLE" ? 1 : q.weight), 0);
+    return [{ kind, percent: inner.scorePercent, weightUsed }];
+  });
 }
 
 /** Bands must have a label and a percentage from 0 to 100, with no two bands starting at the same point. */

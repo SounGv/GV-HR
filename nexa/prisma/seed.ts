@@ -124,7 +124,13 @@ async function main() {
     const dept = await prisma.department.upsert({
       where: { companyId_code: { companyId: COMPANY_ID, code: d.code } },
       update: { name: d.name, parentId: parentId ?? null },
-      create: { companyId: COMPANY_ID, code: d.code, name: d.name, branchId: HQ_ID, parentId: parentId ?? null },
+      create: {
+        companyId: COMPANY_ID,
+        code: d.code,
+        name: d.name,
+        branchId: HQ_ID,
+        parentId: parentId ?? null,
+      },
     });
     deptByCode.set(d.code, dept.id);
   }
@@ -156,6 +162,54 @@ async function main() {
     posByCode.set(p.code, pos.id);
   }
 
+  const DUTIES: Record<string, { title: string; description: string }[]> = {
+    CEO: [
+      {
+        title: "กำหนดทิศทางองค์กร",
+        description: "ตั้งเป้าใหญ่และสื่อสารให้ทุกฝ่ายเดินทางเดียวกัน",
+      },
+      { title: "กำกับผลงานผู้บริหาร", description: "ติดตาม KPI/OKR ของหัวหน้าฝ่าย" },
+    ],
+    "HR-MGR": [
+      { title: "บริหารรอบประเมิน", description: "เปิดรอบ ตรวจความพร้อม และประกาศผล" },
+      { title: "พัฒนาบุคลากร", description: "วางแผนอบรมและเส้นทางเติบโต" },
+    ],
+    "SALE-MGR": [
+      { title: "บริหารทีมขาย", description: "ตั้งเป้าและโค้ชพนักงานขาย" },
+      { title: "ปิดยอดตามเป้าแผนก", description: "ติดตามดีลและอัตราปิดการขาย" },
+    ],
+    "SALE-STAFF": [
+      { title: "ติดต่อลูกค้าและปิดการขาย", description: "ทำตามกระบวนการขายจนปิดดีล" },
+      { title: "ดูแลลูกค้าหลังขาย", description: "ติดตามความพึงพอใจและต่ออายุ" },
+      { title: "บันทึกข้อมูลในระบบ", description: "ใส่ข้อมูลดีลครบและตรงเวลา" },
+    ],
+    "WH-STAFF": [
+      { title: "รับ-จ่ายสินค้าตามเอกสาร", description: "ตรวจนับและบันทึกให้ตรงสต็อก" },
+      { title: "จัดเก็บสินค้าปลอดภัย", description: "จัดวางตามโซนและมาตรฐานคลัง" },
+    ],
+    "FIN-STAFF": [
+      { title: "บันทึกรายการบัญชี", description: "ลงรายการครบและกระทบยอด" },
+      { title: "จัดทำรายงานการเงินรอบ", description: "ส่งรายงานตามกำหนดของแผนก" },
+    ],
+  };
+  let dutyCount = 0;
+  for (const [code, list] of Object.entries(DUTIES)) {
+    const positionId = posByCode.get(code);
+    if (!positionId) continue;
+    const existing = await prisma.positionDuty.count({ where: { positionId } });
+    if (existing > 0) continue;
+    await prisma.positionDuty.createMany({
+      data: list.map((d, i) => ({
+        positionId,
+        title: d.title,
+        description: d.description,
+        order: i,
+      })),
+    });
+    dutyCount += list.length;
+  }
+  console.log(`  ✓ ${dutyCount} position duties`);
+
   // 7) Users + Employees
   const people: Array<{
     code: string;
@@ -167,11 +221,56 @@ async function main() {
     dept: string;
     pos: string;
   }> = [
-    { code: "EMP0001", email: "admin@nexa.co.th", firstName: "แอดมิน", lastName: "ระบบ", nickname: "Admin", role: "Super Admin", dept: "IT", pos: "HR-MGR" },
-    { code: "EMP0002", email: "hr@nexa.co.th", firstName: "สุนทร", lastName: "ใจดี", nickname: "สุนทร", role: "HR Manager", dept: "HR", pos: "HR-MGR" },
-    { code: "EMP0003", email: "manager@nexa.co.th", firstName: "วราภรณ์", lastName: "คำสิงห์", nickname: "แนน", role: "Manager", dept: "SALE-OFF", pos: "SALE-MGR" },
-    { code: "EMP0004", email: "employee@nexa.co.th", firstName: "ธนพล", lastName: "ศรีสุข", nickname: "พล", role: "Employee", dept: "SALE-OFF", pos: "SALE-STAFF" },
-    { code: "EMP0005", email: "finance@nexa.co.th", firstName: "ณัฐชูณิ", lastName: "ใจดี", nickname: "หนิง", role: "Finance", dept: "FIN", pos: "FIN-STAFF" },
+    {
+      code: "EMP0001",
+      email: "admin@nexa.co.th",
+      firstName: "แอดมิน",
+      lastName: "ระบบ",
+      nickname: "Admin",
+      role: "Super Admin",
+      dept: "IT",
+      pos: "HR-MGR",
+    },
+    {
+      code: "EMP0002",
+      email: "hr@nexa.co.th",
+      firstName: "สุนทร",
+      lastName: "ใจดี",
+      nickname: "สุนทร",
+      role: "HR Manager",
+      dept: "HR",
+      pos: "HR-MGR",
+    },
+    {
+      code: "EMP0003",
+      email: "manager@nexa.co.th",
+      firstName: "วราภรณ์",
+      lastName: "คำสิงห์",
+      nickname: "แนน",
+      role: "Manager",
+      dept: "SALE-OFF",
+      pos: "SALE-MGR",
+    },
+    {
+      code: "EMP0004",
+      email: "employee@nexa.co.th",
+      firstName: "ธนพล",
+      lastName: "ศรีสุข",
+      nickname: "พล",
+      role: "Employee",
+      dept: "SALE-OFF",
+      pos: "SALE-STAFF",
+    },
+    {
+      code: "EMP0005",
+      email: "finance@nexa.co.th",
+      firstName: "ณัฐชูณิ",
+      lastName: "ใจดี",
+      nickname: "หนิง",
+      role: "Finance",
+      dept: "FIN",
+      pos: "FIN-STAFF",
+    },
   ];
 
   for (const person of people) {
@@ -402,6 +501,46 @@ async function main() {
     console.log(`  ✓ sample performance review (${cycle})`);
   }
 
+  const competencies = [
+    {
+      name: "ความรับผิดชอบ",
+      kind: "CORE" as const,
+      description: "รับงานแล้วทำให้จบ ไม่ผลักความรับผิดชอบ",
+    },
+    {
+      name: "การทำงานเป็นทีม",
+      kind: "CORE" as const,
+      description: "สื่อสารชัด ช่วยทีม และเคารพความต่าง",
+    },
+    {
+      name: "ทักษะเฉพาะตำแหน่ง",
+      kind: "FUNCTIONAL" as const,
+      description: "ใช้เครื่องมือและกระบวนการของหน่วยงานได้ถูกต้อง",
+    },
+    {
+      name: "การโค้ชและพัฒนาลูกทีม",
+      kind: "LEADERSHIP" as const,
+      description: "ให้ฟีดแบ็กที่ใช้ได้ และเปิดโอกาสให้คนโต",
+    },
+  ];
+  for (const c of competencies) {
+    await prisma.competency.upsert({
+      where: { companyId_name: { companyId: COMPANY_ID, name: c.name } },
+      update: { kind: c.kind, description: c.description, active: true },
+      create: {
+        companyId: COMPANY_ID,
+        name: c.name,
+        kind: c.kind,
+        description: c.description,
+        questionType: "RATING_1_TO_5",
+        maxScore: 5,
+        defaultWeight: 1,
+        isRequired: true,
+      },
+    });
+  }
+  console.log(`  ✓ ${competencies.length} competencies (Core / Functional / Leadership)`);
+
   // 13) Announcements (only on a fresh company to avoid duplicates)
   const annCount = await prisma.announcement.count({ where: { companyId: COMPANY_ID } });
   if (annCount === 0) {
@@ -476,10 +615,39 @@ async function main() {
       status: "AVAILABLE" | "ASSIGNED" | "REPAIR" | "RETIRED";
       assignTo?: string;
     }[] = [
-      { code: "IT-0001", name: "MacBook Pro 14”", category: "โน้ตบุ๊ก", serial: "C02XL0011", price: 65000, status: "ASSIGNED", assignTo: staff?.id },
-      { code: "IT-0002", name: "Dell Latitude 5440", category: "โน้ตบุ๊ก", serial: "DL5440-002", price: 32000, status: "AVAILABLE" },
-      { code: "PH-0001", name: "iPhone 15", category: "โทรศัพท์", serial: "IP15-001", price: 29000, status: "AVAILABLE" },
-      { code: "FN-0001", name: "เก้าอี้สำนักงาน Ergonomic", category: "เฟอร์นิเจอร์", serial: null, price: 4500, status: "REPAIR" },
+      {
+        code: "IT-0001",
+        name: "MacBook Pro 14”",
+        category: "โน้ตบุ๊ก",
+        serial: "C02XL0011",
+        price: 65000,
+        status: "ASSIGNED",
+        assignTo: staff?.id,
+      },
+      {
+        code: "IT-0002",
+        name: "Dell Latitude 5440",
+        category: "โน้ตบุ๊ก",
+        serial: "DL5440-002",
+        price: 32000,
+        status: "AVAILABLE",
+      },
+      {
+        code: "PH-0001",
+        name: "iPhone 15",
+        category: "โทรศัพท์",
+        serial: "IP15-001",
+        price: 29000,
+        status: "AVAILABLE",
+      },
+      {
+        code: "FN-0001",
+        name: "เก้าอี้สำนักงาน Ergonomic",
+        category: "เฟอร์นิเจอร์",
+        serial: null,
+        price: 4500,
+        status: "REPAIR",
+      },
     ];
     for (const a of assets) {
       await prisma.asset.create({
@@ -575,9 +743,30 @@ async function main() {
   if (goalCount === 0 && allEmps.length > 0) {
     const cycle = `H1/${new Date().getFullYear() + 543}`;
     const sample = [
-      { title: "ปิดการขายตามเป้าไตรมาส", type: "KPI" as const, unit: "ดีล", target: 20, current: 12, weight: 5 },
-      { title: "คะแนนความพึงพอใจลูกค้า", type: "KPI" as const, unit: "%", target: 90, current: 88, weight: 4 },
-      { title: "อบรมหลักสูตรพัฒนาทักษะ", type: "OKR" as const, unit: "หลักสูตร", target: 3, current: 1, weight: 2 },
+      {
+        title: "ปิดการขายตามเป้าไตรมาส",
+        type: "KPI" as const,
+        unit: "ดีล",
+        target: 20,
+        current: 12,
+        weight: 5,
+      },
+      {
+        title: "คะแนนความพึงพอใจลูกค้า",
+        type: "KPI" as const,
+        unit: "%",
+        target: 90,
+        current: 88,
+        weight: 4,
+      },
+      {
+        title: "อบรมหลักสูตรพัฒนาทักษะ",
+        type: "OKR" as const,
+        unit: "หลักสูตร",
+        target: 3,
+        current: 1,
+        weight: 2,
+      },
     ];
     let made = 0;
     for (let i = 0; i < sample.length; i++) {
@@ -609,9 +798,27 @@ async function main() {
   const courseCount = await prisma.trainingCourse.count({ where: { companyId: COMPANY_ID } });
   if (courseCount === 0) {
     const courseData = [
-      { title: "การสื่อสารอย่างมีประสิทธิภาพในองค์กร", category: "Soft Skills", hours: 6, provider: "ฝ่ายบุคคล", capacity: 30 },
-      { title: "ความปลอดภัยของข้อมูลและ PDPA", category: "Compliance", hours: 3, provider: "ที่ปรึกษาภายนอก", capacity: 50 },
-      { title: "พื้นฐานการเป็นหัวหน้างาน", category: "Leadership", hours: 12, provider: "สถาบันพัฒนาผู้นำ", capacity: 20 },
+      {
+        title: "การสื่อสารอย่างมีประสิทธิภาพในองค์กร",
+        category: "Soft Skills",
+        hours: 6,
+        provider: "ฝ่ายบุคคล",
+        capacity: 30,
+      },
+      {
+        title: "ความปลอดภัยของข้อมูลและ PDPA",
+        category: "Compliance",
+        hours: 3,
+        provider: "ที่ปรึกษาภายนอก",
+        capacity: 50,
+      },
+      {
+        title: "พื้นฐานการเป็นหัวหน้างาน",
+        category: "Leadership",
+        hours: 12,
+        provider: "สถาบันพัฒนาผู้นำ",
+        capacity: 20,
+      },
     ];
     const created: string[] = [];
     for (const c of courseData) {
@@ -633,7 +840,12 @@ async function main() {
     if (created[0] && allEmps.length > 0) {
       for (const emp of allEmps.slice(0, 2)) {
         await prisma.trainingEnrollment.create({
-          data: { companyId: COMPANY_ID, courseId: created[0], employeeId: emp.id, status: "ENROLLED" },
+          data: {
+            companyId: COMPANY_ID,
+            courseId: created[0],
+            employeeId: emp.id,
+            status: "ENROLLED",
+          },
         });
       }
     }
@@ -644,7 +856,12 @@ async function main() {
   const expenseCount = await prisma.expenseClaim.count({ where: { companyId: COMPANY_ID } });
   if (expenseCount === 0 && allEmps.length > 0) {
     const samples = [
-      { title: "ค่าแท็กซี่ไปพบลูกค้า", category: "travel", amount: 350, status: "PENDING" as const },
+      {
+        title: "ค่าแท็กซี่ไปพบลูกค้า",
+        category: "travel",
+        amount: 350,
+        status: "PENDING" as const,
+      },
       { title: "ค่าอาหารประชุมทีม", category: "food", amount: 1200, status: "APPROVED" as const },
       { title: "ค่าอุปกรณ์สำนักงาน", category: "supplies", amount: 780, status: "PAID" as const },
     ];
@@ -776,7 +993,9 @@ async function main() {
   }
   const existingCount = people.length - generatedPasswords.size;
   if (existingCount > 0) {
-    console.log(`   ${existingCount} account(s) already existed — their passwords were left unchanged.`);
+    console.log(
+      `   ${existingCount} account(s) already existed — their passwords were left unchanged.`,
+    );
   }
 }
 

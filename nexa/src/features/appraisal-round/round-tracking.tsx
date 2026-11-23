@@ -2,21 +2,43 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CircleCheck, Clock, EyeOff, FileSpreadsheet, ListChecks, MessageSquareText, PencilLine, Printer } from "lucide-react";
+import {
+  CircleCheck,
+  Clock,
+  EyeOff,
+  FileSpreadsheet,
+  ListChecks,
+  MessageSquareText,
+  PencilLine,
+  Printer,
+} from "lucide-react";
 
 import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { StatusChip } from "@/components/shared/status-chip";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { SECTION_KIND_LABEL, parseSectionKind } from "@/features/appraisal-form/method-templates";
 import { rubricFor } from "@/features/appraisal-form/rating-labels";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useParticipantResult, useRoundMatrix } from "./hooks";
 import { ANON_MIN } from "./imported-comments";
 import type { RaterType } from "./rules";
-import { ASSIGNMENT_STATUS_LABEL, RATER_LABEL, RESULT_STATUS_LABEL, type AssignmentStatus } from "./types";
+import {
+  ASSIGNMENT_STATUS_LABEL,
+  RATER_LABEL,
+  RESULT_STATUS_LABEL,
+  type AssignmentStatus,
+} from "./types";
 
 const STATUS_ICON = { SUBMITTED: CircleCheck, IN_PROGRESS: PencilLine, PENDING: Clock } as const;
 const STATUS_CLASS: Record<AssignmentStatus, string> = {
@@ -77,14 +99,39 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
 
   const openRaters = raters.filter((g) => g.lines.some((l) => l.status !== "SUBMITTED"));
   const onlyOpen = onlyOpenPick ?? openRaters.length > 0;
-  const shown = (onlyOpen ? openRaters : raters).map((g) => ({ ...g, lines: onlyOpen ? g.lines.filter((l) => l.status !== "SUBMITTED") : g.lines }));
+  const shown = (onlyOpen ? openRaters : raters).map((g) => ({
+    ...g,
+    lines: onlyOpen ? g.lines.filter((l) => l.status !== "SUBMITTED") : g.lines,
+  }));
 
   function downloadExcel() {
-    const head = ["ลำดับ", "ผู้ประเมิน", "แผนก", "พนักงานที่ต้องประเมิน", "บทบาท", "สถานะ", "วันที่ส่ง", "คะแนน (%)"];
+    const head = [
+      "ลำดับ",
+      "ผู้ประเมิน",
+      "แผนก",
+      "พนักงานที่ต้องประเมิน",
+      "บทบาท",
+      "สถานะ",
+      "วันที่ส่ง",
+      "คะแนน (%)",
+    ];
     const lines: string[] = [head.map(csvCell).join(",")];
     shown.forEach((g, i) => {
       for (const l of g.lines) {
-        lines.push([i + 1, g.name, l.department, l.name, RATER_LABEL[l.raterType], ASSIGNMENT_STATUS_LABEL[l.status], l.submittedAt ? formatDate(l.submittedAt) : "", l.percent ?? ""].map(csvCell).join(","));
+        lines.push(
+          [
+            i + 1,
+            g.name,
+            l.department,
+            l.name,
+            RATER_LABEL[l.raterType],
+            ASSIGNMENT_STATUS_LABEL[l.status],
+            l.submittedAt ? formatDate(l.submittedAt) : "",
+            l.percent ?? "",
+          ]
+            .map(csvCell)
+            .join(","),
+        );
       }
     });
     const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
@@ -110,20 +157,36 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
             type="button"
             aria-pressed={onlyOpen}
             onClick={() => setOnlyOpenPick(!onlyOpen)}
-            className={cn("min-h-11 rounded-sm border px-4 text-sm font-medium md:min-h-9 md:px-3", onlyOpen ? "border-primary bg-accent" : "border-border bg-card")}
+            className={cn(
+              "min-h-11 rounded-sm border px-4 text-sm font-medium md:min-h-9 md:px-3",
+              onlyOpen ? "border-primary bg-accent" : "border-border bg-card",
+            )}
           >
             เฉพาะผู้ประเมินที่ยังไม่ครบ ({openRaters.length})
           </button>
-          <Button variant="outline" size="sm" className="h-11 md:h-9" onClick={() => window.print()}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-11 md:h-9"
+            onClick={() => window.print()}
+          >
             <Printer className="size-4" aria-hidden="true" /> พิมพ์
           </Button>
-          <Button variant="outline" size="sm" className="h-11 md:h-9" onClick={downloadExcel} disabled={shown.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-11 md:h-9"
+            onClick={downloadExcel}
+            disabled={shown.length === 0}
+          >
             <FileSpreadsheet className="size-4" aria-hidden="true" /> Excel
           </Button>
         </div>
       </div>
       {shown.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{rows.length === 0 ? "ยังไม่มีงานประเมินในรอบนี้" : "ทุกคนประเมินครบแล้ว"}</p>
+        <p className="text-muted-foreground text-sm">
+          {rows.length === 0 ? "ยังไม่มีงานประเมินในรอบนี้" : "ทุกคนประเมินครบแล้ว"}
+        </p>
       ) : (
         <Table>
           <TableHeader>
@@ -144,33 +207,53 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
                   <TableRow key={l.assignmentId}>
                     {li === 0 && (
                       <>
-                        <TableCell rowSpan={g.lines.length} className="text-center align-top tabular-nums">
+                        <TableCell
+                          rowSpan={g.lines.length}
+                          className="text-center align-top tabular-nums"
+                        >
                           {gi + 1}
                         </TableCell>
-                        <TableCell rowSpan={g.lines.length} className="min-w-44 align-top font-medium whitespace-normal">
+                        <TableCell
+                          rowSpan={g.lines.length}
+                          className="min-w-44 align-top font-medium whitespace-normal"
+                        >
                           {g.name}
-                          <span className="block text-xs font-normal text-muted-foreground">
-                            ครบ {g.lines.filter((x) => x.status === "SUBMITTED").length}/{g.lines.length}
+                          <span className="text-muted-foreground block text-xs font-normal">
+                            ครบ {g.lines.filter((x) => x.status === "SUBMITTED").length}/
+                            {g.lines.length}
                           </span>
                         </TableCell>
                       </>
                     )}
                     <TableCell>{l.department}</TableCell>
                     <TableCell className="whitespace-normal">
-                      <Link href={`/appraisal/rounds/${roundId}/people/${l.participantId}`} className="hover:text-primary hover:underline">
+                      <Link
+                        href={`/appraisal/rounds/${roundId}/people/${l.participantId}`}
+                        className="hover:text-primary hover:underline"
+                      >
                         {l.name}
                       </Link>
                     </TableCell>
                     <TableCell>{RATER_LABEL[l.raterType]}</TableCell>
                     <TableCell>
-                      <span className={cn("inline-flex items-center gap-1 rounded-sm border px-2.5 py-0.5 text-xs font-semibold", STATUS_CLASS[l.status])}>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-sm border px-2.5 py-0.5 text-xs font-semibold",
+                          STATUS_CLASS[l.status],
+                        )}
+                      >
                         <Icon className="size-3.5" aria-hidden="true" />
                         {ASSIGNMENT_STATUS_LABEL[l.status]}
                         {l.submittedAt && ` ${formatDate(l.submittedAt)}`}
-                        {l.percent !== null && <span className="tabular-nums"> · ได้ {l.percent}%</span>}
+                        {l.percent !== null && (
+                          <span className="tabular-nums"> · ได้ {l.percent}%</span>
+                        )}
                       </span>
                       {canFill && l.status !== "SUBMITTED" && (
-                        <Link href={`/appraisal/rounds/${roundId}/fill/${l.assignmentId}`} className="ml-2 text-xs font-bold text-primary underline underline-offset-2 print:hidden">
+                        <Link
+                          href={`/appraisal/rounds/${roundId}/fill/${l.assignmentId}`}
+                          className="text-primary ml-2 text-xs font-bold underline underline-offset-2 print:hidden"
+                        >
                           กรอกแทน
                         </Link>
                       )}
@@ -187,7 +270,13 @@ export function RoundMatrix({ roundId, canFill = false }: { roundId: string; can
 }
 
 /** One person's answers, summarised per rater type. No names on what people wrote, no weighting, no grade. */
-export function ParticipantResultPage({ roundId, participantId }: { roundId: string; participantId: string }) {
+export function ParticipantResultPage({
+  roundId,
+  participantId,
+}: {
+  roundId: string;
+  participantId: string;
+}) {
   const { data, isLoading, isError, refetch } = useParticipantResult(roundId, participantId);
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading || !data) return <TableLoadingState rows={4} />;
@@ -198,39 +287,63 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
   return (
     <div className="space-y-4 pb-6">
       <PageHeaderBar
-        breadcrumbs={[{ label: "ประเมิน", href: "/appraisal/rounds" }, { label: r.roundName, href: `/appraisal/rounds/${roundId}` }, { label: r.name }]}
+        breadcrumbs={[
+          { label: "ประเมิน", href: "/appraisal/rounds" },
+          { label: r.roundName, href: `/appraisal/rounds/${roundId}` },
+          { label: r.name },
+        ]}
         backHref={`/appraisal/rounds/${roundId}`}
         title={r.name}
         description={`${r.code} · ${r.department}`}
         sticky={false}
       />
-      <p className="rounded-lg bg-muted px-4 py-3 text-sm">
-        สรุปคำตอบที่ส่งแล้ว แยกตามมุมมองผู้ประเมิน เป็นค่าเฉลี่ยธรรมดา ยังไม่ถ่วงน้ำหนักและยังไม่มีเกรด (รอ HR ยืนยันสูตร)
-        {" "}
-        {r.namedComments ? "ข้อความที่ผู้ประเมินเขียนอยู่ในการ์ดความเห็นของผู้ประเมินแต่ละคน พร้อมชื่อผู้เขียน (เห็นเฉพาะ HR)" : "ข้อความที่ผู้ประเมินเขียนแสดงโดยไม่ระบุชื่อ"}
+      <p className="bg-muted rounded-lg px-4 py-3 text-sm">
+        สรุปคำตอบที่ส่งแล้ว แยกตามมุมมองผู้ประเมิน เป็นค่าเฉลี่ยธรรมดา
+        ยังไม่ถ่วงน้ำหนักและยังไม่มีเกรด (รอ HR ยืนยันสูตร){" "}
+        {r.namedComments
+          ? "ข้อความที่ผู้ประเมินเขียนอยู่ในการ์ดความเห็นของผู้ประเมินแต่ละคน พร้อมชื่อผู้เขียน (เห็นเฉพาะ HR)"
+          : "ข้อความที่ผู้ประเมินเขียนแสดงโดยไม่ระบุชื่อ"}
       </p>
       {r.namedComments && r.namedComments.length > 0 && (
         <Card className="gap-3 p-4" aria-label="ความเห็นของผู้ประเมินแต่ละคน">
           <h2 className="flex flex-wrap items-center gap-x-2 text-base font-semibold">
             <MessageSquareText className="size-5" aria-hidden="true" /> ความเห็นของผู้ประเมินแต่ละคน
-            <span className="text-sm font-medium text-muted-foreground tabular-nums">{r.namedComments.length} ใบ</span>
+            <span className="text-muted-foreground text-sm font-medium tabular-nums">
+              {r.namedComments.length} ใบ
+            </span>
           </h2>
           <ul className="space-y-2">
             {r.namedComments.map((c) => (
-              <li key={c.assignmentId} className="space-y-1.5 rounded-lg border border-border px-3 py-2">
+              <li
+                key={c.assignmentId}
+                className="border-border space-y-1.5 rounded-lg border px-3 py-2"
+              >
                 <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                   <span className="font-semibold break-words">{c.raterName}</span>
                   <span className="text-muted-foreground">ประเมิน {r.name}</span>
-                  <span className="rounded-md bg-muted px-1.5 text-xs font-medium">{RATER_LABEL[c.raterType]}</span>
-                  {c.score !== null && <span className="rounded-md bg-muted px-1.5 text-xs font-bold tabular-nums">ให้ {c.score}/{r.ratingMax}</span>}
-                  {c.submittedAt && <span className="text-xs text-muted-foreground tabular-nums">{formatDate(c.submittedAt)}</span>}
+                  <span className="bg-muted rounded-md px-1.5 text-xs font-medium">
+                    {RATER_LABEL[c.raterType]}
+                  </span>
+                  {c.score !== null && (
+                    <span className="bg-muted rounded-md px-1.5 text-xs font-bold tabular-nums">
+                      ให้ {c.score}/{r.ratingMax}
+                    </span>
+                  )}
+                  {c.submittedAt && (
+                    <span className="text-muted-foreground text-xs tabular-nums">
+                      {formatDate(c.submittedAt)}
+                    </span>
+                  )}
                 </p>
                 {c.texts.map((t, k) => (
                   <p key={k} className="text-sm break-words whitespace-pre-wrap">
                     {t}
                   </p>
                 ))}
-                <Link href={`/appraisal/rounds/${roundId}/fill/${c.assignmentId}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-2 hover:underline md:min-h-8">
+                <Link
+                  href={`/appraisal/rounds/${roundId}/fill/${c.assignmentId}`}
+                  className="text-primary inline-flex min-h-11 items-center text-sm font-semibold underline-offset-2 hover:underline md:min-h-8"
+                >
                   เปิดใบประเมินของคนนี้
                 </Link>
               </li>
@@ -240,26 +353,45 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
       )}
       <Card className="gap-1 p-4" aria-label="คะแนนรวม">
         {r.result.status === "NOT_CALCULATED" || r.result.scorePercent == null ? (
-          <p className="text-sm text-muted-foreground">ยังไม่ได้คำนวณคะแนน (กดคำนวณผลที่หน้ารอบ)</p>
+          <p className="text-muted-foreground text-sm">ยังไม่ได้คำนวณคะแนน (กดคำนวณผลที่หน้ารอบ)</p>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">คะแนนรวม · {RESULT_STATUS_LABEL[r.result.status]}</p>
+            <p className="text-muted-foreground text-sm">
+              คะแนนรวม · {RESULT_STATUS_LABEL[r.result.status]}
+            </p>
             <p className="text-2xl font-bold tabular-nums">
-              {r.result.scorePercent}% {r.result.grade && <span className="text-base font-semibold">· {r.result.grade}</span>}
+              {r.result.scorePercent}%{" "}
+              {r.result.grade && (
+                <span className="text-base font-semibold">· {r.result.grade}</span>
+              )}
             </p>
             {r.result.adjustedFrom !== null && (
               <p className="text-sm">
-                <StatusChip tone="primary" label="HR ปรับแล้ว" /> คะแนนที่คำนวณได้ {r.result.adjustedFrom}% ดูประวัติที่{" "}
-                <Link href={`/appraisal/rounds/${roundId}/review`} className="font-semibold text-primary underline-offset-2 hover:underline">
+                <StatusChip tone="primary" label="HR ปรับแล้ว" /> คะแนนที่คำนวณได้{" "}
+                {r.result.adjustedFrom}% ดูประวัติที่{" "}
+                <Link
+                  href={`/appraisal/rounds/${roundId}/review`}
+                  className="text-primary font-semibold underline-offset-2 hover:underline"
+                >
                   หน้าทบทวนผล
                 </Link>
               </p>
             )}
             {r.result.types.length > 0 && (
-              <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground tabular-nums">
+              <ul className="text-muted-foreground mt-1 space-y-0.5 text-sm tabular-nums">
                 {r.result.types.map((t) => (
                   <li key={t.raterType}>
-                    {RATER_LABEL[t.raterType]}: {t.percent}% (น้ำหนักที่ใช้ {t.weightUsed}%, {t.raters} คน)
+                    {RATER_LABEL[t.raterType]}: {t.percent}% (น้ำหนักที่ใช้ {t.weightUsed}%,{" "}
+                    {t.raters} คน)
+                  </li>
+                ))}
+              </ul>
+            )}
+            {r.result.methods.length > 0 && (
+              <ul className="text-muted-foreground mt-2 space-y-0.5 text-sm tabular-nums">
+                {r.result.methods.map((m) => (
+                  <li key={m.kind}>
+                    {SECTION_KIND_LABEL[parseSectionKind(m.kind)]}: {m.percent}%
                   </li>
                 ))}
               </ul>
@@ -271,22 +403,30 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
         <Card className="gap-3 p-4" aria-label="ข้อความจากผู้ประเมิน">
           <h2 className="flex flex-wrap items-center gap-x-2 text-base font-semibold">
             <MessageSquareText className="size-5" aria-hidden="true" /> ข้อความจากผู้ประเมิน
-            <span className="text-sm font-medium text-muted-foreground">
-              {RATER_LABEL[r.importedComments.raterType as RaterType]} {r.importedComments.raters > 0 ? `${r.importedComments.raters} คน` : ""}
+            <span className="text-muted-foreground text-sm font-medium">
+              {RATER_LABEL[r.importedComments.raterType as RaterType]}{" "}
+              {r.importedComments.raters > 0 ? `${r.importedComments.raters} คน` : ""}
             </span>
           </h2>
-          <p className="text-sm text-muted-foreground">นำเข้าจาก{r.importedComments.source === "favpo" ? " Favpo" : "ระบบเดิม"} ไม่ระบุว่าใครเขียน และไม่ได้อยู่ในคะแนนที่คำนวณ</p>
+          <p className="text-muted-foreground text-sm">
+            นำเข้าจาก{r.importedComments.source === "favpo" ? " Favpo" : "ระบบเดิม"}{" "}
+            ไม่ระบุว่าใครเขียน และไม่ได้อยู่ในคะแนนที่คำนวณ
+          </p>
           {r.importedComments.hidden ? (
-            <p className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm">
+            <p className="border-border bg-muted flex items-start gap-2 rounded-lg border px-3 py-2 text-sm">
               <EyeOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <span>
-                มี {r.importedComments.hiddenCount} ข้อความ แต่ผู้ประเมินกลุ่มนี้มีไม่ถึง {ANON_MIN} คน จึงยังไม่แสดงเพื่อไม่ให้รู้ว่าใครเขียน HR ดูได้ทั้งหมด
+                มี {r.importedComments.hiddenCount} ข้อความ แต่ผู้ประเมินกลุ่มนี้มีไม่ถึง {ANON_MIN}{" "}
+                คน จึงยังไม่แสดงเพื่อไม่ให้รู้ว่าใครเขียน HR ดูได้ทั้งหมด
               </span>
             </p>
           ) : (
             <ul className="space-y-1.5 text-sm">
               {r.importedComments.texts.map((t, k) => (
-                <li key={k} className="rounded-lg border border-border px-3 py-2 break-words whitespace-pre-wrap">
+                <li
+                  key={k}
+                  className="border-border rounded-lg border px-3 py-2 break-words whitespace-pre-wrap"
+                >
                   {t}
                 </li>
               ))}
@@ -294,20 +434,32 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
           )}
         </Card>
       )}
-      {r.groups.length === 0 && !r.importedComments && <EmptyState icon={ListChecks} title="ยังไม่มีผู้ประเมิน" description="รอบนี้ยังไม่มีงานประเมินของคนนี้" />}
+      {r.groups.length === 0 && !r.importedComments && (
+        <EmptyState
+          icon={ListChecks}
+          title="ยังไม่มีผู้ประเมิน"
+          description="รอบนี้ยังไม่มีงานประเมินของคนนี้"
+        />
+      )}
       {r.groups.map((g) => (
         <Card key={g.raterType} className="gap-3 p-4">
           <h2 className="text-base font-semibold">
-            {RATER_LABEL[g.raterType]} <span className="text-sm font-medium text-muted-foreground tabular-nums">ส่งแล้ว {g.submitted} จาก {g.total} คน</span>
+            {RATER_LABEL[g.raterType]}{" "}
+            <span className="text-muted-foreground text-sm font-medium tabular-nums">
+              ส่งแล้ว {g.submitted} จาก {g.total} คน
+            </span>
           </h2>
           {g.textsHeld && g.submitted > 0 && (
-            <p className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm">
+            <p className="border-border bg-muted flex items-start gap-2 rounded-lg border px-3 py-2 text-sm">
               <EyeOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <span>ผู้ประเมินกลุ่มนี้ส่งแล้วไม่ถึง {ANON_MIN} คน จึงยังไม่แสดงข้อความที่เขียน เพื่อไม่ให้รู้ว่าใครเขียน HR ดูได้ทั้งหมด</span>
+              <span>
+                ผู้ประเมินกลุ่มนี้ส่งแล้วไม่ถึง {ANON_MIN} คน จึงยังไม่แสดงข้อความที่เขียน
+                เพื่อไม่ให้รู้ว่าใครเขียน HR ดูได้ทั้งหมด
+              </span>
             </p>
           )}
           {g.submitted === 0 ? (
-            <p className="text-sm text-muted-foreground">ยังไม่มีผู้ประเมินกลุ่มนี้ส่งผล</p>
+            <p className="text-muted-foreground text-sm">ยังไม่มีผู้ประเมินกลุ่มนี้ส่งผล</p>
           ) : (
             <ol className="space-y-4">
               {g.summary.map((s, i) => (
@@ -318,21 +470,37 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
                   {s.answerType === "RATING" && (
                     <>
                       <p className="text-sm tabular-nums">
-                        ค่าเฉลี่ย <b>{s.average ?? "-"}</b> <span className="text-muted-foreground">(จาก {s.count} คน)</span>
+                        ค่าเฉลี่ย <b>{s.average ?? "-"}</b>{" "}
+                        <span className="text-muted-foreground">(จาก {s.count} คน)</span>
                       </p>
                       {s.count > 0 && (
                         <ul className="grid gap-1 text-sm" aria-label="จำนวนคนต่อระดับคะแนน">
                           {s.scores.map((x) => {
-                            const desc = s.levelDescriptions?.find((l) => l.score === x.score)?.text;
+                            const desc = s.levelDescriptions?.find(
+                              (l) => l.score === x.score,
+                            )?.text;
                             return (
-                              <li key={x.score} className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] items-center gap-2" title={desc}>
+                              <li
+                                key={x.score}
+                                className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] items-center gap-2"
+                                title={desc}
+                              >
                                 <span className="truncate">
-                                  <b className="tabular-nums">{x.score}</b> {labelOf.get(x.score) ?? ""}
+                                  <b className="tabular-nums">{x.score}</b>{" "}
+                                  {labelOf.get(x.score) ?? ""}
                                 </span>
-                                <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                                  <span className="block h-full rounded-full bg-ring" style={{ width: `${s.count ? (x.count / s.count) * 100 : 0}%` }} />
+                                <span
+                                  className="bg-muted h-2 overflow-hidden rounded-full"
+                                  aria-hidden="true"
+                                >
+                                  <span
+                                    className="bg-ring block h-full rounded-full"
+                                    style={{ width: `${s.count ? (x.count / s.count) * 100 : 0}%` }}
+                                  />
                                 </span>
-                                <span className="text-muted-foreground tabular-nums">{x.count} คน</span>
+                                <span className="text-muted-foreground tabular-nums">
+                                  {x.count} คน
+                                </span>
                               </li>
                             );
                           })}
@@ -341,11 +509,16 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
                       {s.notes.length > 0 && (
                         <ul className="space-y-1.5 text-sm" aria-label="ตัวอย่างเหตุการณ์">
                           {s.notes.map((n, k) => (
-                            <li key={k} className="flex gap-2 rounded-lg border border-border px-3 py-2">
-                              <span className="shrink-0 rounded-md bg-muted px-1.5 text-xs font-bold tabular-nums">
+                            <li
+                              key={k}
+                              className="border-border flex gap-2 rounded-lg border px-3 py-2"
+                            >
+                              <span className="bg-muted shrink-0 rounded-md px-1.5 text-xs font-bold tabular-nums">
                                 {n.score} {labelOf.get(n.score) ?? ""}
                               </span>
-                              <span className="min-w-0 break-words whitespace-pre-wrap">{n.text}</span>
+                              <span className="min-w-0 break-words whitespace-pre-wrap">
+                                {n.text}
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -365,13 +538,16 @@ export function ParticipantResultPage({ roundId, participantId }: { roundId: str
                   {s.texts.length > 0 && !r.namedComments && (
                     <ul className="space-y-1.5 text-sm">
                       {s.texts.map((t, k) => (
-                        <li key={k} className="rounded-lg border border-border px-3 py-2 break-words whitespace-pre-wrap">
+                        <li
+                          key={k}
+                          className="border-border rounded-lg border px-3 py-2 break-words whitespace-pre-wrap"
+                        >
                           {t}
                         </li>
                       ))}
                     </ul>
                   )}
-                  {s.count === 0 && <p className="text-sm text-muted-foreground">ยังไม่มีคำตอบ</p>}
+                  {s.count === 0 && <p className="text-muted-foreground text-sm">ยังไม่มีคำตอบ</p>}
                 </li>
               ))}
             </ol>

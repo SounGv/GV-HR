@@ -13,7 +13,13 @@ import {
   shouldRemind,
 } from "../src/features/appraisal-round/rules.ts";
 import { formsInUse, pickForm } from "../src/features/appraisal-round/form-snapshot.ts";
-import { cleanAnswers, needsNote, summarizeAnswers, unansweredRequired, visibleQuestions } from "../src/features/appraisal-round/answers.ts";
+import {
+  cleanAnswers,
+  needsNote,
+  summarizeAnswers,
+  unansweredRequired,
+  visibleQuestions,
+} from "../src/features/appraisal-round/answers.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -23,8 +29,17 @@ const check = (name, fn) => {
 };
 const p = (id, managerId = null, active = true) => ({ id, managerId, active });
 // boss ← a, b, c, d (a team of four) ; c has two reports x, y
-const roster = [p("boss"), p("a", "boss"), p("b", "boss"), p("c", "boss"), p("d", "boss"), p("x", "c"), p("y", "c")];
-const has = (res, pid, rid, type) => res.matches.some((m) => m.participantId === pid && m.raterId === rid && m.raterType === type);
+const roster = [
+  p("boss"),
+  p("a", "boss"),
+  p("b", "boss"),
+  p("c", "boss"),
+  p("d", "boss"),
+  p("x", "c"),
+  p("y", "c"),
+];
+const has = (res, pid, rid, type) =>
+  res.matches.some((m) => m.participantId === pid && m.raterId === rid && m.raterType === type);
 
 check("presets add one perspective at a time", () => {
   assert.deepEqual(PRESETS["90"], ["MANAGER"]);
@@ -63,8 +78,16 @@ check("a person with no subordinates is not an error when others rate them", () 
 });
 check("a rater with too many people is flagged", () => {
   const crowd = [p("m"), ...Array.from({ length: MAX_LOAD + 2 }, (_, i) => p(`e${i}`, "m"))];
-  const r = matchRaters(crowd.slice(1).map((e) => e.id), crowd, ["MANAGER"]);
-  assert.ok(r.exceptions.some((e) => e.kind === "OVERLOADED" && e.employeeId === "m" && e.detail === MAX_LOAD + 2));
+  const r = matchRaters(
+    crowd.slice(1).map((e) => e.id),
+    crowd,
+    ["MANAGER"],
+  );
+  assert.ok(
+    r.exceptions.some(
+      (e) => e.kind === "OVERLOADED" && e.employeeId === "m" && e.detail === MAX_LOAD + 2,
+    ),
+  );
 });
 check("the same pairing is never created twice", () => {
   const r = matchRaters(["a", "a"], roster, ["MANAGER"]);
@@ -72,12 +95,23 @@ check("the same pairing is never created twice", () => {
 });
 
 check("perspective weights must total 100 over the selected types", () => {
-  assert.deepEqual(perspectiveTotal(["MANAGER", "SELF"], { MANAGER: 70, SELF: 30, PEER: 50 }), { total: 100, ok: true });
+  assert.deepEqual(perspectiveTotal(["MANAGER", "SELF"], { MANAGER: 70, SELF: 30, PEER: 50 }), {
+    total: 100,
+    ok: true,
+  });
   assert.equal(perspectiveTotal(["MANAGER", "SELF"], { MANAGER: 70 }).ok, false);
   assert.equal(perspectiveTotal([], {}).ok, false);
 });
 
-const ready = { formPublished: true, participantCount: 3, raterTypes: ["MANAGER"], weights: { MANAGER: 100 }, withoutRater: 0, startIso: "2030-01-01", endIso: "2030-01-07" };
+const ready = {
+  formPublished: true,
+  participantCount: 3,
+  raterTypes: ["MANAGER"],
+  weights: { MANAGER: 100 },
+  withoutRater: 0,
+  startIso: "2030-01-01",
+  endIso: "2030-01-07",
+};
 check("a complete round passes every check", () => {
   assert.ok(roundChecks(ready).every((c) => c.ok));
 });
@@ -105,7 +139,15 @@ check("each rater is messaged once however many people they rate", () => {
   ];
   const plan = planInvitations(matches, new Set(["boss"]), new Set(["boss", "a"]));
   assert.equal(plan.lines.find((l) => l.raterId === "boss").count, 2);
-  assert.deepEqual({ total: plan.total, withLine: plan.withLine, appOnly: plan.appOnly, unreachable: plan.unreachable }, { total: 2, withLine: 1, appOnly: 1, unreachable: 1 });
+  assert.deepEqual(
+    {
+      total: plan.total,
+      withLine: plan.withLine,
+      appOnly: plan.appOnly,
+      unreachable: plan.unreachable,
+    },
+    { total: 2, withLine: 1, appOnly: 1, unreachable: 1 },
+  );
 });
 check("reminders go out only in the last 2 days and never after the round ends", () => {
   assert.equal(shouldRemind("2030-01-10", "2030-01-07"), false);
@@ -115,22 +157,84 @@ check("reminders go out only in the last 2 days and never after the round ends",
 });
 
 const Q = [
-  { id: "r", text: "คะแนน", helpText: null, answerType: "RATING", options: null, weight: 1, required: true, visibleTo: [] },
-  { id: "c", text: "เลือก", helpText: null, answerType: "CHOICE", options: [{ value: "a", label: "ก" }, { value: "b", label: "ข" }], weight: 0, required: true, visibleTo: ["MANAGER"] },
-  { id: "m", text: "หลายข้อ", helpText: null, answerType: "MULTI_CHOICE", options: [{ value: "a", label: "ก" }, { value: "b", label: "ข" }], weight: 0, required: false, visibleTo: [] },
-  { id: "t", text: "ย่อหน้า", helpText: null, answerType: "PARAGRAPH", options: null, weight: 0, required: false, visibleTo: [] },
+  {
+    id: "r",
+    text: "คะแนน",
+    helpText: null,
+    answerType: "RATING",
+    options: null,
+    weight: 1,
+    required: true,
+    visibleTo: [],
+  },
+  {
+    id: "c",
+    text: "เลือก",
+    helpText: null,
+    answerType: "CHOICE",
+    options: [
+      { value: "a", label: "ก" },
+      { value: "b", label: "ข" },
+    ],
+    weight: 0,
+    required: true,
+    visibleTo: ["MANAGER"],
+  },
+  {
+    id: "m",
+    text: "หลายข้อ",
+    helpText: null,
+    answerType: "MULTI_CHOICE",
+    options: [
+      { value: "a", label: "ก" },
+      { value: "b", label: "ข" },
+    ],
+    weight: 0,
+    required: false,
+    visibleTo: [],
+  },
+  {
+    id: "t",
+    text: "ย่อหน้า",
+    helpText: null,
+    answerType: "PARAGRAPH",
+    options: null,
+    weight: 0,
+    required: false,
+    visibleTo: [],
+  },
 ];
 check("a rater only sees the questions meant for their type", () => {
-  assert.deepEqual(visibleQuestions(Q, "MANAGER").map((q) => q.id), ["r", "c", "m", "t"]);
-  assert.deepEqual(visibleQuestions(Q, "SELF").map((q) => q.id), ["r", "m", "t"]);
+  assert.deepEqual(
+    visibleQuestions(Q, "MANAGER").map((q) => q.id),
+    ["r", "c", "m", "t"],
+  );
+  assert.deepEqual(
+    visibleQuestions(Q, "SELF").map((q) => q.id),
+    ["r", "m", "t"],
+  );
 });
 check("answers are checked against the question: scale range, listed options, unknown ids", () => {
-  const bad = cleanAnswers(Q, "MANAGER", [{ questionId: "r", value: 6 }, { questionId: "c", value: "z" }, { questionId: "ghost", value: 1 }], 5);
+  const bad = cleanAnswers(
+    Q,
+    "MANAGER",
+    [
+      { questionId: "r", value: 6 },
+      { questionId: "c", value: "z" },
+      { questionId: "ghost", value: 1 },
+    ],
+    5,
+  );
   assert.deepEqual(bad, []);
   const good = cleanAnswers(
     Q,
     "MANAGER",
-    [{ questionId: "r", value: "4" }, { questionId: "c", value: "b" }, { questionId: "m", value: ["a", "a", "x"] }, { questionId: "t", value: "  สรุป  " }],
+    [
+      { questionId: "r", value: "4" },
+      { questionId: "c", value: "b" },
+      { questionId: "m", value: ["a", "a", "x"] },
+      { questionId: "t", value: "  สรุป  " },
+    ],
     5,
   );
   assert.deepEqual(good, [
@@ -150,14 +254,29 @@ check("required questions block submitting; optional ones do not", () => {
 
 check("a summary averages scores, counts options and lists texts without names", () => {
   const sets = [
-    [{ questionId: "r", value: 4 }, { questionId: "c", value: "a" }, { questionId: "m", value: ["a", "b"] }, { questionId: "t", value: "ดี" }],
-    [{ questionId: "r", value: 5 }, { questionId: "c", value: "a" }, { questionId: "m", value: ["b"] }],
+    [
+      { questionId: "r", value: 4 },
+      { questionId: "c", value: "a" },
+      { questionId: "m", value: ["a", "b"] },
+      { questionId: "t", value: "ดี" },
+    ],
+    [
+      { questionId: "r", value: 5 },
+      { questionId: "c", value: "a" },
+      { questionId: "m", value: ["b"] },
+    ],
   ];
   const [r, c, m, t] = summarizeAnswers(Q, "MANAGER", sets);
   assert.equal(r.average, 4.5);
   assert.equal(r.count, 2);
-  assert.deepEqual(c.options, [{ label: "ก", count: 2 }, { label: "ข", count: 0 }]);
-  assert.deepEqual(m.options, [{ label: "ก", count: 1 }, { label: "ข", count: 2 }]);
+  assert.deepEqual(c.options, [
+    { label: "ก", count: 2 },
+    { label: "ข", count: 0 },
+  ]);
+  assert.deepEqual(m.options, [
+    { label: "ก", count: 1 },
+    { label: "ข", count: 2 },
+  ]);
   assert.deepEqual(t.texts, ["ดี"]);
   assert.equal(t.average, null);
 });
@@ -166,7 +285,13 @@ check("a summary with no answers has no average", () => {
   assert.deepEqual({ count: r.count, average: r.average }, { count: 0, average: null });
 });
 
-const SNAP = { defaultFormId: "f1", forms: { f1: { id: "f1", name: "หลัก", version: 1, ratingMax: 5, questions: [] }, f2: { id: "f2", name: "หัวหน้า", version: 2, ratingMax: 5, questions: [] } } };
+const SNAP = {
+  defaultFormId: "f1",
+  forms: {
+    f1: { id: "f1", name: "หลัก", version: 1, ratingMax: 5, questions: [] },
+    f2: { id: "f2", name: "หัวหน้า", version: 2, ratingMax: 5, questions: [] },
+  },
+};
 check("a person is rated with their own form, else the round's default", () => {
   assert.equal(pickForm(SNAP, "f2").name, "หัวหน้า");
   assert.equal(pickForm(SNAP, null).name, "หลัก");
@@ -178,11 +303,64 @@ check("a round needs the default form plus each different form people were given
   assert.deepEqual(formsInUse("f1", []), ["f1"]);
 });
 
-check("a rating keeps its example; examples on other question types are dropped", () => {
-  assert.deepEqual(cleanAnswers(Q, "MANAGER", [{ questionId: "r", value: 1, note: "  ส่งผิด 3 ครั้ง " }, { questionId: "c", value: "a", note: "x" }], 5), [
-    { questionId: "r", value: 1, note: "ส่งผิด 3 ครั้ง" },
-    { questionId: "c", value: "a" },
+check("file evidence keeps a data URL or https link and drops junk", () => {
+  const q = [
+    {
+      id: "f",
+      text: "หลักฐาน",
+      helpText: null,
+      answerType: "FILE_EVIDENCE",
+      options: null,
+      weight: 0,
+      required: false,
+      visibleTo: [],
+    },
+  ];
+  assert.deepEqual(
+    cleanAnswers(q, "SELF", [{ questionId: "f", value: "https://example.com/a.pdf" }], 5),
+    [{ questionId: "f", value: "https://example.com/a.pdf" }],
+  );
+  assert.deepEqual(
+    cleanAnswers(q, "SELF", [{ questionId: "f", value: "data:application/pdf;base64,QQ==" }], 5),
+    [{ questionId: "f", value: "data:application/pdf;base64,QQ==" }],
+  );
+  assert.deepEqual(cleanAnswers(q, "SELF", [{ questionId: "f", value: "not-a-url" }], 5), []);
+});
+check("file evidence summaries never dump the file contents", () => {
+  const q = [
+    {
+      id: "f",
+      text: "หลักฐาน",
+      helpText: null,
+      answerType: "FILE_EVIDENCE",
+      options: null,
+      weight: 0,
+      required: false,
+      visibleTo: [],
+    },
+  ];
+  const [row] = summarizeAnswers(q, "SELF", [
+    [{ questionId: "f", value: "https://example.com/a.pdf" }],
   ]);
+  assert.deepEqual(row.texts, ["แนบหลักฐานแล้ว"]);
+  assert.equal(row.count, 1);
+});
+check("a rating keeps its example; examples on other question types are dropped", () => {
+  assert.deepEqual(
+    cleanAnswers(
+      Q,
+      "MANAGER",
+      [
+        { questionId: "r", value: 1, note: "  ส่งผิด 3 ครั้ง " },
+        { questionId: "c", value: "a", note: "x" },
+      ],
+      5,
+    ),
+    [
+      { questionId: "r", value: 1, note: "ส่งผิด 3 ครั้ง" },
+      { questionId: "c", value: "a" },
+    ],
+  );
 });
 check("the lowest score needs an example only when the form asks for one", () => {
   const q = Q[0];
@@ -190,14 +368,28 @@ check("the lowest score needs an example only when the form asks for one", () =>
   assert.equal(needsNote(q, { questionId: "r", value: 1, note: "เหตุการณ์" }, true), false);
   assert.equal(needsNote(q, { questionId: "r", value: 2 }, true), false);
   assert.equal(needsNote(q, { questionId: "r", value: 1 }, false), false);
-  assert.deepEqual(unansweredRequired(Q, "SELF", [{ questionId: "r", value: 1 }], { noteAtLowest: true }), ["ข้อ 1 (ต้องมีตัวอย่าง)"]);
+  assert.deepEqual(
+    unansweredRequired(Q, "SELF", [{ questionId: "r", value: 1 }], { noteAtLowest: true }),
+    ["ข้อ 1 (ต้องมีตัวอย่าง)"],
+  );
   assert.deepEqual(unansweredRequired(Q, "SELF", [{ questionId: "r", value: 1 }]), []);
 });
 check("a rating summary counts raters per score and keeps the examples", () => {
-  const sets = [[{ questionId: "r", value: 3, note: "เกินเป้า" }], [{ questionId: "r", value: 3 }], [{ questionId: "r", value: 1, note: "ช้า" }]];
+  const sets = [
+    [{ questionId: "r", value: 3, note: "เกินเป้า" }],
+    [{ questionId: "r", value: 3 }],
+    [{ questionId: "r", value: 1, note: "ช้า" }],
+  ];
   const [r] = summarizeAnswers(Q, "MANAGER", sets, 3);
-  assert.deepEqual(r.scores, [{ score: 3, count: 2 }, { score: 2, count: 0 }, { score: 1, count: 1 }]);
-  assert.deepEqual(r.notes, [{ score: 3, text: "เกินเป้า" }, { score: 1, text: "ช้า" }]);
+  assert.deepEqual(r.scores, [
+    { score: 3, count: 2 },
+    { score: 2, count: 0 },
+    { score: 1, count: 1 },
+  ]);
+  assert.deepEqual(r.notes, [
+    { score: 3, text: "เกินเป้า" },
+    { score: 1, text: "ช้า" },
+  ]);
 });
 
 console.log(`\n${n} checks passed`);

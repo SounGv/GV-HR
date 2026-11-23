@@ -12,7 +12,15 @@ import { isLineConfigured } from "@/lib/integrations/line";
 import { createNotification } from "@/features/notification/service";
 import { loadProbationDue } from "@/features/dashboard-people/service";
 import { formsInUse, pickForm, type RoundSnapshot } from "./form-snapshot";
-import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions, type Answer, type QuestionSummary, type SnapQuestion } from "./answers";
+import {
+  cleanAnswers,
+  summarizeAnswers,
+  unansweredRequired,
+  visibleQuestions,
+  type Answer,
+  type QuestionSummary,
+  type SnapQuestion,
+} from "./answers";
 import {
   applyRaterOverrides,
   matchRaters,
@@ -30,17 +38,26 @@ import {
 import type { RoundUpdateInput } from "./schema";
 import { makeDueRecurringRounds } from "./recurrence-service";
 import { participantScope, viewableEmployeeIds } from "./viewer-scope";
-import { commentsFor, holdsBackTexts, parseImportedComments, type CommentsView } from "./imported-comments";
+import {
+  commentsFor,
+  holdsBackTexts,
+  parseImportedComments,
+  type CommentsView,
+} from "./imported-comments";
 import { sheetPercent } from "./rater-sheet";
 
 type Meta = { ip?: string; userAgent?: string };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
-const fullName = (e: { firstName: string; lastName: string; nickname: string | null }) => displayName(e);
+const fullName = (e: { firstName: string; lastName: string; nickname: string | null }) =>
+  displayName(e);
 const fmtDay = (isoDay: string) =>
-  new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
-    new Date(`${isoDay}T00:00:00Z`),
-  );
+  new Intl.DateTimeFormat("th-TH", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${isoDay}T00:00:00Z`));
 const asWeights = (v: Prisma.JsonValue | null): Partial<Record<RaterType, number>> =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Partial<Record<RaterType, number>>) : {};
 
@@ -135,15 +152,27 @@ export async function listCandidates(companyId: string) {
   }));
 }
 
-export async function createRound(companyId: string, session: AccessClaims, name: string, meta?: Meta) {
+export async function createRound(
+  companyId: string,
+  session: AccessClaims,
+  name: string,
+  meta?: Meta,
+) {
   const published = await prisma.appraisalForm.findFirst({
     where: { companyId, deletedAt: null, status: "PUBLISHED" },
     select: { id: true },
     orderBy: { publishedAt: "desc" },
   });
-  if (!published) throw BadRequest("ยังไม่มีแบบประเมินที่ใช้งานแล้ว กรุณาสร้างและยืนยันใช้แบบประเมินก่อน");
+  if (!published)
+    throw BadRequest("ยังไม่มีแบบประเมินที่ใช้งานแล้ว กรุณาสร้างและยืนยันใช้แบบประเมินก่อน");
   const round = await prisma.appraisalRound.create({
-    data: { companyId, name, formId: published.id, createdById: session.sub, updatedById: session.sub },
+    data: {
+      companyId,
+      name,
+      formId: published.id,
+      createdById: session.sub,
+      updatedById: session.sub,
+    },
     select: { id: true },
   });
   await writeAudit({
@@ -173,16 +202,31 @@ async function cleanPairs(companyId: string, raw: unknown): Promise<RaterPairOve
   const ids = [...new Set([...ov.add, ...ov.remove].flatMap((m) => [m.participantId, m.raterId]))];
   if (ids.length === 0) return null;
   const found = new Set(
-    (await prisma.employee.findMany({ where: { id: { in: ids }, companyId, deletedAt: null }, select: { id: true } })).map((e) => e.id),
+    (
+      await prisma.employee.findMany({
+        where: { id: { in: ids }, companyId, deletedAt: null },
+        select: { id: true },
+      })
+    ).map((e) => e.id),
   );
   const tidy = (list: Match[]) => [
-    ...new Map(list.filter((m) => found.has(m.participantId) && found.has(m.raterId)).map((m) => [`${m.participantId}|${m.raterId}|${m.raterType}`, m])).values(),
+    ...new Map(
+      list
+        .filter((m) => found.has(m.participantId) && found.has(m.raterId))
+        .map((m) => [`${m.participantId}|${m.raterId}|${m.raterType}`, m]),
+    ).values(),
   ];
   const out = { add: tidy(ov.add), remove: tidy(ov.remove) };
   return out.add.length || out.remove.length ? out : null;
 }
 
-export async function updateRound(companyId: string, session: AccessClaims, id: string, input: RoundUpdateInput, meta?: Meta) {
+export async function updateRound(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  input: RoundUpdateInput,
+  meta?: Meta,
+) {
   const round = await loadDraft(companyId, id);
   if (round.status !== "DRAFT") throw BadRequest("รอบนี้เปิดแล้ว แก้ไขไม่ได้");
 
@@ -200,11 +244,18 @@ export async function updateRound(companyId: string, session: AccessClaims, id: 
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.formId !== undefined ? { formId: input.formId } : {}),
       ...(input.raterTypes !== undefined ? { raterTypes: input.raterTypes } : {}),
-      ...(input.perspectiveWeights !== undefined ? { perspectiveWeights: input.perspectiveWeights } : {}),
-      ...(input.startDate !== undefined ? { startDate: input.startDate ? new Date(`${input.startDate}T00:00:00Z`) : null } : {}),
-      ...(input.endDate !== undefined ? { endDate: input.endDate ? new Date(`${input.endDate}T00:00:00Z`) : null } : {}),
+      ...(input.perspectiveWeights !== undefined
+        ? { perspectiveWeights: input.perspectiveWeights }
+        : {}),
+      ...(input.startDate !== undefined
+        ? { startDate: input.startDate ? new Date(`${input.startDate}T00:00:00Z`) : null }
+        : {}),
+      ...(input.endDate !== undefined
+        ? { endDate: input.endDate ? new Date(`${input.endDate}T00:00:00Z`) : null }
+        : {}),
       ...(input.remind !== undefined ? { remind: input.remind } : {}),
       ...(input.notifyLine !== undefined ? { notifyLine: input.notifyLine } : {}),
+      ...(input.sequential !== undefined ? { sequential: input.sequential } : {}),
       updatedById: session.sub,
     },
   });
@@ -212,12 +263,23 @@ export async function updateRound(companyId: string, session: AccessClaims, id: 
   if (input.participantIds) {
     const people = await prisma.employee.findMany({
       where: { id: { in: input.participantIds }, companyId, deletedAt: null, status: "ACTIVE" },
-      select: { id: true, department: { select: { name: true } }, position: { select: { title: true } } },
+      select: {
+        id: true,
+        department: { select: { name: true } },
+        position: { select: { title: true } },
+      },
     });
     const keep = new Set(people.map((p) => p.id));
-    await prisma.appraisalParticipant.deleteMany({ where: { roundId: id, employeeId: { notIn: [...keep] } } });
+    await prisma.appraisalParticipant.deleteMany({
+      where: { roundId: id, employeeId: { notIn: [...keep] } },
+    });
     const existing = new Set(
-      (await prisma.appraisalParticipant.findMany({ where: { roundId: id }, select: { employeeId: true } })).map((p) => p.employeeId),
+      (
+        await prisma.appraisalParticipant.findMany({
+          where: { roundId: id },
+          select: { employeeId: true },
+        })
+      ).map((p) => p.employeeId),
     );
     await prisma.appraisalParticipant.createMany({
       data: people
@@ -246,26 +308,50 @@ export async function updateRound(companyId: string, session: AccessClaims, id: 
     for (const formId of [...wanted, null]) {
       const employeeIds = entries.filter(([, f]) => f === formId).map(([e]) => e);
       if (employeeIds.length === 0) continue;
-      await prisma.appraisalParticipant.updateMany({ where: { roundId: id, employeeId: { in: employeeIds } }, data: { formId } });
+      await prisma.appraisalParticipant.updateMany({
+        where: { roundId: id, employeeId: { in: employeeIds } },
+        data: { formId },
+      });
     }
   }
 
   let pairsAfter: { add: number; remove: number } | undefined;
   if (input.raterPairs !== undefined) {
     const clean = await cleanPairs(companyId, input.raterPairs);
-    await prisma.appraisalRound.update({ where: { id }, data: { raterPairs: clean ? (clean as unknown as Prisma.InputJsonValue) : Prisma.DbNull } });
+    await prisma.appraisalRound.update({
+      where: { id },
+      data: { raterPairs: clean ? (clean as unknown as Prisma.InputJsonValue) : Prisma.DbNull },
+    });
     pairsAfter = { add: clean?.add.length ?? 0, remove: clean?.remove.length ?? 0 };
   } else if (input.participantIds) {
     // People taken out of the round take their hand-set pairs with them, so nothing invisible is left behind.
-    const row = await prisma.appraisalRound.findUnique({ where: { id }, select: { raterPairs: true } });
+    const row = await prisma.appraisalRound.findUnique({
+      where: { id },
+      select: { raterPairs: true },
+    });
     const cur = readOverrides(row?.raterPairs);
     if (cur.add.length || cur.remove.length) {
-      const stay = new Set((await prisma.appraisalParticipant.findMany({ where: { roundId: id }, select: { employeeId: true } })).map((p) => p.employeeId));
-      const next = { add: cur.add.filter((m) => stay.has(m.participantId)), remove: cur.remove.filter((m) => stay.has(m.participantId)) };
+      const stay = new Set(
+        (
+          await prisma.appraisalParticipant.findMany({
+            where: { roundId: id },
+            select: { employeeId: true },
+          })
+        ).map((p) => p.employeeId),
+      );
+      const next = {
+        add: cur.add.filter((m) => stay.has(m.participantId)),
+        remove: cur.remove.filter((m) => stay.has(m.participantId)),
+      };
       if (next.add.length !== cur.add.length || next.remove.length !== cur.remove.length) {
         await prisma.appraisalRound.update({
           where: { id },
-          data: { raterPairs: next.add.length || next.remove.length ? (next as unknown as Prisma.InputJsonValue) : Prisma.DbNull },
+          data: {
+            raterPairs:
+              next.add.length || next.remove.length
+                ? (next as unknown as Prisma.InputJsonValue)
+                : Prisma.DbNull,
+          },
         });
         pairsAfter = { add: next.add.length, remove: next.remove.length };
       }
@@ -319,6 +405,7 @@ export async function getRound(companyId: string, id: string) {
       endDate: true,
       remind: true,
       notifyLine: true,
+      sequential: true,
       openedAt: true,
       notifiedAt: true,
       participants: { select: { employeeId: true, formId: true } },
@@ -326,12 +413,16 @@ export async function getRound(companyId: string, id: string) {
   });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
 
-  const usedIds = formsInUse(round.formId, round.participants.map((p) => p.formId));
+  const usedIds = formsInUse(
+    round.formId,
+    round.participants.map((p) => p.formId),
+  );
   const usedForms = await prisma.appraisalForm.findMany({
     where: { id: { in: usedIds }, companyId },
     select: { id: true, name: true, version: true, status: true },
   });
-  const allPublished = usedForms.length === usedIds.length && usedForms.every((f) => f.status === "PUBLISHED");
+  const allPublished =
+    usedForms.length === usedIds.length && usedForms.every((f) => f.status === "PUBLISHED");
 
   const roster = await loadRoster(companyId);
   const nameOf = new Map(roster.map((e) => [e.id, fullName(e)]));
@@ -339,17 +430,31 @@ export async function getRound(companyId: string, id: string) {
   const types = round.raterTypes as RaterType[];
   const weights = asWeights(round.perspectiveWeights);
 
-  const people: RosterPerson[] = roster.map((e) => ({ id: e.id, managerId: e.managerId, active: e.status === "ACTIVE" }));
+  const people: RosterPerson[] = roster.map((e) => ({
+    id: e.id,
+    managerId: e.managerId,
+    active: e.status === "ACTIVE",
+  }));
   // The org chart decides first; what HR set by hand is put on top (see applyRaterOverrides).
   const overrides = readOverrides(round.raterPairs);
-  const match = applyRaterOverrides(matchRaters(participantIds, people, types), overrides, { participantIds, roster: people, types });
-  const manualKeys = new Set(overrides.add.map((m) => `${m.participantId}|${m.raterId}|${m.raterType}`));
+  const match = applyRaterOverrides(matchRaters(participantIds, people, types), overrides, {
+    participantIds,
+    roster: people,
+    types,
+  });
+  const manualKeys = new Set(
+    overrides.add.map((m) => `${m.participantId}|${m.raterId}|${m.raterType}`),
+  );
   const withoutRater = match.exceptions.filter((e) => e.kind === "NO_RATER").length;
 
   const reachable = new Set(roster.filter((e) => e.userId).map((e) => e.id));
-  const lineLinked = isLineConfigured() ? new Set(roster.filter((e) => e.lineUserId).map((e) => e.id)) : new Set<string>();
+  const lineLinked = isLineConfigured()
+    ? new Set(roster.filter((e) => e.lineUserId).map((e) => e.id))
+    : new Set<string>();
   const plan = planInvitations(match.matches, lineLinked, reachable);
-  const unreachableNames = plan.lines.filter((l) => !reachable.has(l.raterId)).map((l) => nameOf.get(l.raterId) ?? "-");
+  const unreachableNames = plan.lines
+    .filter((l) => !reachable.has(l.raterId))
+    .map((l) => nameOf.get(l.raterId) ?? "-");
 
   const startIso = round.startDate ? iso(round.startDate) : null;
   const endIso = round.endDate ? iso(round.endDate) : null;
@@ -370,13 +475,33 @@ export async function getRound(companyId: string, id: string) {
   const rosterById = new Map(roster.map((e) => [e.id, e]));
   const perPerson = new Map<
     string,
-    { managerId: string | null; managers: number; self: boolean; peers: number; subs: number; raters: { id: string; name: string; type: RaterType; manual: boolean }[] }
+    {
+      managerId: string | null;
+      managers: number;
+      self: boolean;
+      peers: number;
+      subs: number;
+      raters: { id: string; name: string; type: RaterType; manual: boolean }[];
+    }
   >();
-  for (const pid of participantIds) perPerson.set(pid, { managerId: null, managers: 0, self: false, peers: 0, subs: 0, raters: [] });
+  for (const pid of participantIds)
+    perPerson.set(pid, {
+      managerId: null,
+      managers: 0,
+      self: false,
+      peers: 0,
+      subs: 0,
+      raters: [],
+    });
   for (const m of match.matches) {
     const row = perPerson.get(m.participantId);
     if (!row) continue;
-    row.raters.push({ id: m.raterId, name: nameOf.get(m.raterId) ?? "-", type: m.raterType, manual: manualKeys.has(`${m.participantId}|${m.raterId}|${m.raterType}`) });
+    row.raters.push({
+      id: m.raterId,
+      name: nameOf.get(m.raterId) ?? "-",
+      type: m.raterType,
+      manual: manualKeys.has(`${m.participantId}|${m.raterId}|${m.raterType}`),
+    });
     if (m.raterType === "MANAGER") {
       row.managerId ??= m.raterId;
       row.managers++;
@@ -384,7 +509,10 @@ export async function getRound(companyId: string, id: string) {
     else if (m.raterType === "PEER") row.peers++;
     else row.subs++;
   }
-  const photos = await avatarPaths([...participantIds, ...[...perPerson.values()].map((r) => r.managerId)]);
+  const photos = await avatarPaths([
+    ...participantIds,
+    ...[...perPerson.values()].map((r) => r.managerId),
+  ]);
   const rows = participantIds.map((pid) => {
     const r = perPerson.get(pid)!;
     const e = rosterById.get(pid);
@@ -406,7 +534,9 @@ export async function getRound(companyId: string, id: string) {
     };
   });
   // The rater with the most people: the example message the review step previews.
-  const busiest = plan.lines.filter((l) => reachable.has(l.raterId)).sort((a, b) => b.count - a.count)[0];
+  const busiest = plan.lines
+    .filter((l) => reachable.has(l.raterId))
+    .sort((a, b) => b.count - a.count)[0];
 
   return {
     id: round.id,
@@ -414,7 +544,9 @@ export async function getRound(companyId: string, id: string) {
     status: round.status,
     formId: round.formId,
     formName: `${round.form.name} เวอร์ชัน ${round.form.version}`,
-    participantForms: Object.fromEntries(round.participants.filter((p) => p.formId).map((p) => [p.employeeId, p.formId])),
+    participantForms: Object.fromEntries(
+      round.participants.filter((p) => p.formId).map((p) => [p.employeeId, p.formId]),
+    ),
     formsUsed: usedForms.map((f) => ({ id: f.id, name: `${f.name} เวอร์ชัน ${f.version}` })),
     raterTypes: types,
     perspectiveWeights: weights,
@@ -423,16 +555,26 @@ export async function getRound(companyId: string, id: string) {
     endIso,
     remind: round.remind,
     notifyLine: round.notifyLine,
+    sequential: round.sequential,
     openedAt: round.openedAt?.toISOString() ?? null,
     notifiedAt: round.notifiedAt?.toISOString() ?? null,
     participantIds,
     matching: {
       assignmentCount: match.matches.length,
       byType: Object.fromEntries(byType),
-      exceptions: match.exceptions.map((e) => ({ kind: e.kind, employeeId: e.employeeId, name: nameOf.get(e.employeeId) ?? "-", detail: e.detail ?? null })),
+      exceptions: match.exceptions.map((e) => ({
+        kind: e.kind,
+        employeeId: e.employeeId,
+        name: nameOf.get(e.employeeId) ?? "-",
+        detail: e.detail ?? null,
+      })),
       raterCount: plan.lines.length,
       /** Pairs HR set by hand: how many were added, taken out, and how many could not apply (left the company, type no longer used). */
-      manual: { added: overrides.add.length, removed: overrides.remove.length, ignored: match.ignored },
+      manual: {
+        added: overrides.add.length,
+        removed: overrides.remove.length,
+        ignored: match.ignored,
+      },
       rows,
     },
     invitations: {
@@ -455,12 +597,19 @@ export async function listPublishedForms(companyId: string) {
     select: { id: true, name: true, version: true, _count: { select: { questions: true } } },
     orderBy: { publishedAt: "desc" },
   });
-  return forms.map((f) => ({ id: f.id, name: `${f.name} เวอร์ชัน ${f.version}`, questionCount: f._count.questions }));
+  return forms.map((f) => ({
+    id: f.id,
+    name: `${f.name} เวอร์ชัน ${f.version}`,
+    questionCount: f._count.questions,
+  }));
 }
 
 /** Progress of a round that is open or closed: submitted / in progress / not started, overall and per rater type. */
 export async function getRoundProgress(companyId: string, id: string, session: AccessClaims) {
-  const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
+  const round = await prisma.appraisalRound.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true },
+  });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
   const scope = participantScope(await viewableEmployeeIds(companyId, session), session.employeeId);
   const groups = await prisma.appraisalAssignment.groupBy({
@@ -482,8 +631,14 @@ export async function getRoundProgress(companyId: string, id: string, session: A
 export async function openRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
   const detail = await getRound(companyId, id);
   if (detail.status !== "DRAFT") throw BadRequest("รอบนี้เปิดแล้ว");
-  const flag = await prisma.appraisalRound.findFirst({ where: { id, companyId }, select: { isTemplate: true } });
-  if (flag?.isTemplate) throw BadRequest("แม่แบบเปิดรอบโดยตรงไม่ได้ กดคัดลอกเป็นรอบใหม่ก่อน แล้วตั้งวันที่และเปิดรอบที่คัดลอก");
+  const flag = await prisma.appraisalRound.findFirst({
+    where: { id, companyId },
+    select: { isTemplate: true },
+  });
+  if (flag?.isTemplate)
+    throw BadRequest(
+      "แม่แบบเปิดรอบโดยตรงไม่ได้ กดคัดลอกเป็นรอบใหม่ก่อน แล้วตั้งวันที่และเปิดรอบที่คัดลอก",
+    );
   const failed = detail.checks.filter((c) => !c.ok);
   if (failed.length) throw BadRequest(`ยังเปิดรอบไม่ได้: ${failed.map((c) => c.why).join(" · ")}`);
 
@@ -510,6 +665,7 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
           visibleTo: true,
           levelDescriptions: true,
           section: true,
+          sectionKind: true,
         },
         orderBy: { order: "asc" },
       },
@@ -519,18 +675,31 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
   // Frozen copy of every form this round uses, keyed by form id.
   const snapshot: RoundSnapshot = {
     defaultFormId: detail.formId,
-    forms: Object.fromEntries(forms.map((f) => [f.id, f as unknown as RoundSnapshot["forms"][string]])),
+    forms: Object.fromEntries(
+      forms.map((f) => [f.id, f as unknown as RoundSnapshot["forms"][string]]),
+    ),
   };
 
   const roster = await loadRoster(companyId);
-  const people: RosterPerson[] = roster.map((e) => ({ id: e.id, managerId: e.managerId, active: e.status === "ACTIVE" }));
-  const { matches } = applyRaterOverrides(matchRaters(detail.participantIds, people, detail.raterTypes), detail.overrides, {
-    participantIds: detail.participantIds,
-    roster: people,
-    types: detail.raterTypes,
-  });
+  const people: RosterPerson[] = roster.map((e) => ({
+    id: e.id,
+    managerId: e.managerId,
+    active: e.status === "ACTIVE",
+  }));
+  const { matches } = applyRaterOverrides(
+    matchRaters(detail.participantIds, people, detail.raterTypes),
+    detail.overrides,
+    {
+      participantIds: detail.participantIds,
+      roster: people,
+      types: detail.raterTypes,
+    },
+  );
 
-  const participants = await prisma.appraisalParticipant.findMany({ where: { roundId: id }, select: { id: true, employeeId: true } });
+  const participants = await prisma.appraisalParticipant.findMany({
+    where: { roundId: id },
+    select: { id: true, employeeId: true },
+  });
   const pidByEmployee = new Map(participants.map((p) => [p.employeeId, p.id]));
   const mode = sendMode(detail.startIso as string, iso(bangkokParts().dateUTC));
 
@@ -575,15 +744,32 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
  * One message per rater (in-app inbox, plus LINE when the round has it on and the rater linked it).
  * Only assignments not yet notified are included, so running it twice never messages anyone twice.
  */
-export async function sendInvitations(companyId: string, roundId: string, actorUserId?: string | null) {
+export async function sendInvitations(
+  companyId: string,
+  roundId: string,
+  actorUserId?: string | null,
+) {
   const round = await prisma.appraisalRound.findFirst({
     where: { id: roundId, companyId, deletedAt: null },
-    select: { id: true, name: true, endDate: true, notifyLine: true, status: true },
+    select: {
+      id: true,
+      name: true,
+      endDate: true,
+      notifyLine: true,
+      status: true,
+      sequential: true,
+      raterTypes: true,
+    },
   });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
 
+  const selfFirst = round.sequential && round.raterTypes.includes("SELF");
   const pending = await prisma.appraisalAssignment.findMany({
-    where: { participant: { roundId }, notifiedAt: null },
+    where: {
+      participant: { roundId },
+      notifiedAt: null,
+      ...(selfFirst ? { raterType: "SELF" } : {}),
+    },
     select: { id: true, raterEmployeeId: true, participantId: true },
   });
   const byRater = new Map<string, { ids: string[]; people: Set<string> }>();
@@ -611,7 +797,10 @@ export async function sendInvitations(companyId: string, roundId: string, actorU
         },
         actorUserId,
       );
-      await prisma.appraisalAssignment.updateMany({ where: { id: { in: v.ids } }, data: { notifiedAt: new Date() } });
+      await prisma.appraisalAssignment.updateMany({
+        where: { id: { in: v.ids } },
+        data: { notifiedAt: new Date() },
+      });
       sent++;
     } catch {
       failed++;
@@ -624,11 +813,27 @@ export async function sendInvitations(companyId: string, roundId: string, actorU
   return { sent, failed };
 }
 
-export async function closeRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+export async function closeRound(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
   const round = await loadDraft(companyId, id);
-  if (round.status !== "OPEN" && round.status !== "SCHEDULED") throw BadRequest("ปิดได้เฉพาะรอบที่เปิดอยู่");
-  await prisma.appraisalRound.update({ where: { id }, data: { status: "CLOSED", closedAt: new Date(), updatedById: session.sub } });
-  await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_round.close", entity: "AppraisalRound", entityId: id, ...meta });
+  if (round.status !== "OPEN" && round.status !== "SCHEDULED")
+    throw BadRequest("ปิดได้เฉพาะรอบที่เปิดอยู่");
+  await prisma.appraisalRound.update({
+    where: { id },
+    data: { status: "CLOSED", closedAt: new Date(), updatedById: session.sub },
+  });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "appraisal_round.close",
+    entity: "AppraisalRound",
+    entityId: id,
+    ...meta,
+  });
   return { id };
 }
 
@@ -637,7 +842,12 @@ export async function closeRound(companyId: string, session: AccessClaims, id: s
  * Dates are left empty (a new period) and nothing is sent. People who have left since are not copied.
  * A form that is no longer published is replaced by the newest published version of the same form.
  */
-export async function cloneRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+export async function cloneRound(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
   const src = await prisma.appraisalRound.findFirst({
     where: { id, companyId, deletedAt: null },
     select: {
@@ -648,41 +858,67 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
       raterPairs: true,
       remind: true,
       notifyLine: true,
+      sequential: true,
       form: { select: { id: true, lineageId: true, status: true } },
       participants: { select: { employeeId: true, formId: true } },
     },
   });
   if (!src) throw NotFound("ไม่พบรอบประเมิน");
 
-  const published = src.form.status === "PUBLISHED"
-    ? src.form
-    : await prisma.appraisalForm.findFirst({
-        where: { companyId, lineageId: src.form.lineageId, status: "PUBLISHED", deletedAt: null },
-        select: { id: true, lineageId: true, status: true },
-        orderBy: { version: "desc" },
-      });
-  if (!published) throw BadRequest("แบบประเมินของรอบนี้ไม่ได้ใช้งานแล้ว และยังไม่มีเวอร์ชันใหม่ที่ยืนยันใช้ กรุณาสร้างรอบใหม่แทน");
+  const published =
+    src.form.status === "PUBLISHED"
+      ? src.form
+      : await prisma.appraisalForm.findFirst({
+          where: { companyId, lineageId: src.form.lineageId, status: "PUBLISHED", deletedAt: null },
+          select: { id: true, lineageId: true, status: true },
+          orderBy: { version: "desc" },
+        });
+  if (!published)
+    throw BadRequest(
+      "แบบประเมินของรอบนี้ไม่ได้ใช้งานแล้ว และยังไม่มีเวอร์ชันใหม่ที่ยืนยันใช้ กรุณาสร้างรอบใหม่แทน",
+    );
 
   const people = await prisma.employee.findMany({
-    where: { id: { in: src.participants.map((p) => p.employeeId) }, companyId, deletedAt: null, status: "ACTIVE" },
-    select: { id: true, department: { select: { name: true } }, position: { select: { title: true } } },
+    where: {
+      id: { in: src.participants.map((p) => p.employeeId) },
+      companyId,
+      deletedAt: null,
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      department: { select: { name: true } },
+      position: { select: { title: true } },
+    },
   });
   // A person's own form carries over; if it was replaced by a newer published version, use that one.
-  const ownIds = [...new Set(src.participants.map((p) => p.formId).filter((f): f is string => !!f))];
+  const ownIds = [
+    ...new Set(src.participants.map((p) => p.formId).filter((f): f is string => !!f)),
+  ];
   const ownForms = ownIds.length
-    ? await prisma.appraisalForm.findMany({ where: { id: { in: ownIds }, companyId }, select: { id: true, lineageId: true, status: true } })
+    ? await prisma.appraisalForm.findMany({
+        where: { id: { in: ownIds }, companyId },
+        select: { id: true, lineageId: true, status: true },
+      })
     : [];
   const latestByLineage = new Map(
     (
       await prisma.appraisalForm.findMany({
-        where: { companyId, lineageId: { in: ownForms.map((f) => f.lineageId) }, status: "PUBLISHED", deletedAt: null },
+        where: {
+          companyId,
+          lineageId: { in: ownForms.map((f) => f.lineageId) },
+          status: "PUBLISHED",
+          deletedAt: null,
+        },
         select: { id: true, lineageId: true, version: true },
         orderBy: { version: "asc" },
       })
     ).map((f) => [f.lineageId, f.id] as const),
   );
   const carry = new Map(ownForms.map((f) => [f.id, latestByLineage.get(f.lineageId) ?? null]));
-  const formOf = new Map(src.participants.map((p) => [p.employeeId, p.formId ? (carry.get(p.formId) ?? null) : null]));
+  const formOf = new Map(
+    src.participants.map((p) => [p.employeeId, p.formId ? (carry.get(p.formId) ?? null) : null]),
+  );
 
   const created = await prisma.appraisalRound.create({
     data: {
@@ -691,10 +927,12 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
       name: src.isTemplate ? src.name.replace(/^แม่แบบ\s*/, "") : `${src.name} (สำเนา)`,
       formId: published.id,
       raterTypes: src.raterTypes,
-      perspectiveWeights: (src.perspectiveWeights ?? undefined) as Prisma.InputJsonValue | undefined,
+      perspectiveWeights: (src.perspectiveWeights ?? undefined) as
+        Prisma.InputJsonValue | undefined,
       raterPairs: (src.raterPairs ?? undefined) as Prisma.InputJsonValue | undefined,
       remind: src.remind,
       notifyLine: src.notifyLine,
+      sequential: src.sequential,
       createdById: session.sub,
       updatedById: session.sub,
       participants: {
@@ -728,16 +966,33 @@ export async function cloneRound(companyId: string, session: AccessClaims, id: s
 export async function createProbationRound(companyId: string, session: AccessClaims, meta?: Meta) {
   const due = await loadProbationDue(companyId, session);
   if (due.people.length === 0) throw BadRequest("ไม่มีพนักงานที่ครบทดลองงานภายใน 30 วัน");
-  const todayText = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok" }).format(new Date());
+  const todayText = new Intl.DateTimeFormat("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date());
   const round = await createRound(companyId, session, `ประเมินทดลองงาน ${todayText}`, meta);
-  await updateRound(companyId, session, round.id, { participantIds: due.people.map((p) => p.employeeId) }, meta);
+  await updateRound(
+    companyId,
+    session,
+    round.id,
+    { participantIds: due.people.map((p) => p.employeeId) },
+    meta,
+  );
   return { id: round.id, participants: due.people.length };
 }
 
 /** Takes a SCHEDULED round back to a draft (nothing has been sent yet), so it can be edited again. */
-export async function unscheduleRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+export async function unscheduleRound(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
   const round = await loadDraft(companyId, id);
-  if (round.status !== "SCHEDULED") throw BadRequest("ยกเลิกการตั้งเวลาได้เฉพาะรอบที่ตั้งเวลาไว้และยังไม่ได้ส่งข้อความ");
+  if (round.status !== "SCHEDULED")
+    throw BadRequest("ยกเลิกการตั้งเวลาได้เฉพาะรอบที่ตั้งเวลาไว้และยังไม่ได้ส่งข้อความ");
   await prisma.$transaction([
     prisma.appraisalAssignment.deleteMany({ where: { participant: { roundId: id } } }),
     prisma.appraisalRound.update({
@@ -745,22 +1000,47 @@ export async function unscheduleRound(companyId: string, session: AccessClaims, 
       data: { status: "DRAFT", openedAt: null, formSnapshot: undefined, updatedById: session.sub },
     }),
   ]);
-  await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_round.unschedule", entity: "AppraisalRound", entityId: id, ...meta });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "appraisal_round.unschedule",
+    entity: "AppraisalRound",
+    entityId: id,
+    ...meta,
+  });
   return { id };
 }
 
-export async function deleteRound(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+export async function deleteRound(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
   const round = await loadDraft(companyId, id);
   if (round.status !== "DRAFT") throw BadRequest("ลบได้เฉพาะรอบที่ยังเป็นฉบับร่าง");
-  await prisma.appraisalRound.update({ where: { id }, data: { deletedAt: new Date(), updatedById: session.sub } });
-  await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_round.delete", entity: "AppraisalRound", entityId: id, ...meta });
+  await prisma.appraisalRound.update({
+    where: { id },
+    data: { deletedAt: new Date(), updatedById: session.sub },
+  });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "appraisal_round.delete",
+    entity: "AppraisalRound",
+    entityId: id,
+    ...meta,
+  });
 }
 
 /* ───────────────────────────── Tracking and results ───────────────────────────── */
 
 /** "ตรวจเช็คการประเมิน": every person in the round with the status of each of their raters. */
 export async function getRoundMatrix(companyId: string, id: string, session: AccessClaims) {
-  const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true, formSnapshot: true } });
+  const round = await prisma.appraisalRound.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, formSnapshot: true },
+  });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
   const scope = participantScope(await viewableEmployeeIds(companyId, session), session.employeeId);
   // The date and the score of each rater's sheet are for HR only: a manager sees who has finished, not what each person gave.
@@ -773,7 +1053,14 @@ export async function getRoundMatrix(companyId: string, id: string, session: Acc
       departmentName: true,
       employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
       assignments: {
-        select: { id: true, raterType: true, status: true, submittedAt: true, ...(isHr ? { answers: true } : {}), rater: { select: { firstName: true, lastName: true, nickname: true } } },
+        select: {
+          id: true,
+          raterType: true,
+          status: true,
+          submittedAt: true,
+          ...(isHr ? { answers: true } : {}),
+          rater: { select: { firstName: true, lastName: true, nickname: true } },
+        },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -786,14 +1073,23 @@ export async function getRoundMatrix(companyId: string, id: string, session: Acc
     code: p.employee.employeeCode,
     department: p.departmentName ?? "ไม่ระบุแผนก",
     assignments: p.assignments.map((a) => {
-      const form = isHr ? pickForm(round.formSnapshot as unknown as RoundSnapshot | null, p.formId) : null;
+      const form = isHr
+        ? pickForm(round.formSnapshot as unknown as RoundSnapshot | null, p.formId)
+        : null;
       return {
         id: a.id,
         raterType: a.raterType,
         status: a.status,
         raterName: fullName(a.rater),
         submittedAt: isHr && a.status === "SUBMITTED" && a.submittedAt ? iso(a.submittedAt) : null,
-        percent: form && a.status === "SUBMITTED" ? sheetPercent((a as { answers?: unknown }).answers, form.questions ?? [], form.ratingMax ?? 5) : null,
+        percent:
+          form && a.status === "SUBMITTED"
+            ? sheetPercent(
+                (a as { answers?: unknown }).answers,
+                form.questions ?? [],
+                form.ratingMax ?? 5,
+              )
+            : null,
       };
     }),
   }));
@@ -808,7 +1104,13 @@ export interface ParticipantResult {
   roundStatus: string;
   ratingMax: number;
   ratingLabels: unknown;
-  groups: { raterType: string; total: number; submitted: number; /** True when written answers are held back because too few people answered. */ textsHeld: boolean; summary: QuestionSummary[] }[];
+  groups: {
+    raterType: string;
+    total: number;
+    submitted: number;
+    /** True when written answers are held back because too few people answered. */ textsHeld: boolean;
+    summary: QuestionSummary[];
+  }[];
   result: {
     status: string;
     scorePercent: number | null;
@@ -817,11 +1119,21 @@ export interface ParticipantResult {
     /** What the calculation gave when HR changed the score by hand; only HR are told, never managers or the employee. */
     adjustedFrom: number | null;
     types: { raterType: string; raters: number; percent: number; weightUsed: number }[];
+    methods: { kind: string; percent: number; weightUsed: number }[];
   };
   /** Comments copied from another system for a round with no answer sheets; null when there are none. Already filtered for this viewer. */
   importedComments: CommentsView | null;
   /** HR only (null for everyone else): each submitted sheet that has written text, with the rater's name. */
-  namedComments: { assignmentId: string; raterType: string; raterName: string; score: number | null; submittedAt: Date | null; texts: string[] }[] | null;
+  namedComments:
+    | {
+        assignmentId: string;
+        raterType: string;
+        raterName: string;
+        score: number | null;
+        submittedAt: Date | null;
+        texts: string[];
+      }[]
+    | null;
 }
 
 /**
@@ -836,7 +1148,12 @@ export async function getParticipantResult(
 ): Promise<ParticipantResult> {
   const viewable = await viewableEmployeeIds(companyId, session);
   const p = await prisma.appraisalParticipant.findFirst({
-    where: { id: participantId, roundId, round: { companyId, deletedAt: null }, ...participantScope(viewable, session.employeeId) },
+    where: {
+      id: participantId,
+      roundId,
+      round: { companyId, deletedAt: null },
+      ...participantScope(viewable, session.employeeId),
+    },
     select: {
       id: true,
       departmentName: true,
@@ -852,7 +1169,14 @@ export async function getParticipantResult(
       importedComments: true,
       round: { select: { name: true, status: true, formSnapshot: true } },
       assignments: {
-        select: { id: true, raterType: true, status: true, answers: true, submittedAt: true, rater: { select: { firstName: true, lastName: true, nickname: true } } },
+        select: {
+          id: true,
+          raterType: true,
+          status: true,
+          answers: true,
+          submittedAt: true,
+          rater: { select: { firstName: true, lastName: true, nickname: true } },
+        },
         orderBy: { submittedAt: "asc" },
       },
     },
@@ -864,18 +1188,39 @@ export async function getParticipantResult(
   const types = [...new Set(p.assignments.map((a) => a.raterType))];
   const isHr = can(session.perms, "campaign:update");
   const ratingIds = new Set(questions.filter((q) => q.answerType === "RATING").map((q) => q.id));
-  const textIds = new Set(questions.filter((q) => q.answerType === "SHORT_TEXT" || q.answerType === "PARAGRAPH").map((q) => q.id));
+  const textIds = new Set(
+    questions
+      .filter((q) => q.answerType === "SHORT_TEXT" || q.answerType === "PARAGRAPH")
+      .map((q) => q.id),
+  );
   // Who wrote what: only HR get names (the same people can already open each rater's sheet from the tracking table).
   const namedComments = isHr
     ? p.assignments
         .filter((a) => a.status === "SUBMITTED")
         .flatMap((a) => {
           const answers = Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [];
-          const texts = answers.filter((x) => textIds.has(x.questionId) && typeof x.value === "string" && x.value.trim()).map((x) => (x.value as string).trim());
+          const texts = answers
+            .filter(
+              (x) => textIds.has(x.questionId) && typeof x.value === "string" && x.value.trim(),
+            )
+            .map((x) => (x.value as string).trim());
           if (texts.length === 0) return [];
-          const scores = answers.filter((x) => ratingIds.has(x.questionId) && typeof x.value === "number").map((x) => x.value as number);
-          const score = scores.length ? Math.round((scores.reduce((t, v) => t + v, 0) / scores.length) * 10) / 10 : null;
-          return [{ assignmentId: a.id, raterType: a.raterType, raterName: fullName(a.rater), score, submittedAt: a.submittedAt, texts }];
+          const scores = answers
+            .filter((x) => ratingIds.has(x.questionId) && typeof x.value === "number")
+            .map((x) => x.value as number);
+          const score = scores.length
+            ? Math.round((scores.reduce((t, v) => t + v, 0) / scores.length) * 10) / 10
+            : null;
+          return [
+            {
+              assignmentId: a.id,
+              raterType: a.raterType,
+              raterName: fullName(a.rater),
+              score,
+              submittedAt: a.submittedAt,
+              texts,
+            },
+          ];
         })
     : null;
   return {
@@ -893,7 +1238,18 @@ export async function getParticipantResult(
       overallScore: p.overallScore,
       grade: p.grade,
       adjustedFrom: p.adjustedAt && isHr ? p.originalScorePercent : null,
-      types: ((p.scoreBreakdown as unknown as { types?: { raterType: string; raters: number; percent: number; weightUsed: number }[] } | null)?.types ?? []),
+      types:
+        (
+          p.scoreBreakdown as unknown as {
+            types?: { raterType: string; raters: number; percent: number; weightUsed: number }[];
+          } | null
+        )?.types ?? [],
+      methods:
+        (
+          p.scoreBreakdown as unknown as {
+            methods?: { kind: string; percent: number; weightUsed: number }[];
+          } | null
+        )?.methods ?? [],
     },
     importedComments: commentsFor(parseImportedComments(p.importedComments), isHr),
     namedComments,
@@ -901,7 +1257,12 @@ export async function getParticipantResult(
       const mine = p.assignments.filter((a) => a.raterType === t);
       const done = mine.filter((a) => a.status === "SUBMITTED");
       const textsHeld = holdsBackTexts(t, done.length, isHr);
-      const summary = summarizeAnswers(questions, t, done.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [])), ratingMax);
+      const summary = summarizeAnswers(
+        questions,
+        t,
+        done.map((a) => (Array.isArray(a.answers) ? (a.answers as unknown as Answer[]) : [])),
+        ratingMax,
+      );
       return {
         raterType: t,
         total: mine.length,
@@ -915,8 +1276,15 @@ export async function getParticipantResult(
 }
 
 /** Submitted / total assignments per department of the people being evaluated, for the overview bars. */
-export async function getRoundDepartmentProgress(companyId: string, id: string, session: AccessClaims) {
-  const round = await prisma.appraisalRound.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
+export async function getRoundDepartmentProgress(
+  companyId: string,
+  id: string,
+  session: AccessClaims,
+) {
+  const round = await prisma.appraisalRound.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true },
+  });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
   const scope = participantScope(await viewableEmployeeIds(companyId, session), session.employeeId);
   const rows = await prisma.appraisalAssignment.findMany({
@@ -932,7 +1300,11 @@ export async function getRoundDepartmentProgress(companyId: string, id: string, 
     byDept.set(name, cur);
   }
   return [...byDept.entries()]
-    .map(([department, v]) => ({ department, ...v, percent: v.total ? Math.round((v.submitted / v.total) * 100) : 0 }))
+    .map(([department, v]) => ({
+      department,
+      ...v,
+      percent: v.total ? Math.round((v.submitted / v.total) * 100) : 0,
+    }))
     .sort((a, b) => a.percent - b.percent || a.department.localeCompare(b.department, "th"));
 }
 
@@ -942,11 +1314,136 @@ function requireEmployee(session: AccessClaims): string {
   return requireEmployeeId(session);
 }
 
+export async function methodContext(
+  companyId: string,
+  employeeId: string,
+  questions: SnapQuestion[],
+) {
+  const kinds = new Set(questions.map((q) => q.sectionKind).filter((k): k is string => !!k));
+  const wantKpi = kinds.has("KPI");
+  const wantOkr = kinds.has("OKR");
+  const wantTask = kinds.has("TASK");
+  const goals =
+    wantKpi || wantOkr
+      ? await prisma.goal.findMany({
+          where: {
+            companyId,
+            employeeId,
+            deletedAt: null,
+            status: { not: "CANCELLED" },
+            parentGoalId: null,
+            type: wantKpi && wantOkr ? { in: ["KPI", "OKR"] } : wantKpi ? "KPI" : "OKR",
+          },
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            unit: true,
+            targetValue: true,
+            currentValue: true,
+            weight: true,
+            status: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 30,
+        })
+      : [];
+  let duties: { id: string; title: string; description: string | null }[] = [];
+  if (wantTask) {
+    const emp = await prisma.employee.findFirst({
+      where: { id: employeeId, companyId },
+      select: { positionId: true },
+    });
+    if (emp?.positionId) {
+      duties = await prisma.positionDuty.findMany({
+        where: { positionId: emp.positionId },
+        select: { id: true, title: true, description: true },
+        orderBy: [{ order: "asc" }, { title: "asc" }],
+        take: 40,
+      });
+    }
+  }
+  return { goals, duties };
+}
+
+async function selfIsSubmitted(participantId: string): Promise<boolean> {
+  const self = await prisma.appraisalAssignment.findFirst({
+    where: { participantId, raterType: "SELF" },
+    select: { status: true },
+  });
+  return !self || self.status === "SUBMITTED";
+}
+
+/** After the reviewee submits self-assessment, invite the other raters of that person. */
+export async function inviteSequentialFollowers(
+  companyId: string,
+  participantId: string,
+  actorUserId?: string | null,
+) {
+  const participant = await prisma.appraisalParticipant.findFirst({
+    where: { id: participantId, round: { companyId, deletedAt: null } },
+    select: {
+      employee: { select: { firstName: true, lastName: true, nickname: true } },
+      round: {
+        select: {
+          id: true,
+          name: true,
+          endDate: true,
+          notifyLine: true,
+          sequential: true,
+          status: true,
+        },
+      },
+    },
+  });
+  if (!participant || !participant.round.sequential || participant.round.status !== "OPEN") return;
+  const pending = await prisma.appraisalAssignment.findMany({
+    where: { participantId, notifiedAt: null, raterType: { not: "SELF" } },
+    select: { id: true, raterEmployeeId: true },
+  });
+  if (pending.length === 0) return;
+  const endText = participant.round.endDate
+    ? ` ปิดรอบวันที่ ${fmtDay(iso(participant.round.endDate))}`
+    : "";
+  const name = fullName(participant.employee);
+  const byRater = new Map<string, string[]>();
+  for (const a of pending) {
+    const cur = byRater.get(a.raterEmployeeId) ?? [];
+    cur.push(a.id);
+    byRater.set(a.raterEmployeeId, cur);
+  }
+  for (const [raterId, ids] of byRater) {
+    try {
+      await createNotification(
+        companyId,
+        raterId,
+        {
+          title: `ถึงรอบประเมิน: ${participant.round.name}`,
+          body: `${name} ส่งประเมินตนเองแล้ว — กรุณาเข้าไปประเมิน${endText}`,
+          category: "evaluation",
+          link: "/appraisal/tasks",
+          line: participant.round.notifyLine,
+        },
+        actorUserId,
+      );
+      await prisma.appraisalAssignment.updateMany({
+        where: { id: { in: ids } },
+        data: { notifiedAt: new Date() },
+      });
+    } catch {
+      /* one failed invite must not stop the rest */
+    }
+  }
+}
+
 export async function listMyAssignments(companyId: string, session: AccessClaims) {
   if (!session.employeeId) return []; // no employee record: nothing to rate (was a 403 on every page, audit B3)
   const employeeId = requireEmployee(session);
   const rows = await prisma.appraisalAssignment.findMany({
-    where: { raterEmployeeId: employeeId, participant: { round: { companyId, deletedAt: null, status: { in: ["OPEN", "CLOSED"] } } } },
+    where: {
+      raterEmployeeId: employeeId,
+      participant: { round: { companyId, deletedAt: null, status: { in: ["OPEN", "CLOSED"] } } },
+    },
     select: {
       id: true,
       raterType: true,
@@ -954,8 +1451,13 @@ export async function listMyAssignments(companyId: string, session: AccessClaims
       participantId: true,
       participant: {
         select: {
-          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
-          round: { select: { id: true, name: true, status: true, endDate: true } },
+          employee: {
+            select: { firstName: true, lastName: true, nickname: true, employeeCode: true },
+          },
+          round: {
+            select: { id: true, name: true, status: true, endDate: true, sequential: true },
+          },
+          assignments: { where: { raterType: "SELF" }, select: { status: true } },
         },
       },
     },
@@ -967,30 +1469,44 @@ export async function listMyAssignments(companyId: string, session: AccessClaims
   const copied = new Set(
     (
       await prisma.appraisalParticipant.findMany({
-        where: { id: { in: rows.map((r) => r.participantId) }, scoreBreakdown: { path: ["source"], equals: "favpo-import" } },
+        where: {
+          id: { in: rows.map((r) => r.participantId) },
+          scoreBreakdown: { path: ["source"], equals: "favpo-import" },
+        },
         select: { id: true },
       })
     ).map((p) => p.id),
   );
-  return rows.filter((r) => !copied.has(r.participantId)).map((r) => ({
-    id: r.id,
-    raterType: r.raterType,
-    status: r.status,
-    personName: fullName(r.participant.employee),
-    personCode: r.participant.employee.employeeCode,
-    roundId: r.participant.round.id,
-    roundName: r.participant.round.name,
-    roundStatus: r.participant.round.status,
-    endIso: r.participant.round.endDate ? iso(r.participant.round.endDate) : null,
-  }));
+  return rows
+    .filter((r) => !copied.has(r.participantId))
+    .map((r) => ({
+      id: r.id,
+      raterType: r.raterType,
+      status: r.status,
+      personName: fullName(r.participant.employee),
+      personCode: r.participant.employee.employeeCode,
+      roundId: r.participant.round.id,
+      roundName: r.participant.round.name,
+      roundStatus: r.participant.round.status,
+      endIso: r.participant.round.endDate ? iso(r.participant.round.endDate) : null,
+      lockedUntilSelf:
+        r.participant.round.sequential &&
+        r.raterType !== "SELF" &&
+        r.participant.assignments.some((a) => a.status !== "SUBMITTED"),
+    }));
 }
 
 async function loadMine(companyId: string, session: AccessClaims, id: string) {
   const employeeId = requireEmployee(session);
   const a = await prisma.appraisalAssignment.findFirst({
-    where: { id, raterEmployeeId: employeeId, participant: { round: { companyId, deletedAt: null } } },
+    where: {
+      id,
+      raterEmployeeId: employeeId,
+      participant: { round: { companyId, deletedAt: null } },
+    },
     select: {
       id: true,
+      participantId: true,
       raterType: true,
       status: true,
       answers: true,
@@ -998,26 +1514,56 @@ async function loadMine(companyId: string, session: AccessClaims, id: string) {
         select: {
           formId: true,
           employeeId: true,
-          employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true, gender: true } },
+          employee: {
+            select: {
+              firstName: true,
+              lastName: true,
+              nickname: true,
+              employeeCode: true,
+              gender: true,
+            },
+          },
           departmentName: true,
           positionName: true,
-          round: { select: { id: true, name: true, status: true, endDate: true, formSnapshot: true } },
+          round: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+              endDate: true,
+              formSnapshot: true,
+              sequential: true,
+            },
+          },
         },
       },
     },
   });
   if (!a) throw NotFound("ไม่พบงานประเมินนี้");
-  const form = pickForm(a.participant.round.formSnapshot as unknown as RoundSnapshot | null, a.participant.formId);
+  const form = pickForm(
+    a.participant.round.formSnapshot as unknown as RoundSnapshot | null,
+    a.participant.formId,
+  );
   if (!form) throw BadRequest("รอบนี้ยังไม่พร้อม");
   return {
     a,
-    snap: { ratingMax: form.ratingMax, ratingLabels: form.ratingLabels ?? null, noteAtLowest: !!form.noteAtLowest, questions: form.questions as SnapQuestion[] },
+    snap: {
+      ratingMax: form.ratingMax,
+      ratingLabels: form.ratingLabels ?? null,
+      noteAtLowest: !!form.noteAtLowest,
+      questions: form.questions as SnapQuestion[],
+    },
   };
 }
 
 export async function getMyAssignment(companyId: string, session: AccessClaims, id: string) {
   const { a, snap } = await loadMine(companyId, session, id);
   const photos = await avatarPaths([a.participant.employeeId]);
+  const lockedUntilSelf =
+    a.participant.round.sequential &&
+    a.raterType !== "SELF" &&
+    !(await selfIsSubmitted(a.participantId));
+  const ctx = await methodContext(companyId, a.participant.employeeId, snap.questions);
   return {
     id: a.id,
     raterType: a.raterType,
@@ -1026,7 +1572,9 @@ export async function getMyAssignment(companyId: string, session: AccessClaims, 
     personCode: a.participant.employee.employeeCode,
     personGender: a.participant.employee.gender ?? null,
     personAvatarUrl: photos.get(a.participant.employeeId) ?? null,
-    personRole: [a.participant.positionName, a.participant.departmentName].filter(Boolean).join(" · ") || null,
+    personRole:
+      [a.participant.positionName, a.participant.departmentName].filter(Boolean).join(" · ") ||
+      null,
     roundName: a.participant.round.name,
     roundStatus: a.participant.round.status,
     endIso: a.participant.round.endDate ? iso(a.participant.round.endDate) : null,
@@ -1035,6 +1583,9 @@ export async function getMyAssignment(companyId: string, session: AccessClaims, 
     noteAtLowest: snap.noteAtLowest,
     questions: visibleQuestions(snap.questions, a.raterType),
     answers: (Array.isArray(a.answers) ? a.answers : []) as unknown as Answer[],
+    lockedUntilSelf,
+    goals: ctx.goals,
+    duties: ctx.duties,
   };
 }
 
@@ -1049,10 +1600,19 @@ export async function saveMyAnswers(
   const { a, snap } = await loadMine(companyId, session, id);
   if (a.participant.round.status !== "OPEN") throw BadRequest("รอบนี้ปิดแล้ว");
   if (a.status === "SUBMITTED") throw BadRequest("ส่งผลประเมินแล้ว แก้ไขไม่ได้");
+  if (
+    a.participant.round.sequential &&
+    a.raterType !== "SELF" &&
+    !(await selfIsSubmitted(a.participantId))
+  ) {
+    throw BadRequest("รอให้ผู้ถูกประเมินส่งแบบประเมินตนเองก่อน");
+  }
 
   const answers = cleanAnswers(snap.questions, a.raterType, input.answers, snap.ratingMax);
   if (input.submit) {
-    const missing = unansweredRequired(snap.questions, a.raterType, answers, { noteAtLowest: snap.noteAtLowest });
+    const missing = unansweredRequired(snap.questions, a.raterType, answers, {
+      noteAtLowest: snap.noteAtLowest,
+    });
     if (missing.length) throw BadRequest(`ยังตอบไม่ครบ: ${missing.join(", ")}`);
   }
   // Guarded at write time too: a draft save that was already in flight must never undo a sheet that was just submitted.
@@ -1067,7 +1627,16 @@ export async function saveMyAnswers(
   });
   if (saved.count !== 1) throw BadRequest("ส่งผลประเมินแล้ว แก้ไขไม่ได้");
   if (input.submit) {
-    await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_assignment.submit", entity: "AppraisalAssignment", entityId: id, ...meta });
+    await writeAudit({
+      companyId,
+      actorUserId: session.sub,
+      action: "appraisal_assignment.submit",
+      entity: "AppraisalAssignment",
+      entityId: id,
+      ...meta,
+    });
+    if (a.raterType === "SELF")
+      await inviteSequentialFollowers(companyId, a.participantId, session.sub);
   }
   return { id, status: input.submit ? "SUBMITTED" : "IN_PROGRESS", answered: answers.length };
 }
@@ -1110,7 +1679,10 @@ async function remindUnsubmitted(
         link: "/appraisal/tasks",
         line: r.notifyLine,
       });
-      await prisma.appraisalAssignment.updateMany({ where: { id: { in: v.ids } }, data: { remindedAt: new Date() } });
+      await prisma.appraisalAssignment.updateMany({
+        where: { id: { in: v.ids } },
+        data: { remindedAt: new Date() },
+      });
       reminded++;
     } catch {
       /* one failed reminder must not stop the rest */
@@ -1123,12 +1695,27 @@ async function remindUnsubmitted(
 export async function remindAll(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
   const r = await prisma.appraisalRound.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, companyId: true, name: true, endDate: true, notifyLine: true, status: true },
+    select: {
+      id: true,
+      companyId: true,
+      name: true,
+      endDate: true,
+      notifyLine: true,
+      status: true,
+    },
   });
   if (!r) throw NotFound("ไม่พบรอบประเมิน");
   if (r.status !== "OPEN") throw BadRequest("เตือนได้เฉพาะรอบที่เปิดอยู่");
   const reminded = await remindUnsubmitted(r, 1);
-  await writeAudit({ companyId, actorUserId: session.sub, action: "appraisal_round.remind_all", entity: "AppraisalRound", entityId: id, after: { reminded }, ...meta });
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "appraisal_round.remind_all",
+    entity: "AppraisalRound",
+    entityId: id,
+    after: { reminded },
+    ...meta,
+  });
   return { reminded };
 }
 
@@ -1139,7 +1726,14 @@ export async function remindAll(companyId: string, session: AccessClaims, id: st
  */
 export async function runRoundJobs() {
   const todayIso = iso(bangkokParts().dateUTC);
-  const summary = { opened: 0, invitationsSent: 0, reminded: 0, draftsMade: 0, draftsNudged: 0, draftsFailed: 0 };
+  const summary = {
+    opened: 0,
+    invitationsSent: 0,
+    reminded: 0,
+    draftsMade: 0,
+    draftsNudged: 0,
+    draftsFailed: 0,
+  };
 
   // Recurring rounds first: a draft made today shows up in HR's bell this morning.
   // A failure here must not stop the invitations and reminders below, which people are waiting for.
@@ -1156,7 +1750,11 @@ export async function runRoundJobs() {
   // Open rounds where some rater never got the invitation (the message failed on the start day): try those people again.
   // Reminders only reach people who were invited, so without this step they would hear nothing at all.
   const missed = await prisma.appraisalRound.findMany({
-    where: { deletedAt: null, status: "OPEN", participants: { some: { assignments: { some: { notifiedAt: null } } } } },
+    where: {
+      deletedAt: null,
+      status: "OPEN",
+      participants: { some: { assignments: { some: { notifiedAt: null } } } },
+    },
     select: { id: true, companyId: true },
   });
   for (const r of missed) {
@@ -1170,7 +1768,11 @@ export async function runRoundJobs() {
 
   // One round failing must not stop the others from opening or being reminded.
   const due = await prisma.appraisalRound.findMany({
-    where: { deletedAt: null, status: "SCHEDULED", startDate: { lte: new Date(`${todayIso}T00:00:00Z`) } },
+    where: {
+      deletedAt: null,
+      status: "SCHEDULED",
+      startDate: { lte: new Date(`${todayIso}T00:00:00Z`) },
+    },
     select: { id: true, companyId: true },
   });
   for (const r of due) {

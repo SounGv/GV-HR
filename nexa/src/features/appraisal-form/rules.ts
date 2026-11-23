@@ -3,7 +3,8 @@
  * `node --experimental-strip-types scripts/check-appraisal-form.mjs`).
  */
 
-export type AnswerType = "RATING" | "CHOICE" | "MULTI_CHOICE" | "SHORT_TEXT" | "PARAGRAPH";
+export type AnswerType =
+  "RATING" | "CHOICE" | "MULTI_CHOICE" | "SHORT_TEXT" | "PARAGRAPH" | "FILE_EVIDENCE";
 export type FormStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export interface QuestionDraft {
@@ -19,7 +20,8 @@ export const CHOICE_TYPES: ReadonlySet<AnswerType> = new Set(["CHOICE", "MULTI_C
 export const isEditable = (status: FormStatus): boolean => status === "DRAFT";
 
 /** Next version number for a lineage, given the versions that already exist. */
-export const nextVersion = (existing: readonly number[]): number => (existing.length ? Math.max(...existing) + 1 : 1);
+export const nextVersion = (existing: readonly number[]): number =>
+  existing.length ? Math.max(...existing) + 1 : 1;
 
 /** Everything that stops a form from being published, in words HR can act on (empty = ready). */
 export function formProblems(questions: readonly QuestionDraft[]): string[] {
@@ -32,9 +34,11 @@ export function formProblems(questions: readonly QuestionDraft[]): string[] {
       const opts = q.options ?? [];
       if (opts.length < 2) problems.push(`ข้อ ${n} ต้องมีตัวเลือกอย่างน้อย 2 ข้อ`);
       else if (opts.some((o) => !o.label.trim())) problems.push(`ข้อ ${n} มีตัวเลือกที่ยังว่าง`);
-      else if (new Set(opts.map((o) => o.label.trim())).size !== opts.length) problems.push(`ข้อ ${n} มีตัวเลือกซ้ำกัน`);
+      else if (new Set(opts.map((o) => o.label.trim())).size !== opts.length)
+        problems.push(`ข้อ ${n} มีตัวเลือกซ้ำกัน`);
     }
-    if (q.answerType === "RATING" && !(q.weight >= 1)) problems.push(`ข้อ ${n} ต้องมีน้ำหนักอย่างน้อย 1`);
+    if (q.answerType === "RATING" && !(q.weight >= 1))
+      problems.push(`ข้อ ${n} ต้องมีน้ำหนักอย่างน้อย 1`);
   });
   return problems;
 }
@@ -56,10 +60,15 @@ export function cleanLevels(levels: unknown, ratingMax: number): LevelDescriptio
   for (const l of levels) {
     if (!l || typeof l !== "object") continue;
     const score = Number((l as { score?: unknown }).score);
-    const text = typeof (l as { text?: unknown }).text === "string" ? (l as { text: string }).text.trim().slice(0, 300) : "";
+    const text =
+      typeof (l as { text?: unknown }).text === "string"
+        ? (l as { text: string }).text.trim().slice(0, 300)
+        : "";
     if (Number.isInteger(score) && score >= 1 && score <= ratingMax && text) by.set(score, text);
   }
-  const out = [...by.entries()].sort((a, b) => b[0] - a[0]).map(([score, text]) => ({ score, text }));
+  const out = [...by.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([score, text]) => ({ score, text }));
   return out.length ? out : null;
 }
 

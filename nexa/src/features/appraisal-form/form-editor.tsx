@@ -32,7 +32,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/auth-context";
@@ -51,6 +58,13 @@ import {
 import { arrowSelect } from "@/lib/arrow-select";
 import { rubricFor, type RatingLabel } from "./rating-labels";
 import { formProblems } from "./rules";
+import {
+  CUSTOM_SECTION,
+  METHOD_TEMPLATES,
+  SECTION_KIND_LABEL,
+  parseSectionKind,
+  type SectionKind,
+} from "./method-templates";
 import {
   ANSWER_TYPE_LABEL,
   RATER_LABEL,
@@ -84,6 +98,7 @@ const SCALE_SETS: Record<number, string[]> = {
 interface Section {
   key: string;
   name: string;
+  kind: SectionKind;
   qs: QuestionValues[];
 }
 
@@ -118,10 +133,11 @@ function toSections(form: FormDetail): Section[] {
       levels: Object.fromEntries((q.levelDescriptions ?? []).map((l) => [l.score, l.text])),
     };
     const last = out[out.length - 1];
-    if (last && last.name === name) last.qs.push(v);
-    else out.push({ key: newKey(), name, qs: [v] });
+    const kind = parseSectionKind(q.sectionKind);
+    if (last && last.name === name && last.kind === kind) last.qs.push(v);
+    else out.push({ key: newKey(), name, kind, qs: [v] });
   }
-  return out.length ? out : [{ key: newKey(), name: "", qs: [] }];
+  return out.length ? out : [{ key: newKey(), name: "", kind: "CUSTOM", qs: [] }];
 }
 
 /** A question text listing several things ("ปริมาณ, คุณภาพ, ตรงเวลา") is probably several questions. */
@@ -226,10 +242,29 @@ function FormEditor({ form }: { form: FormDetail }) {
   }
 
   /* ── sections and topics ── */
-  function addSection() {
-    const s: Section = { key: newKey(), name: "หมวดใหม่", qs: [blankQuestion()] };
+  const [methodOpen, setMethodOpen] = useState(false);
+  function addSection(kind: SectionKind = "CUSTOM") {
+    const tmpl =
+      kind === "CUSTOM"
+        ? CUSTOM_SECTION
+        : (METHOD_TEMPLATES.find((t) => t.kind === kind) ?? CUSTOM_SECTION);
+    const qs = tmpl.questions.map((q) => ({
+      ...blankQuestion(),
+      text: q.text,
+      helpText: q.helpText,
+      answerType: q.answerType,
+      weight: q.weight,
+      required: q.required,
+    }));
+    const s: Section = {
+      key: newKey(),
+      name: tmpl.kind === "CUSTOM" ? "หมวดใหม่" : tmpl.short,
+      kind: tmpl.kind,
+      qs,
+    };
     edit((ss) => [...ss, s]);
-    setSel(s.qs[0].uiKey);
+    setSel(s.qs[0]?.uiKey ?? null);
+    setMethodOpen(false);
   }
   function addTopic(sectionKey: string, q: QuestionValues = blankQuestion()) {
     edit((ss) => ss.map((s) => (s.key === sectionKey ? { ...s, qs: [...s.qs, q] } : s)));
@@ -322,7 +357,7 @@ function FormEditor({ form }: { form: FormDetail }) {
     withUndo(`ลบหมวด “${s.name || "ไม่มีชื่อ"}” (${s.qs.length} หัวข้อ) แล้ว`, () => {
       edit((ss) => {
         const left = ss.filter((x) => x.key !== key);
-        return left.length ? left : [{ key: newKey(), name: "", qs: [] }];
+        return left.length ? left : [{ key: newKey(), name: "", kind: "CUSTOM", qs: [] }];
       });
       if (current && current.s.key === key) setSel(null);
     });
@@ -399,6 +434,7 @@ function FormEditor({ form }: { form: FormDetail }) {
         required: q.required,
         visibleTo: q.visibleTo,
         section: s.name.trim() || null,
+        sectionKind: s.kind,
         levelDescriptions:
           q.answerType === "RATING"
             ? Object.entries(q.levels)
@@ -457,15 +493,20 @@ function FormEditor({ form }: { form: FormDetail }) {
           }}
           className="h-9 w-full md:max-w-xl"
         />
-        <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted px-2 py-0.5 text-xs font-semibold">
+        <span className="border-border bg-muted inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 text-xs font-semibold">
           {locked && <Lock className="size-3" aria-hidden="true" />}
           {STATUS_LABEL[form.status]} · เวอร์ชัน {form.version}
         </span>
-        <span className="text-sm text-muted-foreground tabular-nums">
-          หัวข้อ {flat.length} · ระดับคะแนน {ratingMax} · {problems.length ? `ยังขาด ${problems.length} อย่าง` : "พร้อมใช้งาน"}
+        <span className="text-muted-foreground text-sm tabular-nums">
+          หัวข้อ {flat.length} · ระดับคะแนน {ratingMax} ·{" "}
+          {problems.length ? `ยังขาด ${problems.length} อย่าง` : "พร้อมใช้งาน"}
         </span>
       </div>
-      {locked && <p className="text-sm text-muted-foreground">แบบนี้ถูกใช้งานแล้ว แก้ไขไม่ได้ ถ้าต้องการเปลี่ยน ให้สร้างเวอร์ชันใหม่</p>}
+      {locked && (
+        <p className="text-muted-foreground text-sm">
+          แบบนี้ถูกใช้งานแล้ว แก้ไขไม่ได้ ถ้าต้องการเปลี่ยน ให้สร้างเวอร์ชันใหม่
+        </p>
+      )}
 
       <PageActions>
         {canEdit && (
@@ -480,7 +521,12 @@ function FormEditor({ form }: { form: FormDetail }) {
             >
               {save.isPending ? "กำลังบันทึก…" : dirty ? "บันทึกร่าง •" : "บันทึกร่าง"}
             </Button>
-            <Button className="h-9" disabled={busy || problems.length > 0} title={problems.join(" · ")} onClick={() => setConfirmPublish(true)}>
+            <Button
+              className="h-9"
+              disabled={busy || problems.length > 0}
+              title={problems.join(" · ")}
+              onClick={() => setConfirmPublish(true)}
+            >
               ยืนยันใช้แบบนี้
             </Button>
           </>
@@ -497,8 +543,10 @@ function FormEditor({ form }: { form: FormDetail }) {
         ratingWeight={ratingWeight}
         canEdit={canEdit}
         onSelect={setSel}
-        onAddSection={addSection}
-        onRenameSection={(k, v) => edit((ss) => ss.map((s) => (s.key === k ? { ...s, name: v } : s)))}
+        onAddSection={() => setMethodOpen(true)}
+        onRenameSection={(k, v) =>
+          edit((ss) => ss.map((s) => (s.key === k ? { ...s, name: v } : s)))
+        }
         onMoveUp={(k) =>
           edit((ss) => {
             const i = ss.findIndex((s) => s.key === k);
@@ -516,7 +564,7 @@ function FormEditor({ form }: { form: FormDetail }) {
           ratingWeight={ratingWeight}
           canEdit={canEdit}
           onSelect={setSel}
-          onAddSection={addSection}
+          onAddSection={() => setMethodOpen(true)}
           onAddTopic={(k) => addTopic(k)}
           onRenameSection={(k, v) =>
             edit((ss) => ss.map((s) => (s.key === k ? { ...s, name: v } : s)))
@@ -609,12 +657,12 @@ function FormEditor({ form }: { form: FormDetail }) {
               <div className="border-border border-t pt-3">
                 <h3 className="mb-1.5 text-sm font-semibold">ความพร้อมก่อนยืนยันใช้</h3>
                 {problems.length === 0 ? (
-                  <p className="flex items-center gap-2 text-sm text-success">
+                  <p className="text-success flex items-center gap-2 text-sm">
                     <CircleCheck className="size-4" aria-hidden="true" /> พร้อมยืนยันใช้ (
                     {flat.length} หัวข้อ)
                   </p>
                 ) : (
-                  <ul className="space-y-1 text-sm text-status-late-fg">
+                  <ul className="text-status-late-fg space-y-1 text-sm">
                     {problems.map((p) => (
                       <li key={p} className="flex gap-2">
                         <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
@@ -672,6 +720,41 @@ function FormEditor({ form }: { form: FormDetail }) {
           );
         }}
       />
+
+      <Dialog open={methodOpen} onOpenChange={setMethodOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>เพิ่มหมวดประเมิน</DialogTitle>
+            <DialogDescription>
+              เลือกวิธีประเมินที่องค์กรใช้ — KPI, OKR, สมรรถนะ หรือผลงานตามหน้าที่ —
+              หรือเริ่มหมวดว่าง
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            {METHOD_TEMPLATES.map((t) => (
+              <button
+                key={t.kind}
+                type="button"
+                className="hover:border-primary/40 hover:bg-muted/40 border-border rounded-lg border p-3 text-left"
+                onClick={() => addSection(t.kind)}
+              >
+                <span className="block text-sm font-semibold">{t.name}</span>
+                <span className="text-muted-foreground mt-0.5 block text-xs">{t.hint}</span>
+              </button>
+            ))}
+            <button
+              type="button"
+              className="hover:bg-muted/40 border-border rounded-lg border border-dashed p-3 text-left"
+              onClick={() => addSection("CUSTOM")}
+            >
+              <span className="block text-sm font-semibold">{CUSTOM_SECTION.name}</span>
+              <span className="text-muted-foreground mt-0.5 block text-xs">
+                {CUSTOM_SECTION.hint}
+              </span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={confirmPublish}
@@ -732,12 +815,16 @@ function TopicsTable({
         </TableHeader>
         <TableBody>
           {sections.map((s, i) => {
-            const sw = s.qs.filter((q) => q.answerType === "RATING").reduce((a, q) => a + q.weight, 0);
+            const sw = s.qs
+              .filter((q) => q.answerType === "RATING")
+              .reduce((a, q) => a + q.weight, 0);
             const pct = Math.round((sw / ratingWeight) * 100);
             return (
               <TableRow key={s.key}>
                 <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
-                <TableCell className="text-right tabular-nums">{sw > 0 ? `${pct}%` : "0%"}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {sw > 0 ? `${pct}%` : "0%"}
+                </TableCell>
                 <TableCell>{sw > 0 ? "ให้คะแนน" : "ข้อความ"}</TableCell>
                 <TableCell className="min-w-56 whitespace-normal">
                   {canEdit ? (
@@ -757,10 +844,24 @@ function TopicsTable({
                 {canEdit && (
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="icon" className="size-9" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ขึ้น`} disabled={i === 0} onClick={() => onMoveUp(s.key)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9"
+                        aria-label={`เลื่อนหัวข้อที่ ${i + 1} ขึ้น`}
+                        disabled={i === 0}
+                        onClick={() => onMoveUp(s.key)}
+                      >
                         <ArrowUp className="size-4" aria-hidden="true" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="size-9" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ลง`} disabled={i === sections.length - 1} onClick={() => onMoveUp(sections[i + 1]!.key)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9"
+                        aria-label={`เลื่อนหัวข้อที่ ${i + 1} ลง`}
+                        disabled={i === sections.length - 1}
+                        onClick={() => onMoveUp(sections[i + 1]!.key)}
+                      >
                         <ArrowDown className="size-4" aria-hidden="true" />
                       </Button>
                     </div>
@@ -768,11 +869,24 @@ function TopicsTable({
                 )}
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-1">
-                    <Button variant="ghost" size="icon" className="size-9" aria-label={`เปิดคำถามในหัวข้อที่ ${i + 1}`} disabled={s.qs.length === 0} onClick={() => s.qs[0] && onSelect(s.qs[0].uiKey)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-9"
+                      aria-label={`เปิดคำถามในหัวข้อที่ ${i + 1}`}
+                      disabled={s.qs.length === 0}
+                      onClick={() => s.qs[0] && onSelect(s.qs[0].uiKey)}
+                    >
                       <Pencil className="size-4" aria-hidden="true" />
                     </Button>
                     {canEdit && (
-                      <Button variant="ghost" size="icon" className="size-9" aria-label={`ลบหัวข้อที่ ${i + 1}`} onClick={() => onDeleteSection(s.key)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9"
+                        aria-label={`ลบหัวข้อที่ ${i + 1}`}
+                        onClick={() => onDeleteSection(s.key)}
+                      >
                         <Trash2 className="size-4" aria-hidden="true" />
                       </Button>
                     )}
@@ -838,17 +952,16 @@ function Outline({
       : {};
 
   return (
-    <Card className="gap-0 rounded-lg p-0 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]" aria-label="โครงแบบประเมิน">
+    <Card
+      className="gap-0 rounded-lg p-0 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]"
+      aria-label="โครงแบบประเมิน"
+    >
       <div className="flex items-center gap-2 px-4 pt-4 pb-2">
         <h2 className="gv-bar-heading flex items-center gap-2 text-sm font-semibold">
           โครงแบบประเมิน
         </h2>
         {canEdit && (
-          <Button
-            variant="outline"
-            className="ml-auto h-9 px-2.5 text-sm"
-            onClick={onAddSection}
-          >
+          <Button variant="outline" className="ml-auto h-9 px-2.5 text-sm" onClick={onAddSection}>
             <Plus className="size-4" aria-hidden="true" /> หมวด
           </Button>
         )}
@@ -857,7 +970,7 @@ function Outline({
         <div className="px-3 pb-2">
           <Button
             variant="outline"
-            className="h-10 w-full justify-start border-dashed text-sm text-primary"
+            className="text-primary h-10 w-full justify-start border-dashed text-sm"
             onClick={onOpenBank}
           >
             <Library className="size-4" aria-hidden="true" /> หยิบจากคลังหัวข้อ
@@ -892,10 +1005,15 @@ function Outline({
                     )}
                   >
                     {s.name || "ไม่จัดหมวด"}
+                    {s.kind !== "CUSTOM" && (
+                      <span className="text-muted-foreground ml-1.5 text-xs font-medium">
+                        · {SECTION_KIND_LABEL[s.kind]}
+                      </span>
+                    )}
                   </b>
                 )}
                 {sw > 0 && (
-                  <span className="shrink-0 rounded-sm bg-accent px-2 text-xs font-bold text-primary tabular-nums">
+                  <span className="bg-accent text-primary shrink-0 rounded-sm px-2 text-xs font-bold tabular-nums">
                     {pct}%
                   </span>
                 )}
@@ -923,7 +1041,7 @@ function Outline({
                   aria-hidden="true"
                 >
                   <span
-                    className="block h-full rounded-full bg-primary transition-[width] duration-500"
+                    className="bg-primary block h-full rounded-full transition-[width] duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -937,7 +1055,7 @@ function Outline({
                 return (
                   <div key={q.uiKey} {...dropProps({ beforeKey: q.uiKey }, q.uiKey)}>
                     {over === q.uiKey && (
-                      <div className="mx-2 h-[3px] rounded bg-ring" aria-hidden="true" />
+                      <div className="bg-ring mx-2 h-[3px] rounded" aria-hidden="true" />
                     )}
                     <button
                       type="button"
@@ -981,7 +1099,7 @@ function Outline({
                       </span>
                       {warn && (
                         <span
-                          className="size-1.5 shrink-0 rounded-full bg-status-late-dot"
+                          className="bg-status-late-dot size-1.5 shrink-0 rounded-full"
                           title="มีคำแนะนำ"
                           aria-label="มีคำแนะนำ"
                         />
@@ -993,12 +1111,12 @@ function Outline({
               {canEdit && (
                 <div {...dropProps({ sectionKey: s.key }, `end-${s.key}`)}>
                   {over === `end-${s.key}` && (
-                    <div className="mx-2 h-[3px] rounded bg-ring" aria-hidden="true" />
+                    <div className="bg-ring mx-2 h-[3px] rounded" aria-hidden="true" />
                   )}
                   <button
                     type="button"
                     onClick={() => onAddTopic(s.key)}
-                    className="border-border hover:bg-accent mt-0.5 flex min-h-9 w-full items-center gap-1.5 rounded-lg border-[1.5px] border-dashed px-2.5 text-sm font-semibold text-primary hover:border-ring hover:bg-accent"
+                    className="border-border hover:bg-accent text-primary hover:border-ring hover:bg-accent mt-0.5 flex min-h-9 w-full items-center gap-1.5 rounded-lg border-[1.5px] border-dashed px-2.5 text-sm font-semibold"
                   >
                     <Plus className="size-3.5" aria-hidden="true" /> เพิ่มหัวข้อ
                     {s.name ? `ใน${s.name}` : ""}
@@ -1035,7 +1153,9 @@ function IconBtn({
       onClick={onClick}
       className={cn(
         "text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-30",
-        danger ? "hover:bg-destructive-muted hover:text-destructive" : "hover:bg-muted hover:text-foreground",
+        danger
+          ? "hover:bg-destructive-muted hover:text-destructive"
+          : "hover:bg-muted hover:text-foreground",
       )}
     >
       {children}
@@ -1045,7 +1165,14 @@ function IconBtn({
 
 /* ───────────────────────── topic editor ───────────────────────── */
 
-const TYPE_ORDER: AnswerType[] = ["RATING", "CHOICE", "MULTI_CHOICE", "SHORT_TEXT", "PARAGRAPH"];
+const TYPE_ORDER: AnswerType[] = [
+  "RATING",
+  "CHOICE",
+  "MULTI_CHOICE",
+  "SHORT_TEXT",
+  "PARAGRAPH",
+  "FILE_EVIDENCE",
+];
 
 function TopicEditor({
   q,
@@ -1102,9 +1229,7 @@ function TopicEditor({
 
       <div className="space-y-4 p-5">
         <label className="block">
-          <span className="text-foreground mb-1.5 block text-sm font-bold">
-            ชื่อหัวข้อ
-          </span>
+          <span className="text-foreground mb-1.5 block text-sm font-bold">ชื่อหัวข้อ</span>
           <Input
             value={q.text}
             disabled={!canEdit}
@@ -1115,7 +1240,7 @@ function TopicEditor({
           />
         </label>
         {parts.length >= 3 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-status-late-border bg-status-late-bg px-3 py-2 text-sm text-status-late-fg">
+          <div className="border-status-late-border bg-status-late-bg text-status-late-fg flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm">
             <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
             <span className="min-w-0 flex-1">
               หัวข้อนี้มีหลายเรื่องในข้อเดียว ถ้าคนเก่งเรื่องหนึ่งแต่อ่อนอีกเรื่องจะให้คะแนนยาก
@@ -1145,9 +1270,7 @@ function TopicEditor({
 
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
           <div>
-            <span className="text-foreground mb-1.5 block text-sm font-bold">
-              ประเภทคำตอบ
-            </span>
+            <span className="text-foreground mb-1.5 block text-sm font-bold">ประเภทคำตอบ</span>
             <div
               role="radiogroup"
               aria-label="ประเภทคำตอบ"
@@ -1174,7 +1297,7 @@ function TopicEditor({
                   }
                   className={cn(
                     "text-muted-foreground min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-60 md:min-h-9",
-                    q.answerType === t && "bg-card text-foreground ",
+                    q.answerType === t && "bg-card text-foreground",
                   )}
                 >
                   {ANSWER_TYPE_LABEL[t]}
@@ -1184,9 +1307,7 @@ function TopicEditor({
           </div>
           {q.answerType === "RATING" && (
             <div>
-              <span className="text-foreground mb-1.5 block text-sm font-bold">
-                น้ำหนัก
-              </span>
+              <span className="text-foreground mb-1.5 block text-sm font-bold">น้ำหนัก</span>
               <div className="border-border inline-flex h-12 items-center overflow-hidden rounded-lg border-[1.5px]">
                 <button
                   type="button"
@@ -1241,7 +1362,9 @@ function TopicEditor({
                   }
                   className={cn(
                     "min-h-9 rounded-sm border-[1.5px] px-3.5 text-sm font-semibold disabled:opacity-60",
-                    on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
+                    on
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card",
                   )}
                 >
                   {RATER_LABEL[r]}
@@ -1298,6 +1421,11 @@ function TopicEditor({
           </div>
         )}
 
+        {q.answerType === "FILE_EVIDENCE" && (
+          <p className="text-muted-foreground text-sm">
+            ผู้ประเมินแนบไฟล์หรือลิงก์หลักฐานได้ — ไม่นับเข้าคะแนน
+          </p>
+        )}
         {CHOICE.has(q.answerType) && (
           <div className="space-y-2">
             <span className="text-foreground block text-sm font-bold">ตัวเลือก</span>
@@ -1383,7 +1511,7 @@ function ScaleCard({
               key={n}
               type="button"
               onClick={() => onPreset(n)}
-              className="border-border min-h-8 rounded-sm border-[1.5px] px-3 text-xs font-semibold hover:border-ring"
+              className="border-border hover:border-ring min-h-8 rounded-sm border-[1.5px] px-3 text-xs font-semibold"
             >
               ชุด {n} ระดับ
             </button>
@@ -1393,7 +1521,7 @@ function ScaleCard({
             aria-pressed={usingSystem}
             onClick={onSystem}
             className={cn(
-              "min-h-8 rounded-sm border-[1.5px] px-3 text-xs font-semibold hover:border-ring",
+              "hover:border-ring min-h-8 rounded-sm border-[1.5px] px-3 text-xs font-semibold",
               usingSystem ? "border-primary bg-accent text-accent-foreground" : "border-border",
             )}
           >
@@ -1441,7 +1569,7 @@ function ScaleCard({
       {canEdit && (
         <Button
           variant="outline"
-          className="h-10 border-dashed text-primary"
+          className="text-primary h-10 border-dashed"
           disabled={labels.length >= MAX_LEVELS}
           onClick={onAdd}
         >
@@ -1501,6 +1629,7 @@ function PhonePreview({
         required: x.q.required,
         visibleTo: x.q.visibleTo,
         section: x.s.name || null,
+        sectionKind: x.s.kind,
         levelDescriptions: Object.entries(x.q.levels)
           .filter(([, t]) => t.trim())
           .map(([score, text]) => ({ score: Number(score), text })),
@@ -1529,7 +1658,7 @@ function PhonePreview({
               }}
               className={cn(
                 "min-h-8 rounded-sm px-2.5 text-xs font-semibold",
-                as === r && "bg-card ",
+                as === r && "bg-card",
               )}
             >
               {RATER_LABEL[r]}
@@ -1537,9 +1666,9 @@ function PhonePreview({
           ))}
         </div>
       </div>
-      <div className="mx-auto w-full max-w-[330px] rounded-sm border border-border bg-card p-0 ">
+      <div className="border-border bg-card mx-auto w-full max-w-[330px] rounded-sm border p-0">
         <div className="bg-background h-[520px] [scrollbar-width:none] overflow-y-auto rounded-lg">
-          <div className="sticky top-0 z-[1] bg-primary px-3.5 pt-3 pb-2.5 text-white">
+          <div className="bg-primary sticky top-0 z-[1] px-3.5 pt-3 pb-2.5 text-white">
             <b className="block text-sm">ประเมิน วันชัย (ตัวอย่าง)</b>
             <span className="block truncate text-xs text-white">
               {formName} · ในฐานะ{RATER_LABEL[as]}
@@ -1699,11 +1828,7 @@ function BankPicker({
                 <div className="min-w-0 flex-1">
                   <p className="text-sm leading-snug font-semibold break-words">{b.text}</p>
                   <p className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-2 text-xs">
-                    {b.section && (
-                      <span className="font-semibold text-primary">
-                        {b.section}
-                      </span>
-                    )}
+                    {b.section && <span className="text-primary font-semibold">{b.section}</span>}
                     <span>{ANSWER_TYPE_LABEL[b.answerType]}</span>
                     {b.answerType === "RATING" && (
                       <span>

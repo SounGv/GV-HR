@@ -22,6 +22,7 @@ const questionSelect = {
   visibleTo: true,
   levelDescriptions: true,
   section: true,
+  sectionKind: true,
 } satisfies Prisma.AppraisalQuestionSelect;
 
 const asOptions = (v: Prisma.JsonValue | null): { value: string; label: string }[] | null =>
@@ -83,11 +84,21 @@ export async function getForm(companyId: string, id: string) {
     ...f,
     ratingLabels: parseRatingLabels(f.ratingLabels, f.ratingMax),
     publishedAt: f.publishedAt?.toISOString() ?? null,
-    questions: f.questions.map((q) => ({ ...q, options: asOptions(q.options), levelDescriptions: cleanLevels(q.levelDescriptions, f.ratingMax) })),
+    questions: f.questions.map((q) => ({
+      ...q,
+      options: asOptions(q.options),
+      levelDescriptions: cleanLevels(q.levelDescriptions, f.ratingMax),
+      sectionKind: q.sectionKind ?? "CUSTOM",
+    })),
   };
 }
 
-export async function createForm(companyId: string, session: AccessClaims, input: FormCreateInput, meta?: Meta) {
+export async function createForm(
+  companyId: string,
+  session: AccessClaims,
+  input: FormCreateInput,
+  meta?: Meta,
+) {
   const form = await prisma.appraisalForm.create({
     data: {
       companyId,
@@ -114,7 +125,13 @@ export async function createForm(companyId: string, session: AccessClaims, input
 }
 
 /** Saves a DRAFT (name, description and the whole question list). A published form is never edited in place. */
-export async function updateForm(companyId: string, session: AccessClaims, id: string, input: FormUpdateInput, meta?: Meta) {
+export async function updateForm(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  input: FormUpdateInput,
+  meta?: Meta,
+) {
   const existing = await prisma.appraisalForm.findFirst({
     where: { id, companyId, deletedAt: null },
     select: { id: true, status: true, ratingMax: true },
@@ -127,15 +144,26 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
   // A draft may change its number of scores; names and descriptions are then read against the new scale.
   const ratingMax = input.ratingMax ?? existing.ratingMax;
   // Score names: null = back to the system names; otherwise one name for every score.
-  const labels = input.ratingLabels === undefined ? undefined : input.ratingLabels === null ? null : parseRatingLabels(input.ratingLabels, ratingMax);
-  if (input.ratingLabels && !labels) throw BadRequest(`ตั้งชื่อระดับคะแนนให้ครบทั้ง ${ratingMax} ระดับ`);
+  const labels =
+    input.ratingLabels === undefined
+      ? undefined
+      : input.ratingLabels === null
+        ? null
+        : parseRatingLabels(input.ratingLabels, ratingMax);
+  if (input.ratingLabels && !labels)
+    throw BadRequest(`ตั้งชื่อระดับคะแนนให้ครบทั้ง ${ratingMax} ระดับ`);
 
   await prisma.appraisalForm.update({
     where: { id },
     data: {
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
-      ...(labels !== undefined ? { ratingLabels: labels === null ? Prisma.DbNull : (labels as unknown as Prisma.InputJsonValue) } : {}),
+      ...(labels !== undefined
+        ? {
+            ratingLabels:
+              labels === null ? Prisma.DbNull : (labels as unknown as Prisma.InputJsonValue),
+          }
+        : {}),
       ...(input.noteAtLowest !== undefined ? { noteAtLowest: input.noteAtLowest } : {}),
       ...(input.ratingMax !== undefined ? { ratingMax: input.ratingMax } : {}),
       updatedById: session.sub,
@@ -156,9 +184,11 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
                 required: q.required,
                 visibleTo: q.visibleTo,
                 section: q.section?.trim() || null,
+                sectionKind: q.sectionKind ?? "CUSTOM",
                 levelDescriptions:
                   q.answerType === "RATING"
-                    ? ((cleanLevels(q.levelDescriptions, ratingMax) ?? undefined) as Prisma.InputJsonValue | undefined)
+                    ? ((cleanLevels(q.levelDescriptions, ratingMax) ?? undefined) as
+                        Prisma.InputJsonValue | undefined)
                     : undefined,
               })),
             },
@@ -178,10 +208,21 @@ export async function updateForm(companyId: string, session: AccessClaims, id: s
 }
 
 /** DRAFT -> PUBLISHED. Refuses a form with problems, and retires the previous published version of the same form. */
-export async function publishForm(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+export async function publishForm(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
   const form = await prisma.appraisalForm.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, status: true, lineageId: true, ratingMax: true, questions: { select: questionSelect, orderBy: { order: "asc" } } },
+    select: {
+      id: true,
+      status: true,
+      lineageId: true,
+      ratingMax: true,
+      questions: { select: questionSelect, orderBy: { order: "asc" } },
+    },
   });
   if (!form) throw NotFound("ไม่พบแบบประเมิน");
   if (form.status !== "DRAFT") throw BadRequest("แบบนี้ถูกใช้งานแล้ว");
@@ -223,7 +264,12 @@ export async function publishForm(companyId: string, session: AccessClaims, id: 
 }
 
 /** Copies a published form into the next DRAFT version. If that draft already exists, returns it instead of making another. */
-export async function createNewVersion(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+export async function createNewVersion(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
   const source = await prisma.appraisalForm.findFirst({
     where: { id, companyId, deletedAt: null },
     select: {
@@ -270,7 +316,9 @@ export async function createNewVersion(companyId: string, session: AccessClaims,
           required: q.required,
           visibleTo: q.visibleTo,
           section: q.section,
-          levelDescriptions: (q.levelDescriptions ?? undefined) as Prisma.InputJsonValue | undefined,
+          sectionKind: q.sectionKind ?? "CUSTOM",
+          levelDescriptions: (q.levelDescriptions ?? undefined) as
+            Prisma.InputJsonValue | undefined,
         })),
       },
     },
@@ -288,14 +336,22 @@ export async function createNewVersion(companyId: string, session: AccessClaims,
   return created;
 }
 
-export async function deleteForm(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+export async function deleteForm(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
   const existing = await prisma.appraisalForm.findFirst({
     where: { id, companyId, deletedAt: null },
     select: { id: true, status: true, name: true },
   });
   if (!existing) throw NotFound("ไม่พบแบบประเมิน");
   if (existing.status !== "DRAFT") throw BadRequest("ลบได้เฉพาะแบบประเมินที่ยังเป็นฉบับร่าง");
-  await prisma.appraisalForm.update({ where: { id }, data: { deletedAt: new Date(), updatedById: session.sub } });
+  await prisma.appraisalForm.update({
+    where: { id },
+    data: { deletedAt: new Date(), updatedById: session.sub },
+  });
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -322,7 +378,12 @@ type BankSource = {
  * help text, section and score descriptions win when it has them. Sequential on purpose
  * (connection pool of 1).
  */
-async function saveToBank(companyId: string, session: AccessClaims, scaleMax: number, questions: BankSource[]) {
+async function saveToBank(
+  companyId: string,
+  session: AccessClaims,
+  scaleMax: number,
+  questions: BankSource[],
+) {
   for (const q of questions) {
     const text = q.text.trim();
     if (!text) continue;
@@ -337,7 +398,9 @@ async function saveToBank(companyId: string, session: AccessClaims, scaleMax: nu
         data: {
           ...(q.helpText ? { helpText: q.helpText } : {}),
           ...(q.section ? { section: q.section } : {}),
-          ...(levels ? { levelDescriptions: levels as unknown as Prisma.InputJsonValue, scaleMax } : {}),
+          ...(levels
+            ? { levelDescriptions: levels as unknown as Prisma.InputJsonValue, scaleMax }
+            : {}),
           usedCount: { increment: 1 },
         },
       });
@@ -380,8 +443,16 @@ export async function listBank(companyId: string) {
 }
 
 /** Takes one entry out of the bank (forms that already copied it keep their copy). */
-export async function removeFromBank(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
-  const row = await prisma.appraisalQuestionBank.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true, text: true } });
+export async function removeFromBank(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
+  const row = await prisma.appraisalQuestionBank.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true, text: true },
+  });
   if (!row) throw NotFound("ไม่พบหัวข้อในคลัง");
   await prisma.appraisalQuestionBank.update({ where: { id }, data: { deletedAt: new Date() } });
   await writeAudit({
