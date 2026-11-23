@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DateInput } from "@/components/ui/date-input";
 
@@ -72,43 +73,63 @@ export function HourMinuteSelect({
     if (hour && minute) onChange(`${hour}:${minute}`);
     else if (hour) onChange(`${hour}:00`);
   };
+  const selectClass = cn(
+    className,
+    // Last so caller `px-2 h-8` cannot cover the chevron or shrink the tap target.
+    // iOS treats `cursor: pointer` as "this is tappable" inside a scrolling page.
+    "min-h-11 min-w-[3.25rem] w-full flex-1 cursor-pointer appearance-none pr-6 text-center text-base tabular-nums md:min-h-8",
+  );
   return (
-    // No native arrow and centred digits: on a phone two pickers share half a row, and the arrow covered "08" / "59".
+    // Custom chevron (native arrow covered "08" / "59" when two pickers shared a row). pointer-events-none so the select still gets the tap.
     <div className="flex min-w-[10rem] items-center gap-1">
-      <select
-        id={id}
-        aria-label="ชั่วโมง"
-        aria-invalid={ariaInvalid}
-        className={cn("min-w-[3.25rem] flex-1 appearance-none text-center tabular-nums", className)}
-        value={h ?? ""}
-        onBlur={onBlur}
-        onChange={(e) => set(e.target.value, m || "00")}
-      >
-        <option value="">ชม.</option>
-        {Array.from({ length: 24 }, (_, i) => (
-          <option key={i} value={pad2(i)}>
-            {pad2(i)}
-          </option>
-        ))}
-      </select>
-      <span aria-hidden="true" className="shrink-0">:</span>
-      <select
-        aria-label="นาที"
-        aria-invalid={ariaInvalid}
-        className={cn("min-w-[3.25rem] flex-1 appearance-none text-center tabular-nums", className)}
-        value={m ?? ""}
-        onBlur={onBlur}
-        onChange={(e) => set(h || "00", e.target.value)}
-      >
-        <option value="">นาที</option>
-        {/* Keep a stored minute that is not on the step (e.g. 18:31) selectable. */}
-        {[...new Set([...minutes.map(pad2), ...(m ? [m] : [])])].sort().map((mm) => (
-          <option key={mm} value={mm}>
-            {mm}
-          </option>
-        ))}
-      </select>
-      <span className="shrink-0 text-sm text-muted-foreground">น.</span>
+      <span className="relative min-w-0 flex-1">
+        <select
+          id={id}
+          aria-label="ชั่วโมง"
+          aria-invalid={ariaInvalid}
+          className={selectClass}
+          value={h ?? ""}
+          onBlur={onBlur}
+          onChange={(e) => set(e.target.value, m || "00")}
+        >
+          <option value="">ชม.</option>
+          {Array.from({ length: 24 }, (_, i) => (
+            <option key={i} value={pad2(i)}>
+              {pad2(i)}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          className="text-muted-foreground pointer-events-none absolute top-1/2 right-1.5 size-3.5 -translate-y-1/2"
+          aria-hidden="true"
+        />
+      </span>
+      <span aria-hidden="true" className="shrink-0">
+        :
+      </span>
+      <span className="relative min-w-0 flex-1">
+        <select
+          aria-label="นาที"
+          aria-invalid={ariaInvalid}
+          className={selectClass}
+          value={m ?? ""}
+          onBlur={onBlur}
+          onChange={(e) => set(h || "00", e.target.value)}
+        >
+          <option value="">นาที</option>
+          {/* Keep a stored minute that is not on the step (e.g. 18:31) selectable. */}
+          {[...new Set([...minutes.map(pad2), ...(m ? [m] : [])])].sort().map((mm) => (
+            <option key={mm} value={mm}>
+              {mm}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          className="text-muted-foreground pointer-events-none absolute top-1/2 right-1.5 size-3.5 -translate-y-1/2"
+          aria-hidden="true"
+        />
+      </span>
+      <span className="text-muted-foreground shrink-0 text-sm">น.</span>
     </div>
   );
 }
@@ -157,7 +178,11 @@ export function DateTimeField({
         aria-invalid={ariaInvalid}
         value={time}
         onBlur={onBlur}
-        onChange={(t) => onChange(`${date || new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date())}T${t}`)}
+        onChange={(t) =>
+          onChange(
+            `${date || new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date())}T${t}`,
+          )
+        }
       />
     </div>
   );

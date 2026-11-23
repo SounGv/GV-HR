@@ -1226,8 +1226,16 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
 @media (max-width: 767px) {
   .gv-m :is(select, textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="file"]):not([type="color"])):not(table *) {
     min-height: 44px;
+    touch-action: manipulation;
   }}
 @media (max-width: 767px) {
+  .gv-m [data-slot="date-input"] {
+    min-height: 44px;
+    height: 44px;
+  }
+  .gv-m select {
+    cursor: pointer;
+  }
   .gv-m [data-slot="dropdown-menu-trigger"]:not(table *) {
     min-height: 44px;
   }}
