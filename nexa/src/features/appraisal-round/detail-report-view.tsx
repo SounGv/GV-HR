@@ -19,6 +19,8 @@ import { useDetailOverview, useDetailPerson } from "./hooks";
 import type { DetailOverview, DetailPerson, DetailPersonView } from "./detail-report-types";
 import { RATER_LABEL } from "./types";
 import { Delta, fmt, MonthsTab, OverviewTab, PeopleTab, SectionsTab, TeamTab } from "./detail-report-tables";
+import { ExecTab } from "./detail-report-exec";
+import { MonthlyCharts } from "./detail-report-monthly";
 
 const dateTh = (iso: string | null) =>
   iso ? new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok" }).format(new Date(iso)) : "-";
@@ -55,7 +57,7 @@ function ChartCard({ title, hint, children }: { title: string; hint?: string; ch
 export function DetailReportView() {
   const [roundId, setRoundId] = useState<string | null>(null);
   const q = useDetailOverview(roundId);
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("exec");
   const [pick, setPick] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dept, setDept] = useState("");
@@ -129,13 +131,17 @@ export function DetailReportView() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as string)} className="gap-3">
         <TabsList variant="line" className="w-fit max-w-full justify-start overflow-x-auto [scrollbar-width:none] print:hidden [&::-webkit-scrollbar]:hidden">
-          <TabsTrigger value="overview">ภาพรวม</TabsTrigger>
+          <TabsTrigger value="exec">สรุปสำหรับผู้บริหาร</TabsTrigger>
+          <TabsTrigger value="overview">กราฟภาพรวม</TabsTrigger>
           <TabsTrigger value="people">สรุปรายคน</TabsTrigger>
           <TabsTrigger value="months">เทียบรายรอบ</TabsTrigger>
           <TabsTrigger value="sections">รายหมวดและความเห็น</TabsTrigger>
           <TabsTrigger value="team">รายทีม</TabsTrigger>
           <TabsTrigger value="person">ดูรายคน</TabsTrigger>
         </TabsList>
+        <TabsContent value="exec">
+          <ExecTab key={data.roundId} data={data} onOpenPerson={open} onGoTab={setTab} />
+        </TabsContent>
         <TabsContent value="overview">
           <div className="mb-2 hidden justify-end md:flex print:hidden">
             <Button variant="outline" className="h-11 md:h-9" onClick={() => window.print()}>
@@ -148,7 +154,7 @@ export function DetailReportView() {
           <PeopleTab data={data} people={filtered} onOpen={open} />
         </TabsContent>
         <TabsContent value="months">
-          <MonthsTab data={data} people={filtered} onOpen={open}>
+          <MonthsTab data={data} people={filtered} onOpen={open} top={<MonthlyCharts data={data} />}>
             <details className="rounded-sm border border-border bg-card p-3">
               <summary className="min-h-11 cursor-pointer text-sm font-medium md:min-h-0">ดูเป็นกราฟรายทีมข้ามรอบ และคนที่ขึ้นลงมากที่สุด</summary>
               <div className="mt-3">

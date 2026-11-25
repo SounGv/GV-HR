@@ -7,6 +7,7 @@ import { pickForm, type RoundSnapshot } from "./form-snapshot";
 import { sheetPercent } from "./rater-sheet";
 import type { Answer, SnapQuestion } from "./answers";
 import { deltaOf, meanOf, monthLabelFromName, previousDepartmentMean, previousScore, ranksFor, sectionPercents, type RoundStamp, type ScoredRow } from "./detail-report-rules";
+import { resolveDepartment } from "./exec-summary-rules";
 import type { DetailHistory, DetailOverview, DetailPerson, DetailPersonView, DetailRoundOption, DetailRoundPoint, DetailTeam } from "./detail-report-types";
 import type { RaterType } from "./types";
 
@@ -34,6 +35,8 @@ interface Scored extends ScoredRow {
 }
 
 async function loadScored(companyId: string) {
+  // Department names a round stored may no longer exist (renamed or split); those show as the person's current department.
+  const live = new Set((await prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { name: true } })).map((d) => d.name));
   const rows = await prisma.appraisalParticipant.findMany({
     where: { scorePercent: { not: null }, round: { companyId, deletedAt: null, isTemplate: false, status: { in: ["OPEN", "CLOSED"] } } },
     select: {
@@ -44,6 +47,7 @@ async function loadScored(companyId: string) {
       scorePercent: true,
       grade: true,
       scoreBreakdown: true,
+      employee: { select: { department: { select: { name: true } } } },
       round: { select: { name: true, status: true, startDate: true, openedAt: true, createdAt: true } },
     },
   });
@@ -58,7 +62,7 @@ async function loadScored(companyId: string) {
     scored.push({
       roundId: r.roundId,
       employeeId: r.employeeId,
-      department: r.departmentName ?? "ไม่ระบุแผนก",
+      department: resolveDepartment(r.departmentName, live, r.employee.department?.name ?? null),
       score: r.scorePercent as number,
       participantId: r.id,
       grade: r.grade,
@@ -66,7 +70,7 @@ async function loadScored(companyId: string) {
     });
   }
   const ordered = [...rounds.values()].sort((a, b) => b.at - a.at);
-  return { rounds: ordered, scored };
+  return { rounds: ordered, scored, live };
 }
 
 const stamps = (rounds: { id: string; at: number }[]): RoundStamp[] => rounds.map((r) => ({ id: r.id, at: r.at }));
@@ -219,7 +223,7 @@ export async function getDetailPerson(companyId: string, roundId: string, partic
       grade: true,
       scoreBreakdown: true,
       importedComments: true,
-      employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true } },
+      employee: { select: { firstName: true, lastName: true, nickname: true, employeeCode: true, department: { select: { name: true } } } },
       round: { select: { name: true, formSnapshot: true } },
       assignments: {
         select: { id: true, raterType: true, status: true, answers: true, submittedAt: true, rater: { select: { firstName: true, lastName: true, nickname: true } } },
@@ -231,11 +235,11 @@ export async function getDetailPerson(companyId: string, roundId: string, partic
   const form = pickForm(p.round.formSnapshot as unknown as RoundSnapshot | null, p.formId);
   const questions = (form?.questions ?? []) as SnapQuestion[];
   const ratingMax = form?.ratingMax ?? 5;
-  const department = p.departmentName ?? "ไม่ระบุแผนก";
   const answersOf = (a: unknown): Answer[] => (Array.isArray(a) ? (a as unknown as Answer[]) : []);
   const qText = new Map(questions.map((q) => [q.id, q.text]));
 
-  const { rounds, scored } = await loadScored(companyId);
+  const { rounds, scored, live } = await loadScored(companyId);
+  const department = resolveDepartment(p.departmentName, live, p.employee.department?.name ?? null);
   const inRound = scored.filter((s) => s.roundId === roundId);
   const mineRow = inRound.find((s) => s.participantId === p.id);
   const ranks = ranksFor(inRound.map((s) => s.score));
@@ -247,10 +251,11 @@ export async function getDetailPerson(companyId: string, roundId: string, partic
   // Sections: this person's mean per section against the mean of the same department in this round (everyone's submitted sheets).
   const submitted = p.assignments.filter((a) => a.status === "SUBMITTED");
   const mySections = sectionPercents(questions, submitted.map((a) => answersOf(a.answers)), ratingMax);
-  const peers = await prisma.appraisalParticipant.findMany({
-    where: { roundId, departmentName: p.departmentName, id: { not: p.id } },
-    select: { assignments: { where: { status: "SUBMITTED" }, select: { answers: true } } },
+  const roundPeople = await prisma.appraisalParticipant.findMany({
+    where: { roundId, id: { not: p.id } },
+    select: { departmentName: true, employee: { select: { department: { select: { name: true } } } }, assignments: { where: { status: "SUBMITTED" }, select: { answers: true } } },
   });
+  const peers = roundPeople.filter((x) => resolveDepartment(x.departmentName, live, x.employee.department?.name ?? null) === department);
   const deptSections = sectionPercents(questions, peers.flatMap((x) => x.assignments.map((a) => answersOf(a.answers))), ratingMax);
   const sections = [...mySections.entries()].map(([name, me]) => ({ name, me, dept: deptSections.get(name) ?? null }));
 

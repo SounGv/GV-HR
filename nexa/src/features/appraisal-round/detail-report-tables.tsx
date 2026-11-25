@@ -399,7 +399,7 @@ export function PeopleTab({ data, people, onOpen }: { data: DetailOverview; peop
 
 /* ─────────────────────────────── เทียบรายเดือน ─────────────────────────────── */
 
-export function MonthsTab({ data, people, onOpen, children }: { data: DetailOverview; people: DetailPerson[]; onOpen: (id: string) => void; children?: React.ReactNode }) {
+export function MonthsTab({ data, people, onOpen, top, children }: { data: DetailOverview; people: DetailPerson[]; onOpen: (id: string) => void; /** Charts shown above the table. */ top?: React.ReactNode; children?: React.ReactNode }) {
   const h = data.history;
   const byEmployee = new Map(h.people.map((x) => [x.employeeId, x.values]));
   // Two rounds in the same month would share a heading, so repeated labels are numbered.
@@ -413,6 +413,7 @@ export function MonthsTab({ data, people, onOpen, children }: { data: DetailOver
   const heads = labels.map((l) => (total(l.text) > 1 ? `${l.text} (${l.count})` : l.text));
   return (
     <div className="space-y-3">
+      {top}
       <div className="flex flex-wrap items-center gap-2">
         <ToneLegend />
         <Button
