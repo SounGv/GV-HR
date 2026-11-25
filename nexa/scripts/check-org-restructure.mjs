@@ -172,7 +172,7 @@ check("plan splits transport, moves Ob/Mai, sets Note as approver", () => {
   assert.equal(lp1Move.managerId, "note");
 });
 
-check("warehouse Online / Offline departments are renamed to Thai ฝ่าย names", () => {
+check("empty warehouse Online / Offline departments are deleted, not renamed", () => {
   const depts = [
     dept("wh", "แผนกคลังสินค้า", "WH"),
     dept("off", "แผนกคลังสินค้า Offline", "ST-OF"),
@@ -181,12 +181,26 @@ check("warehouse Online / Offline departments are renamed to Thai ฝ่าย n
     dept("clm", "แผนกเคลม", "CLM"),
   ];
   const plan = planOrgRestructure([person("note", "โน๊ต", null)], depts);
-  const renames = Object.fromEntries(
-    plan.deptChanges.filter((c) => c.kind === "rename").map((c) => [c.id, c.name]),
+  const deleted = plan.deptChanges.filter((c) => c.kind === "delete").map((c) => c.id).sort();
+  assert.deepEqual(deleted, ["off", "on"]);
+  assert.equal(plan.deptChanges.filter((c) => c.kind === "rename" && /ออนไลน์|ออฟไลน์/.test(c.name)).length, 0);
+  assert.ok(!plan.unresolved.some((u) => /คลังสินค้า/.test(u)));
+});
+
+check("people in a warehouse Online department move to แผนกคลังสินค้า before it is deleted", () => {
+  const depts = [
+    dept("wh", "แผนกคลังสินค้า", "WH"),
+    dept("on", "แผนกคลังสินค้า Online", "ST-ON"),
+    dept("tr", "แผนกขนส่ง", "TR"),
+    dept("clm", "แผนกเคลม", "CLM"),
+  ];
+  const plan = planOrgRestructure(
+    [person("note", "โน๊ต", null), person("w1", "สมชาย", "on")],
+    depts,
   );
-  assert.equal(renames.on, "ฝ่ายคลังสินค้า ออนไลน์");
-  assert.equal(renames.off, "ฝ่ายคลังสินค้า ออฟไลน์");
-  assert.equal(renames.wh, undefined);
+  const mv = plan.personMoves.find((m) => m.employeeId === "w1");
+  assert.equal(mv?.departmentId, "wh");
+  assert.ok(plan.deptChanges.some((c) => c.kind === "delete" && c.id === "on"));
 });
 
 check("ambiguous nickname is unresolved (no silent pick)", () => {

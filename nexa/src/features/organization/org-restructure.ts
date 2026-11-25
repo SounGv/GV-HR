@@ -46,7 +46,8 @@ export type PersonMove = {
 export type DeptChange =
   | { kind: "rename"; id: string; name: string; reason: string }
   | { kind: "detach"; id: string; parentId: null; name?: string; reason: string }
-  | { kind: "create"; name: string; code: string; parentId: null; reason: string };
+  | { kind: "create"; name: string; code: string; parentId: null; reason: string }
+  | { kind: "delete"; id: string; name: string; reason: string };
 
 export type RestructurePlan = {
   deptChanges: DeptChange[];
@@ -238,21 +239,45 @@ export function planOrgRestructure(
   }
   if (beer) notes.push(`พี่เบียร์อยู่ที่: ${labelOf(beer)} — คลังยังเป็นทีมเดิม`);
 
-  // Warehouse online / offline groups: Thai suffix to match the position titles
-  // (พนักงานคลังสินค้า-ออนไลน์ / -ออฟไลน์), and ฝ่าย instead of แผนก.
-  for (const [pattern, suffix] of [
-    [/online|ออนไลน์/i, "ออนไลน์"],
-    [/offline|ออฟไลน์/i, "ออฟไลน์"],
-  ] as const) {
-    const d = depts.find((x) => /คลังสินค้า/.test(x.name) && pattern.test(x.name));
-    if (!d) continue;
-    const name = `ฝ่ายคลังสินค้า ${suffix}`;
-    if (d.name !== name) {
+  // Online / Offline are job positions (พนักงานคลังสินค้า-ออนไลน์ / -ออฟไลน์) inside
+  // แผนกคลังสินค้า, not departments of their own — drop the empty duplicates.
+  const isWarehouseSplit = (d: RestructureDept) =>
+    /คลังสินค้า/.test(d.name) && /online|offline|ออนไลน์|ออฟไลน์/i.test(d.name);
+  const splitDepts = depts.filter(isWarehouseSplit);
+  if (splitDepts.length > 0) {
+    const splitIds = new Set(splitDepts.map((d) => d.id));
+    const mainWarehouse = depts.find(
+      (d) =>
+        !splitIds.has(d.id) &&
+        /^(แผนก|ฝ่าย)?\s*คลังสินค้า\s*$/.test(d.name.trim()),
+    );
+    for (const d of splitDepts) {
+      const kids = depts.filter((x) => x.parentId === d.id);
+      if (kids.length > 0) {
+        unresolved.push(`${d.name} ยังมีแผนกย่อย (${kids.map((k) => k.name).join(", ")}) — ย้ายออกก่อนลบ`);
+        continue;
+      }
+      const members = people.filter((p) => p.departmentId === d.id);
+      if (members.length > 0) {
+        if (!mainWarehouse) {
+          unresolved.push(`${d.name} มีพนักงาน ${members.length} คน แต่ไม่พบแผนกคลังสินค้าหลักให้ย้ายไป`);
+          continue;
+        }
+        for (const m of members) {
+          personMoves.push({
+            employeeId: m.id,
+            label: labelOf(m),
+            departmentId: mainWarehouse.id,
+            managerId: m.managerId,
+            reason: `ย้ายจาก ${d.name} ไป ${mainWarehouse.name} (ออนไลน์/ออฟไลน์ใช้ตำแหน่งแยกแทน)`,
+          });
+        }
+      }
       deptChanges.push({
-        kind: "rename",
+        kind: "delete",
         id: d.id,
-        name,
-        reason: `เรียกกลุ่มคลัง ${suffix} เป็นภาษาไทยและเป็นฝ่าย`,
+        name: d.name,
+        reason: "ออนไลน์/ออฟไลน์เป็นตำแหน่งในแผนกคลังสินค้า ไม่ใช่แผนกแยก",
       });
     }
   }
