@@ -60,7 +60,7 @@ const PAL = { gray: { 300: "#d1d5db", 400: "#9ca3af", 500: "#6b7280" }, slate: {
 const WHITE = [255, 255, 255];
 const DARKHINT = /gv-hero|gv-teal-surface|bg-\[#(0|1)[0-9a-f]{5}\]|bg-sidebar\b|bg-primary\b|bg-foreground|bg-black|bg-slate-9|bg-gray-9|gv-glass|text-white|bg-\[linear-gradient|from-\[#|dark:/;
 // Cards that are dark on purpose (check-in card, auth brand panel, payroll banners): light grey text on them is right.
-const DARKFILES = /auth-brand-panel|\(auth\)|mobile-checkin-flow|clock-card|integration-hub|self-profile-form|payroll-view|mobile-payslips-view|company-profile-form|step-illustration/;
+const DARKFILES = /auth-brand-panel|\(auth\)|mobile-checkin-flow|clock-card|integration-hub|self-profile-form|payroll-view|mobile-payslips-view|company-profile-form/;
 const found = { greyUtil: [], fade: [], whiteFade: [], hex: [], tiny: [], opacityText: [] };
 for (const f of files) {
   const rel = path.relative(ROOT, f).replaceAll("\\", "/");
