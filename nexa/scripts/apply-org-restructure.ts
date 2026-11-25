@@ -83,6 +83,7 @@ async function main() {
     for (const c of plan.deptChanges) {
       if (c.kind === "create") console.log(`  CREATE ${c.name} [${c.code}]  — ${c.reason}`);
       else if (c.kind === "rename") console.log(`  RENAME ${c.id} → ${c.name}  — ${c.reason}`);
+      else if (c.kind === "delete") console.log(`  DELETE ${c.name} (${c.id})  — ${c.reason}`);
       else
         console.log(
           `  DETACH ${c.id}${c.name ? ` rename→ ${c.name}` : ""}  — ${c.reason}`,
@@ -147,6 +148,7 @@ async function main() {
     await prisma.$transaction(
       async (tx) => {
         let dataEngId: string | null = null;
+        const deletions: Extract<(typeof plan.deptChanges)[number], { kind: "delete" }>[] = [];
         for (const c of plan.deptChanges) {
           if (c.kind === "create") {
             const existing = await tx.department.findFirst({
@@ -190,6 +192,8 @@ async function main() {
                 },
               });
             }
+          } else if (c.kind === "delete") {
+            deletions.push(c);
           } else if (c.kind === "rename") {
             await tx.department.update({
               where: { id: c.id },
@@ -256,6 +260,39 @@ async function main() {
                 entityId: m.employeeId,
                 before: { departmentId: before.departmentId, managerId: before.managerId },
                 after: { departmentId, managerId: m.managerId, reason: m.reason },
+              },
+            });
+          }
+        }
+
+        for (const d of deletions) {
+          const left = await tx.department.findUnique({
+            where: { id: d.id },
+            select: {
+              _count: {
+                select: {
+                  children: { where: { deletedAt: null } },
+                  employees: { where: { deletedAt: null } },
+                },
+              },
+            },
+          });
+          if (left && (left._count.children > 0 || left._count.employees > 0)) {
+            throw new Error(`${d.name} still has employees or sub-departments — not deleting`);
+          }
+          await tx.department.update({
+            where: { id: d.id },
+            data: { deletedAt: new Date(), updatedById: actor?.id },
+          });
+          if (actor) {
+            await tx.auditLog.create({
+              data: {
+                companyId,
+                actorUserId: actor.id,
+                action: "department.delete",
+                entity: "Department",
+                entityId: d.id,
+                after: { name: d.name, reason: d.reason },
               },
             });
           }
