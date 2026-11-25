@@ -240,8 +240,11 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
                             </span>
                           ))}
                           {dayItems.length > 2 && (
-                            <span className="px-1 text-xs text-muted-foreground">
-                              +{dayItems.length - 2}
+                            <span
+                              className="px-1 text-xs font-medium text-primary"
+                              title={`มีอีก ${dayItems.length - 2} รายการ กดที่วันนี้เพื่อดูทั้งหมด`}
+                            >
+                              อีก {dayItems.length - 2} รายการ
                             </span>
                           )}
                         </div>
