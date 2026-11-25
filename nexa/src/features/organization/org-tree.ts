@@ -270,6 +270,20 @@ export function buildDivisionPeople(
   if (!division.isOther) {
     heads = candidates.filter((n) => n.person.departmentId === division.key);
     if (heads.length === 0 && candidates.length === 1) heads = candidates;
+    // Several tops, none in the root department, and they do not all report to the same outside person
+    // (that person is drawn instead, see buildDivisionTree): when every one of them is titled ผจก. or
+    // หัวหน้าฝ่าย they are the heads side by side (warehouse manager next to the transport head).
+    if (heads.length === 0 && candidates.length > 1) {
+      const outerManagers = new Set(
+        tops.filter((p) => !(hasNoManager(p) && under(p.id) === 0)).map((p) => p.managerId),
+      );
+      const sharedOuter = outerManagers.size === 1 && !outerManagers.has(null);
+      const titled = (n: PersonNode) => {
+        const t = (n.person.positionTitle ?? "").trim();
+        return HEAD_TITLE_PREFIXES.some((x) => t.startsWith(x));
+      };
+      if (!sharedOuter && candidates.every(titled)) heads = candidates;
+    }
   }
   const headIds = new Set(heads.map((h) => h.person.id));
   const unassigned = division.isOther
@@ -327,11 +341,30 @@ export function buildDivisionPeople(
 
 // ─────────── Reporting tree (org-tree-mock.html) ───────────
 
-/** Position titles starting with this mark a team's assistant head (ผู้ช่วยหัวหน้า). */
-export const ASSISTANT_PREFIX = "ผู้ช่วยหัวหน้า";
+/** Position titles starting with this mark a team's assistant (ผู้ช่วยหัวหน้า…, ผู้ช่วยฝ่ายคลังสินค้า-ออนไลน์…). */
+export const ASSISTANT_PREFIX = "ผู้ช่วย";
+/**
+ * Position titles of a division's own heads. When a division has none in its root department and its tops
+ * do not share one outside manager, tops whose titles all start with one of these are the heads, side by side.
+ */
+export const HEAD_TITLE_PREFIXES = ["ผจก.", "หัวหน้าฝ่าย"] as const;
 
 export const isAssistant = (p: OrgPerson): boolean =>
   (p.positionTitle ?? "").trim().startsWith(ASSISTANT_PREFIX);
+
+/** One channel (ออนไลน์ / ออฟไลน์ / ทั่วไป) of a team that mixes online and offline people. */
+export interface TeamChannel {
+  label: string;
+  assistants: OrgPerson[];
+  members: OrgPerson[];
+  daily: OrgPerson[];
+}
+
+/** Online / offline channel read from the position title; everyone else is "ทั่วไป". */
+export function channelOf(p: OrgPerson): string {
+  const t = p.positionTitle ?? "";
+  return t.includes("ออนไลน์") ? "ออนไลน์" : t.includes("ออฟไลน์") ? "ออฟไลน์" : "ทั่วไป";
+}
 
 export interface TreeTeam {
   /** Department id; null for people with no department. */
@@ -344,6 +377,11 @@ export interface TreeTeam {
   members: OrgPerson[];
   /** Daily-paid people (รายวัน), by name. */
   daily: OrgPerson[];
+  /**
+   * Set only when the team has both ออนไลน์ and ออฟไลน์ people: the same people split by channel
+   * (assistants first in each). Empty for every other team; assistants/members/daily above stay complete.
+   */
+  channels: TeamChannel[];
   count: number;
 }
 
@@ -354,9 +392,19 @@ export interface TreeLead {
   teams: TreeTeam[];
 }
 
+/** One head of a division with several side-by-side heads, with the branches drawn under that head. */
+export interface HeadGroup {
+  /** Null for the leftovers: team heads and teams that sit under none of the heads. */
+  head: PersonNode | null;
+  leads: TreeLead[];
+  direct: TreeTeam[];
+}
+
 export interface DivisionTree {
   /** Division head(s), as in {@link buildDivisionPeople}. */
   heads: PersonNode[];
+  /** Only when there are several heads: each head with its own branches. Empty otherwise. */
+  headGroups: HeadGroup[];
   /**
    * The one person outside the division that everyone at the top of it reports to, shown as the top card
    * when the division has no head of its own (e.g. the company head over three managers).
@@ -381,7 +429,8 @@ export interface DivisionTree {
  *   team head, however deep, lands in that head's team cards, grouped by
  *   department (a deeper head shows as a member, tagged when an assistant).
  * - Assistant: position title starting with {@link ASSISTANT_PREFIX}; listed
- *   first in the team and tagged.
+ *   first in the team and tagged. A team with both ออนไลน์ and ออฟไลน์ people (by position
+ *   title) also gets `channels`, the same people split by channel.
  * - Daily-paid people (`daily`) go to the team card's รายวัน box.
  * - Everyone else not under a team head is grouped by department under the head.
  * - People with no manager at all stay in "ยังไม่ระบุหัวหน้า" as before.
@@ -415,6 +464,22 @@ export function buildDivisionTree(division: Division, people: OrgPerson[]): Divi
       .map(([k, ps]) => {
         const info = deptInfo.get(k);
         const rest = ps.filter((p) => !isAssistant(p));
+        const labels = new Set(ps.map(channelOf));
+        const split = labels.has("ออนไลน์") && labels.has("ออฟไลน์");
+        const channels: TeamChannel[] = split
+          ? ["ออนไลน์", "ออฟไลน์", "ทั่วไป"]
+              .map((label) => {
+                const inCh = ps.filter((p) => channelOf(p) === label);
+                const restCh = inCh.filter((p) => !isAssistant(p));
+                return {
+                  label,
+                  assistants: inCh.filter(isAssistant).sort(byPersonName),
+                  members: restCh.filter((p) => !p.daily).sort(byPersonName),
+                  daily: restCh.filter((p) => p.daily).sort(byPersonName),
+                };
+              })
+              .filter((c) => c.assistants.length + c.members.length + c.daily.length > 0)
+          : [];
         const team: TreeTeam = {
           deptId: k || null,
           name: info?.name ?? "ไม่ระบุแผนก",
@@ -422,6 +487,7 @@ export function buildDivisionTree(division: Division, people: OrgPerson[]): Divi
           assistants: ps.filter(isAssistant).sort(byPersonName),
           members: rest.filter((p) => !p.daily).sort(byPersonName),
           daily: rest.filter((p) => p.daily).sort(byPersonName),
+          channels,
           count: ps.length,
         };
         return { team, order: info?.order ?? Number.MAX_SAFE_INTEGER };
@@ -456,8 +522,34 @@ export function buildDivisionTree(division: Division, people: OrgPerson[]): Divi
     }
     return { person, under: under(person.id), teams: toTeams(below) };
   });
-  const direct = toTeams(members.filter((p) => !placed.has(p.id)));
+  const directPeople = members.filter((p) => !placed.has(p.id));
+  const direct = toTeams(directPeople);
   const allTeams = [...leads.flatMap((l) => l.teams), ...direct];
+
+  // Several heads: split the branches by which head each person reports up to (loop-safe walk).
+  let headGroups: HeadGroup[] = [];
+  if (base.heads.length > 1) {
+    const memberById = new Map(members.map((p) => [p.id, p]));
+    const headOf = (p: OrgPerson): string | null => {
+      const seen = new Set<string>();
+      let cur: OrgPerson | undefined = p;
+      while (cur && !seen.has(cur.id)) {
+        if (headIds.has(cur.id)) return cur.id;
+        seen.add(cur.id);
+        cur = cur.managerId ? memberById.get(cur.managerId) : undefined;
+      }
+      return null;
+    };
+    headGroups = base.heads.map((h) => ({
+      head: h,
+      leads: leads.filter((l) => headOf(l.person) === h.person.id),
+      direct: toTeams(directPeople.filter((p) => headOf(p) === h.person.id)),
+    }));
+    const restLeads = leads.filter((l) => headOf(l.person) === null);
+    const restDirect = toTeams(directPeople.filter((p) => headOf(p) === null));
+    if (restLeads.length + restDirect.length > 0)
+      headGroups.push({ head: null, leads: restLeads, direct: restDirect });
+  }
 
   // No head inside the division: if every top person reports to the same person outside it, that person
   // is the head to draw (a placeholder box with no one in it looked unfinished next to the other divisions).
@@ -474,6 +566,7 @@ export function buildDivisionTree(division: Division, people: OrgPerson[]): Divi
   }
   return {
     heads: base.heads,
+    headGroups,
     outerHead,
     leads,
     direct,

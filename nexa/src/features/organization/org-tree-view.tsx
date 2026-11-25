@@ -69,7 +69,6 @@ export function DivisionTreeChart({
     window.print();
   }
 
-  const branches = tree.leads.length + tree.direct.length;
   let order = 1;
 
   return (
@@ -117,7 +116,45 @@ export function DivisionTreeChart({
         <div ref={treeRef} className="gv-otree">
           <ul className="br">
             <li className="nd">
-              {tree.heads.length > 0 ? (
+              {tree.headGroups.length > 0 ? (
+                <>
+                  <div className="ot-empty">
+                    <Building2
+                      className="dark:text-primary size-5 shrink-0 text-primary"
+                      aria-hidden="true"
+                    />
+                    <span className="min-w-0">
+                      <b className="block text-sm leading-snug break-words">{divisionName}</b>
+                      <small className="text-muted-foreground block text-xs">
+                        {tree.heads.length} หัวหน้า ดูแลคนละสาย
+                      </small>
+                    </span>
+                  </div>
+                  <ul className="br">
+                    {tree.headGroups.map((g) => (
+                      <li key={g.head?.person.id ?? "rest"} className="nd">
+                        {g.head ? (
+                          <TopCard node={g.head} />
+                        ) : (
+                          <div className="ot-empty">
+                            <span className="min-w-0">
+                              <b className="block text-sm leading-snug break-words">
+                                ไม่อยู่ใต้หัวหน้าคนใด
+                              </b>
+                            </span>
+                          </div>
+                        )}
+                        <Branches
+                          leads={g.leads}
+                          direct={g.direct}
+                          hasHead={g.head !== null}
+                          next={() => order++}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : tree.heads.length > 0 ? (
                 <div className="ot-tops">
                   {tree.heads.map((h) => (
                     <TopCard key={h.person.id} node={h} />
@@ -139,34 +176,57 @@ export function DivisionTreeChart({
                   </span>
                 </div>
               )}
-              {branches > 0 && (
-                <ul className="br">
-                  {tree.leads.map((lead) => (
-                    <li key={lead.person.id} className="nd">
-                      <HeadCard lead={lead} index={order++} />
-                      {lead.teams.length > 0 && (
-                        <ul className="br">
-                          {lead.teams.map((t) => (
-                            <li key={t.deptId ?? "none"} className="nd">
-                              <TeamCard team={t} index={order++} />
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </li>
-                  ))}
-                  {tree.direct.map((t) => (
-                    <li key={`direct-${t.deptId ?? "none"}`} className="nd">
-                      <TeamCard team={t} index={order++} direct={tree.heads.length > 0} />
-                    </li>
-                  ))}
-                </ul>
+              {tree.headGroups.length === 0 && (
+                <Branches
+                  leads={tree.leads}
+                  direct={tree.direct}
+                  hasHead={tree.heads.length > 0}
+                  next={() => order++}
+                />
               )}
             </li>
           </ul>
         </div>
       </div>
     </div>
+  );
+}
+
+/** The team heads and the teams that report straight to the head, one level under a head card. */
+function Branches({
+  leads,
+  direct,
+  hasHead,
+  next,
+}: {
+  leads: TreeLead[];
+  direct: TreeTeam[];
+  hasHead: boolean;
+  next: () => number;
+}) {
+  if (leads.length + direct.length === 0) return null;
+  return (
+    <ul className="br">
+      {leads.map((lead) => (
+        <li key={lead.person.id} className="nd">
+          <HeadCard lead={lead} index={next()} />
+          {lead.teams.length > 0 && (
+            <ul className="br">
+              {lead.teams.map((t) => (
+                <li key={t.deptId ?? "none"} className="nd">
+                  <TeamCard team={t} index={next()} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+      {direct.map((t) => (
+        <li key={`direct-${t.deptId ?? "none"}`} className="nd">
+          <TeamCard team={t} index={next()} direct={hasHead} />
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -274,28 +334,64 @@ function TeamCard({ team, index, direct }: { team: TreeTeam; index: number; dire
           <b className="text-foreground block text-lg tabular-nums">{team.count}</b>คน
         </span>
       </div>
+      {team.channels.length > 0 ? (
+        team.channels.map((c) => (
+          <div key={c.label} className="mt-2.5">
+            <p className="text-muted-foreground border-border mb-1 flex justify-between border-b text-xs font-bold">
+              <span>{c.label}</span>
+              <span className="tabular-nums">
+                {c.assistants.length + c.members.length + c.daily.length} คน
+              </span>
+            </p>
+            <PeopleList
+              assistants={c.assistants}
+              members={c.members}
+              daily={c.daily}
+            />
+          </div>
+        ))
+      ) : (
+        <PeopleList assistants={team.assistants} members={team.members} daily={team.daily} />
+      )}
+    </div>
+  );
+}
+
+/** Assistants first (tagged), then members, then the รายวัน box. */
+function PeopleList({
+  assistants,
+  members,
+  daily,
+}: {
+  assistants: OrgPerson[];
+  members: OrgPerson[];
+  daily: OrgPerson[];
+}) {
+  const named = assistants.length + members.length;
+  return (
+    <>
       {named > 0 && (
         <ol className="ot-ml">
-          {team.assistants.map((p) => (
+          {assistants.map((p) => (
             <li key={p.id} className="is-asst">
-              <NameRow person={p} tag="ผู้ช่วยหัวหน้า" />
+              <NameRow person={p} tag="ผู้ช่วย" />
             </li>
           ))}
-          {team.members.map((p) => (
+          {members.map((p) => (
             <li key={p.id}>
               <NameRow person={p} />
             </li>
           ))}
         </ol>
       )}
-      {team.daily.length > 0 && (
+      {daily.length > 0 && (
         <div className={cn("ot-daily", named === 0 && "mt-2.5")}>
           <p className="mb-1.5 flex justify-between text-xs font-bold">
             <span>รายวัน</span>
-            <span className="tabular-nums">{team.daily.length} คน</span>
+            <span className="tabular-nums">{daily.length} คน</span>
           </p>
           <div className="ot-dl">
-            {team.daily.map((p) => (
+            {daily.map((p) => (
               <Link key={p.id} href={employeeHref(p.id)} title={p.positionTitle ?? undefined}>
                 <PersonAvatar
                   name={p.name}
@@ -310,7 +406,7 @@ function TeamCard({ team, index, direct }: { team: TreeTeam; index: number; dire
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

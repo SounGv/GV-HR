@@ -552,4 +552,94 @@ check("edit mode keeps empty columns so every department is a drop target", () =
   });
 }
 
+// ── Warehouse shape: manager heads the division, team heads under them, assistants tagged, channels split ──
+{
+  const wd = [
+    dept("st", "ฝ่ายคลังสินค้าและขนส่ง"),
+    dept("wh", "แผนกคลังสินค้า", "st"),
+    dept("in", "แผนกรับเข้าสินค้า", "st"),
+    dept("dv", "แผนกขนส่ง", "st"),
+  ];
+  const P = (id, d, m, title, extra = {}) => ({ ...person(id, d, m), positionTitle: title, ...extra });
+  const ppl = [
+    P("ceo", null, null, "CEO"),
+    P("hr1", null, "ceo", "HR"),
+    P("mgr", "in", "hr1", "ผจก.ฝ่ายคลังสินค้า"),
+    P("transport", "dv", "hr1", "หัวหน้าฝ่ายขนส่งสินค้า"),
+    P("t1", "dv", "transport", "พนักงานขนส่ง"),
+    P("driver", "dv", "ceo", "พนักงานขับรถ"),
+    P("hb", "st", "mgr", "หัวหน้าฝ่ายคลังสินค้า"),
+    P("hs", "st", "mgr", "หัวหน้าฝ่ายคลังสินค้า"),
+    P("asOn", "wh", "hb", "ผู้ช่วยฝ่ายคลังสินค้า-ออนไลน์"),
+    P("asOff", "wh", "hb", "ผู้ช่วยฝ่ายคลังสินค้า-ออฟไลน์"),
+    P("on1", "wh", "hb", "พนักงานคลังสินค้า-ออนไลน์"),
+    P("onDay", "wh", "hb", "พนักงานคลังสินค้า-ออนไลน์", { daily: true }),
+    P("off1", "wh", "hb", "พนักงานคลังสินค้า-ออฟไลน์"),
+    P("gen1", "wh", "hs", "จนท.ฝ่ายคลังสินค้า"),
+    P("in1", "in", "mgr", "จนท.รับเข้า"),
+  ];
+  const company = buildCompanyTree(wd, ppl);
+  const div = company.divisions.find((x) => x.key === "st");
+  const t = buildDivisionTree(div, ppl);
+  check("warehouse: tops titled ผจก./หัวหน้าฝ่าย that do not share one outside manager are heads side by side", () => {
+    assert.deepEqual(
+      t.heads.map((h) => h.person.id).sort(),
+      ["mgr", "transport"],
+    );
+  });
+  check("warehouse: each head gets its own branches; the rest sit in a head-less group", () => {
+    const g = Object.fromEntries(t.headGroups.map((x) => [x.head?.person.id ?? "rest", x]));
+    assert.deepEqual(
+      g.mgr.leads.map((l) => l.person.id).sort(),
+      ["hb", "hs"],
+    );
+    assert.deepEqual(
+      g.mgr.direct.flatMap((x) => x.members.map((m) => m.id)),
+      ["in1"],
+    );
+    assert.deepEqual(g.transport.leads, []);
+    assert.deepEqual(
+      g.transport.direct.flatMap((x) => x.members.map((m) => m.id)),
+      ["t1"],
+    );
+    assert.deepEqual(
+      g.rest.direct.flatMap((x) => x.members.map((m) => m.id)),
+      ["driver"],
+    );
+  });
+  check("warehouse: a top without such a title, or all tops under one outside manager, means no side-by-side heads", () => {
+    const plain = ppl.map((x) => (x.id === "mgr" ? { ...x, positionTitle: "จนท." } : x));
+    assert.equal(buildDivisionTree(div, plain).heads.length, 0);
+    assert.deepEqual(buildDivisionTree(div, plain).headGroups, []);
+    const same = ppl.map((x) => (x.id === "driver" ? { ...x, managerId: "hr1" } : x));
+    assert.equal(buildDivisionTree(div, same).heads.length, 0);
+    assert.equal(buildDivisionTree(div, same).outerHead?.person.id, "hr1");
+  });
+  check("warehouse: any position starting with ผู้ช่วย is an assistant", () => {
+    const team = t.leads.find((l) => l.person.id === "hb").teams[0];
+    assert.deepEqual(team.assistants.map((x) => x.id).sort(), ["asOff", "asOn"]);
+    assert.equal(t.headGroups.length, 3);
+  });
+  check("warehouse: a team with online and offline people is split by channel, assistants first", () => {
+    const team = t.leads.find((l) => l.person.id === "hb").teams[0];
+    assert.deepEqual(
+      team.channels.map((c) => c.label),
+      ["ออนไลน์", "ออฟไลน์"],
+    );
+    assert.deepEqual(
+      team.channels[0].assistants.map((x) => x.id),
+      ["asOn"],
+    );
+    assert.deepEqual(
+      team.channels[0].daily.map((x) => x.id),
+      ["onDay"],
+    );
+    assert.equal(team.assistants.length + team.members.length + team.daily.length, 5);
+  });
+  check("warehouse: a team without both channels is not split", () => {
+    const team = t.leads.find((l) => l.person.id === "hs").teams[0];
+    assert.deepEqual(team.channels, []);
+  });
+}
+
 console.log(`\n${n} checks passed`);
