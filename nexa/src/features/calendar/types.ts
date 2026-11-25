@@ -32,6 +32,13 @@ export interface CalendarDayPerson {
   partialLeave: boolean;
 }
 
+/** Head-counts drawn inside one calendar cell. */
+export interface CalendarDayCounts {
+  absent: number;
+  leave: number;
+  late: number;
+}
+
 /** Attendance of the whole company on one day, for people who may see attendance. */
 export interface CalendarDayAttendance {
   dateIso: string;

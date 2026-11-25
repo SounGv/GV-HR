@@ -14,8 +14,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 
+import { STATUS_META } from "@/features/attendance-status/status-meta";
+
 import { DayPanel, dayLabel } from "./day-panel";
-import { useMonth, useDeleteEvent, useDayAttendance } from "./hooks";
+import { useMonth, useDeleteEvent, useDayAttendance, useMonthCounts } from "./hooks";
 import type { CalendarItem, CalendarSource, MyDayStatus } from "./types";
 
 const THAI_MONTHS = [
@@ -91,6 +93,8 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
   const [deleteTarget, setDeleteTarget] = useState<CalendarItem | null>(null);
 
   const { data, isLoading, isError, refetch } = useMonth(month);
+  const countsQuery = useMonthCounts(month, canSeeAttendance);
+  const dayCounts = countsQuery.data?.data.days;
   const deleteMut = useDeleteEvent();
   const items = useMemo(() => data?.data.items ?? [], [data]);
   const myStatus = data?.data.myStatus ?? {};
@@ -101,6 +105,17 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
       const arr = map.get(it.date) ?? [];
       arr.push(it);
       map.set(it.date, arr);
+    }
+    return map;
+  }, [items]);
+
+  const leavePeople = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const it of items) {
+      if (it.source !== "leave") continue;
+      const set = map.get(it.date) ?? new Set<string>();
+      set.add(it.title);
+      map.set(it.date, set);
     }
     return map;
   }, [items]);
@@ -194,6 +209,25 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
                 </span>
               ))}
             </div>
+            {canSeeAttendance && (
+              <div className="mb-2 flex flex-wrap items-center gap-3 px-1">
+                <span className="text-xs font-medium text-muted-foreground">ในช่องวัน (จำนวนคน):</span>
+                {(
+                  [
+                    ["ABSENT", "ขาดงาน"],
+                    ["ON_LEAVE", "ลางาน"],
+                    ["LATE", "มาสาย"],
+                  ] as const
+                ).map(([st, label]) => (
+                  <span
+                    key={st}
+                    className={cn("rounded border px-1.5 text-[11px] leading-snug font-semibold", STATUS_META[st].surface)}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-7 gap-1">
               {WEEKDAYS.map((w) => (
                 <div key={w} className="py-1 text-center text-xs font-medium text-muted-foreground">
@@ -203,7 +237,16 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
               {isLoading
                 ? Array.from({ length: 42 }, (_, i) => <Skeleton key={i} className={cn("rounded-md", bare ? "h-28" : "h-20")} />)
                 : cells.map((c) => {
-                    const dayItems = bucket.get(c.iso) ?? [];
+                    const allItems = bucket.get(c.iso) ?? [];
+                    const dayItems = allItems.filter((it) => it.source !== "leave");
+                    const counted = canSeeAttendance ? dayCounts?.[c.iso] : undefined;
+                    const chips: { status: "ABSENT" | "ON_LEAVE" | "LATE"; n: number; short: string }[] = counted
+                      ? [
+                          { status: "ABSENT", n: counted.absent, short: "ขาด" },
+                          { status: "ON_LEAVE", n: counted.leave, short: "ลา" },
+                          { status: "LATE", n: counted.late, short: "สาย" },
+                        ]
+                      : [{ status: "ON_LEAVE", n: leavePeople.get(c.iso)?.size ?? 0, short: "ลา" }];
                     const status = myStatus[c.iso];
                     return (
                       <button
@@ -236,6 +279,22 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
                         >
                           {c.day}
                         </span>
+                        <div className="flex flex-wrap gap-0.5">
+                          {chips
+                            .filter((chip) => chip.n > 0)
+                            .map((chip) => (
+                              <span
+                                key={chip.status}
+                                className={cn(
+                                  "rounded border px-1 text-[11px] leading-snug font-semibold whitespace-nowrap",
+                                  STATUS_META[chip.status].surface,
+                                )}
+                                title={`${STATUS_META[chip.status].label} ${chip.n} คน`}
+                              >
+                                {chip.short} {chip.n}
+                              </span>
+                            ))}
+                        </div>
                         <div className="flex flex-col gap-0.5 overflow-hidden">
                           {dayItems.slice(0, 2).map((it) => (
                             <span

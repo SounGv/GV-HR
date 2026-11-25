@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchDay, fetchMonth, createEvent, updateEvent, deleteEvent } from "./api";
+import { fetchDay, fetchMonth, fetchMonthCounts, createEvent, updateEvent, deleteEvent } from "./api";
 import type { EventFormValues } from "./types";
 
 export const calendarKeys = {
@@ -13,6 +13,17 @@ export function useMonth(month: string) {
   return useQuery({
     queryKey: calendarKeys.month(month),
     queryFn: () => fetchMonth(month),
+    placeholderData: (prev) => prev,
+  });
+}
+
+/** Absent / leave / late head-counts for each day of a month, drawn inside the calendar cells. */
+export function useMonthCounts(month: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["calendar", "counts", month] as const,
+    queryFn: () => fetchMonthCounts(month),
+    enabled,
+    staleTime: 60_000,
     placeholderData: (prev) => prev,
   });
 }

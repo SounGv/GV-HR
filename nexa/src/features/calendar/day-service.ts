@@ -1,8 +1,17 @@
+import { prisma } from "@/lib/prisma";
 import type { AccessClaims } from "@/lib/auth/jwt";
-import { bangkokParts } from "@/lib/datetime";
+import { bangkokParts, LATE_GRACE_MIN } from "@/lib/datetime";
+import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
+import { teamScopeFilter } from "@/features/employee/service";
 import { loadTodayAttendance } from "@/features/attendance-status/service";
-import type { TodayStatus } from "@/features/attendance-status/status-rules";
-import type { CalendarDayAttendance } from "./types";
+import {
+  classifyToday,
+  excusedUntil,
+  hhmmToMin,
+  type HourRange,
+  type TodayStatus,
+} from "@/features/attendance-status/status-rules";
+import type { CalendarDayAttendance, CalendarDayCounts } from "./types";
 
 const DAY_MS = 86_400_000;
 
@@ -51,4 +60,117 @@ export async function getDayAttendance(
 
 function emptyCounts(): Record<TodayStatus, number> {
   return { NORMAL: 0, LATE: 0, ABSENT: 0, ON_LEAVE: 0, NOT_YET: 0 };
+}
+
+/** Same lookback as the dashboard: only people with a clock-in record this recently are checked. */
+const ACTIVITY_LOOKBACK_DAYS = 60;
+
+/**
+ * Absent / on leave / late head-counts for every finished working day of a month, for the numbers drawn inside each calendar cell.
+ *
+ * Same rules and people as the day panel and the attendance dashboard (classifyToday, the same team scope, only people who use
+ * the clock-in app, whole-day leave excuses the day, an hour or morning half day moves the start), read once for the month
+ * instead of once per day. Weekends, holidays and days still to come get no entry. Today is read as of now.
+ */
+export async function getMonthAttendanceCounts(
+  companyId: string,
+  session: AccessClaims,
+  month: string,
+): Promise<Record<string, CalendarDayCounts>> {
+  const [y, mo] = month.split("-").map(Number);
+  const start = new Date(Date.UTC(y, mo - 1, 1));
+  const monthEnd = new Date(Date.UTC(y, mo, 1));
+  const bkk = bangkokParts();
+  const today = bkk.dateUTC;
+  const rangeEnd = new Date(Math.min(monthEnd.getTime(), today.getTime() + DAY_MS));
+  if (rangeEnd.getTime() <= start.getTime()) return {};
+
+  const scope = teamScopeFilter(session) ?? {};
+  const roster = await prisma.employee.findMany({
+    where: { companyId, deletedAt: null, status: "ACTIVE", ...scope },
+    select: { id: true, employmentType: true },
+  });
+  if (roster.length === 0) return {};
+
+  const usage = await prisma.attendanceRecord.groupBy({
+    by: ["employeeId"],
+    where: {
+      companyId,
+      deletedAt: null,
+      workDate: { gte: new Date(start.getTime() - ACTIVITY_LOOKBACK_DAYS * DAY_MS), lt: rangeEnd },
+      employee: scope,
+    },
+  });
+  const users = new Set(usage.map((u) => u.employeeId));
+  const checked = roster.filter((e) => users.has(e.id));
+  if (checked.length === 0) return {};
+
+  const holidays = await prisma.holiday.findMany({
+    where: { companyId, deletedAt: null, date: { gte: start, lt: rangeEnd } },
+    select: { date: true },
+  });
+  const holidaySet = new Set(holidays.map((h) => h.date.toISOString().slice(0, 10)));
+
+  const records = await prisma.attendanceRecord.findMany({
+    where: { companyId, deletedAt: null, workDate: { gte: start, lt: rangeEnd }, employee: scope },
+    select: { employeeId: true, workDate: true, clockInAt: true },
+  });
+  const clockIn = new Map<string, number>();
+  for (const r of records) {
+    if (r.clockInAt) clockIn.set(`${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`, bangkokParts(r.clockInAt).minutesOfDay);
+  }
+
+  const leaves = await prisma.leaveRequest.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      status: "APPROVED",
+      startDate: { lt: rangeEnd },
+      endDate: { gte: start },
+      employee: scope,
+    },
+    select: { employeeId: true, unit: true, halfDay: true, halfDayPeriod: true, startDate: true, endDate: true, startTime: true, endTime: true },
+  });
+  const shifts = await resolveShiftMinutesBatch(companyId, start, rangeEnd);
+
+  const out: Record<string, CalendarDayCounts> = {};
+  for (let cur = new Date(start); cur.getTime() < rangeEnd.getTime(); cur = new Date(cur.getTime() + DAY_MS)) {
+    const day = cur.toISOString().slice(0, 10);
+    const dow = cur.getUTCDay();
+    if (dow === 0 || dow === 6 || holidaySet.has(day)) continue;
+    const nowMin = cur.getTime() === today.getTime() ? bkk.minutesOfDay : 24 * 60;
+
+    const dayLeaves = leaves.filter((l) => l.startDate.getTime() <= cur.getTime() && cur.getTime() <= l.endDate.getTime());
+    const wholeDay = new Set(dayLeaves.filter((l) => l.unit === "DAY" && (!l.halfDay || !l.halfDayPeriod)).map((l) => l.employeeId));
+    const morningHalf = new Set(dayLeaves.filter((l) => l.unit === "DAY" && l.halfDay && l.halfDayPeriod === "MORNING").map((l) => l.employeeId));
+    const hours = new Map<string, HourRange[]>();
+    for (const l of dayLeaves) {
+      if (l.unit !== "HOUR") continue;
+      const a = hhmmToMin(l.startTime);
+      const b = hhmmToMin(l.endTime);
+      if (a === null || b === null) continue;
+      hours.set(l.employeeId, [...(hours.get(l.employeeId) ?? []), { startMin: a, endMin: b }]);
+    }
+
+    const counts: CalendarDayCounts = { absent: 0, leave: 0, late: 0 };
+    for (const e of checked) {
+      const shift = shiftMinutesFromBatch(shifts, e.id, cur, e.employmentType);
+      const shiftEnd = shift.endMin <= shift.startMin ? shift.endMin + 24 * 60 : shift.endMin;
+      const hourly = excusedUntil(hours.get(e.id) ?? [], shift.startMin);
+      const halfStart = morningHalf.has(e.id) ? Math.floor((shift.startMin + shiftEnd) / 2) : null;
+      const status: TodayStatus = classifyToday({
+        nowMin,
+        shiftStartMin: shift.startMin,
+        clockInMin: clockIn.get(`${e.id}|${day}`) ?? null,
+        onApprovedLeave: wholeDay.has(e.id),
+        lateGraceMin: LATE_GRACE_MIN,
+        excusedUntilMin: halfStart == null ? hourly : Math.max(hourly ?? 0, halfStart),
+      });
+      if (status === "ABSENT") counts.absent++;
+      else if (status === "ON_LEAVE") counts.leave++;
+      else if (status === "LATE") counts.late++;
+    }
+    out[day] = counts;
+  }
+  return out;
 }
