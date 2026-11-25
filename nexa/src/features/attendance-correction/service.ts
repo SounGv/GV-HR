@@ -4,7 +4,8 @@ import { refreshAttendanceWatch } from "@/features/attendance-status/watch-cache
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import { createNotification, notifyPermissionHolders } from "@/features/notification/service";
+import { createNotification } from "@/features/notification/service";
+import { notifyApprovalOwners } from "@/features/notification/approval-routing";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { bangkokParts, lateOrPresent, EARLY_LEAVE_GRACE_MIN } from "@/lib/datetime";
 import { isEarlyLeaveElapsed, minutesSinceWorkDate } from "@/features/attendance/overnight";
@@ -151,12 +152,8 @@ export async function createAttendanceCorrection(
     category: "attendance-correction",
     link: `/attendance/corrections/${record.id}`,
   };
-  if (employee?.managerId) {
-    await createNotification(companyId, employee.managerId, correctionNotice, session.sub);
-  } else {
-    // No direct manager on file — send it to the HR-level approvers instead of nobody.
-    await notifyPermissionHolders(companyId, "attendance:approve", employeeId, correctionNotice, session.sub);
-  }
+  // Manager, or HR when there is no manager or the manager handed approvals to HR.
+  await notifyApprovalOwners(companyId, employeeId, "attendance:approve", correctionNotice, session.sub);
 
   await broadcastToLineGroups(
     companyId,

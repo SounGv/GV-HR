@@ -827,6 +827,9 @@ model Employee {
   managerId String?
   manager   Employee?  @relation("EmployeeReports", fields: [managerId], references: [id], onDelete: SetNull)
   reports   Employee[] @relation("EmployeeReports")
+  // On a manager: leave / OT / time-correction requests from their reports notify the HR department
+  // instead of this person (the owner has no time to read them). The reporting line itself is unchanged.
+  approvalDelegatedToHr Boolean @default(false)
 
   attendance                 AttendanceRecord[]
   attendanceCorrections      AttendanceCorrectionRequest[]

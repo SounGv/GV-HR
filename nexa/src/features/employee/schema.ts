@@ -62,6 +62,8 @@ export const employeeCreateSchema = z.object({
   positionId: optionalCuidLike,
   managerId: optionalCuidLike,
   costCenterId: optionalCuidLike,
+  // On a manager: their reports' leave / OT / time-correction requests are announced to HR instead.
+  approvalDelegatedToHr: z.boolean().default(false),
 
   employmentType: z.enum(EMPLOYMENT_TYPES).default("FULL_TIME"),
   status: z.enum(EMPLOYEE_STATUSES).default("ACTIVE"),

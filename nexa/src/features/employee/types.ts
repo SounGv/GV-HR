@@ -61,6 +61,7 @@ export interface EmployeeDetail extends EmployeeListItem {
   district: string | null;
   province: string | null;
   postalCode: string | null;
+  approvalDelegatedToHr: boolean;
   createdAt: string;
   updatedAt: string;
   manager: { id: string; firstName: string; lastName: string } | null;
@@ -87,6 +88,7 @@ export interface EmployeeFormValues {
   positionId?: string;
   managerId?: string;
   costCenterId?: string;
+  approvalDelegatedToHr?: boolean;
   employmentType: EmploymentType;
   status: EmployeeStatus;
   hireDate?: string;

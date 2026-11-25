@@ -3,11 +3,8 @@ import { requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import {
-  createNotification,
-  markNotificationsByLinkRead,
-  notifyPermissionHolders,
-} from "@/features/notification/service";
+import { createNotification, markNotificationsByLinkRead } from "@/features/notification/service";
+import { notifyApprovalOwners } from "@/features/notification/approval-routing";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -95,7 +92,7 @@ export async function createOvertime(
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true, nickname: true, managerId: true },
+    select: { firstName: true, lastName: true, nickname: true },
   });
   // Pay is NOT worked out here: it is calculated when the request is approved (decideOvertime),
   // from the rate then in force and the pay on record at that time.
@@ -134,19 +131,8 @@ export async function createOvertime(
     category: "overtime",
     link: `/overtime/${record.id}`,
   };
-  // The manager on file may have resigned or been removed: only an active one gets it.
-  const manager = employee?.managerId
-    ? await prisma.employee.findFirst({
-        where: { id: employee.managerId, companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } },
-        select: { id: true },
-      })
-    : null;
-  if (manager) {
-    await createNotification(companyId, manager.id, otNotice, session.sub);
-  } else {
-    // No (active) direct manager on file — send it to the HR-level approvers instead of nobody.
-    await notifyPermissionHolders(companyId, "overtime:approve", session.employeeId ?? null, otNotice, session.sub);
-  }
+  // Manager, or HR when there is no manager or the manager handed approvals to HR.
+  await notifyApprovalOwners(companyId, employeeId, "overtime:approve", otNotice, session.sub);
 
   await broadcastToLineGroups(
     companyId,
@@ -478,19 +464,18 @@ export async function cancelOvertime(
   // PENDING request, or (if it was already APPROVED) that OT they were
   // expecting no longer happened — silent cancellation otherwise leaves
   // them to discover it only by re-checking the list themselves.
-  if (req.employee.managerId) {
-    await createNotification(
-      companyId,
-      req.employee.managerId,
-      {
-        title: "คำขอ OT ถูกยกเลิก",
-        body: `${displayName(req.employee)} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
-        category: "overtime",
-        link: `/overtime/${req.id}`,
-      },
-      session.sub,
-    );
-  }
+  await notifyApprovalOwners(
+    companyId,
+    req.employeeId,
+    "overtime:approve",
+    {
+      title: "คำขอ OT ถูกยกเลิก",
+      body: `${displayName(req.employee)} ยกเลิกคำขอ OT ${req.hours} ชั่วโมง${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+      category: "overtime",
+      link: `/overtime/${req.id}`,
+    },
+    session.sub,
+  );
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",

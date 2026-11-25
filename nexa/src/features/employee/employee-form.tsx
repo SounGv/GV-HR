@@ -59,6 +59,7 @@ const formSchema = z.object({
   positionId: z.string().optional(),
   managerId: z.string().optional(),
   costCenterId: z.string().optional(),
+  approvalDelegatedToHr: z.boolean().optional(),
   employmentType: z.enum(EMPLOYMENT_TYPES),
   status: z.enum(EMPLOYEE_STATUSES),
   hireDate: z.string().optional(),
@@ -263,6 +264,21 @@ export function EmployeeForm({
               <DateField form={form} name="hireDate" label="วันเริ่มงาน" />
               <DateField form={form} name="probationEndDate" label="สิ้นสุดทดลองงาน" />
             </FieldGrid>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">ให้ฝ่ายบุคคลอนุมัติแทน</p>
+                <p className="text-sm text-muted-foreground">
+                  เปิดที่หัวหน้า คำขอลา OT และขอแก้เวลาของลูกทีมจะแจ้งเตือนไปที่ฝ่ายบุคคลแทนหัวหน้าคนนี้ ผังองค์กรและการประเมินไม่เปลี่ยน
+                </p>
+              </div>
+              <FormField
+                control={form.control}
+                name="approvalDelegatedToHr"
+                render={({ field }) => (
+                  <Switch aria-label="ให้ฝ่ายบุคคลอนุมัติแทน" checked={!!field.value} onCheckedChange={field.onChange} />
+                )}
+              />
+            </div>
             <PayMismatchNote message={payMismatch} />
           </section>
 

@@ -6,11 +6,8 @@ import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
-import {
-  createNotification,
-  markNotificationsByLinkRead,
-  notifyPermissionHolders,
-} from "@/features/notification/service";
+import { createNotification, markNotificationsByLinkRead } from "@/features/notification/service";
+import { notifyApprovalOwners } from "@/features/notification/approval-routing";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
@@ -236,7 +233,7 @@ export async function createLeave(
 
   const requester = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
-    select: { firstName: true, lastName: true, nickname: true, managerId: true },
+    select: { firstName: true, lastName: true, nickname: true },
   });
 
   const record = await prisma.leaveRequest.create({
@@ -283,21 +280,8 @@ export async function createLeave(
     category: "leave",
     link: `/leave/${record.id}`,
   };
-  let routedTo = "HR (ผู้มีสิทธิ์อนุมัติลา)";
-  // The manager on file may have resigned or been removed: only an active one gets it.
-  const manager = requester?.managerId
-    ? await prisma.employee.findFirst({
-        where: { id: requester.managerId, companyId, deletedAt: null, status: { in: ["ACTIVE", "ON_LEAVE"] } },
-        select: { id: true, firstName: true, lastName: true, nickname: true },
-      })
-    : null;
-  if (manager) {
-    await createNotification(companyId, manager.id, leaveNotice, session.sub);
-    routedTo = displayName(manager);
-  } else {
-    // No (active) direct manager on file — send it to the HR-level approvers instead of nobody.
-    await notifyPermissionHolders(companyId, "leave:approve", employeeId, leaveNotice, session.sub);
-  }
+  // Manager, or HR when there is no manager or the manager handed approvals to HR.
+  const { routedTo } = await notifyApprovalOwners(companyId, employeeId, "leave:approve", leaveNotice, session.sub);
 
   await broadcastToLineGroups(
     companyId,
@@ -640,19 +624,18 @@ export async function cancelLeave(
   // PENDING request, or (if it was already APPROVED) that the leave they
   // were expecting no longer happens — silent cancellation otherwise leaves
   // them to discover it only by re-checking the list themselves.
-  if (req.employee.managerId) {
-    await createNotification(
-      companyId,
-      req.employee.managerId,
-      {
-        title: "คำขอลาถูกยกเลิก",
-        body: `${displayName(req.employee)} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
-        category: "leave",
-        link: `/leave/${req.id}`,
-      },
-      session.sub,
-    );
-  }
+  await notifyApprovalOwners(
+    companyId,
+    req.employeeId,
+    "leave:approve",
+    {
+      title: "คำขอลาถูกยกเลิก",
+      body: `${displayName(req.employee)} ยกเลิก${LEAVE_TYPE_LABEL[req.type] ?? req.type} ${amountLabel}${wasApproved ? " (ที่อนุมัติไปแล้ว)" : ""}`,
+      category: "leave",
+      link: `/leave/${req.id}`,
+    },
+    session.sub,
+  );
   await broadcastToLineGroups(
     companyId,
     "hr-alerts",

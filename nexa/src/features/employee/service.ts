@@ -63,6 +63,7 @@ const detailSelect = {
   postalCode: true,
   createdAt: true,
   updatedAt: true,
+  approvalDelegatedToHr: true,
   manager: { select: { id: true, firstName: true, lastName: true, nickname: true } },
   costCenter: { select: { id: true, name: true } },
 } satisfies Prisma.EmployeeSelect;
@@ -309,6 +310,7 @@ const AUDIT_VALUE_KEYS = [
   "positionId",
   "managerId",
   "costCenterId",
+  "approvalDelegatedToHr",
 ] as const;
 
 function auditAfter(input: EmployeeUpdateInput) {

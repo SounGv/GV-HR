@@ -25,6 +25,7 @@ export function toFormValues(e: EmployeeDetail): Partial<EmployeeFormValues> {
     positionId: e.position?.id,
     managerId: e.manager?.id,
     costCenterId: e.costCenter?.id,
+    approvalDelegatedToHr: e.approvalDelegatedToHr,
     employmentType: e.employmentType,
     status: e.status,
     hireDate: dateInput(e.hireDate),
