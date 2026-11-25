@@ -125,7 +125,22 @@ function Step({ n, step }: { n: number; step: GuideStep }) {
           <figure className="overflow-hidden rounded-lg border border-border bg-card">
             {/* eslint-disable-next-line @next/next/no-img-element -- a fixed screenshot from public/help; no resizing needed */}
             <img src={step.image.src} alt={step.image.alt} loading="lazy" className="h-auto w-full" />
-            {step.image.caption && <figcaption className="border-t border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">{step.image.caption}</figcaption>}
+            <figcaption className="border-t border-border bg-muted/40 px-3 py-3">
+              <p className="mb-2 text-xs font-bold text-muted-foreground">ตัวเลขในรูปหมายถึง</p>
+              <ol className="space-y-2">
+                {step.image.legend.map(([label, text], i) => (
+                  <li key={i} className="flex gap-2.5 text-sm">
+                    <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0 text-foreground">
+                      <span className="font-bold">{label}</span>
+                      <span className="text-muted-foreground"> {text}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </figcaption>
           </figure>
         )}
       </div>
