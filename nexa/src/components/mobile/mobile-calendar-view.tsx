@@ -5,10 +5,11 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
-import { useMonth } from "@/features/calendar/hooks";
+import { useDayAttendance, useMonth } from "@/features/calendar/hooks";
+import { DayPanel, dayLabel } from "@/features/calendar/day-panel";
 import type { CalendarSource, MyDayStatus } from "@/features/calendar/types";
 import { MobileScreen } from "./mobile-screen";
-import { EmptyState, ErrorState } from "@/components/shared/states";
+import { ErrorState } from "@/components/shared/states";
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -71,6 +72,7 @@ function addMonth(month: string, delta: number): string {
 export function MobileCalendarView() {
   const { can } = useAuth();
   const canManage = can("calendar:create");
+  const canSeeAttendance = can("attendance:approve") || can("attendance:manage");
 
   const [month, setMonth] = useState(currentMonth());
   const [selected, setSelected] = useState<string | null>(todayIso());
@@ -110,6 +112,9 @@ export function MobileCalendarView() {
   const monthLabel = `${THAI_MONTHS[m - 1]} ${y + 543}`;
   const today = todayIso();
   const selectedItems = selected ? bucket.get(selected) ?? [] : [];
+  const selectedLeave = selectedItems.filter((it) => it.source === "leave");
+  const selectedOther = selectedItems.filter((it) => it.source !== "leave");
+  const dayQuery = useDayAttendance(selected, canSeeAttendance);
   const newEventHref = selected ? `/calendar/events/new?date=${selected}` : "/calendar/events/new";
 
   return (
@@ -225,14 +230,24 @@ export function MobileCalendarView() {
       )}
 
       <div className="gv-lg-card p-3.5">
-        <p className="text-sm font-semibold text-foreground">
-          {selected ? `รายการวันที่ ${selected.slice(8)} ${THAI_MONTHS[Number(selected.slice(5, 7)) - 1]}` : "เลือกวันที่"}
+        {selected ? (
+          <DayPanel
+            label={dayLabel(selected)}
+            loading={canSeeAttendance && dayQuery.isLoading}
+            day={dayQuery.data?.data}
+            leaveItems={selectedLeave}
+          />
+        ) : (
+          <p className="text-sm font-semibold text-foreground">เลือกวันที่</p>
+        )}
+        <p className="mt-4 border-t border-border pt-3 text-xs font-semibold text-muted-foreground">
+          วันหยุด กิจกรรม และนัดหมาย
         </p>
         <div className="mt-3 space-y-2">
-          {selectedItems.length === 0 ? (
-            <EmptyState title="ไม่มีรายการ" description="วันนี้ยังไม่มีกิจกรรม" className="py-8" />
+          {selectedOther.length === 0 ? (
+            <p className="text-sm text-muted-foreground">ไม่มีรายการอื่นในวันนี้</p>
           ) : (
-            selectedItems.map((it) => (
+            selectedOther.map((it) => (
               <div key={it.id} className="flex items-start gap-2 rounded-lg border border-border p-2.5">
                 <span className={cn("mt-1 size-2 shrink-0 rounded-full", SOURCE_DOT[it.source])} />
                 <div className="min-w-0">

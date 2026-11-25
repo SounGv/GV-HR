@@ -1,5 +1,9 @@
 import { api, type Envelope } from "@/lib/api/client";
-import type { CalendarMonth, EventFormValues } from "./types";
+import type { CalendarDayAttendance, CalendarMonth, EventFormValues } from "./types";
+
+export function fetchDay(date: string) {
+  return api.get<Envelope<CalendarDayAttendance>>(`/api/calendar/day?date=${date}`);
+}
 
 export function fetchMonth(month: string) {
   return api.get<Envelope<CalendarMonth>>(`/api/calendar?month=${month}`);

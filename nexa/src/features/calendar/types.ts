@@ -20,6 +20,31 @@ export interface CalendarMonth {
   myStatus?: Record<string, MyDayStatus>; // date (YYYY-MM-DD) -> status, viewer's own attendance
 }
 
+/** One person who needs a line on the day panel (absent, late, or on leave; people on time are only counted). */
+export interface CalendarDayPerson {
+  employeeId: string;
+  name: string;
+  department: string;
+  status: "NORMAL" | "LATE" | "ABSENT" | "ON_LEAVE" | "NOT_YET";
+  clockIn: string | null;
+  lateMinutes: number | null;
+  /** Came in but also took an hour or half a day as leave. */
+  partialLeave: boolean;
+}
+
+/** Attendance of the whole company on one day, for people who may see attendance. */
+export interface CalendarDayAttendance {
+  dateIso: string;
+  isFuture: boolean;
+  isWorkingDay: boolean;
+  nonWorkingReason: string | null;
+  /** People checked: those who use the clock-in app. */
+  total: number;
+  notChecked: number;
+  counts: Record<"NORMAL" | "LATE" | "ABSENT" | "ON_LEAVE" | "NOT_YET", number>;
+  people: CalendarDayPerson[];
+}
+
 export interface EventFormValues {
   title: string;
   description?: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchMonth, createEvent, updateEvent, deleteEvent } from "./api";
+import { fetchDay, fetchMonth, createEvent, updateEvent, deleteEvent } from "./api";
 import type { EventFormValues } from "./types";
 
 export const calendarKeys = {
@@ -14,6 +14,16 @@ export function useMonth(month: string) {
     queryKey: calendarKeys.month(month),
     queryFn: () => fetchMonth(month),
     placeholderData: (prev) => prev,
+  });
+}
+
+/** Whole-company attendance for one day; only asked for by people who may see attendance. */
+export function useDayAttendance(date: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ["calendar", "day", date] as const,
+    queryFn: () => fetchDay(date!),
+    enabled: enabled && !!date,
+    staleTime: 60_000,
   });
 }
 

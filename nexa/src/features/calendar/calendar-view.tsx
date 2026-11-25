@@ -8,13 +8,14 @@ import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorState } from "@/components/shared/states";
+import { ErrorState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 
-import { useMonth, useDeleteEvent } from "./hooks";
+import { DayPanel, dayLabel } from "./day-panel";
+import { useMonth, useDeleteEvent, useDayAttendance } from "./hooks";
 import type { CalendarItem, CalendarSource, MyDayStatus } from "./types";
 
 const THAI_MONTHS = [
@@ -83,6 +84,7 @@ function addMonth(month: string, delta: number): string {
 export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
   const { can } = useAuth();
   const canManage = can("calendar:create");
+  const canSeeAttendance = can("attendance:approve") || can("attendance:manage");
 
   const [month, setMonth] = useState(currentMonth());
   const [selected, setSelected] = useState<string | null>(todayIso());
@@ -119,6 +121,10 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
   const monthLabel = `${THAI_MONTHS[m - 1]} ${y + 543}`;
   const today = todayIso();
   const selectedItems = selected ? bucket.get(selected) ?? [] : [];
+  const selectedLeave = selectedItems.filter((it) => it.source === "leave");
+  const selectedOther = selectedItems.filter((it) => it.source !== "leave");
+  const dayQuery = useDayAttendance(selected, canSeeAttendance);
+  const selectedLabel = selected ? dayLabel(selected) : "";
 
   const newEventHref = selected ? `/calendar/events/new?date=${selected}` : "/calendar/events/new";
 
@@ -170,7 +176,7 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
       ) : (
-        <div className={cn("grid gap-4", !bare && "lg:grid-cols-[1fr_320px]")}>
+        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
           <Card className="p-2 sm:p-3">
             <div className="mb-2 flex flex-wrap items-center gap-3 px-1">
               <span className="text-xs font-medium text-muted-foreground">ของฉัน:</span>
@@ -254,16 +260,23 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
             </div>
           </Card>
 
-          {!bare && (
           <Card className="h-fit p-4">
-            <p className="text-sm font-semibold">
-              {selected ? `รายการวันที่ ${selected.slice(8)} ${THAI_MONTHS[Number(selected.slice(5, 7)) - 1]}` : "เลือกวันที่"}
-            </p>
-            <div className="mt-3 space-y-2">
-              {selectedItems.length === 0 ? (
-                <EmptyState title="ไม่มีรายการ" description="วันนี้ยังไม่มีกิจกรรม" className="py-8" />
+            {selected ? (
+              <DayPanel
+                label={selectedLabel}
+                loading={canSeeAttendance && dayQuery.isLoading}
+                day={dayQuery.data?.data}
+                leaveItems={selectedLeave}
+              />
+            ) : (
+              <p className="text-sm font-semibold">เลือกวันที่</p>
+            )}
+            <div className="mt-4 space-y-2 border-t border-border pt-3">
+              <p className="text-xs font-semibold text-muted-foreground">วันหยุด กิจกรรม และนัดหมาย</p>
+              {selectedOther.length === 0 ? (
+                <p className="text-sm text-muted-foreground">ไม่มีรายการอื่นในวันนี้</p>
               ) : (
-                selectedItems.map((it) => (
+                selectedOther.map((it) => (
                   <div key={it.id} className="flex items-start justify-between gap-2 rounded-lg border border-border p-2">
                     <div className="flex min-w-0 items-start gap-2">
                       <span className={cn("mt-1 size-2 shrink-0 rounded-full", SOURCE_DOT[it.source])} />
@@ -313,7 +326,6 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
               )}
             </div>
           </Card>
-          )}
         </div>
       )}
 
