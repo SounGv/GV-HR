@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { useAiAccess, useChat, useQuick } from "./hooks";
 import { EngineBadge, FallbackBanner, QuickChips, QuickForm, useEngineMode } from "./fallback-ui";
 import { FALLBACK_NOT_UNDERSTOOD } from "./engine-state";
-import { parseQuickCommand } from "./quick-actions";
+import { parseQuickCommand, QUICK_ACTIONS } from "./quick-actions";
 import { ApiError } from "@/lib/api/client";
 import { AttachButton, AttachTray, FileDownloads, SentFiles, useAttachments } from "./attachments-ui";
 import { playReplyChime, unlockReplyChime } from "./reply-chime";
@@ -217,7 +217,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
         setTurns((prev) => [...prev, { role: "assistant", content: r.ok ? r.markdown : r.message, proposals: r.ok ? r.proposals : undefined, question: label }]);
         setSelected(next.length);
         if (!r.ok && r.needs === "name") {
-          setInput("โควตาวันลาของ ");
+          setInput(QUICK_ACTIONS.find((a) => a.id === request.action)?.prefix ?? "");
           inputRef.current?.focus();
         }
         playReplyChime();
@@ -229,8 +229,8 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
     });
   }
 
-  function pickName() {
-    setInput("โควตาวันลาของ ");
+  function pickName(prefix: string) {
+    setInput(prefix);
     inputRef.current?.focus();
   }
 

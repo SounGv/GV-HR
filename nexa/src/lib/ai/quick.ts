@@ -1,12 +1,13 @@
 import type { Prisma } from "@prisma/client";
-import { canAny } from "@/lib/auth/rbac";
+import { can, canAny } from "@/lib/auth/rbac";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { loadTodayAttendance } from "@/features/attendance-status/service";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { clampTop, dayText as leaveDayText, rankLeave } from "@/features/ai/leave-ranking";
 import { displayName } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { executeReadTool } from "@/lib/ai/read-tools";
+import { executeReadTool, findInScope } from "@/lib/ai/read-tools";
+import { getReport } from "@/features/report/service";
 import { prepareProposal } from "@/lib/ai/proposals";
 import type { ProposalCard } from "@/features/ai/proposal";
 import { LOCAL_SOURCE_LINE, quickToMarkdown, QUICK_MAX_ROWS, rowsNote, type QuickAction } from "@/features/ai/quick-actions";
@@ -110,6 +111,31 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
             head: ["ประเภท", "โควตา", "ใช้ไป", "รออนุมัติ", "คงเหลือ"],
             rows: r.data.balances.map((b) => [b.type, `${b.totalDays} วัน`, `${b.usedDays} วัน`, `${b.pendingDays} วัน`, `${b.remainingDays} วัน`]),
           },
+        }),
+      );
+    }
+
+    case "scan_month": {
+      if (!can(session.perms, "report:read")) return refused("ไม่ได้รับอนุญาต: ต้องมีสิทธิ์ดูรายงาน");
+      const name = input.name?.trim();
+      if (!name) {
+        return { ok: false, message: "ต้องการดูของใคร พิมพ์ชื่อ ชื่อเล่น หรือรหัสพนักงาน (ของทุกคนดูได้ที่เมนูรายงาน เลือก รายละเอียดการลงเวลา (รายวัน))", needs: "name" };
+      }
+      const found = await findInScope(session.companyId, name, scopeWhere);
+      if (found.length === 0) return refused("ไม่พบพนักงานที่ตรงกับคำค้นในขอบเขตของคุณ");
+      if (found.length > 1) return refused(`พบหลายคน ระบุให้ชัดขึ้น: ${found.map((e) => `${displayName(e)} (${e.employeeCode})`).join(", ")}`);
+      const person = found[0];
+      // The same report as the Reports page (this month so far), one person, no AI. Days without a clock-in have no row.
+      const report = await getReport(session.companyId, { type: "attendance_daily", employeeId: [person.id], employeeWhere: scopeWhere, includeNames: false });
+      const days = [...report.rows].reverse();
+      const who = displayName(person);
+      if (days.length === 0) return text(`${who} ยังไม่มีการสแกนเข้า-ออกเดือนนี้`);
+      const lateDays = days.filter((r) => typeof r.lateMinutes === "number").length;
+      return text(
+        quickToMarkdown({
+          text: `การสแกนเข้า-ออกเดือนนี้ของ ${who} ${days.length} วัน มาสาย ${lateDays} วัน`,
+          table: { head: ["วันที่", "เข้า", "ออก", "สาย (นาที)", "สถานะ"], rows: days.map((r) => [String(r.date), String(r.clockIn), String(r.clockOut), String(r.lateMinutes), String(r.status)]) },
+          note: "แสดงเฉพาะวันที่มีบันทึก วันที่ไม่แสดงคือวันหยุดหรือไม่มีการสแกน ดูวันขาดได้ที่รายงาน สรุปการลงเวลา (รายเดือน)",
         }),
       );
     }

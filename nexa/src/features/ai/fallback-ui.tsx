@@ -88,7 +88,7 @@ export function QuickChips({
   className,
 }: {
   onRun: (request: QuickRequest, label: string) => void;
-  onPickName: () => void;
+  onPickName: (prefix: string) => void;
   onOpenForm: (kind: "announce" | "notify") => void;
   disabled?: boolean;
   className?: string;
@@ -103,7 +103,7 @@ export function QuickChips({
               type="button"
               disabled={disabled}
               onClick={() => {
-                if (a.needs === "name") onPickName();
+                if (a.needs === "name") onPickName(a.prefix ?? "");
                 else if (a.needs === "form") onOpenForm(a.id as "announce" | "notify");
                 else onRun({ action: a.id }, a.label);
               }}

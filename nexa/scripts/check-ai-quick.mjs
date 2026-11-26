@@ -22,6 +22,12 @@ check("leave quota takes the name after it, with or without 'ของ'", () => 
   assert.deepEqual(parseQuickCommand("วันลาคงเหลือ  สมหญิง"), { action: "leave_quota", name: "สมหญิง" });
   assert.deepEqual(parseQuickCommand("โควตาวันลา"), { action: "leave_quota" }, "no name yet, the screen asks for one");
 });
+check("scan report takes the name after it, and asks for one when there is none", () => {
+  assert.deepEqual(parseQuickCommand("สแกนเข้าออกของ สมชาย ใจดี"), { action: "scan_month", name: "สมชาย ใจดี" });
+  assert.deepEqual(parseQuickCommand("ดูสแกนเข้า-ออก 1023"), { action: "scan_month", name: "1023" });
+  assert.deepEqual(parseQuickCommand("สแกนเข้า-ออกเดือนนี้ของ สมหญิง"), { action: "scan_month", name: "สมหญิง" });
+  assert.deepEqual(parseQuickCommand("ดึงรายงานสแกนเข้าออก ของพนักงานรายวันของเดือนนี้ให้หน่อย"), { action: "scan_month" }, "the exact sentence that failed: no name, so the screen asks");
+});
 check("announcement and notification open their forms", () => {
   assert.equal(parseQuickCommand("ส่งประกาศ")?.action, "announce");
   assert.equal(parseQuickCommand("ประกาศ หยุดวันที่ 5")?.action, "announce");

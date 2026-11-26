@@ -9,17 +9,20 @@ export type QuickAction =
   | "absent_today"
   | "pending_approvals"
   | "leave_quota"
+  | "scan_month"
   | "shifts_week"
   | "eval_progress"
   | "leave_ranking"
   | "announce"
   | "notify";
 
-export const QUICK_ACTIONS: { id: QuickAction; label: string; icon: "clock" | "users" | "clip" | "cal" | "chart" | "mega" | "bell"; needs: "none" | "name" | "form" }[] = [
+/** `prefix`: for a button that needs a name, the words put in the box so the person only types the name. */
+export const QUICK_ACTIONS: { id: QuickAction; label: string; icon: "clock" | "users" | "clip" | "cal" | "chart" | "mega" | "bell"; needs: "none" | "name" | "form"; prefix?: string }[] = [
   { id: "late_today", label: "ใครมาสายวันนี้", icon: "clock", needs: "none" },
   { id: "absent_today", label: "ใครขาดวันนี้", icon: "users", needs: "none" },
   { id: "pending_approvals", label: "มีอะไรรออนุมัติ", icon: "clip", needs: "none" },
-  { id: "leave_quota", label: "โควตาวันลาของ…", icon: "cal", needs: "name" },
+  { id: "leave_quota", label: "โควตาวันลาของ…", icon: "cal", needs: "name", prefix: "โควตาวันลาของ " },
+  { id: "scan_month", label: "สแกนเข้า-ออกเดือนนี้ของ…", icon: "clock", needs: "name", prefix: "สแกนเข้าออกของ " },
   { id: "shifts_week", label: "ตารางกะสัปดาห์นี้", icon: "cal", needs: "none" },
   { id: "eval_progress", label: "ความคืบหน้ารอบประเมิน", icon: "chart", needs: "none" },
   { id: "leave_ranking", label: "ใครลาเยอะสุดปีนี้", icon: "cal", needs: "none" },
@@ -76,6 +79,12 @@ export function parseQuickCommand(raw: string): QuickCommand | null {
   if (quota) {
     const name = clean(quota[1] ?? "");
     return name ? { action: "leave_quota", name } : { action: "leave_quota" };
+  }
+  // "สแกนเข้าออกของสมชาย", also "ดึงรายงานสแกนเข้า-ออก ของพนักงานรายวันของเดือนนี้ให้หน่อย" (no name left, so the screen asks for one).
+  const scan = /^(?:ดึง|ขอ|ดู|เช็ก|เช็ค)?\s*(?:รายงาน)?(?:สแกน|เวลา)เข้า\s*[-/]?\s*ออก(?:งาน)?(.*)$/.exec(t);
+  if (scan) {
+    const name = clean((scan[1] ?? "").replace(/รายวัน|เดือนนี้|พนักงาน|ให้หน่อย|หน่อย|ครับ|ค่ะ|คะ/g, " ").replace(/^\s*(?:ของ\s*)+/, ""));
+    return name ? { action: "scan_month", name } : { action: "scan_month" };
   }
   const ranking = /^(?:ปีนี้\s*)?(?:ใคร)?ลา(?:เยอะ|มาก|บ่อย)สุด(?:ปีนี้)?\s*(?:(\d{1,2})\s*อันดับ(?:แรก)?)?\s*(?:แยก(?:ตาม)?ประเภท(?:ลา)?)?$/.exec(t);
   if (ranking) return ranking[1] ? { action: "leave_ranking", count: Number(ranking[1]) } : { action: "leave_ranking" };

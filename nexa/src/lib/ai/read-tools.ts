@@ -90,7 +90,7 @@ const untrusted = (text: string | null | undefined) => (text ? `<<ข้อค�
 const dayOf = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : null);
 
 /** Finds people by name, nickname or code inside the asker's scope (AND, not spread: scopeWhere may be an OR filter). */
-async function findInScope(companyId: string, q: string, scopeWhere?: Prisma.EmployeeWhereInput) {
+export async function findInScope(companyId: string, q: string, scopeWhere?: Prisma.EmployeeWhereInput) {
   return prisma.employee.findMany({
     where: { companyId, deletedAt: null, AND: [scopeWhere ?? {}, employeeNameFilter(q)] },
     select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true },
