@@ -1,7 +1,22 @@
 // Checks the pure rules of appraisal forms with made-up questions only.
 // Run: node --experimental-strip-types scripts/check-appraisal-form.mjs
 import assert from "node:assert/strict";
-import { cleanLevels, formProblems, isEditable, nextVersion, ratingWeightTotal } from "../src/features/appraisal-form/rules.ts";
+import {
+  METHOD_TEMPLATES,
+  hasOnlyStarterQuestions,
+  isSourceImportKind,
+  parseSectionKind,
+  questionFromCompetency,
+  questionFromDuty,
+  templateFor,
+} from "../src/features/appraisal-form/method-templates.ts";
+import {
+  cleanLevels,
+  formProblems,
+  isEditable,
+  nextVersion,
+  ratingWeightTotal,
+} from "../src/features/appraisal-form/rules.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -10,14 +25,26 @@ const check = (name, fn) => {
   console.log(`ok  ${name}`);
 };
 const rating = (text = "คำถาม", weight = 1) => ({ text, answerType: "RATING", weight });
-const choice = (options, type = "CHOICE") => ({ text: "เลือก", answerType: type, options, weight: 0 });
+const choice = (options, type = "CHOICE") => ({
+  text: "เลือก",
+  answerType: type,
+  options,
+  weight: 0,
+});
 
 check("a form with no questions cannot be published", () => {
   assert.deepEqual(formProblems([]), ["ยังไม่มีคำถาม"]);
 });
 check("a complete form has no problems", () => {
   assert.deepEqual(
-    formProblems([rating(), choice([{ value: "a", label: "ดี" }, { value: "b", label: "พอใช้" }]), { text: "ความเห็น", answerType: "PARAGRAPH", weight: 0 }]),
+    formProblems([
+      rating(),
+      choice([
+        { value: "a", label: "ดี" },
+        { value: "b", label: "พอใช้" },
+      ]),
+      { text: "ความเห็น", answerType: "PARAGRAPH", weight: 0 },
+    ]),
     [],
   );
 });
@@ -25,12 +52,32 @@ check("an empty question text is reported with its number", () => {
   assert.deepEqual(formProblems([rating("ข้อแรก"), rating("  ")]), ["ข้อ 2 ยังไม่ได้พิมพ์คำถาม"]);
 });
 check("a choice question needs at least 2 options", () => {
-  assert.deepEqual(formProblems([choice([{ value: "a", label: "ดี" }])]), ["ข้อ 1 ต้องมีตัวเลือกอย่างน้อย 2 ข้อ"]);
-  assert.deepEqual(formProblems([choice(null, "MULTI_CHOICE")]), ["ข้อ 1 ต้องมีตัวเลือกอย่างน้อย 2 ข้อ"]);
+  assert.deepEqual(formProblems([choice([{ value: "a", label: "ดี" }])]), [
+    "ข้อ 1 ต้องมีตัวเลือกอย่างน้อย 2 ข้อ",
+  ]);
+  assert.deepEqual(formProblems([choice(null, "MULTI_CHOICE")]), [
+    "ข้อ 1 ต้องมีตัวเลือกอย่างน้อย 2 ข้อ",
+  ]);
 });
 check("blank or duplicate option labels are reported", () => {
-  assert.deepEqual(formProblems([choice([{ value: "a", label: "ดี" }, { value: "b", label: " " }])]), ["ข้อ 1 มีตัวเลือกที่ยังว่าง"]);
-  assert.deepEqual(formProblems([choice([{ value: "a", label: "ดี" }, { value: "b", label: "ดี" }])]), ["ข้อ 1 มีตัวเลือกซ้ำกัน"]);
+  assert.deepEqual(
+    formProblems([
+      choice([
+        { value: "a", label: "ดี" },
+        { value: "b", label: " " },
+      ]),
+    ]),
+    ["ข้อ 1 มีตัวเลือกที่ยังว่าง"],
+  );
+  assert.deepEqual(
+    formProblems([
+      choice([
+        { value: "a", label: "ดี" },
+        { value: "b", label: "ดี" },
+      ]),
+    ]),
+    ["ข้อ 1 มีตัวเลือกซ้ำกัน"],
+  );
 });
 check("a rating question needs a weight of at least 1", () => {
   assert.deepEqual(formProblems([rating("ข้อ", 0)]), ["ข้อ 1 ต้องมีน้ำหนักอย่างน้อย 1"]);
@@ -38,8 +85,74 @@ check("a rating question needs a weight of at least 1", () => {
 check("text questions never need options or weight", () => {
   assert.deepEqual(formProblems([{ text: "สั้น", answerType: "SHORT_TEXT", weight: 0 }]), []);
 });
+check("file evidence never needs options or weight", () => {
+  assert.deepEqual(formProblems([{ text: "หลักฐาน", answerType: "FILE_EVIDENCE", weight: 0 }]), []);
+});
+check("unknown section kinds become CUSTOM", () => {
+  assert.equal(parseSectionKind("KPI"), "KPI");
+  assert.equal(parseSectionKind("CUSTOM"), "CUSTOM");
+  assert.equal(parseSectionKind("nope"), "CUSTOM");
+  assert.equal(parseSectionKind(null), "CUSTOM");
+});
+check("competency library rows copy into form questions without a live link", () => {
+  const rating = questionFromCompetency({
+    name: "ความรับผิดชอบ",
+    exampleBehavior: "รับงานแล้วทำให้จบ",
+    questionType: "RATING_1_TO_5",
+    defaultWeight: 4,
+    isRequired: true,
+  });
+  assert.equal(rating.answerType, "RATING");
+  assert.equal(rating.weight, 4);
+  assert.equal(rating.helpText, "รับงานแล้วทำให้จบ");
+  const yesNo = questionFromCompetency({ name: "ผ่านเกณฑ์?", questionType: "YES_NO" });
+  assert.equal(yesNo.answerType, "CHOICE");
+  assert.equal(yesNo.options.length, 2);
+  const file = questionFromCompetency({ name: "หลักฐาน", questionType: "FILE_EVIDENCE" });
+  assert.equal(file.answerType, "FILE_EVIDENCE");
+  assert.equal(file.weight, 0);
+});
+check("position duties copy into Task rating questions", () => {
+  const q = questionFromDuty({ title: "ปิดการขาย", description: "ทำตามกระบวนการจนปิดดีล" });
+  assert.equal(q.answerType, "RATING");
+  assert.equal(q.text, "ปิดการขาย");
+  assert.equal(q.helpText, "ทำตามกระบวนการจนปิดดีล");
+  assert.ok(isSourceImportKind("TASK"));
+  assert.ok(isSourceImportKind("COMPETENCY_CORE"));
+  assert.equal(isSourceImportKind("KPI"), false);
+});
+check("importing from a source replaces untouched starter questions", () => {
+  const starters = METHOD_TEMPLATES.find((t) => t.kind === "COMPETENCY_CORE").questions.map(
+    (q) => q.text,
+  );
+  assert.equal(hasOnlyStarterQuestions(starters, "COMPETENCY_CORE"), true);
+  assert.equal(hasOnlyStarterQuestions([...starters, "หัวข้อเพิ่ม"], "COMPETENCY_CORE"), false);
+  assert.equal(hasOnlyStarterQuestions(starters.slice(1), "COMPETENCY_CORE"), false);
+});
+check("each method template has starter ratings; Task includes file evidence", () => {
+  for (const t of METHOD_TEMPLATES) {
+    assert.ok(t.questions.length > 0, t.kind);
+    assert.ok(
+      t.questions.some((q) => q.answerType === "RATING"),
+      t.kind,
+    );
+    assert.equal(templateFor(t.kind).kind, t.kind);
+  }
+  assert.ok(
+    METHOD_TEMPLATES.find((t) => t.kind === "TASK")?.questions.some(
+      (q) => q.answerType === "FILE_EVIDENCE",
+    ),
+  );
+});
 check("only RATING questions add to the weight total", () => {
-  assert.equal(ratingWeightTotal([rating("a", 2), rating("b", 3), { text: "x", answerType: "PARAGRAPH", weight: 9 }]), 5);
+  assert.equal(
+    ratingWeightTotal([
+      rating("a", 2),
+      rating("b", 3),
+      { text: "x", answerType: "PARAGRAPH", weight: 9 },
+    ]),
+    5,
+  );
 });
 check("only a draft can be edited", () => {
   assert.equal(isEditable("DRAFT"), true);
@@ -54,8 +167,19 @@ check("next version follows the highest existing one", () => {
 
 check("score descriptions: trimmed, blanks and out-of-scale scores dropped, highest first", () => {
   assert.deepEqual(
-    cleanLevels([{ score: 1, text: " ช้า " }, { score: 3, text: "เกินเป้า" }, { score: 2, text: "  " }, { score: 4, text: "นอกสเกล" }], 3),
-    [{ score: 3, text: "เกินเป้า" }, { score: 1, text: "ช้า" }],
+    cleanLevels(
+      [
+        { score: 1, text: " ช้า " },
+        { score: 3, text: "เกินเป้า" },
+        { score: 2, text: "  " },
+        { score: 4, text: "นอกสเกล" },
+      ],
+      3,
+    ),
+    [
+      { score: 3, text: "เกินเป้า" },
+      { score: 1, text: "ช้า" },
+    ],
   );
   assert.equal(cleanLevels([{ score: 2, text: "" }], 3), null);
   assert.equal(cleanLevels(null, 3), null);

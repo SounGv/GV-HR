@@ -204,7 +204,11 @@ async function assertCodeFree(companyId: string, code: string, exceptId?: string
     select: { deletedAt: true },
   });
   if (existing) {
-    throw Conflict(existing.deletedAt ? `รหัสฝ่าย “${code}” เคยใช้กับรายการที่ถูกลบไปแล้ว ใช้รหัสอื่น` : `มีรหัสฝ่าย “${code}” อยู่แล้ว`);
+    throw Conflict(
+      existing.deletedAt
+        ? `รหัสฝ่าย “${code}” เคยใช้กับรายการที่ถูกลบไปแล้ว ใช้รหัสอื่น`
+        : `มีรหัสฝ่าย “${code}” อยู่แล้ว`,
+    );
   }
 }
 
@@ -374,7 +378,10 @@ export async function listPositions(companyId: string): Promise<PositionRow[]> {
 }
 
 /** A position's department must be a live one of the same company. */
-async function assertPositionDepartment(companyId: string, departmentId: string | null | undefined) {
+async function assertPositionDepartment(
+  companyId: string,
+  departmentId: string | null | undefined,
+) {
   if (!departmentId) return;
   const dept = await prisma.department.findFirst({
     where: { id: departmentId, companyId, deletedAt: null },
@@ -390,14 +397,28 @@ async function assertPositionCodeFree(companyId: string, code: string, exceptId?
     select: { deletedAt: true },
   });
   if (existing) {
-    throw Conflict(existing.deletedAt ? `รหัสตำแหน่ง “${code}” เคยใช้กับรายการที่ถูกลบไปแล้ว ใช้รหัสอื่น` : `มีรหัสตำแหน่ง “${code}” อยู่แล้ว`);
+    throw Conflict(
+      existing.deletedAt
+        ? `รหัสตำแหน่ง “${code}” เคยใช้กับรายการที่ถูกลบไปแล้ว ใช้รหัสอื่น`
+        : `มีรหัสตำแหน่ง “${code}” อยู่แล้ว`,
+    );
   }
 }
 
 export async function getPosition(companyId: string, id: string) {
   const p = await prisma.position.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, title: true, code: true, level: true, departmentId: true },
+    select: {
+      id: true,
+      title: true,
+      code: true,
+      level: true,
+      departmentId: true,
+      duties: {
+        select: { id: true, title: true, description: true, order: true },
+        orderBy: { order: "asc" },
+      },
+    },
   });
   if (!p) throw NotFound("ไม่พบตำแหน่ง");
   return p;
@@ -423,6 +444,16 @@ export async function createPosition(
     },
     select: { id: true },
   });
+  if (input.duties?.length) {
+    await prisma.positionDuty.createMany({
+      data: input.duties.map((d, i) => ({
+        positionId: record.id,
+        title: d.title,
+        description: d.description ?? null,
+        order: i,
+      })),
+    });
+  }
   await writeAudit({
     companyId,
     actorUserId: session.sub,
@@ -461,6 +492,19 @@ export async function updatePosition(
     },
     select: { id: true },
   });
+  if (input.duties !== undefined) {
+    await prisma.positionDuty.deleteMany({ where: { positionId: pos.id } });
+    if (input.duties.length) {
+      await prisma.positionDuty.createMany({
+        data: input.duties.map((d, i) => ({
+          positionId: pos.id,
+          title: d.title,
+          description: d.description ?? null,
+          order: i,
+        })),
+      });
+    }
+  }
   await writeAudit({
     companyId,
     actorUserId: session.sub,

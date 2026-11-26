@@ -7,7 +7,11 @@ export const roundCreateSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อรอบ").max(200),
 });
 
-const pairSchema = z.object({ participantId: z.string().min(1), raterId: z.string().min(1), raterType: z.enum(RATERS) });
+const pairSchema = z.object({
+  participantId: z.string().min(1),
+  raterId: z.string().min(1),
+  raterType: z.enum(RATERS),
+});
 
 export const roundUpdateSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
@@ -18,15 +22,27 @@ export const roundUpdateSchema = z.object({
   endDate: day.nullable().optional(),
   remind: z.boolean().optional(),
   notifyLine: z.boolean().optional(),
+  sequential: z.boolean().optional(),
   participantIds: z.array(z.string().min(1)).max(2000).optional(),
   /** employeeId -> form id (null = the round's own form). Only people already in the round are changed. */
   participantForms: z.record(z.string().min(1), z.string().min(1).nullable()).optional(),
   /** Rater pairs HR set by hand (null = clear them). employeeId pairs; see applyRaterOverrides. */
-  raterPairs: z.object({ add: z.array(pairSchema).max(5000), remove: z.array(pairSchema).max(5000) }).nullable().optional(),
+  raterPairs: z
+    .object({ add: z.array(pairSchema).max(5000), remove: z.array(pairSchema).max(5000) })
+    .nullable()
+    .optional(),
 });
 
 export const answersSchema = z.object({
-  answers: z.array(z.object({ questionId: z.string().min(1), value: z.unknown(), note: z.string().max(2000).optional() })).max(200),
+  answers: z
+    .array(
+      z.object({
+        questionId: z.string().min(1),
+        value: z.unknown(),
+        note: z.string().max(2000).optional(),
+      }),
+    )
+    .max(200),
   submit: z.boolean().default(false),
 });
 
@@ -34,7 +50,11 @@ export type RoundUpdateInput = z.infer<typeof roundUpdateSchema>;
 
 export const settingsSchema = z.object({
   calcMode: z.enum(["WEIGHTED", "SIMPLE"]),
-  bands: z.array(z.object({ label: z.string().trim().min(1).max(60), minPercent: z.number().min(0).max(100) })).max(10),
+  bands: z
+    .array(
+      z.object({ label: z.string().trim().min(1).max(60), minPercent: z.number().min(0).max(100) }),
+    )
+    .max(10),
   approvalLevels: z.number().int().min(0).max(1),
   employeeSees: z.enum(["NEVER", "AFTER_PUBLISH"]),
   ackRequired: z.boolean(),
@@ -59,4 +79,6 @@ export const adjustSchema = z.object({
 });
 export const revertSchema = z.object({ reason: z.string().max(1000) });
 
-export const publishSchema = z.object({ participantIds: z.array(z.string().min(1)).max(2000).optional() });
+export const publishSchema = z.object({
+  participantIds: z.array(z.string().min(1)).max(2000).optional(),
+});

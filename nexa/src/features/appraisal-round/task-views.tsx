@@ -8,12 +8,26 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import { Card } from "@/components/ui/card";
 import { useHrAssignment, useSaveHrAssignment, useSaveTask, useTask, useTasks } from "./hooks";
-import { ASSIGNMENT_STATUS_LABEL, RATER_LABEL, type AssignmentStatus, type HrAssignmentDetail, type TaskDetail } from "./types";
+import {
+  ASSIGNMENT_STATUS_LABEL,
+  RATER_LABEL,
+  type AssignmentStatus,
+  type HrAssignmentDetail,
+  type TaskDetail,
+} from "./types";
 import { TaskForm } from "./task-form";
 
-const TONE: Record<AssignmentStatus, StatusTone> = { PENDING: "warning", IN_PROGRESS: "info", SUBMITTED: "success" };
+const TONE: Record<AssignmentStatus, StatusTone> = {
+  PENDING: "warning",
+  IN_PROGRESS: "info",
+  SUBMITTED: "success",
+};
 const fmtDay = (iso: string | null) =>
-  iso ? new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`)) : "";
+  iso
+    ? new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "long", timeZone: "UTC" }).format(
+        new Date(`${iso}T00:00:00Z`),
+      )
+    : "";
 
 /** "งานประเมินของฉัน": who the signed-in person has to rate. This is where the invitation link lands. */
 export function TaskListView() {
@@ -36,19 +50,46 @@ export function TaskListView() {
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading) return <TableLoadingState rows={4} />;
   if (tasks.length === 0) {
-    return <EmptyState icon={ClipboardList} title="ยังไม่มีงานประเมิน" description="เมื่อมีรอบประเมินที่คุณต้องประเมิน จะแสดงที่นี่และแจ้งในกล่องข้อความ" />;
+    return (
+      <EmptyState
+        icon={ClipboardList}
+        title="ยังไม่มีงานประเมิน"
+        description="เมื่อมีรอบประเมินที่คุณต้องประเมิน จะแสดงที่นี่และแจ้งในกล่องข้อความ"
+      />
+    );
   }
 
   const row = (t: (typeof tasks)[number]) => (
-    <Link key={t.id} href={`/appraisal/tasks/${t.id}`} className="flex min-h-16 flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted/50">
+    <Link
+      key={t.id}
+      href={`/appraisal/tasks/${t.id}`}
+      className="hover:bg-muted/50 flex min-h-16 flex-wrap items-center justify-between gap-2 px-4 py-3"
+    >
       <span className="min-w-0">
-        <span className="block text-sm font-semibold break-words text-foreground">{t.personName}</span>
-        <span className="block text-sm text-muted-foreground">
+        <span className="text-foreground block text-sm font-semibold break-words">
+          {t.personName}
+        </span>
+        <span className="text-muted-foreground block text-sm">
           {t.roundName} · ประเมินในฐานะ{RATER_LABEL[t.raterType]}
           {t.endIso ? ` · ปิด ${fmtDay(t.endIso)}` : ""}
         </span>
       </span>
-      <StatusChip tone={t.roundStatus === "CLOSED" && t.status !== "SUBMITTED" ? "neutral" : TONE[t.status]} label={t.roundStatus === "CLOSED" && t.status !== "SUBMITTED" ? "ปิดรอบแล้ว" : ASSIGNMENT_STATUS_LABEL[t.status]} />
+      <StatusChip
+        tone={
+          t.lockedUntilSelf
+            ? "warning"
+            : t.roundStatus === "CLOSED" && t.status !== "SUBMITTED"
+              ? "neutral"
+              : TONE[t.status]
+        }
+        label={
+          t.lockedUntilSelf
+            ? "รอประเมินตนเอง"
+            : t.roundStatus === "CLOSED" && t.status !== "SUBMITTED"
+              ? "ปิดรอบแล้ว"
+              : ASSIGNMENT_STATUS_LABEL[t.status]
+        }
+      />
     </Link>
   );
 
@@ -56,12 +97,16 @@ export function TaskListView() {
     <div className="space-y-5">
       <section className="space-y-2" aria-label="ที่ต้องประเมิน">
         <h2 className="text-sm font-semibold">ที่ต้องประเมิน ({todo.length})</h2>
-        {todo.length === 0 ? <p className="text-sm text-muted-foreground">ไม่มีงานค้าง</p> : <Card className="gap-0 divide-y divide-border p-0">{todo.map(row)}</Card>}
+        {todo.length === 0 ? (
+          <p className="text-muted-foreground text-sm">ไม่มีงานค้าง</p>
+        ) : (
+          <Card className="divide-border gap-0 divide-y p-0">{todo.map(row)}</Card>
+        )}
       </section>
       {rest.length > 0 && (
         <section className="space-y-2" aria-label="ส่งแล้วหรือปิดรอบแล้ว">
           <h2 className="text-sm font-semibold">ส่งแล้ว / ปิดรอบแล้ว ({rest.length})</h2>
-          <Card className="gap-0 divide-y divide-border p-0">{rest.map(row)}</Card>
+          <Card className="divide-border gap-0 divide-y p-0">{rest.map(row)}</Card>
         </section>
       )}
     </div>
@@ -78,7 +123,9 @@ export function TaskPage({ id }: { id: string }) {
 
 function RaterTaskForm({ task }: { task: TaskDetail }) {
   const save = useSaveTask(task.id);
-  return <TaskForm task={task} save={save} backHref="/appraisal/tasks" backLabel="งานประเมินของฉัน" />;
+  return (
+    <TaskForm task={task} save={save} backHref="/appraisal/tasks" backLabel="งานประเมินของฉัน" />
+  );
 }
 
 /** HR fills in a rater's job for them (e.g. someone who cannot sign in). The audit log records who did it. */
@@ -91,5 +138,13 @@ export function HrFillPage({ roundId, assignmentId }: { roundId: string; assignm
 
 function HrFillForm({ roundId, task }: { roundId: string; task: HrAssignmentDetail }) {
   const save = useSaveHrAssignment(roundId, task.id);
-  return <TaskForm task={task} save={save} backHref={`/appraisal/rounds/${roundId}`} backLabel="รอบประเมิน" onBehalfOf={task.raterName} />;
+  return (
+    <TaskForm
+      task={task}
+      save={save}
+      backHref={`/appraisal/rounds/${roundId}`}
+      backLabel="รอบประเมิน"
+      onBehalfOf={task.raterName}
+    />
+  );
 }

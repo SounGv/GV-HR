@@ -3,7 +3,8 @@
  * `node --experimental-strip-types scripts/check-appraisal-round.mjs`).
  */
 
-export type SnapAnswerType = "RATING" | "CHOICE" | "MULTI_CHOICE" | "SHORT_TEXT" | "PARAGRAPH";
+export type SnapAnswerType =
+  "RATING" | "CHOICE" | "MULTI_CHOICE" | "SHORT_TEXT" | "PARAGRAPH" | "FILE_EVIDENCE";
 export type AnswerValue = number | string | string[];
 
 export interface SnapQuestion {
@@ -20,6 +21,8 @@ export interface SnapQuestion {
   levelDescriptions?: { score: number; text: string }[] | null;
   /** Section (หมวด) name; absent or null = none. */
   section?: string | null;
+  /** Evaluation method of the section; absent on rounds opened before kinds existed. */
+  sectionKind?: string | null;
 }
 
 export interface Answer {
@@ -32,9 +35,14 @@ export interface Answer {
 export const SHORT_MAX = 500;
 export const NOTE_MAX = 1000;
 export const PARAGRAPH_MAX = 4000;
+export const FILE_EVIDENCE_MAX = 3_000_000;
+const FILE_EVIDENCE_RE = /^(data:[a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+;base64,|https?:\/\/)/;
 
 /** The questions this kind of rater is asked. */
-export const visibleQuestions = (questions: readonly SnapQuestion[], raterType: string): SnapQuestion[] =>
+export const visibleQuestions = (
+  questions: readonly SnapQuestion[],
+  raterType: string,
+): SnapQuestion[] =>
   questions.filter((q) => q.visibleTo.length === 0 || q.visibleTo.includes(raterType));
 
 /** Returns a cleaned value when `value` is a valid answer to `q`, otherwise null (treated as unanswered). */
@@ -45,17 +53,29 @@ function cleanValue(q: SnapQuestion, value: unknown, ratingMax: number): AnswerV
       return Number.isInteger(n) && n >= 1 && n <= ratingMax ? n : null;
     }
     case "CHOICE":
-      return typeof value === "string" && (q.options ?? []).some((o) => o.value === value) ? value : null;
+      return typeof value === "string" && (q.options ?? []).some((o) => o.value === value)
+        ? value
+        : null;
     case "MULTI_CHOICE": {
       if (!Array.isArray(value)) return null;
       const allowed = new Set((q.options ?? []).map((o) => o.value));
-      const picked = [...new Set(value.filter((v): v is string => typeof v === "string" && allowed.has(v)))];
+      const picked = [
+        ...new Set(value.filter((v): v is string => typeof v === "string" && allowed.has(v))),
+      ];
       return picked.length ? picked : null;
     }
     case "SHORT_TEXT":
       return typeof value === "string" && value.trim() ? value.trim().slice(0, SHORT_MAX) : null;
     case "PARAGRAPH":
-      return typeof value === "string" && value.trim() ? value.trim().slice(0, PARAGRAPH_MAX) : null;
+      return typeof value === "string" && value.trim()
+        ? value.trim().slice(0, PARAGRAPH_MAX)
+        : null;
+    case "FILE_EVIDENCE":
+      return typeof value === "string" &&
+        FILE_EVIDENCE_RE.test(value) &&
+        value.length <= FILE_EVIDENCE_MAX
+        ? value
+        : null;
   }
 }
 
@@ -74,7 +94,8 @@ export function cleanAnswers(
     const value = cleanValue(q, a.value, ratingMax);
     if (value === null) continue;
     const raw = (a as { note?: unknown }).note;
-    const note = q.answerType === "RATING" && typeof raw === "string" ? raw.trim().slice(0, NOTE_MAX) : "";
+    const note =
+      q.answerType === "RATING" && typeof raw === "string" ? raw.trim().slice(0, NOTE_MAX) : "";
     out.set(q.id, note ? { questionId: q.id, value, note } : { questionId: q.id, value });
   }
   return [...out.values()];
@@ -139,7 +160,8 @@ export function summarizeAnswers(
     const numbers = values.filter((v): v is number => typeof v === "number");
     const picks = new Map<string, number>();
     for (const v of values) {
-      for (const p of Array.isArray(v) ? v : typeof v === "string" ? [v] : []) picks.set(p, (picks.get(p) ?? 0) + 1);
+      for (const p of Array.isArray(v) ? v : typeof v === "string" ? [v] : [])
+        picks.set(p, (picks.get(p) ?? 0) + 1);
     }
     const isChoice = q.answerType === "CHOICE" || q.answerType === "MULTI_CHOICE";
     return {
@@ -148,16 +170,31 @@ export function summarizeAnswers(
       section: q.section ?? null,
       answerType: q.answerType,
       count: values.length,
-      average: q.answerType === "RATING" && numbers.length ? Math.round((numbers.reduce((s, n) => s + n, 0) / numbers.length) * 100) / 100 : null,
-      options: isChoice ? (q.options ?? []).map((o) => ({ label: o.label, count: picks.get(o.value) ?? 0 })) : [],
-      texts: q.answerType === "SHORT_TEXT" || q.answerType === "PARAGRAPH" ? values.filter((v): v is string => typeof v === "string") : [],
+      average:
+        q.answerType === "RATING" && numbers.length
+          ? Math.round((numbers.reduce((s, n) => s + n, 0) / numbers.length) * 100) / 100
+          : null,
+      options: isChoice
+        ? (q.options ?? []).map((o) => ({ label: o.label, count: picks.get(o.value) ?? 0 }))
+        : [],
+      texts:
+        q.answerType === "SHORT_TEXT" || q.answerType === "PARAGRAPH"
+          ? values.filter((v): v is string => typeof v === "string")
+          : q.answerType === "FILE_EVIDENCE"
+            ? values.filter((v): v is string => typeof v === "string").map(() => "แนบหลักฐานแล้ว")
+            : [],
       scores:
         q.answerType === "RATING"
-          ? Array.from({ length: ratingMax }, (_, i) => ratingMax - i).map((score) => ({ score, count: numbers.filter((n) => n === score).length }))
+          ? Array.from({ length: ratingMax }, (_, i) => ratingMax - i).map((score) => ({
+              score,
+              count: numbers.filter((n) => n === score).length,
+            }))
           : [],
       notes:
         q.answerType === "RATING"
-          ? mine.filter((a) => typeof a.value === "number" && a.note?.trim()).map((a) => ({ score: a.value as number, text: a.note!.trim() }))
+          ? mine
+              .filter((a) => typeof a.value === "number" && a.note?.trim())
+              .map((a) => ({ score: a.value as number, text: a.note!.trim() }))
           : [],
       levelDescriptions: q.answerType === "RATING" ? (q.levelDescriptions ?? null) : null,
     };

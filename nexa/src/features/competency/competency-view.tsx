@@ -13,7 +13,10 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { groupByCategory } from "@/lib/competency-grouping";
-import { useCompetencyCategories, useDeleteCompetencyCategory } from "@/features/competency-category/hooks";
+import {
+  useCompetencyCategories,
+  useDeleteCompetencyCategory,
+} from "@/features/competency-category/hooks";
 import type { CompetencyCategory } from "@/features/competency-category/types";
 
 import { useCompetencies, useDeleteCompetency, useDuplicateCompetency } from "./hooks";
@@ -32,7 +35,10 @@ export function CompetencyView() {
   const canDelete = can("campaign:delete");
 
   const [search, setSearch] = useState("");
-  const { data, isLoading, isError, refetch } = useCompetencies({ includeInactive: true, search: search || undefined });
+  const { data, isLoading, isError, refetch } = useCompetencies({
+    includeInactive: true,
+    search: search || undefined,
+  });
   const deleteMutation = useDeleteCompetency();
   const duplicateMutation = useDuplicateCompetency();
   const [deleteTarget, setDeleteTarget] = useState<Competency | null>(null);
@@ -62,7 +68,7 @@ export function CompetencyView() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           คลังคำถามกลาง — ใช้สร้างแบบประเมิน/แคมเปญได้ซ้ำ ไม่ต้องสร้างหัวข้อใหม่ทุกครั้ง
         </p>
         {canManage && (
@@ -78,7 +84,7 @@ export function CompetencyView() {
       </div>
 
       <div className="relative max-w-sm">
-        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
         <Input
           className="pl-9"
           placeholder="ค้นหาหัวข้อ..."
@@ -98,35 +104,46 @@ export function CompetencyView() {
         <EmptyState
           icon={Sparkles}
           title="ยังไม่มีหัวข้อในคลังคำถาม"
-          description={canManage ? "เพิ่มหัวข้อแรก หรือให้ AI ออกแบบให้ตอนสร้างแคมเปญ" : "ยังไม่มีข้อมูล"}
+          description={
+            canManage ? "เพิ่มหัวข้อแรก หรือให้ AI ออกแบบให้ตอนสร้างแคมเปญ" : "ยังไม่มีข้อมูล"
+          }
         />
       ) : (
         <div className="space-y-4">
           {groups.map((group) => (
             <div key={group.categoryId} className="space-y-2">
-              <p className="px-1 text-sm font-semibold text-foreground">{group.categoryName}</p>
-              <Card className="divide-y divide-border p-0">
+              <p className="text-foreground px-1 text-sm font-semibold">{group.categoryName}</p>
+              <Card className="divide-border divide-y p-0">
                 {group.items.map((c) => (
                   <div key={c.id} className="flex items-center gap-4 px-4 py-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="truncate font-medium text-foreground">{c.name}</span>
+                        <span className="text-foreground truncate font-medium">{c.name}</span>
+                        <span className="bg-muted text-muted-foreground shrink-0 rounded-sm px-2 py-0.5 text-xs">
+                          {c.kind === "FUNCTIONAL"
+                            ? "Functional"
+                            : c.kind === "LEADERSHIP"
+                              ? "Leadership"
+                              : "Core"}
+                        </span>
                         {!c.active && (
-                          <span className="shrink-0 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          <span className="bg-muted text-muted-foreground shrink-0 rounded-sm px-2 py-0.5 text-xs">
                             ปิดใช้งาน
                           </span>
                         )}
                         {c.usageCount > 0 && (
-                          <span className="shrink-0 rounded-sm bg-icon-chip-bg px-2 py-0.5 text-xs text-icon-chip-fg">
+                          <span className="bg-icon-chip-bg text-icon-chip-fg shrink-0 rounded-sm px-2 py-0.5 text-xs">
                             ใช้อยู่ {c.usageCount} จุด
                           </span>
                         )}
                       </div>
                       {c.description && (
-                        <p className="mt-0.5 truncate text-sm text-muted-foreground">{c.description}</p>
+                        <p className="text-muted-foreground mt-0.5 truncate text-sm">
+                          {c.description}
+                        </p>
                       )}
                       {c.exampleBehavior && (
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        <p className="text-muted-foreground mt-0.5 truncate text-xs">
                           ตัวอย่างพฤติกรรม: {c.exampleBehavior}
                         </p>
                       )}
@@ -161,7 +178,7 @@ export function CompetencyView() {
                             aria-label="ลบ"
                             onClick={() => setDeleteTarget(c)}
                           >
-                            <Trash2 className="size-4 text-destructive" />
+                            <Trash2 className="text-destructive size-4" />
                           </Button>
                         )}
                       </div>
@@ -198,7 +215,7 @@ function CategoryManagementPanel() {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
-      toast.success("ลบหมวดหมู่เรียบร้อย — สมรรถนะที่เคยอยู่ในหมวดนี้ย้ายไปกลุ่ม \"ไม่มีหมวดหมู่\"");
+      toast.success('ลบหมวดหมู่เรียบร้อย — สมรรถนะที่เคยอยู่ในหมวดนี้ย้ายไปกลุ่ม "ไม่มีหมวดหมู่"');
       setDeleteTarget(null);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ลบไม่สำเร็จ");
@@ -208,26 +225,32 @@ function CategoryManagementPanel() {
   return (
     <Card className="gap-2 p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+        <p className="text-foreground flex items-center gap-1.5 text-sm font-medium">
           <FolderKanban className="size-4" /> หมวดหมู่สมรรถนะ
         </p>
-        <Button variant="outline" size="sm" render={<Link href="/performance/competencies/categories/new" />}>
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link href="/performance/competencies/categories/new" />}
+        >
           <Plus className="size-4" /> เพิ่มหมวดหมู่
         </Button>
       </div>
       {!isLoading && categories.length === 0 ? (
-        <p className="text-sm text-muted-foreground">ยังไม่มีหมวดหมู่ — สมรรถนะทั้งหมดจะแสดงในกลุ่ม &quot;ไม่มีหมวดหมู่&quot;</p>
+        <p className="text-muted-foreground text-sm">
+          ยังไม่มีหมวดหมู่ — สมรรถนะทั้งหมดจะแสดงในกลุ่ม &quot;ไม่มีหมวดหมู่&quot;
+        </p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
             <span
               key={cat.id}
-              className="flex items-center gap-1 rounded-sm border border-border py-0.5 pr-0.5 pl-3 text-xs md:gap-1.5 md:py-1 md:pr-1"
+              className="border-border flex items-center gap-1 rounded-sm border py-0.5 pr-0.5 pl-3 text-xs md:gap-1.5 md:py-1 md:pr-1"
             >
               {cat.name}
               <Link
                 href={`/performance/competencies/categories/${cat.id}/edit`}
-                className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground md:size-auto md:p-1"
+                className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 items-center justify-center rounded-full md:size-auto md:p-1"
                 aria-label="แก้ไขหมวดหมู่"
               >
                 <Pencil className="size-3" />
@@ -235,7 +258,7 @@ function CategoryManagementPanel() {
               <button
                 type="button"
                 onClick={() => setDeleteTarget(cat)}
-                className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive md:size-auto md:p-1"
+                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex size-11 items-center justify-center rounded-full md:size-auto md:p-1"
                 aria-label="ลบหมวดหมู่"
               >
                 <Trash2 className="size-3" />
@@ -249,7 +272,9 @@ function CategoryManagementPanel() {
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="ยืนยันการลบหมวดหมู่"
-        description={deleteTarget ? `ต้องการลบหมวดหมู่ "${deleteTarget.name}" ใช่หรือไม่?` : undefined}
+        description={
+          deleteTarget ? `ต้องการลบหมวดหมู่ "${deleteTarget.name}" ใช่หรือไม่?` : undefined
+        }
         destructive
         confirmLabel="ลบ"
         loading={deleteMutation.isPending}

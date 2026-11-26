@@ -31,6 +31,19 @@ export function deleteDepartment(id: string) {
 export function fetchPositions() {
   return api.get<Envelope<PositionRow[]>>("/api/org/positions");
 }
+
+export interface PositionDetail {
+  id: string;
+  title: string;
+  code: string;
+  level: number;
+  departmentId: string | null;
+  duties: { id: string; title: string; description: string | null; order: number }[];
+}
+
+export function fetchPosition(id: string) {
+  return api.get<Envelope<PositionDetail>>(`/api/org/positions/${id}`);
+}
 export function createPosition(input: PositionFormValues) {
   return api.post<Envelope<{ id: string }>>("/api/org/positions", input);
 }

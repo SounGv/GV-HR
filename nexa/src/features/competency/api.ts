@@ -8,6 +8,7 @@ export interface CompetencyFilters {
   departmentId?: string;
   positionId?: string;
   evaluationType?: string;
+  kind?: "CORE" | "FUNCTIONAL" | "LEADERSHIP";
 }
 
 export function fetchCompetencies(filters?: CompetencyFilters) {
@@ -18,6 +19,7 @@ export function fetchCompetencies(filters?: CompetencyFilters) {
   if (filters?.departmentId) params.set("departmentId", filters.departmentId);
   if (filters?.positionId) params.set("positionId", filters.positionId);
   if (filters?.evaluationType) params.set("evaluationType", filters.evaluationType);
+  if (filters?.kind) params.set("kind", filters.kind);
   const qs = params.toString();
   return api.get<Envelope<Competency[]>>(`/api/competencies${qs ? `?${qs}` : ""}`);
 }

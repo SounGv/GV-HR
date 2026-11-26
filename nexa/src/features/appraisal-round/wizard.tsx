@@ -111,6 +111,7 @@ interface Draft {
   end: string;
   remind: boolean;
   line: boolean;
+  sequential: boolean;
   selected: Set<string>;
   /** employeeId -> form id; a person without an entry uses the round's own form. */
   formOf: Record<string, string>;
@@ -125,6 +126,7 @@ const draftOf = (r: RoundDetail): Draft => ({
   end: r.endIso ?? "",
   remind: r.remind,
   line: r.notifyLine,
+  sequential: r.sequential,
   selected: new Set(r.participantIds),
   formOf: { ...r.participantForms },
   types: [...r.raterTypes],
@@ -140,6 +142,7 @@ function patchOf(d: Draft, r: RoundDetail): RoundSavePayload {
   if (d.end !== (r.endIso ?? "")) p.endDate = d.end || null;
   if (d.remind !== r.remind) p.remind = d.remind;
   if (d.line !== r.notifyLine) p.notifyLine = d.line;
+  if (d.sequential !== r.sequential) p.sequential = d.sequential;
   const ids = [...d.selected];
   const formsChanged = ids.some((id) => (d.formOf[id] ?? "") !== (r.participantForms[id] ?? ""));
   if (!sameSet(ids, r.participantIds) || formsChanged) {
@@ -251,7 +254,11 @@ export function Wizard({ round }: { round: RoundDetail }) {
     <div className="space-y-5 pb-4">
       <PageChromePublisher
         title={draft.name.trim() || round.name}
-        crumbs={[{ label: "ประเมิน", href: "/appraisal/rounds" }, { label: "รอบประเมิน", href: "/appraisal/rounds" }, { label: "สร้างรอบ" }]}
+        crumbs={[
+          { label: "ประเมิน", href: "/appraisal/rounds" },
+          { label: "รอบประเมิน", href: "/appraisal/rounds" },
+          { label: "สร้างรอบ" },
+        ]}
       />
       <Hero
         round={round}
@@ -295,7 +302,7 @@ export function Wizard({ round }: { round: RoundDetail }) {
           </Button>
           <span className="flex-1" />
           {step === 3 && !ready && !dirty && (
-            <span className="order-first w-full text-center text-sm font-semibold text-status-late-fg sm:order-none sm:w-auto">
+            <span className="text-status-late-fg order-first w-full text-center text-sm font-semibold sm:order-none sm:w-auto">
               ยังเปิดไม่ได้ · เหลือ {failing.length} ข้อ
             </span>
           )}
@@ -365,7 +372,10 @@ function Hero({
         : "บันทึกอัตโนมัติเมื่อกดถัดไป";
   return (
     <section className="gv-hero gv-rise p-5 sm:p-6" aria-labelledby="round-wizard-title">
-      <nav aria-label="breadcrumb" className="flex items-center gap-1 text-sm text-foreground md:hidden">
+      <nav
+        aria-label="breadcrumb"
+        className="text-foreground flex items-center gap-1 text-sm md:hidden"
+      >
         <BackLink href="/appraisal/rounds" onHero>
           รอบประเมิน
         </BackLink>
@@ -379,15 +389,18 @@ function Hero({
         >
           {draft.name.trim() || round.name}
         </h1>
-        <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted px-2.5 py-0.5 text-xs font-bold">
-          <span className="size-1.5 rounded-full bg-status-late-dot" aria-hidden="true" /> ฉบับร่าง
+        <span className="border-border bg-muted inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 text-xs font-bold">
+          <span className="bg-status-late-dot size-1.5 rounded-full" aria-hidden="true" /> ฉบับร่าง
         </span>
         <span
-          className="ml-auto inline-flex items-center gap-1.5 text-xs text-foreground"
+          className="text-foreground ml-auto inline-flex items-center gap-1.5 text-xs"
           aria-live="polite"
         >
           <span
-            className={cn("size-1.5 rounded-full", dirty ? "bg-status-late-dot" : "bg-status-normal-dot")}
+            className={cn(
+              "size-1.5 rounded-full",
+              dirty ? "bg-status-late-dot" : "bg-status-normal-dot",
+            )}
             aria-hidden="true"
           />
           {saveText}
@@ -419,9 +432,9 @@ function Hero({
                 type="button"
                 aria-current={on ? "step" : undefined}
                 onClick={() => goTo(i)}
-                className="grid w-full gap-2 rounded-lg text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                className="focus-visible:ring-ring grid w-full gap-2 rounded-lg text-left focus-visible:ring-2 focus-visible:outline-none"
               >
-                <span className="h-[5px] overflow-hidden rounded-full bg-muted">
+                <span className="bg-muted h-[5px] overflow-hidden rounded-full">
                   <span
                     className="block h-full rounded-full transition-[width] duration-500"
                     style={{ width: on || done ? "100%" : 0, background: "var(--primary)" }}
@@ -436,7 +449,11 @@ function Hero({
                   <span
                     className={cn(
                       "flex size-[22px] shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                      on ? "bg-primary text-primary-foreground" : done ? "bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]" : "bg-muted",
+                      on
+                        ? "bg-primary text-primary-foreground"
+                        : done
+                          ? "bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]"
+                          : "bg-muted",
                     )}
                     aria-hidden="true"
                   >
@@ -466,7 +483,7 @@ function Tile({
 }) {
   return (
     <div className="gv-glass min-w-0 px-3.5 py-3">
-      <p className="text-xs leading-snug text-foreground">{label}</p>
+      <p className="text-foreground text-xs leading-snug">{label}</p>
       <p
         className={cn(
           "mt-0.5 leading-snug font-bold tabular-nums",
@@ -474,7 +491,7 @@ function Tile({
         )}
       >
         {value}
-        {unit && <span className="ml-1 text-xs font-medium text-foreground">{unit}</span>}
+        {unit && <span className="text-foreground ml-1 text-xs font-medium">{unit}</span>}
       </p>
     </div>
   );
@@ -494,15 +511,28 @@ function Readiness({
   const passed = round.checks.filter((c) => c.ok).length;
   const total = round.checks.length;
   return (
-    <aside className="grid gap-3 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]" aria-label="ความพร้อมก่อนเปิดรอบ">
+    <aside
+      className="grid gap-3 lg:sticky lg:top-[calc(var(--gv-band-h,5.75rem)+1rem)]"
+      aria-label="ความพร้อมก่อนเปิดรอบ"
+    >
       <Card className="gap-3 rounded-lg p-4">
         <div className="min-w-0">
           <p className="text-sm font-semibold">ความพร้อมก่อนเปิดรอบ</p>
           <p className="text-muted-foreground text-xs tabular-nums">
             ผ่าน {passed} จาก {total} ข้อ{dirty ? " · ยังไม่ได้บันทึกการแก้ล่าสุด" : ""}
           </p>
-          <div className="bg-muted mt-2 h-1.5 overflow-hidden rounded-sm" role="progressbar" aria-label="ความพร้อม" aria-valuemin={0} aria-valuemax={total} aria-valuenow={passed}>
-            <div className="h-full bg-primary transition-[width] duration-500" style={{ width: `${total ? (passed / total) * 100 : 0}%` }} />
+          <div
+            className="bg-muted mt-2 h-1.5 overflow-hidden rounded-sm"
+            role="progressbar"
+            aria-label="ความพร้อม"
+            aria-valuemin={0}
+            aria-valuemax={total}
+            aria-valuenow={passed}
+          >
+            <div
+              className="bg-primary h-full transition-[width] duration-500"
+              style={{ width: `${total ? (passed / total) * 100 : 0}%` }}
+            />
           </div>
         </div>
         <ul className="grid gap-0.5">
@@ -525,7 +555,7 @@ function Readiness({
           ))}
         </ul>
       </Card>
-      <div className="rounded-lg border border-border bg-card p-4 text-sm leading-relaxed">
+      <div className="border-border bg-card rounded-lg border p-4 text-sm leading-relaxed">
         <p className="mb-0.5 text-sm font-semibold">เคล็ดลับ</p>
         ตั้งวันเปิดรอบเป็นวันพรุ่งนี้ ระบบจะตั้งเวลาส่งให้ และยังกด “ยกเลิกการตั้งเวลา”
         กลับมาแก้ได้ก่อนข้อความออก
@@ -540,7 +570,9 @@ function CheckDot({ ok, size = "sm" }: { ok: boolean; size?: "sm" | "md" }) {
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full font-bold",
         size === "md" ? "size-[26px]" : "size-5",
-        ok ? "bg-success text-success-foreground" : "border border-status-late-border bg-status-late-bg text-status-late-fg",
+        ok
+          ? "bg-success text-success-foreground"
+          : "border-status-late-border bg-status-late-bg text-status-late-fg border",
       )}
       aria-label={ok ? "ผ่าน" : "ยังไม่ผ่าน"}
     >
@@ -586,7 +618,7 @@ function StepSetup({
             onChange={(e) => update({ name: e.target.value })}
           />
           {!draft.name.trim() && (
-            <span className="text-xs font-medium text-status-late-fg">กรุณาตั้งชื่อรอบ</span>
+            <span className="text-status-late-fg text-xs font-medium">กรุณาตั้งชื่อรอบ</span>
           )}
         </label>
         <div className="grid gap-1.5 text-sm font-medium">
@@ -629,7 +661,9 @@ function StepSetup({
             aria-invalid={badDates || undefined}
           />
           {badDates ? (
-            <span className="text-xs font-medium text-status-late-fg">วันปิดต้องไม่ก่อนวันเปิด</span>
+            <span className="text-status-late-fg text-xs font-medium">
+              วันปิดต้องไม่ก่อนวันเปิด
+            </span>
           ) : (
             days && (
               <span className="text-muted-foreground text-xs font-medium tabular-nums">
@@ -643,7 +677,14 @@ function StepSetup({
       {draft.start && draft.end && !badDates && (
         <>
           <Sub>ไทม์ไลน์ของรอบ</Sub>
-          <div className="min-w-0 overflow-x-auto"><Timeline start={draft.start} end={draft.end} remind={draft.remind} /></div>
+          <div className="min-w-0 overflow-x-auto">
+            <Timeline
+              start={draft.start}
+              end={draft.end}
+              remind={draft.remind}
+              sequential={draft.sequential}
+            />
+          </div>
         </>
       )}
 
@@ -689,11 +730,27 @@ function ToggleRow({
 }
 
 /** What happens when, worked out from the two dates. The last point is the HR follow-up after closing. */
-function Timeline({ start, end, remind }: { start: string; end: string; remind: boolean }) {
+function Timeline({
+  start,
+  end,
+  remind,
+  sequential,
+}: {
+  start: string;
+  end: string;
+  remind: boolean;
+  sequential?: boolean;
+}) {
   const remindDay = addDays(end, -REMIND_BEFORE_DAYS);
   const points: { when: string; what: string; later?: boolean }[] = [
-    { when: fmtShort(start), what: "เปิดรอบ ส่งข้อความเชิญ" },
-    { when: `${fmtShort(start)} – ${fmtShort(end)}`, what: "ผู้ประเมินกรอกและส่ง" },
+    {
+      when: fmtShort(start),
+      what: sequential ? "เปิดรอบ ส่งเชิญประเมินตนเองก่อน" : "เปิดรอบ ส่งข้อความเชิญ",
+    },
+    {
+      when: `${fmtShort(start)} – ${fmtShort(end)}`,
+      what: sequential ? "ตนเองส่งแล้ว มุมมองอื่นจึงเริ่มประเมิน" : "ผู้ประเมินกรอกและส่ง",
+    },
     ...(remind && remindDay > start
       ? [{ when: fmtShort(remindDay), what: "เตือนคนที่ยังไม่ส่ง" }]
       : []),
@@ -721,15 +778,13 @@ function Timeline({ start, end, remind }: { start: string; end: string; remind: 
             <span
               className={cn(
                 "bg-card relative z-[1] block size-[15px] shrink-0 rounded-full border-[3px] sm:mx-auto",
-                p.later ? "border-dashed border-muted-foreground/50" : "border-ring",
+                p.later ? "border-muted-foreground/50 border-dashed" : "border-ring",
               )}
               aria-hidden="true"
             />
             <span className="min-w-0">
               <b className="block text-sm sm:mt-2">{p.when}</b>
-              <span className="text-muted-foreground block text-xs leading-snug">
-                {p.what}
-              </span>
+              <span className="text-muted-foreground block text-xs leading-snug">{p.what}</span>
             </span>
           </li>
         ))}
@@ -833,7 +888,7 @@ function StepPeople({
               className={cn(
                 "rounded-lg border-[1.5px] p-3.5 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
                 on
-                  ? "border-ring bg-accent  dark:shadow-none"
+                  ? "border-ring bg-accent dark:shadow-none"
                   : some
                     ? "bg-card border-ring/60"
                     : "border-border bg-card hover:border-ring/50",
@@ -910,18 +965,15 @@ function StepPeople({
         </Button>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-accent px-4 py-3 text-foreground">
+      <div className="bg-accent text-foreground mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-4 py-3">
         <span className="text-sm">
-          <b className="text-[22px] text-primary tabular-nums">
-            {selected.size}
-          </b>{" "}
-          คนถูกเลือก
+          <b className="text-primary text-[22px] tabular-nums">{selected.size}</b> คนถูกเลือก
         </span>
-        <span className="min-w-0 truncate text-sm text-muted-foreground">
+        <span className="text-muted-foreground min-w-0 truncate text-sm">
           {chosenDivs.map((d) => d.name).join(" · ") || "ยังไม่ได้เลือก"}
         </span>
         {noManager > 0 && (
-          <span className="ml-auto rounded-sm bg-status-late-bg px-2.5 py-px text-xs font-bold text-status-late-fg">
+          <span className="bg-status-late-bg text-status-late-fg ml-auto rounded-sm px-2.5 py-px text-xs font-bold">
             {noManager} คนยังไม่มีหัวหน้า
           </span>
         )}
@@ -1056,7 +1108,7 @@ function PeopleList({
                         {p.name} <span className="text-muted-foreground">{p.code}</span>
                       </span>
                       {!p.hasManager && (
-                        <span className="shrink-0 rounded-sm bg-status-late-bg px-2 py-px text-xs font-semibold text-status-late-fg">
+                        <span className="bg-status-late-bg text-status-late-fg shrink-0 rounded-sm px-2 py-px text-xs font-semibold">
                           ไม่มีหัวหน้า
                         </span>
                       )}
@@ -1148,22 +1200,20 @@ function StepRaters({
             className={cn(
               "relative rounded-lg border-[1.5px] p-3.5 pb-3 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px disabled:cursor-wait",
               active === k
-                ? "border-ring bg-accent  dark:shadow-none"
+                ? "border-ring bg-accent dark:shadow-none"
                 : "border-border bg-card hover:border-ring/50",
             )}
           >
             {k === "90" && (
-              <span
-                className="absolute top-3 right-3 rounded-sm bg-primary px-2 text-xs font-bold text-primary-foreground"
-              >
+              <span className="bg-primary text-primary-foreground absolute top-3 right-3 rounded-sm px-2 text-xs font-bold">
                 แนะนำรายเดือน
               </span>
             )}
             <span className="text-2xl font-bold tracking-tight">{k}°</span>
-            <span className="ml-1.5 text-sm font-bold text-primary">
-              {PRESET_TEXT[k].name}
+            <span className="text-primary ml-1.5 text-sm font-bold">{PRESET_TEXT[k].name}</span>
+            <span className="my-1.5 block text-sm">
+              ผู้ประเมิน: {PRESETS[k].map((x) => RATER_LABEL[x]).join(" · ")}
             </span>
-            <span className="my-1.5 block text-sm">ผู้ประเมิน: {PRESETS[k].map((x) => RATER_LABEL[x]).join(" · ")}</span>
             <span className="text-muted-foreground block min-h-[34px] text-xs leading-snug">
               {PRESET_TEXT[k].hint}
             </span>
@@ -1175,6 +1225,17 @@ function StepRaters({
         <p className="bg-muted text-muted-foreground mt-3 rounded-lg px-3.5 py-2.5 text-sm">
           เพื่อนร่วมงาน = คนที่มีหัวหน้าคนเดียวกัน ระบบเลือกให้คนละไม่เกิน {PEER_LIMIT} คน
         </p>
+      )}
+
+      {draft.types.includes("SELF") && (
+        <div className="divide-border border-border mt-3 grid divide-y rounded-lg border">
+          <ToggleRow
+            checked={draft.sequential}
+            onChange={(v) => update({ sequential: v })}
+            title="ประเมินตนเองก่อน"
+            hint="หัวหน้าและมุมมองอื่นได้รับเชิญหลังผู้ถูกประเมินส่งแบบประเมินตนเองแล้ว"
+          />
+        </div>
       )}
 
       <Sub>ผลการจับคู่</Sub>
@@ -1189,11 +1250,12 @@ function StepRaters({
       )}
 
       {(overloaded.length > 0 || noPeers.length > 0) && (
-        <ul className="mt-3 space-y-1 text-sm text-status-late-fg">
+        <ul className="text-status-late-fg mt-3 space-y-1 text-sm">
           {overloaded.map((e) => (
             <li key={`o-${e.employeeId}`} className="flex gap-2">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" /> {e.name}{" "}
-              ต้องประเมิน {e.detail} คน มากกว่าปกติ ถ้าตั้งใจไว้แล้วเปิดรอบได้เลย หรือลองแบ่งให้หัวหน้าทีมย่อย
+              ต้องประเมิน {e.detail} คน มากกว่าปกติ ถ้าตั้งใจไว้แล้วเปิดรอบได้เลย
+              หรือลองแบ่งให้หัวหน้าทีมย่อย
             </li>
           ))}
           {noPeers.length > 0 && (
@@ -1215,12 +1277,12 @@ function StepRaters({
 
       {draft.types.length > 0 && (
         <details
-          className="mt-5 rounded-lg border border-dashed border-muted-foreground/40 px-4 py-3"
+          className="border-muted-foreground/40 mt-5 rounded-lg border border-dashed px-4 py-3"
           open={!total.ok}
         >
           <summary className="flex min-h-9 cursor-pointer flex-wrap items-center gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden">
             น้ำหนักคะแนนแต่ละมุมมอง
-            <span className="rounded-md bg-status-absent-bg px-1.5 text-xs font-bold text-status-absent-fg">
+            <span className="bg-status-absent-bg text-status-absent-fg rounded-md px-1.5 text-xs font-bold">
               รอ HR ยืนยัน
             </span>
             <span
@@ -1262,7 +1324,7 @@ function StepRaters({
                     aria-hidden="true"
                   >
                     <span
-                      className="block h-full rounded-full bg-ring transition-[width]"
+                      className="bg-ring block h-full rounded-full transition-[width]"
                       style={{ width: `${w}%` }}
                     />
                   </span>
@@ -1289,11 +1351,11 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
   return (
     <div className="border-border overflow-hidden rounded-lg border">
       <div className="border-border bg-muted/60 flex flex-wrap items-center gap-2 border-b px-4 py-2.5">
-        <span className="rounded-sm border border-status-normal-border bg-status-normal-bg px-2.5 py-px text-xs font-bold text-success">
+        <span className="border-status-normal-border bg-status-normal-bg text-success rounded-sm border px-2.5 py-px text-xs font-bold">
           ✓ {ready} คนพร้อม
         </span>
         {missing.length > 0 && (
-          <span className="rounded-sm border border-status-late-border bg-status-late-bg px-2.5 py-px text-xs font-bold text-status-late-fg">
+          <span className="border-status-late-border bg-status-late-bg text-status-late-fg rounded-sm border px-2.5 py-px text-xs font-bold">
             {missing.length} คนยังไม่มีหัวหน้าประเมิน
           </span>
         )}
@@ -1318,19 +1380,19 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
               return (
                 <tr
                   key={r.employeeId}
-                  className={cn(
-                    "border-border border-t",
-                    bad && "bg-status-late-bg/60",
-                  )}
+                  className={cn("border-border border-t", bad && "bg-status-late-bg/60")}
                 >
                   <td className="px-4 py-2">
                     <span className="flex items-center gap-2.5">
-                      <PersonAvatar name={r.name} gender={r.gender} seed={r.employeeId} src={r.avatarUrl} />
+                      <PersonAvatar
+                        name={r.name}
+                        gender={r.gender}
+                        seed={r.employeeId}
+                        src={r.avatarUrl}
+                      />
                       <span className="min-w-0">
                         <span className="block leading-snug">{r.name}</span>
-                        <span className="text-muted-foreground block text-xs">
-                          {r.department}
-                        </span>
+                        <span className="text-muted-foreground block text-xs">{r.department}</span>
                       </span>
                     </span>
                   </td>
@@ -1348,7 +1410,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
                     ) : can("employee:update") ? (
                       <SetManager row={r} />
                     ) : (
-                      <span className="text-xs font-semibold text-status-late-fg">
+                      <span className="text-status-late-fg text-xs font-semibold">
                         ไม่มีหัวหน้า · ให้ HR ตั้งในผังองค์กร
                       </span>
                     )}
@@ -1425,7 +1487,7 @@ function SetManager({ row }: { row: MatchRow }) {
     <>
       <Select value={pick ?? ""} onValueChange={(v) => setPick((v as string) || null)}>
         <SelectTrigger
-          className="bg-card h-10 w-full max-w-[240px] border-[1.5px] border-status-late-border text-sm font-semibold text-status-late-fg"
+          className="bg-card border-status-late-border text-status-late-fg h-10 w-full max-w-[240px] border-[1.5px] text-sm font-semibold"
           aria-label={`เลือกหัวหน้าให้ ${row.name}`}
         >
           <SelectValue placeholder="ไม่มีหัวหน้า · เลือก…" />
@@ -1466,7 +1528,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
     form: round.formsUsed.map((f) => f.name).join(" · ") || round.formName,
     people: `${round.participantIds.length} คน`,
     raters: `${round.matching.assignmentCount} งานประเมิน · ผู้ประเมิน ${round.matching.raterCount} คน`,
-    schedule: `${fmtShort(round.startIso)} – ${fmtShort(round.endIso)} · LINE ${round.notifyLine ? `${inv.withLine} คน` : "ปิดไว้"} · ในแอป ${inv.appOnly} คน${round.remind ? ` · เตือนก่อนปิด ${REMIND_BEFORE_DAYS} วัน` : ""}`,
+    schedule: `${fmtShort(round.startIso)} – ${fmtShort(round.endIso)} · LINE ${round.notifyLine ? `${inv.withLine} คน` : "ปิดไว้"} · ในแอป ${inv.appOnly} คน${round.remind ? ` · เตือนก่อนปิด ${REMIND_BEFORE_DAYS} วัน` : ""}${round.sequential && round.raterTypes.includes("SELF") ? " · ประเมินตนเองก่อน" : ""}`,
   };
 
   return (
@@ -1497,7 +1559,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
                 </span>
                 <Button
                   variant={c.ok ? "ghost" : "outline"}
-                  className="h-11 shrink-0 text-primary md:h-9"
+                  className="text-primary h-11 shrink-0 md:h-9"
                   onClick={() => goTo(CHECK_STEP[c.key])}
                 >
                   {c.ok ? "แก้" : "ไปแก้"}
@@ -1506,7 +1568,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
             ))}
           </ul>
           {noManager.length > 0 && (
-            <p className="mt-3 flex gap-2 text-sm text-status-late-fg">
+            <p className="text-status-late-fg mt-3 flex gap-2 text-sm">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
               <span>
                 {noManager.length} คนจะไม่มีหัวหน้าประเมิน (มีแค่มุมมองอื่น):{" "}
@@ -1526,7 +1588,7 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
             </p>
           )}
           {inv.unreachable > 0 && (
-            <p className="mt-3 flex gap-2 text-sm text-status-late-fg">
+            <p className="text-status-late-fg mt-3 flex gap-2 text-sm">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
               ส่งไม่ถึง {inv.unreachable} คน (ยังไม่มีบัญชีเข้าใช้งาน):{" "}
               {inv.unreachableNames.slice(0, 5).join(", ")}
@@ -1554,27 +1616,25 @@ function StepReview({ round, goTo }: { round: RoundDetail; goTo: (i: number) => 
 
         {/* What a rater receives: same title and body as sendInvitations(). */}
         <figure
-          className="mx-auto w-full max-w-[280px] rounded-sm border border-border bg-card p-0 "
+          className="border-border bg-card mx-auto w-full max-w-[280px] rounded-sm border p-0"
           aria-label="ตัวอย่างข้อความที่ผู้ประเมินได้รับ"
         >
-          <div className="min-h-[300px] rounded-lg bg-muted px-3 py-3.5 text-foreground">
-            <div className="mb-3 flex items-center gap-2 text-xs font-bold text-muted-foreground">
-              <span
-                className="flex size-[26px] items-center justify-center rounded-full bg-primary text-xs text-primary-foreground"
-              >
+          <div className="bg-muted text-foreground min-h-[300px] rounded-lg px-3 py-3.5">
+            <div className="text-muted-foreground mb-3 flex items-center gap-2 text-xs font-bold">
+              <span className="bg-primary text-primary-foreground flex size-[26px] items-center justify-center rounded-full text-xs">
                 GV
               </span>
               GV One HR{round.notifyLine && inv.lineConfigured ? " · LINE" : " · ในแอป"}
             </div>
-            <div className="rounded-[4px_16px_16px_16px] bg-white px-3 py-3 text-sm leading-relaxed ">
+            <div className="rounded-[4px_16px_16px_16px] bg-white px-3 py-3 text-sm leading-relaxed">
               <b className="mb-1 block text-sm break-words">ถึงรอบประเมิน: {round.name}</b>
               คุณมี {ex?.count ?? "–"} คนที่ต้องประเมิน
               {round.endIso ? ` ปิดรอบวันที่ ${fmtLong(round.endIso)}` : ""}
-              <span className="mt-2.5 block rounded-lg bg-primary py-2 text-center font-bold text-white">
+              <span className="bg-primary mt-2.5 block rounded-lg py-2 text-center font-bold text-white">
                 เปิดงานประเมิน →
               </span>
             </div>
-            <figcaption className="mt-1.5 text-xs text-muted-foreground">
+            <figcaption className="text-muted-foreground mt-1.5 text-xs">
               {round.startIso ? `${fmtShort(round.startIso)} · ` : ""}ตัวอย่าง
               {ex ? `: ข้อความถึง ${ex.name}` : ""}
             </figcaption>

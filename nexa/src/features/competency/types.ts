@@ -18,6 +18,7 @@ export interface Competency {
   category: { id: string; name: string } | null;
   order: number;
   active: boolean;
+  kind: "CORE" | "FUNCTIONAL" | "LEADERSHIP";
   questionType: QuestionType;
   maxScore: number;
   defaultWeight: number;
@@ -38,6 +39,7 @@ export interface CompetencyFormValues {
   categoryId?: string | null;
   order?: number;
   active?: boolean;
+  kind?: "CORE" | "FUNCTIONAL" | "LEADERSHIP";
   questionType?: QuestionType;
   maxScore?: number;
   defaultWeight?: number;

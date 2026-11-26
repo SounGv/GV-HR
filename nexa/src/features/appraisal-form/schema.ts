@@ -1,6 +1,22 @@
 import { z } from "zod";
 
-export const ANSWER_TYPES = ["RATING", "CHOICE", "MULTI_CHOICE", "SHORT_TEXT", "PARAGRAPH"] as const;
+export const ANSWER_TYPES = [
+  "RATING",
+  "CHOICE",
+  "MULTI_CHOICE",
+  "SHORT_TEXT",
+  "PARAGRAPH",
+  "FILE_EVIDENCE",
+] as const;
+export const SECTION_KINDS = [
+  "KPI",
+  "OKR",
+  "COMPETENCY_CORE",
+  "COMPETENCY_FUNCTIONAL",
+  "COMPETENCY_LEADERSHIP",
+  "TASK",
+  "CUSTOM",
+] as const;
 export const RATER_TYPES = ["SELF", "MANAGER", "PEER", "SUBORDINATE"] as const;
 
 const optionSchema = z.object({
@@ -19,6 +35,7 @@ export const questionSchema = z.object({
   visibleTo: z.array(z.enum(RATER_TYPES)).default([]),
   /** Section (หมวด) the question sits under; null = none. */
   section: z.string().trim().max(80).optional().nullable(),
+  sectionKind: z.enum(SECTION_KINDS).optional(),
   /** RATING only: what each score looks like for this question. */
   levelDescriptions: z
     .array(z.object({ score: z.number().int().min(1).max(10), text: z.string().trim().max(300) }))
@@ -38,7 +55,12 @@ export const formUpdateSchema = z.object({
   questions: z.array(questionSchema).max(100).optional(),
   /** One name per score 1..ratingMax; null = the system's original names. */
   ratingLabels: z
-    .array(z.object({ score: z.number().int().min(1).max(10), label: z.string().trim().min(1, "กรุณาตั้งชื่อทุกระดับคะแนน").max(40) }))
+    .array(
+      z.object({
+        score: z.number().int().min(1).max(10),
+        label: z.string().trim().min(1, "กรุณาตั้งชื่อทุกระดับคะแนน").max(40),
+      }),
+    )
     .max(10)
     .optional()
     .nullable(),

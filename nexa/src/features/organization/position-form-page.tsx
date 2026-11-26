@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,6 +47,7 @@ export type PositionInit = {
   code: string;
   level: number;
   departmentId: string | null;
+  duties?: { id: string; title: string; description: string | null }[];
 };
 
 export function PositionFormPage({ position }: { position?: PositionInit }) {
@@ -58,6 +59,10 @@ export function PositionFormPage({ position }: { position?: PositionInit }) {
   const updateMut = useUpdatePosition();
   const pending = createMut.isPending || updateMut.isPending;
   const againRef = useRef(false);
+  const [duties, setDuties] = useState<{ title: string; description: string }[]>(
+    () =>
+      position?.duties?.map((d) => ({ title: d.title, description: d.description ?? "" })) ?? [],
+  );
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -75,6 +80,9 @@ export function PositionFormPage({ position }: { position?: PositionInit }) {
       code: values.code,
       level: values.level,
       departmentId: values.departmentId === NONE ? null : values.departmentId,
+      duties: duties
+        .map((d) => ({ title: d.title.trim(), description: d.description.trim() || null }))
+        .filter((d) => d.title),
     };
     try {
       if (isEdit && position) {
@@ -86,6 +94,7 @@ export function PositionFormPage({ position }: { position?: PositionInit }) {
         toast.success("สร้างตำแหน่งแล้ว");
         if (againRef.current) {
           form.reset({ title: "", code: "", level: "1", departmentId: NONE });
+          setDuties([]);
           if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
           router.push(LIST);
@@ -98,15 +107,22 @@ export function PositionFormPage({ position }: { position?: PositionInit }) {
 
   const actions: FormFooterAction[] = [
     ...(isEdit ? [] : [{ label: "บันทึกและเพิ่มใหม่", onClick: () => (againRef.current = true) }]),
-    { label: isEdit ? "บันทึก" : "เพิ่มตำแหน่ง", onClick: () => (againRef.current = false), primary: true },
+    {
+      label: isEdit ? "บันทึก" : "เพิ่มตำแหน่ง",
+      onClick: () => (againRef.current = false),
+      primary: true,
+    },
   ];
 
   return (
     <FormPageShell
-      breadcrumbs={[{ label: "โครงสร้างองค์กร", href: LIST }, { label: isEdit ? "แก้ไขตำแหน่ง" : "เพิ่มตำแหน่ง" }]}
+      breadcrumbs={[
+        { label: "โครงสร้างองค์กร", href: LIST },
+        { label: isEdit ? "แก้ไขตำแหน่ง" : "เพิ่มตำแหน่ง" },
+      ]}
       backHref={LIST}
       title={isEdit ? "แก้ไขตำแหน่ง" : "เพิ่มตำแหน่ง"}
-      description="กำหนดชื่อตำแหน่ง ระดับ และฝ่ายที่สังกัด"
+      description="กำหนดชื่อตำแหน่ง ระดับ ฝ่ายที่สังกัด และหน้าที่ตามตำแหน่ง (ใช้ประเมินผลงาน Task Achievement)"
       formId={FORM_ID}
       pending={pending}
       onCancel={() => router.push(LIST)}
@@ -193,6 +209,48 @@ export function PositionFormPage({ position }: { position?: PositionInit }) {
               </FormItem>
             )}
           />
+          <div className="space-y-2">
+            <FormLabel>หน้าที่ตามตำแหน่ง</FormLabel>
+            <p className="text-muted-foreground text-xs">
+              ใช้เป็นบริบทตอนประเมินแบบ Task Achievement — คุณภาพ ความสมบูรณ์ และส่งงานตรงเวลา
+            </p>
+            {duties.map((d, i) => (
+              <div key={i} className="border-border space-y-1.5 rounded-lg border p-3">
+                <Input
+                  placeholder="ชื่องาน เช่น ปิดการขายตามเป้า"
+                  value={d.title}
+                  onChange={(e) =>
+                    setDuties((prev) =>
+                      prev.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)),
+                    )
+                  }
+                />
+                <Input
+                  placeholder="รายละเอียด (ไม่บังคับ)"
+                  value={d.description}
+                  onChange={(e) =>
+                    setDuties((prev) =>
+                      prev.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)),
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  className="text-destructive text-xs hover:underline"
+                  onClick={() => setDuties((prev) => prev.filter((_, j) => j !== i))}
+                >
+                  ลบหน้าที่นี้
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="text-primary text-sm font-medium hover:underline"
+              onClick={() => setDuties((prev) => [...prev, { title: "", description: "" }])}
+            >
+              + เพิ่มหน้าที่
+            </button>
+          </div>
         </form>
       </Form>
     </FormPageShell>

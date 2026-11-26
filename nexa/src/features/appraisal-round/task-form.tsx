@@ -19,6 +19,8 @@ import { PersonAvatar } from "@/components/shared/person-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FileAttachField } from "@/components/shared/file-attach-field";
+import { SECTION_KIND_LABEL, parseSectionKind } from "@/features/appraisal-form/method-templates";
 import { rubricFor } from "@/features/appraisal-form/rating-labels";
 import { ApiError } from "@/lib/api/client";
 import { arrowSelect } from "@/lib/arrow-select";
@@ -70,14 +72,25 @@ export function scoreTone(score: number, max: number) {
 }
 
 /** The score as a plain number in a square (Favpo shows numbers, not pictures); the picked one is filled blue. */
-function ScoreIcon({ score, small, picked }: { score: number; max: number; small?: boolean; picked?: boolean }) {
+function ScoreIcon({
+  score,
+  small,
+  picked,
+}: {
+  score: number;
+  max: number;
+  small?: boolean;
+  picked?: boolean;
+}) {
   return (
     <span
       aria-hidden="true"
       className={cn(
         "flex shrink-0 items-center justify-center rounded-sm border font-bold tabular-nums",
         small ? "size-9 text-base" : "size-12 text-xl",
-        picked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground",
+        picked
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-card text-foreground",
       )}
     >
       {score}
@@ -104,6 +117,8 @@ export function TaskForm({
 }) {
   const router = useRouter();
   const locked = task.status === "SUBMITTED" || task.roundStatus !== "OPEN";
+  const waitingSelf =
+    task.lockedUntilSelf && task.roundStatus === "OPEN" && task.status !== "SUBMITTED";
   const questions = task.questions as SnapQuestion[];
   const rubric = useMemo(
     () => rubricFor(task.ratingMax, task.ratingLabels),
@@ -112,7 +127,13 @@ export function TaskForm({
 
   // The first rated question's own words for each score (the form builder's "what each score means"), shown on the intro.
   const startDesc = useMemo(
-    () => new Map((questions.find((x) => x.answerType === "RATING")?.levelDescriptions ?? []).map((l) => [l.score, l.text])),
+    () =>
+      new Map(
+        (questions.find((x) => x.answerType === "RATING")?.levelDescriptions ?? []).map((l) => [
+          l.score,
+          l.text,
+        ]),
+      ),
     [questions],
   );
   const [values, setValues] = useState<Values>(() =>
@@ -126,7 +147,7 @@ export function TaskForm({
   // Someone who already started goes straight to their first open question.
   const firstOpen = questions.findIndex((q) => !isAnswered(values[q.id]));
   const [view, setView] = useState<"start" | "q" | "review">(
-    locked ? "review" : task.answers.length ? "q" : "start",
+    waitingSelf ? "start" : locked ? "review" : task.answers.length ? "q" : "start",
   );
   const [cur, setCur] = useState(firstOpen === -1 ? 0 : firstOpen);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -233,7 +254,10 @@ export function TaskForm({
       needsNote(q, list.find((a) => a.questionId === q.id) as never, task.noteAtLowest));
 
   return (
-    <div ref={topRef} className="relative isolate mx-auto max-w-2xl scroll-mt-4 space-y-4 pb-28 md:pb-4">
+    <div
+      ref={topRef}
+      className="relative isolate mx-auto max-w-2xl scroll-mt-4 space-y-4 pb-28 md:pb-4"
+    >
       {/* Header: who, as whom, progress per question, save state (a flat card). */}
       <section className="gv-frost rounded-lg p-3.5 sm:p-5" aria-label="งานประเมิน">
         <div className="flex items-center gap-3">
@@ -250,9 +274,9 @@ export function TaskForm({
             <button
               type="button"
               onClick={saveNow}
-              className="relative flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-destructive-muted px-2.5 text-xs font-bold text-destructive before:absolute before:-inset-y-1 before:inset-x-0 before:content-['']"
+              className="bg-destructive-muted text-destructive relative flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']"
             >
-              <span className="size-1.5 rounded-full bg-destructive" aria-hidden="true" />
+              <span className="bg-destructive size-1.5 rounded-full" aria-hidden="true" />
               ยังไม่บันทึก · ลองใหม่
             </button>
           ) : (
@@ -299,6 +323,13 @@ export function TaskForm({
         </div>
       </section>
 
+      {waitingSelf && (
+        <p className="border-border bg-muted flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
+          <Lock className="size-4 shrink-0" aria-hidden="true" />
+          รอบนี้ประเมินตามลำดับ — รอให้ {task.personName} ส่งแบบประเมินตนเองก่อน
+          จึงจะเริ่มให้คะแนนได้
+        </p>
+      )}
       {onBehalfOf && !locked && (
         <p className="bg-muted rounded-lg px-4 py-3 text-sm">
           คุณกำลังกรอกแทน <b>{onBehalfOf}</b> ระบบจะบันทึกว่า HR เป็นผู้ส่ง
@@ -315,13 +346,13 @@ export function TaskForm({
 
       {view === "start" && (
         <div className="gv-rise space-y-4">
-          <div className="border-border bg-card flex items-center gap-3.5 rounded-lg border p-4 ">
+          <div className="border-border bg-card flex items-center gap-3.5 rounded-lg border p-4">
             <PersonAvatar
               name={task.personName}
               gender={task.personGender}
               src={task.personAvatarUrl}
               seed={task.personCode}
-              className="size-14 "
+              className="size-14"
             />
             <div className="min-w-0">
               <p className="text-base leading-snug font-bold break-words">{task.personName}</p>
@@ -329,15 +360,61 @@ export function TaskForm({
                 <p className="text-muted-foreground text-sm">{task.personRole}</p>
               )}
               <p className="mt-1.5 flex flex-wrap gap-1.5">
-                <span className="rounded-sm bg-accent px-2.5 text-xs font-bold text-primary">
+                <span className="bg-accent text-primary rounded-sm px-2.5 text-xs font-bold">
                   {questions.length} หัวข้อ
                 </span>
-                <span className="rounded-sm bg-accent px-2.5 text-xs font-bold text-primary">
+                <span className="bg-accent text-primary rounded-sm px-2.5 text-xs font-bold">
                   ราว {Math.max(2, Math.ceil(questions.length * 0.6))} นาที
                 </span>
               </p>
             </div>
           </div>
+          {(task.goals.length > 0 || task.duties.length > 0) && (
+            <div className="space-y-3">
+              {task.goals.length > 0 && (
+                <div>
+                  <h2 className="text-foreground mb-2 px-0.5 text-sm font-bold">
+                    KPI / OKR ของ {task.personName} ในระบบ
+                  </h2>
+                  <ul className="border-border bg-card overflow-hidden rounded-lg border">
+                    {task.goals.map((g) => (
+                      <li
+                        key={g.id}
+                        className="border-border flex items-start justify-between gap-3 border-t px-4 py-2.5 first:border-t-0"
+                      >
+                        <span className="min-w-0 text-sm">
+                          <b className="block">{g.title}</b>
+                          <span className="text-muted-foreground text-xs">
+                            {g.type} · {g.currentValue} / {g.targetValue} {g.unit}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {task.duties.length > 0 && (
+                <div>
+                  <h2 className="text-foreground mb-2 px-0.5 text-sm font-bold">
+                    หน้าที่ตามตำแหน่ง
+                  </h2>
+                  <ul className="border-border bg-card overflow-hidden rounded-lg border">
+                    {task.duties.map((d) => (
+                      <li
+                        key={d.id}
+                        className="border-border border-t px-4 py-2.5 text-sm first:border-t-0"
+                      >
+                        <b className="block">{d.title}</b>
+                        {d.description && (
+                          <span className="text-muted-foreground text-xs">{d.description}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <h2 className="text-foreground mb-2 px-0.5 text-sm font-bold text-balance">
               คะแนนแต่ละระดับหมายถึง
@@ -393,7 +470,7 @@ export function TaskForm({
           value={values[q.id]}
           note={notes[q.id] ?? ""}
           noteRequired={task.noteAtLowest && q.answerType === "RATING" && values[q.id] === 1}
-          disabled={locked}
+          disabled={locked || waitingSelf}
           onValue={(v) => setValue(q.id, v)}
           onNote={(t) => setNote(q.id, t)}
         />
@@ -402,7 +479,9 @@ export function TaskForm({
       {view === "review" && (
         <div className="gv-rise space-y-3">
           <div>
-            <h2 className="text-xl font-bold text-balance">{locked ? "คำตอบที่ส่งแล้ว" : "ตรวจทวนก่อนส่ง"}</h2>
+            <h2 className="text-xl font-bold text-balance">
+              {locked ? "คำตอบที่ส่งแล้ว" : "ตรวจทวนก่อนส่ง"}
+            </h2>
             {!locked && <p className="text-muted-foreground text-sm">กดหัวข้อเพื่อแก้</p>}
           </div>
           <ul className="border-border bg-card overflow-hidden rounded-lg border">
@@ -420,9 +499,11 @@ export function TaskForm({
                         .join(", ")
                     : x.answerType === "CHOICE"
                       ? (x.options ?? []).find((o) => o.value === v)?.label
-                      : typeof v === "string"
-                        ? v
-                        : "";
+                      : x.answerType === "FILE_EVIDENCE"
+                        ? "แนบหลักฐานแล้ว"
+                        : typeof v === "string"
+                          ? v
+                          : "";
               const noNote = needsNote(
                 x,
                 list.find((a) => a.questionId === x.id) as never,
@@ -441,7 +522,7 @@ export function TaskForm({
                         "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold",
                         !done
                           ? x.required
-                            ? "border border-dashed border-status-late-border bg-status-late-bg text-status-late-fg"
+                            ? "border-status-late-border bg-status-late-bg text-status-late-fg border border-dashed"
                             : "border-border text-muted-foreground border border-dashed"
                           : x.answerType === "RATING"
                             ? scoreTone(v as number, task.ratingMax)
@@ -476,7 +557,7 @@ export function TaskForm({
                       </span>
                     </span>
                     {!locked && (
-                      <PencilLine className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                      <PencilLine className="text-primary size-4 shrink-0" aria-hidden="true" />
                     )}
                   </button>
                 </li>
@@ -484,7 +565,7 @@ export function TaskForm({
             })}
           </ul>
           {!locked && missing.length > 0 && (
-            <p className="rounded-lg border border-status-late-border bg-status-late-bg px-3.5 py-2.5 text-sm text-status-late-fg">
+            <p className="border-status-late-border bg-status-late-bg text-status-late-fg rounded-lg border px-3.5 py-2.5 text-sm">
               ยังส่งไม่ได้ · {missing.join(", ")}
             </p>
           )}
@@ -499,7 +580,12 @@ export function TaskForm({
       {/* Thumb bar: one main action per screen. */}
       <div className="gv-foot gv-frost fixed inset-x-0 bottom-[calc(var(--gv-tabbar)+env(safe-area-inset-bottom))] z-30 rounded-t-lg border-x-0 border-b-0 px-4 py-3 md:sticky md:inset-x-auto md:bottom-4 md:rounded-lg md:border md:px-3">
         <div className="flex items-center gap-2">
-          {view === "start" && (
+          {waitingSelf && (
+            <Button variant="outline" className="h-12 flex-1" onClick={() => router.push(backHref)}>
+              กลับไป{backLabel}
+            </Button>
+          )}
+          {view === "start" && !waitingSelf && (
             <Button
               className="h-12 flex-1 font-bold"
               onClick={() => go("q", firstOpen === -1 ? 0 : firstOpen)}
@@ -610,12 +696,15 @@ export function QuestionStep({
   return (
     <div className="gv-rise space-y-3.5">
       <div>
-        <span className="inline-flex rounded-sm bg-accent px-2.5 py-0.5 text-xs font-bold text-primary tabular-nums">
+        <span className="bg-accent text-primary inline-flex rounded-sm px-2.5 py-0.5 text-xs font-bold tabular-nums">
           ข้อ {index + 1} จาก {total}
           {q.section ? ` · ${q.section}` : ""}
+          {parseSectionKind(q.sectionKind) !== "CUSTOM"
+            ? ` · ${SECTION_KIND_LABEL[parseSectionKind(q.sectionKind)]}`
+            : ""}
           {!q.required && " · ไม่บังคับ"}
         </span>
-        <h2 className="mt-2 text-xl leading-snug font-bold break-words text-balance">{q.text}</h2>
+        <h2 className="mt-2 text-xl leading-snug font-bold text-balance break-words">{q.text}</h2>
       </div>
       {q.helpText && (
         <div className="gv-frost flex items-start gap-2.5 rounded-lg px-3 py-2.5">
@@ -669,8 +758,8 @@ export function QuestionStep({
                   "bg-card/90 relative flex w-full items-start gap-3 rounded-lg border-[1.5px] py-3 pr-3.5 pl-3 text-left transition-[border-color,box-shadow,transform,opacity] duration-200 active:scale-[0.985] disabled:opacity-60 dark:shadow-none",
                   on
                     ? low
-                      ? "border-destructive border-2 "
-                      : "border-primary border-2 "
+                      ? "border-destructive border-2"
+                      : "border-primary border-2"
                     : "border-border hover:border-ring/50",
                   picked && !on && "opacity-85",
                 )}
@@ -726,7 +815,7 @@ export function QuestionStep({
       {q.answerType === "RATING" && (
         <label
           className={cn(
-            "gv-frost block rounded-lg px-3.5 py-2.5 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
+            "gv-frost focus-within:border-ring focus-within:ring-ring/50 block rounded-lg px-3.5 py-2.5 transition-shadow focus-within:ring-3",
             noteMissing && "border-status-absent-border bg-status-absent-bg/60",
           )}
         >
@@ -775,7 +864,9 @@ export function QuestionStep({
                 type="button"
                 role={q.answerType === "CHOICE" ? "radio" : "checkbox"}
                 aria-checked={picked}
-                tabIndex={q.answerType === "CHOICE" && !picked && (value !== undefined || oi > 0) ? -1 : 0}
+                tabIndex={
+                  q.answerType === "CHOICE" && !picked && (value !== undefined || oi > 0) ? -1 : 0
+                }
                 disabled={disabled}
                 onClick={() =>
                   q.answerType === "CHOICE"
@@ -830,6 +921,14 @@ export function QuestionStep({
           disabled={disabled}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onValue(e.target.value)}
+        />
+      )}
+      {q.answerType === "FILE_EVIDENCE" && (
+        <FileAttachField
+          label="แนบหลักฐานการทำงาน"
+          disabled={disabled}
+          value={typeof value === "string" ? value : ""}
+          onChange={(url) => onValue(url)}
         />
       )}
     </div>

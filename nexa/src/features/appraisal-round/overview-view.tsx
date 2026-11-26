@@ -3,7 +3,15 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CalendarClock, Check, ClipboardList, Eye, Pencil, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  Check,
+  ClipboardList,
+  Eye,
+  Pencil,
+  Plus,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -13,14 +21,28 @@ import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/s
 import { StatusChip, type StatusTone } from "@/components/shared/status-chip";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppraisalForms } from "@/features/appraisal-form/hooks";
 import type { FormListItem, FormStatus } from "@/features/appraisal-form/types";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
-import { useCreateRound, useDepartmentProgress, usePublishedForms, useRoundProgress, useRounds } from "./hooks";
+import {
+  useCreateRound,
+  useDepartmentProgress,
+  usePublishedForms,
+  useRoundProgress,
+  useRounds,
+} from "./hooks";
+import { METHOD_TEMPLATES } from "@/features/appraisal-form/method-templates";
 import { ROUND_STATUS_LABEL, type RoundListItem, type RoundStatus } from "./types";
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
@@ -28,9 +50,12 @@ import { ROUND_STATUS_LABEL, type RoundListItem, type RoundStatus } from "./type
 const MAX_ROWS = 8;
 
 const fmtDate = (iso: string, withYear = false) =>
-  new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: withYear ? "numeric" : undefined, timeZone: "UTC" }).format(
-    new Date(`${iso}T00:00:00Z`),
-  );
+  new Intl.DateTimeFormat("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: withYear ? "numeric" : undefined,
+    timeZone: "UTC",
+  }).format(new Date(`${iso}T00:00:00Z`));
 
 /** "1 ธ.ค. – 25 ธ.ค." / "เริ่ม 5 ม.ค." / "ปิด 25 ธ.ค." / "ยังไม่กำหนดวัน". */
 function dateRange(start: string | null, end: string | null) {
@@ -43,7 +68,9 @@ function dateRange(start: string | null, end: string | null) {
 /** Whole days from today (Bangkok) to a YYYY-MM-DD date; negative once it has passed. */
 function daysUntil(iso: string) {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
-  return Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+  return Math.round(
+    (Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000,
+  );
 }
 
 /** Open rounds, the one closing soonest first (rounds without a close date last). */
@@ -53,10 +80,23 @@ function openRoundsBySoonest(rounds: RoundListItem[]) {
     .sort((a, b) => (a.endIso ?? "9999-12-31").localeCompare(b.endIso ?? "9999-12-31"));
 }
 
-const ROUND_TONE: Record<RoundStatus, StatusTone> = { OPEN: "success", SCHEDULED: "warning", DRAFT: "warning", CLOSED: "neutral" };
+const ROUND_TONE: Record<RoundStatus, StatusTone> = {
+  OPEN: "success",
+  SCHEDULED: "warning",
+  DRAFT: "warning",
+  CLOSED: "neutral",
+};
 
-const FORM_LABEL: Record<FormStatus, string> = { DRAFT: "ฉบับร่าง", PUBLISHED: "ใช้งานอยู่", ARCHIVED: "เก็บแล้ว" };
-const FORM_TONE: Record<FormStatus, StatusTone> = { DRAFT: "warning", PUBLISHED: "success", ARCHIVED: "neutral" };
+const FORM_LABEL: Record<FormStatus, string> = {
+  DRAFT: "ฉบับร่าง",
+  PUBLISHED: "ใช้งานอยู่",
+  ARCHIVED: "เก็บแล้ว",
+};
+const FORM_TONE: Record<FormStatus, StatusTone> = {
+  DRAFT: "warning",
+  PUBLISHED: "success",
+  ARCHIVED: "neutral",
+};
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties;
 
@@ -117,7 +157,17 @@ export function OverviewActions({ className }: { className?: string }) {
 /* ── hero ────────────────────────────────────────────────────────────── */
 
 /** White pill used for the one next action inside the hero. */
-function HeroPill({ href, onClick, disabled, children }: { href?: string; onClick?: () => void; disabled?: boolean; children: ReactNode }) {
+function HeroPill({
+  href,
+  onClick,
+  disabled,
+  children,
+}: {
+  href?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
   const cls =
     "inline-flex h-11 items-center gap-1.5 rounded-sm bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60 md:h-9";
   if (href) {
@@ -138,7 +188,11 @@ function Eyebrow({ tone, children }: { tone: "waiting" | "open"; children: React
   return (
     <span
       className="inline-block rounded-sm px-2.5 py-0.5 text-xs font-bold"
-      style={tone === "open" ? { background: "var(--on-hero-accent)", color: "var(--on-hero-accent-fg)" } : { background: "var(--status-late-bg)", color: "var(--status-late-fg)" }}
+      style={
+        tone === "open"
+          ? { background: "var(--on-hero-accent)", color: "var(--on-hero-accent-fg)" }
+          : { background: "var(--status-late-bg)", color: "var(--status-late-fg)" }
+      }
     >
       {children}
     </span>
@@ -152,16 +206,35 @@ const NOW_TILE: CSSProperties = {
   boxShadow: "inset 3px 0 0 var(--primary)",
 };
 
-function StepTile({ n, state, title, note, action }: { n: number; state: StepState; title: string; note: string; action?: ReactNode }) {
+function StepTile({
+  n,
+  state,
+  title,
+  note,
+  action,
+}: {
+  n: number;
+  state: StepState;
+  title: string;
+  note: string;
+  action?: ReactNode;
+}) {
   return (
-    <li className={cn("gv-glass grid content-start gap-1.5 px-4 py-3.5", state === "later" && "opacity-70")} style={state === "now" ? NOW_TILE : undefined}>
+    <li
+      className={cn(
+        "gv-glass grid content-start gap-1.5 px-4 py-3.5",
+        state === "later" && "opacity-70",
+      )}
+      style={state === "now" ? NOW_TILE : undefined}
+    >
       <div className="flex items-center gap-2.5 text-sm leading-snug font-bold">
         <span
           className={cn(
             "grid size-7 flex-none place-items-center rounded-full border text-sm font-bold",
             state === "later" && "border-border bg-muted",
             state === "now" && "border-primary bg-primary text-primary-foreground",
-            state === "done" && "border-[var(--on-hero-accent)] bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]",
+            state === "done" &&
+              "border-[var(--on-hero-accent)] bg-[var(--on-hero-accent)] text-[var(--on-hero-accent-fg)]",
           )}
           aria-hidden
         >
@@ -169,10 +242,16 @@ function StepTile({ n, state, title, note, action }: { n: number; state: StepSta
         </span>
         <span>
           {title}
-          <span className="sr-only">{state === "done" ? " (เสร็จแล้ว)" : state === "now" ? " (ขั้นปัจจุบัน)" : " (ขั้นถัดไป)"}</span>
+          <span className="sr-only">
+            {state === "done"
+              ? " (เสร็จแล้ว)"
+              : state === "now"
+                ? " (ขั้นปัจจุบัน)"
+                : " (ขั้นถัดไป)"}
+          </span>
         </span>
       </div>
-      <p className="text-sm leading-relaxed break-words text-foreground">{note}</p>
+      <p className="text-foreground text-sm leading-relaxed break-words">{note}</p>
       {action && <div className="mt-1">{action}</div>}
     </li>
   );
@@ -185,21 +264,28 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
   const forms = useAppraisalForms();
   const published = usePublishedForms();
 
-  if (forms.isError) return <ErrorState title="โหลดแบบประเมินไม่สำเร็จ" onRetry={() => forms.refetch()} />;
+  if (forms.isError)
+    return <ErrorState title="โหลดแบบประเมินไม่สำเร็จ" onRetry={() => forms.refetch()} />;
   if (forms.isLoading) return <Skeleton className="h-64 w-full rounded-lg" />;
 
   const list = forms.data?.data ?? [];
   const drafts = list.filter((f) => f.status === "DRAFT");
   // Published versions can sit behind a newer draft in the list, so ask the rounds API too.
-  const publishedCount = Math.max(published.data?.data.length ?? 0, list.filter((f) => f.status === "PUBLISHED").length);
+  const publishedCount = Math.max(
+    published.data?.data.length ?? 0,
+    list.filter((f) => f.status === "PUBLISHED").length,
+  );
   const bestDraft = drafts.find((f) => f.questionCount > 0);
   const s1 = list.length > 0;
   const s2 = publishedCount > 0;
   const current = !s1 ? 1 : !s2 ? 2 : 3;
-  const stateOf = (n: number): StepState => (n < current ? "done" : n === current ? "now" : "later");
+  const stateOf = (n: number): StepState =>
+    n < current ? "done" : n === current ? "now" : "later";
 
   // A template is only ever copied, so it is never "the draft to continue".
-  const pending = rounds.find((r) => r.status === "SCHEDULED") ?? rounds.find((r) => r.status === "DRAFT" && !r.isTemplate);
+  const pending =
+    rounds.find((r) => r.status === "SCHEDULED") ??
+    rounds.find((r) => r.status === "DRAFT" && !r.isTemplate);
   const templateCount = rounds.filter((r) => r.isTemplate).length;
 
   const sub =
@@ -217,7 +303,11 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
     step2Action = <HeroPill href={`/appraisal/forms/${bestDraft.id}`}>ไปยืนยันแบบนี้ →</HeroPill>;
   } else if (current === 2) {
     step2Note = "ทุกแบบยังไม่มีคำถาม ใส่คำถามก่อน แล้วกดยืนยันใช้";
-    step2Action = <HeroPill href={drafts[0] ? `/appraisal/forms/${drafts[0].id}` : "/appraisal/forms"}>ไปเพิ่มคำถาม →</HeroPill>;
+    step2Action = (
+      <HeroPill href={drafts[0] ? `/appraisal/forms/${drafts[0].id}` : "/appraisal/forms"}>
+        ไปเพิ่มคำถาม →
+      </HeroPill>
+    );
   }
 
   let step3Note = "เลือกแบบ คนที่ถูกประเมิน และวันเปิด–ปิด";
@@ -242,35 +332,67 @@ function SetupHero({ rounds }: { rounds: RoundListItem[] }) {
   }
 
   return (
-    <section className="gv-hero gv-rise p-5 sm:p-6" style={rise(0)} aria-labelledby="appraisal-hero-title">
+    <section
+      className="gv-hero gv-rise p-5 sm:p-6"
+      style={rise(0)}
+      aria-labelledby="appraisal-hero-title"
+    >
       {newRound.dialog}
       <Eyebrow tone="waiting">ยังไม่มีรอบที่เปิดอยู่</Eyebrow>
       <h2 id="appraisal-hero-title" className="mt-2 text-lg leading-snug font-semibold">
         เตรียมให้พร้อมใน 3 ขั้น
       </h2>
-      <p className="mt-0.5 text-sm leading-relaxed text-foreground">{sub}</p>
+      <p className="text-foreground mt-0.5 text-sm leading-relaxed">{sub}</p>
       <ol className="mt-4 grid gap-3 sm:grid-cols-3">
         <StepTile
           n={1}
           state={stateOf(1)}
           title="สร้างแบบประเมิน"
-          note={s1 ? `มีแล้ว ${list.length} แบบ${drafts.length === list.length ? " (ฉบับร่าง)" : ""}` : "ตั้งคำถามและเกณฑ์คะแนนที่จะใช้ประเมิน"}
-          action={!s1 ? <HeroPill href="/appraisal/forms">ไปสร้างแบบประเมิน →</HeroPill> : undefined}
+          note={
+            s1
+              ? `มีแล้ว ${list.length} แบบ${drafts.length === list.length ? " (ฉบับร่าง)" : ""}`
+              : "ตั้งคำถามและเกณฑ์คะแนนที่จะใช้ประเมิน"
+          }
+          action={
+            !s1 ? <HeroPill href="/appraisal/forms">ไปสร้างแบบประเมิน →</HeroPill> : undefined
+          }
         />
-        <StepTile n={2} state={stateOf(2)} title="ยืนยันใช้แบบประเมิน" note={step2Note} action={step2Action} />
-        <StepTile n={3} state={stateOf(3)} title="สร้างและเปิดรอบ" note={step3Note} action={step3Action} />
+        <StepTile
+          n={2}
+          state={stateOf(2)}
+          title="ยืนยันใช้แบบประเมิน"
+          note={step2Note}
+          action={step2Action}
+        />
+        <StepTile
+          n={3}
+          state={stateOf(3)}
+          title="สร้างและเปิดรอบ"
+          note={step3Note}
+          action={step3Action}
+        />
       </ol>
     </section>
   );
 }
 
-function Kpi({ label, value, unit, children }: { label: string; value: ReactNode; unit?: string; children?: ReactNode }) {
+function Kpi({
+  label,
+  value,
+  unit,
+  children,
+}: {
+  label: string;
+  value: ReactNode;
+  unit?: string;
+  children?: ReactNode;
+}) {
   return (
     <div className="gv-glass min-w-0 px-4 py-3.5">
-      <p className="text-sm leading-snug font-semibold text-foreground">{label}</p>
+      <p className="text-foreground text-sm leading-snug font-semibold">{label}</p>
       <p className="mt-1 text-2xl leading-snug font-medium tabular-nums">
         {value}
-        {unit && <span className="ml-1 text-xs font-medium text-foreground">{unit}</span>}
+        {unit && <span className="text-foreground ml-1 text-xs font-medium">{unit}</span>}
       </p>
       {children}
     </div>
@@ -288,12 +410,18 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
   const dash = <span className="text-foreground">–</span>;
 
   return (
-    <section className="gv-hero gv-rise p-5 sm:p-6" style={rise(0)} aria-labelledby="appraisal-hero-title">
-      <Eyebrow tone="open">เปิดอยู่{round.endIso ? ` · ปิด ${fmtDate(round.endIso, true)}` : ""}</Eyebrow>
+    <section
+      className="gv-hero gv-rise p-5 sm:p-6"
+      style={rise(0)}
+      aria-labelledby="appraisal-hero-title"
+    >
+      <Eyebrow tone="open">
+        เปิดอยู่{round.endIso ? ` · ปิด ${fmtDate(round.endIso, true)}` : ""}
+      </Eyebrow>
       <h2 id="appraisal-hero-title" className="mt-2 text-lg leading-snug font-semibold break-words">
         {round.name}
       </h2>
-      <p className="mt-0.5 text-sm leading-relaxed break-words text-foreground">
+      <p className="text-foreground mt-0.5 text-sm leading-relaxed break-words">
         {round.formName && <>ใช้ &ldquo;{round.formName}&rdquo; </>}
         ประเมิน {round.participantCount} คน
         {others > 0 && ` และยังมีอีก ${others} รอบที่เปิดอยู่`}
@@ -306,9 +434,12 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={pct}
-            className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
+            className="bg-muted mt-2 h-1.5 overflow-hidden rounded-full"
           >
-            <div className="gv-grow h-full rounded-full" style={{ width: `${pct}%`, background: "var(--on-hero-accent)" }} />
+            <div
+              className="gv-grow h-full rounded-full"
+              style={{ width: `${pct}%`, background: "var(--on-hero-accent)" }}
+            />
           </div>
         </Kpi>
         <Kpi label="ยังไม่เริ่ม" value={p ? <CountUp value={p.pending} /> : dash} unit="งาน" />
@@ -316,7 +447,10 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
         {left === null ? (
           <Kpi label="เหลือเวลา" value={dash} unit="ไม่ได้กำหนดวันปิด" />
         ) : left <= 0 ? (
-          <Kpi label="เหลือเวลา" value={<span className="text-xl">{left === 0 ? "วันสุดท้าย" : "เลยกำหนดแล้ว"}</span>} />
+          <Kpi
+            label="เหลือเวลา"
+            value={<span className="text-xl">{left === 0 ? "วันสุดท้าย" : "เลยกำหนดแล้ว"}</span>}
+          />
         ) : (
           <Kpi label="เหลือเวลา" value={<CountUp value={left} />} unit="วัน" />
         )}
@@ -327,7 +461,10 @@ function OpenRoundHero({ round, others }: { round: RoundListItem; others: number
 
 function AllLink({ href }: { href: string }) {
   return (
-    <Link href={href} className="inline-flex h-11 items-center text-sm font-semibold text-primary hover:underline md:h-9">
+    <Link
+      href={href}
+      className="text-primary inline-flex h-11 items-center text-sm font-semibold hover:underline md:h-9"
+    >
       ดูทั้งหมด →
     </Link>
   );
@@ -335,16 +472,30 @@ function AllLink({ href }: { href: string }) {
 
 /* ── sections ────────────────────────────────────────────────────────── */
 
-function RoundsSection({ rounds, hasPublished }: { rounds: RoundListItem[]; hasPublished: boolean }) {
+function RoundsSection({
+  rounds,
+  hasPublished,
+}: {
+  rounds: RoundListItem[];
+  hasPublished: boolean;
+}) {
   const shown = rounds.slice(0, MAX_ROWS);
   return (
     <section className="space-y-3">
-      <SectionHeading title="รอบประเมิน" hint="การประเมินที่เปิดจริง ใหม่สุดอยู่บน" action={rounds.length > 0 ? <AllLink href="/appraisal/rounds" /> : undefined} />
+      <SectionHeading
+        title="รอบประเมิน"
+        hint="การประเมินที่เปิดจริง ใหม่สุดอยู่บน"
+        action={rounds.length > 0 ? <AllLink href="/appraisal/rounds" /> : undefined}
+      />
       {rounds.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
           title="ยังไม่มีรอบประเมิน"
-          description={hasPublished ? "กด “สร้างรอบประเมิน” ด้านบนเพื่อเริ่มรอบแรก" : "ยืนยันใช้แบบประเมินก่อน แล้วกด “สร้างรอบประเมิน”"}
+          description={
+            hasPublished
+              ? "กด “สร้างรอบประเมิน” ด้านบนเพื่อเริ่มรอบแรก"
+              : "ยืนยันใช้แบบประเมินก่อน แล้วกด “สร้างรอบประเมิน”"
+          }
           className="gv-rise py-10"
         />
       ) : (
@@ -363,7 +514,10 @@ function RoundsSection({ rounds, hasPublished }: { rounds: RoundListItem[]; hasP
               {shown.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="whitespace-normal">
-                    <Link href={`/appraisal/rounds/${r.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                    <Link
+                      href={`/appraisal/rounds/${r.id}`}
+                      className="text-foreground hover:text-primary font-medium break-words hover:underline"
+                    >
                       {r.name}
                     </Link>
                   </TableCell>
@@ -373,7 +527,15 @@ function RoundsSection({ rounds, hasPublished }: { rounds: RoundListItem[]; hasP
                     <StatusChip tone={ROUND_TONE[r.status]} label={ROUND_STATUS_LABEL[r.status]} />
                   </TableCell>
                   <TableCell className="text-center">
-                    <Link href={`/appraisal/rounds/${r.id}`} aria-label={`เปิดรอบ ${r.name}`} className={buttonVariants({ variant: "ghost", size: "icon", className: "size-9" })}>
+                    <Link
+                      href={`/appraisal/rounds/${r.id}`}
+                      aria-label={`เปิดรอบ ${r.name}`}
+                      className={buttonVariants({
+                        variant: "ghost",
+                        size: "icon",
+                        className: "size-9",
+                      })}
+                    >
                       <Eye className="size-4" aria-hidden="true" />
                     </Link>
                   </TableCell>
@@ -382,7 +544,7 @@ function RoundsSection({ rounds, hasPublished }: { rounds: RoundListItem[]; hasP
             </TableBody>
           </Table>
           {rounds.length > MAX_ROWS && (
-            <p className="px-1 py-2 text-sm text-muted-foreground">
+            <p className="text-muted-foreground px-1 py-2 text-sm">
               แสดง {MAX_ROWS} จาก {rounds.length} รอบ
             </p>
           )}
@@ -408,10 +570,13 @@ function DepartmentSection({ round }: { round: RoundListItem }) {
         <Card className="gv-rise gap-0 py-0" style={rise(2)}>
           <ul aria-label={`ความคืบหน้ารายแผนก ${round.name}`}>
             {rows.map((d) => (
-              <li key={d.department} className="border-t border-border/70 px-5 py-3 first:border-t-0">
+              <li
+                key={d.department}
+                className="border-border/70 border-t px-5 py-3 first:border-t-0"
+              >
                 <div className="flex items-baseline justify-between gap-3 text-sm">
                   <span className="min-w-0 font-semibold break-words">{d.department}</span>
-                  <span className="flex-none text-muted-foreground tabular-nums">
+                  <span className="text-muted-foreground flex-none tabular-nums">
                     {d.submitted}/{d.total} ({d.percent}%)
                   </span>
                 </div>
@@ -421,9 +586,12 @@ function DepartmentSection({ round }: { round: RoundListItem }) {
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={d.percent}
-                  className="mt-1.5 h-[7px] overflow-hidden rounded-full bg-muted"
+                  className="bg-muted mt-1.5 h-[7px] overflow-hidden rounded-full"
                 >
-                  <div className="gv-grow h-full rounded-full bg-primary" style={{ width: `${d.percent}%` }} />
+                  <div
+                    className="gv-grow bg-primary h-full rounded-full"
+                    style={{ width: `${d.percent}%` }}
+                  />
                 </div>
               </li>
             ))}
@@ -472,7 +640,11 @@ function FormsSection() {
           description="สร้างแบบแรก ตั้งคำถาม แล้วกดยืนยันใช้"
           className="gv-rise py-10"
           action={
-            <Button variant="outline" className="h-11 md:h-9" render={<Link href="/appraisal/forms" />}>
+            <Button
+              variant="outline"
+              className="h-11 md:h-9"
+              render={<Link href="/appraisal/forms" />}
+            >
               ไปที่แบบประเมิน
             </Button>
           }
@@ -493,7 +665,10 @@ function FormsSection() {
               {list.slice(0, MAX_ROWS).map((f) => (
                 <TableRow key={f.id}>
                   <TableCell className="whitespace-normal">
-                    <Link href={`/appraisal/forms/${f.id}`} className="font-medium break-words text-foreground hover:text-primary hover:underline">
+                    <Link
+                      href={`/appraisal/forms/${f.id}`}
+                      className="text-foreground hover:text-primary font-medium break-words hover:underline"
+                    >
                       {f.name}
                     </Link>
                   </TableCell>
@@ -504,9 +679,17 @@ function FormsSection() {
                     <Link
                       href={`/appraisal/forms/${f.id}`}
                       aria-label={`${f.questionCount === 0 ? "แก้ไข" : f.status === "DRAFT" ? "ตรวจและยืนยันใช้" : "ดู"}แบบ ${f.name}`}
-                      className={buttonVariants({ variant: "ghost", size: "icon", className: "size-9" })}
+                      className={buttonVariants({
+                        variant: "ghost",
+                        size: "icon",
+                        className: "size-9",
+                      })}
                     >
-                      {f.questionCount === 0 || f.status === "DRAFT" ? <Pencil className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+                      {f.questionCount === 0 || f.status === "DRAFT" ? (
+                        <Pencil className="size-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="size-4" aria-hidden="true" />
+                      )}
                     </Link>
                   </TableCell>
                 </TableRow>
@@ -536,13 +719,22 @@ function FavpoHub() {
       links: [
         { href: "/appraisal/forms", label: "สร้างและแก้แบบประเมิน" },
         { href: "/appraisal/settings", label: "ตั้งค่าคะแนนและการแสดงผล" },
-        { href: "/appraisal/kpi", label: "KPI" },
+        { href: "/appraisal/kpi", label: "KPI เวลาทำงาน (สาย ลา OT)" },
+        { href: "/kpi", label: "เป้าหมาย KPI / OKR ของพนักงาน" },
+        {
+          href: "/performance/competencies",
+          label: "คลังสมรรถนะ (Core / Functional / Leadership)",
+        },
+        { href: "/organization?tab=departments", label: "ตำแหน่งและหน้าที่งาน" },
       ],
     },
     {
       title: "รอบประเมิน",
       links: [
-        { href: "/appraisal/rounds", label: "รอบประเมินทั้งหมด (ตั้งค่ารอบ ตรวจเช็ค จับคู่ผู้ประเมิน)" },
+        {
+          href: "/appraisal/rounds",
+          label: "รอบประเมินทั้งหมด (ตั้งค่ารอบ ตรวจเช็ค จับคู่ผู้ประเมิน)",
+        },
         { href: "/appraisal/recurring", label: "รอบอัตโนมัติ (เปิดรอบซ้ำทุกเดือน)" },
       ],
     },
@@ -556,19 +748,53 @@ function FavpoHub() {
     },
   ];
   return (
-    <section aria-label="ศูนย์รวมการประเมิน" className="grid gap-4 rounded-lg border border-border bg-card p-4 md:grid-cols-3">
+    <section
+      aria-label="ศูนย์รวมการประเมิน"
+      className="border-border bg-card grid gap-4 rounded-lg border p-4 md:grid-cols-3"
+    >
       {groups.map((g) => (
         <div key={g.title}>
           <h2 className="mb-2 text-base font-medium">{g.title}</h2>
-          <div className="divide-y divide-border rounded-sm border border-border">
+          <div className="divide-border border-border divide-y rounded-sm border">
             {g.links.map((l) => (
-              <Link key={l.href} href={l.href} className="flex min-h-11 items-center px-3 py-2 text-sm text-foreground transition-colors hover:bg-[#f6f9fe] hover:text-primary">
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-foreground hover:text-primary flex min-h-11 items-center px-3 py-2 text-sm transition-colors hover:bg-[#f6f9fe]"
+              >
                 {l.label}
               </Link>
             ))}
           </div>
         </div>
       ))}
+    </section>
+  );
+}
+
+function MethodsExplainer() {
+  return (
+    <section
+      aria-label="วิธีประเมินที่ใช้ได้"
+      className="border-border bg-card rounded-lg border p-4"
+    >
+      <h2 className="text-base font-medium">วิธีประเมินที่ใส่ในแบบได้</h2>
+      <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+        แบบประเมินหนึ่งใบผสมวิธีได้ — KPI, OKR, สมรรถนะหลัก / ตามหน่วยงาน / ผู้นำ,
+        และผลงานตามหน้าที่ — แล้วรวมเป็นคะแนนสุดท้ายตามน้ำหนักหัวข้อและมุมมองผู้ประเมิน
+        ตอนสร้างแบบดึงหัวข้อจากคลังสมรรถนะและหน้าที่ของตำแหน่งมาใส่ได้ (คัดลอกมา แก้ได้อิสระ
+        ไม่ลิงก์สด) ตัวเลขเป้า KPI/OKR ของแต่ละคนแสดงตอนประเมิน
+      </p>
+      <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {METHOD_TEMPLATES.map((t) => (
+          <li key={t.kind} className="border-border rounded-lg border px-3 py-2">
+            <b className="text-sm">{t.name}</b>
+            <span className="text-muted-foreground mt-0.5 block text-xs leading-snug">
+              {t.hint}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -580,13 +806,16 @@ export function OverviewView() {
   const list = rounds.data?.data ?? [];
   const open = openRoundsBySoonest(list);
   const lead = open[0];
-  const hasPublished = (published.data?.data.length ?? 0) > 0 || (forms.data?.data ?? []).some((f) => f.status === "PUBLISHED");
+  const hasPublished =
+    (published.data?.data.length ?? 0) > 0 ||
+    (forms.data?.data ?? []).some((f) => f.status === "PUBLISHED");
 
   return (
     <div className="space-y-6">
       <OverviewActions className="md:hidden" />
 
       <FavpoHub />
+      <MethodsExplainer />
 
       {rounds.isError ? (
         <ErrorState title="โหลดรอบประเมินไม่สำเร็จ" onRetry={() => rounds.refetch()} />
@@ -603,7 +832,9 @@ export function OverviewView() {
           {rounds.isError ? (
             <section className="space-y-3">
               <SectionHeading title="รอบประเมิน" />
-              <p className="text-sm text-muted-foreground">โหลดรายการรอบไม่ได้ กด “ลองใหม่” ด้านบน</p>
+              <p className="text-muted-foreground text-sm">
+                โหลดรายการรอบไม่ได้ กด “ลองใหม่” ด้านบน
+              </p>
             </section>
           ) : rounds.isLoading ? (
             <section className="space-y-3">

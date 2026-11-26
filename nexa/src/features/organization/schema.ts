@@ -9,7 +9,12 @@ const nullableId = z.preprocess(
 
 export const departmentCreateSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อ").max(120),
-  code: z.string().trim().min(1, "กรุณาระบุรหัส").max(30).regex(codeRe, "ใช้ตัวอักษร ตัวเลข หรือ - เท่านั้น"),
+  code: z
+    .string()
+    .trim()
+    .min(1, "กรุณาระบุรหัส")
+    .max(30)
+    .regex(codeRe, "ใช้ตัวอักษร ตัวเลข หรือ - เท่านั้น"),
   parentId: nullableId.optional(),
 });
 export type DepartmentCreateInput = z.infer<typeof departmentCreateSchema>;
@@ -28,11 +33,22 @@ export const JOB_LEVELS = [
   { value: 1, label: "ปฏิบัติการ" },
 ] as const;
 
+const dutySchema = z.object({
+  title: z.string().trim().min(1, "กรุณาระบุชื่องาน").max(200),
+  description: z.string().trim().max(500).optional().nullable(),
+});
+
 export const positionCreateSchema = z.object({
   title: z.string().trim().min(1, "กรุณาระบุชื่อตำแหน่ง").max(120),
-  code: z.string().trim().min(1, "กรุณาระบุรหัส").max(30).regex(codeRe, "ใช้ตัวอักษร ตัวเลข หรือ - เท่านั้น"),
+  code: z
+    .string()
+    .trim()
+    .min(1, "กรุณาระบุรหัส")
+    .max(30)
+    .regex(codeRe, "ใช้ตัวอักษร ตัวเลข หรือ - เท่านั้น"),
   level: z.coerce.number().int().min(1).max(9).default(1),
   departmentId: nullableId.optional(),
+  duties: z.array(dutySchema).max(40).optional(),
 });
 export type PositionCreateInput = z.infer<typeof positionCreateSchema>;
 
@@ -41,6 +57,7 @@ export const positionUpdateSchema = z.object({
   code: z.string().trim().min(1).max(30).regex(codeRe).optional(),
   level: z.coerce.number().int().min(1).max(9).optional(),
   departmentId: nullableId.optional(),
+  duties: z.array(dutySchema).max(40).optional(),
 });
 export type PositionUpdateInput = z.infer<typeof positionUpdateSchema>;
 
@@ -56,6 +73,9 @@ export const orgMovesSchema = z.object({
     )
     .min(1, "ไม่มีรายการที่จะบันทึก")
     .max(100, "บันทึกได้ครั้งละไม่เกิน 100 คน")
-    .refine((moves) => new Set(moves.map((m) => m.employeeId)).size === moves.length, "มีพนักงานซ้ำในรายการ"),
+    .refine(
+      (moves) => new Set(moves.map((m) => m.employeeId)).size === moves.length,
+      "มีพนักงานซ้ำในรายการ",
+    ),
 });
 export type OrgMovesInput = z.infer<typeof orgMovesSchema>;

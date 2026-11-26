@@ -106,13 +106,20 @@ export interface RoundDetail {
   endIso: string | null;
   remind: boolean;
   notifyLine: boolean;
+  /** Other raters wait until the reviewee submits self-assessment. */
+  sequential: boolean;
   openedAt: string | null;
   notifiedAt: string | null;
   participantIds: string[];
   matching: {
     assignmentCount: number;
     byType: Record<string, number>;
-    exceptions: { kind: "NO_MANAGER" | "NO_PEERS" | "NO_RATER" | "OVERLOADED"; employeeId: string; name: string; detail: number | null }[];
+    exceptions: {
+      kind: "NO_MANAGER" | "NO_PEERS" | "NO_RATER" | "OVERLOADED";
+      employeeId: string;
+      name: string;
+      detail: number | null;
+    }[];
     /** Different people who will get an invitation. */
     raterCount: number;
     manual: { added: number; removed: number; ignored: number };
@@ -149,6 +156,8 @@ export interface TaskItem {
   roundName: string;
   roundStatus: RoundStatus;
   endIso: string | null;
+  /** Sequential round: this rater cannot start until the reviewee's self-assessment is in. */
+  lockedUntilSelf: boolean;
 }
 
 export interface TaskDetail {
@@ -173,6 +182,20 @@ export interface TaskDetail {
   noteAtLowest: boolean;
   questions: SnapQuestion[];
   answers: { questionId: string; value: number | string | string[]; note?: string }[];
+  lockedUntilSelf: boolean;
+  /** KPI/OKR goals of the person being rated, for the rater to see next to those sections. */
+  goals: {
+    id: string;
+    title: string;
+    type: "KPI" | "OKR";
+    unit: string;
+    targetValue: number;
+    currentValue: number;
+    weight: number;
+    status: string;
+  }[];
+  /** Job duties of the person's position, shown next to a Task Achievement section. */
+  duties: { id: string; title: string; description: string | null }[];
 }
 
 /** What the wizard sends when saving a step. */
@@ -187,9 +210,13 @@ export interface RoundSavePayload {
   endDate?: string | null;
   remind?: boolean;
   notifyLine?: boolean;
+  sequential?: boolean;
   participantIds?: string[];
   /** Rater pairs set by hand on top of the org-chart matching; null clears them. */
-  raterPairs?: { add: { participantId: string; raterId: string; raterType: RaterType }[]; remove: { participantId: string; raterId: string; raterType: RaterType }[] } | null;
+  raterPairs?: {
+    add: { participantId: string; raterId: string; raterType: RaterType }[];
+    remove: { participantId: string; raterId: string; raterType: RaterType }[];
+  } | null;
 }
 
 export interface MatrixRow {
@@ -198,14 +225,21 @@ export interface MatrixRow {
   code: string;
   department: string;
   /** `submittedAt` (ISO date) and `percent` are filled for HR only, and only once the sheet is submitted. */
-  assignments: { id: string; raterType: RaterType; status: AssignmentStatus; raterName: string; submittedAt: string | null; percent: number | null }[];
+  assignments: {
+    id: string;
+    raterType: RaterType;
+    status: AssignmentStatus;
+    raterName: string;
+    submittedAt: string | null;
+    percent: number | null;
+  }[];
 }
 
 export interface QuestionSummary {
   questionId: string;
   text: string;
   section: string | null;
-  answerType: "RATING" | "CHOICE" | "MULTI_CHOICE" | "SHORT_TEXT" | "PARAGRAPH";
+  answerType: "RATING" | "CHOICE" | "MULTI_CHOICE" | "SHORT_TEXT" | "PARAGRAPH" | "FILE_EVIDENCE";
   count: number;
   average: number | null;
   options: { label: string; count: number }[];
@@ -227,7 +261,13 @@ export interface ParticipantResult {
   ratingMax: number;
   /** Score names frozen with the round; null = system names. */
   ratingLabels: unknown;
-  groups: { raterType: RaterType; total: number; submitted: number; /** True when written answers are held back because too few people answered. */ textsHeld: boolean; summary: QuestionSummary[] }[];
+  groups: {
+    raterType: RaterType;
+    total: number;
+    submitted: number;
+    /** True when written answers are held back because too few people answered. */ textsHeld: boolean;
+    summary: QuestionSummary[];
+  }[];
   result: {
     status: ResultStatus;
     scorePercent: number | null;
@@ -236,11 +276,21 @@ export interface ParticipantResult {
     /** Set only for HR when the score was changed by hand: what the calculation gave. */
     adjustedFrom: number | null;
     types: { raterType: RaterType; raters: number; percent: number; weightUsed: number }[];
+    methods: { kind: string; percent: number; weightUsed: number }[];
   };
   /** Comments copied from another system for a round with no answer sheets; null when there are none. Already filtered for this viewer. */
   importedComments: CommentsView | null;
   /** HR only (null for everyone else): each submitted sheet that has written text, with the rater's name. */
-  namedComments: { assignmentId: string; raterType: RaterType; raterName: string; score: number | null; submittedAt: Date | string | null; texts: string[] }[] | null;
+  namedComments:
+    | {
+        assignmentId: string;
+        raterType: RaterType;
+        raterName: string;
+        score: number | null;
+        submittedAt: Date | string | null;
+        texts: string[];
+      }[]
+    | null;
 }
 
 export interface DepartmentProgress {
@@ -250,7 +300,8 @@ export interface DepartmentProgress {
   percent: number;
 }
 
-export type ResultStatus = "NOT_CALCULATED" | "CALCULATED" | "APPROVED" | "PUBLISHED" | "ACKNOWLEDGED";
+export type ResultStatus =
+  "NOT_CALCULATED" | "CALCULATED" | "APPROVED" | "PUBLISHED" | "ACKNOWLEDGED";
 
 export const RESULT_STATUS_LABEL: Record<ResultStatus, string> = {
   NOT_CALCULATED: "ยังไม่คำนวณ",

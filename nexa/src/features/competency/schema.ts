@@ -19,6 +19,7 @@ export const competencyCreateSchema = z.object({
   categoryId: z.string().uuid().optional().nullable(),
   order: z.coerce.number().int().min(0).optional(),
   active: z.boolean().optional(),
+  kind: z.enum(["CORE", "FUNCTIONAL", "LEADERSHIP"]).optional(),
   // Question-bank fields
   questionType: z.enum(QUESTION_TYPES).optional(),
   maxScore: z.coerce.number().min(1).max(1000).optional(),
@@ -40,5 +41,6 @@ export const competencyListQuerySchema = z.object({
   departmentId: z.string().uuid().optional(),
   positionId: z.string().uuid().optional(),
   evaluationType: z.string().trim().max(60).optional(),
+  kind: z.enum(["CORE", "FUNCTIONAL", "LEADERSHIP"]).optional(),
 });
 export type CompetencyListQuery = z.infer<typeof competencyListQuerySchema>;

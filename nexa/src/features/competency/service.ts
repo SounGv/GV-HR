@@ -15,6 +15,7 @@ const select = {
   category: { select: { id: true, name: true } },
   order: true,
   active: true,
+  kind: true,
   questionType: true,
   maxScore: true,
   defaultWeight: true,
@@ -45,6 +46,7 @@ export async function listCompetencies(companyId: string, query: CompetencyListQ
       ...(query.departmentId ? { departmentId: query.departmentId } : {}),
       ...(query.positionId ? { positionId: query.positionId } : {}),
       ...(query.evaluationType ? { evaluationType: query.evaluationType } : {}),
+      ...(query.kind ? { kind: query.kind } : {}),
       ...(query.search
         ? {
             OR: [
@@ -72,7 +74,10 @@ export async function getCompetency(companyId: string, id: string) {
 /** Every EvaluationCampaign/EvaluationTemplate this bank item is used in —
  * "ดูว่าหัวข้อนี้ถูกใช้ในรอบใดบ้าง". */
 export async function getCompetencyUsage(companyId: string, id: string) {
-  const existing = await prisma.competency.findFirst({ where: { id, companyId, deletedAt: null }, select: { id: true } });
+  const existing = await prisma.competency.findFirst({
+    where: { id, companyId, deletedAt: null },
+    select: { id: true },
+  });
   if (!existing) throw NotFound("ไม่พบหัวข้อประเมิน");
 
   // Sequential, not Promise.all — connection_limit=1.
@@ -83,7 +88,9 @@ export async function getCompetencyUsage(companyId: string, id: string) {
   const templateQuestions = await prisma.evaluationTemplateQuestion.findMany({
     where: { competencyId: id, section: { template: { companyId, deletedAt: null } } },
     select: {
-      section: { select: { template: { select: { id: true, name: true, status: true, version: true } } } },
+      section: {
+        select: { template: { select: { id: true, name: true, status: true, version: true } } },
+      },
     },
   });
 
@@ -114,6 +121,7 @@ export async function createCompetency(
       categoryId: input.categoryId ?? null,
       order: input.order ?? 0,
       active: input.active ?? true,
+      kind: input.kind ?? "CORE",
       questionType: input.questionType ?? "RATING_1_TO_5",
       maxScore: input.maxScore ?? 5,
       defaultWeight: input.defaultWeight ?? 1,
@@ -202,7 +210,12 @@ export async function deleteCompetency(
 
 /** "คัดลอกหัวข้อ" — a same-shape independent copy, so editing one never
  * touches the other (no shared row, unlike a template's bank *link*). */
-export async function duplicateCompetency(companyId: string, session: AccessClaims, id: string, meta?: Meta) {
+export async function duplicateCompetency(
+  companyId: string,
+  session: AccessClaims,
+  id: string,
+  meta?: Meta,
+) {
   const source = await prisma.competency.findFirst({
     where: { id, companyId, deletedAt: null },
     select: {
@@ -211,6 +224,7 @@ export async function duplicateCompetency(companyId: string, session: AccessClai
       exampleBehavior: true,
       categoryId: true,
       order: true,
+      kind: true,
       questionType: true,
       maxScore: true,
       defaultWeight: true,
@@ -223,12 +237,26 @@ export async function duplicateCompetency(companyId: string, session: AccessClai
   if (!source) throw NotFound("ไม่พบหัวข้อประเมิน");
 
   let name = `${source.name} (คัดลอก)`;
-  for (let n = 2; await prisma.competency.findFirst({ where: { companyId, name, deletedAt: null }, select: { id: true } }); n++) {
+  for (
+    let n = 2;
+    await prisma.competency.findFirst({
+      where: { companyId, name, deletedAt: null },
+      select: { id: true },
+    });
+    n++
+  ) {
     name = `${source.name} (คัดลอก ${n})`;
   }
 
   const record = await prisma.competency.create({
-    data: { ...source, companyId, name, active: true, createdById: session.sub, updatedById: session.sub },
+    data: {
+      ...source,
+      companyId,
+      name,
+      active: true,
+      createdById: session.sub,
+      updatedById: session.sub,
+    },
     select,
   });
 

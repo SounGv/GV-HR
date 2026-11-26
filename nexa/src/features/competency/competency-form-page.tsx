@@ -67,6 +67,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   exampleBehavior: z.string().optional(),
   categoryId: z.string(),
+  kind: z.enum(["CORE", "FUNCTIONAL", "LEADERSHIP"]),
   active: z.boolean(),
   questionType: z.enum(QUESTION_TYPES),
   maxScore: z.number().min(1, "1-1000").max(1000, "1-1000"),
@@ -92,6 +93,7 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
       description: competency?.description ?? "",
       exampleBehavior: competency?.exampleBehavior ?? "",
       categoryId: competency?.categoryId ?? NO_CATEGORY,
+      kind: competency?.kind ?? "CORE",
       active: competency?.active ?? true,
       questionType: competency?.questionType ?? "RATING_1_TO_5",
       maxScore: competency?.maxScore ?? 5,
@@ -119,6 +121,7 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
             description: "",
             exampleBehavior: "",
             categoryId: NO_CATEGORY,
+            kind: "CORE",
             active: true,
             questionType: "RATING_1_TO_5",
             maxScore: 5,
@@ -137,7 +140,11 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
 
   const actions: FormFooterAction[] = [
     ...(isEdit ? [] : [{ label: "บันทึกและเพิ่มใหม่", onClick: () => (againRef.current = true) }]),
-    { label: isEdit ? "บันทึก" : "เพิ่มสมรรถนะ", onClick: () => (againRef.current = false), primary: true },
+    {
+      label: isEdit ? "บันทึก" : "เพิ่มสมรรถนะ",
+      onClick: () => (againRef.current = false),
+      primary: true,
+    },
   ];
 
   return (
@@ -172,12 +179,40 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
           />
           <FormField
             control={form.control}
+            name="kind"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>ประเภทสมรรถนะ</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="CORE">หลัก (Core) — ทุกคนทุกระดับต้องมี</SelectItem>
+                    <SelectItem value="FUNCTIONAL">ตามหน่วยงาน (Functional)</SelectItem>
+                    <SelectItem value="LEADERSHIP">
+                      ผู้นำ (Leadership) — หัวหน้าและผู้บริหาร
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="description"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>คำอธิบาย</FormLabel>
                 <FormControl>
-                  <Textarea rows={3} placeholder="อธิบายพฤติกรรมที่คาดหวังสำหรับสมรรถนะนี้" {...field} />
+                  <Textarea
+                    rows={3}
+                    placeholder="อธิบายพฤติกรรมที่คาดหวังสำหรับสมรรถนะนี้"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -190,7 +225,11 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
               <FormItem>
                 <FormLabel>ตัวอย่างพฤติกรรม (ไม่บังคับ)</FormLabel>
                 <FormControl>
-                  <Textarea rows={2} placeholder="เช่น คิดหาทางแก้ปัญหาโดยไม่ต้องรอคำสั่ง" {...field} />
+                  <Textarea
+                    rows={2}
+                    placeholder="เช่น คิดหาทางแก้ปัญหาโดยไม่ต้องรอคำสั่ง"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -255,7 +294,9 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
                       onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                     />
                   </FormControl>
-                  <FormDescription>ค่าตั้งต้นเมื่อดึงหัวข้อนี้ไปใส่ในแบบประเมิน — ปรับได้ต่อแบบประเมิน</FormDescription>
+                  <FormDescription>
+                    ค่าตั้งต้นเมื่อดึงหัวข้อนี้ไปใส่ในแบบประเมิน — ปรับได้ต่อแบบประเมิน
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -265,7 +306,7 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
             control={form.control}
             name="isRequired"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
+              <FormItem className="border-border flex flex-row items-center justify-between rounded-lg border p-3">
                 <div className="space-y-0.5">
                   <FormLabel>บังคับตอบ</FormLabel>
                   <FormDescription>ค่าตั้งต้นเมื่อดึงหัวข้อนี้ไปใส่ในแบบประเมิน</FormDescription>
@@ -298,7 +339,10 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  <Link href="/performance/competencies/categories/new" className="text-primary hover:underline">
+                  <Link
+                    href="/performance/competencies/categories/new"
+                    className="text-primary hover:underline"
+                  >
                     + จัดการหมวดหมู่
                   </Link>
                 </FormDescription>
@@ -310,7 +354,7 @@ export function CompetencyFormPage({ competency }: { competency?: Competency }) 
             control={form.control}
             name="active"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
+              <FormItem className="border-border flex flex-row items-center justify-between rounded-lg border p-3">
                 <div className="space-y-0.5">
                   <FormLabel>เปิดใช้งาน</FormLabel>
                   <FormDescription>ปิดไว้ถ้ายังไม่ต้องการให้เลือกใช้ในแคมเปญใหม่</FormDescription>

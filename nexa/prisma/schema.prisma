@@ -535,10 +535,27 @@ model Position {
   competencyRequirements PositionCompetencyRequirement[]
   evaluationQuestions     Competency[]
   evaluationTemplates     EvaluationTemplate[]
+  duties                  PositionDuty[]
 
   @@unique([companyId, code])
   @@index([companyId, deletedAt])
   @@map("positions")
+}
+
+/** Job duties of a position — the source list for Task Achievement evaluation. */
+model PositionDuty {
+  id          String   @id @default(uuid())
+  positionId  String
+  position    Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([positionId, order])
+  @@map("position_duties")
 }
 
 enum SuccessionReadiness {
@@ -1413,6 +1430,7 @@ model Competency {
   category        CompetencyCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   order           Int                 @default(0)
   active          Boolean             @default(true)
+  kind            CompetencyKind      @default(CORE)
 
   // Question-bank fields — this same reusable, company-scoped row doubles as
   // the "evaluation_question_bank" entry a Template pulls a question from
@@ -2474,6 +2492,28 @@ enum AppraisalAnswerType {
   MULTI_CHOICE // pick several
   SHORT_TEXT
   PARAGRAPH
+  FILE_EVIDENCE // never scored — a supporting file (same data-URL pattern as leave attachments)
+}
+
+/** How a form section is meant to be used. CUSTOM is the default so existing
+ * forms keep behaving; the other values are the four popular Thai PMS methods
+ * (KPI, OKR, Competency split into Core/Functional/Leadership, Task Achievement). */
+enum AppraisalSectionKind {
+  KPI
+  OKR
+  COMPETENCY_CORE
+  COMPETENCY_FUNCTIONAL
+  COMPETENCY_LEADERSHIP
+  TASK
+  CUSTOM
+}
+
+/** Competency library classification — Core (everyone), Functional (by role),
+ * Leadership (managers). Independent of free-text CompetencyCategory. */
+enum CompetencyKind {
+  CORE
+  FUNCTIONAL
+  LEADERSHIP
 }
 
 enum AppraisalRaterType {
@@ -2536,6 +2576,9 @@ model AppraisalQuestion {
   // The section (หมวด) this question sits under, e.g. "ผลงาน". Questions of a section are
   // consecutive by `order`. Null = no section.
   section    String?
+  // Which evaluation method this section represents. Default CUSTOM so every
+  // form published before this field existed keeps grouping as a plain section.
+  sectionKind AppraisalSectionKind @default(CUSTOM)
   required   Boolean             @default(true)
   // Which rater types see this question; empty = everyone.
   visibleTo  AppraisalRaterType[] @default([])
@@ -2610,6 +2653,10 @@ model AppraisalRound {
   endDate   DateTime? @db.Date
   remind     Boolean  @default(true)
   notifyLine Boolean  @default(true)
+  // Self-assessment first: other raters cannot start (and are not invited)
+  // until the reviewee's SELF assignment is submitted. No-op when the round
+  // does not collect SELF.
+  sequential Boolean  @default(false)
 
   status     AppraisalRoundStatus @default(DRAFT)
   openedAt   DateTime?
