@@ -9,7 +9,7 @@ import type { EmploymentType } from "@/features/employee/types";
 import { ATTENDANCE_STATUS_LABEL, WORK_MODE_LABEL } from "@/features/attendance/status-badge";
 import { EXPENSE_STATUS_LABEL, EXPENSE_CATEGORY_LABEL } from "@/features/expense/labels";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
-import { bangkokParts, lateOrPresent } from "@/lib/datetime";
+import { bangkokParts, lateOrPresent, LATE_GRACE_MIN } from "@/lib/datetime";
 import { excusedUntil, hhmmToMin, type HourRange } from "@/features/attendance-status/status-rules";
 import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import { REPORT_LABELS, type ReportQuery } from "./schema";
@@ -521,12 +521,13 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
     };
     // Minutes late vs. the employee's real shift start when HR scheduled one
     // (ShiftAssignment), else the company default 09:00 — same cutoff
-    // lib/datetime.ts's lateOrPresent uses. "-" when on time/early so it
-    // doesn't just duplicate the "สถานะ" column with a redundant "0".
+    // lib/datetime.ts's lateOrPresent uses. "-" when on time, early or inside the
+    // grace period (LATE_GRACE_MIN), so this column never shows minutes next to a
+    // status that says the person was on time.
     const lateMinutesOf = (clockInAt: Date | null, shiftStartMin: number): number | "-" => {
       if (!clockInAt) return "-";
       const late = bangkokParts(clockInAt).minutesOfDay - shiftStartMin;
-      return late > 0 ? late : "-";
+      return late > LATE_GRACE_MIN ? late : "-";
     };
     // Symmetric to lateMinutesOf, but for clocking out before the shift ends
     // — "-" once clocked out at/after shift end (nothing early to report).
@@ -875,6 +876,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       `(เฉลี่ย ${avgHours.toFixed(2)} ชม./วัน) · OT ที่อนุมัติแล้วรวม ${totalOt.toFixed(2)} ชม. · ` +
       `มาสาย ${lateCount} ครั้ง (รวม ${totalLateMinutes} นาที)` +
       (leaveShown > 0 ? ` · ลางานโดยไม่มีบันทึกเวลา ${leaveShown} วัน` : "") +
+      (start.getTime() <= todayBangkok.getTime() && todayBangkok.getTime() < end.getTime()
+        ? " · วันนี้ยังไม่นับขาดงานในรายงานนี้ เพราะวันยังไม่จบ ดูคนที่ยังไม่สแกนวันนี้ได้ที่หน้าการเข้างานวันนี้"
+        : "") +
       (absentShown > 0 ? ` · ขาดงาน (ไม่มีบันทึกเวลาและไม่มีใบลาอนุมัติ รวมวันที่ยื่นลาแล้วแต่ยังรออนุมัติ) ${absentShown} วัน` : "") +
       (notCheckedCount > 0
         ? ` · ไม่ได้ตรวจการขาดงานของ ${notCheckedCount} คน ที่ไม่มีบันทึกเวลาเลยในช่วงนี้และ ${ABSENT_ACTIVITY_LOOKBACK_DAYS} วันก่อนหน้า (ยังไม่ได้ใช้ลงเวลาเข้างานในแอป)`

@@ -19,6 +19,8 @@ export function BenefitsHubView() {
   const canApprove = can("expense:approve");
   const { data: medicalData, isLoading: medicalLoading } = useMedicalSummary();
   const { data: loanData, isLoading: loanLoading } = useLoanEligibility();
+  // Shown when a card has nothing to show after loading ended: an account with no employee record, or a failed request.
+  const unavailable = "ยังดูข้อมูลไม่ได้ บัญชีนี้อาจไม่ผูกกับข้อมูลพนักงาน ลองรีเฟรชหน้า ถ้ายังไม่ได้ แจ้ง HR";
   const medical = medicalData?.data;
   const loan = loanData?.data;
 
@@ -35,8 +37,10 @@ export function BenefitsHubView() {
           </div>
         </div>
 
-        {medicalLoading || !medical ? (
+        {medicalLoading ? (
           <p className="text-sm text-muted-foreground">กำลังโหลด…</p>
+        ) : !medical ? (
+          <p className="text-sm text-muted-foreground">{unavailable}</p>
         ) : (
           <div>
             <p className="text-3xl font-bold text-foreground">
@@ -71,8 +75,10 @@ export function BenefitsHubView() {
           </div>
         </div>
 
-        {loanLoading || !loan ? (
+        {loanLoading ? (
           <p className="text-sm text-muted-foreground">กำลังโหลด…</p>
+        ) : !loan ? (
+          <p className="text-sm text-muted-foreground">{unavailable}</p>
         ) : (
           <div>
             <p className="text-3xl font-bold text-foreground">

@@ -34,9 +34,26 @@ export function MonthlyCharts({ data }: { data: DetailOverview }) {
     <div className="space-y-4 print:hidden">
       <Card className="gap-2 p-4">
         <h3 className="text-base font-semibold">ค่าเฉลี่ยบริษัทรายรอบ</h3>
-        <ChartBox min={520}>
-          <ColumnChart values={h.company} labels={labels} label={`ค่าเฉลี่ยบริษัทรายรอบ: ${labels.map((l, i) => `${l} ${fmt(h.company[i])}`).join(", ")}`} />
-        </ChartBox>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
+          <ChartBox min={520}>
+            <ColumnChart values={h.company} labels={labels} label={`ค่าเฉลี่ยบริษัทรายรอบ: ${labels.map((l, i) => `${l} ${fmt(h.company[i])}`).join(", ")}`} />
+          </ChartBox>
+          <ul className="divide-y divide-border text-sm" aria-label="ค่าเฉลี่ยบริษัทแต่ละรอบ">
+            {labels.map((l, i) => {
+              const cur = h.company[i];
+              const prev = i > 0 ? h.company[i - 1] : null;
+              return (
+                <li key={`${l}-${i}`} className="flex items-center justify-between gap-3 py-2">
+                  <span>{l}</span>
+                  <span className="flex items-baseline gap-2 tabular-nums">
+                    <b className="text-base">{fmt(cur)}</b>
+                    <Delta value={cur !== null && prev !== null ? Math.round((cur - prev) * 10) / 10 : null} />
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
         <p className="text-xs text-muted-foreground">แท่งสีตามช่วงคะแนน (เขียว 90 ขึ้นไป · เหลือง 80–89 · แดงต่ำกว่า 80) · ▲▼ ใต้รอบคือเปลี่ยนจากรอบก่อน</p>
       </Card>
 
@@ -90,7 +107,9 @@ export function MonthlyCharts({ data }: { data: DetailOverview }) {
                 <div key={t.department} className="rounded-lg border border-border p-3">
                   <b className="block leading-snug">{t.department}</b>
                   <span className="text-xs text-muted-foreground">{labels[0]} ถึง {labels[n - 1]}</span>
-                  <Sparkline values={t.values} label={`แนวโน้มของ ${t.department}`} />
+                  <div className="max-w-[360px]">
+                    <Sparkline values={t.values} label={`แนวโน้มของ ${t.department}`} />
+                  </div>
                   <div className="flex flex-wrap items-baseline gap-2">
                     <b className={cn("text-lg tabular-nums")}>{fmt(last)}%</b>
                     <Delta value={last !== null && before !== null ? Math.round((last - before) * 10) / 10 : null} />

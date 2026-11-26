@@ -391,7 +391,7 @@ function PersonBody({ roundId, d }: { roundId: string; d: DetailPersonView }) {
         )}
       </Card>
 
-      <details className="rounded-sm border border-border bg-card p-3 print:hidden">
+      <details open className="rounded-sm border border-border bg-card p-3 print:hidden">
         <summary className="min-h-11 cursor-pointer text-sm font-medium md:min-h-0">ดูเป็นกราฟ (หมวด มุมมอง ย้อนหลัง)</summary>
         <div className="mt-3">
       <div className={cn("grid grid-cols-[minmax(0,1fr)] gap-4", radar.length >= 2 ? "xl:grid-cols-3" : "lg:grid-cols-2")}>

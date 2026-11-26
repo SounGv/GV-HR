@@ -301,7 +301,7 @@ export function Sparkline({ values, label }: { values: (number | null)[]; label:
   const H = 86;
   const real = values.map((v, i) => ({ v, i })).filter((p): p is { v: number; i: number } => p.v !== null);
   if (real.length === 0) return null;
-  const { x, y } = scaleOf(values.length, W, H, 6, 10, 8, 8, 65, 100);
+  const { x, y } = scaleOf(values.length, W, H, 16, 16, 18, 8, 65, 100);
   const line = real.map((p, k) => `${k ? "L" : "M"}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
   const last = real[real.length - 1]!;
   return (
@@ -311,6 +311,11 @@ export function Sparkline({ values, label }: { values: (number | null)[]; label:
       <path d={line} fill="none" stroke={BLUE} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
       {real.map((p) => (
         <circle key={p.i} cx={x(p.i)} cy={y(p.v)} r={p === last ? 5 : 2.5} fill={p === last ? toneFill(p.v) : BLUE} />
+      ))}
+      {real.map((p) => (
+        <text key={`t${p.i}`} x={x(p.i)} y={y(p.v) - (p === last ? 9 : 6)} textAnchor="middle" fontSize={p === last ? 9 : 8} fontWeight={p === last ? 700 : 400} fill={TEXT}>
+          {Math.round(p.v * 10) / 10}
+        </text>
       ))}
     </svg>
   );
