@@ -873,9 +873,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
         { key: "clockIn", label: "เวลาเข้า" },
-        { key: "clockInPhoto", label: "รูปลงเวลาเข้างาน", photo: true },
         { key: "clockOut", label: "เวลาออก" },
-        { key: "clockOutPhoto", label: "รูปลงเวลาออกงาน", photo: true },
         { key: "location", label: "สถานที่" },
         { key: "distance", label: "ระยะห่าง (ม.)", numeric: true },
         { key: "breakMinutes", label: "เวลาพัก (นาที)", numeric: true },
@@ -890,11 +888,13 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "workMode", label: "รูปแบบงาน" },
         { key: "note", label: "หมายเหตุ" },
         { key: "editor", label: "ผู้แก้ไขเวลา" },
-        // Last on purpose (owner, 2026-11-26): who and which shift are already clear from the name, so they sit after the scan details in the Excel/PDF export.
+        // Last on purpose (owner, 2026-11-26): who and which shift are already clear from the name, so they sit after the scan details in the Excel/PDF export; the two photos go last of all.
         { key: "department", label: "แผนก" },
         { key: "employmentType", label: "ประเภทการจ้าง" },
         { key: "shiftStart", label: "เวลาเริ่มกะ" },
         { key: "shiftEnd", label: "เวลาเลิกกะ" },
+        { key: "clockInPhoto", label: "รูปลงเวลาเข้างาน", photo: true },
+        { key: "clockOutPhoto", label: "รูปลงเวลาออกงาน", photo: true },
       ],
       rows,
     };
