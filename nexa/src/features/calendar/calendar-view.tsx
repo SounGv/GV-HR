@@ -14,9 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 
-import { STATUS_META } from "@/features/attendance-status/status-meta";
-
-import { DayPanel, dayLabel } from "./day-panel";
+import { DayPanel, dayLabel, SOLID_STATUS } from "./day-panel";
 import { useMonth, useDeleteEvent, useDayAttendance, useMonthCounts } from "./hooks";
 import type { CalendarItem, CalendarSource, MyDayStatus } from "./types";
 
@@ -82,8 +80,38 @@ function addMonth(month: string, delta: number): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-/** `bare` is the home page version (Favpo's): no side panel for the chosen day, taller day cells, today tinted cream. */
-export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
+/**
+ * Today's company-wide attendance for the count boxes on the home page. It reads the same query the day panel uses for today
+ * (same key, so the request is shared and no extra database work happens), and gives nothing back for people who may not see
+ * attendance, on a day with nobody checked, or while loading, so the boxes simply leave their extra line out.
+ */
+function useTodayUsage() {
+  const { can } = useAuth();
+  const allowed = can("attendance:approve") || can("attendance:manage");
+  const q = useDayAttendance(todayIso(), allowed);
+  const d = q.data?.data;
+  return d && !d.isFuture && d.total > 0 ? d : null;
+}
+
+/** Under the headcount: how many of them use the clock-in app and how many never clocked in. Empty when unknown. */
+export function HeadcountUsage() {
+  const d = useTodayUsage();
+  if (!d) return null;
+  return (
+    <>
+      ใช้แอพลงเวลา {d.total} คน · ยังไม่เคยลงเวลา {d.notChecked} คน
+    </>
+  );
+}
+
+/** Small unit text after "present today": "จาก N คนที่ใช้แอพ", or plain "คน" when N is unknown. */
+export function PresentOfApp() {
+  const d = useTodayUsage();
+  return <>{d ? `จาก ${d.total} คนที่ใช้แอพ` : "คน"}</>;
+}
+
+/** The month calendar (home page and the calendar page): head-count chips in each cell and a sticky panel for the chosen day. */
+export function CalendarView() {
   const { can } = useAuth();
   const canManage = can("calendar:create");
   const canSeeAttendance = can("attendance:approve") || can("attendance:manage");
@@ -211,7 +239,7 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
             </div>
             {canSeeAttendance && (
               <div className="mb-2 flex flex-wrap items-center gap-3 px-1">
-                <span className="text-xs font-medium text-muted-foreground">ในช่องวัน (จำนวนคน):</span>
+                <span className="text-[13px] font-medium text-muted-foreground">ในช่องวัน (จำนวนคน):</span>
                 {(
                   [
                     ["ABSENT", "ขาดงาน"],
@@ -219,10 +247,8 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
                     ["LATE", "มาสาย"],
                   ] as const
                 ).map(([st, label]) => (
-                  <span
-                    key={st}
-                    className={cn("rounded border px-1.5 text-[11px] leading-snug font-semibold", STATUS_META[st].surface)}
-                  >
+                  <span key={st} className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
+                    <span className={cn("size-3 rounded-[3px] border", SOLID_STATUS[st])} aria-hidden="true" />
                     {label}
                   </span>
                 ))}
@@ -235,28 +261,39 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
                 </div>
               ))}
               {isLoading
-                ? Array.from({ length: 42 }, (_, i) => <Skeleton key={i} className={cn("rounded-md", bare ? "h-28" : "h-20")} />)
-                : cells.map((c) => {
+                ? Array.from({ length: 42 }, (_, i) => <Skeleton key={i} className="min-h-[92px] rounded-lg" />)
+                : cells.map((c, idx) => {
                     const allItems = bucket.get(c.iso) ?? [];
                     const dayItems = allItems.filter((it) => it.source !== "leave");
                     const counted = canSeeAttendance ? dayCounts?.[c.iso] : undefined;
-                    const chips: { status: "ABSENT" | "ON_LEAVE" | "LATE"; n: number; short: string }[] = counted
+                    const chips: { status: "ABSENT" | "ON_LEAVE" | "LATE"; n: number; short: string; label: string }[] = counted
                       ? [
-                          { status: "ABSENT", n: counted.absent, short: "ขาด" },
-                          { status: "ON_LEAVE", n: counted.leave, short: "ลา" },
-                          { status: "LATE", n: counted.late, short: "สาย" },
+                          { status: "ABSENT", n: counted.absent, short: "ขาด", label: "ขาดงาน" },
+                          { status: "ON_LEAVE", n: counted.leave, short: "ลา", label: "ลางาน" },
+                          { status: "LATE", n: counted.late, short: "สาย", label: "มาสาย" },
                         ]
-                      : [{ status: "ON_LEAVE", n: leavePeople.get(c.iso)?.size ?? 0, short: "ลา" }];
+                      : [{ status: "ON_LEAVE", n: leavePeople.get(c.iso)?.size ?? 0, short: "ลา", label: "ลางาน" }];
                     const status = myStatus[c.iso];
+                    const isToday = c.iso === today;
+                    const isWeekend = idx % 7 === 0 || idx % 7 === 6;
                     return (
                       <button
                         key={c.iso}
                         onClick={() => setSelected(c.iso)}
                         className={cn(
-                          "relative flex flex-col gap-0.5 rounded-md border p-1 text-left transition",
-                          bare ? "h-28" : "h-20",
-                          c.inMonth ? (bare && c.iso === today ? "bg-[#fff8e1]" : "bg-card") : "bg-muted/30 text-muted-foreground",
-                          selected === c.iso ? "border-primary ring-1 ring-primary" : "border-border",
+                          "relative flex min-h-[92px] flex-col gap-[3px] rounded-lg border px-[7px] py-1.5 text-left transition",
+                          !c.inMonth
+                            ? "border-dashed bg-transparent text-muted-foreground"
+                            : isToday
+                              ? "bg-primary/15"
+                              : isWeekend
+                                ? "bg-muted"
+                                : "bg-card",
+                          isToday
+                            ? "border-[3px] border-primary px-[5px] py-[4px]"
+                            : selected === c.iso
+                              ? "border-primary ring-1 ring-primary"
+                              : "border-border",
                         )}
                       >
                         {status && (
@@ -270,28 +307,32 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
                             {MY_STATUS_BADGE[status].label}
                           </span>
                         )}
-                        <span
-                          className={cn(
-                            "text-xs font-medium",
-                            c.iso === today &&
-                              "flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground",
+                        <span className="flex items-center gap-1.5 text-sm leading-[1.4] font-semibold tabular-nums">
+                          {isToday ? (
+                            <>
+                              <span className="flex h-[26px] min-w-[26px] items-center justify-center rounded-full bg-primary px-1.5 text-primary-foreground">
+                                {c.day}
+                              </span>
+                              <span className="text-xs font-semibold text-[#0d47a1] dark:text-primary">วันนี้</span>
+                            </>
+                          ) : (
+                            c.day
                           )}
-                        >
-                          {c.day}
                         </span>
-                        <div className="flex flex-wrap gap-0.5">
+                        <div className="flex flex-col gap-[3px]">
                           {chips
                             .filter((chip) => chip.n > 0)
                             .map((chip) => (
                               <span
                                 key={chip.status}
                                 className={cn(
-                                  "rounded border px-1 text-[11px] leading-snug font-semibold whitespace-nowrap",
-                                  STATUS_META[chip.status].surface,
+                                  "flex h-[21px] items-center justify-between rounded-md border px-[7px] text-[12.5px] font-semibold whitespace-nowrap",
+                                  SOLID_STATUS[chip.status],
                                 )}
-                                title={`${STATUS_META[chip.status].label} ${chip.n} คน`}
+                                title={`${chip.label} ${chip.n} คน`}
                               >
-                                {chip.short} {chip.n}
+                                <span>{chip.short}</span>
+                                <b className="font-bold tabular-nums">{chip.n}</b>
                               </span>
                             ))}
                         </div>
@@ -319,13 +360,14 @@ export function CalendarView({ bare = false }: { bare?: boolean } = {}) {
             </div>
           </Card>
 
-          <Card className="h-fit p-4">
+          <Card className="h-fit self-start p-4 lg:sticky lg:top-3">
             {selected ? (
               <DayPanel
                 label={selectedLabel}
                 loading={canSeeAttendance && dayQuery.isLoading}
                 day={dayQuery.data?.data}
                 leaveItems={selectedLeave}
+                solid
               />
             ) : (
               <p className="text-sm font-semibold">เลือกวันที่</p>
