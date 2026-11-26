@@ -261,7 +261,7 @@ export function CalendarView() {
                 </div>
               ))}
               {isLoading
-                ? Array.from({ length: 42 }, (_, i) => <Skeleton key={i} className="min-h-[92px] rounded-lg" />)
+                ? Array.from({ length: 42 }, (_, i) => <Skeleton key={i} className="min-h-[92px] rounded-lg sm:min-h-[112px]" />)
                 : cells.map((c, idx) => {
                     const allItems = bucket.get(c.iso) ?? [];
                     const dayItems = allItems.filter((it) => it.source !== "leave");
@@ -281,7 +281,7 @@ export function CalendarView() {
                         key={c.iso}
                         onClick={() => setSelected(c.iso)}
                         className={cn(
-                          "relative flex min-h-[92px] flex-col gap-[3px] rounded-lg border px-[7px] py-1.5 text-left transition",
+                          "relative flex min-h-[92px] flex-col gap-[3px] rounded-lg border px-[7px] py-1.5 text-left transition sm:min-h-[112px]",
                           !c.inMonth
                             ? "border-dashed bg-transparent text-muted-foreground"
                             : isToday
@@ -326,7 +326,7 @@ export function CalendarView() {
                               <span
                                 key={chip.status}
                                 className={cn(
-                                  "flex h-[21px] items-center justify-between rounded-md border px-[7px] text-[12.5px] font-semibold whitespace-nowrap",
+                                  "flex h-[21px] items-center justify-between rounded-md border px-[7px] text-[12.5px] font-semibold whitespace-nowrap sm:h-[26px] sm:text-sm",
                                   SOLID_STATUS[chip.status],
                                 )}
                                 title={`${chip.label} ${chip.n} คน`}
@@ -340,14 +340,14 @@ export function CalendarView() {
                           {dayItems.slice(0, 2).map((it) => (
                             <span
                               key={it.id}
-                              className={cn("truncate rounded px-1 text-xs leading-snug", SOURCE_STYLE[it.source])}
+                              className={cn("truncate rounded px-1 text-xs leading-snug sm:text-[13px]", SOURCE_STYLE[it.source])}
                             >
                               {it.title}
                             </span>
                           ))}
                           {dayItems.length > 2 && (
                             <span
-                              className="px-1 text-xs font-medium text-primary"
+                              className="px-1 text-xs font-medium text-primary sm:text-[13px]"
                               title={`มีอีก ${dayItems.length - 2} รายการ กดที่วันนี้เพื่อดูทั้งหมด`}
                             >
                               อีก {dayItems.length - 2} รายการ
