@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-import { ChartBox, ColumnChart, PairedColumns, Segmented, SmoothLine, toneFill } from "./detail-report-svg";
+import { ChartBox, ColumnChart, PairedColumns, Segmented, toneFill } from "./detail-report-svg";
 import { Delta, fmt } from "./detail-report-tables";
 import type { DetailOverview, DetailPerson } from "./detail-report-types";
 import { bandOf, bestMovers, execHeadline, execTeams, teamNeedsLook, watchPeople, type BandTone, type ExecTeam } from "./exec-summary-rules";
@@ -36,16 +36,12 @@ type Sheeted =
   | { kind: "full" }
   | { kind: "small" }
   | { kind: "attn" }
-  | { kind: "rounds" }
-  | { kind: "team"; department: string }
-  | { kind: "month"; index: number };
+  | { kind: "team"; department: string };
 
 export function ExecTab({ data, onOpenPerson, onGoTab }: { data: DetailOverview; onOpenPerson: (participantId: string) => void; onGoTab: (tab: string) => void }) {
   const [view, setView] = useState<Sheeted | null>(null);
   const [teamMode, setTeamMode] = useState<"rows" | "cols">("rows");
-  const [trendMode, setTrendMode] = useState<"cols" | "line">("cols");
   const h = data.history;
-  const labels = h.rounds.map((r) => r.label);
   const head = useMemo(() => execHeadline(data.people, data.progress, h.company), [data.people, data.progress, h.company]);
   const { shown, small } = useMemo(() => execTeams(data.teams), [data.teams]);
   const attn = shown.filter(teamNeedsLook);
@@ -89,7 +85,7 @@ export function ExecTab({ data, onOpenPerson, onGoTab }: { data: DetailOverview;
           ที่ควรดู
         </p>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Kpi icon={<BarChart3 className="size-5" />} label="คะแนนเฉลี่ยบริษัท" value={`${fmt(head.avg)}%`} sub={head.delta === null ? <span className="text-muted-foreground">ยังไม่มีรอบก่อนให้เทียบ</span> : <span><Delta value={head.delta} /> จากรอบก่อน</span>} hint="ดูแยกตามรอบ" onClick={() => setView({ kind: "rounds" })} />
+          <Kpi icon={<BarChart3 className="size-5" />} label="คะแนนเฉลี่ยบริษัท" value={`${fmt(head.avg)}%`} sub={head.delta === null ? <span className="text-muted-foreground">ยังไม่มีรอบก่อนให้เทียบ</span> : <span><Delta value={head.delta} /> จากรอบก่อน</span>} hint="ดูแยกตามรอบ" onClick={() => onGoTab("rounds")} />
           <Kpi icon={<CheckCircle2 className="size-5" />} label="ประเมินครบแล้ว" value={head.asked > 0 ? `${head.submittedPct}%` : "-"} sub={<span className="text-muted-foreground">{head.asked > 0 ? `${head.submitted} จาก ${head.asked} ใบ${head.asked > head.submitted ? ` (ค้าง ${head.asked - head.submitted} ใบ)` : ""}` : "ไม่มีข้อมูลจำนวนใบ"}</span>} hint={head.asked > head.submitted ? "ใครยังไม่ส่ง ดูที่หน้ารอบประเมิน" : undefined} />
           <Kpi icon={<AlertTriangle className="size-5" />} tone="bad" label="คนที่คะแนนต่ำกว่า 80" value={`${head.low} คน`} sub={head.lowBefore === null ? <span className="text-muted-foreground">ยังไม่มีรอบก่อนให้เทียบ</span> : <span className={head.low > head.lowBefore ? "text-destructive" : "text-muted-foreground"}>{head.low > head.lowBefore ? `▲ เพิ่มจากรอบก่อน ${head.low - head.lowBefore} คน` : head.low < head.lowBefore ? `▼ ลดจากรอบก่อน ${head.lowBefore - head.low} คน` : `รอบก่อน ${head.lowBefore} คน`}</span>} hint="ดูรายชื่อ" onClick={() => setView({ kind: "low" })} />
           <Kpi icon={<Star className="size-5" />} tone="good" label="ได้คะแนนเต็ม 100" value={`${head.full} คน`} sub={<span className="text-muted-foreground">{head.fullPct}% ของผู้ถูกประเมิน</span>} hint="ดูรายชื่อ" onClick={() => setView({ kind: "full" })} />
@@ -148,20 +144,10 @@ export function ExecTab({ data, onOpenPerson, onGoTab }: { data: DetailOverview;
       </div>
 
       <Card className="gap-3 p-4 md:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-base font-semibold">ค่าเฉลี่ยบริษัทรายรอบ <span className="ml-1 text-xs font-normal text-muted-foreground">กดแท่งหรือจุดเพื่อดูรอบนั้น</span></h3>
-          <Segmented value={trendMode} onChange={setTrendMode} label="รูปแบบกราฟรายรอบ" options={[{ value: "cols", label: "แท่งแนวตั้ง" }, { value: "line", label: "เส้นโค้ง" }]} />
-        </div>
-        <ChartBox min={520}>
-          {trendMode === "cols" ? (
-            <ColumnChart values={h.company} labels={labels} onPick={(i) => setView({ kind: "month", index: i })} label={`ค่าเฉลี่ยบริษัทรายรอบ: ${labels.map((l, i) => `${l} ${fmt(h.company[i])}`).join(", ")}`} />
-          ) : (
-            <SmoothLine values={h.company} labels={labels} onPick={(i) => setView({ kind: "month", index: i })} label={`ค่าเฉลี่ยบริษัทรายรอบ: ${labels.map((l, i) => `${l} ${fmt(h.company[i])}`).join(", ")}`} />
-          )}
-        </ChartBox>
+        <p className="text-sm text-muted-foreground">กราฟค่าเฉลี่ยบริษัทรายรอบและการเทียบรอบอยู่ที่แท็บ เทียบรอบ</p>
         <div className="flex flex-wrap gap-2 print:hidden">
           <button type="button" onClick={() => onGoTab("people")} className="min-h-11 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-primary/5">ดูสรุปรายคนทั้งหมด</button>
-          <button type="button" onClick={() => onGoTab("months")} className="min-h-11 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-primary/5">ดูเทียบรายรอบ</button>
+          <button type="button" onClick={() => onGoTab("rounds")} className="min-h-11 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-primary/5">ดูเทียบรายรอบ</button>
         </div>
       </Card>
 
@@ -296,50 +282,6 @@ function ExecSheet({ view, onClose, data, onOpenPerson, onTeam, lists }: { view:
         ))}
         {lists.attn.length === 0 && <li className="py-3 text-sm text-muted-foreground">ไม่มีทีมที่ต่ำกว่า 80 หรือลดลงมากในรอบนี้</li>}
       </ul>
-    );
-  } else if (view?.kind === "rounds") {
-    title = "คะแนนเฉลี่ยบริษัท แยกตามรอบ";
-    body = (
-      <>
-        <ChartBox min={440}>
-          <ColumnChart values={h.company} labels={labels} label="ค่าเฉลี่ยบริษัทรายรอบ" height={240} />
-        </ChartBox>
-        <table className="mt-2 w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground">
-              <th className="py-1 font-medium">รอบ</th>
-              <th className="py-1 text-right font-medium">เฉลี่ย</th>
-            </tr>
-          </thead>
-          <tbody>
-            {h.rounds.map((r, i) => (
-              <tr key={r.id} className="border-t border-border">
-                <td className="py-2">{r.name}</td>
-                <td className="py-2 text-right font-semibold tabular-nums">{fmt(h.company[i])}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </>
-    );
-  } else if (view?.kind === "month") {
-    const r = h.rounds[view.index];
-    title = r?.name ?? "รอบ";
-    body = (
-      <>
-        <p className="text-3xl font-bold tabular-nums">{fmt(h.company[view.index])}%</p>
-        <ul className="mt-2 divide-y divide-border">
-          {h.teams.map((t) => ({ department: t.department, value: t.values[view.index] ?? null, before: view.index > 0 ? (t.values[view.index - 1] ?? null) : null })).filter((t) => t.value !== null).sort((a, b) => (a.value as number) - (b.value as number)).map((t) => (
-            <li key={t.department}>
-              <button type="button" onClick={() => onTeam(t.department)} className="flex min-h-11 w-full items-center gap-3 py-2 text-left hover:bg-muted/50">
-                <span className="min-w-0 flex-1 text-primary">{t.department}</span>
-                <b className="tabular-nums">{fmt(t.value)}%</b>
-                <span className="w-24 text-right text-sm"><Delta value={t.before !== null ? Math.round(((t.value as number) - t.before) * 10) / 10 : null} /></span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </>
     );
   } else if (view?.kind === "team") {
     title = view.department;

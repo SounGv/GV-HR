@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils";
 import { useDetailOverview, useDetailPerson } from "./hooks";
 import type { DetailOverview, DetailPerson, DetailPersonView } from "./detail-report-types";
 import { RATER_LABEL } from "./types";
-import { Delta, fmt, MonthsTab, OverviewTab, PeopleTab, SectionsTab, TeamTab } from "./detail-report-tables";
+import { Delta, DistributionCard, fmt, MonthsTab, PeopleTab, SectionsTab, TeamTab } from "./detail-report-tables";
+import { Segmented } from "./detail-report-svg";
 import { ExecTab } from "./detail-report-exec";
 import { MonthlyCharts } from "./detail-report-monthly";
 
@@ -57,7 +58,8 @@ function ChartCard({ title, hint, children }: { title: string; hint?: string; ch
 export function DetailReportView() {
   const [roundId, setRoundId] = useState<string | null>(null);
   const q = useDetailOverview(roundId);
-  const [tab, setTab] = useState("exec");
+  const [tab, setTab] = useState<"exec" | "rounds" | "team" | "people">("exec");
+  const [peopleView, setPeopleView] = useState<"table" | "sections" | "person">("table");
   const [pick, setPick] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dept, setDept] = useState("");
@@ -76,9 +78,22 @@ export function DetailReportView() {
 
   const open = (id: string) => {
     setPick(id);
-    setTab("person");
+    setTab("people");
+    setPeopleView("person");
   };
-  const filterable = tab === "people" || tab === "months" || tab === "sections";
+  /** Links inside the report still use the names of the old seven tabs; this maps them onto the four that exist now. */
+  const go = (name: string) => {
+    if (name === "months" || name === "overview") setTab("rounds");
+    else if (name === "team") setTab("team");
+    else if (name === "sections" || name === "person") {
+      setTab("people");
+      setPeopleView(name === "sections" ? "sections" : "person");
+    } else if (name === "people") {
+      setTab("people");
+      setPeopleView("table");
+    } else setTab(name as "exec" | "rounds");
+  };
+  const filterable = tab === "rounds" || (tab === "people" && peopleView !== "person");
   const departments = [...new Set(data.people.map((p) => p.department))].sort((a, b) => a.localeCompare(b, "th"));
 
   return (
@@ -126,34 +141,24 @@ export function DetailReportView() {
             </Select>
           </>
         )}
-        <span className="ml-auto text-xs text-muted-foreground">เห็นได้เฉพาะ HR · ตัวเลขเป็นคะแนนที่คำนวณไว้แล้ว ไม่เปลี่ยนคะแนนของใคร</span>
+        <span className="rounded-lg border border-border bg-card px-3 py-1 text-sm text-muted-foreground">ผู้ถูกประเมิน {data.people.length} คน · ไม่รวมคนที่ออกจากระบบแล้ว</span>
+        <Button variant="outline" className="ml-auto hidden h-11 md:inline-flex md:h-9" onClick={() => window.print()}>
+          <Printer className="size-4" /> พิมพ์ / บันทึก PDF
+        </Button>
+        <span className="basis-full text-sm text-muted-foreground">เห็นได้เฉพาะ HR · ตัวเลขเป็นคะแนนที่คำนวณไว้แล้ว ไม่เปลี่ยนคะแนนของใคร</span>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as string)} className="gap-3">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="gap-3">
         <TabsList variant="line" className="w-fit max-w-full justify-start overflow-x-auto [scrollbar-width:none] print:hidden [&::-webkit-scrollbar]:hidden">
           <TabsTrigger value="exec">สรุปสำหรับผู้บริหาร</TabsTrigger>
-          <TabsTrigger value="overview">กราฟภาพรวม</TabsTrigger>
-          <TabsTrigger value="people">สรุปรายคน</TabsTrigger>
-          <TabsTrigger value="months">เทียบรายรอบ</TabsTrigger>
-          <TabsTrigger value="sections">รายหมวดและความเห็น</TabsTrigger>
+          <TabsTrigger value="rounds">เทียบรอบ</TabsTrigger>
           <TabsTrigger value="team">รายทีม</TabsTrigger>
-          <TabsTrigger value="person">ดูรายคน</TabsTrigger>
+          <TabsTrigger value="people">รายคน</TabsTrigger>
         </TabsList>
         <TabsContent value="exec">
-          <ExecTab key={data.roundId} data={data} onOpenPerson={open} onGoTab={setTab} />
+          <ExecTab key={data.roundId} data={data} onOpenPerson={open} onGoTab={go} />
         </TabsContent>
-        <TabsContent value="overview">
-          <div className="mb-2 hidden justify-end md:flex print:hidden">
-            <Button variant="outline" className="h-11 md:h-9" onClick={() => window.print()}>
-              <Printer className="size-4" /> พิมพ์ / บันทึก PDF
-            </Button>
-          </div>
-          <OverviewTab key={data.roundId} data={data} />
-        </TabsContent>
-        <TabsContent value="people">
-          <PeopleTab data={data} people={filtered} onOpen={open} />
-        </TabsContent>
-        <TabsContent value="months">
+        <TabsContent value="rounds">
           <MonthsTab data={data} people={filtered} onOpen={open} top={<MonthlyCharts data={data} />}>
             <details className="rounded-sm border border-border bg-card p-3">
               <summary className="min-h-11 cursor-pointer text-sm font-medium md:min-h-0">ดูเป็นกราฟรายทีมข้ามรอบ และคนที่ขึ้นลงมากที่สุด</summary>
@@ -163,14 +168,30 @@ export function DetailReportView() {
             </details>
           </MonthsTab>
         </TabsContent>
-        <TabsContent value="sections">
-          <SectionsTab data={data} people={filtered} onOpen={open} />
-        </TabsContent>
         <TabsContent value="team">
           <TeamTab data={data} />
         </TabsContent>
-        <TabsContent value="person">
-          <PersonTab data={data} pick={pick} setPick={setPick} />
+        <TabsContent value="people">
+          <div className="space-y-4">
+            <Segmented
+              value={peopleView}
+              onChange={setPeopleView}
+              label="มุมมองรายคน"
+              options={[
+                { value: "table", label: "ตารางคะแนน" },
+                { value: "sections", label: "รายหมวดและความเห็น" },
+                { value: "person", label: "ดูรายละเอียดคนเดียว" },
+              ]}
+            />
+            {peopleView === "table" && (
+              <>
+                <DistributionCard data={data} />
+                <PeopleTab data={data} people={filtered} onOpen={open} />
+              </>
+            )}
+            {peopleView === "sections" && <SectionsTab data={data} people={filtered} onOpen={open} />}
+            {peopleView === "person" && <PersonTab data={data} pick={pick} setPick={setPick} />}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

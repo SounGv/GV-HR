@@ -38,7 +38,8 @@ async function loadScored(companyId: string) {
   // Department names a round stored may no longer exist (renamed or split); those show as the person's current department.
   const live = new Set((await prisma.department.findMany({ where: { companyId, deletedAt: null }, select: { name: true } })).map((d) => d.name));
   const rows = await prisma.appraisalParticipant.findMany({
-    where: { scorePercent: { not: null }, round: { companyId, deletedAt: null, isTemplate: false, status: { in: ["OPEN", "CLOSED"] } } },
+    // People who have since been removed from the system are left out, the same as on the summary report page, so the two pages count the same people (owner's decision, 2026-11-26).
+    where: { scorePercent: { not: null }, employee: { deletedAt: null }, round: { companyId, deletedAt: null, isTemplate: false, status: { in: ["OPEN", "CLOSED"] } } },
     select: {
       id: true,
       roundId: true,
@@ -181,7 +182,7 @@ export async function getDetailOverview(companyId: string, roundId?: string | nu
     .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name, "th"));
 
   // Every rater of everyone in the round, by status (the question "is the picture complete").
-  const byStatus = await prisma.appraisalAssignment.groupBy({ by: ["status"], where: { participant: { roundId: round.id } }, _count: { _all: true } });
+  const byStatus = await prisma.appraisalAssignment.groupBy({ by: ["status"], where: { participant: { roundId: round.id, employee: { deletedAt: null } } }, _count: { _all: true } });
   const progress = { submitted: byStatus.find((x) => x.status === "SUBMITTED")?._count._all ?? 0, total: byStatus.reduce((s, x) => s + x._count._all, 0) };
 
   const departments = [...new Set(mine.map((s) => s.department))];
