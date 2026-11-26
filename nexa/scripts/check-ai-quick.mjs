@@ -28,6 +28,11 @@ check("scan report takes the name after it, and asks for one when there is none"
   assert.deepEqual(parseQuickCommand("สแกนเข้า-ออกเดือนนี้ของ สมหญิง"), { action: "scan_month", name: "สมหญิง" });
   assert.deepEqual(parseQuickCommand("ดึงรายงานสแกนเข้าออก ของพนักงานรายวันของเดือนนี้ให้หน่อย"), { action: "scan_month" }, "the exact sentence that failed: no name, so the screen asks");
 });
+check("scan report also understands the month and the wording that failed on 26 Nov", () => {
+  assert.deepEqual(parseQuickCommand("ดึงรายงาน พนักงานสแกนเข้าออกงาน รายวันของเดือน11 ให้หน่อย"), { action: "scan_month", month: 11 });
+  assert.deepEqual(parseQuickCommand("สแกนเข้าออกของ สมชาย เดือน 10"), { action: "scan_month", name: "สมชาย", month: 10 });
+  assert.deepEqual(parseQuickCommand("ขอสแกนเข้า-ออกเดือนพฤศจิกายน"), { action: "scan_month", month: 11 });
+});
 check("announcement and notification open their forms", () => {
   assert.equal(parseQuickCommand("ส่งประกาศ")?.action, "announce");
   assert.equal(parseQuickCommand("ประกาศ หยุดวันที่ 5")?.action, "announce");

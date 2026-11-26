@@ -57,6 +57,7 @@ export interface AttachmentPayload {
 export interface QuickRequest {
   action: "late_today" | "absent_today" | "pending_approvals" | "leave_quota" | "scan_month" | "shifts_week" | "eval_progress" | "leave_ranking" | "announce" | "notify";
   count?: number;
+  month?: number;
   name?: string;
   title?: string;
   body?: string;

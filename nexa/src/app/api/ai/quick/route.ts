@@ -11,6 +11,7 @@ export const runtime = "nodejs";
 const bodySchema = z.object({
   action: z.enum(["late_today", "absent_today", "pending_approvals", "leave_quota", "scan_month", "shifts_week", "eval_progress", "leave_ranking", "announce", "notify"]),
   count: z.number().int().min(1).max(50).optional(),
+  month: z.number().int().min(1).max(12).optional(),
   name: z.string().trim().max(100).optional(),
   title: z.string().trim().max(200).optional(),
   body: z.string().trim().max(5000).optional(),

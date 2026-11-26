@@ -10,7 +10,8 @@ import { executeReadTool, findInScope } from "@/lib/ai/read-tools";
 import { getReport } from "@/features/report/service";
 import { prepareProposal } from "@/lib/ai/proposals";
 import type { ProposalCard } from "@/features/ai/proposal";
-import { LOCAL_SOURCE_LINE, quickToMarkdown, QUICK_MAX_ROWS, rowsNote, type QuickAction } from "@/features/ai/quick-actions";
+import { LOCAL_SOURCE_LINE, quickToMarkdown, QUICK_MAX_ROWS, rowsNote, THAI_MONTHS, type QuickAction } from "@/features/ai/quick-actions";
+import { bangkokParts } from "@/lib/datetime";
 
 /**
  * The quick actions, answered from our own data with no AI. They reuse the read tools and the confirmation cards,
@@ -20,6 +21,7 @@ import { LOCAL_SOURCE_LINE, quickToMarkdown, QUICK_MAX_ROWS, rowsNote, type Quic
 export interface QuickInput {
   action: QuickAction;
   count?: number;
+  month?: number;
   name?: string;
   title?: string;
   body?: string;
@@ -117,23 +119,33 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
 
     case "scan_month": {
       if (!can(session.perms, "report:read")) return refused("ไม่ได้รับอนุญาต: ต้องมีสิทธิ์ดูรายงาน");
+      // The month asked for, else this one; a month later than this one means last year's.
+      const now = bangkokParts();
+      const month = input.month ?? now.month;
+      const year = month > now.month ? now.year - 1 : now.year;
+      const from = `${year}-${String(month).padStart(2, "0")}-01`;
+      const to = `${year}-${String(month).padStart(2, "0")}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, "0")}`;
+      const monthText = `${THAI_MONTHS[month - 1]} ${year + 543}`;
       const name = input.name?.trim();
       if (!name) {
-        return { ok: false, message: "ต้องการดูของใคร พิมพ์ชื่อ ชื่อเล่น หรือรหัสพนักงาน (ของทุกคนดูได้ที่เมนูรายงาน เลือก รายละเอียดการลงเวลา (รายวัน))", needs: "name" };
+        // Everyone's day-by-day scans run to hundreds of rows, too many for a chat: the report page shows and exports them.
+        return text(
+          `รายงานสแกนเข้า-ออกรายวันของพนักงานทุกคน เดือน${monthText} มีหลายร้อยแถว เปิดดูและส่งออก Excel ได้ที่หน้ารายงาน\n\n[เปิดรายงานรายละเอียดการลงเวลา เดือน${monthText}](/reports?view=attendance_daily&from=${from}&to=${to})\n\nถ้าอยากดูทีละคน พิมพ์ "สแกนเข้าออกของ ชื่อ" ได้เลย`,
+        );
       }
       const found = await findInScope(session.companyId, name, scopeWhere);
       if (found.length === 0) return refused("ไม่พบพนักงานที่ตรงกับคำค้นในขอบเขตของคุณ");
       if (found.length > 1) return refused(`พบหลายคน ระบุให้ชัดขึ้น: ${found.map((e) => `${displayName(e)} (${e.employeeCode})`).join(", ")}`);
       const person = found[0];
-      // The same report as the Reports page (this month so far), one person, no AI. Days without a clock-in have no row.
-      const report = await getReport(session.companyId, { type: "attendance_daily", employeeId: [person.id], employeeWhere: scopeWhere, includeNames: false });
+      // The same report as the Reports page, one person, no AI. Days without a clock-in have no row.
+      const report = await getReport(session.companyId, { type: "attendance_daily", from, to, employeeId: [person.id], employeeWhere: scopeWhere, includeNames: false });
       const days = [...report.rows].reverse();
       const who = displayName(person);
-      if (days.length === 0) return text(`${who} ยังไม่มีการสแกนเข้า-ออกเดือนนี้`);
+      if (days.length === 0) return text(`${who} ไม่มีการสแกนเข้า-ออกเดือน${monthText}`);
       const lateDays = days.filter((r) => typeof r.lateMinutes === "number").length;
       return text(
         quickToMarkdown({
-          text: `การสแกนเข้า-ออกเดือนนี้ของ ${who} ${days.length} วัน มาสาย ${lateDays} วัน`,
+          text: `การสแกนเข้า-ออกเดือน${monthText} ของ ${who} ${days.length} วัน มาสาย ${lateDays} วัน`,
           table: { head: ["วันที่", "เข้า", "ออก", "สาย (นาที)", "สถานะ"], rows: days.map((r) => [String(r.date), String(r.clockIn), String(r.clockOut), String(r.lateMinutes), String(r.status)]) },
           note: "แสดงเฉพาะวันที่มีบันทึก วันที่ไม่แสดงคือวันหยุดหรือไม่มีการสแกน ดูวันขาดได้ที่รายงาน สรุปการลงเวลา (รายเดือน)",
         }),

@@ -38,6 +38,21 @@ export interface QuickCommand {
   title?: string;
   /** The "5" in "ลาเยอะสุด 5 อันดับ". */
   count?: number;
+  /** The month asked for ("เดือน 11", "เดือนพฤศจิกายน"), 1 to 12; absent means this month. */
+  month?: number;
+}
+
+export const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+/** "เดือน 11" or a month name inside a sentence; undefined when none is said. */
+function monthIn(t: string): number | undefined {
+  const d = /เดือน\s*(\d{1,2})(?!\d)/.exec(t);
+  if (d) {
+    const n = Number(d[1]);
+    if (n >= 1 && n <= 12) return n;
+  }
+  const i = THAI_MONTHS.findIndex((m) => t.includes(m));
+  return i >= 0 ? i + 1 : undefined;
 }
 
 const clean = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -80,11 +95,15 @@ export function parseQuickCommand(raw: string): QuickCommand | null {
     const name = clean(quota[1] ?? "");
     return name ? { action: "leave_quota", name } : { action: "leave_quota" };
   }
-  // "สแกนเข้าออกของสมชาย", also "ดึงรายงานสแกนเข้า-ออก ของพนักงานรายวันของเดือนนี้ให้หน่อย" (no name left, so the screen asks for one).
-  const scan = /^(?:ดึง|ขอ|ดู|เช็ก|เช็ค)?\s*(?:รายงาน)?(?:สแกน|เวลา)เข้า\s*[-/]?\s*ออก(?:งาน)?(.*)$/.exec(t);
+  // "สแกนเข้าออกของสมชาย", also "ดึงรายงาน พนักงานสแกนเข้าออกงาน รายวันของเดือน11 ให้หน่อย" (no name left: the answer links to the report).
+  const scan = /^(?:ดึง|ขอ|ดู|เช็ก|เช็ค)?\s*(?:รายงาน)?\s*(?:พนักงาน)?\s*(?:สแกน|เวลา)เข้า\s*[-/]?\s*ออก(?:งาน)?(.*)$/.exec(t);
   if (scan) {
-    const name = clean((scan[1] ?? "").replace(/รายวัน|เดือนนี้|พนักงาน|ให้หน่อย|หน่อย|ครับ|ค่ะ|คะ/g, " ").replace(/^\s*(?:ของ\s*)+/, ""));
-    return name ? { action: "scan_month", name } : { action: "scan_month" };
+    const rest = scan[1] ?? "";
+    const month = monthIn(rest);
+    let left = rest.replace(/เดือน\s*\d{1,2}(?!\d)/g, " ");
+    for (const m of THAI_MONTHS) left = left.split(m).join(" ");
+    const name = clean(left.replace(/เดือน(?:นี้)?|รายวัน|พนักงาน|ให้หน่อย|หน่อย|ครับ|ค่ะ|คะ/g, " ").replace(/^\s*(?:ของ\s*)+/, ""));
+    return { action: "scan_month", ...(name ? { name } : {}), ...(month ? { month } : {}) };
   }
   const ranking = /^(?:ปีนี้\s*)?(?:ใคร)?ลา(?:เยอะ|มาก|บ่อย)สุด(?:ปีนี้)?\s*(?:(\d{1,2})\s*อันดับ(?:แรก)?)?\s*(?:แยก(?:ตาม)?ประเภท(?:ลา)?)?$/.exec(t);
   if (ranking) return ranking[1] ? { action: "leave_ranking", count: Number(ranking[1]) } : { action: "leave_ranking" };

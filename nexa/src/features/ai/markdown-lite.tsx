@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
  * reply can't smuggle markup into the page.
  */
 
-/** Inline: **bold**, *italic*, `code`. Everything else stays text. */
+/** Inline: **bold**, *italic*, `code`, and [text](/same-site-path) links. Everything else stays text. */
 function inline(text: string, keyBase: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*)/g;
+  const re = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]\n]+\]\(\/[^)\s]*\)|\*[^*\s][^*]*\*)/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let i = 0;
@@ -21,7 +21,19 @@ function inline(text: string, keyBase: string): ReactNode[] {
     const tok = m[0];
     const key = `${keyBase}-${i++}`;
     if (tok.startsWith("**")) out.push(<strong key={key} className="font-semibold">{tok.slice(2, -2)}</strong>);
-    else if (tok.startsWith("`")) out.push(<code key={key} className="rounded bg-muted px-1 py-0.5 text-[0.92em]">{tok.slice(1, -1)}</code>);
+    else if (tok.startsWith("[")) {
+      // Only paths on this site (starting with /) become links, so a reply can never point the reader to another address.
+      const link = /^\[([^\]]+)\]\((\/[^)\s]*)\)$/.exec(tok);
+      out.push(
+        link ? (
+          <a key={key} href={link[2]} className="font-medium text-primary underline underline-offset-2">
+            {link[1]}
+          </a>
+        ) : (
+          tok
+        ),
+      );
+    } else if (tok.startsWith("`")) out.push(<code key={key} className="rounded bg-muted px-1 py-0.5 text-[0.92em]">{tok.slice(1, -1)}</code>);
     else out.push(<em key={key}>{tok.slice(1, -1)}</em>);
     last = m.index + tok.length;
   }

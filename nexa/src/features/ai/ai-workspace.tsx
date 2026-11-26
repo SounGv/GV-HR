@@ -250,7 +250,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
           setForm(cmd.action);
           setInput("");
         } else {
-          runQuick({ action: cmd.action, ...(cmd.name ? { name: cmd.name } : {}), ...(cmd.count ? { count: cmd.count } : {}) }, q);
+          runQuick({ action: cmd.action, ...(cmd.name ? { name: cmd.name } : {}), ...(cmd.count ? { count: cmd.count } : {}), ...(cmd.month ? { month: cmd.month } : {}) }, q);
         }
         return;
       }
