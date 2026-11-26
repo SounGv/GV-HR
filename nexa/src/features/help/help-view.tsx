@@ -125,7 +125,7 @@ function Step({ n, step }: { n: number; step: GuideStep }) {
           <figure className="overflow-hidden rounded-lg border border-border bg-card">
             <a href={step.image.src} target="_blank" rel="noopener" aria-label={`เปิดรูปเต็มขนาด: ${step.image.alt}`} className="block">
               {/* eslint-disable-next-line @next/next/no-img-element -- a fixed screenshot from public/help; no resizing needed */}
-              <img src={step.image.src} alt={step.image.alt} loading="lazy" className="h-auto w-full" />
+              <img src={step.image.src} alt={step.image.alt} loading="lazy" className="mx-auto block h-auto w-auto max-w-full" />
             </a>
             <figcaption className="border-t border-border bg-muted/40 px-3 py-3">
               <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">

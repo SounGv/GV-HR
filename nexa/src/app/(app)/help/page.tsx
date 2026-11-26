@@ -14,7 +14,7 @@ export default async function HelpPage() {
   await requirePagePermission("employee:update");
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader
         title="คู่มือการใช้งาน"
         description="ขั้นตอนการใช้ฟังก์ชันหลักที่ HR ใช้บ่อยที่สุด"
