@@ -392,6 +392,7 @@ export async function executeTool(
           from,
           to,
           employeeWhere: scopeWhere,
+          maskNoScan: true,
         });
         return JSON.stringify({
           title: report.title,

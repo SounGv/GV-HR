@@ -91,4 +91,10 @@ export type ReportQuery = z.infer<typeof reportQuerySchema> & {
    * meaningful share of this report type's cost at the row counts it runs at.
    */
   includeNames?: boolean;
+  /**
+   * attendance (monthly summary) only, never set from user input. Someone with no scan in the period or in the
+   * ABSENT_ACTIVITY_LOOKBACK_DAYS before it has not started using the clock-in app: their scan-based cells show "-"
+   * and they are not counted absent. Off by default so a caller that scores the raw numbers (the KPI profiles) is unchanged.
+   */
+  maskNoScan?: boolean;
 };

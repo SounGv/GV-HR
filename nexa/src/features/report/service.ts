@@ -314,9 +314,26 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         bumpDept(deptLate, emp?.department?.name, v.late);
       }
     }
+    // People who have never used the clock-in app (no scan in the period or the lookback before it) would otherwise read
+    // as absent every working day; shown as "-" instead (owner, 2026-11-26: only the warehouse uses the scan so far).
+    const noScanCodes = new Set<string>();
+    if (query.maskNoScan) {
+      const lookbackStart = new Date(start.getTime() - ABSENT_ACTIVITY_LOOKBACK_DAYS * 86_400_000);
+      const scanned = await prisma.attendanceRecord.groupBy({
+        by: ["employeeId"],
+        where: { companyId, deletedAt: null, clockInAt: { not: null }, workDate: { gte: lookbackStart, lt: end }, ...deptRel },
+      });
+      const scannedIds = new Set(scanned.map((x) => x.employeeId));
+      for (const e of employees) if (!scannedIds.has(e.id)) noScanCodes.add(e.employeeCode);
+    }
     return {
       title,
       period: label,
+      ...(noScanCodes.size
+        ? {
+            footnote: `ยังไม่ใช้ระบบสแกน ${noScanCodes.size} คน (ไม่มีบันทึกสแกนในช่วงนี้และ ${ABSENT_ACTIVITY_LOOKBACK_DAYS} วันก่อนหน้า) แสดงเป็น - ในช่อง วันมาทำงาน ถึง ชั่วโมงรวม และไม่นับเป็นขาดงาน ส่วนวันลาที่อนุมัติแล้วยังแสดงตามจริง`,
+          }
+        : {}),
       columns: [
         { key: "code", label: "รหัส" },
         { key: "name", label: "ชื่อ-สกุล" },
@@ -343,7 +360,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       rows: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([code, v]) => {
         const pd = personDays.get(code)!;
         const scheduled = pd.days.length;
-        return {
+        const row = {
         code,
         name: v.name,
         scheduled,
@@ -366,6 +383,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         hours: Math.round(v.hours * 10) / 10,
         otHours: Math.round(v.otHours * 10) / 10,
         };
+        return noScanCodes.has(code)
+          ? { ...row, present: "-", rate: "-", late: "-", earlyLeave: "-", noClockOut: "-", absent: "-", onsite: "-", wfh: "-", outside: "-", hours: "-" }
+          : row;
       }),
       summary: toSummary(deptLate),
       summaryLabel: "จำนวนวันมาสายตามแผนก",

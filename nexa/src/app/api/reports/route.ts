@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
     const result = await getReport(session.companyId, {
       ...query,
       employeeWhere: teamScopeFilter(session) ?? undefined,
+      maskNoScan: true,
     });
     return ok(await attachFaces(session.companyId, result));
   } catch (err) {
