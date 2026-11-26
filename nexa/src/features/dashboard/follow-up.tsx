@@ -54,10 +54,11 @@ export type FollowPerson =
   | { id?: string; key?: string; name: string; avatarUrl?: string | null; gender?: string | null; sub?: string; when?: string };
 
 /**
- * The board the cards sit on: three equal-height cards in a row on a wide screen, two on a tablet, stacked on a
- * phone. `items-stretch` so the footer buttons line up at the bottom of the row.
+ * The board the cards sit on: as many equal-height cards per row as fit at 340px or wider (so a 1920px screen
+ * shows five ~360px cards, not three 600px ones with stretched buttons), stacked on a phone. `items-stretch` so
+ * the footer buttons line up at the bottom of the row.
  */
-export const FOLLOW_BOARD_CLASS = "grid grid-cols-1 items-stretch gap-4 min-[860px]:grid-cols-2 xl:grid-cols-3";
+export const FOLLOW_BOARD_CLASS = "grid grid-cols-1 items-stretch gap-4 min-[860px]:grid-cols-[repeat(auto-fill,minmax(340px,1fr))]";
 
 /** Flat card: thin border, 8px radius, no shadow, no hover lift. */
 const CARD = "relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card";
