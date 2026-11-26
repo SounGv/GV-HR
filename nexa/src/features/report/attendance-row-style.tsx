@@ -99,12 +99,8 @@ const MAIN_KEYS = [
   "date",
   "code",
   "name",
-  "department",
-  "shift",
   "clockIn",
-  "clockInPhoto",
   "clockOut",
-  "clockOutPhoto",
   "lateMinutes",
   "earlyMinutes",
   "hours",
@@ -116,6 +112,10 @@ const MAIN_KEYS = [
 ] as const;
 
 const EXTRA_KEYS = ["employmentType", "breakMinutes", "otApprover", "otReason", "workMode", "editor"] as const;
+
+/** Who and which shift are clear from the name, so they come after the scan details (owner, 2026-11-26); the two photos go last of all, as in the export. */
+const BACK_KEYS = ["department", "shift"] as const;
+const PHOTO_KEYS = ["clockInPhoto", "clockOutPhoto"] as const;
 
 const dash = (v: string | number | undefined) => v == null || v === "" || v === "-";
 
@@ -154,13 +154,14 @@ export function buildDailyColumns(columns: ReportColumn[], showExtra: boolean): 
     return real;
   };
 
-  const main = MAIN_KEYS.map(resolve).filter((c): c is DisplayColumn => c !== null);
-  if (!showExtra) return main;
-
-  const extra = EXTRA_KEYS.map(resolve).filter((c): c is DisplayColumn => c !== null);
-  // Anything the service adds later that is not listed above is still shown.
-  const unknown = columns.filter((c) => !used.has(c.key));
-  return [...main, ...extra, ...unknown];
+  const pick = (keys: readonly string[]) => keys.map(resolve).filter((c): c is DisplayColumn => c !== null);
+  const main = pick(MAIN_KEYS);
+  const extra = showExtra ? pick(EXTRA_KEYS) : [];
+  const back = pick(BACK_KEYS);
+  const photos = pick(PHOTO_KEYS);
+  // Anything the service adds later that is not listed above is still shown (only with the extras, as before).
+  const unknown = showExtra ? columns.filter((c) => !used.has(c.key)) : [];
+  return [...main, ...extra, ...back, ...unknown, ...photos];
 }
 
 /** Text shown under the enlarged photo: who, when, where. */
