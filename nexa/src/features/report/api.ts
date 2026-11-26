@@ -7,7 +7,7 @@ export interface ReportParams {
   from?: string;
   to?: string;
   departmentId?: string[];
-  employmentType?: string;
+  employmentType?: string[];
   employeeId?: string[];
   branchId?: string[];
   costCenterId?: string[];
@@ -17,7 +17,7 @@ export function fetchReport(q: ReportParams) {
   const params = new URLSearchParams({ type: q.type });
   if (q.from) params.set("from", q.from);
   if (q.to) params.set("to", q.to);
-  if (q.employmentType) params.set("employmentType", q.employmentType);
+  for (const t of q.employmentType ?? []) params.append("employmentType", t);
   for (const id of q.departmentId ?? []) params.append("departmentId", id);
   for (const id of q.employeeId ?? []) params.append("employeeId", id);
   for (const id of q.branchId ?? []) params.append("branchId", id);

@@ -60,7 +60,8 @@ export const reportQuerySchema = z.object({
   type: z.enum(REPORT_TYPES).default("employees"),
   from: dateStr.optional(),
   to: dateStr.optional(),
-  employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
+  // Several types at once (daily + full-time + probation, say), sent as repeated ?employmentType= keys; absent means every type.
+  employmentType: z.array(z.enum(EMPLOYMENT_TYPES)).min(1).optional(),
   // Multi-select (report-view.tsx's "แผนก"/"พนักงาน"/"สาขา"/"ศูนย์ต้นทุน"
   // pickers) — an empty array is normalized away before this schema ever
   // sees it (same as "not provided"), so `getReport` only has to handle

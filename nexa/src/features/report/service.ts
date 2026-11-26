@@ -112,7 +112,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
   // one place so every report type below picks it up automatically.
   const employeeFilter = {
     ...(query.departmentId ? { departmentId: { in: query.departmentId } } : {}),
-    ...(query.employmentType ? { employmentType: query.employmentType } : {}),
+    ...(query.employmentType ? { employmentType: { in: query.employmentType } } : {}),
     ...(query.employeeId ? { id: { in: query.employeeId } } : {}),
     ...(query.branchId ? { branchId: { in: query.branchId } } : {}),
     ...(query.costCenterId ? { costCenterId: { in: query.costCenterId } } : {}),

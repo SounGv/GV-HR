@@ -78,7 +78,6 @@ import { columnLabel, type ReportColumn, type ReportResult } from "./types";
 import { EvaluationReportOverview, type EvalSection } from "./evaluation-report-overview";
 import { LeaveEmployeeSheet, type LeaveSheetTarget } from "./leave-employee-sheet";
 
-const ALL_TYPE = "ALL";
 const YEAR_NOW = new Date().getFullYear();
 const REPORT_YEARS = [YEAR_NOW, YEAR_NOW - 1, YEAR_NOW - 2, YEAR_NOW - 3];
 function firstOfMonth(): string {
@@ -571,7 +570,7 @@ export function ReportView() {
   const [from, setFrom] = useState<string>(() => searchParams.get("from") ?? firstOfMonth());
   const [to, setTo] = useState<string>(() => searchParams.get("to") ?? searchParams.get("from") ?? todayStr());
   const [departmentIds, setDepartmentIds] = useState<string[]>([]);
-  const [employmentType, setEmploymentType] = useState<string>(ALL_TYPE);
+  const [employmentTypes, setEmploymentTypes] = useState<string[]>([]);
   // Same deep-link convention as "view" above — the command palette's
   // employee search links here with ?employeeId= when you're already on
   // the reports page, so picking a person filters the current report
@@ -591,14 +590,14 @@ export function ReportView() {
   // The five narrowing filters live behind one button; the panel opens by itself when a link arrives with one already set.
   const activeFilterCount =
     (departmentIds.length ? 1 : 0) +
-    (employmentType !== ALL_TYPE ? 1 : 0) +
+    (employmentTypes.length ? 1 : 0) +
     (employeeIds.length ? 1 : 0) +
     (branchIds.length ? 1 : 0) +
     (costCenterIds.length ? 1 : 0);
   const [filtersOpen, setFiltersOpen] = useState(() => !!initialEmployeeId);
   function clearFilters() {
     setDepartmentIds([]);
-    setEmploymentType(ALL_TYPE);
+    setEmploymentTypes([]);
     setEmployeeIds([]);
     setBranchIds([]);
     setCostCenterIds([]);
@@ -628,7 +627,7 @@ export function ReportView() {
   const employees = (orgData?.data.managers ?? [])
     .filter((e) => branchIds.length === 0 || (e.branchId != null && branchIds.includes(e.branchId)))
     .filter((e) => departmentIds.length === 0 || (e.departmentId != null && departmentIds.includes(e.departmentId)))
-    .filter((e) => employmentType === ALL_TYPE || e.employmentType === employmentType)
+    .filter((e) => employmentTypes.length === 0 || employmentTypes.includes(e.employmentType))
     .filter((e) => costCenterIds.length === 0 || (e.costCenterId != null && costCenterIds.includes(e.costCenterId)))
     .sort((a, b) => `${a.firstName}${a.lastName}`.localeCompare(`${b.firstName}${b.lastName}`, "th"));
   // Departments/employees picked before narrowing by a sibling filter can
@@ -651,7 +650,7 @@ export function ReportView() {
       return next.length === prev.length ? prev : next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branchIds, departmentIds, employmentType, costCenterIds, orgData]);
+  }, [branchIds, departmentIds, employmentTypes, costCenterIds, orgData]);
   const { data: costCenterData } = useCostCenters();
   const costCenters = costCenterData?.data ?? [];
 
@@ -659,7 +658,7 @@ export function ReportView() {
     from,
     to,
     departmentId: departmentIds.length ? departmentIds : undefined,
-    employmentType: employmentType === ALL_TYPE ? undefined : employmentType,
+    employmentType: employmentTypes.length ? employmentTypes : undefined,
     employeeId: employeeIds.length ? employeeIds : undefined,
     branchId: branchIds.length ? branchIds : undefined,
     costCenterId: costCenterIds.length ? costCenterIds : undefined,
@@ -687,6 +686,7 @@ export function ReportView() {
     label: `${displayName(e)} · ${e.employeeCode}`,
   }));
   const departmentOptions: MultiSelectOption[] = departments.map((d) => ({ value: d.id, label: d.name }));
+  const employmentOptions: MultiSelectOption[] = EMPLOYMENT_TYPES.map((t) => ({ value: t, label: EMPLOYMENT_LABEL[t as EmploymentType] }));
   const branchOptions: MultiSelectOption[] = branches.map((b) => ({ value: b.id, label: b.name }));
   const costCenterOptions: MultiSelectOption[] = costCenters.map((c) => ({ value: c.id, label: c.name }));
   const reportTypeOptions: MultiSelectOption[] = visibleReportTypes.map((t) => ({ value: t, label: REPORT_LABELS[t] }));
@@ -770,22 +770,7 @@ export function ReportView() {
 
       <div id="report-filters" hidden={!filtersOpen} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-3 print:hidden">
         <MultiSelectField label="แผนก" placeholder="ทุกแผนก" options={departmentOptions} selected={departmentIds} onChange={setDepartmentIds} />
-        <div className="space-y-1">
-          <label className="text-sm text-muted-foreground">ประเภทการจ้าง</label>
-          <Select value={employmentType} onValueChange={(v) => setEmploymentType(v ?? ALL_TYPE)}>
-            <SelectTrigger className="min-w-[160px] w-auto max-w-[320px]">
-              <SelectValue placeholder="ทุกประเภท" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false}>
-              <SelectItem value={ALL_TYPE}>ทุกประเภท</SelectItem>
-              {EMPLOYMENT_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {EMPLOYMENT_LABEL[t as EmploymentType]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <MultiSelectField label="ประเภทการจ้าง" placeholder="ทุกประเภท" options={employmentOptions} selected={employmentTypes} onChange={setEmploymentTypes} />
         <MultiSelectField label="พนักงาน" placeholder="ทุกคน" options={employeeOptions} selected={employeeIds} onChange={setEmployeeIds} />
         <MultiSelectField label="สาขา" placeholder="ทุกสาขา" options={branchOptions} selected={branchIds} onChange={setBranchIds} />
         <MultiSelectField
