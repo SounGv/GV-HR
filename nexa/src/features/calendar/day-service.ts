@@ -63,7 +63,7 @@ function emptyCounts(): Record<TodayStatus, number> {
 }
 
 /** Same lookback as the dashboard: only people with a clock-in record this recently are checked. */
-const ACTIVITY_LOOKBACK_DAYS = 60;
+export const ACTIVITY_LOOKBACK_DAYS = 60;
 
 /**
  * Absent / on leave / late head-counts for every finished working day of a month, for the numbers drawn inside each calendar cell.

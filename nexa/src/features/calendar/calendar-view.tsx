@@ -280,6 +280,10 @@ export function CalendarView() {
                       <button
                         key={c.iso}
                         onClick={() => setSelected(c.iso)}
+                        aria-label={[
+                          c.iso,
+                          ...chips.filter((chip) => chip.n > 0).map((chip) => `${chip.label} ${chip.n} คน`),
+                        ].join(" ")}
                         className={cn(
                           "relative flex min-h-[92px] flex-col gap-[3px] rounded-lg border px-[7px] py-1.5 text-left transition sm:min-h-[112px]",
                           !c.inMonth
@@ -340,14 +344,15 @@ export function CalendarView() {
                           {dayItems.slice(0, 2).map((it) => (
                             <span
                               key={it.id}
-                              className={cn("truncate rounded px-1 text-xs leading-snug sm:text-[13px]", SOURCE_STYLE[it.source])}
+                              title={it.title}
+                              className={cn("truncate rounded px-1 text-xs leading-snug", SOURCE_STYLE[it.source])}
                             >
                               {it.title}
                             </span>
                           ))}
                           {dayItems.length > 2 && (
                             <span
-                              className="px-1 text-xs font-medium text-primary sm:text-[13px]"
+                              className="px-1 text-xs font-medium text-primary"
                               title={`มีอีก ${dayItems.length - 2} รายการ กดที่วันนี้เพื่อดูทั้งหมด`}
                             >
                               อีก {dayItems.length - 2} รายการ

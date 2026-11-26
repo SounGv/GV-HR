@@ -6,6 +6,7 @@ import { bangkokParts } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { CalendarItem, CalendarMonth, MyDayStatus } from "./types";
 import type { EventCreateInput, EventUpdateInput } from "./schema";
+import { ACTIVITY_LOOKBACK_DAYS } from "./day-service";
 
 type Meta = { ip?: string; userAgent?: string };
 
@@ -199,6 +200,14 @@ async function getMyDayStatus(
     select: { workDate: true, clockInAt: true, status: true },
   });
   const recordByDate = new Map(records.map((r) => [iso(r.workDate), r]));
+  // Someone with no attendance record in the ACTIVITY_LOOKBACK_DAYS before the month has not started using the clock-in app,
+  // so a day with no scan is not drawn as absent (the same rule the head-counts in the calendar cells use).
+  const usesClockIn =
+    records.length > 0 ||
+    (await prisma.attendanceRecord.findFirst({
+      where: { companyId, deletedAt: null, employeeId, workDate: { gte: new Date(start.getTime() - ACTIVITY_LOOKBACK_DAYS * DAY_MS), lt: start } },
+      select: { id: true },
+    })) !== null;
 
   const result: Record<string, MyDayStatus> = {};
   for (let cur = new Date(start); cur.getTime() <= rangeEnd.getTime(); cur = new Date(cur.getTime() + DAY_MS)) {
@@ -220,7 +229,7 @@ async function getMyDayStatus(
     const weekday = cur.getUTCDay();
     if (weekday === 0 || weekday === 6) {
       result[day] = "WEEKEND";
-    } else if (day !== todayIsoStr) {
+    } else if (usesClockIn && day !== todayIsoStr) {
       // Today with no scan yet is left unset: the day is not over, so it is not absent.
       result[day] = "ABSENT";
     }
