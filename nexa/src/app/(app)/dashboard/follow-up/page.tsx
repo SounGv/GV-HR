@@ -134,28 +134,29 @@ export default async function FollowUpPage({ searchParams }: { searchParams: Pro
       <PageHeader title="ต้องตามวันนี้" description="เรียงจากเร่งด่วนที่สุด รวมคำขอที่รอคุณอนุมัติ กดปุ่มในการ์ดเพื่อทำต่อ" />
       {/* "ต้องตามวันนี้" board (owner-approved mock, 14 Nov 2026): one card per thing to follow, the
           most urgent first, approvals included; things with nothing today are left to the news ticker. */}
-      <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-3">
+      <section id="follow-up" aria-label="ต้องตามวันนี้" className="scroll-mt-24 space-y-4">
         <div className={FOLLOW_BOARD_CLASS}>
           <ApprovalsFollowCard data={actions} />
           {attendanceToday && <LiveFollowRows />}
-          {canSeeAttendance && (
+          {/* Order (CSS `order`): probation (most urgent), forgotten scans, OT, leave, meetings. */}
+          {canSeeProbation && (
             <Suspense fallback={<FollowRowLoading order={3} />}>
+              <ProbationDueSection companyId={user!.companyId} session={session} />
+            </Suspense>
+          )}
+          {canSeeAttendance && (
+            <Suspense fallback={<FollowRowLoading order={4} />}>
               <MissedScanOutSection companyId={user!.companyId} session={session} />
             </Suspense>
           )}
           {canSeeOvertime && (
-            <Suspense fallback={<FollowRowLoading order={4} />}>
+            <Suspense fallback={<FollowRowLoading order={5} />}>
               <OvertimeTodaySection companyId={user!.companyId} session={session} />
             </Suspense>
           )}
           {canSeeLeaves && (
-            <Suspense fallback={<FollowRowLoading order={5} />}>
-              <UpcomingLeavesSection companyId={user!.companyId} session={session} />
-            </Suspense>
-          )}
-          {canSeeProbation && (
             <Suspense fallback={<FollowRowLoading order={6} />}>
-              <ProbationDueSection companyId={user!.companyId} session={session} />
+              <UpcomingLeavesSection companyId={user!.companyId} session={session} />
             </Suspense>
           )}
           {canSeeMeetings && (

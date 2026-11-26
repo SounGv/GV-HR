@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { Clock } from "lucide-react";
-import { SectionHeading } from "@/components/shared/section-heading";
-import { GvHolidayIcon, GvIconTile, GvYearSetupIcon } from "@/components/shared/gv-icons";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/auth/rbac";
 import { bangkokParts } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { DUE_SOON_FROM_MONTH, dueSoonItems, type DueSoonItem } from "./due-soon-rules";
 
-const BTN = "inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-accent";
+/** Primary solid, 44px tall (the mock drew 40px; touch targets stay at 44px). */
+const BTN =
+  "inline-flex min-h-11 items-center justify-center rounded-lg border border-primary bg-primary px-4 text-[14px] leading-[1.5] font-semibold text-primary-foreground transition-colors hover:brightness-110";
 
 /** Distinct people who have a leave entitlement row for the year. */
 async function peopleWithEntitlements(companyId: string, year: number): Promise<number> {
@@ -49,32 +49,28 @@ export async function DueSoonSection({ companyId, session }: { companyId: string
 /** The card itself, kept apart from the database reads so it can be looked at on its own. */
 export function DueSoonList({ items }: { items: DueSoonItem[] }) {
   return (
-    <section id="due-soon" aria-label="ใกล้ครบกำหนด" className="scroll-mt-24 space-y-3">
-      <SectionHeading title="ใกล้ครบกำหนด" hint="ต้องเตรียมให้เสร็จก่อนขึ้นปีใหม่" />
-      <article className="gv-panel rounded-lg border border-border bg-card p-4  sm:p-5">
-        <ul className="divide-y divide-border">
-          {items.map((it) => (
-            <li key={it.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5 first:pt-0 last:pb-0">
-              <span className="flex min-w-0 flex-[1_1_16rem] items-center gap-3">
-                <GvIconTile icon={it.key === "holidays" ? GvHolidayIcon : GvYearSetupIcon} status="warn" />
-                <span className="min-w-0">
-                  <span className="block text-sm leading-snug font-semibold break-words">{it.title}</span>
-                  <span className="block text-xs leading-snug text-muted-foreground">{it.sub}</span>
-                </span>
+    <section id="due-soon" aria-label="ใกล้ครบกำหนด" className="scroll-mt-24">
+      <h2 className="text-[18px] leading-[1.4] font-bold text-foreground">ใกล้ครบกำหนด</h2>
+      <p className="mt-1 mb-3 text-[14px] leading-[1.6] text-muted-foreground">ต้องเตรียมให้เสร็จก่อนขึ้นปีใหม่</p>
+      <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+        {items.map((it) => (
+          <li key={it.key} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5">
+            <span className="min-w-0 flex-[1_1_16rem]">
+              <span className="block text-[15px] leading-[1.5] font-bold break-words text-foreground">{it.title}</span>
+              <span className="block text-[13px] leading-[1.5] text-muted-foreground">{it.sub}</span>
+            </span>
+            <span className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-[#ffb900] px-2.5 py-0.5 text-[13px] leading-[1.5] font-bold whitespace-nowrap text-[#3a2a00]">
+                <Clock className="size-3.5" aria-hidden="true" />
+                เหลือ {it.daysLeft} วัน
               </span>
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-sm border border-status-late-border bg-status-late-bg px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-status-late-fg">
-                  <Clock className="size-3.5" aria-hidden="true" />
-                  เหลือ {it.daysLeft} วัน
-                </span>
-                <Link href={it.href} className={BTN}>
-                  {it.action}
-                </Link>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </article>
+              <Link href={it.href} className={BTN}>
+                {it.action}
+              </Link>
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

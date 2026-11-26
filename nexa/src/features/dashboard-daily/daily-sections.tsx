@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import { GvMeetingIcon, GvOtIcon, GvScanIcon, type GvIconProps } from "@/components/shared/gv-icons";
 
-import { FollowRow, FollowRowFailed } from "@/features/dashboard/follow-up";
+import { FollowRow, FollowRowFailed, type FollowPerson } from "@/features/dashboard/follow-up";
 import { STATUS_META } from "@/features/attendance-status/status-meta";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { cn } from "@/lib/utils";
@@ -49,7 +49,7 @@ function Frame({
   tag: string;
   unit: string;
   order: number;
-  people?: (string | { name: string; avatarUrl?: string | null })[];
+  people?: FollowPerson[];
 }) {
   return (
     <FollowRow icon={icon} title={title} sub={hint} count={count} unit={unit} tone={tone} tag={tag} order={order} link={link} people={people}>
@@ -112,6 +112,11 @@ function ScanGroup({ label, why, bad, rows, sub }: { label: string; why: string;
   );
 }
 
+/** A forgotten-scan row: the person, what is missing (ลืมสแกนเข้า / ลืมสแกนออก) and the day it happened. */
+function scanPerson(r: MissedScanOut, reason: string): Exclude<FollowPerson, string> & { dayIso: string } {
+  return { key: r.recordId, id: r.employeeId, name: r.name, avatarUrl: r.avatarUrl, gender: r.gender, sub: reason, when: fmtDay(r.dayIso), dayIso: r.dayIso };
+}
+
 /**
  * Scans that need a time fix on a recent day, in three kinds (owner's approved
  * mock, 13 Nov 2026): no scan-out, first scan hours after the shift start
@@ -121,17 +126,23 @@ function ScanGroup({ label, why, bad, rows, sub }: { label: string; why: string;
 export function MissedScanOutCard({ data }: { data: MissedScans }) {
   const all = [...data.noClockOut, ...data.lateFirstScan, ...data.outBeforeIn];
   const hours = LATE_FIRST_SCAN_MIN / 60;
+  // One row per item, newest day first: what is missing (the reason) and the day it happened.
+  const scanPeople = [
+    ...data.noClockOut.map((r) => scanPerson(r, "ลืมสแกนออก")),
+    ...data.lateFirstScan.map((r) => scanPerson(r, "ลืมสแกนเข้า")),
+    ...data.outBeforeIn.map((r) => scanPerson(r, "เวลาออกก่อนเวลาเข้า")),
+  ].sort((a, b) => b.dayIso.localeCompare(a.dayIso));
   return (
     <Frame
       icon={GvScanIcon}
       title="ลืมสแกน"
       hint={`${data.days} วันล่าสุด · ไม่นับวันนี้ · ชั่วโมงยังผิดจนกว่าจะแก้เวลา`}
-      people={all.map((r) => ({ id: r.employeeId, name: r.name, avatarUrl: r.avatarUrl, gender: r.gender }))}
+      people={scanPeople}
       count={all.length}
       tone={data.outBeforeIn.length ? "bad" : "warn"}
       tag="รอแก้เวลา"
       unit="รายการ"
-      order={3}
+      order={4}
       link={{ href: "/attendance/corrections", label: "ไปหน้าแก้ไขเวลา" }}
     >
       {all.length === 0 ? (
@@ -161,12 +172,19 @@ export function OvertimeTodayCard({ rows }: { rows: OvertimeToday[] }) {
       icon={GvOtIcon}
       title="OT วันนี้"
       hint={`รวม ${hours} ชม.`}
-      people={rows.map((r) => ({ id: r.employeeId, name: r.name, avatarUrl: r.avatarUrl, gender: r.gender }))}
+      people={rows.map((r) => ({
+        key: r.requestId,
+        id: r.employeeId,
+        name: r.name,
+        avatarUrl: r.avatarUrl,
+        gender: r.gender,
+        sub: `${r.startTime}–${r.endTime} น. · ${r.hours} ชม. · ${r.status === "APPROVED" ? "อนุมัติแล้ว" : "รออนุมัติ"}`,
+      }))}
       count={rows.length}
       tone={waiting ? "warn" : "info"}
       tag={waiting ? `รออนุมัติ ${waiting}` : "อนุมัติครบแล้ว"}
       unit="คน"
-      order={4}
+      order={5}
       link={{ href: "/overtime", label: "ดูคำขอ OT ทั้งหมด" }}
     >
       {rows.length === 0 ? (
@@ -240,7 +258,7 @@ export async function MissedScanOutSection({ companyId, session }: { companyId: 
   try {
     return <MissedScanOutCard data={await loadMissedScans(companyId, session)} />;
   } catch {
-    return <FollowRowFailed icon={GvScanIcon} title="ลืมสแกน" what="รายชื่อคนลืมสแกน" order={3} />;
+    return <FollowRowFailed icon={GvScanIcon} title="ลืมสแกน" what="รายชื่อคนลืมสแกน" order={4} />;
   }
 }
 
@@ -248,7 +266,7 @@ export async function OvertimeTodaySection({ companyId, session }: { companyId: 
   try {
     return <OvertimeTodayCard rows={await loadOvertimeToday(companyId, session)} />;
   } catch {
-    return <FollowRowFailed icon={GvOtIcon} title="OT วันนี้" what="OT วันนี้" order={4} />;
+    return <FollowRowFailed icon={GvOtIcon} title="OT วันนี้" what="OT วันนี้" order={5} />;
   }
 }
 

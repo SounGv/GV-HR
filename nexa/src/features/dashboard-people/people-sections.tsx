@@ -16,8 +16,6 @@ import {
   type UpcomingLeaves,
 } from "./service";
 
-const SHOWN = 6;
-
 /** "2026-10-06" → "6 ต.ค." The ISO strings are Bangkok calendar days, so format them in UTC. */
 const fmtDay = (iso: string) =>
   new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
@@ -38,7 +36,7 @@ function LeaveGroup({ title, people, empty }: { title: string; people: LeavePers
         <p className="text-sm text-muted-foreground">{empty}</p>
       ) : (
         <ul className="divide-y divide-border">
-          {people.slice(0, SHOWN).map((p) => (
+          {people.map((p) => (
             <li key={p.requestId} className="gv-row -mx-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg px-2 py-2">
               <span className="flex min-w-0 items-center gap-2.5">
                 <PersonAvatar name={p.name} gender={p.gender} seed={p.employeeId} src={p.avatarUrl} className="size-8" />
@@ -62,7 +60,6 @@ function LeaveGroup({ title, people, empty }: { title: string; people: LeavePers
           ))}
         </ul>
       )}
-      {people.length > SHOWN && <p className="text-sm text-muted-foreground">และอีก {people.length - SHOWN} รายการ</p>}
     </section>
   );
 }
@@ -75,12 +72,15 @@ export function UpcomingLeavesCard({ data }: { data: UpcomingLeaves }) {
       icon={GvLeaveIcon}
       title={`ลา ${data.lookaheadDays} วันข้างหน้า`}
       sub={`วันนี้ ${data.today.length} · เร็วๆ นี้ ${data.soon.length} คน`}
-      people={[...data.today, ...data.soon].map((p) => ({ id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender }))}
+      people={[
+        ...data.today.map((p) => ({ key: p.requestId, id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender, sub: p.department, when: "วันนี้" })),
+        ...data.soon.map((p) => ({ key: p.requestId, id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender, sub: p.department, when: fmtDay(p.startIso) })),
+      ]}
       count={count}
       unit="คน"
       tone="info"
       tag="ดูก่อนจัดกะ"
-      order={5}
+      order={6}
       link={{ href: "/leave?view=overview", label: "ดูคำขอลาทั้งหมด" }}
     >
       <div className="space-y-4">
@@ -100,19 +100,30 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
       icon={GvProbationIcon}
       title="ครบทดลองงาน"
       sub="ประเมินให้เสร็จก่อนวันที่ 120"
-      people={data.people.map((p) => ({ id: p.employeeId, name: p.name, avatarUrl: p.avatarUrl, gender: p.gender }))}
+      people={[...data.people]
+        .sort((a, b) => a.daysLeft - b.daysLeft)
+        .map((p) => ({
+          key: p.employeeId,
+          id: p.employeeId,
+          name: p.name,
+          avatarUrl: p.avatarUrl,
+          gender: p.gender,
+          sub: p.department,
+          when: p.daysLeft === 0 ? "ครบวันนี้" : `อีก ${p.daysLeft} วัน`,
+        }))}
       count={data.people.length}
       unit="คน"
       tone={soonest !== null && soonest <= 7 ? "bad" : "warn"}
       tag={soonest === 0 ? "ครบวันนี้" : `ใกล้สุดอีก ${soonest} วัน`}
-      order={6}
+      order={3}
+      detailsLabel="ดูรายละเอียดและประเมิน"
     >
       <div className="space-y-3">
         {data.people.length === 0 ? (
           <p className="text-sm text-muted-foreground">ไม่มีใครครบทดลองงานภายใน {data.windowDays} วัน</p>
         ) : (
           <ul className="divide-y divide-border">
-            {data.people.slice(0, SHOWN).map((p) => (
+            {data.people.map((p) => (
               <li key={p.employeeId}>
                 <Link
                   href={`/employees/${p.employeeId}`}
@@ -141,7 +152,6 @@ export function ProbationDueCard({ data, canCreateRound = false }: { data: Proba
             ))}
           </ul>
         )}
-        {data.people.length > SHOWN && <p className="text-sm text-muted-foreground">และอีก {data.people.length - SHOWN} คน</p>}
         {canCreateRound && data.people.length > 0 && <ProbationRoundButton />}
         {missing > 0 && (
           <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
@@ -159,7 +169,7 @@ export async function UpcomingLeavesSection({ companyId, session }: { companyId:
   try {
     return <UpcomingLeavesCard data={await loadUpcomingLeaves(companyId, session)} />;
   } catch {
-    return <FollowRowFailed icon={GvLeaveIcon} title="ลาวันนี้และวันข้างหน้า" what="รายชื่อคนลา" order={5} />;
+    return <FollowRowFailed icon={GvLeaveIcon} title="ลาวันนี้และวันข้างหน้า" what="รายชื่อคนลา" order={6} />;
   }
 }
 
@@ -167,6 +177,6 @@ export async function ProbationDueSection({ companyId, session }: { companyId: s
   try {
     return <ProbationDueCard data={await loadProbationDue(companyId, session)} canCreateRound={can(session.perms, "campaign:create")} />;
   } catch {
-    return <FollowRowFailed icon={GvProbationIcon} title="ครบทดลองงาน" what="รายชื่อคนใกล้ครบทดลองงาน" order={6} />;
+    return <FollowRowFailed icon={GvProbationIcon} title="ครบทดลองงาน" what="รายชื่อคนใกล้ครบทดลองงาน" order={3} />;
   }
 }

@@ -1,34 +1,42 @@
 import Link from "next/link";
 import type { ComponentType, ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
-import { GvIconTile } from "@/components/shared/gv-icons";
 
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { cn } from "@/lib/utils";
 
 /**
- * How urgent a "ต้องตามวันนี้" card is: the icon chip, status word, number and
- * top wash follow it. `ok` is used automatically when the count is 0.
+ * How urgent a "ต้องตามวันนี้" card is: the solid icon tile, status chip, number and
+ * when-labels follow it (bad = red, warn = amber, info = blue). `ok` is used
+ * automatically when the count is 0.
  */
 export type FollowTone = "bad" | "warn" | "info" | "ok";
 
-const TONE: Record<FollowTone, { word: string; num: string; wash: string }> = {
+/**
+ * Solid fills, not tints (owner-approved mock, 26 Nov 2026). Amber carries dark ink, red and blue carry white.
+ * Amber text on a white card is darkened (#7a5200) so the number and the date stay readable.
+ */
+const TONE: Record<FollowTone, { tile: string; chip: string; text: string }> = {
   bad: {
-    word: "bg-[#fef2f2] text-[#b91c1c] dark:bg-[#3a1513] dark:text-[#fca5a0]",
-    num: "text-[#b91c1c] dark:text-[#fca5a0]",
-    wash: "from-[#fef2f2] dark:from-[#3a1513]/60",
+    tile: "bg-destructive text-destructive-foreground",
+    chip: "bg-destructive text-destructive-foreground",
+    text: "text-destructive",
   },
   warn: {
-    word: "bg-[#fffbeb] text-[#a9500a] dark:bg-[#3a2a10] dark:text-[#f6b45c]",
-    num: "text-[#0d47a1] dark:text-[#bbdefb]",
-    wash: "from-[#eef6fd] dark:from-[#0b1626]",
+    tile: "bg-[#ffb900] text-[#3a2a00]",
+    chip: "bg-[#ffb900] text-[#3a2a00]",
+    text: "text-[#7a5200] dark:text-[#ffb900]",
   },
   info: {
-    word: "bg-[#eff6ff] text-[#1d4ed8] dark:bg-[#13243a] dark:text-[#9cc3f2]",
-    num: "text-[#0d47a1] dark:text-[#bbdefb]",
-    wash: "from-[#eef6fd] dark:from-[#0b1626]",
+    tile: "bg-[#1565c0] text-white",
+    chip: "bg-[#1565c0] text-white",
+    text: "text-[#1565c0] dark:text-[#64b5f6]",
   },
-  ok: { word: "bg-[#e4f6ea] text-[#166534] dark:bg-[#12301e] dark:text-[#7ee2a3]", num: "", wash: "" },
+  ok: {
+    tile: "bg-success text-success-foreground",
+    chip: "bg-success text-success-foreground",
+    text: "text-success",
+  },
 };
 
 /** Order the cards sit in (lower first), so the most urgent leads whatever loads first. */
@@ -37,25 +45,50 @@ export type FollowOrder = number;
 type IconType = ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" }>;
 
 /**
- * The board the cards sit on: they wrap. Cards with nothing today are not drawn (the ticker covers them).
- * `items-start`, not `stretch`: opening one card's list must not stretch its neighbours to the same height
- * (owner, 14 Nov 2026: pressing one card opened all three).
+ * One person (or one item) on a card. A plain string is just a name. An object can carry the photo address
+ * (`avatarUrl`) and `gender` for the picture, a second line (`sub`: the department or the reason) and a bold
+ * coloured `when` label on the right (a date, "อีก 2 วัน", "วันนี้"). `key` tells two items of the same person apart.
  */
-export const FOLLOW_BOARD_CLASS = "flex flex-wrap items-start gap-3.5";
-
-const CARD =
-  "relative flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 overflow-hidden rounded-lg border border-border bg-card p-4  transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5  motion-reduce:transition-none motion-reduce:hover:translate-y-0 ";
+export type FollowPerson =
+  | string
+  | { id?: string; key?: string; name: string; avatarUrl?: string | null; gender?: string | null; sub?: string; when?: string };
 
 /**
- * One card on the dashboard's "ต้องตามวันนี้" board (owner-approved mock, 14 Nov
- * 2026): the icon, title and a big number up top, the status word, the first
- * names, the full list behind "ดูรายชื่อทั้งหมด" (a native `<details>`, works
- * without JavaScript) and the page to act on as a 44px button. A card with
- * nothing to follow is not drawn; the news ticker lists it as "ไม่มีวันนี้".
- * Server- and client-safe (no hooks).
+ * The board the cards sit on: three equal-height cards in a row on a wide screen, two on a tablet, stacked on a
+ * phone. `items-stretch` so the footer buttons line up at the bottom of the row.
+ */
+export const FOLLOW_BOARD_CLASS = "grid grid-cols-1 items-stretch gap-4 min-[860px]:grid-cols-2 xl:grid-cols-3";
+
+/** Flat card: thin border, 8px radius, no shadow, no hover lift. */
+const CARD = "relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card";
+
+/** Full-width 44px button used at the foot of every card. */
+const BTN =
+  "flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border px-4 text-[14px] leading-[1.5] font-semibold transition-colors";
+const BTN_PRIMARY = "border-primary bg-primary text-primary-foreground hover:brightness-110";
+const BTN_OUTLINE = "border-primary bg-card text-[#0d47a1] hover:bg-accent dark:text-primary";
+
+/** The 40px solid square that holds the card's icon. */
+function Tile({ icon: Icon, tone }: { icon: IconType; tone: FollowTone }) {
+  return (
+    <span aria-hidden="true" className={cn("flex size-10 shrink-0 items-center justify-center rounded-lg", TONE[tone].tile)}>
+      <Icon className="size-[22px]" aria-hidden="true" />
+    </span>
+  );
+}
+
+/**
+ * One card on the "ต้องตามวันนี้" board (owner-approved mock, 26 Nov 2026): a solid icon tile, title and
+ * one-line subtitle with the count (36px, unit under it) at the right, a solid status chip, EVERY person as a
+ * row (picture, name, department or reason, bold when-label) and one full-width button at the bottom. A card
+ * with nothing to follow is not drawn; the news ticker lists it as "ไม่มีวันนี้". Server- and client-safe (no hooks).
+ *
+ * The footer is the page to act on (`link`). A card with no page of its own (`link` left out) turns `children`
+ * into the footer button instead (it opens the full detail in place, native `<details>`, works without JavaScript).
+ * When a card has both, `children` stays reachable through a quiet "ดูรายละเอียดเพิ่มเติม" row above the button.
  */
 export function FollowRow({
-  icon: Icon,
+  icon,
   title,
   sub,
   count,
@@ -68,6 +101,7 @@ export function FollowRow({
   display,
   people = [],
   open = false,
+  detailsLabel = "ดูรายละเอียด",
 }: {
   icon: IconType;
   title: string;
@@ -79,32 +113,44 @@ export function FollowRow({
   /** Status word when count > 0 (e.g. "รอแก้เวลา"); zero shows "ไม่มีวันนี้". */
   tag: string;
   order: FollowOrder;
-  /** The full list: names, groups, buttons. */
+  /** The full detail: groups, extra buttons, notes. */
   children?: ReactNode;
   link?: { href: string; label: string };
   /** Number to show instead of `count` (e.g. "46.5"); the count still decides the tone. */
   display?: string;
-  /** Names behind the count; the first three are shown on the card. An entry can carry the photo address (`avatarUrl`) to show the photo instead of the initials. */
-  people?: (string | { id?: string; name: string; avatarUrl?: string | null; gender?: string | null })[];
-  /** Show `children` right on the card instead of behind "ดูรายละเอียด" (short lists). */
+  /** Everyone behind the count, one row each (not cut off). See {@link FollowPerson}. */
+  people?: FollowPerson[];
+  /** Show `children` right on the card instead of behind a button (short lists). */
   open?: boolean;
+  /** Label of the footer button when the card has no `link` and opens `children` instead. */
+  detailsLabel?: string;
 }) {
   if (count <= 0) {
     // Not drawn: the news ticker on the hero reads this and says "ไม่มีวันนี้: …" once for all of them.
     return <span hidden data-follow-clear={title} />;
   }
 
-  // One entry per name (the first photo wins); a plain string has no photo and no gender (the neutral character is drawn).
-  const faces = new Map<string, { photo: string | null; gender: string | null; seed: string }>();
+  // One row per item: two items of the same person (two days) stay apart when they carry a reason or date;
+  // plain names are merged (the first photo wins).
+  const rowMap = new Map<string, { name: string; photo: string | null; gender: string | null; seed: string; sub?: string; when?: string }>();
   for (const p of people) {
-    const name = typeof p === "string" ? p : p.name;
-    const photo = typeof p === "string" ? null : (p.avatarUrl ?? null);
-    const gender = typeof p === "string" ? null : (p.gender ?? null);
-    const seed = typeof p === "string" ? name : (p.id ?? name);
-    const have = faces.get(name);
-    if (!have || (!have.photo && photo)) faces.set(name, { photo, gender, seed });
+    const o = typeof p === "string" ? { name: p } : p;
+    const photo = ("avatarUrl" in o ? o.avatarUrl : null) ?? null;
+    const gender = ("gender" in o ? o.gender : null) ?? null;
+    const seed = ("id" in o ? o.id : undefined) ?? o.name;
+    const sub = "sub" in o ? o.sub : undefined;
+    const when = "when" in o ? o.when : undefined;
+    const key = ("key" in o ? o.key : undefined) ?? `${o.name}|${sub ?? ""}|${when ?? ""}`;
+    const have = rowMap.get(key);
+    if (!have) rowMap.set(key, { name: o.name, photo, gender, seed, sub, when });
+    else if (!have.photo && photo) have.photo = photo;
   }
-  const names = [...faces.keys()];
+  const rows = [...rowMap.values()];
+  const names = [...new Set(rows.map((r) => r.name))];
+  const t = TONE[tone];
+  const primary = tone !== "info";
+  const btn = cn(BTN, primary ? BTN_PRIMARY : BTN_OUTLINE);
+
   return (
     <article
       data-follow-card
@@ -116,57 +162,72 @@ export function FollowRow({
       data-follow-names={names.slice(0, 2).join(", ")}
       data-follow-href={link?.href ?? "#follow-up"}
       style={{ order }}
-      aria-label={`${title} ${display ?? count} ${unit}`} className={CARD}>
-      <div className="relative flex items-start gap-3">
-        <GvIconTile icon={Icon} status={tone} />
-        <span className="min-w-0 flex-1 pt-0.5">
-          <span className="block text-[15.5px] leading-snug font-semibold text-foreground">{title}</span>
-          {sub && <span className="block text-[12.5px] leading-snug text-muted-foreground">{sub}</span>}
+      aria-label={`${title} ${display ?? count} ${unit}`}
+      className={CARD}
+    >
+      <div className="flex items-start gap-3 px-4 pt-4 pb-2.5">
+        <Tile icon={icon} tone={tone} />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] leading-[1.4] font-bold text-foreground">{title}</span>
+          {sub && <span className="block text-[13px] leading-[1.5] text-muted-foreground">{sub}</span>}
         </span>
-        <span className="shrink-0 text-right leading-snug">
-          <span className={"block text-[34px] font-bold text-foreground tabular-nums"}>{display ?? count}</span>
-          <span className="mt-1 block text-[12px] leading-snug text-muted-foreground">{unit}</span>
+        <span className="shrink-0 text-right">
+          <span className={cn("block text-[36px] leading-[1.1] font-bold tabular-nums", t.text)}>{display ?? count}</span>
+          <span className="block text-[13px] leading-[1.5] text-muted-foreground">{unit}</span>
         </span>
       </div>
       {tag && (
-        <span className={cn("relative inline-flex self-start rounded-sm px-2.5 py-0.5 text-[12.5px] font-semibold", TONE[tone].word)}>
-          {tone === "info" ? "i" : "!"} {tag}
+        <span className={cn("mx-4 mb-2 inline-flex items-center gap-1.5 self-start rounded-md px-2.5 py-0.5 text-[13px] leading-[1.5] font-bold", t.chip)}>
+          <span aria-hidden="true">{tone === "info" ? "i" : "!"}</span>
+          {tag}
         </span>
       )}
-      {names.length > 0 && (
-        <ul className="relative flex flex-col">
-          {names.slice(0, 3).map((n) => (
-            <li key={n} className="flex min-h-9 items-center gap-2 border-t border-dashed border-border text-[13.5px] first:border-t-0">
-              <PersonAvatar name={n} gender={faces.get(n)!.gender} seed={faces.get(n)!.seed} src={faces.get(n)!.photo} className="size-7 border border-border text-xs font-bold" />
-              <span className="min-w-0 font-medium break-words">{n}</span>
+      {rows.length > 0 && (
+        <ul className="px-4">
+          {rows.map((r, i) => (
+            <li key={i} className="flex items-center gap-2.5 border-t border-border py-2.5">
+              <PersonAvatar name={r.name} gender={r.gender} seed={r.seed} src={r.photo} className="size-[34px] border border-border text-sm font-bold" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] leading-[1.5] font-semibold break-words text-foreground">{r.name}</span>
+                {r.sub && <span className="block text-[13px] leading-[1.5] break-words text-muted-foreground">{r.sub}</span>}
+              </span>
+              {r.when && <span className={cn("shrink-0 text-right text-[13px] leading-[1.5] font-bold tabular-nums", t.text)}>{r.when}</span>}
             </li>
           ))}
-          {names.length > 3 && <li className="pt-1 text-[12.5px] text-muted-foreground">และอีก {names.length - 3} คน</li>}
         </ul>
       )}
-      {children && open && <div className="relative">{children}</div>}
-      {children && !open && (
-        <details className="group relative">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1 text-[13.5px] font-semibold text-primary [&::-webkit-details-marker]:hidden">
-            ดูรายละเอียด
-            <ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden="true" />
-          </summary>
-          <div className="space-y-2 pt-1">{children}</div>
-        </details>
-      )}
-      {link && (
-        <Link
-          href={link.href}
-          className={cn(
-            "relative mt-auto inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border px-3 text-[14px] font-semibold transition-colors",
-            tone === "bad"
-              ? "border-transparent bg-[#0d47a1] text-white  hover:brightness-110"
-              : "border-border bg-[#eef6fd] text-[#0d47a1] hover:bg-[#e3f2fd] dark:bg-[#0b1626] dark:text-[#bbdefb]",
+      {children && open && <div className="px-4 pt-1">{children}</div>}
+
+      {/* Footer: one 44px button, pinned to the bottom so the buttons of a row line up. */}
+      {link ? (
+        <div className="mt-auto flex flex-col px-4 pt-3 pb-4">
+          {children && !open && (
+            <details className="group mb-1">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1 text-[14px] leading-[1.5] font-semibold text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+                ดูรายละเอียดเพิ่มเติม
+                <ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden="true" />
+              </summary>
+              <div className="space-y-2 pt-1 pb-2">{children}</div>
+            </details>
           )}
-        >
-          {link.label} <ChevronRight className="size-4" aria-hidden="true" />
-        </Link>
+          <Link href={link.href} className={btn}>
+            {link.label}
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
+      ) : (
+        children &&
+        !open && (
+          <details className="group mt-auto px-4 pt-3 pb-4">
+            <summary className={cn(btn, "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
+              {detailsLabel}
+              <ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden="true" />
+            </summary>
+            <div className="space-y-2 pt-3">{children}</div>
+          </details>
+        )
       )}
+      {!link && !(children && !open) && <div className="pb-2" />}
     </article>
   );
 }
@@ -175,27 +236,47 @@ export function FollowRow({
 export function FollowRowFailed({ icon, title, what, order }: { icon: IconType; title: string; what: string; order: FollowOrder }) {
   const Icon = icon;
   return (
-    <div style={{ order }} className={cn(CARD, "hover:translate-y-0")}>
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <Icon className="size-5" aria-hidden="true" />
+    <div style={{ order }} className={cn(CARD, "p-4")}>
+      <div className="flex items-start gap-3">
+        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <Icon className="size-[22px]" aria-hidden="true" />
         </span>
         <span className="min-w-0">
-          <span className="block text-[15px] leading-snug font-semibold text-foreground">{title}</span>
-          <span className="block text-[12.5px] text-muted-foreground">โหลด{what}ไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง</span>
+          <span className="block text-[16px] leading-[1.4] font-bold text-foreground">{title}</span>
+          <span className="block text-[13px] leading-[1.5] text-muted-foreground">โหลด{what}ไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง</span>
         </span>
       </div>
     </div>
   );
 }
 
-/** Placeholder card while a slow card loads. */
+/** Placeholder card while a slow card loads: same shape as a real card (header, chip, three rows, button). */
 export function FollowRowLoading({ order }: { order: FollowOrder }) {
+  const bar = "animate-pulse rounded bg-muted motion-reduce:animate-none";
   return (
-    <div style={{ order }} className={cn(CARD, "min-h-[150px] hover:translate-y-0")}>
-      <span className="size-11 animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />
-      <span className="h-4 w-40 animate-pulse rounded bg-muted motion-reduce:animate-none" />
-      <span className="h-4 w-28 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+    <div style={{ order }} aria-hidden="true" className={cn(CARD, "min-h-[260px]")}>
+      <div className="flex items-start gap-3 px-4 pt-4 pb-2.5">
+        <span className={cn("size-10 shrink-0 rounded-lg", bar)} />
+        <span className="flex flex-1 flex-col gap-2 pt-1">
+          <span className={cn("h-4 w-32", bar)} />
+          <span className={cn("h-3.5 w-44", bar)} />
+        </span>
+        <span className={cn("h-9 w-10", bar)} />
+      </div>
+      <ul className="px-4">
+        {[0, 1, 2].map((i) => (
+          <li key={i} className="flex items-center gap-2.5 border-t border-border py-2.5">
+            <span className={cn("size-[34px] shrink-0 rounded-full", bar)} />
+            <span className="flex flex-1 flex-col gap-1.5">
+              <span className={cn("h-3.5 w-28", bar)} />
+              <span className={cn("h-3 w-20", bar)} />
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-auto px-4 pt-3 pb-4">
+        <span className={cn("block h-11 w-full rounded-lg", bar)} />
+      </div>
     </div>
   );
 }
