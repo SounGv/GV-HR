@@ -375,6 +375,7 @@ function ExecSheet({ view, onClose, data, onOpenPerson, onTeam, lists }: { view:
           <PairedColumns
             rows={teamPeople.map((p) => ({ name: p.name.replace(/\s*\(.*\)$/, "").split(" ")[0] ?? p.name, a: p.prev, b: p.total, onPick: () => onOpenPerson(p.participantId) }))}
             label={`เทียบรายคนของ ${view.department}`}
+            legend={["รอบก่อน", "รอบนี้"]}
           />
         </ChartBox>
         <p className="mb-2 text-xs text-muted-foreground">แท่งเทา = รอบก่อน · แท่งสี = รอบนี้ · แกนเริ่มที่ 50 · กดแท่งเพื่อดูรายละเอียดรายคน</p>

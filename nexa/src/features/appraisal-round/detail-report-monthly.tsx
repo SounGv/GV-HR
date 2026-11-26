@@ -57,7 +57,7 @@ export function MonthlyCharts({ data }: { data: DetailOverview }) {
         </div>
         {mode === "cols" ? (
           <ChartBox min={560}>
-            <PairedColumns rows={rows} label={`เทียบ ${labels[a]} กับ ${labels[b]} แต่ละทีม`} />
+            <PairedColumns rows={rows} label={`เทียบ ${labels[a]} กับ ${labels[b]} แต่ละทีม`} legend={[labels[a] ?? "รอบแรก", labels[b] ?? "รอบหลัง"]} />
           </ChartBox>
         ) : (
           <ul className="divide-y divide-border">

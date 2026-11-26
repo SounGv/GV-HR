@@ -21,6 +21,9 @@ const MUTED = "var(--muted-foreground)";
 const GRID = "var(--chart-grid)";
 const BLUE = "var(--chart-1)";
 
+/** A chart is never drawn wider than this many times its own width: on a wide screen it stays readable instead of blowing up the axis text. */
+const MAX_GROW = 1.25;
+
 const hit = "cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]";
 function press(fn?: () => void) {
   return fn
@@ -87,7 +90,7 @@ export function ColumnChart({
   const slot = (W - L - R) / Math.max(n, 1);
   const bw = Math.min(54, slot * 0.6);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W * MAX_GROW }} role="img" aria-label={label}>
       {ticks(lo, 100).map((t) => (
         <g key={t}>
           <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke={GRID} />
@@ -167,7 +170,7 @@ export function SmoothLine({ values, labels, onPick, label }: { values: (number 
   const bubbleText = `${labels[lastP.i]} ${num(lastP.v)}${delta === null || delta === 0 ? "" : delta < 0 ? ` ▼${num(-delta)}` : ` ▲${num(delta)}`}`;
   const gid = `area-${labels.join("").length}-${n}`;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W * MAX_GROW }} role="img" aria-label={label}>
       <defs>
         <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0" stopColor={BLUE} stopOpacity=".22" />
@@ -224,7 +227,7 @@ export interface PairRow {
 }
 
 /** Two columns per group (earlier in grey, later coloured by band) with the change under the name; the axis starts at 50 so differences show. */
-export function PairedColumns({ rows, label }: { rows: PairRow[]; label: string }) {
+export function PairedColumns({ rows, label, legend }: { rows: PairRow[]; label: string; legend?: [earlier: string, later: string] }) {
   const W = Math.max(560, 80 * rows.length + 60);
   const H = 300;
   const L = 36;
@@ -236,7 +239,20 @@ export function PairedColumns({ rows, label }: { rows: PairRow[]; label: string 
   const bw = Math.min(30, slot * 0.34);
   const { y } = scaleOf(2, W, H, L, R, T, B, lo, 100);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={label}>
+    <div>
+      {legend && (
+        <p className="mb-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-3 w-3 rounded-sm" style={{ background: "var(--chart-muted-bar)" }} aria-hidden="true" />
+            แท่งเทา = {legend[0]}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-3 w-3 rounded-sm" style={{ background: "var(--status-normal-dot)" }} aria-hidden="true" />
+            แท่งสี = {legend[1]}
+          </span>
+        </p>
+      )}
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W * MAX_GROW }} role="img" aria-label={label}>
       {ticks(lo, 100).map((t) => (
         <g key={t}>
           <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke={GRID} />
@@ -275,6 +291,7 @@ export function PairedColumns({ rows, label }: { rows: PairRow[]; label: string 
         );
       })}
     </svg>
+    </div>
   );
 }
 
