@@ -42,6 +42,7 @@ import {
 import { PageActions } from "@/components/layout/page-chrome";
 import { RowFace } from "./row-face";
 import { MultiSelectField, type MultiSelectOption } from "@/components/shared/multi-select-field";
+import { EmployeeSearch } from "./employee-search";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
@@ -766,6 +767,15 @@ export function ReportView() {
           <div className="flex items-center gap-2 md:hidden">{reportButtons}</div>
           <PageActions>{reportButtons}</PageActions>
         </div>
+      </div>
+
+      <div className="print:hidden">
+        <EmployeeSearch
+          options={employeeOptions}
+          selected={employeeIds}
+          onChange={setEmployeeIds}
+          hasOtherFilters={departmentIds.length + employmentTypes.length + branchIds.length + costCenterIds.length > 0}
+        />
       </div>
 
       <div id="report-filters" hidden={!filtersOpen} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-3 print:hidden">
