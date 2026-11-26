@@ -34,22 +34,22 @@ export function HelpView() {
               <section.icon className="size-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-xl font-bold text-foreground sm:text-2xl">
+              <h2 className="text-xl font-bold leading-[1.4] text-foreground sm:text-2xl">
                 {i + 1}. {section.title}
               </h2>
-              {section.intro && <p className="mt-1 text-sm text-muted-foreground">{section.intro}</p>}
+              {section.intro && <p className="mt-1 text-base leading-[1.65] sm:text-sm text-muted-foreground">{section.intro}</p>}
             </div>
           </div>
 
           <div className="space-y-5">
             {section.procedures?.map((proc) => (
               <div key={proc.title} className="rounded-lg border border-border bg-muted/30 p-4">
-                <h3 className="flex items-center gap-2 text-[15px] font-bold text-foreground">
+                <h3 className="flex items-center gap-2 text-lg font-bold leading-[1.4] text-foreground sm:text-xl">
                   <span className="h-4 w-1 shrink-0 rounded-full bg-primary" aria-hidden="true" />
                   {proc.title}
                 </h3>
                 {proc.where && (
-                  <p className="mt-1 mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <p className="mt-1.5 mb-3 flex items-center gap-1.5 text-sm leading-[1.65] text-muted-foreground">
                     <MapPin className="size-3.5" aria-hidden="true" /> {proc.where}
                   </p>
                 )}
@@ -63,9 +63,9 @@ export function HelpView() {
 
             {section.tables?.map((table) => (
               <div key={table.caption} className="space-y-2">
-                <p className="text-sm font-bold text-foreground">{table.caption}</p>
+                <p className="text-base leading-[1.65] sm:text-sm font-bold text-foreground">{table.caption}</p>
                 <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full min-w-[480px] text-left text-[15px]">
+                  <table className="w-full min-w-[480px] text-left text-base leading-[1.65] sm:text-sm">
                     <thead className="bg-primary text-primary-foreground">
                       <tr>
                         {table.headers.map((h) => (
@@ -94,7 +94,7 @@ export function HelpView() {
             {section.tips && section.tips.length > 0 && (
               <div className="space-y-2.5 rounded-lg border border-warning/30 bg-warning/10 p-4">
                 {section.tips.map((tip, ti) => (
-                  <p key={ti} className="flex gap-2.5 text-sm font-medium text-foreground">
+                  <p key={ti} className="flex gap-2.5 text-base leading-[1.65] sm:text-sm font-medium text-foreground">
                     <Lightbulb className="size-4 shrink-0 text-warning" aria-hidden="true" />
                     <span>{tip}</span>
                   </p>
@@ -110,12 +110,12 @@ export function HelpView() {
 
 function Step({ n, step }: { n: number; step: GuideStep }) {
   return (
-    <li className="flex gap-3 text-sm print:break-inside-avoid">
-      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground">{n}</span>
+    <li className="flex gap-3 text-base leading-[1.65] sm:text-sm print:break-inside-avoid">
+      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{n}</span>
       <div className="min-w-0 flex-1 space-y-2 pt-0.5">
         <p className="font-medium text-foreground">{step.text}</p>
         {step.sub && (
-          <ul className="list-disc space-y-1 pl-4 text-[13px] text-muted-foreground marker:text-primary/50">
+          <ul className="list-disc space-y-1 pl-4 text-sm leading-[1.65] text-muted-foreground marker:text-primary/50">
             {step.sub.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
@@ -123,13 +123,18 @@ function Step({ n, step }: { n: number; step: GuideStep }) {
         )}
         {step.image && (
           <figure className="overflow-hidden rounded-lg border border-border bg-card">
-            {/* eslint-disable-next-line @next/next/no-img-element -- a fixed screenshot from public/help; no resizing needed */}
-            <img src={step.image.src} alt={step.image.alt} loading="lazy" className="h-auto w-full" />
+            <a href={step.image.src} target="_blank" rel="noopener" aria-label={`เปิดรูปเต็มขนาด: ${step.image.alt}`} className="block">
+              {/* eslint-disable-next-line @next/next/no-img-element -- a fixed screenshot from public/help; no resizing needed */}
+              <img src={step.image.src} alt={step.image.alt} loading="lazy" className="h-auto w-full" />
+            </a>
             <figcaption className="border-t border-border bg-muted/40 px-3 py-3">
-              <p className="mb-2 text-xs font-bold text-muted-foreground">ตัวเลขในรูปหมายถึง</p>
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <p className="text-sm font-bold text-foreground">ตัวเลขในรูปหมายถึง</p>
+                <p className="text-sm text-muted-foreground print:hidden">แตะรูปเพื่อขยาย</p>
+              </div>
               <ol className="space-y-2">
                 {step.image.legend.map(([label, text], i) => (
-                  <li key={i} className="flex gap-2.5 text-sm">
+                  <li key={i} className="flex gap-2.5 text-base leading-[1.65] sm:text-sm">
                     <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground" aria-hidden="true">
                       {i + 1}
                     </span>
