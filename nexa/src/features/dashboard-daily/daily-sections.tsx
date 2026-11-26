@@ -143,7 +143,7 @@ export function MissedScanOutCard({ data }: { data: MissedScans }) {
       tag="รอแก้เวลา"
       unit="รายการ"
       order={4}
-      link={{ href: "/attendance/corrections", label: "ไปหน้าแก้ไขเวลา" }}
+      link={{ href: "/attendance/corrections?tab=missed", label: "ดูคนลืมสแกน" }}
     >
       {all.length === 0 ? (
         <Empty>ทุกคนสแกนครบ</Empty>

@@ -20,6 +20,8 @@ import { LeaveStatusBadge } from "@/features/leave/labels";
 
 import { useAttendanceCorrections, useCancelAttendanceCorrection, useDecideAttendanceCorrection } from "./hooks";
 import type { AttendanceCorrectionRequest } from "./types";
+import type { MissedScans } from "@/features/dashboard-daily/service";
+import { MissedScansTab } from "./missed-scans-tab";
 
 function fmtTime(iso: string | null) {
   if (!iso) return null;
@@ -35,24 +37,42 @@ function line(r: AttendanceCorrectionRequest) {
   return parts.join(" · ");
 }
 
-export function CorrectionView() {
-  const { canAny } = useAuth();
+/**
+ * Three tabs: my own requests (only for an account that is an employee), requests waiting for me to decide, and the
+ * scans that look forgotten (the list behind the home board's "ลืมสแกน" card). `tab` comes from the link (?tab=missed).
+ */
+export function CorrectionView({ tab, missed, lateHours }: { tab?: string; missed: MissedScans | null; lateHours: number }) {
+  const { user, canAny } = useAuth();
   const canApprove = canAny(["attendance:approve", "attendance:manage"]);
+  const hasEmployee = !!user.employee;
+  const wanted = tab === "missed" || tab === "approvals" || tab === "me" ? tab : undefined;
+  const available = (t: string) => (t === "me" ? hasEmployee : canApprove);
+  // An account with no employee record (admin) has nothing under "my requests", so it opens on the approvals instead.
+  const first = wanted && available(wanted) ? wanted : hasEmployee ? "me" : "approvals";
 
   return (
-    <Tabs defaultValue="me" className="space-y-4">
+    <Tabs defaultValue={first} className="space-y-4">
       <TabsList>
-        <TabsTrigger value="me">คำขอของฉัน</TabsTrigger>
+        {hasEmployee && <TabsTrigger value="me">คำขอของฉัน</TabsTrigger>}
         {canApprove && <TabsTrigger value="approvals">รออนุมัติ</TabsTrigger>}
+        {canApprove && <TabsTrigger value="missed">ลืมสแกน</TabsTrigger>}
       </TabsList>
 
-      <TabsContent value="me">
-        <MyRequests />
-      </TabsContent>
+      {hasEmployee && (
+        <TabsContent value="me">
+          <MyRequests />
+        </TabsContent>
+      )}
 
       {canApprove && (
         <TabsContent value="approvals">
           <Approvals />
+        </TabsContent>
+      )}
+
+      {canApprove && (
+        <TabsContent value="missed">
+          <MissedScansTab data={missed} lateHours={lateHours} />
         </TabsContent>
       )}
     </Tabs>
