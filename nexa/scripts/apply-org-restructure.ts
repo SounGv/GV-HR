@@ -76,7 +76,12 @@ async function main() {
       positionTitle: p.position?.title ?? null,
     }));
 
-    const plan = planOrgRestructure(people, depts);
+    const positions = await prisma.position.findMany({
+      where: { companyId, deletedAt: null },
+      select: { id: true, title: true, departmentId: true },
+    });
+
+    const plan = planOrgRestructure(people, depts, positions);
 
     console.log("— Department changes —");
     if (plan.deptChanges.length === 0) console.log("  (none)");
@@ -89,6 +94,10 @@ async function main() {
           `  DETACH ${c.id}${c.name ? ` rename→ ${c.name}` : ""}  — ${c.reason}`,
         );
     }
+
+    console.log("\n— Position moves —");
+    if (plan.positionMoves.length === 0) console.log("  (none)");
+    for (const pm of plan.positionMoves) console.log(`  ${pm.title} → dept ${pm.departmentId}  — ${pm.reason}`);
 
     console.log("\n— Person moves (department / manager) —");
     if (plan.personMoves.length === 0) console.log("  (none)");
@@ -265,6 +274,13 @@ async function main() {
           }
         }
 
+        for (const pm of plan.positionMoves) {
+          await tx.position.update({
+            where: { id: pm.id },
+            data: { departmentId: pm.departmentId, updatedById: actor?.id },
+          });
+        }
+
         for (const d of deletions) {
           const left = await tx.department.findUnique({
             where: { id: d.id },
@@ -278,7 +294,8 @@ async function main() {
             },
           });
           if (left && (left._count.children > 0 || left._count.employees > 0)) {
-            throw new Error(`${d.name} still has employees or sub-departments — not deleting`);
+            console.warn(`  skip delete: ${d.name} still has employees or sub-departments`);
+            continue;
           }
           await tx.department.update({
             where: { id: d.id },
