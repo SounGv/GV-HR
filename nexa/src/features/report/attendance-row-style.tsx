@@ -107,14 +107,13 @@ const MAIN_KEYS = [
   "otHours",
   "otStatus",
   "status",
-  "place",
   "note",
 ] as const;
 
 const EXTRA_KEYS = ["employmentType", "breakMinutes", "otApprover", "otReason", "workMode", "editor"] as const;
 
 /** Who and which shift are clear from the name, so they come after the scan details (owner, 2026-11-26); the two photos go last of all, as in the export. */
-const BACK_KEYS = ["department", "shift"] as const;
+const BACK_KEYS = ["department", "shift", "place"] as const;
 const PHOTO_KEYS = ["clockInPhoto", "clockOutPhoto"] as const;
 
 const dash = (v: string | number | undefined) => v == null || v === "" || v === "-";
