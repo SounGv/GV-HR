@@ -94,6 +94,17 @@ function fmtNum(v: string | number) {
   return typeof v === "number" ? v.toLocaleString("th-TH") : v;
 }
 
+/**
+ * On-screen tables only: drop a column whose cell is empty ("-", blank) in every row, so a column nobody fills (break minutes,
+ * a grade band that was never set) does not take space. A zero is a real value and keeps its column. The exports are not
+ * filtered: they keep every column the service sent, in the order it sent them.
+ */
+function withoutEmptyColumns<C extends DisplayColumn>(columns: C[], rows: ReportResult["rows"]): C[] {
+  if (rows.length === 0) return columns;
+  const isEmpty = (v: unknown) => v === undefined || v === null || v === "" || v === "-";
+  return columns.filter((c) => rows.some((r) => !isEmpty(c.value ? c.value(r) : r[c.key])));
+}
+
 /** Photo cells hold a full base64 data URL — useless (and huge) as raw text
  * in a CSV/PDF export or an AI prompt, so those paths drop them. The Excel
  * export is the exception: it embeds them as real thumbnail images instead
@@ -292,11 +303,7 @@ function ReportSection({
   // toggle). Every other report shows its columns as the service sent them.
   const isDaily = type === "attendance_daily";
   const hasChart = !!result && ((result.summary?.length ?? 0) > 0 || (result.secondarySummary?.length ?? 0) > 0);
-  const displayColumns: DisplayColumn[] = result
-    ? isDaily
-      ? buildDailyColumns(result.columns, showExtraColumns)
-      : result.columns
-    : [];
+  const displayColumns: DisplayColumn[] = result ? withoutEmptyColumns(isDaily ? buildDailyColumns(result.columns, showExtraColumns) : result.columns, result.rows) : [];
 
   return (
     <section className="space-y-3">
