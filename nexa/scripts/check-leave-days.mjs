@@ -1,7 +1,16 @@
 // Checks how leave days are counted (Monday to Saturday; Sundays skipped) with made-up dates only.
 // Run: node --experimental-strip-types scripts/check-leave-days.mjs
 import assert from "node:assert/strict";
-import { computeLeaveDays, isSunday } from "../src/features/leave/days.ts";
+import {
+  MEDICAL_CERT_MESSAGE,
+  MEDICAL_CERT_NTH_MESSAGE,
+  SICK_USES_WITHOUT_CERT,
+  computeLeaveDays,
+  countSickUses,
+  isSunday,
+  medicalCertMessage,
+  needsMedicalCertificate,
+} from "../src/features/leave/days.ts";
 
 let n = 0;
 const check = (name, fn) => {
@@ -49,6 +58,54 @@ check("a long leave is counted without drifting (30 calendar days = 26 working d
 });
 check("an end date before the start counts 0", () => {
   assert.equal(computeLeaveDays(day(NEXT_MON), day(MON), false), 0);
+});
+
+// Sick leave and the medical certificate: the 3rd use of a year onward, or more than 2 days in one request.
+const sick = (status, startDate, type = "SICK") => ({ type, status, startDate });
+check("the first two uses of sick leave need no certificate, the third does", () => {
+  assert.equal(SICK_USES_WITHOUT_CERT, 2);
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 1, 0), false);
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 1, 1), false);
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 1, 2), true);
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 1, 5), true);
+});
+check("the third use needs it even for hourly or half-day sick leave", () => {
+  assert.equal(needsMedicalCertificate("SICK", "HOUR", null, 2), true);
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 0.5, 2), true);
+  assert.equal(needsMedicalCertificate("SICK", "HOUR", null, 1), false);
+});
+check("the old rule still asks for it: more than 2 days in one request, from the very first use", () => {
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 3, 0), true);
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 2, 0), false);
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 3), true);
+});
+check("other leave types never need a certificate", () => {
+  for (const t of ["ANNUAL", "PERSONAL", "UNPAID", "OTHER"]) assert.equal(needsMedicalCertificate(t, "DAY", 9, 9), false);
+});
+check("a use is a waiting or approved sick request of that year; rejected, cancelled, other types and other years do not count", () => {
+  const list = [
+    sick("APPROVED", "2030-01-10"),
+    sick("PENDING", "2030-02-10"),
+    sick("REJECTED", "2030-03-10"),
+    sick("CANCELLED", "2030-04-10"),
+    sick("APPROVED", "2030-05-10", "ANNUAL"),
+    sick("APPROVED", "2029-12-31"),
+    sick("APPROVED", day("2030-12-31")),
+  ];
+  assert.equal(countSickUses(list, 2030), 3);
+  assert.equal(countSickUses(list, 2029), 1);
+  assert.equal(countSickUses([], 2030), 0);
+});
+check("two uses so far means the next request is the third and needs the certificate", () => {
+  const uses = countSickUses([sick("APPROVED", "2030-01-10"), sick("PENDING", "2030-02-10")], 2030);
+  assert.equal(uses, 2);
+  assert.equal(needsMedicalCertificate("SICK", "DAY", 1, uses), true);
+});
+check("the message says the yearly count once it applies, else the length of the request", () => {
+  assert.equal(medicalCertMessage(0), MEDICAL_CERT_MESSAGE);
+  assert.equal(medicalCertMessage(1), MEDICAL_CERT_MESSAGE);
+  assert.equal(medicalCertMessage(2), MEDICAL_CERT_NTH_MESSAGE);
+  assert.ok(MEDICAL_CERT_NTH_MESSAGE.includes("ครั้งที่ 3"));
 });
 
 console.log(`\n${n} checks passed`);

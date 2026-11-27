@@ -32,9 +32,9 @@ import { ApiError } from "@/lib/api/client";
 import { MobileLeaveForm } from "@/components/mobile/mobile-leave-form";
 import { DesktopOnly } from "@/components/mobile/mobile-screen";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "./schema";
-import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday, needsMedicalCertificate, MEDICAL_CERT_MESSAGE } from "./days";
+import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday, needsMedicalCertificate, medicalCertMessage } from "./days";
 import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "./labels";
-import { useCreateLeave } from "./hooks";
+import { useCreateLeave, useSickUses } from "./hooks";
 import { BalanceCards } from "./balance-cards";
 
 const FORM_ID = "leave-form";
@@ -174,12 +174,15 @@ export function LeaveFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [durationValue, start]);
 
-  const certRequired = needsMedicalCertificate(leaveType, isHourly ? "HOUR" : "DAY", preview);
+  // Sick leave used so far this year (counted by the year the leave starts): the 3rd one onward needs a medical certificate.
+  const sickUses = useSickUses(start ? new Date(start).getUTCFullYear() : new Date().getFullYear());
+  const certRequired = needsMedicalCertificate(leaveType, isHourly ? "HOUR" : "DAY", preview, sickUses);
+  const certMessage = medicalCertMessage(sickUses);
 
   async function onSubmit(values: FormSchema) {
     if (certRequired && !values.attachmentUrl) {
-      form.setError("attachmentUrl", { message: MEDICAL_CERT_MESSAGE });
-      toast.error(MEDICAL_CERT_MESSAGE);
+      form.setError("attachmentUrl", { message: certMessage });
+      toast.error(certMessage);
       return;
     }
     try {
@@ -367,7 +370,7 @@ export function LeaveFormPage() {
               <FormItem>
                 <FormLabel>{certRequired ? "แนบใบรับรองแพทย์ *" : "แนบไฟล์ประกอบ (ถ้ามี)"}</FormLabel>
                 {certRequired && !field.value && (
-                  <p className="text-sm text-destructive">{MEDICAL_CERT_MESSAGE}</p>
+                  <p className="text-sm text-destructive">{certMessage}</p>
                 )}
                 <FormControl>
                   <FileAttachField value={field.value} onChange={field.onChange} label="แนบใบรับรองแพทย์" />

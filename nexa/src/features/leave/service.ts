@@ -11,7 +11,7 @@ import { notifyApprovalOwners } from "@/features/notification/approval-routing";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { canTakeHourly, computeLeaveDays, computeLeaveHours, deductsBalance, isSunday, PAID_LEAVE_TYPES, timeRangesOverlap, needsMedicalCertificate, MEDICAL_CERT_MESSAGE } from "./days";
+import { canTakeHourly, computeLeaveDays, computeLeaveHours, deductsBalance, isSunday, PAID_LEAVE_TYPES, timeRangesOverlap, needsMedicalCertificate, countSickUses, medicalCertMessage } from "./days";
 import { HALF_DAY_PERIOD_LABEL } from "./labels";
 import type { DecideInput, LeaveCreateInput, LeaveListQuery } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
@@ -174,8 +174,24 @@ export async function createLeave(
     throw BadRequest("วันที่เลือกเป็นวันอาทิตย์ ซึ่งไม่ใช่วันทำงาน (นับวันลาจันทร์–เสาร์) กรุณาเลือกวันอื่น");
   }
 
-  if (needsMedicalCertificate(input.type, input.unit, days) && !input.attachmentUrl) {
-    throw BadRequest(MEDICAL_CERT_MESSAGE);
+  // Sick leave: the 3rd use of the year onward (or more than 2 days in one request) needs a medical certificate attached.
+  let sickUses = 0;
+  if (input.type === "SICK") {
+    const year = input.startDate.getUTCFullYear();
+    const thisYear = await prisma.leaveRequest.findMany({
+      where: {
+        companyId,
+        employeeId,
+        type: "SICK",
+        deletedAt: null,
+        startDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
+      },
+      select: { type: true, status: true, startDate: true },
+    });
+    sickUses = countSickUses(thisYear, year);
+  }
+  if (needsMedicalCertificate(input.type, input.unit, days, sickUses) && !input.attachmentUrl) {
+    throw BadRequest(medicalCertMessage(sickUses));
   }
 
   if (isHourly && !canTakeHourly(input.type)) {

@@ -24,16 +24,42 @@ export function computeLeaveDays(start: Date, end: Date, halfDay: boolean): numb
 /** Sick leave longer than this many days in one request needs a medical certificate (owner, 14 Nov 2026). */
 export const MEDICAL_CERT_AFTER_DAYS = 2;
 
+/** The first this many sick-leave uses of a year need no medical certificate; the next one does (owner, 28 Nov 2026). */
+export const SICK_USES_WITHOUT_CERT = 2;
+
 /**
- * Whether this request has to carry a medical certificate before it can be sent:
- * sick leave of more than {@link MEDICAL_CERT_AFTER_DAYS} days in one request.
- * Hourly sick leave is always within one day, so it never needs one.
+ * How many times the person has used sick leave in `year`: requests that are waiting or approved (a rejected or cancelled
+ * request is not a use), counted per request whatever its length, by the year the leave starts. A waiting request counts so
+ * that sending several at once cannot get around the rule.
  */
-export function needsMedicalCertificate(type: string, unit: string | undefined, days: number | null): boolean {
-  return type === "SICK" && unit !== "HOUR" && days != null && days > MEDICAL_CERT_AFTER_DAYS;
+export function countSickUses(
+  requests: readonly { type: string; status: string; startDate: Date | string }[],
+  year: number,
+): number {
+  return requests.filter(
+    (r) => r.type === "SICK" && (r.status === "PENDING" || r.status === "APPROVED") && new Date(r.startDate).getUTCFullYear() === year,
+  ).length;
+}
+
+/**
+ * Whether this request has to carry a medical certificate before it can be sent. Either rule asks for one:
+ * the request is sick leave of more than {@link MEDICAL_CERT_AFTER_DAYS} days (hourly sick leave is within one day, so
+ * this part never applies to it), or it is the {@link SICK_USES_WITHOUT_CERT}+1 th use of sick leave this year or later.
+ * @param priorSickUses sick-leave uses already made this year (countSickUses), not counting this request
+ */
+export function needsMedicalCertificate(type: string, unit: string | undefined, days: number | null, priorSickUses = 0): boolean {
+  if (type !== "SICK") return false;
+  if (priorSickUses >= SICK_USES_WITHOUT_CERT) return true;
+  return unit !== "HOUR" && days != null && days > MEDICAL_CERT_AFTER_DAYS;
 }
 
 export const MEDICAL_CERT_MESSAGE = `ลาป่วยเกิน ${MEDICAL_CERT_AFTER_DAYS} วัน ต้องแนบใบรับรองแพทย์ก่อนส่งคำขอ`;
+export const MEDICAL_CERT_NTH_MESSAGE = `ลาป่วยครั้งที่ ${SICK_USES_WITHOUT_CERT + 1} ของปีนี้เป็นต้นไป ต้องแนบใบรับรองแพทย์ก่อนส่งคำขอ`;
+
+/** The message that says why the certificate is needed: the yearly count when it applies, else the length of the request. */
+export function medicalCertMessage(priorSickUses: number): string {
+  return priorSickUses >= SICK_USES_WITHOUT_CERT ? MEDICAL_CERT_NTH_MESSAGE : MEDICAL_CERT_MESSAGE;
+}
 
 /** Paid leave types deduct from the annual balance; UNPAID/OTHER do not. */
 export function deductsBalance(type: string): boolean {

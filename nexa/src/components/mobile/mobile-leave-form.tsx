@@ -13,10 +13,10 @@ import { DateInput } from "@/components/ui/date-input";
 import { FileAttachField } from "@/components/shared/file-attach-field";
 import { TimeSelect } from "@/components/shared/time-select";
 import { LEAVE_TYPES, LEAVE_UNITS, HALF_DAY_PERIODS } from "@/features/leave/schema";
-import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday, needsMedicalCertificate, MEDICAL_CERT_MESSAGE } from "@/features/leave/days";
+import { addHoursToTime, computeLeaveDays, computeLeaveHours, canTakeHourly, isSunday, needsMedicalCertificate, medicalCertMessage } from "@/features/leave/days";
 import { remainingLeaveHours } from "@/features/leave/hour-pool";
 import { LEAVE_TYPE_LABEL, HALF_DAY_PERIOD_LABEL } from "@/features/leave/labels";
-import { useBalances, useCreateLeave } from "@/features/leave/hooks";
+import { useBalances, useCreateLeave, useSickUses } from "@/features/leave/hooks";
 import type { LeaveType } from "@/features/leave/types";
 import { MobileActionFooter, MobilePrimaryButton } from "./mobile-action-footer";
 import { MobileAlertBanner, MobileSuccessCard } from "./mobile-alert-banner";
@@ -191,13 +191,16 @@ export function MobileLeaveForm() {
   }, [balanceData]);
 
   const attachment = form.watch("attachmentUrl");
+  // Sick leave used so far this year (counted by the year the leave starts): the 3rd one onward needs a medical certificate.
+  const sickUses = useSickUses(start ? new Date(start).getUTCFullYear() : new Date().getFullYear());
+  const certNeeded = needsMedicalCertificate(type, isHourly ? "HOUR" : "DAY", preview, sickUses);
   const blockedMessage = useMemo(() => {
     // Monday to Saturday is the working week: a request that only covers a Sunday cannot be sent.
     if (isHourly ? !!start && isSunday(new Date(start)) : preview === 0) {
       return <>วันที่เลือกเป็นวันอาทิตย์ ซึ่งไม่ใช่วันทำงาน (นับวันลาจันทร์–เสาร์) กรุณาเลือกวันอื่น</>;
     }
-    if (needsMedicalCertificate(type, isHourly ? "HOUR" : "DAY", preview) && !attachment) {
-      return <>{MEDICAL_CERT_MESSAGE}</>;
+    if (certNeeded && !attachment) {
+      return <>{medicalCertMessage(sickUses)}</>;
     }
     if (!preview || UNLIMITED_TYPES.includes(type) || type === "OTHER") return null;
     const bal = balanceMap.get(type);
@@ -226,7 +229,7 @@ export function MobileLeaveForm() {
       );
     }
     return null;
-  }, [preview, type, balanceMap, isHourly, start, attachment]);
+  }, [preview, type, balanceMap, isHourly, start, attachment, certNeeded, sickUses]);
 
   /** Tells the person what is missing instead of the button silently doing nothing. */
   function onInvalid(errors: Partial<Record<keyof FormSchema, { message?: string }>>) {
@@ -444,8 +447,9 @@ export function MobileLeaveForm() {
           )}
 
           <p className="mb-2 mt-4 text-[15px] font-semibold text-foreground">
-            {needsMedicalCertificate(type, isHourly ? "HOUR" : "DAY", preview) ? "แนบใบรับรองแพทย์ *" : "แนบไฟล์ประกอบ (ถ้ามี)"}
+            {certNeeded ? "แนบใบรับรองแพทย์ *" : "แนบไฟล์ประกอบ (ถ้ามี)"}
           </p>
+          {certNeeded && !attachment && <p className="-mt-1 mb-2 text-sm text-destructive">{medicalCertMessage(sickUses)}</p>}
           <FileAttachField
             value={form.watch("attachmentUrl")}
             onChange={(v) => form.setValue("attachmentUrl", v, { shouldValidate: true })}

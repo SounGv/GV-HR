@@ -8,6 +8,7 @@ import {
   fetchBalances,
   fetchLeave,
 } from "./api";
+import { countSickUses } from "./days";
 import type { LeaveFormValues, LeaveScope, LeaveStatus } from "./types";
 
 export const leaveKeys = {
@@ -23,6 +24,12 @@ export function useLeave(scope: LeaveScope, status?: LeaveStatus, options?: { en
     placeholderData: (prev) => prev,
     enabled: options?.enabled ?? true,
   });
+}
+
+/** Sick-leave uses so far this year for the signed-in person, so the forms can ask for the certificate before sending (see countSickUses). */
+export function useSickUses(year: number): number {
+  const { data } = useLeave("me");
+  return countSickUses(data?.data ?? [], year);
 }
 
 export function useBalances() {
