@@ -79,7 +79,7 @@ export function CrossTeamDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>เลือกคู่ข้ามทีม</DialogTitle>
           <DialogDescription>
@@ -103,7 +103,7 @@ export function CrossTeamDialog({
           {plan.already > 0 && ` · มีอยู่แล้ว ${plan.already} คู่`}
           {plan.outside > 0 && ` · ข้าม ${plan.outside} คู่ (ผู้ถูกประเมินไม่ได้อยู่ในรอบนี้)`}
         </p>
-        <DialogFooter>
+        <DialogFooter className="sticky bottom-0 z-10 bg-muted">
           <Button variant="outline" className="h-11 md:h-10" onClick={onClose}>
             ปิด
           </Button>
@@ -158,7 +158,7 @@ function PickList({
       <div className="p-2">
         <Input aria-label={`ค้นหา ${title}`} placeholder="ค้นหาชื่อ รหัส หรือแผนก" className="h-11 md:h-10" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-      <div className="max-h-72 overflow-y-auto px-2 pb-2">
+      <div className="max-h-48 overflow-y-auto px-2 pb-2 md:max-h-72">
         {groups.map(([dept, list]) => {
           const ids = list.map((p) => p.id);
           const all = ids.every((id) => selected.has(id));
