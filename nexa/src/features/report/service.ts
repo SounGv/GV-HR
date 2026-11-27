@@ -15,6 +15,7 @@ import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendanc
 import { REPORT_LABELS, type ReportQuery } from "./schema";
 import type { ReportResult, ReportSummaryDatum } from "./types";
 import { capRowsByDay, laterDate } from "./daily-cap";
+import { dayKindOf, isPaidByDay, netWorkedHours } from "./worked-time";
 import { absentDays, employedDays, leaveCover, workingDays } from "./work-days";
 import { summarizeRound, type ScoredPerson } from "./result-insights";
 
@@ -425,6 +426,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
             lastName: true,
             nickname: true,
             employmentType: true,
+            compensationType: true,
             department: { select: { name: true } },
           },
         },
@@ -568,6 +570,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
       dayLeaves.some((l) => l.employeeId === employeeId && l.startDate.getTime() <= workDate.getTime() && workDate.getTime() <= l.endDate.getTime());
     const rows = recs.map((r) => {
       const hours = hoursWorked(r.clockInAt, r.clockOutAt);
+      const byDay = isPaidByDay(r.employee.employmentType, r.employee.compensationType);
+      const net = byDay ? netWorkedHours(r.clockInAt, r.clockOutAt) : null;
       const otKey = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
       const approvedOt = otByKey.get(otKey);
       const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate, r.employee.employmentType);
@@ -606,6 +610,9 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         clockOut: fmtTime(r.clockOutAt),
         breakMinutes: breakMinutesOf(r.breakStartAt, r.breakEndAt),
         hours,
+        // Only for staff paid by the day (see worked-time.ts); everyone else shows "-".
+        netHours: net ?? "-",
+        dayKind: byDay ? dayKindOf(r.clockInAt, r.clockOutAt) ?? "-" : "-",
         otHours: otHoursNum ? Math.round(otHoursNum * 100) / 100 : "-",
         otStatus: otApproval ? OT_STATUS_LABEL_SHORT[otApproval.status] ?? otApproval.status : "-",
         otApprover: otApproval?.approverUserId ? otApproverNameById.get(otApproval.approverUserId) ?? "-" : "-",
@@ -698,6 +705,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         clockOut: blank,
         breakMinutes: blank,
         hours: blank,
+        netHours: blank,
+        dayKind: blank,
         otHours: blank,
         otStatus: blank,
         otApprover: blank,
@@ -899,6 +908,8 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "clockIn", label: "เวลาเข้า" },
         { key: "clockOut", label: "เวลาออก" },
         { key: "hours", label: "ชั่วโมงทำงาน", numeric: true },
+        { key: "netHours", label: "ชั่วโมงสุทธิ (รายวัน)", numeric: true },
+        { key: "dayKind", label: "ครบวัน/ไม่เต็มวัน" },
         { key: "otHours", label: "ชั่วโมง OT", numeric: true },
         { key: "otStatus", label: "สถานะ OT" },
         { key: "otApprover", label: "ผู้อนุมัติ OT" },
