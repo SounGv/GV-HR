@@ -9,7 +9,23 @@ import { teamScopeFilter } from "@/features/employee/service";
 
 export const runtime = "nodejs";
 
-const querySchema = z.object({ kind: z.enum(["in", "out"]), v: z.string().optional() });
+const querySchema = z.object({ kind: z.enum(["in", "out"]), v: z.string().optional(), s: z.enum(["thumb"]).optional() });
+
+/** Longest side of a thumbnail in pixels: sharp enough for the 44px table cell and the 70px Excel cell on a dense screen. */
+const THUMB_PX = 160;
+
+/**
+ * A small JPEG of the photo (the stored ones average 236 KB, a thumbnail about 6 KB), so a report of a thousand rows or an
+ * Excel export does not move hundreds of megabytes. If the image library cannot run, the original is served instead.
+ */
+async function thumbnailOf(original: Buffer): Promise<Buffer | null> {
+  try {
+    const sharp = (await import("sharp")).default;
+    return await sharp(original).rotate().resize(THUMB_PX, THUMB_PX, { fit: "cover" }).jpeg({ quality: 72 }).toBuffer();
+  } catch {
+    return null;
+  }
+}
 const paramsSchema = z.object({ id: z.string().uuid() });
 
 // Stored as `data:image/<type>;base64,<data>` (see lib/image-schema.ts). Only
@@ -38,7 +54,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const session = await requireSession();
     const { id } = paramsSchema.parse(await params);
-    const { kind } = querySchema.parse(Object.fromEntries(req.nextUrl.searchParams.entries()));
+    const { kind, s } = querySchema.parse(Object.fromEntries(req.nextUrl.searchParams.entries()));
 
     const scope = can(session.perms, "report:read")
       ? teamScopeFilter(session)
@@ -52,9 +68,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const match = dataUrl ? DATA_URL_RE.exec(dataUrl) : null;
     if (!match) throw NotFound("ไม่พบรูปถ่าย");
 
-    return new Response(Buffer.from(match[2], "base64"), {
+    const original = Buffer.from(match[2], "base64");
+    const thumb = s === "thumb" ? await thumbnailOf(original) : null;
+    return new Response(new Uint8Array(thumb ?? original), {
       headers: {
-        "Content-Type": CONTENT_TYPE[match[1]],
+        "Content-Type": thumb ? "image/jpeg" : CONTENT_TYPE[match[1]],
         // `v` in the URL changes whenever the record changes, so a long cache is safe;
         // `private` keeps a shared proxy from storing a person's photo.
         "Cache-Control": "private, max-age=31536000, immutable",

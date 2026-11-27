@@ -7,3 +7,8 @@
 export function attendancePhotoUrl(recordId: string, kind: "in" | "out", updatedAt: string): string {
   return `/api/attendance/${recordId}/photo?kind=${kind}&v=${new Date(updatedAt).getTime()}`;
 }
+
+/** The same photo as a small picture (about 160px, a few KB) for table cells and Excel sheets; other URLs are returned unchanged. */
+export function attendancePhotoThumbUrl(photoUrl: string): string {
+  return photoUrl.startsWith("/api/attendance/") && !photoUrl.includes("s=thumb") ? `${photoUrl}&s=thumb` : photoUrl;
+}

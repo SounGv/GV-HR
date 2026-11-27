@@ -44,6 +44,7 @@ import { RowFace } from "./row-face";
 import { MultiSelectField, type MultiSelectOption } from "@/components/shared/multi-select-field";
 import { EmployeeSearch } from "./employee-search";
 import { EmptyState, ErrorState, TableLoadingState } from "@/components/shared/states";
+import { attendancePhotoThumbUrl } from "@/features/attendance/photo-url";
 import { useAuth } from "@/features/auth/auth-context";
 import { useOrgOptions } from "@/features/employee/hooks";
 import { EMPLOYMENT_TYPES } from "@/features/employee/schema";
@@ -151,7 +152,8 @@ async function loadExcelImages(
   async function worker() {
     for (let url = queue.pop(); url !== undefined; url = queue.pop()) {
       try {
-        const res = await fetch(url, { credentials: "same-origin" });
+        // A 160px thumbnail is plenty for the 70px cell and is about 40 times smaller than the stored photo.
+        const res = await fetch(attendancePhotoThumbUrl(url), { credentials: "same-origin" });
         if (!res.ok) throw new Error(String(res.status));
         const blob = await res.blob();
         const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -168,7 +170,7 @@ async function loadExcelImages(
       }
     }
   }
-  await Promise.all(Array.from({ length: Math.min(6, urls.size) }, worker));
+  await Promise.all(Array.from({ length: Math.min(10, urls.size) }, worker));
   return { images, failed };
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { attendancePhotoThumbUrl } from "@/features/attendance/photo-url";
 
 /** What the enlarged-photo dialog shows next to the picture. */
 export interface PhotoPreview {
@@ -37,7 +38,7 @@ export function PhotoCell({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={url}
+        src={attendancePhotoThumbUrl(url)}
         alt=""
         loading="lazy"
         decoding="async"
