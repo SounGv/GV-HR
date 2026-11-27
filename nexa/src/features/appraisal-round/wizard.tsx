@@ -1253,8 +1253,8 @@ function StepRaters({
         >
           <summary className="flex min-h-9 cursor-pointer flex-wrap items-center gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden">
             น้ำหนักคะแนนแต่ละมุมมอง
-            <span className="rounded-md bg-status-absent-bg px-1.5 text-xs font-bold text-status-absent-fg">
-              รอ HR ยืนยัน
+            <span className="rounded-md bg-muted px-1.5 text-xs font-bold text-muted-foreground">
+              ไม่บังคับ
             </span>
             <span
               className={cn(
@@ -1262,11 +1262,11 @@ function StepRaters({
                 total.ok ? "text-success" : "text-status-late-fg",
               )}
             >
-              {total.ok ? "รวม 100%" : `รวม ${total.total}% ต้องเป็น 100%`}
+              {total.equal ? "ไม่ตั้ง นับเท่ากันทุกมุมมอง" : total.ok ? "รวม 100%" : `รวม ${total.total}% ต้องเป็น 100% หรือเว้นว่างทั้งหมด`}
             </span>
           </summary>
           <p className="text-muted-foreground mt-1 text-xs">
-            มีผลต่อคะแนนรวม ค่าเริ่มต้นเป็นตัวอย่าง บันทึกเมื่อกดถัดไป
+            เหมือน Favpo ที่ใช้อยู่: ไม่ตั้ง = ค่าเฉลี่ยเท่ากันทุกมุมมอง ถ้าตั้งน้ำหนักจะมีผลต่อคะแนนรวม ต้องรวม 100% และให้ HR ยืนยัน บันทึกเมื่อกดถัดไป
           </p>
           <div className="mt-2 space-y-2">
             {RATER_TYPES.filter((t) => draft.types.includes(t)).map((t) => {

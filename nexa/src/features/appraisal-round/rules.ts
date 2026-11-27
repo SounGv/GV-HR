@@ -18,13 +18,17 @@ export const PRESETS: Record<"90" | "180" | "270" | "360" | "UP", readonly Rater
   UP: ["SUBORDINATE"],
 };
 
-/** Starting weights per preset; placeholders until HR confirms the real ones. Shared by the round wizard and recurring rounds. */
+/**
+ * Starting weights per preset: none. Favpo, which GV used until now, sets no weight between perspectives (its weight grid is empty), so
+ * results are plain averages; with no weights every perspective that answered counts equally (see scoring.ts). HR can still set weights
+ * that total 100 in the round. Shared by the round wizard and recurring rounds.
+ */
 export const PRESET_WEIGHTS: Record<keyof typeof PRESETS, Partial<Record<RaterType, number>>> = {
-  "90": { MANAGER: 100 },
-  "180": { MANAGER: 70, SELF: 30 },
-  "270": { MANAGER: 50, SELF: 25, PEER: 25 },
-  "360": { MANAGER: 40, SELF: 20, PEER: 20, SUBORDINATE: 20 },
-  UP: { SUBORDINATE: 100 },
+  "90": {},
+  "180": {},
+  "270": {},
+  "360": {},
+  UP: {},
 };
 
 /** Peers picked automatically for one person: colleagues under the same manager, at most this many. */
@@ -229,10 +233,13 @@ export function applyRaterOverrides(
   return { matches, exceptions, ignored };
 }
 
-/** Selected perspectives must total 100. Returns the total and whether it is valid. */
+/**
+ * Selected perspectives either carry no weight at all (every perspective counts equally, like Favpo) or total exactly 100.
+ * Returns the total, whether it is the "no weights" case, and whether it is valid.
+ */
 export function perspectiveTotal(types: readonly RaterType[], weights: Partial<Record<RaterType, number>>) {
   const total = types.reduce((sum, t) => sum + (weights[t] ?? 0), 0);
-  return { total, ok: types.length > 0 && total === 100 };
+  return { total, equal: total === 0, ok: types.length > 0 && (total === 100 || total === 0) };
 }
 
 export interface RoundState {
@@ -265,7 +272,7 @@ export function roundChecks(s: RoundState): Check[] {
         s.raterTypes.length === 0
           ? "ยังไม่ได้เลือกผู้ประเมิน"
           : !pers.ok
-            ? `น้ำหนักผู้ประเมินรวม ${pers.total}% ต้องเป็น 100%`
+            ? `น้ำหนักผู้ประเมินรวม ${pers.total}% ต้องเป็น 100% หรือเว้นว่างทั้งหมด`
             : `มี ${s.withoutRater} คนที่ยังไม่มีผู้ประเมิน`,
     },
     {

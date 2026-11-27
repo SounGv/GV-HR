@@ -74,7 +74,7 @@ check("the same pairing is never created twice", () => {
 });
 
 check("perspective weights must total 100 over the selected types", () => {
-  assert.deepEqual(perspectiveTotal(["MANAGER", "SELF"], { MANAGER: 70, SELF: 30, PEER: 50 }), { total: 100, ok: true });
+  assert.deepEqual(perspectiveTotal(["MANAGER", "SELF"], { MANAGER: 70, SELF: 30, PEER: 50 }), { total: 100, equal: false, ok: true });
   assert.equal(perspectiveTotal(["MANAGER", "SELF"], { MANAGER: 70 }).ok, false);
   assert.equal(perspectiveTotal([], {}).ok, false);
 });
@@ -202,15 +202,25 @@ check("a rating summary counts raters per score and keeps the examples", () => {
   assert.deepEqual(r.notes, [{ score: 3, text: "เกินเป้า" }, { score: 1, text: "ช้า" }]);
 });
 
-check("every preset has weights for exactly its perspectives, adding to 100, and the save schema accepts them", () => {
+check("presets start with no perspective weights (like Favpo) and the save schema accepts that and a full set", () => {
   for (const k of Object.keys(PRESETS)) {
-    const w = PRESET_WEIGHTS[k];
-    assert.deepEqual(Object.keys(w).sort(), [...PRESETS[k]].sort(), `weights of preset ${k}`);
-    assert.equal(Object.values(w).reduce((a, b) => a + b, 0), 100, `weights of preset ${k} add to 100`);
+    assert.deepEqual(PRESET_WEIGHTS[k], {}, `preset ${k} starts with no weights`);
+    assert.ok(roundUpdateSchema.safeParse({ raterTypes: PRESETS[k], perspectiveWeights: PRESET_WEIGHTS[k] }).success, `schema rejects preset ${k}`);
     // a partial record used to answer 422 (zod 4 wants every key of an enum record), so the wizard could not save 90, 180 or 270
-    const res = roundUpdateSchema.safeParse({ raterTypes: PRESETS[k], perspectiveWeights: w });
-    assert.ok(res.success, `schema rejects preset ${k}`);
+    const own = Object.fromEntries(PRESETS[k].map((t, i) => [t, i === 0 ? 100 : 0]));
+    assert.ok(roundUpdateSchema.safeParse({ raterTypes: PRESETS[k], perspectiveWeights: own }).success, `schema rejects own-type weights of ${k}`);
   }
+});
+check("no weights is valid and means equal; weights must otherwise total 100", () => {
+  const types = ["MANAGER", "SELF", "PEER"];
+  assert.deepEqual(perspectiveTotal(types, {}), { total: 0, equal: true, ok: true });
+  assert.equal(perspectiveTotal(types, { MANAGER: 50, SELF: 25, PEER: 25 }).ok, true);
+  assert.equal(perspectiveTotal(types, { MANAGER: 60 }).ok, false);
+  assert.equal(perspectiveTotal(types, { MANAGER: 60, SELF: 60 }).ok, false);
+  assert.equal(perspectiveTotal([], {}).ok, false);
+  const base = { formPublished: true, participantCount: 3, raterTypes: types, weights: {}, withoutRater: 0, startIso: "2026-12-01", endIso: "2026-12-07" };
+  assert.ok(roundChecks(base).every((c) => c.ok), "a round with no weights can open");
+  assert.equal(roundChecks({ ...base, weights: { MANAGER: 60 } }).find((c) => c.key === "raters").ok, false);
 });
 check("the upward preset is only the team rating its manager", () => {
   assert.deepEqual(PRESETS.UP, ["SUBORDINATE"]);
