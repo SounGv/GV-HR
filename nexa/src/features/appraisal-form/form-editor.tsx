@@ -442,7 +442,7 @@ function FormEditor({ form }: { form: FormDetail }) {
     flat.filter((x) => x.q.answerType === "RATING").reduce((n, x) => n + x.q.weight, 0) || 1;
 
   return (
-    <div className="space-y-4 pb-10">
+    <div className="gv-thai-lh space-y-4 pb-10">
       <PageChromePublisher title={name.trim() || "แบบประเมิน"} />
       {/* Favpo's form page head: the form's name and state on one line, its buttons in the title row at the right. */}
       <div className="flex flex-wrap items-center gap-3">
@@ -455,7 +455,7 @@ function FormEditor({ form }: { form: FormDetail }) {
             setName(e.target.value);
             setDirty(true);
           }}
-          className="h-9 w-full md:max-w-xl"
+          className="h-10 w-full md:max-w-xl"
         />
         <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted px-2 py-0.5 text-xs font-semibold">
           {locked && <Lock className="size-3" aria-hidden="true" />}
@@ -472,7 +472,7 @@ function FormEditor({ form }: { form: FormDetail }) {
           <>
             <Button
               variant="outline"
-              className="h-9"
+              className="h-10"
               disabled={busy}
               onClick={async () => {
                 if (await saveDraft()) toast.success("บันทึกฉบับร่างแล้ว");
@@ -480,13 +480,13 @@ function FormEditor({ form }: { form: FormDetail }) {
             >
               {save.isPending ? "กำลังบันทึก…" : dirty ? "บันทึกร่าง •" : "บันทึกร่าง"}
             </Button>
-            <Button className="h-9" disabled={busy || problems.length > 0} title={problems.join(" · ")} onClick={() => setConfirmPublish(true)}>
+            <Button className="h-10" disabled={busy || problems.length > 0} title={problems.join(" · ")} onClick={() => setConfirmPublish(true)}>
               ยืนยันใช้แบบนี้
             </Button>
           </>
         )}
         {locked && can("campaign:create") && form.status === "PUBLISHED" && (
-          <Button className="h-9" onClick={onNewVersion} disabled={newVersion.isPending}>
+          <Button className="h-10" onClick={onNewVersion} disabled={newVersion.isPending}>
             สร้างเวอร์ชันใหม่
           </Button>
         )}
@@ -558,7 +558,7 @@ function FormEditor({ form }: { form: FormDetail }) {
                   หรือ{" "}
                   <button
                     type="button"
-                    className="text-primary font-semibold hover:underline"
+                    className="text-primary inline-flex min-h-10 items-center font-semibold hover:underline"
                     onClick={() => addTopic(sections[sections.length - 1].key)}
                   >
                     เพิ่มหัวข้อใหม่
@@ -709,12 +709,12 @@ function TopicsTable({
   onDeleteSection: (k: string) => void;
 }) {
   return (
-    <section aria-label="หัวข้อของแบบประเมิน" className="space-y-2">
+    <section aria-label="หมวดของแบบประเมิน" className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-base font-medium">หัวข้อของแบบประเมิน</h2>
+        <h2 className="text-base font-medium">หมวดของแบบประเมิน</h2>
         {canEdit && (
-          <Button variant="outline" size="sm" className="ml-auto h-9" onClick={onAddSection}>
-            <Plus className="size-4" aria-hidden="true" /> เพิ่มหัวข้อ
+          <Button variant="outline" size="sm" className="ml-auto h-10" onClick={onAddSection}>
+            <Plus className="size-4" aria-hidden="true" /> เพิ่มหมวด
           </Button>
         )}
       </div>
@@ -724,7 +724,7 @@ function TopicsTable({
             <TableHead className="w-14 text-center">ลำดับ</TableHead>
             <TableHead className="text-right">ค่าน้ำหนัก</TableHead>
             <TableHead>ประเภทข้อมูล</TableHead>
-            <TableHead className="w-full">ชื่อหัวข้อ</TableHead>
+            <TableHead className="w-full">ชื่อหมวด</TableHead>
             <TableHead className="text-center">คำถาม</TableHead>
             {canEdit && <TableHead className="text-center">เรียง</TableHead>}
             <TableHead className="text-center">จัดการ</TableHead>
@@ -742,8 +742,8 @@ function TopicsTable({
                 <TableCell className="min-w-56 whitespace-normal">
                   {canEdit ? (
                     <Input
-                      aria-label={`ชื่อหัวข้อที่ ${i + 1}`}
-                      className="h-9"
+                      aria-label={`ชื่อหมวดที่ ${i + 1}`}
+                      className="h-10"
                       value={s.name}
                       maxLength={80}
                       placeholder="ไม่จัดหมวด"
@@ -757,10 +757,10 @@ function TopicsTable({
                 {canEdit && (
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="icon" className="size-9" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ขึ้น`} disabled={i === 0} onClick={() => onMoveUp(s.key)}>
+                      <Button variant="ghost" size="icon" className="size-10" aria-label={`เลื่อนหมวดที่ ${i + 1} ขึ้น`} disabled={i === 0} onClick={() => onMoveUp(s.key)}>
                         <ArrowUp className="size-4" aria-hidden="true" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="size-9" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ลง`} disabled={i === sections.length - 1} onClick={() => onMoveUp(sections[i + 1]!.key)}>
+                      <Button variant="ghost" size="icon" className="size-10" aria-label={`เลื่อนหมวดที่ ${i + 1} ลง`} disabled={i === sections.length - 1} onClick={() => onMoveUp(sections[i + 1]!.key)}>
                         <ArrowDown className="size-4" aria-hidden="true" />
                       </Button>
                     </div>
@@ -768,11 +768,11 @@ function TopicsTable({
                 )}
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-1">
-                    <Button variant="ghost" size="icon" className="size-9" aria-label={`เปิดคำถามในหัวข้อที่ ${i + 1}`} disabled={s.qs.length === 0} onClick={() => s.qs[0] && onSelect(s.qs[0].uiKey)}>
+                    <Button variant="ghost" size="icon" className="size-10" aria-label={`เปิดคำถามในหมวดที่ ${i + 1}`} disabled={s.qs.length === 0} onClick={() => s.qs[0] && onSelect(s.qs[0].uiKey)}>
                       <Pencil className="size-4" aria-hidden="true" />
                     </Button>
                     {canEdit && (
-                      <Button variant="ghost" size="icon" className="size-9" aria-label={`ลบหัวข้อที่ ${i + 1}`} onClick={() => onDeleteSection(s.key)}>
+                      <Button variant="ghost" size="icon" className="size-10" aria-label={`ลบหมวดที่ ${i + 1}`} onClick={() => onDeleteSection(s.key)}>
                         <Trash2 className="size-4" aria-hidden="true" />
                       </Button>
                     )}
@@ -846,7 +846,7 @@ function Outline({
         {canEdit && (
           <Button
             variant="outline"
-            className="ml-auto h-9 px-2.5 text-sm"
+            className="ml-auto h-10 px-2.5 text-sm"
             onClick={onAddSection}
           >
             <Plus className="size-4" aria-hidden="true" /> หมวด
@@ -877,7 +877,7 @@ function Outline({
                   <Input
                     autoFocus
                     aria-label="ชื่อหมวด"
-                    className="h-8 text-sm"
+                    className="h-10 text-sm"
                     value={s.name}
                     maxLength={80}
                     onChange={(e) => onRenameSection(s.key, e.target.value)}
@@ -998,7 +998,7 @@ function Outline({
                   <button
                     type="button"
                     onClick={() => onAddTopic(s.key)}
-                    className="border-border hover:bg-accent mt-0.5 flex min-h-9 w-full items-center gap-1.5 rounded-lg border-[1.5px] border-dashed px-2.5 text-sm font-semibold text-primary hover:border-ring hover:bg-accent"
+                    className="border-border hover:bg-accent mt-0.5 flex min-h-10 w-full items-center gap-1.5 rounded-lg border-[1.5px] border-dashed px-2.5 text-sm font-semibold text-primary hover:border-ring hover:bg-accent"
                   >
                     <Plus className="size-3.5" aria-hidden="true" /> เพิ่มหัวข้อ
                     {s.name ? `ใน${s.name}` : ""}
@@ -1034,7 +1034,7 @@ function IconBtn({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-30",
+        "text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-30",
         danger ? "hover:bg-destructive-muted hover:text-destructive" : "hover:bg-muted hover:text-foreground",
       )}
     >
@@ -1121,7 +1121,7 @@ function TopicEditor({
               หัวข้อนี้มีหลายเรื่องในข้อเดียว ถ้าคนเก่งเรื่องหนึ่งแต่อ่อนอีกเรื่องจะให้คะแนนยาก
             </span>
             {canEdit && (
-              <Button variant="outline" className="bg-card h-9" onClick={onSplit}>
+              <Button variant="outline" className="bg-card h-10" onClick={onSplit}>
                 <Scissors className="size-4" aria-hidden="true" /> แยกเป็น {parts.length} หัวข้อ
               </Button>
             )}
@@ -1240,7 +1240,7 @@ function TopicEditor({
                     })
                   }
                   className={cn(
-                    "min-h-9 rounded-sm border-[1.5px] px-3.5 text-sm font-semibold disabled:opacity-60",
+                    "min-h-10 rounded-sm border-[1.5px] px-3.5 text-sm font-semibold disabled:opacity-60",
                     on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
                   )}
                 >
@@ -1383,7 +1383,7 @@ function ScaleCard({
               key={n}
               type="button"
               onClick={() => onPreset(n)}
-              className="border-border min-h-8 rounded-sm border-[1.5px] px-3 text-xs font-semibold hover:border-ring"
+              className="border-border min-h-10 rounded-sm border-[1.5px] px-3 text-xs font-semibold hover:border-ring"
             >
               ชุด {n} ระดับ
             </button>
@@ -1393,7 +1393,7 @@ function ScaleCard({
             aria-pressed={usingSystem}
             onClick={onSystem}
             className={cn(
-              "min-h-8 rounded-sm border-[1.5px] px-3 text-xs font-semibold hover:border-ring",
+              "min-h-10 rounded-sm border-[1.5px] px-3 text-xs font-semibold hover:border-ring",
               usingSystem ? "border-primary bg-accent text-accent-foreground" : "border-border",
             )}
           >
@@ -1509,7 +1509,7 @@ function PhonePreview({
 
   return (
     <Card className="gap-3 rounded-lg p-4" aria-label="ตัวอย่างที่ผู้ประเมินเห็น">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <h2 className="gv-bar-heading flex items-center gap-2 text-sm font-semibold">
           ผู้ประเมินเห็นแบบนี้
         </h2>
@@ -1518,7 +1518,7 @@ function PhonePreview({
           aria-label="ดูในมุมของ"
           className="bg-muted ml-auto flex gap-0.5 rounded-sm p-0.5"
         >
-          {(["MANAGER", "SELF", "PEER"] as RaterType[]).map((r) => (
+          {(["MANAGER", "SELF", "PEER", "SUBORDINATE"] as RaterType[]).map((r) => (
             <button
               key={r}
               type="button"
@@ -1528,7 +1528,7 @@ function PhonePreview({
                 setManual(null);
               }}
               className={cn(
-                "min-h-8 rounded-sm px-2.5 text-xs font-semibold",
+                "min-h-10 rounded-sm px-2.5 text-xs font-semibold whitespace-nowrap",
                 as === r && "bg-card ",
               )}
             >
@@ -1583,7 +1583,7 @@ function PhonePreview({
       <div className="flex justify-center gap-2">
         <Button
           variant="outline"
-          className="h-9"
+          className="h-10"
           disabled={i <= 0}
           onClick={() => setManual({ sel, i: i - 1 })}
         >
@@ -1591,7 +1591,7 @@ function PhonePreview({
         </Button>
         <Button
           variant="outline"
-          className="h-9"
+          className="h-10"
           disabled={i >= shown.length - 1}
           onClick={() => setManual({ sel, i: i + 1 })}
         >
@@ -1664,7 +1664,7 @@ function BankPicker({
                 aria-pressed={section === s}
                 onClick={() => setSection(s)}
                 className={cn(
-                  "min-h-8 shrink-0 rounded-sm border-[1.5px] px-3 text-xs font-semibold whitespace-nowrap",
+                  "min-h-10 shrink-0 rounded-sm border-[1.5px] px-3 text-xs font-semibold whitespace-nowrap",
                   section === s
                     ? "border-foreground bg-foreground text-background"
                     : "border-border",
@@ -1722,7 +1722,7 @@ function BankPicker({
                 {canEdit && (
                   <div className="flex shrink-0 items-center gap-1">
                     <Button
-                      className="h-9"
+                      className="h-10"
                       variant={used ? "outline" : "default"}
                       disabled={used}
                       onClick={() => onPick(b)}

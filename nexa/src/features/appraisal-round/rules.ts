@@ -9,20 +9,22 @@
 export type RaterType = "SELF" | "MANAGER" | "PEER" | "SUBORDINATE";
 export const RATER_TYPES: readonly RaterType[] = ["SELF", "MANAGER", "PEER", "SUBORDINATE"];
 
-/** 90° = manager; 180° adds self; 270° adds peers; 360° adds subordinates. */
-export const PRESETS: Record<"90" | "180" | "270" | "360", readonly RaterType[]> = {
+/** 90° = manager; 180° adds self; 270° adds peers; 360° adds subordinates; UP = only the team rating its manager. */
+export const PRESETS: Record<"90" | "180" | "270" | "360" | "UP", readonly RaterType[]> = {
   "90": ["MANAGER"],
   "180": ["MANAGER", "SELF"],
   "270": ["MANAGER", "SELF", "PEER"],
   "360": ["MANAGER", "SELF", "PEER", "SUBORDINATE"],
+  UP: ["SUBORDINATE"],
 };
 
 /** Starting weights per preset; placeholders until HR confirms the real ones. Shared by the round wizard and recurring rounds. */
-export const PRESET_WEIGHTS: Record<"90" | "180" | "270" | "360", Partial<Record<RaterType, number>>> = {
+export const PRESET_WEIGHTS: Record<keyof typeof PRESETS, Partial<Record<RaterType, number>>> = {
   "90": { MANAGER: 100 },
   "180": { MANAGER: 70, SELF: 30 },
   "270": { MANAGER: 50, SELF: 25, PEER: 25 },
   "360": { MANAGER: 40, SELF: 20, PEER: 20, SUBORDINATE: 20 },
+  UP: { SUBORDINATE: 100 },
 };
 
 /** Peers picked automatically for one person: colleagues under the same manager, at most this many. */

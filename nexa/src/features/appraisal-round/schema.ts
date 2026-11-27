@@ -13,7 +13,8 @@ export const roundUpdateSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
   formId: z.string().min(1).optional(),
   raterTypes: z.array(z.enum(RATERS)).max(4).optional(),
-  perspectiveWeights: z.record(z.enum(RATERS), z.number().int().min(0).max(100)).optional(),
+  // partialRecord: a preset sends only the perspectives it uses ({ MANAGER: 100 }); z.record over an enum would demand all four and answer 422.
+  perspectiveWeights: z.partialRecord(z.enum(RATERS), z.number().int().min(0).max(100)).optional(),
   startDate: day.nullable().optional(),
   endDate: day.nullable().optional(),
   remind: z.boolean().optional(),

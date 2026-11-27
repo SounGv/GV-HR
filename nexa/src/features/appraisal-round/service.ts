@@ -44,12 +44,12 @@ const fmtDay = (isoDay: string) =>
 const asWeights = (v: Prisma.JsonValue | null): Partial<Record<RaterType, number>> =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Partial<Record<RaterType, number>>) : {};
 
-/** "90°" … "360°" when the round asks exactly the people of one preset, else "กำหนดเอง". */
+/** "90°" … "360°" or "ประเมินขึ้น" when the round asks exactly the people of one preset, else "กำหนดเอง". */
 function presetNameOf(types: RaterType[] | null): string {
   const set = new Set(types ?? []);
   for (const k of Object.keys(PRESETS) as (keyof typeof PRESETS)[]) {
     const want = PRESETS[k];
-    if (want.length === set.size && want.every((x) => set.has(x))) return `${k}°`;
+    if (want.length === set.size && want.every((x) => set.has(x))) return k === "UP" ? "ประเมินขึ้น" : `${k}°`;
   }
   return "กำหนดเอง";
 }

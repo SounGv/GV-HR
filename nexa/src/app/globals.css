@@ -1368,3 +1368,12 @@ body[data-ticker-bot] .ai-shortcut-spark { display: block; }
     align-items: center;
   }
 }
+
+/* Thai tone marks and lower vowels need more room than Tailwind's 1.43 (14px/20px) and 1.33 (12px/16px). Used on the screens where HR
+   reads long Thai labels (round wizard, form editor). Unlayered, so it beats the utilities; text that sets its own leading-* is left alone. */
+:where(.gv-thai-lh) .text-sm:not([class*="leading-"]) {
+  line-height: 1.6;
+}
+:where(.gv-thai-lh) .text-xs:not([class*="leading-"]) {
+  line-height: 1.5;
+}

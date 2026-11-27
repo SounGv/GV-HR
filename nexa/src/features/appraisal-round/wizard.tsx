@@ -69,10 +69,11 @@ const STEPS = ["ตั้งรอบ", "เลือกคน", "ใครป�
 type PresetKey = keyof typeof PRESETS;
 const PRESET_KEYS = Object.keys(PRESETS) as PresetKey[];
 const PRESET_TEXT: Record<PresetKey, { name: string; hint: string }> = {
-  "90": { name: "หัวหน้า", hint: "หัวหน้าประเมินลูกทีม เร็ว เหมาะกับรอบรายเดือน" },
+  "90": { name: "หัวหน้าประเมินลูกน้อง", hint: "หัวหน้าประเมินลูกทีม เร็ว เหมาะกับรอบรายเดือน" },
   "180": { name: "+ ตนเอง", hint: "เพิ่มประเมินตัวเอง เห็นมุมมองสองฝั่ง" },
   "270": { name: "+ เพื่อน", hint: `เพิ่มเพื่อนที่มีหัวหน้าคนเดียวกัน (สูงสุด ${PEER_LIMIT} คน)` },
   "360": { name: "+ ลูกน้อง", hint: "ลูกทีมประเมินหัวหน้าด้วย เหมาะกับรอบปี" },
+  UP: { name: "ลูกน้องประเมินหัวหน้า", hint: "เลือกหัวหน้าเป็นผู้ถูกประเมินในขั้นก่อนหน้า ลูกทีมของแต่ละคนเป็นผู้ประเมิน" },
 };
 const DEFAULT_WEIGHTS = PRESET_WEIGHTS;
 const CHECK_STEP = { form: 0, people: 1, raters: 2, schedule: 0 } as const;
@@ -248,7 +249,7 @@ export function Wizard({ round }: { round: RoundDetail }) {
   const stepDone = (i: number) => i < step || (i === 3 && ready);
 
   return (
-    <div className="space-y-5 pb-4">
+    <div className="gv-thai-lh space-y-5 pb-4">
       <PageChromePublisher
         title={draft.name.trim() || round.name}
         crumbs={[{ label: "ประเมิน", href: "/appraisal/rounds" }, { label: "รอบประเมิน", href: "/appraisal/rounds" }, { label: "สร้างรอบ" }]}
@@ -592,7 +593,7 @@ function StepSetup({
         <div className="grid gap-1.5 text-sm font-medium">
           <span>แบบประเมิน</span>
           <Select value={draft.formId} onValueChange={(v) => v && update({ formId: v as string })}>
-            <SelectTrigger className="h-11 w-full" aria-label="แบบประเมิน">
+            <SelectTrigger className="h-11 w-full data-[size=default]:h-11" aria-label="แบบประเมิน">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -605,7 +606,7 @@ function StepSetup({
           </Select>
           <span className="text-muted-foreground text-xs font-medium">
             เลือกได้เฉพาะแบบที่ยืนยันใช้แล้ว ·{" "}
-            <Link href="/appraisal/forms" className="text-primary font-semibold hover:underline">
+            <Link href="/appraisal/forms" className="text-primary inline-flex min-h-11 items-center font-semibold hover:underline md:min-h-8">
               ไปหน้าแบบประเมิน
             </Link>
           </span>
@@ -614,7 +615,7 @@ function StepSetup({
           วันเปิดรอบ
           <Input
             type="date"
-            className="h-11"
+            className="h-11 md:h-11 md:min-h-11"
             value={draft.start}
             onChange={(e) => update({ start: e.target.value })}
           />
@@ -623,7 +624,7 @@ function StepSetup({
           วันปิดรอบ
           <Input
             type="date"
-            className="h-11"
+            className="h-11 md:h-11 md:min-h-11"
             value={draft.end}
             onChange={(e) => update({ end: e.target.value })}
             aria-invalid={badDates || undefined}
@@ -998,7 +999,7 @@ function PeopleList({
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <div className="max-h-[440px] space-y-4 overflow-y-auto">
+        <div className="space-y-4">
           {groups.map(([dept, list]) => {
             const ids = list.map((p) => p.id);
             const all = ids.every((id) => selected.has(id));
@@ -1136,7 +1137,7 @@ function StepRaters({
       <div
         role="group"
         aria-label="รูปแบบการประเมิน"
-        className="mt-5 grid grid-cols-2 gap-2.5 xl:grid-cols-4"
+        className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-3 2xl:grid-cols-5"
       >
         {PRESET_KEYS.map((k) => (
           <button
@@ -1159,7 +1160,7 @@ function StepRaters({
                 แนะนำรายเดือน
               </span>
             )}
-            <span className="text-2xl font-bold tracking-tight">{k}°</span>
+            <span className="text-2xl font-bold tracking-tight">{k === "UP" ? "ประเมินขึ้น" : `${k}°`}</span>
             <span className="ml-1.5 text-sm font-bold text-primary">
               {PRESET_TEXT[k].name}
             </span>
@@ -1171,6 +1172,11 @@ function StepRaters({
         ))}
       </div>
 
+      {active === "UP" && (
+        <p className="bg-muted text-muted-foreground mt-3 rounded-lg px-3.5 py-2.5 text-sm">
+          ผู้ถูกประเมินในรอบนี้คือหัวหน้า ผู้ประเมินคือลูกน้องที่ตั้งหัวหน้าคนนั้นไว้ในผังองค์กร หัวหน้าที่ไม่มีลูกน้องจะไม่มีผู้ประเมิน
+        </p>
+      )}
       {draft.types.includes("PEER") && (
         <p className="bg-muted text-muted-foreground mt-3 rounded-lg px-3.5 py-2.5 text-sm">
           เพื่อนร่วมงาน = คนที่มีหัวหน้าคนเดียวกัน ระบบเลือกให้คนละไม่เกิน {PEER_LIMIT} คน
@@ -1306,7 +1312,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
           <thead>
             <tr className="text-muted-foreground text-left text-xs font-bold">
               <th className="px-4 py-2 font-bold">ผู้ถูกประเมิน</th>
-              <th className="px-4 py-2 font-bold">หัวหน้าประเมิน</th>
+              {types.includes("MANAGER") && <th className="px-4 py-2 font-bold">หัวหน้าประเมิน</th>}
               {types.includes("SELF") && <th className="px-3 py-2 font-bold">ตนเอง</th>}
               {types.includes("PEER") && <th className="px-3 py-2 font-bold">เพื่อน</th>}
               {types.includes("SUBORDINATE") && <th className="px-3 py-2 font-bold">ลูกน้อง</th>}
@@ -1334,6 +1340,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
                       </span>
                     </span>
                   </td>
+                  {types.includes("MANAGER") && (
                   <td className="px-4 py-2">
                     {r.managerId ? (
                       <span className="flex items-center gap-2.5">
@@ -1353,6 +1360,7 @@ function MatchTable({ round, missing }: { round: RoundDetail; missing: MatchRow[
                       </span>
                     )}
                   </td>
+                  )}
                   {types.includes("SELF") && (
                     <td className="px-3 py-2">{r.self ? <Pill>✓ ตนเอง</Pill> : "–"}</td>
                   )}

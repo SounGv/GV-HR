@@ -5,6 +5,7 @@ import {
   MAX_LOAD,
   PEER_LIMIT,
   PRESETS,
+  PRESET_WEIGHTS,
   matchRaters,
   perspectiveTotal,
   planInvitations,
@@ -12,6 +13,7 @@ import {
   sendMode,
   shouldRemind,
 } from "../src/features/appraisal-round/rules.ts";
+import { roundUpdateSchema } from "../src/features/appraisal-round/schema.ts";
 import { formsInUse, pickForm } from "../src/features/appraisal-round/form-snapshot.ts";
 import { cleanAnswers, needsNote, summarizeAnswers, unansweredRequired, visibleQuestions } from "../src/features/appraisal-round/answers.ts";
 
@@ -198,6 +200,23 @@ check("a rating summary counts raters per score and keeps the examples", () => {
   const [r] = summarizeAnswers(Q, "MANAGER", sets, 3);
   assert.deepEqual(r.scores, [{ score: 3, count: 2 }, { score: 2, count: 0 }, { score: 1, count: 1 }]);
   assert.deepEqual(r.notes, [{ score: 3, text: "เกินเป้า" }, { score: 1, text: "ช้า" }]);
+});
+
+check("every preset has weights for exactly its perspectives, adding to 100, and the save schema accepts them", () => {
+  for (const k of Object.keys(PRESETS)) {
+    const w = PRESET_WEIGHTS[k];
+    assert.deepEqual(Object.keys(w).sort(), [...PRESETS[k]].sort(), `weights of preset ${k}`);
+    assert.equal(Object.values(w).reduce((a, b) => a + b, 0), 100, `weights of preset ${k} add to 100`);
+    // a partial record used to answer 422 (zod 4 wants every key of an enum record), so the wizard could not save 90, 180 or 270
+    const res = roundUpdateSchema.safeParse({ raterTypes: PRESETS[k], perspectiveWeights: w });
+    assert.ok(res.success, `schema rejects preset ${k}`);
+  }
+});
+check("the upward preset is only the team rating its manager", () => {
+  assert.deepEqual(PRESETS.UP, ["SUBORDINATE"]);
+  const r = matchRaters(["c"], roster, PRESETS.UP);
+  assert.deepEqual(r.matches.map((m) => m.raterType), ["SUBORDINATE", "SUBORDINATE"]);
+  assert.deepEqual(r.matches.map((m) => m.raterId).sort(), ["x", "y"]);
 });
 
 console.log(`\n${n} checks passed`);
