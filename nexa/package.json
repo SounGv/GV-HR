@@ -25,6 +25,7 @@
     "check:score-icon": "node --experimental-strip-types scripts/check-score-icon.mjs",
     "check:rater-sheet": "node --experimental-strip-types scripts/check-rater-sheet.mjs",
     "check:leave-ranking": "node --experimental-strip-types scripts/check-leave-ranking.mjs",
+    "check:calendar-activity": "node --experimental-strip-types scripts/check-calendar-activity.mjs",
     "check:org-restructure": "node --experimental-strip-types scripts/check-org-restructure.mjs",
     "org:restructure": "node --env-file=.env.local ./node_modules/tsx/dist/cli.mjs scripts/apply-org-restructure.ts",
     "org:restructure:apply": "node --env-file=.env.local ./node_modules/tsx/dist/cli.mjs scripts/apply-org-restructure.ts --yes",

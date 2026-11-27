@@ -11,7 +11,10 @@ import {
   type HourRange,
   type TodayStatus,
 } from "@/features/attendance-status/status-rules";
+import { ACTIVITY_LOOKBACK_DAYS, usedClockInBy } from "./attendance-activity";
 import type { CalendarDayAttendance, CalendarDayCounts } from "./types";
+
+export { ACTIVITY_LOOKBACK_DAYS };
 
 const DAY_MS = 86_400_000;
 
@@ -62,15 +65,12 @@ function emptyCounts(): Record<TodayStatus, number> {
   return { NORMAL: 0, LATE: 0, ABSENT: 0, ON_LEAVE: 0, NOT_YET: 0 };
 }
 
-/** Same lookback as the dashboard: only people with a clock-in record this recently are checked. */
-export const ACTIVITY_LOOKBACK_DAYS = 60;
-
 /**
  * Absent / on leave / late head-counts for every finished working day of a month, for the numbers drawn inside each calendar cell.
  *
- * Same rules and people as the day panel and the attendance dashboard (classifyToday, the same team scope, only people who use
- * the clock-in app, whole-day leave excuses the day, an hour or morning half day moves the start), read once for the month
- * instead of once per day. Weekends, holidays and days still to come get no entry. Today is read as of now.
+ * Same rules and people as the day panel and the attendance dashboard (classifyToday, the same team scope, only people who had
+ * used the clock-in app by that day (usedClockInBy), whole-day leave excuses the day, an hour or morning half day moves the
+ * start), read once for the month instead of once per day. Weekends, holidays and days still to come get no entry. Today is read as of now.
  */
 export async function getMonthAttendanceCounts(
   companyId: string,
@@ -92,32 +92,25 @@ export async function getMonthAttendanceCounts(
   });
   if (roster.length === 0) return {};
 
-  const usage = await prisma.attendanceRecord.groupBy({
-    by: ["employeeId"],
-    where: {
-      companyId,
-      deletedAt: null,
-      workDate: { gte: new Date(start.getTime() - ACTIVITY_LOOKBACK_DAYS * DAY_MS), lt: rangeEnd },
-      employee: scope,
-    },
-  });
-  const users = new Set(usage.map((u) => u.employeeId));
-  const checked = roster.filter((e) => users.has(e.id));
-  if (checked.length === 0) return {};
-
   const holidays = await prisma.holiday.findMany({
     where: { companyId, deletedAt: null, date: { gte: start, lt: rangeEnd } },
     select: { date: true },
   });
   const holidaySet = new Set(holidays.map((h) => h.date.toISOString().slice(0, 10)));
 
+  // The month plus the lookback before it: the records say both what happened each day and who had started using the app by then.
   const records = await prisma.attendanceRecord.findMany({
-    where: { companyId, deletedAt: null, workDate: { gte: start, lt: rangeEnd }, employee: scope },
+    where: { companyId, deletedAt: null, workDate: { gte: new Date(start.getTime() - ACTIVITY_LOOKBACK_DAYS * DAY_MS), lt: rangeEnd }, employee: scope },
     select: { employeeId: true, workDate: true, clockInAt: true },
   });
+  if (records.length === 0) return {};
+  const recordDays = new Map<string, number[]>();
   const clockIn = new Map<string, number>();
   for (const r of records) {
-    if (r.clockInAt) clockIn.set(`${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`, bangkokParts(r.clockInAt).minutesOfDay);
+    recordDays.set(r.employeeId, [...(recordDays.get(r.employeeId) ?? []), r.workDate.getTime()]);
+    if (r.clockInAt && r.workDate.getTime() >= start.getTime()) {
+      clockIn.set(`${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`, bangkokParts(r.clockInAt).minutesOfDay);
+    }
   }
 
   const leaves = await prisma.leaveRequest.findMany({
@@ -153,7 +146,8 @@ export async function getMonthAttendanceCounts(
     }
 
     const counts: CalendarDayCounts = { absent: 0, leave: 0, late: 0 };
-    for (const e of checked) {
+    for (const e of roster) {
+      if (!usedClockInBy(cur.getTime(), recordDays.get(e.id) ?? [])) continue;
       const shift = shiftMinutesFromBatch(shifts, e.id, cur, e.employmentType);
       const shiftEnd = shift.endMin <= shift.startMin ? shift.endMin + 24 * 60 : shift.endMin;
       const hourly = excusedUntil(hours.get(e.id) ?? [], shift.startMin);
