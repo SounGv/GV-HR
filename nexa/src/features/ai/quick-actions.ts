@@ -10,6 +10,7 @@ export type QuickAction =
   | "pending_approvals"
   | "leave_quota"
   | "scan_month"
+  | "scan_daily"
   | "shifts_week"
   | "eval_progress"
   | "leave_ranking"
@@ -23,6 +24,7 @@ export const QUICK_ACTIONS: { id: QuickAction; label: string; icon: "clock" | "u
   { id: "pending_approvals", label: "มีอะไรรออนุมัติ", icon: "clip", needs: "none" },
   { id: "leave_quota", label: "โควตาวันลาของ…", icon: "cal", needs: "name", prefix: "โควตาวันลาของ " },
   { id: "scan_month", label: "สแกนเข้า-ออกเดือนนี้ของ…", icon: "clock", needs: "name", prefix: "สแกนเข้าออกของ " },
+  { id: "scan_daily", label: "เวลาเข้า-ออกพนักงานรายวัน", icon: "clock", needs: "none" },
   { id: "shifts_week", label: "ตารางกะสัปดาห์นี้", icon: "cal", needs: "none" },
   { id: "eval_progress", label: "ความคืบหน้ารอบประเมิน", icon: "chart", needs: "none" },
   { id: "leave_ranking", label: "ใครลาเยอะสุดปีนี้", icon: "cal", needs: "none" },
@@ -40,6 +42,20 @@ export interface QuickCommand {
   count?: number;
   /** The month asked for ("เดือน 11", "เดือนพฤศจิกายน"), 1 to 12; absent means this month. */
   month?: number;
+  /** An exact range typed as "1/11/2569 - 27/11/2569", as ISO days (Gregorian year); wins over `month`. */
+  from?: string;
+  to?: string;
+}
+
+/** What the chat sends to /api/ai/quick for a command read from typed text. */
+export function quickRequestOf(cmd: QuickCommand): { action: QuickAction; name?: string; count?: number; month?: number; from?: string; to?: string } {
+  return {
+    action: cmd.action,
+    ...(cmd.name ? { name: cmd.name } : {}),
+    ...(cmd.count ? { count: cmd.count } : {}),
+    ...(cmd.month ? { month: cmd.month } : {}),
+    ...(cmd.from && cmd.to ? { from: cmd.from, to: cmd.to } : {}),
+  };
 }
 
 export const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -56,6 +72,36 @@ function monthIn(t: string): number | undefined {
 }
 
 const clean = (s: string) => s.replace(/\s+/g, " ").trim();
+
+/** A real calendar day as ISO text, or null ("31/2/2026" is not a day). Years above 2400 are Buddhist. */
+function isoDay(y: number, m: number, d: number): string | null {
+  const year = y > 2400 ? y - 543 : y;
+  const t = new Date(Date.UTC(year, m - 1, d));
+  if (t.getUTCFullYear() !== year || t.getUTCMonth() !== m - 1 || t.getUTCDate() !== d) return null;
+  return t.toISOString().slice(0, 10);
+}
+
+/**
+ * An exact range typed as "1/11/2569 - 27/11/2569" or "1-27/11/2569". Returns the range and the text without it;
+ * no range when the days are not real, run backwards, or span more than a year (the words are then left in place).
+ */
+function rangeIn(t: string): { from?: string; to?: string; rest: string } {
+  const sep = "\\s*(?:-|–|ถึงวันที่|จนถึง|ถึง)\\s*";
+  const full = new RegExp(`(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*/\\s*(\\d{4})${sep}(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*/\\s*(\\d{4})`).exec(t);
+  const short = full ? null : new RegExp(`(\\d{1,2})${sep}(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*/\\s*(\\d{4})`).exec(t);
+  let from: string | null = null;
+  let to: string | null = null;
+  const hit = full ?? short;
+  if (full) {
+    from = isoDay(Number(full[3]), Number(full[2]), Number(full[1]));
+    to = isoDay(Number(full[6]), Number(full[5]), Number(full[4]));
+  } else if (short) {
+    from = isoDay(Number(short[4]), Number(short[3]), Number(short[1]));
+    to = isoDay(Number(short[4]), Number(short[3]), Number(short[2]));
+  }
+  if (!hit || !from || !to || from > to || Date.parse(to) - Date.parse(from) > 365 * 86400000) return { rest: t };
+  return { from, to, rest: t.replace(hit[0], " ") };
+}
 
 /** Polite and filler words that do not change what is asked. Longest first, so "มีอะไร" goes before "มี". */
 const FILLERS = ["ถึงไหนแล้ว", "ถึงไหน", "แล้ว", "สัปดาห์นี้", "ทั้งหมด", "ตอนนี้", "วันนี้", "หรือเปล่า", "มีอะไร", "ขอดู", "กี่คน", "บ้าง", "ไหม", "เปล่า", "ครับ", "ค่ะ", "คะ", "นะ", "หน่อย", "เช็กดู", "เช็คดู", "เช็ก", "เช็ค", "ดู", "ใคร", "มี", "คำขอ", "รายการ", "การ", "ที่"];
@@ -98,12 +144,17 @@ export function parseQuickCommand(raw: string): QuickCommand | null {
   // "สแกนเข้าออกของสมชาย", also "ดึงรายงาน พนักงานสแกนเข้าออกงาน รายวันของเดือน11 ให้หน่อย" (no name left: the answer links to the report).
   const scan = /^(?:ดึง|ขอ|ดู|เช็ก|เช็ค)?\s*(?:รายงาน)?\s*(?:พนักงาน)?\s*(?:สแกน|เวลา)เข้า\s*[-/]?\s*ออก(?:งาน)?(.*)$/.exec(t);
   if (scan) {
-    const rest = scan[1] ?? "";
-    const month = monthIn(rest);
+    const asked = scan[1] ?? "";
+    const { from, to, rest } = rangeIn(asked);
+    const month = from ? undefined : monthIn(rest);
+    // "พนักงานรายวัน" is the staff paid by the day; a bare "รายวัน" means the day-by-day report.
+    const dailyStaff = /พนักงานรายวัน|รายวัน(?:ทุกคน|ทั้งหมด)/.test(asked);
     let left = rest.replace(/เดือน\s*\d{1,2}(?!\d)/g, " ");
     for (const m of THAI_MONTHS) left = left.split(m).join(" ");
-    const name = clean(left.replace(/เดือน(?:นี้)?|รายวัน|พนักงาน|ให้หน่อย|หน่อย|ครับ|ค่ะ|คะ/g, " ").replace(/^\s*(?:ของ\s*)+/, ""));
-    return { action: "scan_month", ...(name ? { name } : {}), ...(month ? { month } : {}) };
+    const name = clean(left.replace(/เดือน(?:นี้)?|รายวัน|พนักงาน|วันที่|ตั้งแต่|ให้หน่อย|หน่อย|ครับ|ค่ะ|คะ/g, " ").replace(/^\s*(?:ของ\s*)+/, ""));
+    const range = from && to ? { from, to } : {};
+    if (dailyStaff && !name) return { action: "scan_daily", ...range, ...(month ? { month } : {}) };
+    return { action: "scan_month", ...(name ? { name } : {}), ...(month ? { month } : {}), ...range };
   }
   const ranking = /^(?:ปีนี้\s*)?(?:ใคร)?ลา(?:เยอะ|มาก|บ่อย)สุด(?:ปีนี้)?\s*(?:(\d{1,2})\s*อันดับ(?:แรก)?)?\s*(?:แยก(?:ตาม)?ประเภท(?:ลา)?)?$/.exec(t);
   if (ranking) return ranking[1] ? { action: "leave_ranking", count: Number(ranking[1]) } : { action: "leave_ranking" };

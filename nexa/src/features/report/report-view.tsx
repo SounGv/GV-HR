@@ -580,7 +580,10 @@ export function ReportView() {
   const [from, setFrom] = useState<string>(() => searchParams.get("from") ?? firstOfMonth());
   const [to, setTo] = useState<string>(() => searchParams.get("to") ?? searchParams.get("from") ?? todayStr());
   const [departmentIds, setDepartmentIds] = useState<string[]>([]);
-  const [employmentTypes, setEmploymentTypes] = useState<string[]>([]);
+  // ?employmentType= (repeatable) opens the report with those employment types already chosen (the chat's daily-staff link).
+  const [employmentTypes, setEmploymentTypes] = useState<string[]>(() =>
+    searchParams.getAll("employmentType").filter((t): t is (typeof EMPLOYMENT_TYPES)[number] => (EMPLOYMENT_TYPES as readonly string[]).includes(t)),
+  );
   // Same deep-link convention as "view" above — the command palette's
   // employee search links here with ?employeeId= when you're already on
   // the reports page, so picking a person filters the current report
@@ -604,7 +607,7 @@ export function ReportView() {
     (employeeIds.length ? 1 : 0) +
     (branchIds.length ? 1 : 0) +
     (costCenterIds.length ? 1 : 0);
-  const [filtersOpen, setFiltersOpen] = useState(() => !!initialEmployeeId);
+  const [filtersOpen, setFiltersOpen] = useState(() => !!initialEmployeeId || employmentTypes.length > 0);
   function clearFilters() {
     setDepartmentIds([]);
     setEmploymentTypes([]);

@@ -22,6 +22,9 @@ export interface QuickInput {
   action: QuickAction;
   count?: number;
   month?: number;
+  /** An exact range (ISO days), wins over `month`. */
+  from?: string;
+  to?: string;
   name?: string;
   title?: string;
   body?: string;
@@ -117,20 +120,33 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
       );
     }
 
+    case "scan_daily":
     case "scan_month": {
       if (!can(session.perms, "report:read")) return refused("ไม่ได้รับอนุญาต: ต้องมีสิทธิ์ดูรายงาน");
-      // The month asked for, else this one; a month later than this one means last year's.
+      // The range typed, else the month asked for (else this one: a month later than this one means last year's); the
+      // button for staff paid by the day with no date means this month so far.
       const now = bangkokParts();
       const month = input.month ?? now.month;
       const year = month > now.month ? now.year - 1 : now.year;
-      const from = `${year}-${String(month).padStart(2, "0")}-01`;
-      const to = `${year}-${String(month).padStart(2, "0")}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, "0")}`;
-      const monthText = `${THAI_MONTHS[month - 1]} ${year + 543}`;
+      const monthFrom = `${year}-${String(month).padStart(2, "0")}-01`;
+      const monthTo = `${year}-${String(month).padStart(2, "0")}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, "0")}`;
+      const thisMonthSoFar = input.action === "scan_daily" && !input.month && !input.from;
+      const from = input.from && input.to ? input.from : monthFrom;
+      const to = input.from && input.to ? input.to : thisMonthSoFar ? `${monthFrom.slice(0, 8)}${String(now.day).padStart(2, "0")}` : monthTo;
+      const thaiDay = (iso: string) => `${Number(iso.slice(8, 10))}/${Number(iso.slice(5, 7))}/${Number(iso.slice(0, 4)) + 543}`;
+      const monthText = input.from && input.to ? `${thaiDay(from)} ถึง ${thaiDay(to)}` : thisMonthSoFar ? `${THAI_MONTHS[month - 1]} ${year + 543} (ถึงวันนี้)` : `${THAI_MONTHS[month - 1]} ${year + 543}`;
+      const periodText = input.from && input.to ? `ช่วง ${monthText}` : `เดือน${monthText}`;
+      if (input.action === "scan_daily") {
+        // The report page filters by employment type (พนักงานรายวัน), shows the net hours and full or part day, and exports Excel.
+        return text(
+          `เวลาเข้า-ออกของพนักงานรายวัน ${periodText} มีหลายแถว เปิดดูและส่งออก Excel ได้ที่หน้ารายงาน ตั้งตัวกรองประเภทการจ้างเป็น "พนักงานรายวัน" ให้แล้ว (คนที่ตั้งเป็นพนักงานประจำแต่รับเงินรายวันไม่อยู่ในตัวกรองนี้)\n\n[เปิดรายงานเวลาเข้า-ออกพนักงานรายวัน ${periodText}](/reports?view=attendance_daily&from=${from}&to=${to}&employmentType=DAILY_WORKER)\n\nคอลัมน์ "ชั่วโมงสุทธิ (รายวัน)" และ "ครบวัน/ไม่เต็มวัน" ช่วยดูคนที่ทำไม่เต็มวัน`,
+        );
+      }
       const name = input.name?.trim();
       if (!name) {
         // Everyone's day-by-day scans run to hundreds of rows, too many for a chat: the report page shows and exports them.
         return text(
-          `รายงานสแกนเข้า-ออกรายวันของพนักงานทุกคน เดือน${monthText} มีหลายร้อยแถว เปิดดูและส่งออก Excel ได้ที่หน้ารายงาน\n\n[เปิดรายงานรายละเอียดการลงเวลา เดือน${monthText}](/reports?view=attendance_daily&from=${from}&to=${to})\n\nถ้าอยากดูทีละคน พิมพ์ "สแกนเข้าออกของ ชื่อ" ได้เลย`,
+          `รายงานสแกนเข้า-ออกรายวันของพนักงานทุกคน ${periodText} มีหลายร้อยแถว เปิดดูและส่งออก Excel ได้ที่หน้ารายงาน\n\n[เปิดรายงานรายละเอียดการลงเวลา ${periodText}](/reports?view=attendance_daily&from=${from}&to=${to})\n\nถ้าอยากดูทีละคน พิมพ์ "สแกนเข้าออกของ ชื่อ" ได้เลย`,
         );
       }
       const found = await findInScope(session.companyId, name, scopeWhere);
@@ -141,11 +157,11 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
       const report = await getReport(session.companyId, { type: "attendance_daily", from, to, employeeId: [person.id], employeeWhere: scopeWhere, includeNames: false });
       const days = [...report.rows].reverse();
       const who = displayName(person);
-      if (days.length === 0) return text(`${who} ไม่มีการสแกนเข้า-ออกเดือน${monthText}`);
+      if (days.length === 0) return text(`${who} ไม่มีการสแกนเข้า-ออก${periodText}`);
       const lateDays = days.filter((r) => typeof r.lateMinutes === "number").length;
       return text(
         quickToMarkdown({
-          text: `การสแกนเข้า-ออกเดือน${monthText} ของ ${who} ${days.length} วัน มาสาย ${lateDays} วัน`,
+          text: `การสแกนเข้า-ออก${periodText} ของ ${who} ${days.length} วัน มาสาย ${lateDays} วัน`,
           table: { head: ["วันที่", "เข้า", "ออก", "สาย (นาที)", "สถานะ"], rows: days.map((r) => [String(r.date), String(r.clockIn), String(r.clockOut), String(r.lateMinutes), String(r.status)]) },
           note: "แสดงเฉพาะวันที่มีบันทึก วันที่ไม่แสดงคือวันหยุดหรือไม่มีการสแกน ดูวันขาดได้ที่รายงาน สรุปการลงเวลา (รายเดือน)",
         }),

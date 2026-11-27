@@ -26,7 +26,18 @@ check("scan report takes the name after it, and asks for one when there is none"
   assert.deepEqual(parseQuickCommand("สแกนเข้าออกของ สมชาย ใจดี"), { action: "scan_month", name: "สมชาย ใจดี" });
   assert.deepEqual(parseQuickCommand("ดูสแกนเข้า-ออก 1023"), { action: "scan_month", name: "1023" });
   assert.deepEqual(parseQuickCommand("สแกนเข้า-ออกเดือนนี้ของ สมหญิง"), { action: "scan_month", name: "สมหญิง" });
-  assert.deepEqual(parseQuickCommand("ดึงรายงานสแกนเข้าออก ของพนักงานรายวันของเดือนนี้ให้หน่อย"), { action: "scan_month" }, "the exact sentence that failed: no name, so the screen asks");
+  assert.deepEqual(parseQuickCommand("ดึงรายงานสแกนเข้าออก ของพนักงานรายวันของเดือนนี้ให้หน่อย"), { action: "scan_daily" }, "staff paid by the day get their own answer");
+});
+check("an exact date range typed in Thai years is read, with or without the staff-by-the-day words", () => {
+  // The sentence typed on 27 Nov 2026 that the backup AI answered with "ไม่เห็นข้อมูลในระบบ".
+  assert.deepEqual(parseQuickCommand("ดึง เวลาเข้าออกงาน พนักงานรายวัน วันที่ 1/11/ 2569 -27/11/2569"), { action: "scan_daily", from: "2026-11-01", to: "2026-11-27" });
+  assert.deepEqual(parseQuickCommand("เวลาเข้าออกงาน 1-27/11/2569"), { action: "scan_month", from: "2026-11-01", to: "2026-11-27" });
+  assert.deepEqual(parseQuickCommand("สแกนเข้าออกของ สมชาย 1/11/2569 ถึง 27/11/2569"), { action: "scan_month", name: "สมชาย", from: "2026-11-01", to: "2026-11-27" });
+  assert.deepEqual(parseQuickCommand("เวลาเข้าออกงาน พนักงานรายวัน 1/11/2026 - 27/11/2026"), { action: "scan_daily", from: "2026-11-01", to: "2026-11-27" });
+});
+check("a range with a day that does not exist, or that runs backwards, is ignored", () => {
+  assert.equal(parseQuickCommand("เวลาเข้าออกงาน พนักงานรายวัน 31/2/2569 - 5/3/2569")?.action, "scan_month", "not a real day: no range, the leftover words are searched as a name and found nobody");
+  assert.deepEqual(parseQuickCommand("เวลาเข้าออกงาน พนักงานรายวัน 27/11/2569 - 1/11/2569")?.from, undefined, "backwards range is ignored");
 });
 check("scan report also understands the month and the wording that failed on 26 Nov", () => {
   assert.deepEqual(parseQuickCommand("ดึงรายงาน พนักงานสแกนเข้าออกงาน รายวันของเดือน11 ให้หน่อย"), { action: "scan_month", month: 11 });

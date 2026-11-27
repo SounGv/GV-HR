@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { useAiAccess, useChat, useQuick } from "./hooks";
 import { EngineBadge, FallbackBanner, QuickChips, QuickForm, useEngineMode } from "./fallback-ui";
 import { FALLBACK_NOT_UNDERSTOOD } from "./engine-state";
-import { parseQuickCommand, QUICK_ACTIONS } from "./quick-actions";
+import { parseQuickCommand, QUICK_ACTIONS, quickRequestOf } from "./quick-actions";
 import { ApiError } from "@/lib/api/client";
 import { AttachButton, AttachTray, FileDownloads, SentFiles, useAttachments } from "./attachments-ui";
 import { playReplyChime, unlockReplyChime } from "./reply-chime";
@@ -250,7 +250,7 @@ export function AiWorkspace({ initialQuestion }: { initialQuestion?: string }) {
           setForm(cmd.action);
           setInput("");
         } else {
-          runQuick({ action: cmd.action, ...(cmd.name ? { name: cmd.name } : {}), ...(cmd.count ? { count: cmd.count } : {}), ...(cmd.month ? { month: cmd.month } : {}) }, q);
+          runQuick(quickRequestOf(cmd), q);
         }
         return;
       }

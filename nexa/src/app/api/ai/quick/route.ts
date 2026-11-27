@@ -9,9 +9,11 @@ import { runQuickAction } from "@/lib/ai/quick";
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
-  action: z.enum(["late_today", "absent_today", "pending_approvals", "leave_quota", "scan_month", "shifts_week", "eval_progress", "leave_ranking", "announce", "notify"]),
+  action: z.enum(["late_today", "absent_today", "pending_approvals", "leave_quota", "scan_month", "scan_daily", "shifts_week", "eval_progress", "leave_ranking", "announce", "notify"]),
   count: z.number().int().min(1).max(50).optional(),
   month: z.number().int().min(1).max(12).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   name: z.string().trim().max(100).optional(),
   title: z.string().trim().max(200).optional(),
   body: z.string().trim().max(5000).optional(),
