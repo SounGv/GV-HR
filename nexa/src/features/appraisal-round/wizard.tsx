@@ -1127,6 +1127,18 @@ function StepRaters({
   const missing = m.rows.filter((r) => typesSaved.includes("MANAGER") && !r.managerId);
   const overloaded = m.exceptions.filter((e) => e.kind === "OVERLOADED");
   const noPeers = m.exceptions.filter((e) => e.kind === "NO_PEERS");
+  const peersByHand = round.overrides.manualPeers === true;
+  const saveHand = useSaveRound(round.id);
+
+  /** Peers picked by HR only (cross-team), saved at once with the hand-set pairs, which are kept as they are. */
+  async function setPeersByHand(on: boolean) {
+    const { add, remove } = round.overrides;
+    try {
+      await saveHand.mutateAsync({ raterPairs: add.length || remove.length || on ? { add, remove, ...(on ? { manualPeers: true } : {}) } : null });
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "บันทึกไม่สำเร็จ");
+    }
+  }
 
   return (
     <div>
@@ -1177,10 +1189,25 @@ function StepRaters({
           ผู้ถูกประเมินในรอบนี้คือหัวหน้า ผู้ประเมินคือลูกน้องที่ตั้งหัวหน้าคนนั้นไว้ในผังองค์กร หัวหน้าที่ไม่มีลูกน้องจะไม่มีผู้ประเมิน
         </p>
       )}
-      {draft.types.includes("PEER") && (
-        <p className="bg-muted text-muted-foreground mt-3 rounded-lg px-3.5 py-2.5 text-sm">
-          เพื่อนร่วมงาน = คนที่มีหัวหน้าคนเดียวกัน ระบบเลือกให้คนละไม่เกิน {PEER_LIMIT} คน
-        </p>
+      {draft.types.includes("PEER") ? (
+        <div className="bg-muted mt-3 rounded-lg px-3.5 py-2.5 text-sm">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 md:min-h-10">
+            <Switch checked={peersByHand} disabled={saveHand.isPending} onCheckedChange={(v) => setPeersByHand(v === true)} />
+            <span className="font-semibold">เลือกเพื่อนร่วมงานเอง</span>
+            <span className="text-muted-foreground text-xs">ข้ามทีมได้ ระบบจะไม่เลือกเพื่อนทีมเดียวกันให้</span>
+          </label>
+          <p className="text-muted-foreground mt-1">
+            {peersByHand
+              ? "กด “เลือกคู่ข้ามทีม” ในกล่อง “ตั้งผู้ประเมินเอง” ด้านล่าง เพื่อเลือกว่าใครประเมินใคร คะแนนนับตามน้ำหนักเพื่อนร่วมงาน"
+              : `เพื่อนร่วมงาน = คนที่มีหัวหน้าคนเดียวกัน ระบบเลือกให้คนละไม่เกิน ${PEER_LIMIT} คน`}
+          </p>
+        </div>
+      ) : (
+        draft.types.length > 0 && (
+          <p className="text-muted-foreground mt-3 text-sm">
+            อยากให้ผู้ร่วมงานต่างทีมประเมินด้วย เลือก 270° หรือ 360° แล้วเปิด “เลือกเพื่อนร่วมงานเอง”
+          </p>
+        )
       )}
 
       <Sub>ผลการจับคู่</Sub>
@@ -1205,7 +1232,7 @@ function StepRaters({
           {noPeers.length > 0 && (
             <li className="flex gap-2">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-              {noPeers.length} คนไม่มีเพื่อนร่วมทีม (ไม่มีคนอื่นใต้หัวหน้าเดียวกัน)
+              {noPeers.length} คน{peersByHand ? "ยังไม่ได้เลือกเพื่อนร่วมงาน" : "ไม่มีเพื่อนร่วมทีม (ไม่มีคนอื่นใต้หัวหน้าเดียวกัน)"}{" "}
               จะไม่มีมุมมองเพื่อน:{" "}
               {noPeers
                 .slice(0, 4)

@@ -23,7 +23,10 @@ export const roundUpdateSchema = z.object({
   /** employeeId -> form id (null = the round's own form). Only people already in the round are changed. */
   participantForms: z.record(z.string().min(1), z.string().min(1).nullable()).optional(),
   /** Rater pairs HR set by hand (null = clear them). employeeId pairs; see applyRaterOverrides. */
-  raterPairs: z.object({ add: z.array(pairSchema).max(5000), remove: z.array(pairSchema).max(5000) }).nullable().optional(),
+  raterPairs: z
+    .object({ add: z.array(pairSchema).max(5000), remove: z.array(pairSchema).max(5000), manualPeers: z.boolean().optional() })
+    .nullable()
+    .optional(),
 });
 
 export const answersSchema = z.object({

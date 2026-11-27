@@ -15,6 +15,7 @@ import { formsInUse, pickForm, type RoundSnapshot } from "./form-snapshot";
 import { cleanAnswers, summarizeAnswers, unansweredRequired, visibleQuestions, type Answer, type QuestionSummary, type SnapQuestion } from "./answers";
 import {
   applyRaterOverrides,
+  autoRaterTypes,
   matchRaters,
   planInvitations,
   readOverrides,
@@ -170,16 +171,17 @@ async function loadDraft(companyId: string, id: string) {
 /** Keeps only pairs between real people of this company, once each; nothing left means "nothing set by hand" (null). */
 async function cleanPairs(companyId: string, raw: unknown): Promise<RaterPairOverrides | null> {
   const ov = readOverrides(raw);
+  const manual = ov.manualPeers === true;
   const ids = [...new Set([...ov.add, ...ov.remove].flatMap((m) => [m.participantId, m.raterId]))];
-  if (ids.length === 0) return null;
+  if (ids.length === 0) return manual ? { add: [], remove: [], manualPeers: true } : null;
   const found = new Set(
     (await prisma.employee.findMany({ where: { id: { in: ids }, companyId, deletedAt: null }, select: { id: true } })).map((e) => e.id),
   );
   const tidy = (list: Match[]) => [
     ...new Map(list.filter((m) => found.has(m.participantId) && found.has(m.raterId)).map((m) => [`${m.participantId}|${m.raterId}|${m.raterType}`, m])).values(),
   ];
-  const out = { add: tidy(ov.add), remove: tidy(ov.remove) };
-  return out.add.length || out.remove.length ? out : null;
+  const out: RaterPairOverrides = { add: tidy(ov.add), remove: tidy(ov.remove), ...(manual ? { manualPeers: true } : {}) };
+  return out.add.length || out.remove.length || manual ? out : null;
 }
 
 export async function updateRound(companyId: string, session: AccessClaims, id: string, input: RoundUpdateInput, meta?: Meta) {
@@ -261,11 +263,11 @@ export async function updateRound(companyId: string, session: AccessClaims, id: 
     const cur = readOverrides(row?.raterPairs);
     if (cur.add.length || cur.remove.length) {
       const stay = new Set((await prisma.appraisalParticipant.findMany({ where: { roundId: id }, select: { employeeId: true } })).map((p) => p.employeeId));
-      const next = { add: cur.add.filter((m) => stay.has(m.participantId)), remove: cur.remove.filter((m) => stay.has(m.participantId)) };
+      const next = { ...cur, add: cur.add.filter((m) => stay.has(m.participantId)), remove: cur.remove.filter((m) => stay.has(m.participantId)) };
       if (next.add.length !== cur.add.length || next.remove.length !== cur.remove.length) {
         await prisma.appraisalRound.update({
           where: { id },
-          data: { raterPairs: next.add.length || next.remove.length ? (next as unknown as Prisma.InputJsonValue) : Prisma.DbNull },
+          data: { raterPairs: next.add.length || next.remove.length || next.manualPeers ? (next as unknown as Prisma.InputJsonValue) : Prisma.DbNull },
         });
         pairsAfter = { add: next.add.length, remove: next.remove.length };
       }
@@ -342,7 +344,7 @@ export async function getRound(companyId: string, id: string) {
   const people: RosterPerson[] = roster.map((e) => ({ id: e.id, managerId: e.managerId, active: e.status === "ACTIVE" }));
   // The org chart decides first; what HR set by hand is put on top (see applyRaterOverrides).
   const overrides = readOverrides(round.raterPairs);
-  const match = applyRaterOverrides(matchRaters(participantIds, people, types), overrides, { participantIds, roster: people, types });
+  const match = applyRaterOverrides(matchRaters(participantIds, people, autoRaterTypes(types, overrides)), overrides, { participantIds, roster: people, types });
   const manualKeys = new Set(overrides.add.map((m) => `${m.participantId}|${m.raterId}|${m.raterType}`));
   const withoutRater = match.exceptions.filter((e) => e.kind === "NO_RATER").length;
 
@@ -524,7 +526,7 @@ export async function openRound(companyId: string, session: AccessClaims, id: st
 
   const roster = await loadRoster(companyId);
   const people: RosterPerson[] = roster.map((e) => ({ id: e.id, managerId: e.managerId, active: e.status === "ACTIVE" }));
-  const { matches } = applyRaterOverrides(matchRaters(detail.participantIds, people, detail.raterTypes), detail.overrides, {
+  const { matches } = applyRaterOverrides(matchRaters(detail.participantIds, people, autoRaterTypes(detail.raterTypes, detail.overrides)), detail.overrides, {
     participantIds: detail.participantIds,
     roster: people,
     types: detail.raterTypes,

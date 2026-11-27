@@ -1,7 +1,7 @@
 // Checks hand-set rater pairs: how they sit on top of the org-chart matching, and how a pasted list is read.
 // Run: node --experimental-strip-types scripts/check-appraisal-raters.mjs
 import assert from "node:assert/strict";
-import { MAX_LOAD, addPair, applyRaterOverrides, matchRaters, readOverrides, removePair } from "../src/features/appraisal-round/rules.ts";
+import { MAX_LOAD, addPair, applyRaterOverrides, autoRaterTypes, matchRaters, readOverrides, removePair } from "../src/features/appraisal-round/rules.ts";
 import { parsePairLines } from "../src/features/appraisal-round/pair-import.ts";
 
 let n = 0;
@@ -152,6 +152,31 @@ check("every kind of bad line is reported with its line number and none of them 
   assert.deepEqual(r.problems.map((p) => [p.line, p.kind]), [
     [2, "FORMAT"], [3, "NO_RATER"], [4, "NO_RATEE"], [5, "AMBIGUOUS_RATER"], [6, "AMBIGUOUS_RATEE"], [7, "BAD_TYPE"], [8, "BAD_PAIR"], [9, "BAD_PAIR"], [10, "DUPLICATE"],
   ]);
+});
+
+check("peers picked by hand: the same-manager peers are left out, the cross-team pair is in, and the flag survives edits", () => {
+  // other team: boss2 -> z ; a and b share boss, z works in another team
+  const people = [...roster, { id: "boss2", managerId: null, active: true }, { id: "z", managerId: "boss2", active: true }];
+  const types = ["MANAGER", "PEER"];
+  const ids = ["a", "b"];
+  const pair = { participantId: "a", raterId: "z", raterType: "PEER" };
+  const ov = addPair({ add: [], remove: [], manualPeers: true }, pair);
+  assert.equal(ov.manualPeers, true);
+  assert.equal(removePair(ov, pair).manualPeers, true);
+  assert.deepEqual(autoRaterTypes(types, ov), ["MANAGER"]);
+  assert.deepEqual(autoRaterTypes(types, { add: [], remove: [] }), types);
+  const auto = matchRaters(ids, people, autoRaterTypes(types, ov));
+  const out = applyRaterOverrides(auto, ov, { participantIds: ids, roster: people, types });
+  assert.deepEqual(keys(out), ["a<-boss:MANAGER", "a<-z:PEER", "b<-boss:MANAGER"]);
+  // b has no peer yet: said so, but is not left without a rater
+  assert.deepEqual(out.exceptions.map((e) => [e.kind, e.employeeId]), [["NO_PEERS", "b"]]);
+  // without the flag the automatic peers (a and b rate each other) come back
+  const plain = applyRaterOverrides(matchRaters(ids, people, types), { add: [pair], remove: [] }, { participantIds: ids, roster: people, types });
+  assert.ok(keys(plain).includes("a<-b:PEER") && keys(plain).includes("b<-a:PEER"));
+});
+check("the manual-peers flag is read only when it is true", () => {
+  assert.equal(readOverrides({ add: [], remove: [], manualPeers: true }).manualPeers, true);
+  assert.deepEqual(readOverrides({ add: [], remove: [], manualPeers: "yes" }), { add: [], remove: [] });
 });
 
 console.log(`\n${n} checks passed`);

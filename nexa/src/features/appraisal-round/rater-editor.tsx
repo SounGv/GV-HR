@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { CrossTeamDialog } from "./cross-team-dialog";
 import { useCandidates, useSaveRound } from "./hooks";
 import { parsePairLines, type PairProblemKind } from "./pair-import";
 import { addPair, removePair, type RaterPairOverrides, type RaterType } from "./rules";
@@ -40,6 +41,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
   const save = useSaveRound(round.id);
   const [editing, setEditing] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [crossing, setCrossing] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [q, setQ] = useState("");
@@ -75,7 +77,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
 
   async function apply(next: RaterPairOverrides, done: string) {
     try {
-      await save.mutateAsync({ raterPairs: next.add.length || next.remove.length ? next : null });
+      await save.mutateAsync({ raterPairs: next.add.length || next.remove.length || next.manualPeers ? next : null });
       toast.success(done);
       return true;
     } catch (err) {
@@ -104,6 +106,11 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
           </>
         )}
         <span className="ml-auto flex flex-wrap gap-2">
+          {round.raterTypes.includes("PEER") && (
+            <Button className="h-11 md:h-10" onClick={() => setCrossing(true)} disabled={save.isPending}>
+              เลือกคู่ข้ามทีม
+            </Button>
+          )}
           <Button variant="outline" className="h-11 md:h-9" onClick={() => setImporting(true)} disabled={save.isPending}>
             นำเข้ารายชื่อคู่
           </Button>
@@ -115,7 +122,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
         </span>
       </div>
       <p className="text-muted-foreground mt-2 text-sm">
-        ใช้เมื่อผังองค์กรไม่ตรงกับที่ทำจริง เช่น หัวหน้าประเมินคนต่างฝ่าย หรือลูกน้องเลือกประเมินหัวหน้าหลายคน ป้ายเขียว = ตั้งเอง ป้ายขาว = ระบบจับคู่จากผังองค์กร
+        ใช้เมื่อผังองค์กรไม่ตรงกับที่ทำจริง เช่น หัวหน้าประเมินคนต่างฝ่าย ลูกน้องเลือกประเมินหัวหน้าหลายคน หรือทีมที่เดือนนี้ทำงานร่วมกับอีกทีม ป้ายเขียว = ตั้งเอง ป้ายขาว = ระบบจับคู่จากผังองค์กร
       </p>
 
       <div className="mt-3 inline-flex overflow-hidden rounded-sm border border-border" role="group" aria-label="มุมมองการจับคู่">
@@ -295,6 +302,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
 
       {editRow && <EditRatersDialog round={round} row={editRow} ov={ov} apply={apply} busy={save.isPending} onClose={() => setEditing(null)} />}
       {importing && <ImportPairsDialog round={round} ov={ov} apply={apply} busy={save.isPending} onClose={() => setImporting(false)} />}
+      {crossing && <CrossTeamDialog round={round} ov={ov} apply={apply} busy={save.isPending} onClose={() => setCrossing(false)} />}
       <ConfirmDialog
         open={clearing}
         onOpenChange={setClearing}
@@ -304,7 +312,7 @@ export function RaterPairsPanel({ round }: { round: RoundDetail }) {
         destructive
         loading={save.isPending}
         onConfirm={async () => {
-          if (await apply({ add: [], remove: [] }, "ล้างที่ตั้งเองแล้ว")) setClearing(false);
+          if (await apply({ add: [], remove: [], ...(ov.manualPeers ? { manualPeers: true } : {}) }, "ล้างที่ตั้งเองแล้ว")) setClearing(false);
         }}
       />
     </section>

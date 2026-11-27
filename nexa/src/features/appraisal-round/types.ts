@@ -101,6 +101,8 @@ export interface RoundDetail {
   overrides: {
     add: { participantId: string; raterId: string; raterType: RaterType }[];
     remove: { participantId: string; raterId: string; raterType: RaterType }[];
+    /** Peers are only the pairs HR picks (no automatic same-manager peers). */
+    manualPeers?: boolean;
   };
   startIso: string | null;
   endIso: string | null;
@@ -189,7 +191,7 @@ export interface RoundSavePayload {
   notifyLine?: boolean;
   participantIds?: string[];
   /** Rater pairs set by hand on top of the org-chart matching; null clears them. */
-  raterPairs?: { add: { participantId: string; raterId: string; raterType: RaterType }[]; remove: { participantId: string; raterId: string; raterType: RaterType }[] } | null;
+  raterPairs?: { add: { participantId: string; raterId: string; raterType: RaterType }[]; remove: { participantId: string; raterId: string; raterType: RaterType }[]; manualPeers?: boolean } | null;
 }
 
 export interface MatrixRow {

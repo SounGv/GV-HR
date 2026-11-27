@@ -127,6 +127,13 @@ export function matchRaters(
 export interface RaterPairOverrides {
   add: Match[];
   remove: Match[];
+  /** Peers are only the pairs HR picks: the same-manager peers are not added automatically (cross-team collaborators). */
+  manualPeers?: boolean;
+}
+
+/** The rater types the org chart fills in by itself; PEER is left out when HR picks the peers by hand. */
+export function autoRaterTypes(types: readonly RaterType[], overrides: RaterPairOverrides | null | undefined): readonly RaterType[] {
+  return overrides?.manualPeers ? types.filter((t) => t !== "PEER") : types;
 }
 
 const pairKey = (m: Match) => `${m.participantId}|${m.raterId}|${m.raterType}`;
@@ -145,23 +152,23 @@ export function readOverrides(raw: unknown): RaterPairOverrides {
         )
       : [];
   const o = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
-  return { add: list(o.add), remove: list(o.remove) };
+  return { add: list(o.add), remove: list(o.remove), ...(o.manualPeers === true ? { manualPeers: true } : {}) };
 }
 
 /** The overrides after HR adds one pair: if it had been taken out it comes back, otherwise it is added once. */
 export function addPair(ov: RaterPairOverrides, m: Match): RaterPairOverrides {
   const k = pairKey(m);
-  if (ov.remove.some((x) => pairKey(x) === k)) return { add: ov.add, remove: ov.remove.filter((x) => pairKey(x) !== k) };
+  if (ov.remove.some((x) => pairKey(x) === k)) return { ...ov, remove: ov.remove.filter((x) => pairKey(x) !== k) };
   if (ov.add.some((x) => pairKey(x) === k)) return ov;
-  return { add: [...ov.add, m], remove: ov.remove };
+  return { ...ov, add: [...ov.add, m] };
 }
 
 /** The overrides after HR removes one rater: a hand-set one is simply dropped, an automatic one is recorded as taken out. */
 export function removePair(ov: RaterPairOverrides, m: Match): RaterPairOverrides {
   const k = pairKey(m);
-  if (ov.add.some((x) => pairKey(x) === k)) return { add: ov.add.filter((x) => pairKey(x) !== k), remove: ov.remove };
+  if (ov.add.some((x) => pairKey(x) === k)) return { ...ov, add: ov.add.filter((x) => pairKey(x) !== k) };
   if (ov.remove.some((x) => pairKey(x) === k)) return ov;
-  return { add: ov.add, remove: [...ov.remove, m] };
+  return { ...ov, remove: [...ov.remove, m] };
 }
 
 export interface OverrideContext {
