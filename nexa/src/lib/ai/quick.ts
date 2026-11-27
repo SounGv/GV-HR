@@ -4,13 +4,13 @@ import type { AccessClaims } from "@/lib/auth/jwt";
 import { loadTodayAttendance } from "@/features/attendance-status/service";
 import { LEAVE_TYPE_LABEL } from "@/features/leave/labels";
 import { clampTop, dayText as leaveDayText, rankLeave } from "@/features/ai/leave-ranking";
-import { displayName } from "@/lib/format";
+import { displayName, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { executeReadTool, findInScope } from "@/lib/ai/read-tools";
 import { getReport } from "@/features/report/service";
 import { prepareProposal } from "@/lib/ai/proposals";
 import type { ProposalCard } from "@/features/ai/proposal";
-import { LOCAL_SOURCE_LINE, quickToMarkdown, QUICK_MAX_ROWS, rowsNote, THAI_MONTHS, type QuickAction } from "@/features/ai/quick-actions";
+import { LOCAL_SOURCE_LINE, quickToMarkdown, QUICK_MAX_ROWS, rowsNote, tableToMarkdown, THAI_MONTHS, type QuickAction } from "@/features/ai/quick-actions";
 import { bangkokParts } from "@/lib/datetime";
 
 /**
@@ -137,10 +137,55 @@ export async function runQuickAction(session: AccessClaims, scopeWhere: Prisma.E
       const monthText = input.from && input.to ? `${thaiDay(from)} ถึง ${thaiDay(to)}` : thisMonthSoFar ? `${THAI_MONTHS[month - 1]} ${year + 543} (ถึงวันนี้)` : `${THAI_MONTHS[month - 1]} ${year + 543}`;
       const periodText = input.from && input.to ? `ช่วง ${monthText}` : `เดือน${monthText}`;
       if (input.action === "scan_daily") {
-        // The report page filters by employment type (พนักงานรายวัน), shows the net hours and full or part day, and exports Excel.
-        return text(
-          `เวลาเข้า-ออกของพนักงานรายวัน ${periodText} มีหลายแถว เปิดดูและส่งออก Excel ได้ที่หน้ารายงาน ตั้งตัวกรองประเภทการจ้างเป็น "พนักงานรายวัน" ให้แล้ว (คนที่ตั้งเป็นพนักงานประจำแต่รับเงินรายวันไม่อยู่ในตัวกรองนี้)\n\n[เปิดรายงานเวลาเข้า-ออกพนักงานรายวัน ${periodText}](/reports?view=attendance_daily&from=${from}&to=${to}&employmentType=DAILY_WORKER)\n\nคอลัมน์ "ชั่วโมงสุทธิ (รายวัน)" และ "ครบวัน/ไม่เต็มวัน" ช่วยดูคนที่ทำไม่เต็มวัน`,
-        );
+        // Staff paid by the day: a daily worker, or anyone whose pay type is DAILY (the same people worked-time.ts counts).
+        const people = await prisma.employee.findMany({
+          where: { companyId: session.companyId, deletedAt: null, AND: [{ OR: [{ employmentType: "DAILY_WORKER" }, { compensationType: "DAILY" }] }, scopeWhere ?? {}] },
+          select: { id: true },
+        });
+        if (people.length === 0) return text("ไม่พบพนักงานรายวันในขอบเขตของคุณ");
+        const report = await getReport(session.companyId, { type: "attendance_daily", from, to, employeeId: people.map((p) => p.id), employeeWhere: scopeWhere, includeNames: false });
+        // Only days with a scan have a day kind; leave and absent rows show "-" there and are not counted.
+        const scanned = report.rows.filter((r) => r.dayKind === "ครบวัน" || r.dayKind === "ไม่เต็มวัน" || r.dayKind === "ลืมสแกนออก");
+        // Today's day is not over: someone with no scan-out yet is still at work, not a forgotten scan.
+        const todayText = formatDate(bangkokParts().dateUTC);
+        const days = scanned.filter((r) => !(r.dayKind === "ลืมสแกนออก" && r.date === todayText));
+        const stillAtWork = scanned.length - days.length;
+        const byPerson = new Map<string, { name: string; days: number; full: number; part: number; noOut: number; netHours: number }>();
+        for (const r of days) {
+          const key = String(r.code);
+          const p = byPerson.get(key) ?? { name: String(r.name), days: 0, full: 0, part: 0, noOut: 0, netHours: 0 };
+          p.days += 1;
+          if (r.dayKind === "ครบวัน") p.full += 1;
+          else if (r.dayKind === "ไม่เต็มวัน") p.part += 1;
+          else p.noOut += 1;
+          if (typeof r.netHours === "number") p.netHours += r.netHours;
+          byPerson.set(key, p);
+        }
+        const link = `[เปิดรายงานเวลาเข้า-ออกพนักงานรายวัน ${periodText}](/reports?view=attendance_daily&from=${from}&to=${to}&employmentType=DAILY_WORKER)`;
+        if (byPerson.size === 0) return text(`พนักงานรายวัน ${people.length} คน ไม่มีการสแกนเข้า-ออก${periodText}\n\n${link}`);
+        const summary = [...byPerson.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        // The days HR types the pay for by hand: part days and days with no scan-out (net hours as the report counts them: 1 hour lunch off a long day, rounded down to 15 minutes).
+        const odd = days.filter((r) => r.dayKind !== "ครบวัน");
+        const shown = odd.slice(0, 40);
+        const table = tableToMarkdown;
+        const sections = [
+          `พนักงานรายวัน ${people.length} คน ${periodText} ครบวัน ${days.filter((r) => r.dayKind === "ครบวัน").length} วัน ไม่เต็มวัน ${days.filter((r) => r.dayKind === "ไม่เต็มวัน").length} วัน ลืมสแกนออก ${days.filter((r) => r.dayKind === "ลืมสแกนออก").length} วัน`,
+          table(
+            ["รหัส", "ชื่อ", "มา (วัน)", "ครบ", "ไม่เต็ม", "ลืมออก", "ชม.สุทธิ"],
+            summary.map(([code, p]) => [code, p.name, String(p.days), String(p.full), String(p.part), String(p.noOut), String(p.netHours)]),
+          ),
+        ];
+        if (odd.length > 0) {
+          sections.push(
+            `วันที่ไม่เต็มวันหรือลืมสแกนออก (ใช้ตอนใส่เงินเอง)`,
+            table(["วันที่", "ชื่อ", "เข้า", "ออก", "ชม.สุทธิ", "สถานะ"], shown.map((r) => [String(r.date), String(r.name), String(r.clockIn), String(r.clockOut), String(r.netHours), String(r.dayKind)])),
+          );
+          const cut = rowsNote(shown.length, odd.length, "วัน");
+          if (cut) sections.push(`${cut} ดูครบได้ที่รายงาน`);
+        }
+        if (stillAtWork > 0) sections.push(`วันนี้มี ${stillAtWork} คนที่ยังไม่สแกนออก ยังไม่นับเป็นลืมสแกนออก เพราะวันยังไม่จบ`);
+        sections.push(link, `ชั่วโมงสุทธิหักพักเที่ยง 1 ชม. เมื่อทำงานเกิน 5 ชม. ปัดลงทีละ 15 นาที ตัวเลขนี้ใช้ดูอย่างเดียว ไม่แตะเงิน ตัวกรองในลิงก์ครอบคลุมเฉพาะประเภทการจ้าง “พนักงานรายวัน”`);
+        return text(sections.join("\n\n"));
       }
       const name = input.name?.trim();
       if (!name) {

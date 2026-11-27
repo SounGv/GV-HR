@@ -182,15 +182,15 @@ export const LOCAL_SOURCE_LINE = "ตอบจากข้อมูลในร�
 
 const cell = (s: string) => s.replace(/\|/g, "/").replace(/\r?\n/g, " ");
 
+/** A Markdown table; a pipe or line break inside a cell cannot break it. */
+export function tableToMarkdown(head: string[], rows: string[][]): string {
+  return [`| ${head.map(cell).join(" | ")} |`, `| ${head.map(() => "---").join(" | ")} |`, ...rows.map((row) => `| ${row.map(cell).join(" | ")} |`)].join("\n");
+}
+
 /** The answer as Markdown, the form the chat already shows (headings, tables). */
 export function quickToMarkdown(r: QuickResultBody): string {
   const parts = [r.text];
-  if (r.table && r.table.rows.length > 0) {
-    const head = `| ${r.table.head.map(cell).join(" | ")} |`;
-    const sep = `| ${r.table.head.map(() => "---").join(" | ")} |`;
-    const rows = r.table.rows.map((row) => `| ${row.map(cell).join(" | ")} |`);
-    parts.push([head, sep, ...rows].join("\n"));
-  }
+  if (r.table && r.table.rows.length > 0) parts.push(tableToMarkdown(r.table.head, r.table.rows));
   if (r.note) parts.push(r.note);
   parts.push(`*${LOCAL_SOURCE_LINE}*`);
   return parts.join("\n\n");
