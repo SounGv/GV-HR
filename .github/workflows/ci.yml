@@ -1,0 +1,44 @@
+name: ci
+
+# Runs on every pull request and every push to main. Vercel deploys main on its own,
+# so this shows a red mark on the commit when something broke; it does not block the deploy.
+# Nothing here touches the database or the network (no .env file, no secrets).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: nexa
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: nexa/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Prisma client
+        run: npm run db:generate
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Rule checks (scripts/check-*.mjs)
+        run: npm run check:all

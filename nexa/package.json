@@ -18,6 +18,7 @@
     "db:studio": "node ./node_modules/prisma/build/index.js studio",
     "db:reset": "node ./node_modules/prisma/build/index.js migrate reset",
     "test:recurrence": "node scripts/e2e-ai/build.mjs run-recurrence && node --env-file=.env.local .tmp-e2e/run-recurrence.cjs",
+    "check:all": "node scripts/run-checks.mjs",
     "check:ui": "node scripts/check-ui-invariants.mjs",
     "check:imported-comments": "node --experimental-strip-types scripts/check-imported-comments.mjs",
     "check:backup-ai": "node --experimental-strip-types scripts/check-backup-ai.mjs",
