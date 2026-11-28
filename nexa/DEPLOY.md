@@ -37,7 +37,7 @@ DIRECT_URL=postgresql://postgres.abcd:PASSWORD@aws-0-ap-southeast-1.pooler.supab
 ## ขั้นที่ 3 — Import โปรเจกต์เข้า Vercel
 1. https://vercel.com → **Add New → Project** → เลือก repo `SounGv/GV-HR`
 2. **Root Directory** → กด Edit → เลือก **`nexa`** ⬅️ สำคัญมาก
-3. Framework Preset จะขึ้น **Next.js** อัตโนมัติ (Build Command ใช้ `vercel-build` ในโปรเจกต์ = รัน `prisma migrate deploy` ให้เอง — ไม่ต้องตั้งเพิ่ม)
+3. Framework Preset จะขึ้น **Next.js** อัตโนมัติ (Build Command ใช้ `vercel-build` ในโปรเจกต์ = `prisma generate` แล้ว `next build` เท่านั้น **ไม่ได้สร้างหรือแก้ตารางให้** — ไม่ต้องตั้งเพิ่ม)
 4. ใส่ **Environment Variables** (ตั้งให้ครบก่อนกด Deploy):
 
 | ตัวแปร | ค่า |
@@ -53,12 +53,18 @@ DIRECT_URL=postgresql://postgres.abcd:PASSWORD@aws-0-ap-southeast-1.pooler.supab
 
 > `NODE_ENV=production` Vercel ตั้งให้อัตโนมัติ ไม่ต้องใส่
 
-5. กด **Deploy** — ตอน build ระบบจะรัน `prisma migrate deploy` สร้างตารางทั้งหมดใน Supabase ให้เอง
+5. กด **Deploy** — build ไม่ได้รัน migrate ให้ ถ้าเป็นฐานข้อมูลใหม่ที่ว่าง ให้สร้างตารางเองก่อนด้วยคำสั่งด้านล่าง (ทำครั้งเดียว ใช้ `DIRECT_URL` พอร์ต 5432):
+
+```bash
+npx prisma migrate deploy
+```
+
+> ไฟล์ใน `prisma/migrations/` สร้างได้ครบทุกตารางตั้งแต่ `20261128100000_catch_up_missing_schema` (ก่อนหน้านั้นขาด 1 ตาราง 9 คอลัมน์ เพราะฐานจริงถูกสร้างด้วย `db push`) ห้ามใช้ `migrate reset` กับฐานข้อมูลที่ใช้งานจริง
 
 ---
 
 ## ขั้นที่ 4 — ใส่ข้อมูลเริ่มต้น (seed) ครั้งเดียว
-ตาราง migrate ให้แล้ว แต่ยังว่าง ต้อง seed ข้อมูลตั้งต้น (บริษัท, roles, 8 ฝ่าย, บัญชีทดลอง) — ทำครั้งเดียวจากเครื่องตัวเอง:
+ตารางถูกสร้างแล้ว (จากขั้นก่อนหน้า) แต่ยังว่าง ต้อง seed ข้อมูลตั้งต้น (บริษัท, roles, 8 ฝ่าย, บัญชีทดลอง) — ทำครั้งเดียวจากเครื่องตัวเอง:
 
 1. ก๊อปโฟลเดอร์ `nexa` ไปไว้ path สั้น ๆ ไม่มี `&` เช่น `C:\nexa` (กันปัญหาชื่อโฟลเดอร์มี `&`)
 2. ในโฟลเดอร์นั้น สร้างไฟล์ `.env` ใส่ `DATABASE_URL` + `DIRECT_URL` ให้ชี้ไป Supabase (ค่าเดียวกับขั้น 2)
@@ -90,12 +96,12 @@ npm run db:seed
 
 ## หลังจากนี้ — อัปเดตอัตโนมัติ
 แก้โค้ด → `git push` เข้า branch ที่ Vercel ดูอยู่ → **Vercel build + deploy ให้เองทุกครั้ง**
-ถ้าแก้ schema ฐานข้อมูล: สร้าง migration (`npm run db:migrate` ที่เครื่อง) แล้ว commit โฟลเดอร์ `prisma/migrations/` — ตอน deploy ระบบจะ `migrate deploy` ให้เอง
+ถ้าแก้ schema ฐานข้อมูล: เพิ่มโฟลเดอร์ใหม่ใน `prisma/migrations/` แล้ว commit (`npm run db:migrate` จะขึ้น drift กับฐานจริง ให้ใช้ `prisma migrate diff` หรือเขียน SQL แบบ `IF NOT EXISTS` เอง) — **Vercel ไม่รัน migrate ให้** ต้องรัน `npx prisma migrate deploy` กับฐานจริงเองหลังตรวจแล้ว ก่อนหรือพร้อม push โค้ดที่ใช้คอลัมน์ใหม่
 
 ---
 
 ## แก้ปัญหาที่พบบ่อย
-- **Build fail ตอน migrate**: เช็คว่า `DIRECT_URL` (พอร์ต 5432) ถูกต้อง — migrate ต้องใช้ direct ไม่ใช่ pooler
+- **`migrate deploy` ที่รันเองไม่ผ่าน**: เช็คว่า `DIRECT_URL` (พอร์ต 5432) ถูกต้อง — migrate ต้องใช้ direct ไม่ใช่ pooler
 - **แอปต่อ DB ไม่ได้ตอนรัน**: เช็คว่า `DATABASE_URL` เป็น pooler (6543) + มี `?pgbouncer=true&connection_limit=1`
 - **ล็อกอินไม่ได้ / error auth**: เช็คว่าใส่ `JWT_ACCESS_SECRET` + `JWT_REFRESH_SECRET` แล้ว (production จะไม่ยอมรันถ้าไม่ตั้ง)
 - **NEXA AI ใช้ไม่ได้**: ต้องใส่ `ANTHROPIC_API_KEY` (ถ้าไม่ใส่ ฟีเจอร์อื่นยังทำงานปกติ)
