@@ -86,7 +86,7 @@ export function PayslipDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>สลิปเงินเดือน · {view.periodLabel}</DialogTitle>

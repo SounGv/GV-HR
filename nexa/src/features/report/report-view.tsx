@@ -703,19 +703,34 @@ export function ReportView() {
   const results = useReports(types.map((t) => ({ type: t, ...sharedFilters })));
   const anyResult = results.some((r) => (r.data?.data?.rows.length ?? 0) > 0);
 
+  // One file at a time: a second tap used to start a second build of the same workbook.
+  const exportingAll = useRef(false);
+
   async function exportAllExcel() {
-    const ExcelJS = (await import("exceljs")).default;
-    const workbook = new ExcelJS.Workbook();
-    let any = false;
-    for (let i = 0; i < types.length; i++) {
-      const result = results[i].data?.data;
-      if (!result || result.rows.length === 0) continue;
-      await addExcelSheet(workbook, REPORT_LABELS[types[i]], result);
-      any = true;
+    if (exportingAll.current) return;
+    exportingAll.current = true;
+    const id = toast.loading("กำลังสร้างไฟล์ Excel อาจใช้เวลาสักครู่");
+    try {
+      const ExcelJS = (await import("exceljs")).default;
+      const workbook = new ExcelJS.Workbook();
+      let any = false;
+      for (let i = 0; i < types.length; i++) {
+        const result = results[i].data?.data;
+        if (!result || result.rows.length === 0) continue;
+        await addExcelSheet(workbook, REPORT_LABELS[types[i]], result);
+        any = true;
+      }
+      if (!any) {
+        toast.dismiss(id);
+        return;
+      }
+      await downloadWorkbook(workbook, `reports-${from}_${to}.xlsx`);
+      toast.success("ดาวน์โหลด Excel แล้ว (รวมทุกหัวข้อที่เลือก)", { id });
+    } catch {
+      toast.error("สร้างไฟล์ Excel ไม่สำเร็จ ลองใหม่อีกครั้ง", { id });
+    } finally {
+      exportingAll.current = false;
     }
-    if (!any) return;
-    await downloadWorkbook(workbook, `reports-${from}_${to}.xlsx`);
-    toast.success("ดาวน์โหลด Excel แล้ว (รวมทุกหัวข้อที่เลือก)");
   }
 
   const employeeOptions: MultiSelectOption[] = employees.map((e) => ({

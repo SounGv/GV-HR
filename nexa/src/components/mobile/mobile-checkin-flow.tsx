@@ -654,7 +654,8 @@ function OffsiteStep({
           </span>
           <div className="min-w-0">
             <p className="text-base leading-snug font-bold">อยู่นอกพื้นที่ทำงาน</p>
-            <p className="truncate text-xs text-muted-foreground">
+            {/* May wrap onto a second line: the distance is the part that matters and sits at the end, so it must not be the part cut off. */}
+            <p className="text-xs break-words text-muted-foreground">
               {info.branchName ? `${info.branchName} ` : ""}ห่าง {info.distance.toLocaleString("th-TH")} เมตร
             </p>
           </div>

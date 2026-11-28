@@ -216,7 +216,7 @@ export function RecurrenceView() {
 
 function RecurrenceDialog({ state, onClose }: { state: { id: string | null; body: RecurrenceBody } | null; onClose: () => void }) {
   return (
-    <Dialog open={state !== null} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={state !== null} onOpenChange={(o) => !o && onClose()} disablePointerDismissal>
       <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">{state && <Form key={state.id ?? "new"} id={state.id} initial={state.body} onClose={onClose} />}</DialogContent>
     </Dialog>
   );

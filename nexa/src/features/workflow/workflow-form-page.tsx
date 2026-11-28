@@ -170,7 +170,7 @@ export function WorkflowFormPage({ workflow }: { workflow?: ApprovalWorkflow }) 
             <p className="text-sm font-medium">เปิดใช้งาน</p>
             <p className="text-xs text-muted-foreground">อนุญาตให้ส่งคำขอตามเวิร์กโฟลว์นี้</p>
           </div>
-          <Switch checked={active} onCheckedChange={setActive} />
+          <Switch aria-label="เปิดใช้งานเวิร์กโฟลว์นี้" checked={active} onCheckedChange={setActive} />
         </div>
       </form>
     </FormPageShell>

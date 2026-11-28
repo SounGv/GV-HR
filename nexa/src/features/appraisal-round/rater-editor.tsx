@@ -477,7 +477,7 @@ function ImportPairsDialog({
   const typeNotUsed = parsed.pairs.filter((p) => inRound.has(p.participantId) && !round.raterTypes.includes(p.raterType)).length;
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
+    <Dialog open onOpenChange={(o) => !o && onClose()} disablePointerDismissal>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>นำเข้ารายชื่อคู่</DialogTitle>
