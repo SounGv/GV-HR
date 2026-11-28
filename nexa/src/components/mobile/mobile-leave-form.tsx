@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -233,8 +234,21 @@ export function MobileLeaveForm() {
 
   /** Tells the person what is missing instead of the button silently doing nothing. */
   function onInvalid(errors: Partial<Record<keyof FormSchema, { message?: string }>>) {
-    const first = Object.values(errors).find((e) => e?.message);
-    toast.error(first?.message ?? "กรุณากรอกข้อมูลให้ครบ");
+    const firstKey = (Object.keys(errors) as (keyof FormSchema)[]).find((k) => errors[k]?.message);
+    toast.error((firstKey && errors[firstKey]?.message) || "กรุณากรอกข้อมูลให้ครบ");
+    // The message is also shown under its field; bring that field into view once it has rendered.
+    if (firstKey) setTimeout(() => document.getElementById(`leave-err-${firstKey}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+  }
+
+  /** The message for one field, shown right under it (the toast alone disappears and does not say which field). */
+  function fieldError(...names: (keyof FormSchema)[]) {
+    const name = names.find((n) => form.formState.errors[n]?.message);
+    if (!name) return null;
+    return (
+      <p id={`leave-err-${name}`} role="alert" className="mt-1.5 text-sm text-destructive">
+        {form.formState.errors[name]?.message}
+      </p>
+    );
   }
 
   const blockedIsSunday = isHourly ? !!start && isSunday(new Date(start)) : preview === 0;
@@ -341,6 +355,7 @@ export function MobileLeaveForm() {
                 <button
                   key={t}
                   type="button"
+                  aria-pressed={selected}
                   onClick={() => {
                     form.setValue("type", t, { shouldValidate: true });
                     // Hourly leave isn't offered for this type — fall back to
@@ -349,12 +364,14 @@ export function MobileLeaveForm() {
                     if (!canTakeHourly(t) && form.getValues("unit") === "HOUR") onDurationChange("FULL_DAY");
                   }}
                   className={cn(
-                    "rounded-lg border-[1.5px] p-3 text-left transition active:scale-[0.99]",
+                    "relative rounded-lg border-[1.5px] p-3 text-left transition active:scale-[0.99]",
                     selected
                       ? "border-primary bg-accent text-accent-foreground"
                       : "border-border bg-card text-foreground",
                   )}
                 >
+                  {/* A tick as well as the colour: the selection must not depend on colour alone (hard to see in sunlight). */}
+                  {selected && <Check className="absolute right-2 top-2 size-4 text-primary" aria-hidden />}
                   <div className="text-[15px] font-semibold">{LEAVE_TYPE_LABEL[t]}</div>
                   <div className="text-[13px] text-muted-foreground">{sub}</div>
                 </button>
@@ -409,6 +426,7 @@ export function MobileLeaveForm() {
                   />
                 </label>
               </div>
+              {fieldError("startDate", "endDate", "halfDay", "halfDayPeriod")}
             </>
           ) : (
             <>
@@ -424,6 +442,7 @@ export function MobileLeaveForm() {
                   }}
                 />
               </label>
+              {fieldError("startDate", "endDate", "halfDay", "halfDayPeriod")}
             </>
           )}
 
@@ -443,6 +462,7 @@ export function MobileLeaveForm() {
                   })}
                 />
               </label>
+              {fieldError("startTime", "endTime")}
             </>
           )}
 
