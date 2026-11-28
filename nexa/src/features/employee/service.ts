@@ -266,6 +266,33 @@ async function assertValidOrgRefs(companyId: string, selfId: string | null, inpu
   }
 }
 
+/** Tells whoever manages assets that a person who has left (or was removed) still holds equipment, so the hand-back is not forgotten. */
+async function notifyAssetsStillHeld(companyId: string, employeeId: string, name: string, actor: AccessClaims) {
+  const held = await listAssetsHeldBy(companyId, employeeId);
+  if (held.length === 0) return;
+  await notifyPermissionHolders(
+    companyId,
+    "asset:update",
+    actor.employeeId ?? null,
+    {
+      title: "พนักงานที่พ้นสภาพยังถือทรัพย์สินอยู่",
+      body: `${name} ยังถือ ${held.length} รายการ: ${held.map((a) => a.name).slice(0, 3).join(", ")}${held.length > 3 ? " …" : ""}`,
+      category: "asset",
+      link: `/employees/${employeeId}`,
+    },
+    actor.sub,
+  );
+}
+
+/** "emp0001" and "EMP0001" are the same code to a person; the database only refuses an exact repeat. Removed rows count too (their code stays taken). */
+async function assertEmployeeCodeFree(companyId: string, code: string, exceptId?: string) {
+  const clash = await prisma.employee.findFirst({
+    where: { companyId, employeeCode: { equals: code, mode: "insensitive" }, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { employeeCode: true },
+  });
+  if (clash) throw BadRequest(`รหัสพนักงาน “${clash.employeeCode}” ถูกใช้แล้ว (ตัวพิมพ์เล็กใหญ่ต่างกันก็นับว่าซ้ำ)`);
+}
+
 export async function createEmployee(
   companyId: string,
   input: EmployeeCreateInput,
@@ -273,6 +300,7 @@ export async function createEmployee(
   meta?: { ip?: string; userAgent?: string },
 ): Promise<EmployeeDetail> {
   await assertValidOrgRefs(companyId, null, input);
+  await assertEmployeeCodeFree(companyId, input.employeeCode);
   const created = await prisma.employee.create({
     data: {
       ...toDecimalFields(input),
@@ -333,6 +361,7 @@ export async function updateEmployee(
   if (!existing) throw NotFound("ไม่พบพนักงาน");
 
   await assertValidOrgRefs(companyId, id, input);
+  if (input.employeeCode) await assertEmployeeCodeFree(companyId, input.employeeCode, id);
   // Switching a login off through the status needs the same privilege check as the account screens.
   const INACTIVE_STATUSES = new Set(["TERMINATED", "RESIGNED", "SUSPENDED"]);
   const disablesLogin =
@@ -364,21 +393,7 @@ export async function updateEmployee(
   // nothing linked the asset register to employment status. Tell whoever
   // manages assets so the hand-back doesn't depend on someone remembering.
   if (input.status && input.status !== existing.status && (input.status === "RESIGNED" || input.status === "TERMINATED")) {
-    const held = await listAssetsHeldBy(companyId, id);
-    if (held.length > 0) {
-      await notifyPermissionHolders(
-        companyId,
-        "asset:update",
-        actor.employeeId ?? null,
-        {
-          title: "พนักงานที่พ้นสภาพยังถือทรัพย์สินอยู่",
-          body: `${displayName(updated)} ยังถือ ${held.length} รายการ: ${held.map((a) => a.name).slice(0, 3).join(", ")}${held.length > 3 ? " …" : ""}`,
-          category: "asset",
-          link: `/employees/${id}`,
-        },
-        actor.sub,
-      );
-    }
+    await notifyAssetsStillHeld(companyId, id, displayName(updated), actor);
   }
 
   await writeAudit({
@@ -402,7 +417,7 @@ export async function softDeleteEmployee(
 ): Promise<void> {
   const existing = await prisma.employee.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true, employeeCode: true, userId: true },
+    select: { id: true, employeeCode: true, userId: true, firstName: true, lastName: true, nickname: true },
   });
   if (!existing) throw NotFound("ไม่พบพนักงาน");
   // Deleting the record also switches the login off, so apply the same self / higher-privilege guard.
@@ -424,6 +439,9 @@ export async function softDeleteEmployee(
     });
     await revokeAllForUser(existing.userId);
   }
+
+  // Removing a person who still holds equipment used to leave the asset marked "borrowed" with nobody told.
+  await notifyAssetsStillHeld(companyId, id, displayName(existing), actor);
 
   await writeAudit({
     companyId,

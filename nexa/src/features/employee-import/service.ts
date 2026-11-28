@@ -41,6 +41,7 @@ export async function importEmployees(
   // check, attempt tx.employee.create(), throw P2002 mid-loop, and roll back
   // every row already applied earlier in the same import batch.
   const takenBySoftDeleted = new Set(allEmployees.filter((e) => e.deletedAt).map((e) => e.employeeCode));
+  const existingCodeByLower = new Map(allEmployees.map((e) => [e.employeeCode.toLowerCase(), e.employeeCode]));
 
   const errors: ImportSummary["errors"] = [];
   const warnings: string[] = [];
@@ -58,11 +59,18 @@ export async function importEmployees(
       return;
     }
     const r = parsed.data;
-    if (seen.has(r.employeeCode)) {
-      errors.push({ row: sheetRow(raw, i), code: r.employeeCode, message: "รหัสพนักงานซ้ำในไฟล์" });
+    // "emp0001" and "EMP0001" are the same code to a person, in the file and against people already in the system.
+    const lower = r.employeeCode.toLowerCase();
+    if (seen.has(lower)) {
+      errors.push({ row: sheetRow(raw, i), code: r.employeeCode, message: "รหัสพนักงานซ้ำในไฟล์ (ตัวพิมพ์เล็กใหญ่ต่างกันก็นับว่าซ้ำ)" });
       return;
     }
-    seen.add(r.employeeCode);
+    const sameLetters = existingCodeByLower.get(lower);
+    if (sameLetters && sameLetters !== r.employeeCode) {
+      errors.push({ row: sheetRow(raw, i), code: r.employeeCode, message: `ซ้ำกับรหัส ${sameLetters} ที่มีอยู่แล้ว (ต่างกันแค่ตัวพิมพ์เล็กใหญ่) ใช้รหัสให้ตรงกัน` });
+      return;
+    }
+    seen.add(lower);
     valid.push({ row: r, index: sheetRow(raw, i) });
   });
 

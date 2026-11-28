@@ -117,6 +117,7 @@ export function EmployeeForm({
   const firstName = form.watch("firstName");
   const lastName = form.watch("lastName");
   const compensationType = form.watch("compensationType");
+  const status = form.watch("status");
   const payMismatch = employmentPayMismatch(form.watch("employmentType"), compensationType);
   const branchId = form.watch("branchId");
   const departmentId = form.watch("departmentId");
@@ -263,6 +264,9 @@ export function EmployeeForm({
                 options={EMPLOYEE_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
               <DateField form={form} name="hireDate" label="วันเริ่มงาน" />
               <DateField form={form} name="probationEndDate" label="สิ้นสุดทดลองงาน" />
+              {(status === "RESIGNED" || status === "TERMINATED") && (
+                <DateField form={form} name="terminationDate" label="วันสุดท้ายของการทำงาน" />
+              )}
             </FieldGrid>
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
               <div>

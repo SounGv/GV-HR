@@ -199,8 +199,9 @@ export async function applyOrgMoves(
 
 async function assertCodeFree(companyId: string, code: string, exceptId?: string) {
   // The database unique covers removed rows too, so look at them as well and say why the code is taken.
+  // "hr" and "HR" are the same code to a person, so the check ignores letter case.
   const existing = await prisma.department.findFirst({
-    where: { companyId, code, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    where: { companyId, code: { equals: code, mode: "insensitive" }, ...(exceptId ? { id: { not: exceptId } } : {}) },
     select: { deletedAt: true },
   });
   if (existing) {
@@ -387,8 +388,9 @@ async function assertPositionDepartment(companyId: string, departmentId: string 
 
 async function assertPositionCodeFree(companyId: string, code: string, exceptId?: string) {
   // The database unique covers removed rows too, so look at them as well and say why the code is taken.
+  // "hr" and "HR" are the same code to a person, so the check ignores letter case.
   const existing = await prisma.position.findFirst({
-    where: { companyId, code, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    where: { companyId, code: { equals: code, mode: "insensitive" }, ...(exceptId ? { id: { not: exceptId } } : {}) },
     select: { deletedAt: true },
   });
   if (existing) {
