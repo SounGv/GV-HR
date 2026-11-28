@@ -5,6 +5,7 @@ import { displayName } from "@/lib/format";
 import { Prisma, type LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { withAdvisoryLock } from "@/lib/db-lock";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification, markNotificationsByLinkRead } from "@/features/notification/service";
 import { notifyApprovalOwners } from "@/features/notification/approval-routing";
@@ -222,57 +223,60 @@ export async function createLeave(
   // hourly requests on the same day may occupy different time slots we don't
   // compare here. Without this, the same date range could be approved twice
   // and LeaveBalance debited twice for the same day(s).
-  const overlap = await prisma.leaveRequest.findFirst({
-    where: {
-      companyId,
-      employeeId,
-      deletedAt: null,
-      status: { in: ["PENDING", "APPROVED"] },
-      startDate: { lte: input.endDate },
-      endDate: { gte: input.startDate },
-      ...(isHourly ? { unit: "DAY" } : {}),
-    },
-    select: { id: true },
-  });
-  if (overlap) {
-    throw BadRequest("คุณมีคำขอลาในช่วงวันที่นี้อยู่แล้ว กรุณาตรวจสอบหรือยกเลิกคำขอเดิมก่อนยื่นใหม่");
-  }
-  // Two hourly requests on the same day may not cover the same time, or the hours would be paid or deducted twice.
-  if (isHourly) {
-    const sameDay = await prisma.leaveRequest.findMany({
-      where: { companyId, employeeId, deletedAt: null, status: { in: ["PENDING", "APPROVED"] }, unit: "HOUR", startDate: input.startDate },
-      select: { startTime: true, endTime: true },
+  // The check and the insert run under one lock per person, so two quick requests (a double tap, a retry) cannot both pass it.
+  const record = await withAdvisoryLock(`leave:${employeeId}`, async (tx) => {
+    const overlap = await tx.leaveRequest.findFirst({
+      where: {
+        companyId,
+        employeeId,
+        deletedAt: null,
+        status: { in: ["PENDING", "APPROVED"] },
+        startDate: { lte: input.endDate },
+        endDate: { gte: input.startDate },
+        ...(isHourly ? { unit: "DAY" } : {}),
+      },
+      select: { id: true },
     });
-    const clash = sameDay.find((r) => r.startTime && r.endTime && timeRangesOverlap(input.startTime!, input.endTime!, r.startTime, r.endTime));
-    if (clash) throw BadRequest(`วันนั้นมีคำขอลา ${clash.startTime}-${clash.endTime} น. อยู่แล้ว เลือกช่วงเวลาที่ไม่ซ้ำกัน`);
-  }
+    if (overlap) {
+      throw BadRequest("คุณมีคำขอลาในช่วงวันที่นี้อยู่แล้ว กรุณาตรวจสอบหรือยกเลิกคำขอเดิมก่อนยื่นใหม่");
+    }
+    // Two hourly requests on the same day may not cover the same time, or the hours would be paid or deducted twice.
+    if (isHourly) {
+      const sameDay = await tx.leaveRequest.findMany({
+        where: { companyId, employeeId, deletedAt: null, status: { in: ["PENDING", "APPROVED"] }, unit: "HOUR", startDate: input.startDate },
+        select: { startTime: true, endTime: true },
+      });
+      const clash = sameDay.find((r) => r.startTime && r.endTime && timeRangesOverlap(input.startTime!, input.endTime!, r.startTime, r.endTime));
+      if (clash) throw BadRequest(`วันนั้นมีคำขอลา ${clash.startTime}-${clash.endTime} น. อยู่แล้ว เลือกช่วงเวลาที่ไม่ซ้ำกัน`);
+    }
+
+    return tx.leaveRequest.create({
+      data: {
+        companyId,
+        employeeId,
+        type: input.type,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        halfDay: input.halfDay,
+        halfDayPeriod: input.halfDay ? input.halfDayPeriod : null,
+        days,
+        unit: input.unit,
+        hours,
+        startTime: isHourly ? input.startTime : null,
+        endTime: isHourly ? input.endTime : null,
+        reason: input.reason,
+        attachmentUrl: input.attachmentUrl,
+        status: "PENDING",
+        createdById: session.sub,
+        updatedById: session.sub,
+      },
+      select: requestSelect,
+    });
+  });
 
   const requester = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
     select: { firstName: true, lastName: true, nickname: true },
-  });
-
-  const record = await prisma.leaveRequest.create({
-    data: {
-      companyId,
-      employeeId,
-      type: input.type,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      halfDay: input.halfDay,
-      halfDayPeriod: input.halfDay ? input.halfDayPeriod : null,
-      days,
-      unit: input.unit,
-      hours,
-      startTime: isHourly ? input.startTime : null,
-      endTime: isHourly ? input.endTime : null,
-      reason: input.reason,
-      attachmentUrl: input.attachmentUrl,
-      status: "PENDING",
-      createdById: session.sub,
-      updatedById: session.sub,
-    },
-    select: requestSelect,
   });
 
   await writeAudit({

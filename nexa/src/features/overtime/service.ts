@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { withAdvisoryLock } from "@/lib/db-lock";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification, markNotificationsByLinkRead } from "@/features/notification/service";
 import { notifyApprovalOwners } from "@/features/notification/approval-routing";
@@ -77,42 +78,45 @@ export async function createOvertime(
 
   // The same hours may not be asked for twice: both would be approved and paid.
   // A range that runs past midnight is compared as clashing with anything that day.
-  const sameDay = await prisma.overtimeRequest.findMany({
-    where: { companyId, employeeId, date: input.date, deletedAt: null, status: { in: ["PENDING", "APPROVED"] } },
-    select: { startTime: true, endTime: true },
+  // Check and insert run under one lock per person: two quick taps used to pass the check together and both be saved.
+  // Pay is NOT worked out here: it is calculated when the request is approved (decideOvertime),
+  // from the rate then in force and the pay on record at that time.
+  const record = await withAdvisoryLock(`overtime:${employeeId}`, async (tx) => {
+    const sameDay = await tx.overtimeRequest.findMany({
+      where: { companyId, employeeId, date: input.date, deletedAt: null, status: { in: ["PENDING", "APPROVED"] } },
+      select: { startTime: true, endTime: true },
+    });
+    const wraps = (a: string, b: string) => b <= a;
+    const clash = sameDay.find(
+      (o) =>
+        wraps(o.startTime, o.endTime) ||
+        wraps(input.startTime, input.endTime) ||
+        timeRangesOverlap(input.startTime, input.endTime, o.startTime, o.endTime),
+    );
+    if (clash) throw BadRequest(`วันนั้นมีคำขอ OT ${clash.startTime}-${clash.endTime} น. อยู่แล้ว เลือกช่วงเวลาที่ไม่ซ้ำกัน`);
+
+    return tx.overtimeRequest.create({
+      data: {
+        companyId,
+        employeeId,
+        date: input.date,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        hours,
+        multiplier,
+        estimatedAmount: 0,
+        reason: input.reason,
+        status: "PENDING",
+        createdById: session.sub,
+        updatedById: session.sub,
+      },
+      select: requestSelect,
+    });
   });
-  const wraps = (a: string, b: string) => b <= a;
-  const clash = sameDay.find(
-    (o) =>
-      wraps(o.startTime, o.endTime) ||
-      wraps(input.startTime, input.endTime) ||
-      timeRangesOverlap(input.startTime, input.endTime, o.startTime, o.endTime),
-  );
-  if (clash) throw BadRequest(`วันนั้นมีคำขอ OT ${clash.startTime}-${clash.endTime} น. อยู่แล้ว เลือกช่วงเวลาที่ไม่ซ้ำกัน`);
 
   const employee = await prisma.employee.findFirst({
     where: { id: employeeId, companyId, deletedAt: null },
     select: { firstName: true, lastName: true, nickname: true },
-  });
-  // Pay is NOT worked out here: it is calculated when the request is approved (decideOvertime),
-  // from the rate then in force and the pay on record at that time.
-
-  const record = await prisma.overtimeRequest.create({
-    data: {
-      companyId,
-      employeeId,
-      date: input.date,
-      startTime: input.startTime,
-      endTime: input.endTime,
-      hours,
-      multiplier,
-      estimatedAmount: 0,
-      reason: input.reason,
-      status: "PENDING",
-      createdById: session.sub,
-      updatedById: session.sub,
-    },
-    select: requestSelect,
   });
 
   await writeAudit({

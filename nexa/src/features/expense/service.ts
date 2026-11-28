@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { withAdvisoryLock, type LockedDb } from "@/lib/db-lock";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { hasCompletedOneYear, hasPassedProbation } from "@/lib/tenure";
 import { bangkokParts } from "@/lib/datetime";
@@ -110,13 +111,7 @@ export async function getMedicalEligibility(companyId: string, employeeId: strin
  * Company.medicalExpenseCapAmount baht per employee per calendar year
  * (counting DRAFT/PENDING/APPROVED/PAID claims so concurrent submissions
  * can't jointly exceed the cap before any of them are decided). */
-async function assertMedicalExpenseAllowed(
-  companyId: string,
-  employeeId: string,
-  amount: number,
-  expenseDate: Date,
-  excludeClaimId?: string,
-) {
+async function medicalPrecheck(companyId: string, employeeId: string, expenseDate: Date): Promise<number> {
   const { eligible } = await getMedicalEligibility(companyId, employeeId);
   if (!eligible) {
     throw BadRequest("สิทธิ์เบิกค่ารักษาพยาบาลจะเปิดให้เมื่อผ่านทดลองงานและทำงานครบ 1 ปีแล้ว");
@@ -132,11 +127,24 @@ async function assertMedicalExpenseAllowed(
     throw BadRequest("วันที่เบิกค่ารักษาพยาบาลต้องไม่ใช่วันในอนาคต เลือกวันที่ใหม่แล้วส่งอีกครั้ง");
   }
 
-  const cap = await getMedicalExpenseCap(companyId);
+  return getMedicalExpenseCap(companyId);
+}
+
+/** The cap test itself. It runs inside the per-person lock of createExpense/submitExpense, together with the insert or
+ * the status change, so claims sent at the same moment are counted one after the other, not all against the same total. */
+async function assertWithinMedicalCap(
+  db: LockedDb,
+  companyId: string,
+  employeeId: string,
+  amount: number,
+  expenseDate: Date,
+  cap: number,
+  excludeClaimId?: string,
+) {
   const year = expenseDate.getUTCFullYear();
   const yearStart = new Date(Date.UTC(year, 0, 1));
   const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
-  const used = await prisma.expenseClaim.aggregate({
+  const used = await db.expenseClaim.aggregate({
     where: {
       companyId,
       employeeId,
@@ -161,13 +169,14 @@ async function assertMedicalExpenseAllowed(
  * where "ห้ามใช้เอกสารหรือเลขที่ใบเสร็จซ้ำ" was explicit. Compares the
  * attached file itself (there's no separate receipt-number field). */
 async function assertReceiptNotReused(
+  db: LockedDb,
   companyId: string,
   employeeId: string,
   receiptUrl: string | null | undefined,
   excludeClaimId?: string,
 ) {
   if (!receiptUrl) return;
-  const existing = await prisma.expenseClaim.findFirst({
+  const existing = await db.expenseClaim.findFirst({
     where: {
       companyId,
       employeeId,
@@ -228,33 +237,40 @@ export async function createExpense(
   const employeeId = requireEmployeeId(session);
   const isDraft = input.status === "DRAFT";
 
+  const checkMedical = input.category === "medical" && !isDraft;
+  let cap = 0;
   if (input.category === "medical") {
     if (input.sickLeaveRequestId) {
       await resolveSickLeaveReference(companyId, employeeId, input.sickLeaveRequestId);
     }
-    if (!isDraft) {
-      await assertReceiptNotReused(companyId, employeeId, input.receiptUrl);
-      await assertMedicalExpenseAllowed(companyId, employeeId, input.amount, input.expenseDate);
-    }
+    if (!isDraft) cap = await medicalPrecheck(companyId, employeeId, input.expenseDate);
   }
 
-  const record = await prisma.expenseClaim.create({
-    data: {
-      companyId,
-      employeeId,
-      title: input.title,
-      category: input.category,
-      amount: new Prisma.Decimal(input.amount),
-      expenseDate: input.expenseDate,
-      description: input.description,
-      receiptUrl: input.receiptUrl,
-      hospitalName: input.hospitalName,
-      sickLeaveRequestId: input.sickLeaveRequestId,
-      status: isDraft ? "DRAFT" : "PENDING",
-      createdById: session.sub,
-      updatedById: session.sub,
-    },
-    select: claimSelect,
+  // The receipt and cap checks and the insert run under one lock per person: claims sent together used to pass the
+  // cap check one by one and add up past it.
+  const record = await withAdvisoryLock(`expense:${employeeId}`, async (tx) => {
+    if (checkMedical) {
+      await assertReceiptNotReused(tx, companyId, employeeId, input.receiptUrl);
+      await assertWithinMedicalCap(tx, companyId, employeeId, input.amount, input.expenseDate, cap);
+    }
+    return tx.expenseClaim.create({
+      data: {
+        companyId,
+        employeeId,
+        title: input.title,
+        category: input.category,
+        amount: new Prisma.Decimal(input.amount),
+        expenseDate: input.expenseDate,
+        description: input.description,
+        receiptUrl: input.receiptUrl,
+        hospitalName: input.hospitalName,
+        sickLeaveRequestId: input.sickLeaveRequestId,
+        status: isDraft ? "DRAFT" : "PENDING",
+        createdById: session.sub,
+        updatedById: session.sub,
+      },
+      select: claimSelect,
+    });
   });
   await writeAudit({
     companyId,
@@ -283,18 +299,21 @@ export async function submitExpense(companyId: string, session: AccessClaims, id
   if (claim.employeeId !== employeeId) throw Forbidden("ส่งได้เฉพาะรายการของตนเอง");
   if (claim.status !== "DRAFT") throw BadRequest("ส่งได้เฉพาะรายการที่ยังเป็นฉบับร่าง");
 
-  if (claim.category === "medical") {
-    await assertReceiptNotReused(companyId, employeeId, claim.receiptUrl ?? undefined, claim.id);
-    await assertMedicalExpenseAllowed(companyId, employeeId, Number(claim.amount), claim.expenseDate, claim.id);
-  }
+  const cap = claim.category === "medical" ? await medicalPrecheck(companyId, employeeId, claim.expenseDate) : 0;
 
-  // Guard on status so a double submit or a cancel in between cannot be overwritten.
-  const { count } = await prisma.expenseClaim.updateMany({
-    where: { id: claim.id, status: "DRAFT" },
-    data: { status: "PENDING", updatedById: session.sub },
+  const record = await withAdvisoryLock(`expense:${employeeId}`, async (tx) => {
+    if (claim.category === "medical") {
+      await assertReceiptNotReused(tx, companyId, employeeId, claim.receiptUrl ?? undefined, claim.id);
+      await assertWithinMedicalCap(tx, companyId, employeeId, Number(claim.amount), claim.expenseDate, cap, claim.id);
+    }
+    // Guard on status so a double submit or a cancel in between cannot be overwritten.
+    const { count } = await tx.expenseClaim.updateMany({
+      where: { id: claim.id, status: "DRAFT" },
+      data: { status: "PENDING", updatedById: session.sub },
+    });
+    if (count === 0) throw Conflict("รายการนี้ถูกดำเนินการไปแล้ว กรุณารีเฟรชหน้า");
+    return tx.expenseClaim.findFirstOrThrow({ where: { id: claim.id }, select: claimSelect });
   });
-  if (count === 0) throw Conflict("รายการนี้ถูกดำเนินการไปแล้ว กรุณารีเฟรชหน้า");
-  const record = await prisma.expenseClaim.findFirstOrThrow({ where: { id: claim.id }, select: claimSelect });
   await writeAudit({
     companyId,
     actorUserId: session.sub,

@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { withAdvisoryLock } from "@/lib/db-lock";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { loginIdentifier, displayName } from "@/lib/format";
 import { createNotification } from "@/features/notification/service";
@@ -313,23 +314,41 @@ export async function createRequest(
     status: "PENDING",
   }));
 
-  const record = await prisma.approvalRequest.create({
-    data: {
-      companyId,
-      workflowId: wf.id,
-      workflowName: wf.name,
-      requesterEmployeeId: employeeId,
-      requesterName: await actorName(companyId, session),
-      title: input.title,
-      detail: input.detail,
-      amount: input.amount != null ? new Prisma.Decimal(input.amount) : null,
-      steps: steps as unknown as Prisma.InputJsonValue,
-      currentStep: 0,
-      status: "PENDING",
-      createdById: session.sub,
-      updatedById: session.sub,
-    },
-    select: { id: true },
+  const requesterName = await actorName(companyId, session);
+  // An identical request that is still waiting is a double tap, not a new request: it would be approved and paid twice.
+  // Check and insert run under one lock per person so two quick taps cannot both pass the check.
+  const record = await withAdvisoryLock(`workflow-request:${employeeId}`, async (tx) => {
+    const same = await tx.approvalRequest.findFirst({
+      where: {
+        companyId,
+        requesterEmployeeId: employeeId,
+        workflowId: wf.id,
+        title: input.title,
+        detail: input.detail ?? null,
+        amount: input.amount != null ? new Prisma.Decimal(input.amount) : null,
+        status: "PENDING",
+      },
+      select: { id: true },
+    });
+    if (same) throw BadRequest("คุณส่งคำขอนี้ไปแล้วและยังรออนุมัติอยู่ ตรวจรายการคำขอของคุณก่อนส่งซ้ำ");
+    return tx.approvalRequest.create({
+      data: {
+        companyId,
+        workflowId: wf.id,
+        workflowName: wf.name,
+        requesterEmployeeId: employeeId,
+        requesterName,
+        title: input.title,
+        detail: input.detail,
+        amount: input.amount != null ? new Prisma.Decimal(input.amount) : null,
+        steps: steps as unknown as Prisma.InputJsonValue,
+        currentStep: 0,
+        status: "PENDING",
+        createdById: session.sub,
+        updatedById: session.sub,
+      },
+      select: { id: true },
+    });
   });
   await writeAudit({
     companyId,

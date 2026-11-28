@@ -3,6 +3,7 @@ import { hasEmployee, requireEmployeeId } from "@/lib/auth/employee";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { withAdvisoryLock } from "@/lib/db-lock";
 import { can } from "@/lib/auth/rbac";
 import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification } from "@/features/notification/service";
@@ -74,22 +75,31 @@ export async function createMeeting(
     select: { firstName: true, lastName: true, nickname: true },
   });
 
-  const meeting = await prisma.meeting.create({
-    data: {
-      companyId,
-      organizerEmployeeId,
-      title: input.title,
-      description: input.description,
-      location: input.location,
-      startAt: input.startAt,
-      endAt: input.endAt,
-      createdById: session.sub,
-      updatedById: session.sub,
-      attendees: {
-        create: attendees.map((a) => ({ employeeId: a.id })),
+  // The same meeting (same organizer, title and time) is not saved twice: a double tap used to invite everyone twice.
+  // Check and insert run under one lock per organizer so two quick taps cannot both pass the check.
+  const meeting = await withAdvisoryLock(`meeting:${organizerEmployeeId}`, async (tx) => {
+    const same = await tx.meeting.findFirst({
+      where: { companyId, organizerEmployeeId, title: input.title, startAt: input.startAt, endAt: input.endAt, deletedAt: null },
+      select: { id: true },
+    });
+    if (same) throw BadRequest("คุณนัดประชุมนี้ไว้แล้ว (ชื่อและเวลาเดียวกัน) ตรวจรายการประชุมของคุณก่อนสร้างซ้ำ");
+    return tx.meeting.create({
+      data: {
+        companyId,
+        organizerEmployeeId,
+        title: input.title,
+        description: input.description,
+        location: input.location,
+        startAt: input.startAt,
+        endAt: input.endAt,
+        createdById: session.sub,
+        updatedById: session.sub,
+        attendees: {
+          create: attendees.map((a) => ({ employeeId: a.id })),
+        },
       },
-    },
-    select: meetingSelect,
+      select: meetingSelect,
+    });
   });
 
   await writeAudit({
