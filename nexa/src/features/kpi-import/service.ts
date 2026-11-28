@@ -61,7 +61,8 @@ export async function importKpiGoals(
         currentValue: r.currentValue,
         weight: r.weight,
         status,
-        dueDate: r.dueDate ?? null,
+        // The row schema keeps "YYYY-MM-DD" as text; Prisma wants a Date for the column. The date was already checked to be real.
+        dueDate: r.dueDate ? new Date(`${r.dueDate}T00:00:00Z`) : null,
         updatedById: session.sub,
       };
 
