@@ -55,4 +55,24 @@ check("rows outside the preset are never taken away", () => {
   assert.ok(keys.includes("report:export"));
 });
 
+check("Manager and Finance can clock in and make their own requests, like Employee", () => {
+  for (const name of ["Manager", "Finance"]) {
+    const keys = rolePermissionKeys({ name, isSystem: true, permissions: rows("dashboard:read") });
+    for (const k of ["attendance:create", "leave:create", "overtime:create", "expense:create", "notification:read"])
+      assert.ok(keys.includes(k), `${name} lacks ${k}`);
+  }
+});
+check("making own requests gives Manager and Finance no extra approval rights", () => {
+  const manager = rolePermissionKeys({ name: "Manager", isSystem: true, permissions: [] });
+  for (const k of ["leave:approve", "overtime:approve", "payroll:update", "payroll:approve", "employee:update"])
+    assert.ok(!manager.includes(k), `Manager must not hold ${k}`);
+  const finance = rolePermissionKeys({ name: "Finance", isSystem: true, permissions: [] });
+  for (const k of ["leave:approve", "leave:manage", "overtime:approve", "employee:update"])
+    assert.ok(!finance.includes(k), `Finance must not hold ${k}`);
+});
+check("Employee is exactly the self-service set and nothing more", () => {
+  const employee = rolePermissionKeys({ name: "Employee", isSystem: true, permissions: [] }).sort();
+  assert.ok(employee.includes("attendance:create") && !employee.some((k) => /:(approve|manage|update|delete)$/.test(k)));
+});
+
 console.log(`\n${n} checks passed`);

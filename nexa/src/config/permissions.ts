@@ -101,6 +101,37 @@ export interface RolePreset {
   permissions: string[];
 }
 
+/**
+ * What every person needs for their own work: clock in, ask for leave and OT, claim expenses, read their own things.
+ * Employee is exactly this. Manager and Finance include it too, so someone who holds only one of those roles can still
+ * clock in and make their own requests (as in Favpo, where the staff menu and the approver menu share one app).
+ */
+export const SELF_SERVICE_PERMISSIONS: string[] = [
+  "dashboard:read",
+  "attendance:read",
+  "attendance:create",
+  "recognition:read",
+  "leave:read",
+  "leave:create",
+  "overtime:read",
+  "overtime:create",
+  "payroll:read",
+  "expense:read",
+  "expense:create",
+  "training:read",
+  "performance:read",
+  "campaign:read",
+  "kpi:read",
+  "okr:read",
+  "holiday:read",
+  "calendar:read",
+  "meeting:read",
+  "shift:read",
+  "workflow:read",
+  "notification:read",
+  "announcement:read",
+];
+
 export const ROLE_PRESETS: RolePreset[] = [
   {
     name: "Super Admin",
@@ -146,6 +177,7 @@ export const ROLE_PRESETS: RolePreset[] = [
     description: "หัวหน้าทีม — ดูแลและอนุมัติทีมของตน",
     isSystem: true,
     permissions: [
+      ...SELF_SERVICE_PERMISSIONS,
       "dashboard:read",
       "employee:read",
       "attendance:read",
@@ -181,37 +213,14 @@ export const ROLE_PRESETS: RolePreset[] = [
     name: "Employee",
     description: "พนักงานทั่วไป — เข้าถึงข้อมูลของตนเอง",
     isSystem: true,
-    permissions: [
-      "dashboard:read",
-      "attendance:read",
-      "attendance:create",
-      "recognition:read",
-      "leave:read",
-      "leave:create",
-      "overtime:read",
-      "overtime:create",
-      "payroll:read",
-      "expense:read",
-      "expense:create",
-      "training:read",
-      "performance:read",
-      "campaign:read",
-      "kpi:read",
-      "okr:read",
-      "holiday:read",
-      "calendar:read",
-      "meeting:read",
-      "shift:read",
-      "workflow:read",
-      "notification:read",
-      "announcement:read",
-    ],
+    permissions: [...SELF_SERVICE_PERMISSIONS],
   },
   {
     name: "Finance",
     description: "ฝ่ายการเงิน — เงินเดือนและค่าใช้จ่าย",
     isSystem: true,
     permissions: [
+      ...SELF_SERVICE_PERMISSIONS,
       "dashboard:read",
       "employee:read",
       "payroll:*",
