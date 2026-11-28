@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { NotFound } from "@/lib/api/errors";
+import { BadRequest, NotFound } from "@/lib/api/errors";
 import { displayName } from "@/lib/format";
 import { bangkokParts } from "@/lib/datetime";
 import type { AccessClaims } from "@/lib/auth/jwt";
@@ -282,9 +282,14 @@ export async function updateEvent(
 ) {
   const ev = await prisma.calendarEvent.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, startDate: true, endDate: true },
   });
   if (!ev) throw NotFound("ไม่พบกิจกรรม");
+
+  // Same rule as creating: the end may not be before the start, judged on what the event will be after this edit.
+  const nextStart = input.startDate ?? ev.startDate;
+  const nextEnd = input.endDate !== undefined ? input.endDate : ev.endDate;
+  if (nextEnd && nextEnd < nextStart) throw BadRequest("วันสิ้นสุดต้องไม่ก่อนวันเริ่ม");
 
   const record = await prisma.calendarEvent.update({
     where: { id: ev.id },

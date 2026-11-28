@@ -57,6 +57,9 @@ export function WorkflowFormPage({ workflow }: { workflow?: ApprovalWorkflow }) 
 
   async function submit() {
     if (!name.trim()) return toast.error("กรุณาระบุชื่อเวิร์กโฟลว์");
+    // A row with nothing in it is just an extra row and is left out; a row with only a name or only an approver is a mistake to fix.
+    const half = steps.findIndex((s) => !!s.name.trim() !== !!s.approverRole);
+    if (half >= 0) return toast.error(`ขั้นที่ ${half + 1} ยังกรอกไม่ครบ ต้องมีทั้งชื่อขั้นและผู้อนุมัติ`);
     const cleaned = steps.filter((s) => s.name.trim() && s.approverRole);
     if (cleaned.length === 0) return toast.error("ต้องมีอย่างน้อย 1 ขั้นที่กรอกครบ");
 

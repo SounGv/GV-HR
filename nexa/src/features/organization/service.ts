@@ -325,6 +325,7 @@ export async function deleteDepartment(
         select: {
           children: { where: { deletedAt: null } },
           employees: { where: { deletedAt: null } },
+          positions: { where: { deletedAt: null } },
         },
       },
     },
@@ -332,6 +333,7 @@ export async function deleteDepartment(
   if (!dept) throw NotFound("ไม่พบฝ่าย");
   if (dept._count.children > 0) throw BadRequest("ลบไม่ได้ — ยังมีแผนกย่อยอยู่ภายใน");
   if (dept._count.employees > 0) throw BadRequest("ลบไม่ได้ — ยังมีพนักงานสังกัดอยู่");
+  if (dept._count.positions > 0) throw BadRequest("ลบไม่ได้ — ยังมีตำแหน่งงานผูกกับแผนกนี้อยู่ ย้ายหรือลบตำแหน่งก่อน");
 
   await prisma.department.update({
     where: { id: dept.id },
