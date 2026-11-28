@@ -28,7 +28,9 @@ const LEAVE_TYPE_LABEL: Record<string, string> = {
   HOLIDAY_SWAP: "ใช้สิทธิ์วันหยุด",
 };
 
-const requestSelect = {
+// The list fields, without the attachment: an attachment is an inline base64 file of up to 3 MB, and the queue
+// lists (also polled for the nav badge) carry up to 200 rows. Only single-record reads add attachmentUrl.
+const requestListSelect = {
   id: true,
   type: true,
   startDate: true,
@@ -41,7 +43,6 @@ const requestSelect = {
   startTime: true,
   endTime: true,
   reason: true,
-  attachmentUrl: true,
   status: true,
   approverEmployeeId: true,
   decidedAt: true,
@@ -51,6 +52,8 @@ const requestSelect = {
     select: { id: true, employeeCode: true, firstName: true, lastName: true, nickname: true, avatarUrl: true, gender: true },
   },
 } satisfies Prisma.LeaveRequestSelect;
+
+const requestSelect = { ...requestListSelect, attachmentUrl: true } satisfies Prisma.LeaveRequestSelect;
 
 
 /**
@@ -341,7 +344,7 @@ export async function listLeave(
       ...(employeeIds ? { employeeId: { in: employeeIds } } : {}),
       ...(query.status ? { status: query.status } : {}),
     },
-    select: requestSelect,
+    select: requestListSelect,
     orderBy: { createdAt: "desc" },
     take: 200,
   });

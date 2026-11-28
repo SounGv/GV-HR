@@ -20,7 +20,8 @@ export interface LeaveRequest {
   startTime: string | null;
   endTime: string | null;
   reason: string | null;
-  attachmentUrl: string | null;
+  /** Only on a single request; lists leave the file out (it is an inline file of up to 3 MB). */
+  attachmentUrl?: string | null;
   status: LeaveStatus;
   approverEmployeeId: string | null;
   decidedAt: string | null;

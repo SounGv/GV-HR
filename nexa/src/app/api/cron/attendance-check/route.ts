@@ -3,6 +3,8 @@ import { checkMissedScans } from "@/features/attendance/missed-scan-check";
 import { constantTimeEqual } from "@/lib/auth/bearer-token";
 
 export const runtime = "nodejs";
+// A run walks many people one at a time (database writes and LINE pushes), so give it a full minute.
+export const maxDuration = 60;
 
 /**
  * Triggered by Vercel Cron (see `vercel.json`). Vercel automatically attaches

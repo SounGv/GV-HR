@@ -74,7 +74,7 @@ export function BenefitsReportView() {
             department: r.department ?? "-",
             lastClaimDate: r.lastClaimDate ? formatDate(r.lastClaimDate) : "-",
             sickLeaveRefCount: r.sickLeaveRefs.length,
-            attachmentCount: r.attachments.length,
+            attachmentCount: r.attachmentCount,
           })),
         ),
       );
@@ -126,7 +126,7 @@ export function BenefitsReportView() {
         r.remaining,
         r.lastClaimDate ? formatDate(r.lastClaimDate) : "-",
         r.sickLeaveRefs.length,
-        r.attachments.length,
+        r.attachmentCount,
       ]);
     } else {
       const loanRows = rows as LoanReportRow[];
@@ -239,7 +239,7 @@ function MedicalCards({ rows }: { rows: MedicalReportRow[] }) {
             <Fact label="ครั้งที่เบิก" value={r.claimCount} />
             <Fact label="เบิกล่าสุด" value={r.lastClaimDate ? formatDate(r.lastClaimDate) : "-"} />
             <Fact label="ใบลาป่วยอ้างอิง" value={r.sickLeaveRefs.length > 0 ? `${r.sickLeaveRefs.length} ใบ` : "-"} />
-            <Fact label="เอกสารแนบ" value={r.attachments.length > 0 ? `${r.attachments.length} ไฟล์` : "-"} />
+            <Fact label="เอกสารแนบ" value={r.attachmentCount > 0 ? `${r.attachmentCount} ไฟล์` : "-"} />
           </dl>
         </li>
       ))}
@@ -303,7 +303,7 @@ function MedicalTable({ rows }: { rows: MedicalReportRow[] }) {
             <TableCell className="text-right font-semibold text-primary tabular-nums">{formatCurrency(r.remaining)}</TableCell>
             <TableCell className="tabular-nums">{r.lastClaimDate ? formatDate(r.lastClaimDate) : "-"}</TableCell>
             <TableCell className="text-center tabular-nums">{r.sickLeaveRefs.length > 0 ? `${r.sickLeaveRefs.length} ใบ` : "-"}</TableCell>
-            <TableCell className="text-center tabular-nums">{r.attachments.length > 0 ? `${r.attachments.length} ไฟล์` : "-"}</TableCell>
+            <TableCell className="text-center tabular-nums">{r.attachmentCount > 0 ? `${r.attachmentCount} ไฟล์` : "-"}</TableCell>
           </TableRow>
         ))}
       </TableBody>

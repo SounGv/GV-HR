@@ -6,6 +6,8 @@ import { kpiImportPayloadSchema } from "@/features/kpi-import/schema";
 import { importKpiGoals } from "@/features/kpi-import/service";
 
 export const runtime = "nodejs";
+// A large file is saved one row at a time on a one-connection pool, so allow it the time it needs.
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {

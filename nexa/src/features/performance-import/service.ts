@@ -46,6 +46,16 @@ export async function importPerformanceReviews(
     valid.push({ row: parsed.data, index: i + 1 });
   });
 
+  // Written before the rows are saved: if the function is cut off part-way, this still shows who started which import.
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "performance.import.start",
+    entity: "PerformanceReview",
+    after: { rows: rawRows.length, valid: valid.length },
+    ...meta,
+  });
+
   const codes = [...new Set(valid.map((v) => v.row.employeeCode))];
   const employees = await prisma.employee.findMany({
     where: { companyId, employeeCode: { in: codes }, deletedAt: null },

@@ -13,7 +13,7 @@ import { displayName } from "@/lib/format";
 
 type Meta = { ip?: string; userAgent?: string };
 
-const loanSelect = {
+const loanListSelect = {
   id: true,
   year: true,
   amount: true,
@@ -22,7 +22,6 @@ const loanSelect = {
   reason: true,
   bankName: true,
   bankAccountNo: true,
-  attachmentUrl: true,
   repaidAmount: true,
   status: true,
   decidedAt: true,
@@ -34,7 +33,12 @@ const loanSelect = {
   },
 } satisfies Prisma.CompanyLoanRequestSelect;
 
-type RawLoan = Prisma.CompanyLoanRequestGetPayload<{ select: typeof loanSelect }>;
+// The attachment is an inline base64 file of up to 3 MB: lists leave it out, single-record reads add it.
+const loanSelect = { ...loanListSelect, attachmentUrl: true } satisfies Prisma.CompanyLoanRequestSelect;
+
+type RawLoan = Omit<Prisma.CompanyLoanRequestGetPayload<{ select: typeof loanSelect }>, "attachmentUrl"> & {
+  attachmentUrl?: string | null;
+};
 
 function serialize(l: RawLoan): CompanyLoanRequest {
   return {
@@ -46,7 +50,7 @@ function serialize(l: RawLoan): CompanyLoanRequest {
     reason: l.reason,
     bankName: l.bankName,
     bankAccountNo: l.bankAccountNo,
-    attachmentUrl: l.attachmentUrl,
+    ...(l.attachmentUrl !== undefined ? { attachmentUrl: l.attachmentUrl } : {}),
     repaidAmount: Number(l.repaidAmount),
     status: l.status as CompanyLoanRequest["status"],
     decidedAt: l.decidedAt ? l.decidedAt.toISOString() : null,
@@ -214,7 +218,7 @@ export async function listLoans(companyId: string, session: AccessClaims, query:
       ...(employeeIds ? { employeeId: { in: employeeIds } } : {}),
       ...(query.status ? { status: query.status } : {}),
     },
-    select: loanSelect,
+    select: loanListSelect,
     orderBy: { createdAt: "desc" },
     take: 200,
   });
@@ -345,8 +349,8 @@ export interface PayrollLoanInstallment {
  * is deducted automatically every run instead of HR retyping an amount by
  * hand each period. An employee can have more than one outstanding loan
  * (e.g. a prior year's loan still repaying when a new one is approved) — all
- * are summed for display but tracked separately so applyPayrollLoanInstallments
- * can credit the right loan(s).
+ * are summed for display but tracked separately so markPaid() can credit the
+ * right loan(s).
  */
 export async function getOutstandingLoansForPayroll(
   companyId: string,
@@ -375,39 +379,8 @@ export function sumInstallments(list: PayrollLoanInstallment[] | undefined): num
   return (list ?? []).reduce((s, x) => s + x.installment, 0);
 }
 
-/**
- * Credits each installment against its loan's repaidAmount — called once a
- * payslip that included these installments is actually marked PAID (see
- * payroll/service.ts's markPaid()), never at draft-generate time, so a
- * regenerated-but-still-DRAFT payslip never double-credits a repayment.
- * Sequential, not Promise.all — same pooled-connection reasoning used
- * elsewhere in this codebase (connection_limit=1).
- */
-export async function applyPayrollLoanInstallments(
-  companyId: string,
-  session: AccessClaims,
-  installments: PayrollLoanInstallment[],
-  meta?: Meta,
-): Promise<void> {
-  for (const { loanId, installment } of installments) {
-    // Atomic increment: a manual repayment and a payroll installment on the
-    // same loan at the same moment must both land.
-    const { count } = await prisma.companyLoanRequest.updateMany({
-      where: { id: loanId, companyId, deletedAt: null },
-      data: { repaidAmount: { increment: new Prisma.Decimal(installment) }, updatedById: session.sub },
-    });
-    if (count === 0) continue;
-    await writeAudit({
-      companyId,
-      actorUserId: session.sub,
-      action: "loan.repay",
-      entity: "CompanyLoanRequest",
-      entityId: loanId,
-      after: { amount: installment, source: "payroll" },
-      ...meta,
-    });
-  }
-}
+// The installments are credited to each loan's repaidAmount by payroll/service.ts's markPaid(), inside the same
+// transaction that marks the payslip PAID, never at draft time, so a regenerated DRAFT payslip never double-credits.
 
 /** Finance/HR records a repayment against a disbursed loan — a running
  * total only (repaidAmount), not a full installment ledger; see the model's

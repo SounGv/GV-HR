@@ -29,7 +29,6 @@ export interface SickLeaveOption {
   days: number;
   halfDay: boolean;
   halfDayPeriod: "MORNING" | "AFTERNOON" | null;
-  attachmentUrl: string | null;
 }
 
 export function fetchSickLeaves() {

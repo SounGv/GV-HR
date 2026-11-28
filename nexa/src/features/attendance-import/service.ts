@@ -49,6 +49,16 @@ export async function importAttendance(
     parsedRows.push({ ...parsed.data, rowIndex: i + 1 });
   });
 
+  // Written before the rows are saved: if the function is cut off part-way, this still shows who started which import.
+  await writeAudit({
+    companyId,
+    actorUserId: session.sub,
+    action: "attendance.import.start",
+    entity: "AttendanceRecord",
+    after: { rows: rawRows.length, valid: parsedRows.length },
+    ...meta,
+  });
+
   const codes = [...new Set(parsedRows.map((r) => r.employeeCode))];
   const employees = await prisma.employee.findMany({
     where: { companyId, employeeCode: { in: codes }, deletedAt: null },

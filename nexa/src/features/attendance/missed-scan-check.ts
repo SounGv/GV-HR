@@ -40,7 +40,8 @@ export async function checkMissedScans(): Promise<{ checked: number; flagged: nu
   let checked = 0;
   let flagged = 0;
 
-  for (const company of companies) {
+  // One company failing (a database error, a slow LINE push) must not stop the others from being checked.
+  for (const company of companies) try {
     const holiday = await prisma.holiday.findFirst({
       where: { companyId: company.id, deletedAt: null, date: yesterday },
       select: { id: true },
@@ -101,11 +102,30 @@ export async function checkMissedScans(): Promise<{ checked: number; flagged: nu
       }
     }
     if (results.length === 0) continue;
-    flagged += results.length;
+
+    // A second run for the same day (a Vercel retry, someone opening the URL by hand) must not alert the same
+    // people again: whoever already has this day's alert is skipped, and when nobody is new the group summary is not resent.
+    const alreadyAlerted = new Set(
+      (
+        await prisma.notification.findMany({
+          where: {
+            companyId: company.id,
+            employeeId: { in: results.map((r) => r.employeeId) },
+            category: "attendance",
+            link: "/attendance/corrections",
+            title: { contains: `เมื่อวันที่ ${dateLabel}` },
+          },
+          select: { employeeId: true },
+        })
+      ).map((n) => n.employeeId),
+    );
+    const fresh = results.filter((r) => !alreadyAlerted.has(r.employeeId));
+    if (fresh.length === 0) continue;
+    flagged += fresh.length;
 
     // Sequential — the pooled DB connection (connection_limit=1) can't
     // afford concurrent notification writes.
-    for (const r of results) {
+    for (const r of fresh) {
       const issueLabel = r.issue === "no_clock_out" ? "ลืมสแกนออกงาน" : "ไม่มีข้อมูลลงเวลาเข้า-ออกงาน";
       await createNotification(company.id, r.employeeId, {
         title: `${issueLabel} เมื่อวันที่ ${dateLabel}`,
@@ -131,6 +151,8 @@ export async function checkMissedScans(): Promise<{ checked: number; flagged: nu
     if (noClockOut.length) lines.push(`ลืมสแกนออก (${noClockOut.length}): ${noClockOut.join(", ")}`);
     if (noScan.length) lines.push(`ไม่มีข้อมูลลงเวลาเลย — อาจลืมสแกนหรือขาดงาน ต้องตรวจสอบ (${noScan.length}): ${noScan.join(", ")}`);
     await broadcastToLineGroups(company.id, "hr-alerts", lines.join("\n"), "attendance");
+  } catch (err) {
+    console.error("missed-scan check failed for company", company.id, err);
   }
 
   return { checked, flagged };

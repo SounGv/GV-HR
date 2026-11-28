@@ -9,7 +9,8 @@ export interface ExpenseClaim {
   amount: number;
   expenseDate: string;
   description: string | null;
-  receiptUrl: string | null;
+  /** Only on a single claim; lists leave the file out (it is an inline file of up to 3 MB). */
+  receiptUrl?: string | null;
   hospitalName: string | null;
   sickLeaveRequestId: string | null;
   status: ExpenseStatus;

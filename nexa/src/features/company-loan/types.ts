@@ -10,7 +10,8 @@ export interface CompanyLoanRequest {
   reason: string | null;
   bankName: string | null;
   bankAccountNo: string | null;
-  attachmentUrl: string | null;
+  /** Only on a single request; lists leave the file out (it is an inline file of up to 3 MB). */
+  attachmentUrl?: string | null;
   repaidAmount: number;
   status: LoanStatus;
   decidedAt: string | null;

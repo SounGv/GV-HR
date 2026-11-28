@@ -14,14 +14,13 @@ import type { ExpenseCreateInput, ExpenseDecideInput, ExpenseListQuery } from ".
 
 type Meta = { ip?: string; userAgent?: string };
 
-const claimSelect = {
+const claimListSelect = {
   id: true,
   title: true,
   category: true,
   amount: true,
   expenseDate: true,
   description: true,
-  receiptUrl: true,
   hospitalName: true,
   sickLeaveRequestId: true,
   status: true,
@@ -34,7 +33,12 @@ const claimSelect = {
   },
 } satisfies Prisma.ExpenseClaimSelect;
 
-type RawClaim = Prisma.ExpenseClaimGetPayload<{ select: typeof claimSelect }>;
+// The receipt is an inline base64 file of up to 3 MB: lists leave it out, single-record reads add it.
+const claimSelect = { ...claimListSelect, receiptUrl: true } satisfies Prisma.ExpenseClaimSelect;
+
+type RawClaim = Omit<Prisma.ExpenseClaimGetPayload<{ select: typeof claimSelect }>, "receiptUrl"> & {
+  receiptUrl?: string | null;
+};
 
 function serialize(c: RawClaim): ExpenseClaim {
   return {
@@ -44,7 +48,7 @@ function serialize(c: RawClaim): ExpenseClaim {
     amount: Number(c.amount),
     expenseDate: c.expenseDate.toISOString(),
     description: c.description,
-    receiptUrl: c.receiptUrl,
+    ...(c.receiptUrl !== undefined ? { receiptUrl: c.receiptUrl } : {}),
     hospitalName: c.hospitalName,
     sickLeaveRequestId: c.sickLeaveRequestId,
     status: c.status,
@@ -355,7 +359,7 @@ export async function listExpenses(
       ...(employeeIds ? { employeeId: { in: employeeIds } } : {}),
       ...(query.status ? { status: query.status } : {}),
     },
-    select: claimSelect,
+    select: claimListSelect,
     orderBy: { createdAt: "desc" },
     take: 200,
   });

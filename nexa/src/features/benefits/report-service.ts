@@ -28,7 +28,8 @@ export interface MedicalReportRow {
   pendingTotal: number;
   remaining: number;
   lastClaimDate: string | null;
-  attachments: string[];
+  /** How many claims carry a receipt. The files themselves are inline base64 of up to 3 MB each and are not sent here. */
+  attachmentCount: number;
   sickLeaveRefs: string[];
 }
 
@@ -40,8 +41,7 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
   const year = filters.year ?? bangkokParts().year;
   const cap = await getMedicalExpenseCap(companyId);
 
-  const claims = await prisma.expenseClaim.findMany({
-    where: {
+  const claimWhere: Prisma.ExpenseClaimWhereInput = {
       companyId,
       category: "medical",
       deletedAt: null,
@@ -58,13 +58,14 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
           }
         : {}),
       ...(filters.departmentId ? { employee: { departmentId: { in: filters.departmentId } } } : {}),
-    },
+  };
+  const claims = await prisma.expenseClaim.findMany({
+    where: claimWhere,
     select: {
       employeeId: true,
       amount: true,
       status: true,
       expenseDate: true,
-      receiptUrl: true,
       sickLeaveRequestId: true,
       employee: {
         select: { employeeCode: true, firstName: true, lastName: true, nickname: true, department: { select: { name: true } } },
@@ -72,6 +73,14 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
     },
     orderBy: { expenseDate: "desc" },
   });
+
+  // Receipts are counted by the database without reading the files (each is an inline file of up to 3 MB).
+  const withReceipt = await prisma.expenseClaim.groupBy({
+    by: ["employeeId"],
+    where: { ...claimWhere, receiptUrl: { not: null } },
+    _count: { _all: true },
+  });
+  const receiptCount = new Map(withReceipt.map((r) => [r.employeeId, r._count._all]));
 
   const byEmployee = new Map<string, MedicalReportRow>();
   for (const c of claims) {
@@ -88,7 +97,7 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
         pendingTotal: 0,
         remaining: cap,
         lastClaimDate: null,
-        attachments: [],
+        attachmentCount: receiptCount.get(c.employeeId) ?? 0,
         sickLeaveRefs: [],
       };
       byEmployee.set(c.employeeId, row);
@@ -98,7 +107,6 @@ export async function getMedicalBenefitsReport(companyId: string, filters: Benef
     if (c.status === "APPROVED" || c.status === "PAID") row.approvedTotal += amount;
     if (c.status === "PENDING") row.pendingTotal += amount;
     if (!row.lastClaimDate || c.expenseDate.toISOString() > row.lastClaimDate) row.lastClaimDate = c.expenseDate.toISOString();
-    if (c.receiptUrl) row.attachments.push(c.receiptUrl);
     if (c.sickLeaveRequestId) row.sickLeaveRefs.push(c.sickLeaveRequestId);
   }
   // With a status filter the rows above hold only part of the year, so the balance is worked out

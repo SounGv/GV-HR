@@ -6,6 +6,8 @@ import { payrollImportPayloadSchema } from "@/features/payroll-import/schema";
 import { importPayrollAdjustments } from "@/features/payroll-import/service";
 
 export const runtime = "nodejs";
+// A large file is saved one row at a time on a one-connection pool, so allow it the time it needs.
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {

@@ -22,7 +22,6 @@ export async function GET() {
         days: r.days,
         halfDay: r.halfDay,
         halfDayPeriod: r.halfDayPeriod,
-        attachmentUrl: r.attachmentUrl,
       }));
     return ok(sickLeaves);
   } catch (err) {
