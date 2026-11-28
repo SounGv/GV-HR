@@ -8,6 +8,7 @@ import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
 import { ApiError } from "@/lib/api/client";
 import { useCameraStream, type CameraFacing } from "@/features/attendance/use-camera-stream";
 import { useClockIn, useClockOut, useToday } from "@/features/attendance/hooks";
+import { useBackButton } from "@/hooks/use-back-button";
 
 type Step = "map" | "camera" | "preview" | "processing" | "offsite" | "success" | "error";
 
@@ -71,6 +72,23 @@ export function MobileCheckinFlow({
   const [facing, setFacing] = useState<CameraFacing>("environment");
   const cam = useCameraStream(step === "camera" && !skipCapture, facing, { sharp: true });
   const submittingRef = useRef(false);
+
+  // The phone's back button steps back through the flow (confirm -> camera -> map) and only from the first screen
+  // closes it; it used to leave the app and throw the photo and location away. While saving it does nothing.
+  useBackButton(true, () => {
+    if (step === "preview") {
+      setStep("camera");
+      return "stay";
+    }
+    if (step === "camera") {
+      setStep("map");
+      return "stay";
+    }
+    if (step === "processing") return "stay";
+    if (step === "success") onDone();
+    else onClose();
+    return "leave";
+  });
 
   const branch = todayData?.data?.branch ?? null;
   const hasGeofence = branch?.lat != null && branch?.lng != null && branch?.radiusMeters != null;
