@@ -1,7 +1,7 @@
 "use client";
 
 import { displayName } from "@/lib/format";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { BarChart3, Download, FileSpreadsheet, ListFilter, Printer, TriangleAlert } from "lucide-react";
@@ -267,16 +267,41 @@ function ReportSection({
     toast.success("ดาวน์โหลด CSV แล้ว");
   }
 
+  // Building a big Excel or PDF file takes several seconds (photos are fetched one by one); a second tap used to start a second file.
+  const exporting = useRef(false);
+
   async function exportExcel() {
-    if (!result) return;
-    const ExcelJS = (await import("exceljs")).default;
-    const workbook = new ExcelJS.Workbook();
-    await addExcelSheet(workbook, REPORT_LABELS[type], result);
-    await downloadWorkbook(workbook, `${type}-${from}_${to}.xlsx`);
-    toast.success("ดาวน์โหลด Excel แล้ว");
+    if (!result || exporting.current) return;
+    exporting.current = true;
+    const id = toast.loading("กำลังสร้างไฟล์ Excel อาจใช้เวลาสักครู่");
+    try {
+      const ExcelJS = (await import("exceljs")).default;
+      const workbook = new ExcelJS.Workbook();
+      await addExcelSheet(workbook, REPORT_LABELS[type], result);
+      await downloadWorkbook(workbook, `${type}-${from}_${to}.xlsx`);
+      toast.success("ดาวน์โหลด Excel แล้ว", { id });
+    } catch {
+      toast.error("สร้างไฟล์ Excel ไม่สำเร็จ ลองใหม่อีกครั้ง", { id });
+    } finally {
+      exporting.current = false;
+    }
   }
 
   async function exportPdf() {
+    if (!result || exporting.current) return;
+    exporting.current = true;
+    const id = toast.loading("กำลังสร้างไฟล์ PDF");
+    try {
+      await buildPdf();
+      toast.success("ดาวน์โหลด PDF แล้ว", { id });
+    } catch {
+      toast.error("สร้างไฟล์ PDF ไม่สำเร็จ ลองใหม่อีกครั้ง", { id });
+    } finally {
+      exporting.current = false;
+    }
+  }
+
+  async function buildPdf() {
     if (!result) return;
     const columns = exportableColumns(result);
     const { jsPDF } = await import("jspdf");
@@ -298,7 +323,6 @@ function ReportSection({
       ...thaiTableHooks(doc),
     });
     doc.save(`${type}-${from}_${to}.pdf`);
-    toast.success("ดาวน์โหลด PDF แล้ว");
   }
 
   // Daily attendance report: a focused default set of columns (extras behind a

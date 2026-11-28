@@ -2,6 +2,7 @@
   "name": "GV One",
   "short_name": "GV One",
   "description": "ระบบบริหารงานบุคคลและเงินเดือนสำหรับองค์กร — HR & Payroll",
+  "id": "/dashboard",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
