@@ -148,7 +148,20 @@ export async function importEmployees(
         } else if (!managerId) {
           warnings.push(`${code}: ไม่พบรหัสหัวหน้า “${managerCode}” (ข้ามการผูกหัวหน้า)`);
         } else {
-          await tx.employee.update({ where: { id: employeeId }, data: { managerId } });
+          // Same rule as the edit page: the new manager must not report (directly or further up) to this person.
+          // Walk up from the manager; links saved earlier in this loop are already visible inside the transaction.
+          let loops = false;
+          let cursor: string | null = managerId;
+          for (let guard = 0; cursor && guard < 50; guard++) {
+            if (cursor === employeeId) {
+              loops = true;
+              break;
+            }
+            const up: { managerId: string | null } | null = await tx.employee.findFirst({ where: { id: cursor, companyId }, select: { managerId: true } });
+            cursor = up?.managerId ?? null;
+          }
+          if (loops) warnings.push(`${code}: หัวหน้า “${managerCode}” อยู่ใต้พนักงานคนนี้ ตั้งแล้วจะวนกันเอง (ข้ามการผูกหัวหน้า)`);
+          else await tx.employee.update({ where: { id: employeeId }, data: { managerId } });
         }
       }
     }, txOptions);
