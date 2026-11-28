@@ -253,7 +253,7 @@ export async function getDetailPerson(companyId: string, roundId: string, partic
   const submitted = p.assignments.filter((a) => a.status === "SUBMITTED");
   const mySections = sectionPercents(questions, submitted.map((a) => answersOf(a.answers)), ratingMax);
   const roundPeople = await prisma.appraisalParticipant.findMany({
-    where: { roundId, id: { not: p.id } },
+    where: { roundId, id: { not: p.id }, employee: { deletedAt: null } },
     select: { departmentName: true, employee: { select: { department: { select: { name: true } } } }, assignments: { where: { status: "SUBMITTED" }, select: { answers: true } } },
   });
   const peers = roundPeople.filter((x) => resolveDepartment(x.departmentName, live, x.employee.department?.name ?? null) === department);

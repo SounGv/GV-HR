@@ -124,7 +124,7 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
   const myTasks: MyTeamTask[] = [];
   for (const r of rounds) {
     const participants = await prisma.appraisalParticipant.findMany({
-      where: { roundId: r.id, ...scope },
+      where: { roundId: r.id, employee: { deletedAt: null }, ...scope },
       select: {
         departmentName: true,
         employee: { select: { id: true, firstName: true, lastName: true, nickname: true } },
@@ -167,7 +167,8 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
   // Results: the most recent round that has approved results in the viewer's scope.
   let results: ResultsCard | null = null;
   const latest = await prisma.appraisalParticipant.findFirst({
-    where: { round: { companyId, deletedAt: null }, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
+    // People removed from the system are left out, the same as in the detailed report, so the averages agree.
+    where: { round: { companyId, deletedAt: null }, employee: { deletedAt: null }, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope },
     orderBy: [{ round: { closedAt: { sort: "desc", nulls: "last" } } }, { round: { createdAt: "desc" } }],
     select: { roundId: true, round: { select: { name: true, raterTypes: true, closedAt: true } } },
   });
@@ -193,7 +194,7 @@ export async function loadEvaluationOverview(companyId: string, session: AccessC
     if (summary) {
       // Only against an earlier round where the same kind of people rate: managers rating staff is not staff rating managers.
       const earlier = await prisma.appraisalRound.findMany({
-        where: { companyId, deletedAt: null, id: { not: latest.roundId }, participants: { some: { resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope } } },
+        where: { companyId, deletedAt: null, id: { not: latest.roundId }, participants: { some: { employee: { deletedAt: null }, resultStatus: { in: [...APPROVED] }, scorePercent: { not: null }, ...scope } } },
         orderBy: [{ closedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
         select: { id: true, name: true, raterTypes: true },
         take: 8,
