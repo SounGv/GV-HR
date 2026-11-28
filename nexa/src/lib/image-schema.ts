@@ -41,21 +41,25 @@ export function dataUrlOrHttpUrlSchema(maxBytes = 3_000_000) {
     .optional();
 }
 
-/** Any client-uploaded file, not just images (e.g. a PDF/doc résumé). */
-const DATA_URL_ANY_RE = /^data:[a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+;base64,/;
+/**
+ * The kinds of file the attach field offers (its `accept`): pictures, PDF, Word. Anything else, such as a program
+ * file sent straight to the API, is refused: whoever opens the attachment later would be handed that file.
+ */
+export const DATA_URL_FILE_RE =
+  /^data:(image\/(png|jpe?g|webp|gif|heic|heif)|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document));base64,/;
 
 /**
  * Same idea as `dataUrlOrHttpUrlSchema`, but for attachments that aren't
- * necessarily images (résumés, documents) — accepts any `data:...;base64,`
- * payload or a pasted https URL.
+ * necessarily images (résumés, documents): a `data:...;base64,` payload of a
+ * picture, PDF or Word file, or a pasted https URL.
  */
 export function dataUrlFileOrHttpUrlSchema(maxBytes = 3_000_000) {
   return z
     .string()
     .max(maxBytes, "ไฟล์มีขนาดใหญ่เกินไป")
     .refine(
-      (v) => DATA_URL_ANY_RE.test(v) || HTTP_URL_RE.test(v),
-      "ต้องเป็นไฟล์ที่อัปโหลด หรือลิงก์ http(s) เท่านั้น",
+      (v) => DATA_URL_FILE_RE.test(v) || HTTP_URL_RE.test(v),
+      "แนบได้เฉพาะรูปภาพ, PDF หรือ Word (หรือลิงก์ http(s))",
     )
     .nullable()
     .optional();

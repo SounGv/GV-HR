@@ -5,6 +5,7 @@ import { bangkokParts } from "@/lib/datetime";
 import { BadRequest, Conflict, Forbidden, NotFound, NoEmployee } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { ShiftAssignment } from "./types";
+import { shiftTemplateProblem } from "./template-rules";
 import type {
   TemplateCreateInput,
   TemplateUpdateInput,
@@ -52,6 +53,8 @@ export async function createTemplate(
   input: TemplateCreateInput,
   meta?: Meta,
 ) {
+  const problem = shiftTemplateProblem(input.startTime, input.endTime, input.breakMinutes);
+  if (problem) throw BadRequest(problem);
   const record = await prisma.shiftTemplate.create({
     data: {
       companyId,
@@ -85,9 +88,16 @@ export async function updateTemplate(
 ) {
   const tpl = await prisma.shiftTemplate.findFirst({
     where: { id, companyId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, startTime: true, endTime: true, breakMinutes: true },
   });
   if (!tpl) throw NotFound("ไม่พบกะการทำงาน");
+  // Judged on what the shift will be after this edit, so changing only the break can still be refused.
+  const problem = shiftTemplateProblem(
+    input.startTime ?? tpl.startTime,
+    input.endTime ?? tpl.endTime,
+    input.breakMinutes ?? tpl.breakMinutes,
+  );
+  if (problem) throw BadRequest(problem);
   const record = await prisma.shiftTemplate.update({
     where: { id: tpl.id },
     data: {
