@@ -125,7 +125,7 @@ function CreateSessionDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} disablePointerDismissal>
       <Button onClick={() => setOpen(true)}>
         <Plus className="size-4" /> สร้างรอบปรับเทียบ
       </Button>

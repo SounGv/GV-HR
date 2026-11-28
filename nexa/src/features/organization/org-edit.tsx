@@ -258,7 +258,7 @@ export function ConfirmMovesDialog({
   onSave: () => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={(o) => !saving && onOpenChange(o)}>
+    <Dialog open={open} onOpenChange={(o) => !saving && onOpenChange(o)} disablePointerDismissal>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">ยืนยันการเปลี่ยนผัง ({rows.length} คน)</DialogTitle>

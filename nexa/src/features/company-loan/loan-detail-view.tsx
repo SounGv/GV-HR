@@ -118,7 +118,7 @@ export function LoanDetailView({ loanId }: { loanId: string }) {
         </CardContent>
       </Card>
 
-      <Dialog open={repayOpen} onOpenChange={setRepayOpen}>
+      <Dialog open={repayOpen} onOpenChange={setRepayOpen} disablePointerDismissal>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>บันทึกการผ่อนชำระ</DialogTitle>

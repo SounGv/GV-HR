@@ -18,7 +18,7 @@ import type { ReviewPerson } from "./types";
  */
 export function AdjustDialog({ roundId, person, onClose }: { roundId: string; person: ReviewPerson | null; onClose: () => void }) {
   return (
-    <Dialog open={person !== null} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={person !== null} onOpenChange={(o) => !o && onClose()} disablePointerDismissal>
       <DialogContent className="sm:max-w-md">{person && <Form key={person.participantId} roundId={roundId} person={person} onClose={onClose} />}</DialogContent>
     </Dialog>
   );

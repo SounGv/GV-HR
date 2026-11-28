@@ -54,7 +54,7 @@ export function CloneCampaignDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} disablePointerDismissal>
       <Button
         variant="ghost"
         size="icon-sm"

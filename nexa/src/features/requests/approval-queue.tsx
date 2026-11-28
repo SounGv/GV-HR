@@ -197,7 +197,7 @@ export function RejectDialog({
   onConfirm: () => void;
 }) {
   return (
-    <Dialog open={!!target} onOpenChange={(o) => !o && !loading && onCancel()}>
+    <Dialog open={!!target} onOpenChange={(o) => !o && !loading && onCancel()} disablePointerDismissal>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>ไม่อนุมัติคำขอ{target ? KIND_LABEL[target.kind] : ""}</DialogTitle>

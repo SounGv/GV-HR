@@ -481,7 +481,7 @@ export function ParticipantDetailView({ participantId }: { participantId: string
         ))}
       </div>
 
-      <Dialog open={!!reopenTarget} onOpenChange={(open) => !open && setReopenTarget(null)}>
+      <Dialog open={!!reopenTarget} onOpenChange={(open) => !open && setReopenTarget(null)} disablePointerDismissal>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>ขอเปิดแก้ไขแบบประเมินใหม่</DialogTitle>

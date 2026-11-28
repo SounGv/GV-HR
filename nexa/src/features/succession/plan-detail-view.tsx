@@ -170,7 +170,7 @@ function AddCandidateDialog({ planId, existingIds }: { planId: string; existingI
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} disablePointerDismissal>
       <Button size="sm" onClick={() => setOpen(true)}>
         <Plus className="size-4" /> เพิ่มผู้สืบทอด
       </Button>

@@ -717,7 +717,7 @@ export function ClockCard() {
       {/* Off-site fallback — only appears when the server actually rejects the location.
           Without `attendance:offsite`, there's no reason field at all — HR must grant
           the permission first (per-employee, via the role/permission matrix). */}
-      <Dialog open={!!offsite} onOpenChange={(v) => !v && setOffsite(null)}>
+      <Dialog open={!!offsite} onOpenChange={(v) => !v && setOffsite(null)} disablePointerDismissal>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-warning">

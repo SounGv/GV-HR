@@ -224,7 +224,7 @@ function RequestSwapButton({ assignment }: { assignment: ShiftAssignment }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} disablePointerDismissal>
       <Button variant="ghost" size="icon-sm" aria-label="ขอสลับเวร" onClick={() => setOpen(true)}>
         <Repeat className="size-3.5" />
       </Button>

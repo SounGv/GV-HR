@@ -345,7 +345,7 @@ function AddItemDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>เพิ่มรายการแผนพัฒนา</DialogTitle>
