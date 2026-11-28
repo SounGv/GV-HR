@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Building2, Camera, CheckCircle2, Home, MapPinned, ShieldCheck, UserRoundX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
+import { isPhoneWidth } from "@/lib/viewport";
 import { useAuth } from "@/features/auth/auth-context";
 import { useToday } from "@/features/attendance/hooks";
 import { WORK_MODE_LABEL } from "@/features/attendance/status-badge";
@@ -74,7 +75,8 @@ function MobileCheckinCardForEmployee() {
   const hasGeofence = branch?.lat != null && branch?.lng != null && branch?.radiusMeters != null;
 
   useEffect(() => {
-    if (hasOut || isWfh) return;
+    // This card is also drawn (and hidden by CSS) on a desktop home page: only a phone should ask for the location.
+    if (hasOut || isWfh || !isPhoneWidth()) return;
     let cancelled = false;
     getCurrentPosition({ timeout: 6000 })
       .then((pos) => {
