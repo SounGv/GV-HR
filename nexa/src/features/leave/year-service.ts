@@ -41,6 +41,7 @@ async function plan(companyId: string, fromYear: number, toYear: number, carryAn
       totalDays: true,
       usedDays: true,
       totalHours: true,
+      carriedDays: true,
       employee: { select: { employeeCode: true, firstName: true, lastName: true, nickname: true, status: true, deletedAt: true } },
     },
   });
@@ -137,6 +138,7 @@ export async function applyRollover(
         year: input.toYear,
         type: r.type,
         totalDays: r.totalDays,
+        carriedDays: r.carried,
         usedDays: 0,
         totalHours: r.totalHours,
         usedHours: 0,

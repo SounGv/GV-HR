@@ -14,6 +14,8 @@ export interface PrevBalance {
   totalDays: number;
   usedDays: number;
   totalHours: number;
+  /** Days of `totalDays` that were carried in from the year before (0 or missing for rows made before this was recorded). */
+  carriedDays?: number;
 }
 
 export interface NewBalance {
@@ -30,14 +32,19 @@ const isPaid = (t: string): t is PaidType => (PAID_TYPES as readonly string[]).i
 /**
  * One person's next-year rows. A type last year had no row for gets none. Carry-over only applies to
  * annual leave: the unused days, never more than `carryAnnualCap` (0 = no carry-over).
+ *
+ * The new total is the fixed yearly entitlement (last year's total minus what was carried into it) plus this
+ * year's carry, so the entitlement never snowballs: 6 days with 3 carried in is a base of 6, not 9, and a year
+ * later the base is still 6 (Favpo keeps a fixed yearly entitlement the same way).
  */
 export function rolloverBalances(prev: readonly PrevBalance[], carryAnnualCap: number): NewBalance[] {
   const out: NewBalance[] = [];
   for (const p of prev) {
     if (!isPaid(p.type)) continue;
+    const base = Math.max(0, r1(p.totalDays - (p.carriedDays ?? 0)));
     const left = Math.max(0, p.totalDays - p.usedDays);
     const carried = p.type === "ANNUAL" && carryAnnualCap > 0 ? r1(Math.min(carryAnnualCap, left)) : 0;
-    out.push({ type: p.type, totalDays: r1(p.totalDays + carried), totalHours: p.totalHours, carried });
+    out.push({ type: p.type, totalDays: r1(base + carried), totalHours: p.totalHours, carried });
   }
   return out;
 }

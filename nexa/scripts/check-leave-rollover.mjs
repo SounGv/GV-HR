@@ -42,6 +42,21 @@ check("half days stay clean after carrying", () => {
   assert.equal(rolloverBalances(half, 10)[0].carried, 3.7);
   assert.equal(rolloverBalances(half, 10)[0].totalDays, 10.7);
 });
+check("a carried-in balance does not snowball: the base stays the fixed entitlement", () => {
+  // 6 days a year. 2569 -> 2570: 3 unused, carry 3 -> total 9 (3 of it carried).
+  const y2570 = rolloverBalances([{ type: "ANNUAL", totalDays: 6, usedDays: 3, totalHours: 0, carriedDays: 0 }], 10)[0];
+  assert.deepEqual([y2570.totalDays, y2570.carried], [9, 3]);
+  // 2570 -> 2571: nothing used of 9. Base is 9 - 3 = 6, carry is capped at 10 and is 9 -> total 15, not 9 + 9 = 18.
+  const y2571 = rolloverBalances([{ type: "ANNUAL", totalDays: 9, usedDays: 0, totalHours: 0, carriedDays: 3 }], 10)[0];
+  assert.deepEqual([y2571.totalDays, y2571.carried], [15, 9]);
+  // With a cap of 3 the year after is 6 + 3 = 9, not 9 + 3 = 12, however many years pass.
+  const y2572 = rolloverBalances([{ type: "ANNUAL", totalDays: 9, usedDays: 0, totalHours: 0, carriedDays: 3 }], 3)[0];
+  assert.deepEqual([y2572.totalDays, y2572.carried], [9, 3]);
+});
+check("sick and personal rows keep their entitlement whatever carriedDays holds", () => {
+  const r = rolloverBalances([{ type: "PERSONAL", totalDays: 6, usedDays: 6, totalHours: 0, carriedDays: 0 }], 10)[0];
+  assert.equal(r.totalDays, 6);
+});
 check("types other than the three paid ones are ignored", () => {
   assert.deepEqual(rolloverBalances([{ type: "UNPAID", totalDays: 0, usedDays: 2, totalHours: 0 }], 5), []);
 });

@@ -1132,6 +1132,9 @@ model LeaveBalance {
   year      Int
   type      LeaveType
   totalDays Float     @default(0)
+  // Part of totalDays that was carried in from the year before (annual leave). The fixed yearly entitlement is
+  // totalDays - carriedDays, so a rollover does not carry the carry forward again.
+  carriedDays Float   @default(0)
   usedDays  Float     @default(0)
   // Separate hour-based quota tracking (see LeaveRequest.unit) — never
   // converted to/from totalDays/usedDays, an intentionally independent pool.
