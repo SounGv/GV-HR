@@ -318,7 +318,7 @@ export function EmployeeForm({
                 control={form.control}
                 name="taxSpouseNoIncome"
                 render={({ field }) => (
-                  <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                  <Switch aria-label="คู่สมรสไม่มีเงินได้" checked={!!field.value} onCheckedChange={field.onChange} />
                 )}
               />
             </div>

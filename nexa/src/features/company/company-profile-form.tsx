@@ -235,6 +235,7 @@ export function CompanyProfileForm() {
             </p>
           </div>
           <Switch
+            aria-label="เปิดใช้งานการหักเงินอัตโนมัติ"
             checked={form.attendanceDeductionEnabled === "true"}
             onCheckedChange={(v) => set("attendanceDeductionEnabled", String(v))}
             disabled={!canEdit}

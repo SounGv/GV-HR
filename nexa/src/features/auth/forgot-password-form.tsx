@@ -64,9 +64,9 @@ export function ForgotPasswordForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>อีเมล</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <div className="relative">
+                <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                <FormControl>
                   <Input
                     type="email"
                     autoComplete="email"
@@ -74,8 +74,8 @@ export function ForgotPasswordForm() {
                     className="h-10 pl-9"
                     {...field}
                   />
-                </div>
-              </FormControl>
+                </FormControl>
+              </div>
               <FormMessage />
             </FormItem>
           )}

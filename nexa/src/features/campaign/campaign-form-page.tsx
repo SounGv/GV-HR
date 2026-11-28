@@ -280,7 +280,7 @@ export function CampaignFormPage({ campaign }: { campaign?: CampaignDetail }) {
                     <p className="text-sm font-medium text-foreground">ใช้แบบประเมิน (Template) แทนสมรรถนะ</p>
                     <p className="text-xs text-muted-foreground">เลือกแบบประเมินที่สร้างไว้ในหน้า “แบบประเมิน” แทนการเลือกสมรรถนะรายข้อ</p>
                   </div>
-                  <Switch checked={useEvalTemplate} onCheckedChange={setUseEvalTemplate} />
+                  <Switch aria-label="ใช้แบบประเมิน (Template) แทนสมรรถนะ" checked={useEvalTemplate} onCheckedChange={setUseEvalTemplate} />
                 </Card>
               )}
 

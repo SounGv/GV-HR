@@ -93,12 +93,12 @@ export function ResetPasswordForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>รหัสผ่านใหม่</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <div className="relative">
+                <Lock className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                <FormControl>
                   <Input type="password" autoComplete="new-password" placeholder="8+ ตัวอักษร มีพิมพ์เล็ก ใหญ่ ตัวเลข" className="h-10 pl-9" {...field} />
-                </div>
-              </FormControl>
+                </FormControl>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -109,12 +109,12 @@ export function ResetPasswordForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>ยืนยันรหัสผ่านใหม่</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <div className="relative">
+                <Lock className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                <FormControl>
                   <Input type="password" autoComplete="new-password" placeholder="กรอกอีกครั้ง" className="h-10 pl-9" {...field} />
-                </div>
-              </FormControl>
+                </FormControl>
+              </div>
               <FormMessage />
             </FormItem>
           )}

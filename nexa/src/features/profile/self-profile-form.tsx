@@ -124,7 +124,7 @@ export function SelfProfileForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {/* Header + avatar */}
-      <Card className="relative overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white">
+      <Card className="relative overflow-hidden border-0 bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white">
         <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:items-center">
           <div className="relative">
             <Avatar className="size-20 ring-2 ring-white/15">
@@ -167,10 +167,10 @@ export function SelfProfileForm() {
       <Section icon={UserIcon} title="ข้อมูลส่วนตัว" desc="ชื่อ ชื่อเล่น และข้อมูลพื้นฐาน">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="ชื่อ" required error={errors.firstName}>
-            <Input value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
+            <Input value={form.firstName} onChange={(e) => set("firstName", e.target.value)} autoComplete="given-name" />
           </Field>
           <Field label="นามสกุล" error={errors.lastName}>
-            <Input value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
+            <Input value={form.lastName} onChange={(e) => set("lastName", e.target.value)} autoComplete="family-name" />
           </Field>
           <Field label="ชื่อเล่น" error={errors.nickname}>
             <Input value={form.nickname} onChange={(e) => set("nickname", e.target.value)} />
@@ -194,10 +194,10 @@ export function SelfProfileForm() {
       <Section icon={Phone} title="ช่องทางติดต่อ" desc="โทรศัพท์และอีเมลส่วนตัว">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="โทรศัพท์" error={errors.phone}>
-            <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+            <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} type="tel" inputMode="tel" autoComplete="tel" />
           </Field>
           <Field label="อีเมล" error={errors.email}>
-            <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" />
           </Field>
         </div>
       </Section>
@@ -230,7 +230,7 @@ export function SelfProfileForm() {
       <Section icon={ShieldAlert} title="ผู้ติดต่อกรณีฉุกเฉิน" desc="บุคคลที่ติดต่อได้เมื่อจำเป็น">
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="ชื่อผู้ติดต่อ"><Input value={form.emergencyContactName} onChange={(e) => set("emergencyContactName", e.target.value)} /></Field>
-          <Field label="เบอร์โทร"><Input value={form.emergencyContactPhone} onChange={(e) => set("emergencyContactPhone", e.target.value)} /></Field>
+          <Field label="เบอร์โทร"><Input value={form.emergencyContactPhone} onChange={(e) => set("emergencyContactPhone", e.target.value)} type="tel" inputMode="tel" /></Field>
           <Field label="ความสัมพันธ์"><Input value={form.emergencyContactRelation} onChange={(e) => set("emergencyContactRelation", e.target.value)} /></Field>
         </div>
       </Section>
@@ -305,11 +305,18 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
-        {label} {required && <span className="text-destructive">*</span>}
+      {/* The field sits inside its label, so tapping the name focuses it and a screen reader reads the name with it. */}
+      <label className="block space-y-1.5">
+        <span className="block text-xs font-medium text-muted-foreground">
+          {label} {required && <span className="text-destructive">*</span>}
+        </span>
+        {children}
       </label>
-      {children}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
