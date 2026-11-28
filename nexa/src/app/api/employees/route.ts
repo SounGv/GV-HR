@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
-import { employeeListQuerySchema, employeeCreateSchema } from "@/features/employee/schema";
+import { employeeListQuerySchema, employeeCreateChecked } from "@/features/employee/schema";
 import { listEmployees, createEmployee } from "@/features/employee/service";
 import { okPaginated, created, handleApiError } from "@/lib/api/response";
 import { buildPageMeta } from "@/lib/api/pagination";
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await requirePermission("employee:create");
     const body = await req.json().catch(() => ({}));
-    const input = employeeCreateSchema.parse(body);
+    const input = employeeCreateChecked.parse(body);
     const employee = await createEmployee(session.companyId, input, session, getRequestMeta(req));
     return created(employee);
   } catch (err) {

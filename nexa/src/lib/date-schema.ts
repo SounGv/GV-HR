@@ -12,6 +12,22 @@ export const MAX_DATE_YEAR = 2100;
  * 2400 gets a message that names the cause so the person fixes it instead of retrying.
  */
 export const calendarDate = (params?: { message?: string }) =>
+  z.preprocess(unrollDay, calendarDateInner(params));
+
+/**
+ * "2026-02-30" is not a day, but JavaScript reads it as 2 March. Text that looks like a date and does not exist is
+ * turned into something that fails to parse, so the field's own message shows instead of a silently moved date.
+ */
+function unrollDay(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (!m) return v;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const real = new Date(Date.UTC(y, mo - 1, d));
+  return real.getUTCFullYear() === y && real.getUTCMonth() === mo - 1 && real.getUTCDate() === d ? v : "not a date";
+}
+
+const calendarDateInner = (params?: { message?: string }) =>
   z.coerce.date(params).refine(
     (d) => {
       const y = d.getUTCFullYear();

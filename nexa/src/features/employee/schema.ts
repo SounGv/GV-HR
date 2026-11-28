@@ -37,6 +37,22 @@ const optionalCuidLike = optional(z.string().uuid());
 // default HQ branch), same reasoning as qrBranchId in attendance/schema.ts.
 const optionalBranchId = optional(z.string().trim().min(1).max(100));
 
+const MAX_PAY = 10_000_000;
+const PAY_TOO_BIG = "จำนวนเงินสูงเกินจริง ตรวจจำนวนเงินอีกครั้ง";
+
+/** Dates of one employee that cannot be true: probation ending before the start of work, a birth date in the future. */
+function checkEmployeeDates(
+  d: { hireDate?: Date | null; probationEndDate?: Date | null; dateOfBirth?: Date | null },
+  ctx: z.RefinementCtx,
+) {
+  if (d.hireDate && d.probationEndDate && d.probationEndDate < d.hireDate) {
+    ctx.addIssue({ code: "custom", message: "วันสิ้นสุดทดลองงานต้องไม่ก่อนวันเริ่มงาน", path: ["probationEndDate"] });
+  }
+  if (d.dateOfBirth && d.dateOfBirth.getTime() > Date.now()) {
+    ctx.addIssue({ code: "custom", message: "วันเกิดต้องไม่ใช่วันในอนาคต", path: ["dateOfBirth"] });
+  }
+}
+
 export const employeeCreateSchema = z.object({
   employeeCode: z.string().trim().min(1, "กรุณากรอกรหัสพนักงาน").max(20),
   firstName: z.string().trim().min(1, "กรุณากรอกชื่อ").max(120),
@@ -72,9 +88,10 @@ export const employeeCreateSchema = z.object({
   terminationDate: optionalDate,
 
   compensationType: z.enum(COMPENSATION_TYPES).default("MONTHLY"),
-  baseSalary: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ")),
-  dailyRate: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ")),
-  hourlyRate: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ")),
+  // The upper limit stops a slipped zero (or a pasted phone number) from overflowing the money column and failing the save.
+  baseSalary: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ").max(MAX_PAY, PAY_TOO_BIG)),
+  dailyRate: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ").max(MAX_PAY, PAY_TOO_BIG)),
+  hourlyRate: optional(z.coerce.number().min(0, "ต้องไม่ติดลบ").max(MAX_PAY, PAY_TOO_BIG)),
   bankName: optional(z.string().trim().max(120)),
   bankAccountNo: optional(z.string().trim().max(40)),
 
@@ -93,6 +110,8 @@ export const employeeCreateSchema = z.object({
 });
 
 export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
+/** The create schema as the API uses it: the field rules plus the date checks across fields. */
+export const employeeCreateChecked = employeeCreateSchema.superRefine(checkEmployeeDates);
 
 /** For PATCH: "" or null means "clear this field" (stored as null); a missing key means "leave it alone". */
 const clearable = <T extends z.ZodTypeAny>(inner: T) =>
@@ -139,7 +158,7 @@ export const employeeUpdateSchema = updateSchemaOf(employeeCreateSchema).extend(
   district: clearableText(120),
   province: clearableText(120),
   postalCode: clearableText(10),
-}) as unknown as z.ZodType<EmployeeUpdateInput>;
+}).superRefine(checkEmployeeDates) as unknown as z.ZodType<EmployeeUpdateInput>;
 
 /** List query = base pagination + employee-specific filters. */
 export const employeeListQuerySchema = listQuerySchema.extend({

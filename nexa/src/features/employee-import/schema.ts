@@ -60,8 +60,12 @@ export const importRowSchema = z.object({
   probationEndDate: importDate,
   baseSalary: z.preprocess(
     (v) => (v === "" || v == null ? null : v),
-    z.coerce.number().min(0, "เงินเดือนต้องไม่ติดลบ").nullable().optional(),
+    // The upper limit stops a slipped zero from overflowing the money column, which failed the whole file with no row named.
+    z.coerce.number().min(0, "เงินเดือนต้องไม่ติดลบ").max(10_000_000, "เงินเดือนสูงเกินจริง ตรวจจำนวนเงินอีกครั้ง").nullable().optional(),
   ),
+}).refine((r) => !r.hireDate || !r.probationEndDate || r.probationEndDate >= r.hireDate, {
+  message: "วันสิ้นสุดทดลองงานต้องไม่ก่อนวันเริ่มงาน",
+  path: ["probationEndDate"],
 });
 
 export type ImportRow = z.infer<typeof importRowSchema>;

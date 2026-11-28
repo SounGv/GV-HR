@@ -29,6 +29,15 @@ check("a year outside 1900 to 2100 is refused", () => {
   assert.equal(s.safeParse("1900-01-01").success, true);
   assert.equal(s.safeParse("2100-12-31").success, true);
 });
+check("a day that does not exist is refused, not moved to the next month", () => {
+  assert.equal(s.safeParse("2026-02-30").success, false);
+  assert.equal(s.safeParse("2026-04-31").success, false);
+  assert.equal(s.safeParse("2026-13-01").success, false);
+  assert.equal(s.safeParse("2026-02-28").success, true);
+  assert.equal(s.safeParse("2028-02-29").success, true, "a real leap day");
+  assert.equal(s.safeParse("2027-02-29").success, false, "not a leap year");
+  assert.equal(calendarDate({ message: "x" }).safeParse("2026-02-30").error.issues[0].message, "x");
+});
 check("junk and empty input still fail with the field's own message", () => {
   const r = s.safeParse("not a date");
   assert.equal(r.success, false);
