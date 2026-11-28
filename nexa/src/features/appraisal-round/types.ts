@@ -111,6 +111,8 @@ export interface RoundDetail {
   openedAt: string | null;
   notifiedAt: string | null;
   participantIds: string[];
+  /** Set only when the viewer may not see who is in the round (a manager): the head count, with the ids left out. */
+  participantCount?: number;
   matching: {
     assignmentCount: number;
     byType: Record<string, number>;

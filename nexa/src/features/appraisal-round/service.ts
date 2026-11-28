@@ -304,8 +304,28 @@ async function loadRoster(companyId: string) {
   });
 }
 
-/** Everything the wizard shows for one round: the saved choices, the matching result and the readiness list. */
-export async function getRound(companyId: string, id: string) {
+/**
+ * Everything the wizard shows for one round: the saved choices, the matching result and the readiness list.
+ *
+ * Pass `viewer` when the answer goes to a person. Anyone without `campaign:update` (a manager, who holds only
+ * `campaign:manage`) gets the round's summary with every name and rater list left out: who rates whom is
+ * limited to the people they may see on the tracking and results screens, which are scoped separately.
+ */
+export async function getRound(companyId: string, id: string, viewer?: AccessClaims) {
+  const detail = await loadRoundDetail(companyId, id);
+  if (!viewer || can(viewer.perms, "campaign:update")) return detail;
+  return {
+    ...detail,
+    participantCount: detail.participantIds.length,
+    participantIds: [],
+    participantForms: {},
+    overrides: { add: [], remove: [] },
+    matching: { ...detail.matching, exceptions: [], rows: [] },
+    invitations: { ...detail.invitations, unreachableNames: [], example: null },
+  };
+}
+
+async function loadRoundDetail(companyId: string, id: string) {
   const round = await prisma.appraisalRound.findFirst({
     where: { id, companyId, deletedAt: null },
     select: {

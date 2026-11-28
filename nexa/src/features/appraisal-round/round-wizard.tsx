@@ -133,7 +133,7 @@ function RoundOverview({ round }: { round: RoundDetail }) {
           </div>
           <div>
             <dt className="text-muted-foreground">คนที่ถูกประเมิน</dt>
-            <dd className="font-medium tabular-nums">{round.participantIds.length} คน</dd>
+            <dd className="font-medium tabular-nums">{round.participantCount ?? round.participantIds.length} คน</dd>
           </div>
         </dl>
         {round.status === "SCHEDULED" && (

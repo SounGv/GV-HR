@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   try {
     const session = await requirePermission("campaign:manage");
     const { id } = await params;
-    return ok(await getRound(session.companyId, id));
+    return ok(await getRound(session.companyId, id, session));
   } catch (err) {
     return handleApiError(err);
   }
