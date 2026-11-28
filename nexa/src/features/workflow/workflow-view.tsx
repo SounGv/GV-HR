@@ -4,11 +4,14 @@ import { roleLabel as roleName } from "@/lib/role-label";
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Check, X, GitBranch, Pencil, Trash2, Send, Inbox } from "lucide-react";
+import { Plus, Check, X, GitBranch, Pencil, Trash2, Send, Inbox, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusChip } from "@/components/shared/status-chip";
 import { EmptyState, ErrorState, NoEmployeeState, TableLoadingState } from "@/components/shared/states";
@@ -192,13 +195,27 @@ function InboxRequests() {
   const { data, isLoading, isError, refetch } = useRequests("inbox");
   const decideMut = useDecideRequest();
   const requests = data?.data ?? [];
+  // Rejecting asks for an optional reason first; the requester sees it with the decision.
+  const [rejectTarget, setRejectTarget] = useState<ApprovalRequest | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
-  async function decide(id: string, action: "approve" | "reject") {
+  async function decide(id: string, action: "approve" | "reject", note?: string) {
     try {
-      await decideMut.mutateAsync({ id, action });
+      await decideMut.mutateAsync({ id, action, note });
       toast.success(action === "approve" ? "อนุมัติแล้ว" : "ไม่อนุมัติแล้ว");
+      return true;
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "ดำเนินการไม่สำเร็จ");
+      return false;
+    }
+  }
+
+  async function confirmReject() {
+    if (!rejectTarget) return;
+    const ok = await decide(rejectTarget.id, "reject", rejectReason.trim() || undefined);
+    if (ok) {
+      setRejectTarget(null);
+      setRejectReason("");
     }
   }
 
@@ -209,20 +226,64 @@ function InboxRequests() {
   }
 
   return (
-    <RequestTable
-      requests={requests}
-      showRequester
-      renderActions={(r) => (
-        <>
-          <Button variant="outline" size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "reject")}>
-            <X className="size-4" /> ไม่อนุมัติ
-          </Button>
-          <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
-            <Check className="size-4" /> อนุมัติ
-          </Button>
-        </>
-      )}
-    />
+    <>
+      <RequestTable
+        requests={requests}
+        showRequester
+        renderActions={(r) => (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={decideMut.isPending}
+              onClick={() => {
+                setRejectReason("");
+                setRejectTarget(r);
+              }}
+            >
+              <X className="size-4" /> ไม่อนุมัติ
+            </Button>
+            <Button size="sm" disabled={decideMut.isPending} onClick={() => decide(r.id, "approve")}>
+              <Check className="size-4" /> อนุมัติ
+            </Button>
+          </>
+        )}
+      />
+      <Dialog
+        open={!!rejectTarget}
+        onOpenChange={(o) => !o && !decideMut.isPending && setRejectTarget(null)}
+        disablePointerDismissal
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>ไม่อนุมัติคำขอ</DialogTitle>
+            <DialogDescription>
+              {rejectTarget ? `${rejectTarget.requesterName} · ${rejectTarget.title}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="workflow-reject-reason">เหตุผล (ไม่บังคับ พนักงานจะเห็นพร้อมผลการพิจารณา)</Label>
+            <Textarea
+              id="workflow-reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="เช่น งบประมาณหมดแล้ว ขอเลื่อนเป็นไตรมาสหน้า"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="h-11" onClick={() => setRejectTarget(null)} disabled={decideMut.isPending}>
+              ยกเลิก
+            </Button>
+            <Button variant="destructive" className="h-11" onClick={confirmReject} disabled={decideMut.isPending}>
+              {decideMut.isPending && <Loader2 className="size-4 animate-spin motion-reduce:animate-[spin_2.5s_linear_infinite]" />}
+              ยืนยันไม่อนุมัติ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
