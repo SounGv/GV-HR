@@ -1512,7 +1512,7 @@ export async function getReport(companyId: string, query: ReportQuery): Promise<
         { key: "examples", label: "ตัวอย่าง / ความเห็น" },
       ],
       rows,
-      footnote: `${rows.length} แถว · จากคำตอบที่ส่งแล้วเท่านั้น · ไม่ระบุชื่อผู้ประเมิน`,
+      footnote: `${rows.length} แถว · จากคำตอบที่ส่งแล้วเท่านั้น · ไม่ระบุชื่อผู้ประเมิน · คะแนนเฉลี่ยเป็นค่าเฉลี่ยตรงของแต่ละหัวข้อ ไม่ถ่วงน้ำหนักข้อและมุมมอง จึงอาจต่างจากคะแนนรวมของรอบ`,
     };
   }
 

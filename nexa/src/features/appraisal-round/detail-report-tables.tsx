@@ -333,6 +333,11 @@ export function SectionsTab({ data, people, onOpen }: { data: DetailOverview; pe
         </Button>
       </div>
       {names.length === 0 && <p className="rounded-sm border border-border bg-card px-3 py-2 text-sm text-muted-foreground">แบบประเมินของรอบนี้ไม่ได้แบ่งหมวด จึงมีเฉพาะคะแนนรวมกับความเห็น</p>}
+      {names.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          คะแนนรายหมวดเป็นค่าเฉลี่ยของทุกใบที่ส่ง ไม่ถ่วงน้ำหนักข้อและมุมมองผู้ประเมิน ส่วนคะแนนรวมถ่วงน้ำหนักแล้ว ตัวเลขจึงอาจต่างกัน
+        </p>
+      )}
       <div className="hidden md:block">
       <Table>
         <TableHeader>
