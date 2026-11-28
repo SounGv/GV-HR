@@ -248,8 +248,9 @@ export async function publishResults(companyId: string, session: AccessClaims, r
 /* ───────────────────────── HR table ───────────────────────── */
 
 export async function getRoundResults(companyId: string, roundId: string, session: AccessClaims) {
-  const round = await prisma.appraisalRound.findFirst({ where: { id: roundId, companyId, deletedAt: null }, select: { id: true } });
+  const round = await prisma.appraisalRound.findFirst({ where: { id: roundId, companyId, deletedAt: null }, select: { id: true, raterTypes: true } });
   if (!round) throw NotFound("ไม่พบรอบประเมิน");
+  const roundTypes = (round.raterTypes as string[]) ?? [];
   const scope = participantScope(await viewableEmployeeIds(companyId, session), session.employeeId);
   const rows = await prisma.appraisalParticipant.findMany({
     where: { roundId, ...scope },
@@ -266,17 +267,26 @@ export async function getRoundResults(companyId: string, roundId: string, sessio
     orderBy: { employee: { employeeCode: "asc" } },
     take: 2000,
   });
-  return rows.map((r) => ({
-    participantId: r.id,
-    name: displayName(r.employee),
-    code: r.employee.employeeCode,
-    department: r.departmentName ?? "ไม่ระบุแผนก",
-    status: r.resultStatus,
-    scorePercent: r.scorePercent,
-    overallScore: r.overallScore,
-    grade: r.grade,
-    imported: (r.scoreBreakdown as { source?: string } | null)?.source === "favpo-import",
-  }));
+  return rows.map((r) => {
+    const breakdown = r.scoreBreakdown as { source?: string; types?: { raterType: string }[] } | null;
+    const imported = breakdown?.source === "favpo-import";
+    // The score of a calculated person leaves out any kind of rater who sent nothing and shares the weight among the
+    // others (that is the rule). This lists the kinds that were left out, so a result built on fewer people is visible.
+    const counted = new Set((breakdown?.types ?? []).map((t) => t.raterType));
+    const missingTypes = !imported && Array.isArray(breakdown?.types) ? roundTypes.filter((t) => !counted.has(t)) : [];
+    return {
+      participantId: r.id,
+      name: displayName(r.employee),
+      code: r.employee.employeeCode,
+      department: r.departmentName ?? "ไม่ระบุแผนก",
+      status: r.resultStatus,
+      scorePercent: r.scorePercent,
+      overallScore: r.overallScore,
+      grade: r.grade,
+      imported,
+      missingTypes,
+    };
+  });
 }
 
 /* ───────────────────────── the employee's own results ───────────────────────── */

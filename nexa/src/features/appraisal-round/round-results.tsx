@@ -15,7 +15,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { bandKeyOf, bandLabel } from "@/features/dashboard-people/evaluation-rules";
 import { ApiError } from "@/lib/api/client";
 import { useResultActions, useRoundResults, useSettings } from "./hooks";
-import { RESULT_STATUS_LABEL, type ResultStatus, type RoundStatus } from "./types";
+import { RATER_LABEL, RESULT_STATUS_LABEL, type ResultStatus, type RoundStatus } from "./types";
 
 const TONE: Record<ResultStatus, StatusTone> = { NOT_CALCULATED: "neutral", CALCULATED: "info", APPROVED: "primary", PUBLISHED: "success", ACKNOWLEDGED: "success" };
 
@@ -133,7 +133,12 @@ export function RoundResults({ roundId, status }: { roundId: string; status: Rou
                   <td className="px-2 py-2 text-right tabular-nums">{r.scorePercent ?? "-"}</td>
                   <td className="px-2 py-2">{r.grade ?? "-"}</td>
                   <td className="px-3 py-2">
-                    <StatusChip tone={TONE[r.status]} label={RESULT_STATUS_LABEL[r.status]} />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <StatusChip tone={TONE[r.status]} label={RESULT_STATUS_LABEL[r.status]} />
+                      {r.missingTypes.length > 0 && (
+                        <StatusChip tone="warning" label={`ไม่มีคะแนนจาก ${r.missingTypes.map((t) => RATER_LABEL[t]).join(", ")}`} />
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

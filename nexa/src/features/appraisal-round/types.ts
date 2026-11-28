@@ -285,6 +285,8 @@ export interface ResultRow {
   grade: string | null;
   /** Brought in from Favpo: only the person's total exists, there are no answers behind it. */
   imported: boolean;
+  /** Kinds of rater the round asked for that sent nothing, so the score was worked out without them (empty when all are in or the person is not calculated). */
+  missingTypes: RaterType[];
 }
 
 export interface MyResult {
