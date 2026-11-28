@@ -127,23 +127,23 @@ export async function importAttendance(
     const status = lateOrPresent(hh * 60 + mm, shift.startMin);
 
     // An imported punch that clocks out past the employee's scheduled shift
-    // end is real overtime that a bare clock-in/out import would otherwise
-    // never surface — there's no OT request behind it (the system wasn't
-    // live yet), so it must never reach payroll. Auto-approve one from the
-    // excess minutes instead: HR uploading this file is already attesting
-    // these hours happened, the same trust an import already extends to the
-    // attendance records themselves.
+    // end may be real overtime, but staying late is not OT until someone asks
+    // for it and someone approves (HR rule of 20 Oct 2569; Favpo works the same
+    // way: staff record OT, a manager approves). So the import only raises a
+    // PENDING request from the excess minutes; an approver decides, and only an
+    // approved one reaches payroll.
     // Saturday is a company-wide half day — time worked past the (already
     // shortened) shift end doesn't count as OT, per company policy.
     let otData: Prisma.OvertimeRequestUncheckedCreateInput | null = null;
     if (r.clockOut && workDate.getUTCDay() !== 6) {
       const [outH, outM] = r.clockOut.split(":").map(Number);
       const excessMinutes = outH * 60 + outM - shift.endMin;
-      // Skip when the person already asked for OT that day, or it would be paid twice.
+      // Skip when that day already has a request in any status: one the person asked for would be paid twice,
+      // and one that was rejected or cancelled is a decision this import must not undo.
       const existingOt =
         excessMinutes >= MIN_OT_MINUTES
           ? await prisma.overtimeRequest.count({
-              where: { companyId, employeeId: employee.id, date: workDate, deletedAt: null, status: { in: ["PENDING", "APPROVED"] } },
+              where: { companyId, employeeId: employee.id, date: workDate, deletedAt: null },
             })
           : 0;
       if (existingOt > 0) otSkipped++;
@@ -169,12 +169,8 @@ export async function importAttendance(
           hours,
           multiplier: DEFAULT_MULTIPLIER,
           estimatedAmount: estimated,
-          reason: "สร้างอัตโนมัติจากการนำเข้าไฟล์ลงเวลา (เวลาออกเกินกะ)",
-          status: "APPROVED",
-          approverEmployeeId: session.employeeId ?? null,
-          approverUserId: session.sub,
-          decidedAt: new Date(),
-          decisionNote: "อนุมัติอัตโนมัติจากการนำเข้าไฟล์ลงเวลาโดยฝ่ายบุคคล",
+          reason: "สร้างจากการนำเข้าไฟล์ลงเวลา (เวลาออกเกินกะ) รอผู้อนุมัติตัดสิน",
+          status: "PENDING",
           createdById: session.sub,
           updatedById: session.sub,
         };
@@ -214,10 +210,10 @@ export async function importAttendance(
   }
 
   if (otCreated > 0) {
-    warnings.push(`สร้างคำขอ OT อัตโนมัติ ${otCreated} รายการ จากเวลาที่ลงออกเกินกะงาน (อนุมัติให้อัตโนมัติแล้ว)`);
+    warnings.push(`สร้างคำขอ OT ${otCreated} รายการ จากเวลาที่ลงออกเกินกะงาน สถานะรออนุมัติ ยังไม่ถูกนำไปคิดเงิน จนกว่าผู้อนุมัติจะอนุมัติ`);
   }
   if (otSkipped > 0) {
-    warnings.push(`ไม่ได้สร้าง OT อัตโนมัติ ${otSkipped} รายการ เพราะพนักงานขอ OT วันนั้นไว้แล้ว`);
+    warnings.push(`ไม่ได้สร้างคำขอ OT ${otSkipped} รายการ เพราะวันนั้นมีคำขอ OT อยู่แล้ว (รออนุมัติ อนุมัติ ไม่อนุมัติ หรือยกเลิก)`);
   }
 
   await writeAudit({

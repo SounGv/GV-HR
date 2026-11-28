@@ -7,10 +7,9 @@ import { BadRequest, Conflict, Forbidden, NotFound } from "@/lib/api/errors";
 import { createNotification, markNotificationsByLinkRead } from "@/features/notification/service";
 import { notifyApprovalOwners } from "@/features/notification/approval-routing";
 import { broadcastToLineGroups } from "@/lib/integrations/line-group-broadcast";
-import { resolveShiftMinutesBatch, shiftMinutesFromBatch } from "@/lib/attendance-shift";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import { can } from "@/lib/auth/rbac";
-import { computeHours, dayOffReason, estimateAmount, minutesSinceWorkDateStart, shiftOverlapMessage, DAY_OFF_MULTIPLIER, DEFAULT_MULTIPLIER, MIN_OT_MINUTES, multiplierFor } from "./calc";
+import { computeHours, dayOffReason, estimateAmount, shiftOverlapMessage, DAY_OFF_MULTIPLIER, multiplierFor } from "./calc";
 import { resolveShiftMinutes } from "@/lib/attendance-shift";
 import type { OtCreateInput, OtDecideInput, OtListQuery, OtUpdateReasonInput, OtUpdateNoteInput } from "./schema";
 import { appBaseUrl } from "@/lib/app-url";
@@ -200,11 +199,8 @@ export async function getOvertime(companyId: string, session: AccessClaims, id: 
  * The requester or their manager/HR correcting the stated reason — no status
  * restriction, since it's descriptive text only (never touches hours/amount/
  * status) and the audit log keeps the before/after value either way. Needed
- * for more than just the requester's own typos: `reconcileOvertimeFromAttendance`
- * auto-creates and auto-approves records with a generic system-written reason
- * ("สร้างอัตโนมัติจากการตรวจสอบเวลาเข้า-ออกงานย้อนหลัง...") that nobody typed —
- * the employee never got a chance to state a real one, so their manager needs
- * a way to replace it with the actual explanation too.
+ * for more than just the requester's own typos: a request raised from an imported attendance file carries a
+ * system-written reason that nobody typed, so the approver needs a way to replace it with the actual explanation.
  */
 export async function updateOvertimeReason(
   companyId: string,
@@ -489,120 +485,4 @@ export async function cancelOvertime(
   );
 
   return record;
-}
-
-/**
- * Scans existing attendance records over [from, to) for clock-outs past the
- * employee's shift end with no OT request behind them yet, and auto-creates
- * an already-APPROVED one for the excess — same rule the attendance import
- * applies to rows it creates itself, but this also covers attendance that
- * arrived some other way (a prior import run, a direct DB backfill, a time-
- * clock device sync) where nothing was ever there to hook the check into.
- * Skips any (employee, date) that already has an OvertimeRequest of any
- * status, so it never creates a duplicate alongside one the employee
- * actually submitted.
- */
-export async function reconcileOvertimeFromAttendance(
-  companyId: string,
-  session: AccessClaims,
-  from: Date,
-  to: Date,
-  meta?: Meta,
-): Promise<{ scanned: number; created: number }> {
-  const records = await prisma.attendanceRecord.findMany({
-    where: { companyId, deletedAt: null, workDate: { gte: from, lt: to }, clockInAt: { not: null }, clockOutAt: { not: null } },
-    select: {
-      employeeId: true,
-      workDate: true,
-      clockOutAt: true,
-      employee: {
-        select: { compensationType: true, baseSalary: true, dailyRate: true, hourlyRate: true },
-      },
-    },
-  });
-  if (records.length === 0) return { scanned: 0, created: 0 };
-
-  const existingOt = await prisma.overtimeRequest.findMany({
-    where: {
-      companyId,
-      deletedAt: null,
-      employeeId: { in: [...new Set(records.map((r) => r.employeeId))] },
-      date: { gte: from, lt: to },
-    },
-    select: { employeeId: true, date: true },
-  });
-  const hasOt = new Set(existingOt.map((o) => `${o.employeeId}|${o.date.toISOString().slice(0, 10)}`));
-
-  const rangeEnd = new Date(to);
-  const shiftMap = await resolveShiftMinutesBatch(companyId, from, rangeEnd);
-
-  let created = 0;
-  for (const r of records) {
-    const key = `${r.employeeId}|${r.workDate.toISOString().slice(0, 10)}`;
-    if (hasOt.has(key)) continue;
-    // Saturday is a company-wide half day — time worked past the (already
-    // shortened) shift end doesn't count as OT, per company policy.
-    if (r.workDate.getUTCDay() === 6) continue;
-
-    // Elapsed minutes since the work day's Bangkok midnight — NOT the same
-    // as "minutes since clockOutAt's own midnight", which wraps to a small
-    // number (and silently drops the overtime) for an after-midnight
-    // clock-out on an overnight shift.
-    const elapsedMinutes = minutesSinceWorkDateStart(r.clockOutAt!, r.workDate);
-    const shift = shiftMinutesFromBatch(shiftMap, r.employeeId, r.workDate);
-    const excessMinutes = elapsedMinutes - shift.endMin;
-    if (excessMinutes < MIN_OT_MINUTES) continue;
-
-    const hours = Math.round((excessMinutes / 60) * 100) / 100;
-    const estimated = estimateAmount(
-      {
-        compensationType: r.employee.compensationType,
-        baseSalary: r.employee.baseSalary ? Number(r.employee.baseSalary) : null,
-        dailyRate: r.employee.dailyRate ? Number(r.employee.dailyRate) : null,
-        hourlyRate: r.employee.hourlyRate ? Number(r.employee.hourlyRate) : null,
-      },
-      hours,
-      DEFAULT_MULTIPLIER,
-    );
-    const shiftEndLabel = `${String(Math.floor(shift.endMin / 60)).padStart(2, "0")}:${String(shift.endMin % 60).padStart(2, "0")}`;
-    // Display-only "HH:mm" — wraps past midnight (e.g. 1460 min → "00:20"),
-    // which is fine for a label; the money math above uses elapsedMinutes.
-    const clockOutMinutesOfDay = ((elapsedMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
-    const clockOutLabel = `${String(Math.floor(clockOutMinutesOfDay / 60)).padStart(2, "0")}:${String(clockOutMinutesOfDay % 60).padStart(2, "0")}`;
-
-    await prisma.overtimeRequest.create({
-      data: {
-        companyId,
-        employeeId: r.employeeId,
-        date: r.workDate,
-        startTime: shiftEndLabel,
-        endTime: clockOutLabel,
-        hours,
-        multiplier: DEFAULT_MULTIPLIER,
-        estimatedAmount: estimated,
-        reason: "สร้างอัตโนมัติจากการตรวจสอบเวลาเข้า-ออกงานย้อนหลัง (เวลาออกเกินกะ)",
-        status: "APPROVED",
-        approverEmployeeId: session.employeeId ?? null,
-        approverUserId: session.sub,
-        decidedAt: new Date(),
-        decisionNote: "อนุมัติอัตโนมัติจากการตรวจสอบเวลาเข้า-ออกงานย้อนหลัง",
-        createdById: session.sub,
-        updatedById: session.sub,
-      },
-    });
-    created++;
-  }
-
-  if (created > 0) {
-    await writeAudit({
-      companyId,
-      actorUserId: session.sub,
-      action: "overtime.reconcile_from_attendance",
-      entity: "OvertimeRequest",
-      after: { scanned: records.length, created },
-      ...meta,
-    });
-  }
-
-  return { scanned: records.length, created };
 }
