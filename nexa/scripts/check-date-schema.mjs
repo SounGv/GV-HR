@@ -1,7 +1,8 @@
 // Checks that form dates reject years that are typing slips (Buddhist era typed as 2569) and keep normal dates working.
 // Run: node --experimental-strip-types scripts/check-date-schema.mjs
 import assert from "node:assert/strict";
-import { calendarDate } from "../src/lib/date-schema.ts";
+import { calendarDate, isRealDay } from "../src/lib/date-schema.ts";
+import { roundUpdateSchema } from "../src/features/appraisal-round/schema.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -37,6 +38,18 @@ check("a day that does not exist is refused, not moved to the next month", () =>
   assert.equal(s.safeParse("2028-02-29").success, true, "a real leap day");
   assert.equal(s.safeParse("2027-02-29").success, false, "not a leap year");
   assert.equal(calendarDate({ message: "x" }).safeParse("2026-02-30").error.issues[0].message, "x");
+});
+check("isRealDay never throws and rejects what does not exist", () => {
+  assert.equal(isRealDay("2026-02-28"), true);
+  assert.equal(isRealDay("2026-02-30"), false);
+  assert.equal(isRealDay("2026-13-01"), false, "month 13 used to throw 'Invalid time value'");
+  assert.equal(isRealDay("2026-00-10"), false);
+  assert.equal(isRealDay("2026-04-31"), false);
+  assert.equal(isRealDay("abc"), false);
+});
+check("the appraisal round's start and end date refuse a day that does not exist, and never throw", () => {
+  for (const d of ["2026-02-30", "2026-13-01", "2026-04-31"]) assert.equal(roundUpdateSchema.safeParse({ startDate: d }).success, false, d);
+  for (const d of ["2026-02-28", "2028-02-29"]) assert.equal(roundUpdateSchema.safeParse({ startDate: d }).success, true, d);
 });
 check("junk and empty input still fail with the field's own message", () => {
   const r = s.safeParse("not a date");

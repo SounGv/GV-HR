@@ -1,7 +1,16 @@
 import { z } from "zod";
 
 const RATERS = ["SELF", "MANAGER", "PEER", "SUBORDINATE"] as const;
-const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "รูปแบบวันที่ไม่ถูกต้อง");
+const day = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "รูปแบบวันที่ไม่ถูกต้อง")
+  // 2026-02-30 matches the pattern but is not a day; new Date() would move it to 2 March.
+  // Written out here (not imported) because the check scripts load this file straight from node, which cannot resolve "@/".
+  .refine((v) => {
+    const [y, m, d] = v.split("-").map(Number);
+    const real = new Date(Date.UTC(y, m - 1, d));
+    return real.getUTCFullYear() === y && real.getUTCMonth() === m - 1 && real.getUTCDate() === d;
+  }, "วันที่นี้ไม่มีอยู่จริง");
 
 export const roundCreateSchema = z.object({
   name: z.string().trim().min(1, "กรุณาระบุชื่อรอบ").max(200),
