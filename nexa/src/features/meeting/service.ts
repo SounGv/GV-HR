@@ -79,7 +79,8 @@ export async function createMeeting(
   // Check and insert run under one lock per organizer so two quick taps cannot both pass the check.
   const meeting = await withAdvisoryLock(`meeting:${organizerEmployeeId}`, async (tx) => {
     const same = await tx.meeting.findFirst({
-      where: { companyId, organizerEmployeeId, title: input.title, startAt: input.startAt, endAt: input.endAt, deletedAt: null },
+      // A cancelled meeting does not count: the same slot may be booked again after cancelling.
+      where: { companyId, organizerEmployeeId, title: input.title, startAt: input.startAt, endAt: input.endAt, deletedAt: null, status: { not: "CANCELLED" } },
       select: { id: true },
     });
     if (same) throw BadRequest("คุณนัดประชุมนี้ไว้แล้ว (ชื่อและเวลาเดียวกัน) ตรวจรายการประชุมของคุณก่อนสร้างซ้ำ");
