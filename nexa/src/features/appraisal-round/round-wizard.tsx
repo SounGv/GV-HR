@@ -26,11 +26,22 @@ const fmtDay = (iso: string | null) =>
 
 /** Loads one round; a draft opens in the 4-step wizard (wizard.tsx), anything else shows progress. */
 export function RoundPage({ id }: { id: string }) {
+  const { can } = useAuth();
   const { data, isLoading, isError, refetch } = useRound(id);
   if (isError) return <ErrorState onRetry={() => refetch()} />;
   if (isLoading || !data) return <TableLoadingState rows={4} />;
   const round = data.data;
-  return round.status === "DRAFT" ? <Wizard key={round.id} round={round} /> : <RoundOverview round={round} />;
+  if (round.status !== "DRAFT") return <RoundOverview round={round} />;
+  // Setting a round up is HR's job. A manager is sent the summary only (no names), so the wizard would show an empty shell.
+  if (!can("campaign:update")) {
+    return (
+      <>
+        <Header round={round} />
+        <Card className="p-4 text-sm text-muted-foreground">รอบนี้ยังเป็นร่าง ฝ่ายบุคคลกำลังตั้งค่าอยู่ จะดูความคืบหน้าได้เมื่อเปิดรอบแล้ว</Card>
+      </>
+    );
+  }
+  return <Wizard key={round.id} round={round} />;
 }
 
 function Header({ round, backTitle }: { round: RoundDetail; backTitle?: string }) {
