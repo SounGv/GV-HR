@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { requireEmployeeId } from "@/lib/auth/employee";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
+import { bangkokParts } from "@/lib/datetime";
 import { Forbidden, NotFound } from "@/lib/api/errors";
 import type { AccessClaims } from "@/lib/auth/jwt";
 import type { DevelopmentItemCreateInput, DevelopmentItemUpdateInput } from "./schema";
@@ -44,9 +45,10 @@ function isHrLevel(session: AccessClaims): boolean {
 }
 
 /** "H1/2569" style — same convention already used by PerformanceReview.cycle / Goal.cycle. */
-export function currentCycle(): string {
-  const now = new Date();
-  return `H${now.getMonth() < 6 ? 1 : 2}/${now.getFullYear() + 543}`;
+export function currentCycle(now: Date = new Date()): string {
+  // Bangkok's calendar, not the server's: Vercel runs in UTC, 7 hours behind, so 00:00-07:00 on 1 Jan / 1 Jul was the old half.
+  const { year, month } = bangkokParts(now);
+  return `H${month <= 6 ? 1 : 2}/${year + 543}`;
 }
 
 /** Every employee owns exactly one plan per cycle — created on first access. */
