@@ -27,7 +27,7 @@ export async function importEmployees(
   const positions = await prisma.position.findMany({ where: { companyId, deletedAt: null }, select: { id: true, title: true } });
   // Includes soft-deleted rows too — employeeCode uniqueness is enforced
   // at the DB level across ALL rows regardless of deletedAt (see below).
-  const allEmployees = await prisma.employee.findMany({ where: { companyId }, select: { id: true, employeeCode: true, deletedAt: true } });
+  const allEmployees = await prisma.employee.findMany({ where: { companyId }, select: { id: true, employeeCode: true, deletedAt: true, managerId: true } });
   const branches = await prisma.branch.findMany({ where: { companyId, deletedAt: null }, select: { id: true, name: true } });
   const costCenters = await prisma.costCenter.findMany({ where: { companyId, deletedAt: null }, select: { id: true, name: true } });
   const deptMap = new Map(depts.map((d) => [norm(d.name), d.id]));
@@ -87,6 +87,8 @@ export async function importEmployees(
   // same file (or created by it) resolves just like one already in the system.
   const idByCode = new Map(codeMap);
   const pendingManagers: { code: string; managerCode: string }[] = [];
+  // Who reports to whom, kept in memory and updated as links are made, so the loop check needs no query per step.
+  const managerOf = new Map<string, string | null>(allEmployees.map((e) => [e.id, e.managerId]));
 
   // One update/create per row on a single connection: the 5 s default would roll everything back on a big file.
   const txOptions = { maxWait: 10_000, timeout: Math.min(55_000, 15_000 + valid.length * 40) };
@@ -142,6 +144,7 @@ export async function importEmployees(
             select: { id: true },
           });
           idByCode.set(r.employeeCode, createdRow.id);
+          managerOf.set(createdRow.id, null);
           created++;
         }
         if (r.managerCode) pendingManagers.push({ code: r.employeeCode, managerCode: r.managerCode });
@@ -157,7 +160,7 @@ export async function importEmployees(
           warnings.push(`${code}: ไม่พบรหัสหัวหน้า “${managerCode}” (ข้ามการผูกหัวหน้า)`);
         } else {
           // Same rule as the edit page: the new manager must not report (directly or further up) to this person.
-          // Walk up from the manager; links saved earlier in this loop are already visible inside the transaction.
+          // Walk up from the manager through the links known so far (those made earlier in this loop included).
           let loops = false;
           let cursor: string | null = managerId;
           for (let guard = 0; cursor && guard < 50; guard++) {
@@ -165,11 +168,13 @@ export async function importEmployees(
               loops = true;
               break;
             }
-            const up: { managerId: string | null } | null = await tx.employee.findFirst({ where: { id: cursor, companyId }, select: { managerId: true } });
-            cursor = up?.managerId ?? null;
+            cursor = managerOf.get(cursor) ?? null;
           }
           if (loops) warnings.push(`${code}: หัวหน้า “${managerCode}” อยู่ใต้พนักงานคนนี้ ตั้งแล้วจะวนกันเอง (ข้ามการผูกหัวหน้า)`);
-          else await tx.employee.update({ where: { id: employeeId }, data: { managerId } });
+          else {
+            await tx.employee.update({ where: { id: employeeId }, data: { managerId } });
+            managerOf.set(employeeId, managerId);
+          }
         }
       }
     }, txOptions);
