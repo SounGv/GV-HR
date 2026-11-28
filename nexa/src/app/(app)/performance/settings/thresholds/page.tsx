@@ -12,8 +12,8 @@ export default async function EvaluationThresholdsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="เกณฑ์คะแนนประเมินผล"
-        description="ตั้งค่าเกณฑ์สีของผลประเมินและน้ำหนักคะแนนต่อประเภทผู้ประเมิน — ใช้ทั่วทั้งระบบ ไม่ hardcode ในหน้าจอ"
+        title="เกณฑ์คะแนนประเมินผล (ระบบเดิม)"
+        description="ใช้กับแคมเปญประเมินแบบเดิมเท่านั้น รอบประเมินใหม่ไม่ใช้ค่าในหน้านี้ ให้ตั้งที่เมนู ประเมิน แล้วเลือก ตั้งค่า"
       />
       <EvaluationThresholdsForm />
       <EvaluationRaterWeightsForm />

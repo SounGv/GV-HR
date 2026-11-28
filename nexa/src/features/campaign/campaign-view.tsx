@@ -67,7 +67,7 @@ export function CampaignView() {
                   <CalendarClock className="size-4" /> รอบอัตโนมัติ
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/performance/settings/thresholds" />}>
-                  <Gauge className="size-4" /> เกณฑ์คะแนนประเมินผล
+                  <Gauge className="size-4" /> เกณฑ์คะแนนประเมินผล (ระบบเดิม)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
