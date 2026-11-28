@@ -29,6 +29,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getCurrentPosition, distanceMeters } from "@/lib/geolocation";
+import { isPhoneWidth } from "@/lib/viewport";
 import { ApiError } from "@/lib/api/client";
 import { useCameraStream, type CameraFacing } from "./use-camera-stream";
 import { useClockIn, useClockOut, useEndBreak, useStartBreak, useToday } from "./hooks";
@@ -134,6 +135,8 @@ export function ClockCard() {
   }
 
   useEffect(() => {
+    // The phone screens use their own check-in card; this desktop card is only hidden there, so it must not ask for the location too.
+    if (isPhoneWidth()) return;
     primeGps();
   }, []);
 
@@ -375,7 +378,7 @@ export function ClockCard() {
     : "--:--:--";
 
   return (
-    <section className="relative overflow-hidden rounded-lg bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white sm:p-8">
+    <section className="relative overflow-hidden rounded-lg bg-[#0d47a1] dark:bg-[#0a2f6b] p-6 text-white sm:p-8">
 
       <button
         type="button"
@@ -571,8 +574,8 @@ export function ClockCard() {
         )}
       </div>
 
-      {/* Break toggle — only while clocked in, not yet clocked out */}
-      {hasIn && !hasOut && (
+      {/* Break toggle: only while clocked in, not yet clocked out, and not after the day's one break has ended (the server allows one break a day) */}
+      {hasIn && !hasOut && !(record?.breakStartAt && record?.breakEndAt) && (
         <div className="relative mt-3">
           <Button
             type="button"

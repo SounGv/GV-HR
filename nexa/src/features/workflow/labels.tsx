@@ -29,6 +29,12 @@ export function RequestStatusBadge({ status }: { status: RequestStatus }) {
   );
 }
 
+export const STEP_STATUS_LABEL: Record<StepStatus, string> = {
+  PENDING: "รออนุมัติ",
+  APPROVED: "อนุมัติแล้ว",
+  REJECTED: "ไม่อนุมัติ",
+};
+
 export const STEP_DOT: Record<StepStatus, string> = {
   PENDING: "bg-muted-foreground/40",
   APPROVED: "bg-success",

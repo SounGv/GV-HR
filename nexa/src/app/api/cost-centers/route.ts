@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requirePermission } from "@/lib/auth/guard";
+import { requireAnyPermission, requirePermission } from "@/lib/auth/guard";
 import { getRequestMeta } from "@/lib/api/request";
 import { ok, created, handleApiError } from "@/lib/api/response";
 import { costCenterCreateSchema } from "@/features/cost-center/schema";
@@ -9,7 +9,8 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const session = await requirePermission("admin:read");
+    // The report filter lists cost centers too, so people who read reports (HR Manager has no admin:read) may read the list.
+    const session = await requireAnyPermission(["admin:read", "report:read"]);
     return ok(await listCostCenters(session.companyId));
   } catch (err) {
     return handleApiError(err);

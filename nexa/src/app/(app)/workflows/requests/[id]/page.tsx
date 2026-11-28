@@ -8,8 +8,8 @@ import { PageHeaderBar } from "@/components/shared/page-header-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { RequestStatusBadge } from "@/features/workflow/labels";
-import type { RequestStatus } from "@/features/workflow/types";
+import { REQUEST_STATUS_LABEL, RequestStatusBadge, STEP_STATUS_LABEL } from "@/features/workflow/labels";
+import type { RequestStatus, StepStatus } from "@/features/workflow/types";
 
 export const metadata: Metadata = { title: "รายละเอียดคำขออนุมัติ" };
 
@@ -69,7 +69,7 @@ export default async function WorkflowRequestDetailPage({ params }: { params: Pr
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <InfoRow icon={UserRound} label="ผู้ส่งคำขอ" value={request.requesterName} />
-            <InfoRow label="สถานะปัจจุบัน" value={request.status} />
+            <InfoRow label="สถานะปัจจุบัน" value={REQUEST_STATUS_LABEL[status] ?? request.status} />
             <InfoRow label="ขั้นตอนปัจจุบัน" value={`${(request.currentStep ?? 0) + 1}/${steps.length || 1}`} />
             <InfoRow label="จำนวนเงิน" value={request.amount != null ? formatCurrency(Number(request.amount)) : "—"} />
           </div>
@@ -88,7 +88,7 @@ export default async function WorkflowRequestDetailPage({ params }: { params: Pr
                 <div key={`${step.name}-${index}`} className="rounded-lg border border-border px-3 py-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-foreground">{step.name || `ขั้นตอนที่ ${index + 1}`}</span>
-                    <span className="text-muted-foreground">{step.status || "PENDING"}</span>
+                    <span className="text-muted-foreground">{STEP_STATUS_LABEL[(step.status || "PENDING") as StepStatus] ?? step.status}</span>
                   </div>
                   {step.decidedByName && <p className="mt-1 text-xs text-muted-foreground">อนุมัติโดย {step.decidedByName}</p>}
                 </div>
